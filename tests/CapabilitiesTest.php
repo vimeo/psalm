@@ -2680,6 +2680,95 @@ final class CapabilitiesTest extends TestCase
                         }
                     }',
             ],
+            'ternaryOrMatchWhoseEveryBranchReturnsThisIsThis' => [
+                'code' => '<?php
+                    final class Counter {
+                        public int $n = 0;
+
+                        /**
+                         * @return $this
+                         * @psalm-external-mutation-free
+                         */
+                        public function inc(): static {
+                            $this->n++;
+                            return $this;
+                        }
+
+                        /** @return $this */
+                        public function ping(string $u): static {
+                            echo $u;
+                            return $this;
+                        }
+
+                        /** @return $this */
+                        public function pingIf(bool $v): static {
+                            return $v ? $this->ping("") : $this;
+                        }
+
+                        /** @return $this */
+                        public function incOrFail(bool $v): static {
+                            return $v ? $this->inc() : throw new RuntimeException();
+                        }
+
+                        /** @return $this */
+                        public function incShort(): static {
+                            return $this->inc() ?: $this;
+                        }
+
+                        /** @return $this */
+                        public function incBy(int $by, bool $v): static {
+                            return match ($by) {
+                                0 => $this,
+                                1 => $this->inc(),
+                                2 => $v ? $this->inc()->inc() : $this->ping(""),
+                                default => throw new InvalidArgumentException(),
+                            };
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RedundantConditionGivenDocblockType'],
+                'php_version' => '8.0',
+            ],
+            'ternaryOfThisAsReceiverOnlyMutatesThis' => [
+                'code' => '<?php
+                    final class Counter {
+                        public int $n = 0;
+
+                        /**
+                         * @return $this
+                         * @psalm-external-mutation-free
+                         */
+                        public function inc(): static {
+                            $this->n++;
+                            return $this;
+                        }
+
+                        /** @psalm-external-mutation-free */
+                        public function incIfThenInc(bool $v): void {
+                            ($v ? $this->inc() : $this)->inc();
+                        }
+                    }',
+            ],
+            'assigningToAPropertyOfATernaryOfThisOnlyMutatesThis' => [
+                'code' => '<?php
+                    final class Counter {
+                        public int $n = 0;
+
+                        /**
+                         * @return $this
+                         * @psalm-external-mutation-free
+                         */
+                        public function inc(): static {
+                            $this->n++;
+                            return $this;
+                        }
+
+                        /** @psalm-external-mutation-free */
+                        public function resetIf(bool $v): void {
+                            ($v ? $this->inc() : $this)->n = 0;
+                        }
+                    }',
+            ],
             'purityTemplatesComeAfterTypeTemplates' => [
                 'code' => '<?php
                     /**
@@ -7399,6 +7488,41 @@ final class CapabilitiesTest extends TestCase
                         }
                     }',
                 'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:36 - The declared return type \'$this\' for Copying::inc requires returning $this, but this may return another object',
+            ],
+            'ternaryWithABranchNotReturningThisIsNotThis' => [
+                'code' => '<?php
+                    final class Counter {
+                        /** @return $this */
+                        public function copyIf(bool $v): static {
+                            return $v ? $this : clone $this;
+                        }
+                    }',
+                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:36 - The declared return type \'$this\' for Counter::copyIf requires returning $this, but this may return another object',
+            ],
+            'shortTernaryWithAConditionNotReturningThisIsNotThis' => [
+                'code' => '<?php
+                    final class Counter {
+                        /** @return $this */
+                        public function otherOrThis(?self $other): static {
+                            return $other ?: $this;
+                        }
+                    }',
+                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:36 - The declared return type \'$this\' for Counter::otherOrThis requires returning $this, but this may return another object',
+            ],
+            'matchWithAnArmNotReturningThisIsNotThis' => [
+                'code' => '<?php
+                    final class Counter {
+                        /** @return $this */
+                        public function copyIf(int $v): static {
+                            return match ($v) {
+                                0 => $this,
+                                default => clone $this,
+                            };
+                        }
+                    }',
+                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:36 - The declared return type \'$this\' for Counter::copyIf requires returning $this, but this may return another object',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'purityArgumentsGoInBrackets' => [
                 'code' => '<?php
