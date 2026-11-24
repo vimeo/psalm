@@ -630,6 +630,25 @@ final class TemplateStandinTypeReplacer
     }
 
     /**
+     * The object input as the object with the properties of the base type it has, by the id of the type
+     *
+     * @return array<string, TObjectWithProperties>
+     */
+    private static function getObjectWithPropertiesMatch(
+        Codebase $codebase,
+        TNamedObject $atomic_input_type,
+        TObjectWithProperties $base_type,
+    ): array {
+        $object_with_keys = KeyedArrayComparator::coerceToObjectWithProperties(
+            $codebase,
+            $atomic_input_type,
+            $base_type,
+        );
+
+        return $object_with_keys ? [$object_with_keys->getId() => $object_with_keys] : [];
+    }
+
+    /**
      * This method attempts to find bits of the input type (normally the argument type of a method call)
      * that match the base type (normally the param type of the method). These matches are used to infer
      * more template types
@@ -752,15 +771,10 @@ final class TemplateStandinTypeReplacer
             if ($atomic_input_type instanceof TNamedObject
                 && $base_type instanceof TObjectWithProperties
             ) {
-                $object_with_keys = KeyedArrayComparator::coerceToObjectWithProperties(
-                    $codebase,
-                    $atomic_input_type,
-                    $base_type,
-                );
-
-                if ($object_with_keys) {
-                    $matching_atomic_types[$object_with_keys->getId()] = $object_with_keys;
-                }
+                $matching_atomic_types = [
+                    ...$matching_atomic_types,
+                    ...self::getObjectWithPropertiesMatch($codebase, $atomic_input_type, $base_type),
+                ];
 
                 continue;
             }
