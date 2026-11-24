@@ -887,7 +887,7 @@ final class TypeVariableTest extends TestCase
                      * @template TContext as array
                      */
                     class a {
-                        
+
                         /**
                          * @param (callable(): TContext)|null $row_context
                          */
@@ -895,7 +895,7 @@ final class TypeVariableTest extends TestCase
                             protected $row_context = null,
                         ) {
                         }
-                        
+
                         /**
                          * @psalm-type TReturn = string|null|Stringable|int|float|list<Stringable|string>
                          *
@@ -1582,6 +1582,113 @@ final class TypeVariableTest extends TestCase
                         $n = new NoCtor();
                         $n->add("a");
                         return $n;
+                    }',
+            ],
+            'constructionOfATemplateConstrainedThroughAGrandparentMember' => [
+                'code' => '<?php
+                    /** @template T */
+                    class GP {
+                        public function __construct() {}
+
+                        /** @param T $x */
+                        public function add($x): void {}
+                    }
+
+                    /**
+                     * @template U
+                     * @extends GP<U>
+                     */
+                    class P extends GP {}
+
+                    /**
+                     * @template W
+                     * @extends P<W>
+                     */
+                    final class GrandChild extends P {
+                        public function __construct() {}
+                    }
+
+                    /** @return GrandChild<int> */
+                    function grand(): GrandChild {
+                        return new GrandChild();
+                    }',
+            ],
+            'constructionOfATemplateConstrainedThroughADocblockInheritedParam' => [
+                'code' => '<?php
+                    /** @template T */
+                    abstract class AbsBase {
+                        /** @param T $x */
+                        abstract public function add($x): void;
+                    }
+
+                    /**
+                     * @template U
+                     * @extends AbsBase<U>
+                     */
+                    final class Impl extends AbsBase {
+                        public function add($x): void {}
+                    }
+
+                    /** @return Impl<int> */
+                    function impl(): Impl {
+                        return new Impl();
+                    }',
+            ],
+            'constructionOfATemplateConstrainedThroughInheritedMembers' => [
+                'code' => '<?php
+                    /** @template T */
+                    class Collection {
+                        public function __construct() {}
+
+                        /** @param T $x */
+                        public function add($x): void {}
+                    }
+
+                    /**
+                     * @template U
+                     * @extends Collection<U>
+                     */
+                    final class ChildCollection extends Collection {
+                        public function __construct() {}
+                    }
+
+                    /** @template T */
+                    trait Pushes {
+                        /** @param T $x */
+                        public function push($x): void {}
+                    }
+
+                    /** @template V */
+                    final class Stack {
+                        /** @use Pushes<V> */
+                        use Pushes;
+                    }
+
+                    /** @template T */
+                    class Slot {
+                        /** @var T|null */
+                        public $item = null;
+                    }
+
+                    /**
+                     * @template W
+                     * @extends Slot<W>
+                     */
+                    final class ChildSlot extends Slot {}
+
+                    /** @return ChildCollection<int> */
+                    function collection(): ChildCollection {
+                        return new ChildCollection();
+                    }
+
+                    /** @return Stack<int> */
+                    function stack(): Stack {
+                        return new Stack();
+                    }
+
+                    /** @return ChildSlot<int> */
+                    function slot(): ChildSlot {
+                        return new ChildSlot();
                     }',
             ],
             'constructionOfACovariantTemplateNothingCanConstrain' => [
@@ -2439,6 +2546,49 @@ final class TypeVariableTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'constructionOfATemplateOnlyATemplateOfAnInheritedMethodNamesLikeIt' => [
+                'code' => '<?php
+                    class Collection {
+                        public function __construct() {}
+
+                        /**
+                         * @template T
+                         * @param T $x
+                         */
+                        public function add($x): void {}
+                    }
+
+                    /** @template T */
+                    final class ChildCollection extends Collection {
+                        public function __construct() {}
+                    }
+
+                    /** @return ChildCollection<int> */
+                    function collection(): ChildCollection {
+                        return new ChildCollection();
+                    }',
+                'error_message' => 'MixedReturnTypeCoercion',
+            ],
+            'constructionOfATemplateOnlyAProtectedInheritedMethodTakes' => [
+                'code' => '<?php
+                    /** @template T */
+                    class Collection {
+                        /** @param T $x */
+                        protected function add($x): void {}
+                    }
+
+                    /**
+                     * @template U
+                     * @extends Collection<U>
+                     */
+                    final class ChildCollection extends Collection {}
+
+                    /** @return ChildCollection<int> */
+                    function collection(): ChildCollection {
+                        return new ChildCollection();
+                    }',
+                'error_message' => 'MixedReturnTypeCoercion',
+            ],
             'constructionOfAnInvariantTemplateNothingCanConstrain' => [
                 'code' => '<?php
                     /** @template T */

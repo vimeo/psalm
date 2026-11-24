@@ -41,6 +41,7 @@ use Psalm\Issue\OverriddenFinalConstant;
 use Psalm\Issue\OverriddenInterfaceConstant;
 use Psalm\Issue\ParentNotFound;
 use Psalm\Issue\ParseError;
+use Psalm\Issue\UndefinedClass;
 use Psalm\Issue\UndefinedConstant;
 use Psalm\IssueBuffer;
 use Psalm\Storage\AttributeStorage;
@@ -53,6 +54,7 @@ use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
@@ -62,6 +64,7 @@ use ReflectionProperty;
 
 use function array_values;
 use function assert;
+use function count;
 use function explode;
 use function in_array;
 use function ltrim;
@@ -396,31 +399,19 @@ final class ClassConstAnalyzer
             }
         }
 
-        if ($stmt->class instanceof PhpParser\Node\Expr\Variable) {
-            $fq_class_name = null;
-            $lhs_type_definite_class = null;
-            $lhs_is_static = false;
-            if ($lhs_type->isSingle()) {
-                $atomic_type = $lhs_type->getSingleAtomic();
-                if ($atomic_type instanceof TNamedObject || $atomic_type instanceof TLiteralClassString) {
-                    $fq_class_name = $atomic_type->value;
-                    $lhs_type_definite_class = $atomic_type->definite_class;
-                    $lhs_is_static = $atomic_type instanceof TNamedObject && $atomic_type->is_static;
-                } elseif ($atomic_type::class === TLiteralString::class
-                    && $codebase->config->allow_string_standin_for_class
-                ) {
-                    $class_name = ltrim($atomic_type->value, '\\');
-                    if ($codebase->classlike_storage_provider->has($class_name)) {
-                        $fq_class_name = $class_name;
-                        $lhs_type_definite_class = true;
-                    }
-                }
-            }
+        if (!$stmt->class instanceof PhpParser\Node\Expr\Variable) {
+            return true;
+        }
 
-            if ($fq_class_name === null || $lhs_type_definite_class === null) {
-                return true;
-            }
+        $lhs_classes = self::getClassesOfAVariable($statements_analyzer, $codebase, $stmt->class, $lhs_type);
 
+        if ($lhs_classes === null) {
+            return true;
+        }
+
+        $stmt_types = [];
+
+        foreach ($lhs_classes as [$fq_class_name, $lhs_type_definite_class, $lhs_is_static]) {
             $fq_class_name = $codebase->classlikes->getUnAliasedName($fq_class_name);
 
             $moved_class = false;
@@ -435,8 +426,10 @@ final class ClassConstAnalyzer
                 );
             }
 
-            // if we're ignoring that the class doesn't exist, exit anyway
+            // if we're ignoring that the class doesn't exist, exit anyway, and without the type of the classes before
             if (!$codebase->classlikes->classOrInterfaceOrEnumExists($fq_class_name, null, $context)) {
+                $statements_analyzer->node_data->setType($stmt, Type::getMixed());
+
                 return true;
             }
 
@@ -450,8 +443,11 @@ final class ClassConstAnalyzer
                 );
             }
 
+            // a class whose constant is not typed leaves the fetch mixed
+            $statements_analyzer->node_data->setType($stmt, Type::getMixed());
+
             if (!$stmt->name instanceof PhpParser\Node\Identifier) {
-                return self::analyzeLiteralNamedFetch(
+                $analyzed = self::analyzeLiteralNamedFetch(
                     $statements_analyzer,
                     $stmt,
                     $stmt->name,
@@ -461,17 +457,28 @@ final class ClassConstAnalyzer
                     !$lhs_type_definite_class,
                     $lhs_is_static,
                 );
+            } else {
+                $analyzed = self::analyzeIdentifiedFetch(
+                    $statements_analyzer,
+                    $stmt,
+                    $stmt->name,
+                    $context,
+                    $fq_class_name,
+                    $moved_class,
+                    !$lhs_type_definite_class,
+                );
             }
 
-            return self::analyzeIdentifiedFetch(
-                $statements_analyzer,
-                $stmt,
-                $stmt->name,
-                $context,
-                $fq_class_name,
-                $moved_class,
-                !$lhs_type_definite_class,
-            );
+            if ($analyzed === false) {
+                return false;
+            }
+
+            $stmt_types[] = $statements_analyzer->node_data->getType($stmt) ?? Type::getMixed();
+        }
+
+        // the constant of each class the expression may be, mixed as soon as one of them is not typed
+        if (count($stmt_types) > 1) {
+            $statements_analyzer->node_data->setType($stmt, Type::combineUnionTypeArray($stmt_types, $codebase));
         }
 
         return true;
@@ -1330,5 +1337,51 @@ final class ClassConstAnalyzer
             return [$parent_classlike_storage, $parent_const_storage];
         }
         return null;
+    }
+
+    /**
+     * Each class the variable may be an object or a name of, or null when one of its types is none of them. PHP fails
+     * on a constant fetched on null, as on a static call: the null of a union with classes is reported, and the other
+     * classes are checked
+     *
+     * @return list<array{string, bool, bool}>|null
+     */
+    private static function getClassesOfAVariable(
+        StatementsAnalyzer $statements_analyzer,
+        Codebase $codebase,
+        PhpParser\Node\Expr $class,
+        Union $lhs_type,
+    ): ?array {
+        $lhs_classes = [];
+
+        foreach ($lhs_type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TNamedObject || $atomic_type instanceof TLiteralClassString) {
+                $lhs_classes[] = [
+                    $atomic_type->value,
+                    $atomic_type->definite_class,
+                    $atomic_type instanceof TNamedObject && $atomic_type->is_static,
+                ];
+            } elseif ($atomic_type::class === TLiteralString::class
+                && $codebase->config->allow_string_standin_for_class
+                && $codebase->classlike_storage_provider->has(ltrim($atomic_type->value, '\\'))
+            ) {
+                $lhs_classes[] = [ltrim($atomic_type->value, '\\'), true, false];
+            } elseif (!$atomic_type instanceof TNull || $lhs_type->isNull()) {
+                return null;
+            }
+        }
+
+        if ($lhs_type->isNullable() && !$lhs_type->ignore_nullable_issues) {
+            IssueBuffer::maybeAdd(
+                new UndefinedClass(
+                    'Type null cannot be used as a class',
+                    new CodeLocation($statements_analyzer->getSource(), $class),
+                    'null',
+                ),
+                $statements_analyzer->getSuppressedIssues(),
+            );
+        }
+
+        return $lhs_classes;
     }
 }
