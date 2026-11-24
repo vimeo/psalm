@@ -4920,21 +4920,24 @@ final class TypeAlgebraTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => ['TypeDoesNotContainType'],
             ],
-            'propertyIsKeptWhenAnOffsetIsWrittenWhereItCannotBe' => [
+            'propertyNotInitializedYetIsInitializedByAnOffsetWrite' => [
                 'code' => '<?php
                     final class A {
-                        /** @var array{t: null} */
-                        public array $p = ["t" => null];
+                        /** @var array<string, int> */
+                        private array $cache;
 
-                        public function m(): void {
-                            if ($this->p["t"] !== null) {
-                                $this->p["o"] = 1;
+                        /** @return array<string, int> */
+                        public function get(): array {
+                            if (!isset($this->cache)) {
+                                $this->cache["a"] = 1;
+                                /** @psalm-check-type-exact $this->cache = array{a: 1} */
                             }
-                            /** @psalm-check-type-exact $this->p = array{t: null} */
+
+                            return $this->cache;
                         }
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['DocblockTypeContradiction'],
+                'ignored_issues' => ['MissingConstructor', 'RedundantPropertyInitializationCheck'],
             ],
             'offsetKnownFromTheConditionIsKeptWhenTheArrayIsNotReassigned' => [
                 'code' => '<?php
@@ -5708,6 +5711,27 @@ final class TypeAlgebraTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'propertyNotInitializedYetIsCheckedWhenAnOffsetWriteInitializesIt' => [
+                'code' => '<?php
+                    interface EntityType {}
+                    interface ContentEntityType extends EntityType {}
+
+                    final class A {
+                        /** @var ContentEntityType[] */
+                        private $moderated = [];
+
+                        /** @param array<string, EntityType> $definitions */
+                        public function f(array $definitions): void {
+                            if (!isset($this->moderated)) {
+                                foreach ($definitions as $id => $definition) {
+                                    $this->moderated[$id] = $definition;
+                                }
+                            }
+                        }
+                    }',
+                'error_message' => 'PropertyTypeCoercion',
+                'error_levels' => ['DocblockTypeContradiction', 'RedundantPropertyInitializationCheck'],
+            ],
             'offsetOfAnArrayThatCannotBeIsNever' => [
                 'code' => '<?php
                     /** @param array{test: null, other: int} $a */
