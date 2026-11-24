@@ -116,6 +116,8 @@ final class TypeChecker extends TypeVisitor
      * @param bool $only_contravariant whether only contravariant templates are checked: a covariant one may be in
      *                                 a property's type, and was never checked in `@param-out`, by-ref output and
      *                                 assertion types
+     * @param bool $from_overridden_method whether the type is one a method takes from the method it overrides,
+     *                                     where its templates are checked
      * @psalm-mutation-free
      */
     public function __construct(
@@ -128,6 +130,7 @@ final class TypeChecker extends TypeVisitor
         private ?TemplateVariance $position = null,
         private readonly ?Context $context = null,
         private readonly bool $only_contravariant = false,
+        private readonly bool $from_overridden_method = false,
     ) {
     }
 
@@ -255,7 +258,9 @@ final class TypeChecker extends TypeVisitor
             TemplateVariance::Covariant => $outer_position,
             TemplateVariance::Contravariant => self::getOppositePosition($outer_position),
             TemplateVariance::Invariant => $outer_position !== null
-                || ($this->source instanceof MethodAnalyzer && $this->source->getMethodName() !== '__construct')
+                || ($this->source instanceof MethodAnalyzer
+                    && $this->source->getMethodName() !== '__construct'
+                    && !$this->from_overridden_method)
                     ? TemplateVariance::Invariant
                     : null,
         };

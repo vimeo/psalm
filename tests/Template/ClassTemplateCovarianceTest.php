@@ -44,6 +44,32 @@ final class ClassTemplateCovarianceTest extends TestCase
                 'ignored_issues' => ['MissingOverrideAttribute'],
                 'php_version' => '8.0',
             ],
+            'covariantTemplateInAnInvariantArgOfAParamTypeTakenFromTheOverriddenMethod' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface Inv {
+                        /** @param T $value */
+                        public function set(mixed $value): void;
+                    }
+                    /** @template-covariant T */
+                    interface Src {
+                        /**
+                         * @param Inv<T> $items
+                         * @psalm-suppress InvalidTemplateParam
+                         */
+                        public function merge(Inv $items): void;
+                    }
+                    /**
+                     * @template-covariant T
+                     * @implements Src<T>
+                     */
+                    final class Impl implements Src {
+                        public function merge(Inv $items): void {}
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingOverrideAttribute'],
+                'php_version' => '8.0',
+            ],
             'covariantTemplateInOutputsOtherThanTheReturnType' => [
                 'code' => '<?php
                     /** @template-covariant T */

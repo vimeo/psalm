@@ -2235,25 +2235,32 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 }
 
                 if ($function_param->type_location && !$inherited_type) {
-                    if ($param_type->check(
-                        $this,
-                        $function_param->type_location,
-                        $storage->suppressed_issues,
-                        [],
-                        false,
-                        false,
-                        // a type the parameter takes from the overridden method is checked there, for its templates
-                        $this->function instanceof ClassMethod
-                            && strtolower($this->function->name->name) !== '__construct'
-                            && $function_param === ($storage->params[$offset] ?? null),
-                        $context,
-                    ) === false) {
+                    $own_param = $storage->params[$offset] ?? null;
+
+                    // a type the parameter takes from the overridden method is checked there, for its templates
+                    if (!$param_type->checked
+                        && !(new TypeChecker(
+                            $this,
+                            $function_param->type_location,
+                            $storage->suppressed_issues,
+                            [],
+                            false,
+                            false,
+                            $this->function instanceof ClassMethod
+                                && strtolower($this->function->name->name) !== '__construct'
+                                && $function_param === $own_param
+                                    ? TemplateVariance::Contravariant
+                                    : null,
+                            $context,
+                            false,
+                            $function_param !== $own_param,
+                        ))->check($param_type)
+                    ) {
                         $check_stmts = false;
                     }
 
                     // the method's own `@param-out` is checked here even if the type it takes is the overridden
                     // method's, which checks only what it declares
-                    $own_param = $storage->params[$offset] ?? null;
                     $output_type = $function_param->out_type
                         ?? ($function_param->by_ref && $function_param === $own_param ? $param_type : null);
 
