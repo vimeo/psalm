@@ -341,7 +341,8 @@ final class LoopAnalyzer
                             $has_changes = true;
                         }
                     } elseif (isset($original_parent_context->vars_in_scope[$var_id])
-                        // what assigning the loop variables forgot (`$a[$k]` for a foreach key `$k`) is not restored
+                        // what assigning the loop variables forgot (`$a[$k]` for a foreach key `$k`, `$v['k']` for a
+                        // foreach value `$v`) is not restored
                         && isset($pre_loop_context->vars_in_scope[$var_id])
                     ) {
                         if (!$type->equals($original_parent_context->vars_in_scope[$var_id])) {
