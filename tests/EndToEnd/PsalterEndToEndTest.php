@@ -641,6 +641,9 @@ final class PsalterEndToEndTest extends PsalmEndToEndTestCase
         yield 'psalter' => [__DIR__ . '/../../psalter', ['--issues=', '--dry-run'], '--issues'];
         yield 'psalm-refactor' => [__DIR__ . '/../../psalm-refactor', ['--move=', '--into', 'C'], '--move'];
         yield 'psalm-language-server' => [__DIR__ . '/../../psalm-language-server', ['--config='], '--config'];
+        yield 'psalm missing value' => [__DIR__ . '/../../psalm', ['--threads'], '--threads'];
+        yield 'psalm missing short value' => [__DIR__ . '/../../psalm', ['-c'], '-c'];
+        yield 'psalm missing php-version value' => [__DIR__ . '/../../psalm', ['--php-version'], '--php-version'];
     }
 
     public function testAnOptionalOptionValueMayStayEmpty(): void

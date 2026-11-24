@@ -413,7 +413,8 @@ final class CliUtils
      * @param list<string> $long_options
      * @return array{array<string, false|list<false|string>|string>, list<string>, list<string>} the options like
      *      getopt() returns them, the options that aren't in $short_options and $long_options, like "-z", and
-     *      the long options that require a value but were given an empty one, like "--threads="
+     *      the options that require a value but were given an empty one or none, like "--threads=" or a
+     *      trailing "--threads"
      * @psalm-capabilities read-props|write-this-props|write-refs
      */
     private static function parseOptions(array $args, array $short_options, array $long_options): array
@@ -462,6 +463,8 @@ final class CliUtils
                     self::addOption($options, $name, $value);
                 } elseif (isset($args[$i + 1])) {
                     self::addOption($options, $name, $args[++$i]);
+                } else {
+                    $empty[] = '--' . $name;
                 }
 
                 continue;
@@ -488,6 +491,8 @@ final class CliUtils
                     self::addOption($options, $name, $value[0] === '=' ? substr($value, 1) : $value);
                 } elseif ($arity === ':' && isset($args[$i + 1])) {
                     self::addOption($options, $name, $args[++$i]);
+                } elseif ($arity === ':') {
+                    $empty[] = '-' . $name;
                 }
 
                 break;
