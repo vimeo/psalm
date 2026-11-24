@@ -7,6 +7,7 @@ namespace Psalm\Type\Atomic;
 use Override;
 
 use function is_nan;
+use function var_export;
 
 /**
  * Denotes a floating point value where the exact numeric value is known.
@@ -24,10 +25,7 @@ final class TLiteralFloat extends TFloat
     #[Override]
     public function getKey(bool $include_extra = true): string
     {
-        if (is_nan($this->value)) {
-            return 'float(NAN)';
-        }
-        return 'float(' . $this->value . ')';
+        return 'float(' . $this->getValueString() . ')';
     }
 
     #[Override]
@@ -36,11 +34,22 @@ final class TLiteralFloat extends TFloat
         if (!$exact) {
             return 'float';
         }
+
+        return 'float(' . $this->getValueString() . ')';
+    }
+
+    /**
+     * The value in full: the text of a float is cut to the `precision` setting, which can give two floats the same
+     */
+    private function getValueString(): string
+    {
         if (is_nan($this->value)) {
-            return 'float(NAN)';
+            return 'NAN';
         }
 
-        return 'float(' . $this->value . ')';
+        $value = (string) $this->value;
+
+        return (float) $value === $this->value ? $value : var_export($this->value, true);
     }
 
     /**

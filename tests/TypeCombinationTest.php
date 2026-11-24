@@ -10,8 +10,11 @@ use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 use Psalm\Type;
 use Psalm\Type\Atomic;
+use Psalm\Type\Atomic\TConditional;
+use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TTemplateParamClass;
 
 use function array_reverse;
 
@@ -68,6 +71,50 @@ final class TypeCombinationTest extends TestCase
         $this->assertSame('Exception', TypeCombiner::combine([$plain, $static])->getId());
         $this->assertSame('Exception', TypeCombiner::combine([$static, $plain, $static])->getId());
         $this->assertSame('Exception&static', TypeCombiner::combine([$static, $static])->getId());
+    }
+
+    public function testFloatsThatPrintAlikeAreKeptApart(): void
+    {
+        $this->assertSame(
+            'float(0.3)|float(0.30000000000000004)',
+            TypeCombiner::combine([new TLiteralFloat(0.3), new TLiteralFloat(0.1 + 0.2)])->getId(),
+        );
+    }
+
+    public function testConditionalsOnTheSameTemplateAreKeptApart(): void
+    {
+        $int_conditional = new TConditional(
+            'T',
+            'fn-f',
+            Type::getMixed(),
+            Type::getInt(),
+            Type::getString(),
+            Type::getBool(),
+        );
+        $string_conditional = new TConditional(
+            'T',
+            'fn-f',
+            Type::getMixed(),
+            Type::getString(),
+            Type::getInt(),
+            Type::getFloat(),
+        );
+
+        $this->assertSame(
+            '(T is int ? string : bool)|(T is string ? int : float)',
+            TypeCombiner::combine([$int_conditional, $string_conditional])->getId(),
+        );
+    }
+
+    public function testClassStringsOfTemplatesOfDifferentScopesAreKeptApart(): void
+    {
+        $function_template = new TTemplateParamClass('T', 'Exception', new TNamedObject('Exception'), 'fn-f');
+        $class_template = new TTemplateParamClass('T', 'Exception', new TNamedObject('Exception'), 'Foo');
+
+        $this->assertSame(
+            '(class-string<T:Foo as Exception>)|(class-string<T:fn-f as Exception>)',
+            TypeCombiner::combine([$function_template, $class_template])->getId(),
+        );
     }
 
     /**

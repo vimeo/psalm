@@ -2840,7 +2840,7 @@ final class BinaryOperationTest extends TestCase
                     $a = -(1 << 63);
                     PHP,
                 'assertions' => [
-                    '$a===' => 'float(9.2233720368548E+18)',
+                    '$a===' => 'float(9.223372036854776E+18)',
                 ],
             ],
             'bitwiseOperationsOfIntRanges' => [
