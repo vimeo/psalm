@@ -10,6 +10,7 @@ use Amp\Sync\Channel;
 use Override;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Codebase\Scanner;
+use Psalm\Internal\Perf;
 use Psalm\IssueBuffer;
 
 use const PHP_EOL;
@@ -33,6 +34,7 @@ final class ShutdownScannerTask implements Task
         $project_analyzer = ProjectAnalyzer::getInstance();
         $codebase = $project_analyzer->getCodebase();
         $statements_provider = $codebase->statements_provider;
+        $perf = Perf\Collector::workerData();
 
         return [
             'classlikes_data' => $codebase->classlikes->getThreadData(),
@@ -46,9 +48,15 @@ final class ShutdownScannerTask implements Task
             'classlike_storage' => $codebase->classlike_storage_provider->getAll(),
             'file_storage' => $codebase->file_storage_provider->getAll(),
             'taint_data' => $codebase->taint_flow_graph,
-            'global_constants' => $codebase->getAllStubbedConstants(),
-            'unresolved_global_constants' => $codebase->getAllUnresolvedGlobalConstants(),
-            'global_functions' => $codebase->functions->getAllStubbedFunctions(),
-        ];
+            'global_constants' => InitScannerTask::withoutInherited('constants', $codebase->getAllStubbedConstants()),
+            'unresolved_global_constants' => InitScannerTask::withoutInherited(
+                'unresolved_constants',
+                $codebase->getAllUnresolvedGlobalConstants(),
+            ),
+            'global_functions' => InitScannerTask::withoutInherited(
+                'functions',
+                $codebase->functions->getAllStubbedFunctions(),
+            ),
+        ] + ($perf !== null ? ['perf' => $perf] : []);
     }
 }
