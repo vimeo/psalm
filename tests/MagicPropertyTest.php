@@ -9,10 +9,13 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
+use Psalm\Internal\Analyzer\IssueData;
 use Psalm\IssueBuffer;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\InvalidCodeAnalysisWithIssuesTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+
+use function array_map;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -1630,6 +1633,54 @@ final class MagicPropertyTest extends TestCase
                     }',
                 'error_message' => 'UndefinedThisPropertyFetch',
             ],
+            'annotationWithoutGetterSaysHowToReadItThroughThis' => [
+                'code' => '<?php
+                    /**
+                     * @property int $y
+                     */
+                    final class Page {
+                        public function get(): int {
+                            return $this->y;
+                        }
+                    }',
+                'error_message' => 'UndefinedThisPropertyFetch - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:36 - Instance property Page::$y is not defined, but a docblock of Page declares it: add __get() to Page, or set usePhpDocPropertiesWithoutMagicCall="true" in the config',
+            ],
+            'annotationWithoutSetterSaysHowToWriteItThroughThis' => [
+                'code' => '<?php
+                    /**
+                     * @property int $y
+                     */
+                    final class Page {
+                        public function set(): void {
+                            $this->y = 1;
+                        }
+                    }',
+                'error_message' => 'UndefinedThisPropertyAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:29 - Instance property Page::$y is not defined, but a docblock of Page declares it: add __set() to Page, or set usePhpDocPropertiesWithoutMagicCall="true" in the config',
+            ],
+            'annotationWithoutGetterSaysHowToReadIt' => [
+                'code' => '<?php
+                    /**
+                     * @property bool $is_protected
+                     */
+                    final class Page {}
+
+                    function isProtected(Page $page): bool {
+                        return $page->is_protected;
+                    }',
+                'error_message' => 'UndefinedPropertyFetch - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:32 - Instance property Page::$is_protected is not defined, but a docblock of Page declares it: add __get() to Page, or set usePhpDocPropertiesWithoutMagicCall="true" in the config',
+            ],
+            'annotationWithoutSetterSaysHowToWriteIt' => [
+                'code' => '<?php
+                    /**
+                     * @property-write bool $is_protected
+                     */
+                    final class Page {}
+
+                    function protect(Page $page): void {
+                        $page->is_protected = true;
+                    }',
+                'error_message' => 'UndefinedPropertyAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:25 - Instance property Page::$is_protected is not defined, but a docblock of Page declares it: add __set() to Page, or set usePhpDocPropertiesWithoutMagicCall="true" in the config',
+            ],
             'propertyWithSelfWildcardConstantNonMatchingString' => [
                 'code' => '<?php
                     /** @property self::STATUS_* $status */
@@ -2172,5 +2223,31 @@ final class MagicPropertyTest extends TestCase
         );
 
         $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testAReadOnlyAnnotationIsNoHintForAWrite(): void
+    {
+        $this->testConfig->throw_exception = false;
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile($file_path, '<?php
+            /**
+             * @property-read bool $is_protected
+             */
+            final class Page {}
+
+            function protect(Page $page): void {
+                $page->is_protected = true;
+            }');
+
+        $this->analyzeFile($file_path, new Context(), false);
+
+        $this->assertSame(
+            ['Instance property Page::$is_protected is not defined'],
+            array_map(
+                static fn(IssueData $issue): string => $issue->message,
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
+        );
     }
 }
