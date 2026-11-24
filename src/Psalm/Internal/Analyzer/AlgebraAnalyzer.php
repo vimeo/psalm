@@ -43,6 +43,7 @@ use function preg_quote;
 use function reset;
 use function sort;
 use function spl_object_id;
+use function str_starts_with;
 use function strpbrk;
 
 /**
@@ -266,6 +267,26 @@ final class AlgebraAnalyzer
     }
 
     /**
+     * The pseudo-variables of symbol and extension checks don't say which symbol was checked:
+     * `extension_loaded('x')` and `function_exists('x_f')`, or checks of two functions of one extension or
+     * PHP version, assert the same clause
+     *
+     * @psalm-pure
+     */
+    private static function testsSymbolCheckVar(Clause $clause): bool
+    {
+        foreach ($clause->possibilities as $key => $_) {
+            if ($key === Context::PHP_SYMBOL_GUARD_VAR_ID
+                || str_starts_with($key, Context::PHP_EXTENSION_VAR_ID_PREFIX)
+            ) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * This looks to see if there are any clauses in one formula that contradict
      * clauses in another formula, or clauses that duplicate previous clauses
      *
@@ -322,6 +343,7 @@ final class AlgebraAnalyzer
                     || ($not_null_var_id !== null && isset($isset_var_ids[$not_null_var_id])))
                 && !self::testsAnyVar($formula_2_clause, $new_assigned_var_ids)
                 && !self::hasUnidentifiedPossibility($formula_2_clause)
+                && !self::testsSymbolCheckVar($formula_2_clause)
             ) {
                 IssueBuffer::maybeAdd(
                     new RedundantCondition(

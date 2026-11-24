@@ -225,6 +225,38 @@ final class RedundantConditionTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'extensionLoadedAndFunctionOfTheExtension' => [
+                'code' => '<?php
+                    function f(): void {
+                        if (\extension_loaded("pcntl") && \function_exists("pcntl_signal")) {
+                            echo 1;
+                        }
+                    }',
+            ],
+            'twoFunctionsOfOneExtension' => [
+                'code' => '<?php
+                    function f(string $e): void {
+                        if ("syslog" === $e && \function_exists("openlog") && \function_exists("syslog")) {
+                            echo 1;
+                        }
+                    }',
+            ],
+            'twoClassesOfOneExtension' => [
+                'code' => '<?php
+                    function f(): void {
+                        if (\class_exists("Redis") && \class_exists("RedisCluster")) {
+                            echo 1;
+                        }
+                    }',
+            ],
+            'twoFunctionsOfOnePhpVersion' => [
+                'code' => '<?php
+                    function f(): void {
+                        if (\function_exists("array_is_list") && \function_exists("enum_exists")) {
+                            echo 1;
+                        }
+                    }',
+            ],
             'notIdenticalToAVariableOfSeveralLiteralsDoesNotExcludeThem' => [
                 'code' => '<?php
                     /** @param 1|2|3|5 $old */
