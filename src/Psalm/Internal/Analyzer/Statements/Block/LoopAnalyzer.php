@@ -391,6 +391,18 @@ final class LoopAnalyzer
                     }
                 }
 
+                // a clause on what the loop writes holds where it starts, not where the next iteration does, even when
+                // the write leaves the type as it was (`mixed`)
+                foreach ($assignment_mapper->getWrittenVarIds() as $var_id => $_) {
+                    $clause_count = count($pre_loop_context->clauses);
+
+                    $pre_loop_context->removeVarFromConflictingClauses($var_id);
+
+                    if (count($pre_loop_context->clauses) !== $clause_count) {
+                        $has_changes = true;
+                    }
+                }
+
                 // a variable the body unset is gone where the next iteration starts only if the body ran:
                 // it's possibly undefined there
                 foreach ($original_parent_context->vars_in_scope as $var_id => $_) {

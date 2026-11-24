@@ -194,7 +194,7 @@ final class SymbolLookupTest extends TestCase
             ),
         );
         $this->assertNotNull($information);
-        $this->assertSame("array<string, mixed>", $information->code);
+        $this->assertSame("array<non-empty-string, mixed>", $information->code);
         $this->assertSame('$_SESSION', $information->title);
         $this->assertNull($information->description);
 
@@ -234,7 +234,7 @@ final class SymbolLookupTest extends TestCase
             ),
         );
         $this->assertNotNull($information);
-        $this->assertSame("const APPLE string", $information->code);
+        $this->assertSame("const APPLE '🍏'", $information->code);
         $this->assertSame("APPLE", $information->title);
         $this->assertNull($information->description);
 
@@ -246,7 +246,7 @@ final class SymbolLookupTest extends TestCase
             ),
         );
         $this->assertNotNull($information);
-        $this->assertSame("const BANANA string", $information->code);
+        $this->assertSame("const BANANA '🍌'", $information->code);
         $this->assertSame("BANANA", $information->title);
         $this->assertNull($information->description);
     }
@@ -610,6 +610,60 @@ final class SymbolLookupTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
 
         $reference =  $this->codebase->getReferenceAtPositionAsReference('somefile.php', new Position(4, 33));
+        $this->assertNotNull($reference);
+
+        $this->assertSame('B\AClass', $reference->symbol);
+    }
+
+    public function testGetSymbolPositionStaticReturnType(): void
+    {
+        $config = $this->codebase->config;
+        $config->throw_exception = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                namespace B;
+                class AClass {
+                    public function make(): static {
+                        return $this;
+                    }
+                }',
+        );
+
+        $this->codebase->file_provider->openFile('somefile.php');
+        $this->codebase->scanFiles();
+        $this->analyzeFile('somefile.php', new Context());
+
+        $reference = $this->codebase->getReferenceAtPositionAsReference('somefile.php', new Position(3, 47));
+        $this->assertNotNull($reference);
+
+        $this->assertSame('B\AClass', $reference->symbol);
+    }
+
+    public function testGetSymbolPositionStaticCall(): void
+    {
+        $config = $this->codebase->config;
+        $config->throw_exception = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                namespace B;
+                class AClass {
+                    public static function make(): void {}
+
+                    public function run(): void {
+                        static::make();
+                    }
+                }',
+        );
+
+        $this->codebase->file_provider->openFile('somefile.php');
+        $this->codebase->scanFiles();
+        $this->analyzeFile('somefile.php', new Context());
+
+        $reference = $this->codebase->getReferenceAtPositionAsReference('somefile.php', new Position(6, 27));
         $this->assertNotNull($reference);
 
         $this->assertSame('B\AClass', $reference->symbol);

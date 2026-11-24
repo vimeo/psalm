@@ -24,7 +24,7 @@ final class TDependentGetClass extends TString implements DependentType
     }
 
     #[Override]
-    public function getId(bool $exact = true, bool $nested = false): string
+    public function getId(bool $exact = true): string
     {
         return $this->as_type->isMixed()
             || $this->as_type->hasObject()

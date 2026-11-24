@@ -15,6 +15,8 @@ use function array_map;
 use function count;
 use function is_string;
 use function spl_object_id;
+use function str_contains;
+use function str_starts_with;
 use function strrpos;
 use function substr;
 
@@ -79,6 +81,20 @@ final class AssignmentMapVisitor extends PhpParser\NodeVisitorAbstract
     private array $overwritten_var_ids = [];
 
     /**
+     * The variables the loop itself writes, and the ones it binds by reference
+     *
+     * @var array<string, true>
+     */
+    private array $loop_written_var_ids = [];
+
+    private int $function_like_depth = 0;
+
+    /**
+     * The depth of the functions and methods, which don't share `$this` with the loop
+     */
+    private int $own_this_depth = 0;
+
+    /**
      * @psalm-mutation-free
      */
     public function __construct(protected ?string $this_class_name, private readonly ?self $outer_visitor = null)
@@ -107,11 +123,28 @@ final class AssignmentMapVisitor extends PhpParser\NodeVisitorAbstract
     #[Override]
     public function enterNode(PhpParser\Node $node): ?int
     {
+        if ($node instanceof PhpParser\Node\FunctionLike) {
+            ++$this->function_like_depth;
+
+            if (!$node instanceof PhpParser\Node\Expr\Closure
+                && !$node instanceof PhpParser\Node\Expr\ArrowFunction
+            ) {
+                ++$this->own_this_depth;
+            }
+
+            return null;
+        }
+
         if ($node instanceof PhpParser\Node\Expr\AssignRef) {
             $right_var_id = ExpressionIdentifier::getRootVarId($node->expr, $this->this_class_name);
 
+            // written through the reference
+            if ($right_var_id !== null) {
+                $this->addLoopWrittenVarId($right_var_id);
+            }
+
             foreach ($this->getAssignedRootVarIds($node->var) as $var_id) {
-                $this->defined_var_ids[$var_id] = true;
+                $this->addDefinedVarId($var_id);
 
                 // what is written to either of them goes into the other one
                 if ($right_var_id !== null && $right_var_id !== $var_id) {
@@ -139,7 +172,7 @@ final class AssignmentMapVisitor extends PhpParser\NodeVisitorAbstract
 
             foreach ($left_var_ids as $left_var_id) {
                 $this->assignment_map[$left_var_id][$right_var_id ?? 'isset'] = true;
-                $this->written_var_ids[$left_var_id] = true;
+                $this->addWrittenVarId($left_var_id);
             }
 
             // what the sides change themselves (`$x = $counts['one']++`, `$a[$i++] = 1`) is in the map too
@@ -155,6 +188,7 @@ final class AssignmentMapVisitor extends PhpParser\NodeVisitorAbstract
             $this->defined_var_ids += $inner_visitor->defined_var_ids;
             $this->feeding_var_ids += $inner_visitor->feeding_var_ids;
             $this->written_var_ids += $inner_visitor->written_var_ids;
+            $this->loop_written_var_ids += $inner_visitor->loop_written_var_ids;
             $this->by_ref_arg_var_ids += $inner_visitor->by_ref_arg_var_ids;
 
             // after the writes of the sides: `($p = f())->b` doesn't read the `$p->b` written before
@@ -190,7 +224,7 @@ final class AssignmentMapVisitor extends PhpParser\NodeVisitorAbstract
 
             if ($var_id !== null) {
                 $this->assignment_map[$var_id][$var_id] = true;
-                $this->written_var_ids[$var_id] = true;
+                $this->addWrittenVarId($var_id);
             }
 
             return PhpParser\NodeVisitor::DONT_TRAVERSE_CHILDREN;
@@ -241,7 +275,7 @@ final class AssignmentMapVisitor extends PhpParser\NodeVisitorAbstract
 
                 if ($arg_var_id !== null) {
                     $this->assignment_map[$arg_var_id][$arg_var_id] = true;
-                    $this->written_var_ids[$arg_var_id] = true;
+                    $this->addWrittenVarId($arg_var_id);
                 }
             }
         } elseif ($node instanceof PhpParser\Node\Stmt\Foreach_) {
@@ -252,21 +286,21 @@ final class AssignmentMapVisitor extends PhpParser\NodeVisitorAbstract
                 $iterated_var_id = ExpressionIdentifier::getRootVarId($node->expr, $this->this_class_name);
 
                 if ($iterated_var_id !== null) {
-                    $this->written_var_ids[$iterated_var_id] = true;
+                    $this->addWrittenVarId($iterated_var_id);
                 }
             }
 
             foreach ([$node->keyVar, $node->valueVar] as $target) {
                 if ($target) {
                     foreach ($this->getAssignedRootVarIds($target) as $var_id) {
-                        $this->defined_var_ids[$var_id] = true;
+                        $this->addDefinedVarId($var_id);
                     }
                 }
             }
         } elseif ($node instanceof PhpParser\Node\Stmt\Static_) {
             foreach ($node->vars as $static_var) {
                 if (is_string($static_var->var->name)) {
-                    $this->defined_var_ids['$' . $static_var->var->name] = true;
+                    $this->addDefinedVarId('$' . $static_var->var->name);
                 }
             }
         } elseif ($node instanceof PhpParser\Node\Stmt\Global_) {
@@ -274,7 +308,7 @@ final class AssignmentMapVisitor extends PhpParser\NodeVisitorAbstract
                 $var_id = ExpressionIdentifier::getRootVarId($global_var, $this->this_class_name);
 
                 if ($var_id !== null) {
-                    $this->defined_var_ids[$var_id] = true;
+                    $this->addDefinedVarId($var_id);
                 }
             }
         }
@@ -417,6 +451,85 @@ final class AssignmentMapVisitor extends PhpParser\NodeVisitorAbstract
             $this->feeding_var_ids,
             $this->written_var_ids + $this->defined_var_ids + $this->by_ref_arg_var_ids,
         );
+    }
+
+    /**
+     * The variables the loop writes, not counting the calls it gives them to
+     *
+     * @return array<string, true>
+     * @psalm-capabilities read-props
+     */
+    public function getWrittenVarIds(): array
+    {
+        return $this->loop_written_var_ids;
+    }
+
+    /**
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    #[Override]
+    public function leaveNode(PhpParser\Node $node): null
+    {
+        if ($node instanceof PhpParser\Node\FunctionLike) {
+            --$this->function_like_depth;
+
+            if (!$node instanceof PhpParser\Node\Expr\Closure
+                && !$node instanceof PhpParser\Node\Expr\ArrowFunction
+            ) {
+                --$this->own_this_depth;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    private function addWrittenVarId(string $var_id): void
+    {
+        $this->written_var_ids[$var_id] = true;
+        $this->addLoopWrittenVarId($var_id);
+    }
+
+    /**
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    private function addDefinedVarId(string $var_id): void
+    {
+        $this->defined_var_ids[$var_id] = true;
+        $this->addLoopWrittenVarId($var_id);
+    }
+
+    /**
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    private function addLoopWrittenVarId(string $var_id): void
+    {
+        // a function declared in the loop has its own variables, but the objects are shared, and so is `$this` with a
+        // closure; a method of a class declared in the loop has its own `$this`
+        if (!$this->isInFunctionLike()
+            || (!$this->hasOwnThis() && (str_contains($var_id, '->') || str_contains($var_id, '::')))
+            || !str_starts_with($var_id, '$')
+        ) {
+            $this->loop_written_var_ids[$var_id] = true;
+        }
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    private function isInFunctionLike(): bool
+    {
+        return $this->function_like_depth > 0 || ($this->outer_visitor?->isInFunctionLike() ?? false);
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    private function hasOwnThis(): bool
+    {
+        return $this->own_this_depth > 0 || ($this->outer_visitor?->hasOwnThis() ?? false);
     }
 
     /**

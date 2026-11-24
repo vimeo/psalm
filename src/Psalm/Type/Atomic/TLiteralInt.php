@@ -26,7 +26,7 @@ final class TLiteralInt extends TInt
     }
 
     #[Override]
-    public function getId(bool $exact = true, bool $nested = false): string
+    public function getId(bool $exact = true): string
     {
         if (!$exact) {
             return 'int';
