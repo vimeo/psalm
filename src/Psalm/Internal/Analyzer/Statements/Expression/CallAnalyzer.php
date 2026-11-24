@@ -295,6 +295,25 @@ abstract class CallAnalyzer
     }
 
     /**
+     * Whether `static` of a call is the class using the trait the call is in, or its parent (`$this`, `self`, `static`,
+     * `parent`), which differs for each class using it: such a call doesn't resolve `static` in the hints of closure
+     * arguments
+     */
+    public static function isStaticOfTraitUser(
+        StatementsSource $source,
+        Context $context,
+        string $static_class,
+        bool $is_static = false,
+    ): bool {
+        $static_class = strtolower($static_class);
+
+        return ($is_static
+                || $static_class === strtolower((string) $context->self)
+                || $static_class === strtolower((string) $context->parent))
+            && self::isInTrait($source);
+    }
+
+    /**
      * @param  list<PhpParser\Node\Arg>   $args
      */
     public static function checkMethodArgs(
@@ -365,6 +384,43 @@ abstract class CallAnalyzer
 
                     // the inherited parameter types refer to the templates of the documenting method, bound by the call
                     $template_result->template_types += $documenting_method_storage->template_types;
+                }
+            }
+
+            // the parameter types an override inherits from the methods it overrides refer to their templates
+            if ($declaring_class_storage->user_defined) {
+                $inherited_template_types = [];
+
+                foreach ($class_storage->overridden_method_ids[$method_name] ?? [] as $overridden_method_id) {
+                    $overridden_method_storage = $codebase->methods->hasStorage($overridden_method_id)
+                        ? $codebase->methods->getStorage($overridden_method_id)
+                        : null;
+
+                    if ($overridden_method_storage === null || !$overridden_method_storage->has_docblock_param_types) {
+                        continue;
+                    }
+
+                    foreach ($method_storage->params as $i => $param) {
+                        if (!$param->has_docblock_type
+                            && ($overridden_method_storage->params[$i]->has_docblock_type ?? false)
+                        ) {
+                            foreach ($overridden_method_storage->template_types ?? [] as $name => $by_class) {
+                                $inherited_template_types[$name] = ($inherited_template_types[$name] ?? []) + $by_class;
+                            }
+
+                            break;
+                        }
+                    }
+                }
+
+                if ($inherited_template_types !== []) {
+                    // the templates of the called method stay bound too
+                    foreach ([$method_storage->template_types ?? [], $inherited_template_types] as $template_types) {
+                        foreach ($template_types as $name => $by_class) {
+                            $template_result->template_types[$name] = ($template_result->template_types[$name] ?? [])
+                                + $by_class;
+                        }
+                    }
                 }
             }
 

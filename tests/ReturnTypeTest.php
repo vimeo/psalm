@@ -438,6 +438,30 @@ final class ReturnTypeTest extends TestCase
                         return \'\\\\\\\\\';
                     }',
             ],
+            'thisOfAFinalClassIsAnInterfaceItImplementsIntersectedWithStatic' => [
+                'code' => '<?php
+                    interface I {}
+
+                    final class A implements I {
+                        /** @return I&static */
+                        public function get(): I {
+                            return $this;
+                        }
+                    }',
+            ],
+            'thisOfAFinalClassIsAGenericInterfaceItImplementsIntersectedWithStatic' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface I {}
+
+                    /** @implements I<int> */
+                    final class A implements I {
+                        /** @return I<int>&static */
+                        public function get(): I {
+                            return $this;
+                        }
+                    }',
+            ],
             'docblockStringLiteralWithAUnicodeEscapeWithLeadingZeros' => [
                 'code' => '<?php
                     /** @return "\u{0000000000e9}" */
@@ -3127,6 +3151,32 @@ final class ReturnTypeTest extends TestCase
                     }',
                 'error_message' => 'Not all code paths of f end in a return statement',
             ],
+            'thisOfAFinalClassIsNotAnInterfaceItDoesNotImplementIntersectedWithStatic' => [
+                'code' => '<?php
+                    interface I {}
+
+                    final class A {
+                        /** @return I&static */
+                        public function get(): object {
+                            return $this;
+                        }
+                    }',
+                'error_message' => 'LessSpecificReturnStatement',
+            ],
+            'thisOfAFinalClassIsNotAGenericInterfaceWithOtherTypeArguments' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface I {}
+
+                    /** @implements I<int> */
+                    final class A implements I {
+                        /** @return I<string>&static */
+                        public function get(): I {
+                            return $this;
+                        }
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
             'doWhileLeftByGoto' => [
                 'code' => '<?php
                     function f(bool $b): int {
@@ -3294,6 +3344,20 @@ final class ReturnTypeTest extends TestCase
                     /** @return "\t" */
                     function tab(): string {
                         return "\\\\t";
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
+            'sealedShapeMissingARequiredKeyReturned' => [
+                'code' => '<?php
+                    class Base {}
+                    final class Child extends Base {}
+
+                    /**
+                     * @param array{a: Base} $a
+                     * @return array{a: Child, b: int}
+                     */
+                    function f(array $a): array {
+                        return $a;
                     }',
                 'error_message' => 'InvalidReturnStatement',
             ],

@@ -98,6 +98,37 @@ final class ReferenceConstraintTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'paramOutOfAByRefParamOfAStaticMethodBeforeTheArgumentThatBindsItsTemplate' => [
+                'code' => '<?php
+                    final class C {
+                        /**
+                         * @template T
+                         * @param mixed $out
+                         * @param T $v
+                         * @param-out list<T> $out
+                         */
+                        public static function s(&$out, $v): void {
+                            $out = [$v];
+                        }
+
+                        /**
+                         * @template T
+                         * @param mixed $out
+                         * @param T $v
+                         * @param-out list<T> $out
+                         */
+                        public function m(&$out, $v): void {
+                            $out = [$v];
+                        }
+                    }
+
+                    C::s($static, "x");
+                    (new C())->m($instance, "x");',
+                'assertions' => [
+                    '$static===' => "list<'x'>",
+                    '$instance===' => "list<'x'>",
+                ],
+            ],
             'paramOutOfAByRefParamAfterTheArgumentThatBindsItsTemplate' => [
                 'code' => '<?php
                     /**

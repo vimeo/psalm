@@ -20,6 +20,29 @@ final class ExtDsStubTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'Hashable equals takes the object as $obj' => [
+                'code' => <<<'PHP'
+                    <?php
+                    use Ds\Hashable;
+
+                    final class Key implements Hashable {
+                        public function __construct(private string $name) {}
+
+                        #[Override]
+                        public function equals($obj): bool {
+                            return $obj instanceof self && $obj->name === $this->name;
+                        }
+
+                        #[Override]
+                        public function hash(): string {
+                            return $this->name;
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
             'a vector and a deque have the methods of a sequence' => [
                 'code' => <<<'PHP'
                     <?php
@@ -113,6 +136,27 @@ final class ExtDsStubTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'Hashable equals with another parameter name is a ParamNameMismatch' => [
+                'code' => <<<'PHP'
+                    <?php
+                    use Ds\Hashable;
+
+                    final class Key implements Hashable {
+                        #[Override]
+                        public function equals($other): bool {
+                            return $other === $this;
+                        }
+
+                        #[Override]
+                        public function hash(): string {
+                            return "key";
+                        }
+                    }
+                    PHP,
+                'error_message' => 'ParamNameMismatch',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
             'pushing a value of another type to a vector' => [
                 'code' => <<<'PHP'
                     <?php

@@ -155,6 +155,68 @@ final class CallableTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'callableOfATemplatedReturnMayBeAClosure' => [
+                'code' => '<?php
+                    /**
+                     * @template TReturn
+                     * @param (callable(mixed...): TReturn) $callable
+                     */
+                    function parallel(callable $callable): bool
+                    {
+                        if ($callable instanceof \\Closure) {
+                            return true;
+                        }
+
+                        return false;
+                    }',
+            ],
+            'callableOfThisInATraitIsTheObjectTheMethodIsCalledOn' => [
+                'code' => '<?php
+                    final class Str {
+                        /** @param callable(static): void $callback */
+                        public function __construct(?callable $callback = null) {}
+
+                        /**
+                         * @template TReturn
+                         * @param callable($this): TReturn $callback
+                         * @return TReturn
+                         */
+                        public function when(callable $callback) {
+                            return $callback($this);
+                        }
+
+                        /** @param callable(static): void $callback */
+                        public static function make(callable $callback): void {
+                            $callback(new Str());
+                        }
+
+                        public function beforeLast(string $s): self {
+                            return $this;
+                        }
+                    }
+
+                    trait CompilesEchos {
+                        public function compile(): void {
+                            (new Str())->when(function ($str) {
+                                return $str->beforeLast(";");
+                            });
+
+                            Str::make(function ($str): void {
+                                $str->beforeLast(";");
+                            });
+
+                            new Str(function ($str): void {
+                                $str->beforeLast(";");
+                            });
+                        }
+                    }
+
+                    final class Compiler {
+                        use CompilesEchos;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingClosureReturnType'],
+            ],
             'callableArrayOnAnIntersectionWithATemplate' => [
                 'code' => '<?php
                     interface Foo {
@@ -255,6 +317,79 @@ final class CallableTest extends TestCase
                             return \\Array_Map([$this, "twice"], [1, 2]);
                         }
                     }',
+            ],
+            'closureWithATypedParamIsACallableOfNever' => [
+                'code' => '<?php
+                    /** @param callable(never): string $callback */
+                    function takesCallable(callable $callback): void {}
+
+                    takesCallable(function (string $value): string {
+                        return strtoupper($value);
+                    });',
+            ],
+            'typedClosureParamsOfAMatchOfAResultUnion' => [
+                'code' => '<?php
+                    /**
+                     * @template TValue
+                     * @template TError
+                     */
+                    interface Result {
+                        /**
+                         * @template TReturn
+                         * @param callable(TValue): TReturn $ok_fn
+                         * @param callable(TError): TReturn $err_fn
+                         * @return TReturn
+                         */
+                        public function match(callable $ok_fn, callable $err_fn): mixed;
+                    }
+
+                    /**
+                     * @template TValue
+                     * @implements Result<TValue, never>
+                     */
+                    final class Ok implements Result {
+                        /** @param TValue $value */
+                        public function __construct(private mixed $value) {}
+
+                        public function match(callable $ok_fn, callable $err_fn): mixed {
+                            return $ok_fn($this->value);
+                        }
+                    }
+
+                    /**
+                     * @template TError
+                     * @implements Result<never, TError>
+                     */
+                    final class Err implements Result {
+                        /** @param TError $error */
+                        public function __construct(private mixed $error) {}
+
+                        public function match(callable $ok_fn, callable $err_fn): mixed {
+                            return $err_fn($this->error);
+                        }
+                    }
+
+                    /** @return Ok<int>|Err<string> */
+                    function compute(bool $success): Ok|Err {
+                        return $success ? new Ok(1) : new Err("failure");
+                    }
+
+                    function withTypedParameters(bool $success): string {
+                        return compute($success)->match(
+                            fn (int $value): string => (string) $value,
+                            fn (string $error): string => $error,
+                        );
+                    }
+
+                    function withAnUntypedOkParameter(bool $success): string {
+                        return compute($success)->match(
+                            fn ($value): string => (string) $value,
+                            fn (string $error): string => $error,
+                        );
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'callableOfThisTakesTheTemplatesOfTheObject' => [
                 'code' => '<?php
@@ -659,7 +794,7 @@ final class CallableTest extends TestCase
                      * @param A $a
                      * @return list{A, B}
                      */
-                    function withUnbound(mixed $a): array { return [$a, null]; }
+                    function withUnbound(mixed $a): array { throw new LogicException(); }
                     $with_unbound = withUnbound(...);
                     $unbound = $with_unbound(1);',
                 'assertions' => [
@@ -4227,6 +4362,44 @@ final class CallableTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'callableOfStaticOfTheClassUsingATraitIsNotSharedWithOtherUsers' => [
+                'code' => '<?php
+                    trait Filters {
+                        public function run(): void {
+                            (new self())->where(function ($query): void {
+                                $query->extra();
+                            });
+                        }
+                    }
+
+                    final class EloquentBuilder {
+                        use Filters;
+
+                        /**
+                         * @param (Closure(static): mixed)|string $column
+                         * @return $this
+                         */
+                        public function where($column) {
+                            return $this;
+                        }
+
+                        public function extra(): void {}
+                    }
+
+                    final class QueryBuilder {
+                        use Filters;
+
+                        /**
+                         * @param Closure|string $column
+                         * @return $this
+                         */
+                        public function where($column) {
+                            return $this;
+                        }
+                    }',
+                'error_message' => 'Method QueryBuilder::extra does not exist',
+                'error_levels' => ['InvalidArgument'],
+            ],
             'nonPublicCallbackOfANativeFunctionWrittenInAnotherCaseFromAnotherClass' => [
                 'code' => '<?php
                     final class A {
