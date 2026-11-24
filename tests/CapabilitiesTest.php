@@ -8086,6 +8086,14 @@ final class CapabilitiesTest extends TestCase
                     }',
                 'error_message' => 'constructor Linked::__construct requires',
             ],
+            'unannotatedStubbedConstructorWithAnEmptyBodyIsNotTrivial' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function make(): DateTimeImmutable {
+                        return new DateTimeImmutable();
+                    }',
+                'error_message' => 'ImpureMethodCall',
+            ],
             'inheritedTrivialConstructorRunsTheSetHookOfARedeclaredProperty' => [
                 'code' => '<?php
                     class Base {

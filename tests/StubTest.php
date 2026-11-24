@@ -385,6 +385,43 @@ final class StubTest extends DeferredAnalyzerTestCase
         }
     }
 
+    public function testUnannotatedStubbedConstructorWithAnEmptyBodyIsImpure(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('ImpureMethodCall');
+
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+
+                    <stubs>
+                        <file name="tests/fixtures/stubs/empty_constructor.phpstub" />
+                    </stubs>
+                </psalm>',
+            ),
+        );
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @psalm-pure */
+                function make(): StubbedWithEmptyConstructor {
+                    return new StubbedWithEmptyConstructor(1);
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
     public function testStubFileClass(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
