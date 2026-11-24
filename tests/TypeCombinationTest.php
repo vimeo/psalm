@@ -942,6 +942,20 @@ final class TypeCombinationTest extends TestCase
                     'lowercase-string&non-falsy-string',
                 ],
             ],
+            'combineNonFalsyStringWithNumericString' => [
+                'non-empty-string',
+                [
+                    'non-falsy-string',
+                    'numeric-string',
+                ],
+            ],
+            'combineNumericStringWithNonFalsyString' => [
+                'non-empty-string',
+                [
+                    'numeric-string',
+                    'non-falsy-string',
+                ],
+            ],
             'combineNonFalsyNumericStringWithZero' => [
                 'numeric-string',
                 [
