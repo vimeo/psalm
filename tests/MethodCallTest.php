@@ -3197,6 +3197,37 @@ final class MethodCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'nullsafeChainWithSeveralHopsKeepsNullOnlyForTheShortCircuitBeforeACallWithArguments' => [
+                'code' => '<?php
+                    abstract class C {
+                        abstract public function c(): int;
+                    }
+                    abstract class B {
+                        public ?B $next = null;
+                        abstract public function with(int $x): self;
+                        abstract public function c(int $x): C;
+                    }
+                    abstract class A {
+                        public ?B $b = null;
+                    }
+                    function aOrNull(): ?A {
+                        return null;
+                    }
+
+                    $a = aOrNull();
+                    $twoHops = $a?->b?->with(1)->c(2)->c();
+                    $threeHops = $a?->b?->next?->with(1)->c(2)->c();
+                    $severalCallsWithArguments = $a?->b?->with(1)->with(2)->c(3)->c();
+                    $hopAfterTheCall = $a?->b?->with(1)->next?->c(2)->c();',
+                'assertions' => [
+                    '$twoHops' => 'int|null',
+                    '$threeHops' => 'int|null',
+                    '$severalCallsWithArguments' => 'int|null',
+                    '$hopAfterTheCall' => 'int|null',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'nullsafeChainKeepsShortCircuitNullInsideIssetEmptyAndCoalesce' => [
                 'code' => '<?php
                     abstract class C {
@@ -4596,6 +4627,135 @@ final class MethodCallTest extends TestCase
 
                     function f(?A $a): void {
                         $a?->b()->maybe()->c();
+                    }',
+                'error_message' => 'PossiblyNullReference',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'nullsafeChainWithSeveralHopsReportsNullReturnedByACallWithArguments' => [
+                'code' => '<?php
+                    abstract class C {
+                        abstract public function c(): int;
+                    }
+                    abstract class B {
+                        abstract public function maybe(int $x): ?C;
+                    }
+                    abstract class A {
+                        public ?B $b = null;
+                    }
+
+                    function f(?A $a): void {
+                        $a?->b?->maybe(1)->c();
+                    }',
+                'error_message' => 'PossiblyNullReference',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'nullsafeChainWithSeveralHopsReportsNullReturnedByACallWithArgumentsInALaterLoopPass' => [
+                'code' => '<?php
+                    abstract class C {
+                        abstract public function c(): int;
+                    }
+                    abstract class B {
+                        abstract public function with(int $x): C;
+                    }
+                    abstract class MaybeB {
+                        abstract public function with(int $x): ?C;
+                    }
+                    abstract class A {
+                        public ?B $b = null;
+                    }
+                    abstract class MaybeA {
+                        public ?MaybeB $b = null;
+                    }
+
+                    function f(?A $a, ?MaybeA $maybe): void {
+                        for ($i = 0; $i < 2; $i++) {
+                            $a?->b?->with(1)->c();
+                            $a = $maybe;
+                        }
+                    }',
+                'error_message' => 'PossiblyNullReference',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'nullsafeChainReportsStaticCallOnTheResultOfAVoidMethod' => [
+                'code' => '<?php
+                    abstract class B {
+                        abstract public function run(int $x): void;
+                    }
+
+                    function f(?B $b): void {
+                        $b?->run(1)::done();
+                    }',
+                'error_message' => 'UndefinedClass',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'nullsafeChainWithSeveralHopsReportsStaticCallOnTheResultOfAVoidMethod' => [
+                'code' => '<?php
+                    abstract class B {
+                        abstract public function run(int $x): void;
+                    }
+                    abstract class A {
+                        public ?B $b = null;
+                    }
+
+                    function f(?A $a): void {
+                        $a?->b?->run(1)::done();
+                    }',
+                'error_message' => 'UndefinedClass',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'nullsafeChainReportsNullValueOfATemplate' => [
+                'code' => '<?php
+                    abstract class C {
+                        abstract public function c(): int;
+                    }
+                    abstract class B {
+                        /**
+                         * @template U
+                         * @param U $u
+                         * @return U
+                         */
+                        abstract public function id(mixed $u): mixed;
+                    }
+
+                    /**
+                     * @template T of array<string, C|null>
+                     * @param value-of<T> $value
+                     */
+                    function f(?B $b, mixed $value): void {
+                        $b?->id($value)->c();
+                    }',
+                'error_message' => 'PossiblyNullReference',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'nullsafeChainWithSeveralHopsReportsNullValueOfATemplate' => [
+                'code' => '<?php
+                    abstract class C {
+                        abstract public function c(): int;
+                    }
+                    abstract class B {
+                        /**
+                         * @template U
+                         * @param U $u
+                         * @return U
+                         */
+                        abstract public function id(mixed $u): mixed;
+                    }
+                    abstract class A {
+                        public ?B $b = null;
+                    }
+
+                    /**
+                     * @template T of array<string, C|null>
+                     * @param value-of<T> $value
+                     */
+                    function f(?A $a, mixed $value): void {
+                        $a?->b?->id($value)->c();
                     }',
                 'error_message' => 'PossiblyNullReference',
                 'error_levels' => [],
