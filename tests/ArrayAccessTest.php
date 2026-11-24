@@ -1637,6 +1637,14 @@ final class ArrayAccessTest extends TestCase
 
                 function elementNamed(Dom\\HTMLCollection $elements): ?Dom\\Element {
                     return $elements["main"];
+                }
+
+                function entityAt(Dom\\DocumentType $doctype): ?Dom\\Node {
+                    return $doctype->entities[0];
+                }
+
+                function entityNamed(Dom\\DocumentType $doctype): ?Dom\\Node {
+                    return $doctype->entities["e"];
                 }',
         );
 
@@ -1651,6 +1659,15 @@ final class ArrayAccessTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'offsetOfADomNamedNodeMapOfEitherKindIsRead' => [
+                'code' => '<?php
+                    function either(DOMNamedNodeMap $attributes, int|string $key): ?DOMNode {
+                        return $attributes[$key];
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'offsetsOfADomNamedNodeMapAreReadByPositionOrName' => [
                 'code' => '<?php
                     function attributeAt(DOMNamedNodeMap $attributes): ?DOMNode {
@@ -4251,6 +4268,27 @@ final class ArrayAccessTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'writeToAnOffsetOfADomNamedNodeMapIsInvalid' => [
+                'code' => '<?php
+                    function a(DOMNamedNodeMap $m, DOMAttr $a): void { $m["x"] = $a; }',
+                'error_message' => 'InvalidArrayAssignment',
+                'error_levels' => [],
+                'php_version' => '8.2',
+            ],
+            'appendToADomNodeListIsInvalid' => [
+                'code' => '<?php
+                    function b(DOMNodeList $l, DOMNode $n): void { $l[] = $n; }',
+                'error_message' => 'InvalidArrayAssignment',
+                'error_levels' => [],
+                'php_version' => '8.2',
+            ],
+            'unsetAnOffsetOfADomNamedNodeMapIsInvalid' => [
+                'code' => '<?php
+                    function c(DOMNamedNodeMap $m): void { unset($m[0]); }',
+                'error_message' => 'InvalidArrayAccess',
+                'error_levels' => [],
+                'php_version' => '8.2',
+            ],
             'stringOffsetOfAnIntKeyedArrayObject' => [
                 'code' => '<?php
                     /** @var ArrayObject<int, int> */
