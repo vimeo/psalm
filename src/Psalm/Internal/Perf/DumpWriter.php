@@ -343,7 +343,7 @@ final class DumpWriter
             'opcache' => $opcache !== false,
             'jit' => $opcache !== false && ($opcache['jit']['on'] ?? false) === true,
             'zend_assertions' => (int) ini_get('zend.assertions'),
-            'memory_limit' => (string) ini_get('memory_limit'),
+            'memory_limit' => ini_get('memory_limit'),
             'extensions' => $extensions,
             'cpu_count' => max(1, (new CpuCoreCounter())->getCountWithFallback(1)),
             'ci' => CliUtils::runningInCI(),
