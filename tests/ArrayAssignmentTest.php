@@ -1202,7 +1202,7 @@ final class ArrayAssignmentTest extends TestCase
                     /** @var array<string, string> $a */
                     $a = [];
                     $a["x"] = 1;
-                    $a[uniqid()] = "b";
+                    $a[(string) rand()] = "b";
                     $b = $a["x"];
                     /** @psalm-check-type-exact $b = 1 */;
                     $a[str_repeat("x", rand(1, 3))] = "c";
@@ -1212,7 +1212,7 @@ final class ArrayAssignmentTest extends TestCase
                     /** @var array<string, array<string, int|string>> $e */
                     $e = [];
                     $e["x"]["y"] = 1;
-                    $e["x"][uniqid()] = "b";
+                    $e["x"][(string) rand()] = "b";
                     $f = $e["x"]["y"];
                     /** @psalm-check-type-exact $f = 1 */;
                     $e["x"][str_repeat("y", rand(1, 3))] = "c";
@@ -1344,7 +1344,7 @@ final class ArrayAssignmentTest extends TestCase
                     $d = [];
                     $d["any"]["x"] = 5;
                     $d["any"]["y"] = 6;
-                    $d[uniqid()]["x"] = "s";
+                    $d[(string) rand()]["x"] = "s";
                     $e = $d["any"]["x"];
                     /** @psalm-check-type-exact $e = 5 */;
                     $d[str_repeat("a", rand(1, 3))]["x"] = "s";
