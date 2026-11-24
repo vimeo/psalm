@@ -125,9 +125,11 @@ use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function array_all;
+use function array_filter;
 use function array_keys;
 use function array_map;
 use function array_push;
+use function array_values;
 use function assert;
 use function count;
 use function explode;
@@ -145,6 +147,7 @@ use function strpos;
 use function strtolower;
 use function substr;
 
+use const ARRAY_FILTER_USE_KEY;
 use const PHP_INT_MAX;
 use const PHP_INT_MIN;
 
@@ -1008,6 +1011,20 @@ final class AssertionFinder
         $if_types += self::getGuardAssertions($expr, $function_id, $source, $codebase, $first_var_type);
 
         return $if_types ? [$if_types] : [];
+    }
+
+    /**
+     * Whether the call is a `function_exists()`, `class_exists()`, `interface_exists()`, `enum_exists()` or
+     * `method_exists()` check: where it holds the symbol's extension is loaded and its PHP version reached, but where
+     * it fails the symbol may only be disabled, missing from that version of the extension or not polyfilled
+     */
+    public static function isSymbolExistsCheck(PhpParser\Node\Expr\FuncCall $expr, FileSource $source): bool
+    {
+        return in_array(
+            self::getCalledFunctionId($expr, $source),
+            ['function_exists', 'class_exists', 'interface_exists', 'enum_exists', 'method_exists'],
+            true,
+        );
     }
 
     /**
@@ -2764,6 +2781,21 @@ final class AssertionFinder
                         $source->node_data->setAssertions($base_conditional, $base_assertions);
                     }
                 }
+            }
+
+            // see isSymbolExistsCheck()
+            if (!$operand_holds
+                && $base_conditional instanceof PhpParser\Node\Expr\FuncCall
+                && self::isSymbolExistsCheck($base_conditional, $source)
+            ) {
+                $base_assertions = array_values(array_filter(array_map(
+                    static fn(array $assertions): array => array_filter(
+                        $assertions,
+                        static fn(string $var_id): bool => !Context::isSymbolCheckVarId($var_id),
+                        ARRAY_FILTER_USE_KEY,
+                    ),
+                    $base_assertions,
+                )));
             }
 
             $if_types = $operand_holds ? $base_assertions : self::getNegatedAssertions($base_assertions);

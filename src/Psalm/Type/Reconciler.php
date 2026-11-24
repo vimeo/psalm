@@ -318,6 +318,7 @@ class Reconciler
                 $report_location = $code_location
                     && isset($referenced_var_ids[$key])
                     && isset($active_new_types[$key][$offset])
+                    && !Context::isSymbolCheckVarId($key)
                     ? $code_location
                     : null;
                 // of several alternatives, one that cannot be the value is only a problem when none can
