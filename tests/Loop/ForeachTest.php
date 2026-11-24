@@ -3537,6 +3537,14 @@ final class ForeachTest extends TestCase
                     foreach (g() as $_) {}',
                 'error_message' => 'non-null send() type Generator<int, int, non-empty-string',
             ],
+            'nullableIteratorShowsTheRefinedType' => [
+                'code' => '<?php
+                    /** @param list{5, non-empty-string}|null $a */
+                    function f(?array $a): void {
+                        foreach ($a as $_) {}
+                    }',
+                'error_message' => 'PossiblyNullIterator - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:34 - Cannot iterate over nullable var list{5, non-empty-string}|null',
+            ],
             'propertyNarrowedBeforeTheLoopIsForgottenAfterABreakReassigningItsObject' => [
                 'code' => '<?php
                     final class D {

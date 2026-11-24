@@ -2551,7 +2551,7 @@ final class ArrayAssignmentAnalyzer
             if ($object_id) {
                 $var_id_addition = '[' . $object_id . '->' . $child_stmt->dim->name->name . ']';
             } else {
-                $var_id_addition = '[' . $child_stmt_dim_type . ']';
+                $var_id_addition = '[' . $child_stmt_dim_type->getId(false) . ']';
             }
 
             return [null, $var_id_addition, true];
@@ -2570,7 +2570,7 @@ final class ArrayAssignmentAnalyzer
             return [null, $var_id_addition, true];
         }
 
-        $var_id_addition = '[' . $child_stmt_dim_type . ']';
+        $var_id_addition = '[' . $child_stmt_dim_type->getId(false) . ']';
 
         return [null, $var_id_addition, false];
     }
