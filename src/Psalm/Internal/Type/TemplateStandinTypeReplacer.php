@@ -1140,6 +1140,7 @@ final class TemplateStandinTypeReplacer
             }
 
             $generic_param = $input_type->getBuilder();
+            $bound_part_is_generic = false;
 
             if (UnionTypeComparator::canBeContainedBy(
                 $codebase,
@@ -1150,16 +1151,28 @@ final class TemplateStandinTypeReplacer
                 $matching_input_keys,
             )) {
                 if ($matching_input_keys) {
-                    self::keepMatchingInputTypes($codebase, $generic_param, $matching_input_keys, $gate_replacement_type);
+                    $bound_part_is_generic = self::keepMatchingInputTypes(
+                        $codebase,
+                        $generic_param,
+                        $matching_input_keys,
+                        $gate_replacement_type,
+                    );
                 }
-            } elseif (!$input_type->hasTemplate()) {
-                // as for a lower bound, the parts of the bound the input contains, if any (a template input, whose
-                // values aren't known yet, stays as it is and records no bound)
-                self::keepMatchingInputTypes($codebase, $generic_param, [], $gate_replacement_type);
+            } elseif ($input_type->hasTemplate()) {
+                // a template input, whose values aren't known yet, records no bound
+                $generic_param = null;
+            } else {
+                // as for a lower bound, the parts of the bound the input contains, if any
+                $bound_part_is_generic = self::keepMatchingInputTypes(
+                    $codebase,
+                    $generic_param,
+                    [],
+                    $gate_replacement_type,
+                );
             }
 
             // the parts of a bound that is generic in other templates are not known yet
-            if (!$generic_param->isUnionEmpty() && !self::hasTemplateAtAnyDepth($generic_param)) {
+            if ($generic_param !== null && !$bound_part_is_generic && !$generic_param->isUnionEmpty()) {
                 $generic_param = $generic_param->freeze();
 
                 $upper_bound = $template_result->upper_bounds

@@ -3496,6 +3496,38 @@ final class FunctionTemplateTest extends TestCase
                 'ignored_issues' => ['UnusedVariable'],
                 'php_version' => '8.0',
             ],
+            'callableParamTypedWithATemplateOfTheCallerRecordsAnUpperBound' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param callable(T): void $cb
+                     * @return T
+                     */
+                    function fromCallback(callable $cb) {
+                        throw new Exception();
+                    }
+
+                    /**
+                     * @template U of string
+                     * @param U $u
+                     * @return U
+                     */
+                    function g($u) {
+                        /** @param U $x */
+                        $f = function ($x): void {};
+                        return fromCallback($f);
+                    }
+
+                    /** @template V of string */
+                    final class C {
+                        /** @return V */
+                        public function get() {
+                            /** @param V $x */
+                            $f = function ($x): void {};
+                            return fromCallback($f);
+                        }
+                    }',
+            ],
             'templateUpperBoundByCallableParamOnlyCoercedToTheBoundKeepsTheBoundPartsItContains' => [
                 'code' => '<?php
                     /**
@@ -3557,6 +3589,46 @@ final class FunctionTemplateTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'callableParamTypedWithATemplateOfTheCallerIsCheckedAgainstTheArgument' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param list<T> $xs
+                     * @param callable(T): void $cb
+                     */
+                    function eachOf(array $xs, callable $cb): void {}
+
+                    /**
+                     * @template U of string
+                     * @param U $u
+                     */
+                    function g($u): void {
+                        /** @param U $x */
+                        $f = function ($x): void {};
+                        eachOf([1, 2], $f);
+                    }',
+                'error_message' => 'InvalidScalarArgument',
+            ],
+            'callableParamTypedWithAListOfATemplateOfTheCallerIsCheckedAgainstTheArgument' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param list<T> $xs
+                     * @param callable(T): void $cb
+                     */
+                    function eachOf(array $xs, callable $cb): void {}
+
+                    /**
+                     * @template U of string
+                     * @param U $u
+                     */
+                    function g($u): void {
+                        /** @param list<U> $x */
+                        $f = function (array $x): void {};
+                        eachOf([[1]], $f);
+                    }',
+                'error_message' => 'InvalidScalarArgument',
+            ],
             'methodTemplateBoundStillReportsTheClassStringOfANonFinalClassThatWasExcluded' => [
                 'code' => '<?php
                     interface StampInterface {}
