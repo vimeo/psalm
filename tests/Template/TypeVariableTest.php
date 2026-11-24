@@ -443,6 +443,28 @@ final class TypeVariableTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'falseArgumentRecordsABoundOnATypeVariable' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     */
+                    final class A {
+                        /**
+                         * @param T $value
+                         */
+                        public function __construct($value) {}
+
+                        /**
+                         * @param T $value
+                         */
+                        public function takeValue($value): void {}
+                    }
+
+                    /** @var bool */
+                    $value = true;
+                    $obj = new A($value);
+                    $obj->takeValue(false);',
+            ],
             'magicPropertyOfObjectsBuiltEmptyOnEachBranch' => [
                 'code' => '<?php
                     /**
@@ -2433,6 +2455,28 @@ final class TypeVariableTest extends TestCase
                     }',
                 'error_message' => 'MixedReturnTypeCoercion',
             ],
+            'falseArgumentIsCheckedAgainstADeclaredTypeArgument' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     */
+                    final class A {
+                        /**
+                         * @param T $value
+                         */
+                        public function __construct($value) {}
+
+                        /**
+                         * @param T $value
+                         */
+                        public function takeValue($value): void {}
+                    }
+
+                    /** @var A<int> */
+                    $obj = new A(1);
+                    $obj->takeValue(false);',
+                'error_message' => 'InvalidArgument',
+            ],
             'mixedConstructionCallableParamRequirement' => [
                 // a value that entered the variable as mixed is then required to
                 // be a Foo by the callable's parameter: reported at the call, as
@@ -2811,6 +2855,25 @@ final class TypeVariableTest extends TestCase
                     $c->each(function (int $i): void {});',
                 'error_message' => 'IncompatibleTypeParameters - src' . DIRECTORY_SEPARATOR
                     . 'somefile.php:26:30 - Type \'x\' should be a subtype of int',
+            ],
+            'valueAddedAfterConstructionMustFitTheConstructorCallback' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class CallbackPipe {
+                        /** @param Closure(T): void $callback */
+                        public function __construct(private Closure $callback) {}
+                        /** @param T $v */
+                        public function push(mixed $v): void { ($this->callback)($v); }
+                    }
+                    function f(): void {
+                        $p = new CallbackPipe(function (int $x): void {});
+                        $p->push("s");
+                        $p->push(1);
+                    }',
+                'error_message' => 'IncompatibleTypeParameters - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:11:34 - Type \'s\' should be a subtype of int',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'untypedCallbackSeesObjectAddedAfterConstruction' => [
                 'code' => '<?php

@@ -16,6 +16,36 @@ return array (
   ),
   'changed' => 
   array (
+    'bind_textdomain_codeset' => 
+    array (
+      'old' => 
+      array (
+        0 => 'string',
+        'domain' => 'string',
+        'codeset' => 'null|string',
+      ),
+      'new' => 
+      array (
+        0 => 'string',
+        'domain' => 'string',
+        'codeset=' => 'null|string',
+      ),
+    ),
+    'bindtextdomain' => 
+    array (
+      'old' => 
+      array (
+        0 => 'string',
+        'domain' => 'string',
+        'directory' => 'null|string',
+      ),
+      'new' => 
+      array (
+        0 => 'string',
+        'domain' => 'string',
+        'directory=' => 'null|string',
+      ),
+    ),
     'collator::setstrength' => 
     array (
       'old' => 
@@ -55,6 +85,181 @@ return array (
       array (
         0 => 'DateInterval',
         'datetime' => 'string',
+      ),
+    ),
+    'dba_close' => 
+    array (
+      'old' => 
+      array (
+        0 => 'void',
+        'dba' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'void',
+        'dba' => 'Dba\\Connection',
+      ),
+    ),
+    'dba_delete' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'key' => 'array<array-key, mixed>|string',
+        'dba' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'key' => 'array<array-key, mixed>|string',
+        'dba' => 'Dba\\Connection',
+      ),
+    ),
+    'dba_exists' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'key' => 'array<array-key, mixed>|string',
+        'dba' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'key' => 'array<array-key, mixed>|string',
+        'dba' => 'Dba\\Connection',
+      ),
+    ),
+    'dba_firstkey' => 
+    array (
+      'old' => 
+      array (
+        0 => 'string',
+        'dba' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'string',
+        'dba' => 'Dba\\Connection',
+      ),
+    ),
+    'dba_insert' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'key' => 'array<array-key, mixed>|string',
+        'value' => 'string',
+        'dba' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'key' => 'array<array-key, mixed>|string',
+        'value' => 'string',
+        'dba' => 'Dba\\Connection',
+      ),
+    ),
+    'dba_nextkey' => 
+    array (
+      'old' => 
+      array (
+        0 => 'string',
+        'dba' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'string',
+        'dba' => 'Dba\\Connection',
+      ),
+    ),
+    'dba_open' => 
+    array (
+      'old' => 
+      array (
+        0 => 'resource',
+        'path' => 'string',
+        'mode' => 'string',
+        'handler=' => 'null|string',
+        'permission=' => 'int',
+        'map_size=' => 'int',
+        'flags=' => 'int|null',
+      ),
+      'new' => 
+      array (
+        0 => 'Dba\\Connection|false',
+        'path' => 'string',
+        'mode' => 'string',
+        'handler=' => 'null|string',
+        'permission=' => 'int',
+        'map_size=' => 'int',
+        'flags=' => 'int|null',
+      ),
+    ),
+    'dba_optimize' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'dba' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'dba' => 'Dba\\Connection',
+      ),
+    ),
+    'dba_popen' => 
+    array (
+      'old' => 
+      array (
+        0 => 'resource',
+        'path' => 'string',
+        'mode' => 'string',
+        'handler=' => 'null|string',
+        'permission=' => 'int',
+        'map_size=' => 'int',
+        'flags=' => 'int|null',
+      ),
+      'new' => 
+      array (
+        0 => 'Dba\\Connection|false',
+        'path' => 'string',
+        'mode' => 'string',
+        'handler=' => 'null|string',
+        'permission=' => 'int',
+        'map_size=' => 'int',
+        'flags=' => 'int|null',
+      ),
+    ),
+    'dba_replace' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'key' => 'array<array-key, mixed>|string',
+        'value' => 'string',
+        'dba' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'key' => 'array<array-key, mixed>|string',
+        'value' => 'string',
+        'dba' => 'Dba\\Connection',
+      ),
+    ),
+    'dba_sync' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'dba' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'dba' => 'Dba\\Connection',
       ),
     ),
     'domdocument::registernodeclass' => 
@@ -412,6 +617,724 @@ return array (
       array (
         0 => 'true',
         'flags' => 'int',
+      ),
+    ),
+    'odbc_autocommit' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool|int',
+        'odbc' => 'resource',
+        'enable=' => 'bool|null',
+      ),
+      'new' => 
+      array (
+        0 => 'bool|int',
+        'odbc' => 'Odbc\\Connection',
+        'enable=' => 'bool|null',
+      ),
+    ),
+    'odbc_binmode' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'statement' => 'resource',
+        'mode' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'true',
+        'statement' => 'Odbc\\Result',
+        'mode' => 'int',
+      ),
+    ),
+    'odbc_close' => 
+    array (
+      'old' => 
+      array (
+        0 => 'void',
+        'odbc' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'void',
+        'odbc' => 'Odbc\\Connection',
+      ),
+    ),
+    'odbc_columnprivileges' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|resource',
+        'odbc' => 'resource',
+        'catalog' => 'null|string',
+        'schema' => 'string',
+        'table' => 'string',
+        'column' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'Odbc\\Result|false',
+        'odbc' => 'Odbc\\Connection',
+        'catalog' => 'null|string',
+        'schema' => 'string',
+        'table' => 'string',
+        'column' => 'string',
+      ),
+    ),
+    'odbc_columns' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|resource',
+        'odbc' => 'resource',
+        'catalog=' => 'null|string',
+        'schema=' => 'null|string',
+        'table=' => 'null|string',
+        'column=' => 'null|string',
+      ),
+      'new' => 
+      array (
+        0 => 'Odbc\\Result|false',
+        'odbc' => 'Odbc\\Connection',
+        'catalog=' => 'null|string',
+        'schema=' => 'null|string',
+        'table=' => 'null|string',
+        'column=' => 'null|string',
+      ),
+    ),
+    'odbc_commit' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'odbc' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'odbc' => 'Odbc\\Connection',
+      ),
+    ),
+    'odbc_connect' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|resource',
+        'dsn' => 'string',
+        'user' => 'string',
+        'password' => 'string',
+        'cursor_option=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'Odbc\\Connection|false',
+        'dsn' => 'string',
+        'user=' => 'null|string',
+        'password=' => 'null|string',
+        'cursor_option=' => 'int',
+      ),
+    ),
+    'odbc_cursor' => 
+    array (
+      'old' => 
+      array (
+        0 => 'string',
+        'statement' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'string',
+        'statement' => 'Odbc\\Result',
+      ),
+    ),
+    'odbc_data_source' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, mixed>|false|null',
+        'odbc' => 'resource',
+        'fetch_type' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, mixed>|false|null',
+        'odbc' => 'Odbc\\Connection',
+        'fetch_type' => 'int',
+      ),
+    ),
+    'odbc_do' => 
+    array (
+      'old' => 
+      array (
+        0 => 'resource',
+        'odbc' => 'resource',
+        'query' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'Odbc\\Result|false',
+        'odbc' => 'Odbc\\Connection',
+        'query' => 'string',
+      ),
+    ),
+    'odbc_error' => 
+    array (
+      'old' => 
+      array (
+        0 => 'string',
+        'odbc=' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'string',
+        'odbc=' => 'Odbc\\Connection|null',
+      ),
+    ),
+    'odbc_errormsg' => 
+    array (
+      'old' => 
+      array (
+        0 => 'string',
+        'odbc=' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'string',
+        'odbc=' => 'Odbc\\Connection|null',
+      ),
+    ),
+    'odbc_exec' => 
+    array (
+      'old' => 
+      array (
+        0 => 'resource',
+        'odbc' => 'resource',
+        'query' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'Odbc\\Result|false',
+        'odbc' => 'Odbc\\Connection',
+        'query' => 'string',
+      ),
+    ),
+    'odbc_execute' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'statement' => 'resource',
+        'params=' => 'array<array-key, mixed>',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'statement' => 'Odbc\\Result',
+        'params=' => 'array<array-key, mixed>',
+      ),
+    ),
+    'odbc_fetch_array' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'statement' => 'resource',
+        'row=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'statement' => 'Odbc\\Result',
+        'row=' => 'int|null',
+      ),
+    ),
+    'odbc_fetch_into' => 
+    array (
+      'old' => 
+      array (
+        0 => 'int',
+        'statement' => 'resource',
+        '&w array' => 'array<array-key, mixed>',
+        'row=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'int',
+        'statement' => 'Odbc\\Result',
+        '&w array' => 'array<array-key, mixed>',
+        'row=' => 'int|null',
+      ),
+    ),
+    'odbc_fetch_object' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|stdClass',
+        'statement' => 'resource',
+        'row=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'false|stdClass',
+        'statement' => 'Odbc\\Result',
+        'row=' => 'int|null',
+      ),
+    ),
+    'odbc_fetch_row' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'statement' => 'resource',
+        'row=' => 'int|null',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'statement' => 'Odbc\\Result',
+        'row=' => 'int|null',
+      ),
+    ),
+    'odbc_field_len' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|int',
+        'statement' => 'resource',
+        'field' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'false|int',
+        'statement' => 'Odbc\\Result',
+        'field' => 'int',
+      ),
+    ),
+    'odbc_field_name' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|string',
+        'statement' => 'resource',
+        'field' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'false|string',
+        'statement' => 'Odbc\\Result',
+        'field' => 'int',
+      ),
+    ),
+    'odbc_field_num' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|int',
+        'statement' => 'resource',
+        'field' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'false|int',
+        'statement' => 'Odbc\\Result',
+        'field' => 'string',
+      ),
+    ),
+    'odbc_field_precision' => 
+    array (
+      'old' => 
+      array (
+        0 => 'int',
+        'statement' => 'resource',
+        'field' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'int',
+        'statement' => 'Odbc\\Result',
+        'field' => 'int',
+      ),
+    ),
+    'odbc_field_scale' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|int',
+        'statement' => 'resource',
+        'field' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'false|int',
+        'statement' => 'Odbc\\Result',
+        'field' => 'int',
+      ),
+    ),
+    'odbc_field_type' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|string',
+        'statement' => 'resource',
+        'field' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'false|string',
+        'statement' => 'Odbc\\Result',
+        'field' => 'int',
+      ),
+    ),
+    'odbc_foreignkeys' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|resource',
+        'odbc' => 'resource',
+        'pk_catalog' => 'null|string',
+        'pk_schema' => 'string',
+        'pk_table' => 'string',
+        'fk_catalog' => 'string',
+        'fk_schema' => 'string',
+        'fk_table' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'Odbc\\Result|false',
+        'odbc' => 'Odbc\\Connection',
+        'pk_catalog' => 'null|string',
+        'pk_schema' => 'string',
+        'pk_table' => 'string',
+        'fk_catalog' => 'string',
+        'fk_schema' => 'string',
+        'fk_table' => 'string',
+      ),
+    ),
+    'odbc_free_result' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'statement' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'true',
+        'statement' => 'Odbc\\Result',
+      ),
+    ),
+    'odbc_gettypeinfo' => 
+    array (
+      'old' => 
+      array (
+        0 => 'resource',
+        'odbc' => 'resource',
+        'data_type=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'Odbc\\Result|false',
+        'odbc' => 'Odbc\\Connection',
+        'data_type=' => 'int',
+      ),
+    ),
+    'odbc_longreadlen' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'statement' => 'resource',
+        'length' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'true',
+        'statement' => 'Odbc\\Result',
+        'length' => 'int',
+      ),
+    ),
+    'odbc_next_result' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'statement' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'statement' => 'Odbc\\Result',
+      ),
+    ),
+    'odbc_num_fields' => 
+    array (
+      'old' => 
+      array (
+        0 => 'int',
+        'statement' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'int',
+        'statement' => 'Odbc\\Result',
+      ),
+    ),
+    'odbc_num_rows' => 
+    array (
+      'old' => 
+      array (
+        0 => 'int',
+        'statement' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'int',
+        'statement' => 'Odbc\\Result',
+      ),
+    ),
+    'odbc_pconnect' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|resource',
+        'dsn' => 'string',
+        'user' => 'string',
+        'password' => 'string',
+        'cursor_option=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'Odbc\\Connection|false',
+        'dsn' => 'string',
+        'user=' => 'null|string',
+        'password=' => 'null|string',
+        'cursor_option=' => 'int',
+      ),
+    ),
+    'odbc_prepare' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|resource',
+        'odbc' => 'resource',
+        'query' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'Odbc\\Result|false',
+        'odbc' => 'Odbc\\Connection',
+        'query' => 'string',
+      ),
+    ),
+    'odbc_primarykeys' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|resource',
+        'odbc' => 'resource',
+        'catalog' => 'null|string',
+        'schema' => 'string',
+        'table' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'Odbc\\Result|false',
+        'odbc' => 'Odbc\\Connection',
+        'catalog' => 'null|string',
+        'schema' => 'string',
+        'table' => 'string',
+      ),
+    ),
+    'odbc_procedurecolumns' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|resource',
+        'odbc' => 'resource',
+        'catalog=' => 'null|string',
+        'schema=' => 'null|string',
+        'procedure=' => 'null|string',
+        'column=' => 'null|string',
+      ),
+      'new' => 
+      array (
+        0 => 'Odbc\\Result|false',
+        'odbc' => 'Odbc\\Connection',
+        'catalog=' => 'null|string',
+        'schema=' => 'null|string',
+        'procedure=' => 'null|string',
+        'column=' => 'null|string',
+      ),
+    ),
+    'odbc_procedures' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|resource',
+        'odbc' => 'resource',
+        'catalog=' => 'null|string',
+        'schema=' => 'null|string',
+        'procedure=' => 'null|string',
+      ),
+      'new' => 
+      array (
+        0 => 'Odbc\\Result|false',
+        'odbc' => 'Odbc\\Connection',
+        'catalog=' => 'null|string',
+        'schema=' => 'null|string',
+        'procedure=' => 'null|string',
+      ),
+    ),
+    'odbc_result' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool|null|string',
+        'statement' => 'resource',
+        'field' => 'int|string',
+      ),
+      'new' => 
+      array (
+        0 => 'bool|null|string',
+        'statement' => 'Odbc\\Result',
+        'field' => 'int|string',
+      ),
+    ),
+    'odbc_result_all' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|int',
+        'statement' => 'resource',
+        'format=' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'false|int',
+        'statement' => 'Odbc\\Result',
+        'format=' => 'string',
+      ),
+    ),
+    'odbc_rollback' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'odbc' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'odbc' => 'Odbc\\Connection',
+      ),
+    ),
+    'odbc_setoption' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'odbc' => 'resource',
+        'which' => 'int',
+        'option' => 'int',
+        'value' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'odbc' => 'Odbc\\Connection|Odbc\\Result',
+        'which' => 'int',
+        'option' => 'int',
+        'value' => 'int',
+      ),
+    ),
+    'odbc_specialcolumns' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|resource',
+        'odbc' => 'resource',
+        'type' => 'int',
+        'catalog' => 'null|string',
+        'schema' => 'string',
+        'table' => 'string',
+        'scope' => 'int',
+        'nullable' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'Odbc\\Result|false',
+        'odbc' => 'Odbc\\Connection',
+        'type' => 'int',
+        'catalog' => 'null|string',
+        'schema' => 'string',
+        'table' => 'string',
+        'scope' => 'int',
+        'nullable' => 'int',
+      ),
+    ),
+    'odbc_statistics' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|resource',
+        'odbc' => 'resource',
+        'catalog' => 'null|string',
+        'schema' => 'string',
+        'table' => 'string',
+        'unique' => 'int',
+        'accuracy' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'Odbc\\Result|false',
+        'odbc' => 'Odbc\\Connection',
+        'catalog' => 'null|string',
+        'schema' => 'string',
+        'table' => 'string',
+        'unique' => 'int',
+        'accuracy' => 'int',
+      ),
+    ),
+    'odbc_tableprivileges' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|resource',
+        'odbc' => 'resource',
+        'catalog' => 'null|string',
+        'schema' => 'string',
+        'table' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'Odbc\\Result|false',
+        'odbc' => 'Odbc\\Connection',
+        'catalog' => 'null|string',
+        'schema' => 'string',
+        'table' => 'string',
+      ),
+    ),
+    'odbc_tables' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|resource',
+        'odbc' => 'resource',
+        'catalog=' => 'null|string',
+        'schema=' => 'null|string',
+        'table=' => 'null|string',
+        'types=' => 'null|string',
+      ),
+      'new' => 
+      array (
+        0 => 'Odbc\\Result|false',
+        'odbc' => 'Odbc\\Connection',
+        'catalog=' => 'null|string',
+        'schema=' => 'null|string',
+        'table=' => 'null|string',
+        'types=' => 'null|string',
       ),
     ),
     'openssl_csr_sign' => 
@@ -893,6 +1816,19 @@ return array (
         0 => 'true',
         'context' => 'resource',
         'params' => 'array<array-key, mixed>',
+      ),
+    ),
+    'textdomain' => 
+    array (
+      'old' => 
+      array (
+        0 => 'string',
+        'domain' => 'null|string',
+      ),
+      'new' => 
+      array (
+        0 => 'string',
+        'domain=' => 'null|string',
       ),
     ),
     'trigger_error' => 
