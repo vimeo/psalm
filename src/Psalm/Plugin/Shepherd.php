@@ -286,15 +286,9 @@ final class Shepherd implements AfterAnalysisInterface
         curl_setopt($ch, CURLOPT_POST, true);
         curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
 
-        // Set HTTP Header for POST request
-        curl_setopt(
-            $ch,
-            CURLOPT_HTTPHEADER,
-            [
-                'Content-Type: application/json',
-                'Content-Length: ' . strlen($payload),
-            ],
-        );
+        // No Content-Length: curl sets it for the POST, but a header set here would also go out with
+        // the GET that follows a redirect, and Google Apps Script answers that GET with HTTP 400.
+        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
 
         // Submit the POST request
         $curl_result = curl_exec($ch);
