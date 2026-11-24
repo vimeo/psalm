@@ -355,6 +355,32 @@ final class ClassTemplateContravarianceTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.4',
             ],
+            'newWithAValueOrClassStringArgTakesTheBound' => [
+                'code' => '<?php
+                    final class Dog {}
+                    /** @template-contravariant T of object */
+                    final class Handler {
+                        /** @param class-string<T> $class */
+                        public function __construct(private string $class) {}
+                        /** @param T $value */
+                        public function handle(object $value): void {}
+                    }
+                    /** @template-contravariant T */
+                    final class Logger {
+                        /** @param T $first */
+                        public function __construct(mixed $first) {}
+                        /** @param T $value */
+                        public function log(mixed $value): void {}
+                    }
+                    $handler = new Handler(Dog::class);
+                    $logger = new Logger(1);',
+                'assertions' => [
+                    '$handler===' => 'Handler<object>',
+                    '$logger===' => 'Logger<mixed>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'newWithCovariantAndContravariantTemplates' => [
                 'code' => '<?php
                     /**

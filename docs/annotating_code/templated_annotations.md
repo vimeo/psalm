@@ -635,6 +635,39 @@ function f(): void {
 }
 ```
 
+A value or a `class-string<T>` given to the constructor doesn't narrow a contravariant template, only a callback's parameter or an invariant argument (`Box<T>`) does:
+
+```php
+<?php
+final class Dog {}
+
+/** @template-contravariant T of object */
+final class Handler {
+    /** @param class-string<T> $class */
+    public function __construct(private string $class) {}
+
+    /** @param T $value */
+    public function handle(object $value): void {}
+}
+
+/** @template-contravariant T */
+final class Callback {
+    /** @param Closure(T): void $callback */
+    public function __construct(private Closure $callback) {}
+
+    /** @param T $value */
+    public function call(mixed $value): void {}
+}
+
+function f(): void {
+    $handler = new Handler(Dog::class); // Handler<object>
+    $handler->handle(new stdClass()); // no issue
+
+    $callback = new Callback(function (int $value): void {}); // Callback<int>
+    $callback->call("a"); // InvalidScalarArgument
+}
+```
+
 ## Star projection
 
 `Box<*>` is a `Box` of some type you don't know. Kotlin calls it a [star projection](https://kotlinlang.org/docs/generics.html#star-projections), Java an unbounded wildcard (`Box<?>`).
