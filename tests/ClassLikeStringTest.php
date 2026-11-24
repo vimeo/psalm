@@ -359,7 +359,39 @@ final class ClassLikeStringTest extends TestCase
                     '$empty===' => 'string',
                     '$same===' => 'class-string<Shape>',
                 ],
-                'ignored_issues' => ['MissingClosureReturnType'],
+                'ignored_issues' => [],
+            ],
+            'getClassCombinedWithANumericStringIsNonEmpty' => [
+                'code' => '<?php
+                    interface Shape {}
+
+                    function shape(): Shape {
+                        return new class implements Shape {};
+                    }
+
+                    $shape = shape();
+
+                    /** @var numeric-string $n */
+                    $n = "1";
+
+                    $first = rand(0, 1) ? get_class($shape) : $n;
+                    $second = rand(0, 1) ? $n : get_class($shape);
+
+                    $reverse = "1";
+                    if (rand(0, 1)) {
+                        $reverse = get_class($shape);
+                    }
+
+                    $assigned = $n;
+                    if (rand(0, 1)) {
+                        $assigned = get_class($shape);
+                    }',
+                'assertions' => [
+                    '$first===' => 'non-empty-string',
+                    '$second===' => 'non-empty-string',
+                    '$assigned===' => 'non-empty-string',
+                ],
+                'ignored_issues' => [],
             ],
             'getClassOfAUnionWithAnIntersectionIsComparedWithAClassOfTheUnion' => [
                 'code' => '<?php
