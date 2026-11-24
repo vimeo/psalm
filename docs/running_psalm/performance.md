@@ -1,6 +1,6 @@
 # Finding out why Psalm is slow
 
-`--debug-performance` is Psalm's built-in self-profiling. It prints where a run spent its time and memory: stages, workers, the slowest files, the slowest statements and functions, and the time spent in plugin and provider handlers.
+`--debug-performance` (short name: `--profile`) is Psalm's built-in self-profiling. It prints where a run spent its time and memory: stages, workers, the slowest files, the slowest statements and functions, and the time spent in plugin and provider handlers.
 
 ```bash
 ./vendor/bin/psalm --no-cache --debug-performance
@@ -9,10 +9,10 @@
 `--debug-performance=PATH` also writes everything it measured to a JSON file, the performance profile:
 
 ```bash
-./vendor/bin/psalm --no-cache --debug-performance=psalm-perf.json
+./vendor/bin/psalm --no-cache --profile=psalm-perf.json
 ```
 
-To see it as charts and tables, open the performance report at https://psalm.dev/perf/ and drop the profile on the page; the page reads it in your browser and sends it nowhere.
+To see it as charts and tables, open the performance report at https://psalm.dev/profile/ and drop the profile on the page; the page reads it in your browser and sends it nowhere.
 
 Use `--no-cache` to measure a cold run, and leave out `--debug`, which distorts the timings. Times per file are most reliable with `--threads=1`.
 
