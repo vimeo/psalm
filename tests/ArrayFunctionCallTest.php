@@ -5450,6 +5450,18 @@ final class ArrayFunctionCallTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],
+            'arrayMapClosureParamGivenParentTypeAndInvalidType' => [
+                'code' => '<?php
+                    final class Foo {}
+
+                    /** @param list<object|int> $l */
+                    function f(array $l): void {
+                        array_map(fn(Foo $_f): int => 1, $l);
+                    }',
+                'error_message' => 'PossiblyInvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'arrayColumnIndexColumnOfAnUnsealedRowMayBeAnObject' => [
                 'code' => '<?php
                     /** @param list<array{0: stdClass, ...}> $rows */

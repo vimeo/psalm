@@ -3297,6 +3297,20 @@ final class ReturnTypeTest extends TestCase
                     }',
                 'error_message' => 'InvalidReturnStatement',
             ],
+            'sealedShapeMissingARequiredKeyReturned' => [
+                'code' => '<?php
+                    class Base {}
+                    final class Child extends Base {}
+
+                    /**
+                     * @param array{a: Base} $a
+                     * @return array{a: Child, b: int}
+                     */
+                    function f(array $a): array {
+                        return $a;
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
             'generatorReturnsImplicitlyOnAPath' => [
                 'code' => '<?php
                     /** @return Generator<int, int, mixed, string> */
