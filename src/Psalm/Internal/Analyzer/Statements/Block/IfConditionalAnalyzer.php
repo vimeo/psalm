@@ -115,9 +115,9 @@ final class IfConditionalAnalyzer
         //   exit
         // }
         // echo $matches[0];
-        $externally_applied_if_cond_expr = self::getDefinitelyEvaluatedExpressionAfterIf($cond);
+        $externally_applied_if_cond_expr = self::getDefinitelyEvaluatedExpression($cond, true);
 
-        $internally_applied_if_cond_expr = self::getDefinitelyEvaluatedExpressionInsideIf($cond);
+        $internally_applied_if_cond_expr = self::getDefinitelyEvaluatedExpression($cond, false);
 
         $pre_condition_vars_in_scope = $outer_context->vars_in_scope;
 
@@ -613,81 +613,44 @@ final class IfConditionalAnalyzer
 
     /**
      * Returns statements that are definitely evaluated before any statements after the end of the
-     * if/elseif/else blocks
+     * if/elseif/else blocks, or before any statements inside the if block
      */
-    private static function getDefinitelyEvaluatedExpressionAfterIf(PhpParser\Node\Expr $stmt): PhpParser\Node\Expr
-    {
+    private static function getDefinitelyEvaluatedExpression(
+        PhpParser\Node\Expr $stmt,
+        bool $after_if,
+    ): PhpParser\Node\Expr {
         if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Equal
             || $stmt instanceof PhpParser\Node\Expr\BinaryOp\Identical
         ) {
             if ($stmt->left instanceof PhpParser\Node\Expr\ConstFetch
                 && $stmt->left->name->getParts() === ['true']
             ) {
-                return self::getDefinitelyEvaluatedExpressionAfterIf($stmt->right);
+                return self::getDefinitelyEvaluatedExpression($stmt->right, $after_if);
             }
 
             if ($stmt->right instanceof PhpParser\Node\Expr\ConstFetch
                 && $stmt->right->name->getParts() === ['true']
             ) {
-                return self::getDefinitelyEvaluatedExpressionAfterIf($stmt->left);
+                return self::getDefinitelyEvaluatedExpression($stmt->left, $after_if);
             }
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\BinaryOp) {
-            if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd
-                || $stmt instanceof PhpParser\Node\Expr\BinaryOp\LogicalAnd
+            // the left side of `&&` is evaluated before anything after the if, that of `||` before its block
+            if ($after_if
+                ? ($stmt instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd
+                    || $stmt instanceof PhpParser\Node\Expr\BinaryOp\LogicalAnd)
+                : ($stmt instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
+                    || $stmt instanceof PhpParser\Node\Expr\BinaryOp\LogicalOr)
             ) {
-                return self::getDefinitelyEvaluatedExpressionAfterIf($stmt->left);
+                return self::getDefinitelyEvaluatedExpression($stmt->left, $after_if);
             }
 
             return $stmt;
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\BooleanNot) {
-            $inner_stmt = self::getDefinitelyEvaluatedExpressionInsideIf($stmt->expr);
-
-            if ($inner_stmt !== $stmt->expr) {
-                return $inner_stmt;
-            }
-        }
-
-        return $stmt;
-    }
-
-    /**
-     * Returns statements that are definitely evaluated before any statements inside
-     * the if block
-     */
-    private static function getDefinitelyEvaluatedExpressionInsideIf(PhpParser\Node\Expr $stmt): PhpParser\Node\Expr
-    {
-        if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Equal
-            || $stmt instanceof PhpParser\Node\Expr\BinaryOp\Identical
-        ) {
-            if ($stmt->left instanceof PhpParser\Node\Expr\ConstFetch
-                && $stmt->left->name->getParts() === ['true']
-            ) {
-                return self::getDefinitelyEvaluatedExpressionInsideIf($stmt->right);
-            }
-
-            if ($stmt->right instanceof PhpParser\Node\Expr\ConstFetch
-                && $stmt->right->name->getParts() === ['true']
-            ) {
-                return self::getDefinitelyEvaluatedExpressionInsideIf($stmt->left);
-            }
-        }
-
-        if ($stmt instanceof PhpParser\Node\Expr\BinaryOp) {
-            if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
-                || $stmt instanceof PhpParser\Node\Expr\BinaryOp\LogicalOr
-            ) {
-                return self::getDefinitelyEvaluatedExpressionInsideIf($stmt->left);
-            }
-
-            return $stmt;
-        }
-
-        if ($stmt instanceof PhpParser\Node\Expr\BooleanNot) {
-            $inner_stmt = self::getDefinitelyEvaluatedExpressionAfterIf($stmt->expr);
+            $inner_stmt = self::getDefinitelyEvaluatedExpression($stmt->expr, !$after_if);
 
             if ($inner_stmt !== $stmt->expr) {
                 return $inner_stmt;

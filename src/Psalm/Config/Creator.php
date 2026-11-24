@@ -214,10 +214,6 @@ final class Creator
                     'Invalid composer.json at ' . $composer_json_location . ': ' . $e->getMessage(),
                 );
             }
-            if (!$composer_json) {
-                throw new ConfigCreationException('Invalid composer.json at ' . $composer_json_location);
-            }
-
             if (!is_array($composer_json)) {
                 throw new ConfigCreationException('Invalid composer.json at ' . $composer_json_location);
             }
@@ -304,7 +300,8 @@ final class Creator
         foreach ($php_files as $php_file) {
             $php_file = str_replace($current_dir . DIRECTORY_SEPARATOR, '', $php_file);
 
-            $parts = explode(DIRECTORY_SEPARATOR, ltrim($php_file, DIRECTORY_SEPARATOR));
+            // on Windows, glob() keeps the "/" of the pattern after the directory's "\"
+            $parts = explode('/', ltrim(str_replace(DIRECTORY_SEPARATOR, '/', $php_file), '/'));
 
             if ($parts[0] === 'vendor' || $parts[0] === 'tests') {
                 continue;

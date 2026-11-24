@@ -3,7 +3,9 @@
 declare(strict_types=1);
 
 const MB_FAIL_PCT = 5.0;
-const WALL_WARN_PCT = 20.0;
+const WALL_WARN_PCT = 10.0;
+/** Applies to the wall times summed over the projects that ran on both sides. */
+const TOTAL_WALL_WARN_PCT = 5.0;
 /**
  * Head timeout or memory crash fails only if base used under this share of the limit hit (else warn); any other
  * head crash fails. When the PR changes composer.json, MB and wall deltas cannot fail the check.
@@ -20,7 +22,9 @@ const VERDICT_RANK = ['pass' => 0, 'skip' => 1, 'warn' => 1, 'fail' => 2];
 
 /**
  * @param array<mixed> $plan
- * @return array{verdict: string, deps_changed: bool, projects: array<string, array<string, mixed>>}
+ * @return array{
+ *     verdict: string, deps_changed: bool, total_wall_delta: ?float, projects: array<string, array<string, mixed>>
+ * }
  */
 function compareAll(array $plan, string $inDir, bool $depsChanged): array
 {
@@ -40,12 +44,35 @@ function compareAll(array $plan, string $inDir, bool $depsChanged): array
     }
 
     $worst = max(array_map(static fn(array $p): int => VERDICT_RANK[$p['verdict']], $projects) ?: [1]);
+    $totalWall = totalWallDelta($projects);
+    if (!$depsChanged && $totalWall !== null && $totalWall > TOTAL_WALL_WARN_PCT) {
+        $worst = max($worst, VERDICT_RANK['warn']);
+    }
 
     return [
         'verdict' => ['pass', 'warn', 'fail'][$worst],
         'deps_changed' => $depsChanged,
+        'total_wall_delta' => $totalWall,
         'projects' => $projects,
     ];
+}
+
+/**
+ * Change of the wall times summed over the projects that ran on both sides; null when there are none.
+ *
+ * @param array<string, array<string, mixed>> $projects
+ */
+function totalWallDelta(array $projects): ?float
+{
+    $base = $head = 0.0;
+    foreach ($projects as $p) {
+        if ($p['base']['status'] === 'ok' && $p['head']['status'] === 'ok') {
+            $base += (float) $p['base']['wall'];
+            $head += (float) $p['head']['wall'];
+        }
+    }
+
+    return pctDelta($base, $head);
 }
 
 /** @return array<string, mixed> */
