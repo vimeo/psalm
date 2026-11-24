@@ -68,6 +68,7 @@ use Psalm\Storage\FileStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Storage\PropertyHookStorage;
 use Psalm\Storage\PropertyStorage;
+use Psalm\Storage\TemplateVariance;
 use Psalm\Type;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TNamedObject;
@@ -78,8 +79,10 @@ use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function array_column;
+use function array_diff;
 use function array_diff_key;
 use function array_fill_keys;
+use function array_map;
 use function array_merge;
 use function array_pop;
 use function array_shift;
@@ -93,6 +96,7 @@ use function is_array;
 use function ltrim;
 use function pathinfo;
 use function preg_match;
+use function preg_quote;
 use function preg_split;
 use function reset;
 use function sprintf;
@@ -494,8 +498,8 @@ final class ClassLikeNodeScanner
                 usort(
                     $docblock_info->templates,
                     /**
-                     * @param array{string, ?string, ?string, bool, int} $l
-                     * @param array{string, ?string, ?string, bool, int} $r
+                     * @param array{string, ?string, ?string, TemplateVariance, int} $l
+                     * @param array{string, ?string, ?string, TemplateVariance, int} $r
                      */
                     static fn(array $l, array $r): int
                         => [in_array($l[0], $purity_templates, true), $l[4]]
@@ -528,6 +532,15 @@ final class ClassLikeNodeScanner
                     }
                 }
 
+                // a bound may name a template declared after it
+                $declared_template_types = [];
+
+                foreach ($docblock_info->templates as $template_map) {
+                    $declared_template_types[$template_map[0]] = [$fq_classlike_name => Type::getMixed()];
+                }
+
+                $dependent_bounds = [];
+
                 foreach ($docblock_info->templates as $i => $template_map) {
                     $template_name = $template_map[0];
 
@@ -549,11 +562,11 @@ final class ClassLikeNodeScanner
                                     TypeTokenizer::getFullyQualifiedTokens(
                                         $type_string,
                                         $this->aliases,
-                                        $storage->template_types + $purity_template_types,
+                                        $storage->template_types + $purity_template_types + $declared_template_types,
                                         $this->type_aliases,
                                     ),
                                     null,
-                                    $storage->template_types + $purity_template_types,
+                                    $storage->template_types + $purity_template_types + $declared_template_types,
                                     $this->type_aliases,
                                 );
                             } catch (TypeParseTreeException $e) {
@@ -563,6 +576,17 @@ final class ClassLikeNodeScanner
                                 );
 
                                 continue;
+                            }
+
+                            $other_templates = array_map(
+                                preg_quote(...),
+                                array_diff(array_column($docblock_info->templates, 0), [$template_name]),
+                            );
+
+                            if ($other_templates !== []
+                                && preg_match('/\\b(?:' . implode('|', $other_templates) . ')\\b/', $type_string)
+                            ) {
+                                $dependent_bounds[$template_name] = $type_string;
                             }
 
                             // a class named only in the bound (`@template TArr of array{a: stdClass}`) is read where
@@ -583,11 +607,48 @@ final class ClassLikeNodeScanner
                             );
                         }
                     } else {
-                        /** @psalm-suppress PropertyTypeCoercion due to a Psalm bug */
                         $storage->template_types[$template_name][$fq_classlike_name] = Type::getMixed();
                     }
 
-                    $storage->template_covariants[$i] = $template_map[3];
+                    $storage->template_covariants[$i] = $template_map[3] === TemplateVariance::Covariant;
+
+                    if ($template_map[3] === TemplateVariance::Contravariant) {
+                        $storage->template_contravariants[$i] = true;
+                    }
+                }
+
+                // a bound read another template before that template's own bound was final
+                for ($pass = count($dependent_bounds); $pass > 0; $pass--) {
+                    $settled = true;
+
+                    foreach ($dependent_bounds as $template_name => $type_string) {
+                        $known_template_types = $storage->template_types + $purity_template_types;
+
+                        try {
+                            $bound = TypeParser::parseTokens(
+                                TypeTokenizer::getFullyQualifiedTokens(
+                                    $type_string,
+                                    $this->aliases,
+                                    $known_template_types,
+                                    $this->type_aliases,
+                                ),
+                                null,
+                                $known_template_types,
+                                $this->type_aliases,
+                            );
+                        } catch (TypeParseTreeException) {
+                            continue;
+                        }
+
+                        if ($bound->getId() !== $storage->template_types[$template_name][$fq_classlike_name]->getId()) {
+                            $storage->template_types[$template_name] = [$fq_classlike_name => $bound];
+                            $settled = false;
+                        }
+                    }
+
+                    if ($settled) {
+                        break;
+                    }
                 }
 
                 $this->class_template_types = $storage->template_types;
@@ -1389,7 +1450,7 @@ final class ClassLikeNodeScanner
             $implemented_class_name,
             '@template-implements',
             'Implemented class',
-            'an implemented class',
+            'an implemented interface',
             $storage->class_implements,
         );
 
@@ -1409,7 +1470,7 @@ final class ClassLikeNodeScanner
             $used_class_name,
             '@template-use',
             'Used class',
-            'an used class',
+            'a used trait',
             $storage->used_traits,
         );
 
@@ -1483,6 +1544,17 @@ final class ClassLikeNodeScanner
         $counts = [];
 
         foreach ($union_type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TNamedObject
+                && !isset($related_classes[strtolower($atomic_type->value)])
+            ) {
+                $storage->docblock_issues[] = new InvalidDocblock(
+                    $tag . ' must include the name of ' . $related_name . ', got ' . $atomic_type->getId(),
+                    new CodeLocation($this->file_scanner, $node, null, true),
+                );
+
+                continue;
+            }
+
             if (!$atomic_type instanceof TGenericObject) {
                 $storage->docblock_issues[] = new InvalidDocblock(
                     $tag . ' has invalid class ' . $atomic_type->getId(),
@@ -1493,15 +1565,6 @@ final class ClassLikeNodeScanner
             }
 
             $generic_class_lc = strtolower($atomic_type->value);
-
-            if (!isset($related_classes[$generic_class_lc])) {
-                $storage->docblock_issues[] = new InvalidDocblock(
-                    $tag . ' must include the name of ' . $related_name . ', got ' . $atomic_type->getId(),
-                    new CodeLocation($this->file_scanner, $node, null, true),
-                );
-
-                continue;
-            }
 
             if ($this->reportStarArgument($storage, $node, $atomic_type, $tag)) {
                 continue;

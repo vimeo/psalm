@@ -772,6 +772,22 @@ final class MethodSignatureTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'methodAnnotationNarrowingTheReturnTypeOfANativeMethodNeedsNoSignature' => [
+                'code' => '<?php
+                    /**
+                     * @method int getCode()
+                     */
+                    class A extends RuntimeException
+                    {
+                        public function __construct(string $message = \'\', int $code = 0, ?Throwable $previous = null, array $context = [])
+                        {
+                            parent::__construct($message, $code, $previous);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'staticTypeArgumentMatchesInheritedReturnType' => [
                 'code' => '<?php
                     /** @template T */
@@ -903,6 +919,41 @@ final class MethodSignatureTest extends TestCase
                         public function foo(Closure $d, array &$a): void {}
                     }',
             ],
+            'disableNamedArgumentsOnClassImplementingParameterlessMethods' => [
+                'code' => '<?php
+                    /**
+                     * @no-named-arguments
+                     * @implements IteratorAggregate<int, int>
+                     */
+                    final class C implements Countable, IteratorAggregate {
+                        public function count(): int {
+                            return 0;
+                        }
+
+                        public function getIterator(): Iterator {
+                            return new ArrayIterator([]);
+                        }
+
+                        public function __toString(): string {
+                            return "";
+                        }
+                    }',
+            ],
+            'disableNamedArgumentsInOverrideOfParameterlessMethod' => [
+                'code' => '<?php
+                    class A {
+                        public function foo(): void {}
+                        public function bar(): void {}
+                    }
+
+                    final class B extends A {
+                        /** @no-named-arguments */
+                        public function foo(): void {}
+
+                        /** @no-named-arguments */
+                        public function bar(int ...$_args): void {}
+                    }',
+            ],
             'overrideDocumentingSomeParamsKeepsItsOwnType' => [
                 'code' => '<?php
                     class Repository {
@@ -956,6 +1007,250 @@ final class MethodSignatureTest extends TestCase
                             /** @psalm-check-type-exact $strict = bool */;
 
                             return false;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'inheritedParamTypeKeepsWhatAPartiallyDocumentedOverrideWidensItsNativeTypeWith' => [
+                'code' => '<?php
+                    final class D {}
+
+                    interface I {
+                        /** @param D|null $d */
+                        public function decide(?D $d = null): bool;
+                    }
+
+                    final class M implements I {
+                        /** @param bool $x */
+                        #[\Override]
+                        public function decide(bool|D|null $d = null, bool $x = false): bool {
+                            /** @psalm-check-type-exact $d = bool|D|null */;
+                            if (\is_bool($d)) {
+                                $x = $d;
+                            }
+                            return $x;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'inheritedParamTypeKeepsWhatAnUndocumentedOverrideWidensItsNativeTypeWith' => [
+                'code' => '<?php
+                    final class D {}
+
+                    interface I {
+                        /** @param D|null $d */
+                        public function decide(?D $d = null): bool;
+                    }
+
+                    final class M implements I {
+                        #[\Override]
+                        public function decide(bool|D|null $d = null): bool {
+                            /** @psalm-check-type-exact $d = bool|D|null */;
+                            return \is_bool($d);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'inheritedParamTypeRefinesOnlyThePartOfTheWidenedNativeTypeThatTheParentDocuments' => [
+                'code' => '<?php
+                    class P {
+                        /** @param positive-int $x */
+                        public function f(int $x): void {}
+                    }
+
+                    final class Q extends P {
+                        #[\Override]
+                        public function f(int|string $x): void {
+                            /** @psalm-check-type-exact $x = positive-int|string */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'inheritedParamTypeStillRefinesAnOverrideWithTheSameNativeType' => [
+                'code' => '<?php
+                    class P {
+                        /** @param positive-int $x */
+                        public function f(int $x): void {}
+                    }
+
+                    final class Q extends P {
+                        /** @return void */
+                        #[\Override]
+                        public function f(int $x): void {
+                            /** @psalm-check-type-exact $x = positive-int */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'inheritedParamTypeOfAParameterWithoutNativeTypeRefinesTheOverride' => [
+                'code' => '<?php
+                    class P {
+                        /** @param positive-int $x */
+                        public function f($x): void {}
+                    }
+
+                    final class Q extends P {
+                        /** @return void */
+                        #[\Override]
+                        public function f(int $x): void {
+                            /** @psalm-check-type-exact $x = positive-int */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'inheritedParamTypeOfAnOverrideWidenedToMixedIsMixed' => [
+                'code' => '<?php
+                    final class D {
+                        public function foo(): void {}
+                    }
+
+                    interface I {
+                        /** @param D|null $d */
+                        public function decide(?D $d = null): void;
+                    }
+
+                    final class M implements I {
+                        #[\Override]
+                        public function decide(mixed $d = null): void {
+                            /** @psalm-check-type-exact $d = mixed */;
+                            $d->foo();
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedMethodCall'],
+                'php_version' => '8.3',
+            ],
+            'inheritedParamTypeCombinesWithTheWidenedNativeType' => [
+                'code' => '<?php
+                    class P {
+                        /** @param positive-int|false $x */
+                        public function f(int|false $x): void {}
+                    }
+
+                    final class Q extends P {
+                        #[\Override]
+                        public function f(int|bool $x): void {
+                            /** @psalm-check-type-exact $x = bool|positive-int */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'inheritedParamTypeKeepsWhatAnotherDocumentingParentNativelyAcceptsButDocumentsOut' => [
+                'code' => '<?php
+                    interface A {
+                        /** @param positive-int $x */
+                        public function f(int|string $x, int $y): void;
+                    }
+
+                    interface B {
+                        /** @param positive-int $x */
+                        public function f(int $x, int $y): void;
+                    }
+
+                    final class C implements A, B {
+                        /** @param int $y */
+                        #[\Override]
+                        public function f(int|string $x, int $y): void {
+                            /** @psalm-check-type-exact $x = positive-int */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'inheritedParamTypeOfAnUndocumentedOverrideKeepsWhatAnotherParentDocumentsOut' => [
+                'code' => '<?php
+                    final class D {}
+
+                    interface I {
+                        /** @param D|null $d */
+                        public function decide(?D $d = null): void;
+                    }
+
+                    interface K {
+                        /** @param D|null $d */
+                        public function decide(bool|D|null $d = null): void;
+                    }
+
+                    final class M implements I, K {
+                        #[\Override]
+                        public function decide(bool|D|null $d = null): void {
+                            /** @psalm-check-type-exact $d = D|null */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'inheritedParamTypeOfAnUndocumentedOverrideKeepsWhatAnotherParentDocumentsOutInEitherOrder' => [
+                'code' => '<?php
+                    final class D {}
+
+                    interface I {
+                        /** @param D|null $d */
+                        public function decide(?D $d = null): void;
+                    }
+
+                    interface K {
+                        /** @param D|null $d */
+                        public function decide(bool|D|null $d = null): void;
+                    }
+
+                    final class M implements K, I {
+                        #[\Override]
+                        public function decide(bool|D|null $d = null): void {
+                            /** @psalm-check-type-exact $d = D|null */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'inheritedParamTypeOfAParentNativeTypeIsNotWidenedByTheSameClass' => [
+                'code' => '<?php
+                    class A {}
+                    final class B extends A {}
+
+                    class P extends A {
+                        /** @param B $x */
+                        public function f(parent $x): void {}
+                    }
+
+                    final class Q extends P {
+                        #[\Override]
+                        public function f(A $x): void {
+                            /** @psalm-check-type-exact $x = B */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'inheritedParamTypeOfASelfNativeTypeIsNotWidenedByTheSameClass' => [
+                'code' => '<?php
+                    class P {
+                        /** @param static $x */
+                        public function f(self $x): void {}
+                    }
+
+                    final class Q extends P {
+                        #[\Override]
+                        public function f(P $x): void {
+                            /** @psalm-check-type-exact $x = Q */;
                         }
                     }',
                 'assertions' => [],
@@ -2163,6 +2458,53 @@ final class MethodSignatureTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'undefinedClassInTheWidenedNativeTypeOfAnOverrideInheritingAParamTypeIsReportedOnTheOverride' => [
+                'code' => '<?php
+                    final class D {}
+
+                    interface I {
+                        /** @param D|null $d */
+                        public function decide(?D $d = null): void;
+                    }
+
+                    final class M implements I {
+                        #[\Override]
+                        public function decide(Unknown|D|null $d = null): void {}
+                    }',
+                'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:48',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
+            'deprecatedClassInTheNativeTypeOfAnOverrideInheritingAParamTypeIsReportedOnTheOverride' => [
+                'code' => '<?php
+                    /** @deprecated */
+                    final class Old {}
+
+                    interface I {
+                        /**
+                         * @param Old|null $o
+                         * @psalm-suppress DeprecatedClass
+                         */
+                        public function f(?Old $o): void;
+                    }
+
+                    final class M implements I {
+                        #[\Override]
+                        public function f(?Old $o): void {}
+                    }',
+                'error_message' => 'DeprecatedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:15:43',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
+            'finalMethodOfAReflectedNativeClassCannotBeOverridden' => [
+                'code' => '<?php
+                    final class P extends Phar {
+                        public static function apiVersion(): string {
+                            return "1.1.1";
+                        }
+                    }',
+                'error_message' => 'MethodSignatureMismatch',
+            ],
             'overrideNativeFinalMethodOfDocblockFinalClass' => [
                 'code' => '<?php
                     /**
@@ -3067,6 +3409,20 @@ final class MethodSignatureTest extends TestCase
                     }
                 ',
                 'error_message' => 'MethodSignatureMismatch',
+            ],
+            'disableNamedArgumentsOnClassWithParameterlessMethods' => [
+                'code' => '<?php
+                    interface Foo {
+                        public function a(): void;
+                        public function b(int $x): void;
+                    }
+                    /** @no-named-arguments */
+                    final class Baz implements Foo {
+                        public function a(): void {}
+                        public function b(int $x): void {}
+                    }
+                ',
+                'error_message' => 'Method Baz::b should accept named arguments as Foo::b does',
             ],
             'SKIPPED-noMixedTypehintInDescendant' => [ // #13926
                 'code' => '<?php

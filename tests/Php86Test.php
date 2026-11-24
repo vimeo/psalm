@@ -117,6 +117,15 @@ final class Php86Test extends TestCase
                 'ignored_issues' => ['UnusedVariable'],
                 'php_version' => '8.6',
             ],
+            'streamLastErrors' => [
+                'code' => '<?php
+                    $errors = stream_last_errors();',
+                'assertions' => [
+                    '$errors===' => 'list<StreamError>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.6',
+            ],
         ];
     }
 

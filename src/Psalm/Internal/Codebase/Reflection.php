@@ -34,6 +34,7 @@ use function strtolower;
 
 use const PHP_MAJOR_VERSION;
 use const PHP_MINOR_VERSION;
+use const PHP_VERSION_ID;
 
 /**
  * @internal
@@ -90,6 +91,7 @@ final class Reflection
 
         $storage = $this->storage_provider->create($class_name);
         $storage->abstract = $reflected_class->isAbstract();
+        $storage->final = $reflected_class->isFinal();
         $storage->is_interface = $reflected_class->isInterface();
 
         $storage->potential_declaring_method_ids['__construct'][$class_name_lower . '::__construct'] = true;
@@ -141,6 +143,15 @@ final class Reflection
                 $storage->properties[$property_name]->visibility = ClassLikeAnalyzer::VISIBILITY_PROTECTED;
             } elseif ($class_property->isPrivate()) {
                 $storage->properties[$property_name]->visibility = ClassLikeAnalyzer::VISIBILITY_PRIVATE;
+            }
+
+            $storage->properties[$property_name]->set_visibility = $storage->properties[$property_name]->visibility;
+            if (PHP_VERSION_ID >= 8_04_00) {
+                if ($class_property->isPrivateSet()) {
+                    $storage->properties[$property_name]->set_visibility = ClassLikeAnalyzer::VISIBILITY_PRIVATE;
+                } elseif ($class_property->isProtectedSet()) {
+                    $storage->properties[$property_name]->set_visibility = ClassLikeAnalyzer::VISIBILITY_PROTECTED;
+                }
             }
 
             $property_id = $class_property->class . '::$' . $property_name;
@@ -199,6 +210,13 @@ final class Reflection
         $reflection_methods = $reflected_class->getMethods(
             (ReflectionMethod::IS_PUBLIC | ReflectionMethod::IS_PROTECTED),
         );
+
+        // a private constructor (Closure, HashContext) makes `new` fail
+        $reflection_constructor = $reflected_class->getConstructor();
+
+        if ($reflection_constructor && $reflection_constructor->isPrivate()) {
+            $reflection_methods[] = $reflection_constructor;
+        }
 
         if ($class_name_lower === 'generator') {
             $storage->template_types = [
@@ -295,6 +313,7 @@ final class Reflection
 
         $storage->is_static = $method->isStatic();
         $storage->abstract = $method->isAbstract();
+        $storage->final = $method->isFinal() || $declaring_class->isFinal();
 
         if (isset(self::PURE_METHODS[$fq_class_name_lc . '::' . $method_name_lc])) {
             $storage->capabilities = Capabilities::NONE;

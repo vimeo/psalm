@@ -225,6 +225,105 @@ final class RedundantConditionTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'extensionLoadedAndFunctionOfTheExtension' => [
+                'code' => '<?php
+                    function f(): void {
+                        if (\extension_loaded("pcntl") && \function_exists("pcntl_signal")) {
+                            echo 1;
+                        }
+                    }',
+            ],
+            'twoFunctionsOfOneExtension' => [
+                'code' => '<?php
+                    function f(string $e): void {
+                        if ("syslog" === $e && \function_exists("openlog") && \function_exists("syslog")) {
+                            echo 1;
+                        }
+                    }',
+            ],
+            'twoClassesOfOneExtension' => [
+                'code' => '<?php
+                    function f(): void {
+                        if (\class_exists("Redis") && \class_exists("RedisCluster")) {
+                            echo 1;
+                        }
+                    }',
+            ],
+            'twoFunctionsOfOnePhpVersion' => [
+                'code' => '<?php
+                    function f(): void {
+                        if (\function_exists("array_is_list") && \function_exists("enum_exists")) {
+                            echo 1;
+                        }
+                    }',
+            ],
+            'functionOfAnExtensionAndAnotherOneMissing' => [
+                'code' => '<?php
+                    function f(): void {
+                        if (\function_exists("openlog") && !\function_exists("syslog")) {
+                            echo 1;
+                        }
+                    }',
+            ],
+            'functionsOfTwoPhpVersions' => [
+                'code' => '<?php
+                    function f(): void {
+                        if (\function_exists("array_is_list") && \function_exists("str_contains")) {
+                            echo 1;
+                        }
+                    }',
+            ],
+            'functionOfAPhpVersionAndOneOfAnOlderVersionMissing' => [
+                'code' => '<?php
+                    function f(): void {
+                        if (\function_exists("array_is_list") && !\function_exists("str_contains")) {
+                            echo 1;
+                        }
+                    }',
+            ],
+            'missingFunctionOfAnExtensionSaysNothingOfAnotherOne' => [
+                'code' => '<?php
+                    function f(bool $b): void {
+                        if ((\function_exists("openlog") || $b) && (\function_exists("syslog") || $b)) {
+                            echo 1;
+                        }
+                    }',
+            ],
+            'notIdenticalToAVariableOfSeveralLiteralsDoesNotExcludeThem' => [
+                'code' => '<?php
+                    /** @param 1|2|3|5 $old */
+                    function changeType(int $new, int $old): bool {
+                        if ($new === $old) {
+                            return true;
+                        }
+                        if (!in_array($new, [2, 3, 5], true)) {
+                            return false;
+                        }
+                        return true;
+                    }
+
+                    /** @param 1|2 $old */
+                    function same(int $new, int $old): int {
+                        if ($new !== $old) {
+                            return 0;
+                        }
+                        /** @psalm-check-type-exact $new = 1|2 */
+                        return $new;
+                    }',
+            ],
+            'assertionOfStaticOnAnInterfaceReceiverIsNotImplied' => [
+                'code' => '<?php
+                    interface Comparable {
+                        /** @psalm-assert-if-true static $object */
+                        public function equals(Comparable $object): bool;
+                    }
+
+                    function f(Comparable $left, Comparable $right): void {
+                        if ($left->equals($right)) {
+                            echo "yes";
+                        }
+                    }',
+            ],
             'notIdenticalToABoolLiteralOfATemplateBoundedByMixed' => [
                 'code' => '<?php
                     /**
@@ -2810,19 +2909,25 @@ final class RedundantConditionTest extends TestCase
                     }',
                 'error_message' => 'RedundantCondition',
             ],
-            'assertionOfAnInterfaceAlreadyImplied' => [
+            'assertionOfAFinalClassAlreadyImplied' => [
                 'code' => '<?php
                     interface Comparable {
                         /** @psalm-assert-if-true static $object */
                         public function equals(Comparable $object): bool;
                     }
 
-                    function f(Comparable $left, Comparable $right): void {
+                    final class Money implements Comparable {
+                        public function equals(Comparable $object): bool {
+                            return $object instanceof self;
+                        }
+                    }
+
+                    function f(Money $left, Money $right): void {
                         if ($left->equals($right)) {
                             echo "yes";
                         }
                     }',
-                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:29 - Type Comparable for $right is always Comparable',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:14:29 - Type Money for $right is always Money',
             ],
             'assignedArrayOffsetCheckedTwice' => [
                 'code' => '<?php

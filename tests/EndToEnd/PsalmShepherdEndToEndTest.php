@@ -7,6 +7,7 @@ namespace Psalm\Tests\EndToEnd;
 use Override;
 use Symfony\Component\Process\Process;
 
+use function array_keys;
 use function fclose;
 use function file_exists;
 use function file_get_contents;
@@ -15,8 +16,10 @@ use function fread;
 use function fwrite;
 use function json_decode;
 use function preg_match;
+use function sort;
 use function str_contains;
 use function str_replace;
+use function str_starts_with;
 use function stream_socket_accept;
 use function stream_socket_get_name;
 use function stream_socket_server;
@@ -27,6 +30,7 @@ use function trim;
 
 use const JSON_THROW_ON_ERROR;
 use const PHP_BINARY;
+use const PHP_VERSION;
 
 /**
  * Tests which endpoint the psalm command sends the Shepherd report to and what it says when it can't send a report,
@@ -140,6 +144,17 @@ final class PsalmShepherdEndToEndTest extends PsalmEndToEndTestCase
         );
     }
 
+    public function testPsalmSendsTheReportOnlyToAnHttpUrl(): void
+    {
+        $process = $this->runPsalmWithShepherd(['--shepherd=ftp://127.0.0.1:1/report'], self::githubActions());
+
+        $this->assertStringContainsString(
+            'Warning: Results not sent to Shepherd: the URL must use http or https',
+            $process->getErrorOutput(),
+        );
+        $this->assertSame(0, $process->getExitCode());
+    }
+
     public function testPsalmSendsTheHeadOfAGithubActionsPullRequestAsItsCommit(): void
     {
         $head_of_checkout = $this->initGitRepository();
@@ -186,6 +201,193 @@ final class PsalmShepherdEndToEndTest extends PsalmEndToEndTestCase
         $this->assertSame('psalm', $report['build']['CI_REPO_OWNER']);
         $this->assertSame('master', $report['build']['CI_BRANCH']);
         $this->assertArrayNotHasKey('CI_PR_NUMBER', $report['build']);
+        // a run on the path of Clean.php only
+        $this->assertFalse($report['analysis']['full']);
+        $this->assertSame(1, $report['analysis']['file_count']);
+    }
+
+    public function testPsalmSendsEmptyGroupsAndTheAnalysisFlagsInEffect(): void
+    {
+        $this->initProject();
+        // no CLI flag turns unused code detection off; --taint-analysis overrides runTaintAnalysis="false"
+        $psalmXml = (string) file_get_contents(self::$tmpDir . '/psalm.xml');
+        file_put_contents(
+            self::$tmpDir . '/psalm.xml',
+            str_replace('findUnusedCode="true"', 'findUnusedCode="false"', $psalmXml),
+        );
+
+        $report = $this->runPsalmAndReadTheRawReport(
+            ['--no-cache', '--taint-analysis', '--php-version=8.1', self::$tmpDir . '/src/Clean.php'],
+            self::githubActions(),
+        );
+
+        // objects even when empty, not the empty arrays PHP encodes by default
+        $this->assertStringContainsString('"issue_counts":{"baselined":{},"info":{}}', $report);
+        $this->assertStringContainsString('"target_php_version":"8.1"', $report);
+        $this->assertStringContainsString('"find_unused_code":false', $report);
+        $this->assertStringContainsString('"taint_analysis":true', $report);
+    }
+
+    public function testPsalmSendsTheIssueCountsOfTheBaselineAndTheConfig(): void
+    {
+        $this->initProject();
+        file_put_contents(self::$tmpDir . '/src/A.php', "<?php\nfunction a(): int\n{\n    return 'a';\n}\n");
+        $this->runPsalm(['--set-baseline'], self::$tmpDir, true);
+
+        file_put_contents(
+            self::$tmpDir . '/src/B.php',
+            "<?php\nfunction b(): int\n{\n    return 'b';\n}\n\nfunction c()\n{\n    return 1;\n}\n",
+        );
+        $psalmXml = (string) file_get_contents(self::$tmpDir . '/psalm.xml');
+        file_put_contents(self::$tmpDir . '/psalm.xml', str_replace(
+            '</psalm>',
+            '<issueHandlers><InvalidReturnType errorLevel="info" /><MissingReturnType errorLevel="info" />'
+                . '</issueHandlers></psalm>',
+            $psalmXml,
+        ));
+
+        $report = $this->runPsalmAndReadTheRawReport(['--no-cache'], self::githubActions());
+
+        // the InvalidReturnType of a() and foo() are info now, but the baseline still covers them (it has no
+        // unused entry); those of b() and the MissingReturnType of c() are info, and not in the baseline; each issue
+        // is in one group only, and the InvalidReturnStatement of b() is an error, sent in `issues`
+        $this->assertStringContainsString(
+            '"issue_counts":{"baselined":{"InvalidReturnStatement":2,"InvalidReturnType":2},'
+                . '"info":{"InvalidReturnType":1,"MissingReturnType":1}}',
+            $report,
+        );
+        $this->assertSame(['src/B.php InvalidReturnStatement'], self::sentIssues($report));
+
+        // the key list, so that no key is added or removed unnoticed
+        /** @var array{analysis: array<string, mixed>} $decoded */
+        $decoded = self::decode($report);
+        $this->assertSame(
+            [
+                'build',
+                'git',
+                'issues',
+                'issue_counts',
+                'analysis',
+                'coverage',
+                'level',
+                'versions',
+            ],
+            array_keys($decoded),
+        );
+        // composer.json requires PHP >= 7.1, and the generated psalm.xml has no phpVersion
+        $this->assertSame(
+            [
+                'full' => true,
+                'file_count' => 4,
+                'target_php_version' => '7.1',
+                'find_unused_code' => true,
+                'taint_analysis' => false,
+            ],
+            $decoded['analysis'],
+        );
+        $this->assertStringContainsString('"php":"' . PHP_VERSION . '"', $report);
+    }
+
+    public function testPsalmWritesTheReportToAFile(): void
+    {
+        $report_file = str_replace('\\', '/', self::$tmpDir) . '/src/report.json';
+        // file:///C:/... on Windows
+        $path = str_starts_with($report_file, '/') ? $report_file : '/' . $report_file;
+
+        // curl would read the file and show it as the response
+        file_put_contents($report_file, 'local-secret-value');
+
+        $process = $this->runPsalmWithShepherd(['--debug', '--shepherd=file://' . $path], self::githubActions());
+
+        $this->assertStringContainsString('Results written to ' . $path, $process->getErrorOutput());
+        $this->assertStringNotContainsString('local-secret-value', $process->getErrorOutput());
+        $this->assertFileExists($report_file);
+        $report = (string) file_get_contents($report_file);
+        $this->assertSame(
+            ['build', 'git', 'issues', 'issue_counts', 'analysis', 'coverage', 'level', 'versions'],
+            array_keys(self::decode($report)),
+        );
+        // encoded as it is sent
+        $this->assertStringContainsString('"issue_counts":{"baselined":{},"info":{}}', $report);
+        $this->assertSame(0, $process->getExitCode());
+    }
+
+    /**
+     * Google Apps Script answers the POST with a 302 to the result, which curl fetches with a GET.
+     * Google rejects that GET with HTTP 400 when it still carries the Content-Length of the POST body.
+     */
+    public function testPsalmSendsTheReportToAnEndpointThatRedirectsToItsResult(): void
+    {
+        $this->initProject();
+        $server = stream_socket_server('tcp://127.0.0.1:0', $error_code, $error_message);
+        $this->assertNotFalse($server, $error_message);
+        $address = stream_socket_get_name($server, false);
+        $this->assertIsString($address);
+
+        $process = self::newProcess(
+            [
+                PHP_BINARY,
+                $this->psalm,
+                '-c=' . self::$tmpDir . '/psalm.xml',
+                '--no-cache',
+                self::$tmpDir . '/src/Clean.php',
+                '--shepherd=http://' . $address . '/exec',
+            ],
+            self::$tmpDir,
+            self::githubActions() + self::ciEnvVarsToUnset() + self::agentEnvVarsToUnset(),
+        );
+        $process->start();
+
+        try {
+            [$connection, $post] = self::acceptRequest($server, $process);
+            $this->assertStringStartsWith('POST /exec ', $post);
+            fwrite($connection, "HTTP/1.1 302 Found\r\nLocation: /result\r\nContent-Length: 0\r\nConnection: close\r\n\r\n");
+            fclose($connection);
+
+            [$connection, $get] = self::acceptRequest($server, $process);
+            $this->assertStringStartsWith('GET /result ', $get);
+            $status = preg_match('/^Content-Length:/mi', $get) === 1 ? '400 Bad Request' : '200 OK';
+            fwrite($connection, "HTTP/1.1 $status\r\nContent-Length: 0\r\nConnection: close\r\n\r\n");
+            fclose($connection);
+            $process->wait();
+        } finally {
+            fclose($server);
+        }
+
+        $this->assertStringContainsString('Results sent to Shepherd (127.0.0.1)', $process->getErrorOutput());
+        $this->assertStringNotContainsString('Results not sent to Shepherd', $process->getErrorOutput());
+    }
+
+    /**
+     * Accepts one request and reads it; the body is read only for a POST, so a GET is never waited on
+     *
+     * @param resource $server
+     * @return array{resource, string} the connection and the request line with the headers
+     */
+    private static function acceptRequest($server, Process $process): array
+    {
+        $connection = null;
+        while ($connection === null && $process->isRunning()) {
+            $connection = @stream_socket_accept($server, 1) ?: null;
+        }
+        self::assertNotNull($connection, "Psalm sent no request\n" . $process->getErrorOutput());
+
+        $request = '';
+        while (!str_contains($request, "\r\n\r\n")) {
+            $request .= (string) fread($connection, 8192);
+        }
+        $headers_end = strpos($request, "\r\n\r\n");
+        self::assertIsInt($headers_end);
+        $headers = substr($request, 0, $headers_end);
+
+        if (str_starts_with($headers, 'POST ') && preg_match('/^Content-Length: (\d+)/mi', $headers, $matches) === 1) {
+            $body = substr($request, $headers_end + 4);
+            while (strlen($body) < (int) $matches[1]) {
+                $body .= (string) fread($connection, 65_536);
+            }
+        }
+
+        return [$connection, $headers];
     }
 
     /**
@@ -207,11 +409,7 @@ final class PsalmShepherdEndToEndTest extends PsalmEndToEndTestCase
      */
     private function runPsalmWithShepherd(array $args, array $env): Process
     {
-        $this->runPsalmInit(1);
-        $psalmXml = file_get_contents(self::$tmpDir . '/psalm.xml');
-        $psalmXml = str_replace('<psalm', '<psalm runTaintAnalysis="false"', (string)$psalmXml);
-        file_put_contents(self::$tmpDir . '/psalm.xml', $psalmXml);
-        file_put_contents(self::$tmpDir . '/src/Clean.php', "<?php\nfunction clean(): void {}\n");
+        $this->initProject();
 
         $process = self::newProcess(
             [
@@ -260,28 +458,42 @@ final class PsalmShepherdEndToEndTest extends PsalmEndToEndTestCase
      * Runs Psalm with --shepherd on a local server that accepts one report
      *
      * @param array<string, string> $env
-     * @return array{build: array<string, string>, git: array{head: array{id: string}}}
+     * @return array{
+     *     build: array<string, string>,
+     *     git: array{head: array{id: string}},
+     *     analysis: array{full: bool, file_count: int},
+     * }
      */
     private function runPsalmAndReadTheReport(array $env): array
+    {
+        $this->initProject();
+
+        /** @var array{build: array<string, string>, git: array{head: array{id: string}}, analysis: array{full: bool, file_count: int}} */
+        return self::decode(
+            $this->runPsalmAndReadTheRawReport(['--no-cache', self::$tmpDir . '/src/Clean.php'], $env),
+        );
+    }
+
+    /**
+     * Runs Psalm with --shepherd on a local server that accepts one report
+     *
+     * @param list<string> $args
+     * @param array<string, string> $env
+     * @return string the report as sent
+     */
+    private function runPsalmAndReadTheRawReport(array $args, array $env): string
     {
         $server = stream_socket_server('tcp://127.0.0.1:0', $error_code, $error_message);
         $this->assertNotFalse($server, $error_message);
         $address = stream_socket_get_name($server, false);
         $this->assertIsString($address);
 
-        $this->runPsalmInit(1);
-        $psalmXml = file_get_contents(self::$tmpDir . '/psalm.xml');
-        $psalmXml = str_replace('<psalm', '<psalm runTaintAnalysis="false"', (string)$psalmXml);
-        file_put_contents(self::$tmpDir . '/psalm.xml', $psalmXml);
-        file_put_contents(self::$tmpDir . '/src/Clean.php', "<?php\nfunction clean(): void {}\n");
-
         $process = self::newProcess(
             [
                 PHP_BINARY,
                 $this->psalm,
-                '--no-cache',
                 '-c=' . self::$tmpDir . '/psalm.xml',
-                self::$tmpDir . '/src/Clean.php',
+                ...$args,
                 '--shepherd=http://' . $address,
             ],
             self::$tmpDir,
@@ -319,8 +531,43 @@ final class PsalmShepherdEndToEndTest extends PsalmEndToEndTestCase
             fclose($server);
         }
 
-        /** @var array{build: array<string, string>, git: array{head: array{id: string}}} */
-        return json_decode($body, true, 512, JSON_THROW_ON_ERROR);
+        return $body;
+    }
+
+    private function initProject(): void
+    {
+        $this->runPsalmInit(1);
+        $psalmXml = file_get_contents(self::$tmpDir . '/psalm.xml');
+        $psalmXml = str_replace('<psalm', '<psalm runTaintAnalysis="false"', (string)$psalmXml);
+        file_put_contents(self::$tmpDir . '/psalm.xml', $psalmXml);
+        file_put_contents(self::$tmpDir . '/src/Clean.php', "<?php\nfunction clean(): void {}\n");
+    }
+
+    /**
+     * @return array<string, mixed>
+     * @psalm-pure
+     */
+    private static function decode(string $report): array
+    {
+        /** @var array<string, mixed> */
+        return json_decode($report, true, 512, JSON_THROW_ON_ERROR);
+    }
+
+    /**
+     * @return list<string> the file and type of each issue sent, sorted
+     * @psalm-pure
+     */
+    private static function sentIssues(string $report): array
+    {
+        /** @var list<array{file_name: string, type: string}> $issues */
+        $issues = self::decode($report)['issues'];
+        $sent = [];
+        foreach ($issues as $issue) {
+            $sent[] = $issue['file_name'] . ' ' . $issue['type'];
+        }
+        sort($sent);
+
+        return $sent;
     }
 
     /**

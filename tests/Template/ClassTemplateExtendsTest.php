@@ -111,6 +111,145 @@ final class ClassTemplateExtendsTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'staticOfAnImplementedTemplateIsTheObjectItIsInferredFrom' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface Wrapper {}
+
+                    /** @implements Wrapper<static> */
+                    class Node implements Wrapper {}
+
+                    /** @template T */
+                    final class Box {
+                        /** @return self<T> */
+                        public function same(): self {
+                            return $this;
+                        }
+                    }
+
+                    /**
+                     * @template T
+                     * @param Wrapper<T> $value
+                     * @return Box<T>
+                     */
+                    function unwrap(Wrapper $value): Box {
+                        return new Box();
+                    }
+
+                    $a = unwrap(new Node());',
+                'assertions' => [
+                    '$a===' => 'Box<Node>',
+                ],
+            ],
+            'staticInsideTypesOfAnImplementedTemplateIsTheObjectItIsInferredFrom' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface Wrapper {}
+
+                    /** @implements Wrapper<Closure(): static> */
+                    final class Factory implements Wrapper {}
+
+                    /** @implements Wrapper<object{p: static}> */
+                    final class Shaped implements Wrapper {}
+
+                    /** @implements Wrapper<class-string<static>> */
+                    class Named implements Wrapper {}
+
+                    final class SubNamed extends Named {}
+
+                    /** @template T */
+                    final class Box {}
+
+                    /**
+                     * @template T
+                     * @param Wrapper<T> $value
+                     * @return Box<T>
+                     */
+                    function unwrap(Wrapper $value): Box {
+                        return new Box();
+                    }
+
+                    $closure = unwrap(new Factory());
+                    $shape = unwrap(new Shaped());
+                    $class = unwrap(new SubNamed());',
+                'assertions' => [
+                    '$closure===' => 'Box<Closure[impure]():Factory>',
+                    '$shape===' => 'Box<object{p:Shaped}>',
+                    '$class===' => 'Box<class-string<SubNamed>>',
+                ],
+            ],
+            'staticNestedInAnImplementedTemplateIsTheObjectItIsInferredFrom' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface Wrapper {}
+
+                    /** @implements Wrapper<list<static>> */
+                    class Node implements Wrapper {}
+
+                    /** @template T */
+                    final class Box {}
+
+                    /**
+                     * @template T
+                     * @param Wrapper<T> $value
+                     * @return Box<T>
+                     */
+                    function unwrap(Wrapper $value): Box {
+                        return new Box();
+                    }
+
+                    $a = unwrap(new Node());',
+                'assertions' => [
+                    '$a===' => 'Box<list<Node>>',
+                ],
+            ],
+            'chainedCallOnATemplateInferredFromAnImplementedStatic' => [
+                'code' => '<?php
+                    /** @implements IteratorAggregate<int, static> */
+                    final class Node implements IteratorAggregate {
+                        #[Override]
+                        public function getIterator(): Iterator {
+                            return new ArrayIterator([$this]);
+                        }
+
+                        /** @return list<static> */
+                        public function all(): array {
+                            return wrap($this)->same()->items();
+                        }
+                    }
+
+                    /** @template T */
+                    final class Box {
+                        /** @param list<T> $items */
+                        public function __construct(private array $items) {}
+
+                        /** @return self<T> */
+                        public function same(): self {
+                            return $this;
+                        }
+
+                        /** @return list<T> */
+                        public function items(): array {
+                            return $this->items;
+                        }
+                    }
+
+                    /**
+                     * @template T
+                     * @param iterable<T> $value
+                     * @return Box<T>
+                     */
+                    function wrap(iterable $value): Box {
+                        return new Box([]);
+                    }
+
+                    $n = wrap(new Node())->same();',
+                'assertions' => [
+                    '$n===' => 'Box<Node>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
             'templateTagNamesParentInAnotherCase' => [
                 'code' => '<?php
                     /** @template T */
@@ -6516,7 +6655,17 @@ final class ClassTemplateExtendsTest extends TestCase
 
                     /** @implements J<int> */
                     final class C implements I {}',
-                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:21 - @template-implements must include the name of an implemented class, got J',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:21 - @template-implements must include the name of an implemented interface, got J',
+            ],
+            'implementsTagNamingAnotherInterfaceWithoutTypeArguments' => [
+                'code' => '<?php
+                    interface I {}
+
+                    interface J {}
+
+                    /** @implements J */
+                    final class C implements I {}',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:21 - @template-implements must include the name of an implemented interface, got J',
             ],
             'useTagNamingAnotherTrait' => [
                 'code' => '<?php
@@ -6530,7 +6679,31 @@ final class ClassTemplateExtendsTest extends TestCase
                         /** @use T2<int> */
                         use T1;
                     }',
-                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:25 - @template-use must include the name of an used class, got T2',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:25 - @template-use must include the name of a used trait, got T2',
+            ],
+            'useTagNamingAnotherTraitWithoutTypeArguments' => [
+                'code' => '<?php
+                    /** @template T */
+                    trait T1 {}
+
+                    trait T2 {}
+
+                    final class C {
+                        /** @use T2 */
+                        use T1;
+                    }',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:25 - @template-use must include the name of a used trait, got T2',
+            ],
+            'extendsTagNamingAnotherClassWithoutTypeArguments' => [
+                'code' => '<?php
+                    /** @template T */
+                    class P {}
+
+                    final class Q {}
+
+                    /** @extends Q */
+                    final class C extends P {}',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:21 - @template-extends must include the name of an extended class, got Q',
             ],
             'templatedMethodOfAMiddleParentDoesNotImplementTheInterfaceOfTheChildWithAnotherType' => [
                 'code' => '<?php
@@ -7596,7 +7769,7 @@ final class ClassTemplateExtendsTest extends TestCase
                     function baz($t) {
                         return new BarOfFoo("hello");
                     }',
-                'error_message' => 'InvalidReturnStatement',
+                'error_message' => 'IncompatibleTypeParameters',
             ],
             'noCrashForTooManyTemplateParams' => [
                 'code' => '<?php

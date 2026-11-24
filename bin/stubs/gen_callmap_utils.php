@@ -2,85 +2,145 @@
 
 declare(strict_types=1);
 
+namespace Psalm\Internal\Stubs;
+
+use AssertionError;
+use PhpParser\Node\Stmt;
 use PhpParser\Node\Stmt\Class_;
 use PhpParser\Node\Stmt\Namespace_;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNull;
+use Throwable;
 
-function internalNormalizeCallMap(array|string $callMap, string|int $key = 0): array|string
+use function array_intersect_key;
+use function array_key_first;
+use function array_slice;
+use function array_values;
+use function count;
+use function explode;
+use function file_put_contents;
+use function is_array;
+use function is_int;
+use function json_encode;
+use function ksort;
+use function str_contains;
+use function strncmp;
+use function strtolower;
+use function substr;
+use function uksort;
+use function var_export;
+
+/**
+ * @param array<int|string, string> $entry
+ * @return array<int|string, string>
+ */
+function normalizeCallMapEntry(array $entry): array
 {
-    if (is_string($callMap)) {
-        if ($key === -2) {
-            return $callMap;
+    foreach ($entry as $key => $type) {
+        // -2 says whether the reflected return type is tentative or absent: it isn't a type
+        if ($key !== -2) {
+            $entry[$key] = Type::parseString($type === '' ? 'mixed' : $type)->getId(true);
         }
-        return Type::parseString($callMap === '' ? 'mixed' : $callMap)->getId(true);
     }
 
-    $new = [];
-
-    $value = null;
-    foreach ($callMap as $key => $value) {
-        $new[is_string($key) && is_array($value) ? strtolower($key) : $key] = internalNormalizeCallMap($value, $key);
-    }
-    if (is_array($value) && $key !== 'old' && $key !== 'new') {
-        ksort($new);
-    }
-
-    return $new;
-}
-
-function normalizeCallMap(array $callMap): array
-{
-    return internalNormalizeCallMap($callMap);
+    return $entry;
 }
 
 /**
- * @return array<string, array{byRef: bool, refMode: 'rw'|'w'|'r', variadic: bool, optional: bool, type: string}>
+ * @param array<string, array<int|string, string>> $callMap
+ * @return array<string, array<int|string, string>>
+ */
+function normalizeCallMap(array $callMap): array
+{
+    $normalized = [];
+    foreach ($callMap as $function => $entry) {
+        $normalized[strtolower($function)] = normalizeCallMapEntry($entry);
+    }
+    ksort($normalized);
+
+    return $normalized;
+}
+
+/**
+ * @param array{
+ *     added: array<string, array<int|string, string>>,
+ *     changed: array<string, array{old: array<int|string, string>, new: array<int|string, string>}>,
+ *     removed: array<string, array<int|string, string>>
+ * } $delta
+ * @return array{
+ *     added: array<string, array<int|string, string>>,
+ *     changed: array<string, array{old: array<int|string, string>, new: array<int|string, string>}>,
+ *     removed: array<string, array<int|string, string>>
+ * }
+ */
+function normalizeCallMapDelta(array $delta): array
+{
+    $changed = [];
+    foreach ($delta['changed'] as $function => $change) {
+        $changed[strtolower($function)] = [
+            'old' => normalizeCallMapEntry($change['old']),
+            'new' => normalizeCallMapEntry($change['new']),
+        ];
+    }
+    ksort($changed);
+
+    return [
+        'added' => normalizeCallMap($delta['added']),
+        'changed' => $changed,
+        'removed' => normalizeCallMap($delta['removed']),
+    ];
+}
+
+/**
+ * @psalm-pure
+ * @param array<int|string, string> $parameters
+ * @return array<string, array{
+ *     byRef: bool,
+ *     refMode?: 'rw'|'w'|'r',
+ *     variadic: bool,
+ *     optional: bool,
+ *     type: string,
+ *     name: string
+ * }>
  */
 function normalizeParameters(string $func, array $parameters): array
 {
-
-    /**
-     * Parse the parameter names from the map.
-     *
-     * @var array<string, array{byRef: bool, refMode: 'rw'|'w'|'r', variadic: bool, optional: bool, type: string}>
-     */
     $normalizedEntries = [];
-    
-    foreach ($parameters as $key => $entry) {
+
+    foreach ($parameters as $key => $type) {
         if (is_int($key)) {
             continue;
         }
         $normalizedKey = $key;
-        /**
-         * @var array{byRef: bool, refMode: 'rw'|'w'|'r', variadic: bool, optional: bool, type: string} $normalizedEntry
-         */
-        $normalizedEntry = [
-            'variadic' => false,
-            'byRef' => false,
-            'optional' => false,
-            'type' => $entry,
-        ];
+        $variadic = false;
+        $byRef = false;
 
         do {
             if (strncmp($normalizedKey, '...', 3) === 0) {
-                $normalizedEntry['variadic'] = true;
+                $variadic = true;
                 $normalizedKey = substr($normalizedKey, 3);
                 continue;
             }
 
             if (strncmp($normalizedKey, '&', 1) === 0) {
-                $normalizedEntry['byRef'] = true;
+                $byRef = true;
                 $normalizedKey = substr($normalizedKey, 1);
                 continue;
             }
             break;
         } while (true);
 
+        $normalizedEntry = [
+            'variadic' => $variadic,
+            'byRef' => $byRef,
+            'optional' => false,
+            'type' => $type,
+        ];
+
         // Read the reference mode
-        if ($normalizedEntry['byRef']) {
+        if ($byRef) {
             $parts = explode(' ', $normalizedKey, 2);
             if (count($parts) === 2) {
                 if (!($parts[0] === 'rw' || $parts[0] === 'w' || $parts[0] === 'r')) {
@@ -93,54 +153,61 @@ function normalizeParameters(string $func, array $parameters): array
                 $normalizedEntry['refMode'] = 'rw';
             }
         }
-    
+
         // Strip prefixes.
         if (substr($normalizedKey, -1, 1) === "=") {
             $normalizedEntry['optional'] = true;
             $normalizedKey = substr($normalizedKey, 0, -1);
         }
-    
+
         $normalizedEntry['name'] = $normalizedKey;
         $normalizedEntries[$normalizedKey] = $normalizedEntry;
     }
-    
+
     return $normalizedEntries;
 }
-    
+
 /**
- * @param array<string|int, string> $baseParameters
- * @param array<string|int, string> $customParameters
- * @return array<string|int, string>
+ * @param array<int|string, string> $baseParameters
+ * @param array<int|string, string> $customParameters
+ * @return array<int|string, string>
  */
 function assertEntryParameters(string $func, array $baseParameters, array $customParameters): array
 {
     if ($func === 'max' || $func === 'min') {
         return $customParameters;
     }
-    $denormalized = [assertTypeValidity($baseParameters[0], $customParameters[0], "Return $func")];
+    if (!isset($baseParameters[0], $customParameters[0])) {
+        throw new AssertionError("$func has no return type");
+    }
+    $denormalized = [assertTypeValidity($baseParameters[0], $customParameters[0])];
 
-    $baseParameters = normalizeParameters($func, $baseParameters);
-    $customParameters = normalizeParameters($func, $customParameters);
+    $base = normalizeParameters($func, $baseParameters);
+    $custom = normalizeParameters($func, $customParameters);
 
-    $customParametersByVal = array_values($customParameters);
+    $customByPosition = array_values($custom);
 
     $final = [];
     $idx = 0;
-    foreach ($baseParameters as $name => $parameter) {
-        if ($parameter['variadic'] && count($customParameters) > $idx + 1) {
+    foreach ($base as $name => $parameter) {
+        if ($parameter['variadic'] && count($custom) > $idx + 1) {
             // C variadics can require a first argument that reflection does not distinguish from the rest.
-            foreach (array_slice($customParameters, $idx) as $customName => $customParameter) {
+            foreach (array_slice($custom, $idx) as $customName => $customParameter) {
                 $variadicBase = $parameter;
                 $variadicBase['variadic'] = $customParameter['variadic'];
                 $variadicBase['optional'] = $customParameter['optional'];
-                $final[$customName] = assertParameter($func, $customName, $customParameter, $variadicBase);
+                $final[$customName] = assertParameter($func, $customParameter, $variadicBase);
             }
             break;
         }
-        if (isset($customParameters[$name])) {
-            $final[$name] = assertParameter($func, $name, $customParameters[$name], $parameter);
-        } elseif (isset($customParametersByVal[$idx])) {
-            $final[$name] = assertParameter($func, $name, $customParametersByVal[$idx], $parameter);
+        $positional = $customByPosition[$idx] ?? null;
+        // a name reflection lacks renames the parameter at this position, so a later one may share this name
+        if ($positional !== null && !isset($base[$positional['name']])) {
+            $final[$name] = assertParameter($func, $positional, $parameter);
+        } elseif (isset($custom[$name])) {
+            $final[$name] = assertParameter($func, $custom[$name], $parameter);
+        } elseif ($positional !== null) {
+            $final[$name] = assertParameter($func, $positional, $parameter);
         } else {
             $final[$name] = $parameter;
         }
@@ -148,10 +215,7 @@ function assertEntryParameters(string $func, array $baseParameters, array $custo
     }
 
     foreach ($final as $key => $param) {
-        if ($key === 0) {
-            continue;
-        }
-        if (($param['refMode'] ?? 'rw') !== 'rw') {
+        if (isset($param['refMode']) && $param['refMode'] !== 'rw') {
             $key = "{$param['refMode']} $key";
         }
         if ($param['variadic']) {
@@ -168,43 +232,30 @@ function assertEntryParameters(string $func, array $baseParameters, array $custo
 
     return $denormalized;
 }
-    
+
 /**
- * @param array{
- *      byRef: bool,
- *      name?: string,
- *      refMode: 'rw'|'w'|'r',
- *      variadic: bool,
- *      optional: bool,
- *      type: string
- * } $custom
- * @param array{
- *      byRef: bool,
- *      name?: string,
- *      refMode: 'rw'|'w'|'r',
- *      variadic: bool,
- *      optional: bool,
- *      type: string
- * } $base
+ * @param array{byRef: bool, refMode?: 'rw'|'w'|'r', variadic: bool, optional: bool, type: string, name: string} $custom
+ * @param array{byRef: bool, refMode?: 'rw'|'w'|'r', variadic: bool, optional: bool, type: string, name: string} $base
+ * @return array{byRef: bool, refMode?: 'rw'|'w'|'r', variadic: bool, optional: bool, type: string, name: string}
  */
-function assertParameter(string $func, string $paramName, array $custom, array $base): array
+function assertParameter(string $func, array $custom, array $base): array
 {
     if ($func !== 'version_compare') {
         $custom['optional'] = $base['optional'];
     }
     $custom['variadic'] = $base['variadic'];
     $custom['byRef'] = $base['byRef'];
-    
-    $custom['type'] = assertTypeValidity($base['type'], $custom['type'], "Param $func '{$paramName}'");
+
+    $custom['type'] = assertTypeValidity($base['type'], $custom['type']);
 
     return $custom;
 }
 
-function assertTypeValidity(string $base, string $custom, string $msgPrefix): string
+function assertTypeValidity(string $base, string $custom): string
 {
     $expectedType = Type::parseString($base);
     $callMapType = Type::parseString($custom === '' ? $base : $custom);
-    
+
     $codebase = ProjectAnalyzer::getInstance()->getCodebase();
     try {
         if (!UnionTypeComparator::isContainedBy(
@@ -222,7 +273,7 @@ function assertTypeValidity(string $base, string $custom, string $msgPrefix): st
         }
     } catch (Throwable) {
     }
-    
+
     if ($expectedType->hasMixed()) {
         return $custom;
     }
@@ -237,6 +288,9 @@ function assertTypeValidity(string $base, string $custom, string $msgPrefix): st
     return $callMapType->getId(true);
 }
 
+/**
+ * @param array<array-key, array<array-key, mixed>> $callMap
+ */
 function writeCallMap(string $file, array $callMap): void
 {
     foreach ($callMap as &$entry) {
@@ -261,13 +315,15 @@ function writeCallMapIntroductions(string $file, array $callMaps): void
     ksort($callMaps);
     $oldest = array_key_first($callMaps);
     $introductions = [];
-    foreach ($callMaps as $version => $callMap) {
-        if ($version === $oldest) {
-            continue;
-        }
-        foreach ($callMap as $key => $_) {
-            if (!isset($callMaps[$oldest][$key])) {
-                $introductions[$key] ??= $version;
+    if ($oldest !== null) {
+        foreach ($callMaps as $version => $callMap) {
+            if ($version === $oldest) {
+                continue;
+            }
+            foreach ($callMap as $key => $_) {
+                if (!isset($callMaps[$oldest][$key])) {
+                    $introductions[$key] ??= $version;
+                }
             }
         }
     }
@@ -279,6 +335,7 @@ return '.var_export($introductions, true).';');
 }
 
 /**
+ * @psalm-pure
  * @template K as array-key
  * @template V
  * @param array<K, V> $a
@@ -298,11 +355,16 @@ function get_changed_functions(array $a, array $b): array
     return $changed_functions;
 }
 
+/**
+ * @psalm-capabilities read-props
+ * @param array<Stmt> $statements
+ * @return array<lowercase-string, true>
+ */
 function extractClassesFromStatements(array $statements): array
 {
     $classes = [];
     foreach ($statements as $statement) {
-        if ($statement instanceof Class_) {
+        if ($statement instanceof Class_ && $statement->namespacedName !== null) {
             $classes[strtolower($statement->namespacedName->toString())] = true;
         }
         if ($statement instanceof Namespace_) {
@@ -313,9 +375,17 @@ function extractClassesFromStatements(array $statements): array
     return $classes;
 }
 
+/**
+ * @psalm-pure
+ * @param array<array-key, array<array-key, string>|string> $array
+ */
 function serializeArray(array $array, string $prefix): string
 {
-    uksort($array, fn(string $first, string $second): int => strtolower($first) <=> strtolower($second));
+    uksort(
+        $array,
+        static fn(int|string $first, int|string $second): int
+            => strtolower((string) $first) <=> strtolower((string) $second),
+    );
     $result = "[\n";
     $localPrefix = $prefix . '    ';
     foreach ($array as $key => $value) {

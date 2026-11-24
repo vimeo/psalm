@@ -371,6 +371,159 @@ final class OverrideTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.6',
             ],
+            'propertyWithTheOverrideAttributeNeedsNoMissingOverrideAttribute' => [
+                'code' => '<?php
+                    class P {
+                        public string $label = "p";
+                    }
+
+                    class C extends P {
+                        #[\\Override]
+                        public string $label = "c";
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'promotedPropertyWithTheOverrideAttributeNeedsNoMissingOverrideAttribute' => [
+                'code' => '<?php
+                    class P {
+                        public function __construct(public string $label = "p") {}
+                    }
+
+                    class C extends P {
+                        public function __construct(#[\\Override] public string $label = "c") {
+                            parent::__construct($label);
+                        }
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'propertyOverridingAPrivatePropertyOrNothingNeedsNoOverrideAttribute' => [
+                'code' => '<?php
+                    class P {
+                        private string $secret = "p";
+                    }
+
+                    class C extends P {
+                        private string $secret = "c";
+                        public int $own = 1;
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'propertyOfATraitNeedsNoOverrideAttribute' => [
+                'code' => '<?php
+                    class P {
+                        public string $label = "p";
+                    }
+
+                    trait T {
+                        public string $label = "t";
+                    }
+
+                    class C extends P {
+                        use T;
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'propertyOverridingAPropertyNeedsNoOverrideAttributeBeforePhp85' => [
+                'code' => '<?php
+                    class P {
+                        public string $label = "p";
+                    }
+
+                    class C extends P {
+                        public string $label = "c";
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'constantWithTheOverrideAttributeNeedsNoMissingOverrideAttribute' => [
+                'code' => '<?php
+                    class P {
+                        public const int K = 1;
+                    }
+
+                    class C extends P {
+                        #[\\Override]
+                        public const int K = 1;
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.6',
+            ],
+            'constantOverridingAPrivateConstantOrNothingNeedsNoOverrideAttribute' => [
+                'code' => '<?php
+                    class P {
+                        private const int HIDDEN = 1;
+                    }
+
+                    class C extends P {
+                        private const int HIDDEN = 1;
+                        public const int OWN = 3;
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.6',
+            ],
+            'constantOfATraitNeedsNoOverrideAttribute' => [
+                'code' => '<?php
+                    class P {
+                        public const int K = 1;
+                    }
+
+                    trait T {
+                        public const int K = 1;
+                    }
+
+                    class C extends P {
+                        use T;
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.6',
+            ],
+            'inheritedConstantNeedsNoOverrideAttribute' => [
+                'code' => '<?php
+                    class P {
+                        public const int K = 1;
+                    }
+
+                    class C extends P {}
+                    class D extends C {}
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.6',
+            ],
+            'constantOverridingAConstantNeedsNoOverrideAttributeBeforePhp86' => [
+                'code' => '<?php
+                    class P {
+                        public const int K = 1;
+                    }
+
+                    class C extends P {
+                        public const int K = 1;
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
         ];
     }
 
@@ -708,6 +861,119 @@ final class OverrideTest extends TestCase
                     }
                 ',
                 'error_message' => 'InvalidAttribute - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:27 - Attribute Override cannot be used on a class constant',
+                'error_levels' => [],
+                'php_version' => '8.5',
+            ],
+            'constantOverridingAParentConstantNeedsTheOverrideAttribute' => [
+                'code' => '<?php
+                    class P {
+                        public const int K = 1;
+                    }
+
+                    class C extends P {
+                        public const int K = 1;
+                    }
+                ',
+                'error_message' => 'MissingOverrideAttribute - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:42 - Class constant C::K should have the "Override" attribute',
+                'error_levels' => [],
+                'php_version' => '8.6',
+            ],
+            'constantImplementingAnInterfaceConstantNeedsTheOverrideAttribute' => [
+                'code' => '<?php
+                    interface HasSides {
+                        public const int SIDES = 0;
+                    }
+
+                    enum Kind: int implements HasSides {
+                        case A = 1;
+                        public const int SIDES = 0;
+                    }
+                ',
+                'error_message' => 'MissingOverrideAttribute - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:42 - Class constant Kind::SIDES should have the "Override" attribute',
+                'error_levels' => [],
+                'php_version' => '8.6',
+            ],
+            'staticPropertyOverridingAParentPropertyNeedsTheOverrideAttribute' => [
+                'code' => '<?php
+                    class P {
+                        public static int $count = 0;
+                    }
+
+                    class C extends P {
+                        public static int $count = 1;
+                    }
+                ',
+                'error_message' => 'MissingOverrideAttribute - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:43 - Property C::$count should have the "Override" attribute',
+                'error_levels' => [],
+                'php_version' => '8.5',
+            ],
+            'enumCaseImplementingAnInterfaceConstantNeedsTheOverrideAttribute' => [
+                'code' => '<?php
+                    interface HasA {
+                        public const int A = 1;
+                    }
+
+                    enum E: int implements HasA {
+                        case A = 1;
+                    }
+                ',
+                'error_message' => 'MissingOverrideAttribute - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:25 - Enum case E::A should have the "Override" attribute',
+                'error_levels' => [],
+                'php_version' => '8.6',
+            ],
+            'propertyOverridingAParentPropertyNeedsTheOverrideAttribute' => [
+                'code' => '<?php
+                    class P {
+                        public string $label = "p";
+                    }
+
+                    class C extends P {
+                        public string $label = "c";
+                    }
+                ',
+                'error_message' => 'MissingOverrideAttribute - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:39 - Property C::$label should have the "Override" attribute',
+                'error_levels' => [],
+                'php_version' => '8.5',
+            ],
+            'protectedPropertyOverridingAParentPropertyNeedsTheOverrideAttribute' => [
+                'code' => '<?php
+                    class P {
+                        protected int $size = 1;
+                    }
+
+                    class C extends P {
+                        protected int $size = 2;
+                    }
+                ',
+                'error_message' => 'MissingOverrideAttribute - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:39 - Property C::$size should have the "Override" attribute',
+                'error_levels' => [],
+                'php_version' => '8.5',
+            ],
+            'promotedPropertyOverridingAParentPropertyNeedsTheOverrideAttribute' => [
+                'code' => '<?php
+                    class P {
+                        public string $label = "p";
+                    }
+
+                    class C extends P {
+                        public function __construct(public string $label = "c") {}
+                    }
+                ',
+                'error_message' => 'MissingOverrideAttribute - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:67 - Property C::$label should have the "Override" attribute',
+                'error_levels' => [],
+                'php_version' => '8.5',
+            ],
+            'propertyImplementingAnInterfacePropertyNeedsTheOverrideAttribute' => [
+                'code' => '<?php
+                    interface HasName {
+                        public string $name { get; }
+                    }
+
+                    class Named implements HasName {
+                        public string $name = "n";
+                    }
+                ',
+                'error_message' => 'MissingOverrideAttribute - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:39 - Property Named::$name should have the "Override" attribute',
                 'error_levels' => [],
                 'php_version' => '8.5',
             ],

@@ -13,7 +13,12 @@ Domain skills (load them before touching the area):
 - `psalm-repro`: scratch-project repros, comparing against master/old releases, timing and memory
 - `merge-6x-into-master`: the 6.x → master merge procedure
 - `pr-description`: the PR description format, and reformatting existing descriptions
+- `bugbot-review`: requesting Cursor Bugbot reviews and handling their findings
 - `plugin-api-bc`: a failing BC check, the roave XML, and the psalm-plugin-api PR
+
+`skills/psalm` is the skill Psalm ships to its users. A PR that changes a CLI option, an issue
+type or its docs page, or what a `psalm.xml` attribute does updates that skill too.
+`tests/AgentSkillTest.php` only checks that the names it mentions still exist.
 
 ## Fixing bugs and writing features
 
@@ -52,7 +57,8 @@ These come first, before every other rule here:
   `psalm-repro`), single-file self-analysis, and one full self-analysis.
 - When briefing a subagent, spell all of this out ("single test cases only, no test files
   or suites, no sweeps, `timeout 300` on self-analysis"); a vague "don't run phpunit"
-  was not enough.
+  was not enough. Tell a subagent that opens or updates a PR to run the Bugbot loop too
+  (skill `bugbot-review`).
 
 ## Pull requests
 
@@ -61,6 +67,9 @@ These come first, before every other rule here:
   `release:docs`, …) or the `label` check fails.
 - Then poll `gh pr checks <n>`. For `gh run list`, `--commit <sha>` is reliable;
   `--branch` sometimes returns stale runs.
+- **Bugbot:** after every push, comment `bugbot review` on the PR, wait for its findings,
+  fix or answer each one, and request it again until it finds nothing new on the head
+  commit (skill `bugbot-review`). A PR isn't done, or ready to merge, before that.
 - Prefer a PR even when asked to fix something on master. A direct push to master was
   once reverted and redone as a PR.
 - **Description:** follow skill `pr-description` (one-line bug + Before/After code blocks
@@ -75,6 +84,8 @@ These come first, before every other rule here:
 
 ## Merging and releasing (maintainers with merge rights)
 
+- Before merging a vimeo/psalm PR, run the Bugbot loop on its head commit (skill
+  `bugbot-review`) in addition to your own review, also for PRs by other people.
 - In any repo of github.com/psalm (plugins, codeception-psalm-module, psalm-plugin-api,
   …), review the diff yourself, wait for green CI, merge, and **tag a release** of every
   plugin you changed (fixture/CI/dependency-only changes too), following each repo's
