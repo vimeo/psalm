@@ -18,26 +18,29 @@ autoloader (`composer dump-autoload`) or add the directory to `<extraFiles>`.
 
 ## Extensions
 
-Psalm loads the stubs of a PHP extension (`pdo`, `mysqli`, `redis`, `mongodb`, `imagick`, …) only when
-`composer.json` requires it (`"ext-pdo": "*"`) or `psalm.xml` enables it:
+Code using a function or class of an extension `composer.json` doesn't declare is
+`MissingExtensionRequirement`. Add the extension to `require` (`"ext-mbstring": "*"`), or to `suggest` when the
+code checks `extension_loaded()` first.
+
+Psalm loads the precise stubs of an extension (`pdo`, `redis`, `mongodb`, `imagick`, …) only when
+`composer.json` requires it or `psalm.xml` enables it; without them its methods may return `mixed`:
 
 ```xml
 <enableExtensions>
-    <extension name="pdo"/>
+    <extension name="redis"/>
 </enableExtensions>
 ```
 
-Without it, the extension's methods return `mixed` and their taint sinks are missing (no `TaintedSql` for
-`PDO::query()`). Adding `ext-*` to `composer.json` is the better fix: it is true for the project anyway.
+`ext-*` in `composer.json` is the better fix: it is true for the project anyway.
 
 ## Stubs and plugins
 
 - `<stubs><file name="stubs/Legacy.phpstub"/></stubs>`: declarations Psalm should believe over the real code,
   e.g. a library without types. Stubs don't override classes inside `<projectFiles>`.
-- Plugins add framework knowledge. Install with Composer, enable with
-  `vendor/bin/psalm-plugin enable <package>`:
-  `psalm/plugin-phpunit`, `psalm/plugin-symfony`, `psalm/plugin-laravel`, `weirdan/doctrine-psalm-plugin`,
-  `psalm/plugin-mockery`. `vendor/bin/psalm-plugin show` lists what is installed.
+- Plugins add framework knowledge. Psalm ships the plugins of PHPUnit, Mockery, Symfony, Laravel, Doctrine
+  and webmozart/assert and enables each when the project depends on its library (`loadLibraryPlugins`);
+  `--debug` prints `Loaded plugin …` for each. Others: install with Composer, enable with
+  `vendor/bin/psalm-plugin enable <package>`.
 
 ## Notable attributes of `<psalm>`
 
