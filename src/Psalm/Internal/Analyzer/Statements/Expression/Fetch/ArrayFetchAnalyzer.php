@@ -1211,22 +1211,29 @@ final class ArrayFetchAnalyzer
             }
         }
 
+        // an expression that is read and written (`$a[$k]++`, a by-reference argument) is analyzed twice: its offset
+        // is reported by the first analysis only
+        $offset_reported = $statements_analyzer->node_data->isOffsetChecked($stmt);
+
         if ($offset_type->hasMixed()) {
             $statements_analyzer->countMixed($context, true);
 
-            IssueBuffer::maybeAdd(
-                new MixedArrayOffset(
-                    'Cannot access value on variable ' .
-                        self::describeArrayVar($extended_var_id, $stmt) . ' using mixed offset',
-                    new CodeLocation($statements_analyzer->getSource(), $stmt),
-                ),
-                $statements_analyzer->getSuppressedIssues(),
-            );
+            if (!$offset_reported) {
+                $statements_analyzer->node_data->markOffsetChecked($stmt);
+
+                IssueBuffer::maybeAdd(
+                    new MixedArrayOffset(
+                        'Cannot access value on variable ' .
+                            self::describeArrayVar($extended_var_id, $stmt) . ' using mixed offset',
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
+            }
         } else {
             $statements_analyzer->countMixed($context, false);
 
             if ($expected_offset_types) {
-                $statements_analyzer->node_data->markOffsetChecked($stmt);
                 $invalid_offset_type = $expected_offset_types[0];
 
                 $used_offset = 'using a ' . $offset_type->getId() . ' offset';
@@ -1240,7 +1247,9 @@ final class ArrayFetchAnalyzer
                 if ($has_valid_expected_offset && $has_valid_absolute_offset && $context->inside_isset) {
                     // do nothing
                 } elseif ($has_valid_expected_offset && $has_valid_absolute_offset) {
-                    if (!$context->inside_unset) {
+                    if (!$context->inside_unset && !$offset_reported) {
+                        $statements_analyzer->node_data->markOffsetChecked($stmt);
+
                         IssueBuffer::maybeAdd(
                             new PossiblyInvalidArrayOffset(
                                 'Cannot access value on variable ' .
@@ -1261,25 +1270,27 @@ final class ArrayFetchAnalyzer
                         );
                     }
 
-                    IssueBuffer::maybeAdd(
-                        new InvalidArrayOffset(
-                            'Cannot access value on variable ' .
-                                self::describeArrayVar($extended_var_id, $stmt) . ' ' . $used_offset
-                                . ', expecting ' . $invalid_offset_type,
-                            new CodeLocation($statements_analyzer->getSource(), $stmt),
-                        ),
-                        $statements_analyzer->getSuppressedIssues(),
-                    );
+                    if (!$offset_reported) {
+                        $statements_analyzer->node_data->markOffsetChecked($stmt);
+
+                        IssueBuffer::maybeAdd(
+                            new InvalidArrayOffset(
+                                'Cannot access value on variable ' .
+                                    self::describeArrayVar($extended_var_id, $stmt) . ' ' . $used_offset
+                                    . ', expecting ' . $invalid_offset_type,
+                                new CodeLocation($statements_analyzer->getSource(), $stmt),
+                            ),
+                            $statements_analyzer->getSuppressedIssues(),
+                        );
+                    }
                 }
             } elseif (!$context->inside_isset
                 && $array_type->isArray()
                 && !$offset_type->ignore_falsable_issues
                 && isset($offset_type->getAtomicTypes()['false'])
-                && !$statements_analyzer->node_data->isOffsetChecked($stmt)
+                && !$offset_reported
             ) {
-                // PHP turns a false offset of an array into 0, and `false` alone is already an invalid offset. An
-                // expression that is read and written (`$a[$k]++`, a by-reference argument) is analyzed twice: it
-                // is reported once, and not when the other analysis already reported its offset
+                // PHP turns a false offset of an array into 0, and `false` alone is already an invalid offset
                 $statements_analyzer->node_data->markOffsetChecked($stmt);
 
                 IssueBuffer::maybeAdd(
