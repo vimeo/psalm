@@ -9,6 +9,8 @@ use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
+use const DIRECTORY_SEPARATOR;
+
 final class ValueOfTemplateTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
@@ -21,6 +23,38 @@ final class ValueOfTemplateTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'itemOfATemplateArrayAtItsKeyIsItsValue' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array<string, int>
+                     * @param T $arr
+                     * @param key-of<T> $k
+                     * @return value-of<T>
+                     */
+                    function item(array $arr, $k) {
+                        return $arr[$k];
+                    }
+
+                    /**
+                     * @template T of array{a: int, b: string}
+                     * @param T $arr
+                     * @param key-of<T> $k
+                     * @return value-of<T>
+                     */
+                    function shapeItem(array $arr, $k) {
+                        return $arr[$k];
+                    }
+
+                    /**
+                     * @template T of array<string, int>
+                     * @param key-of<T> $k
+                     * @param value-of<T> $v
+                     * @return array<key-of<T>, value-of<T>>
+                     */
+                    function pair($k, $v): array {
+                        return [$k => $v];
+                    }',
+            ],
             'acceptsArrayValuesFn' => [
                 'code' => '<?php
                     /**
@@ -626,6 +660,38 @@ final class ValueOfTemplateTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'writeUnderTheKeyOfATemplateBoundedByAShapeWidensTheArray' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array{a: int, b: string}
+                     * @param T $t
+                     * @param key-of<T> $k
+                     * @return T
+                     */
+                    function w(array $t, string $k): array {
+                        $t[$k] = 1;
+
+                        return $t;
+                    }',
+                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR
+                    . "somefile.php:11:32 - The inferred type 'non-empty-array<'a'|'b'|(key-of",
+                'error_levels' => [],
+                'php_version' => '8.2',
+            ],
+            'itemOfATemplateArrayAtTheKeyOfAnotherTemplateIsNotItsValue' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array<string, int>
+                     * @template U of array<string, int>
+                     * @param T $arr
+                     * @param key-of<U> $k
+                     * @return value-of<T>
+                     */
+                    function item(array $arr, $k) {
+                        return $arr[$k];
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
             'valueOfTemplateIdenticalToImpossibleLiteral' => [
                 'code' => '<?php
                     /**

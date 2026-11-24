@@ -163,6 +163,17 @@ final class StubTest extends DeferredAnalyzerTestCase
         );
 
         $this->assertSame([], $config->getStubFiles());
+
+        $directory = dirname(__DIR__) . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR
+            . 'fixtures' . DIRECTORY_SEPARATOR . 'stubs_directory' . DIRECTORY_SEPARATOR;
+
+        $this->assertSame(
+            [
+                $directory . 'nested' . DIRECTORY_SEPARATOR . 'two.php',
+                $directory . 'one.phpstub',
+            ],
+            array_values($config->getPreloadedStubFiles()),
+        );
     }
 
     public function testStubDirectoryMustBeADirectory(): void
