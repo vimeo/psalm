@@ -27,6 +27,7 @@ use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\TypeVisitor\TemplateTypeCollector;
+use Psalm\Internal\TypeVisitor\TypeVariableResolver;
 use Psalm\Issue\DocblockTypeContradiction;
 use Psalm\Issue\PsalmInternalError;
 use Psalm\Issue\RedundantCondition;
@@ -1780,7 +1781,7 @@ class Reconciler
 
                         $new_base_type = Type::combineUnionTypes(
                             $new_base_type,
-                            $new_base_type_candidate,
+                            TypeVariableResolver::resolveTopLevel($new_base_type_candidate, $codebase),
                             $codebase,
                         );
 

@@ -317,15 +317,18 @@ final class ArrayFetchAnalyzer
                 $stmt_var_type = $non_null_var_type->freeze();
             }
 
-            $stmt_type = self::getArrayAccessTypeGivenOffset(
-                $statements_analyzer,
-                $stmt,
-                $stmt_var_type,
-                $used_key_type,
-                false,
-                $extended_var_id,
-                $context,
-                null,
+            $stmt_type = TypeVariableResolver::resolveTopLevel(
+                self::getArrayAccessTypeGivenOffset(
+                    $statements_analyzer,
+                    $stmt,
+                    $stmt_var_type,
+                    $used_key_type,
+                    false,
+                    $extended_var_id,
+                    $context,
+                    null,
+                ),
+                $codebase,
             );
 
             $own_type = $stmt_type;

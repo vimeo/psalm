@@ -2931,7 +2931,10 @@ final class AssignmentAnalyzer
                     if ($offset_value !== null
                         && isset($assign_value_atomic_type->properties[$offset_value])
                     ) {
-                        $value_type = $assign_value_atomic_type->properties[$offset_value];
+                        $value_type = TypeVariableResolver::resolveTopLevel(
+                            $assign_value_atomic_type->properties[$offset_value],
+                            $codebase,
+                        );
 
                         if ($value_type->possibly_undefined) {
                             IssueBuffer::maybeAdd(
@@ -3067,7 +3070,7 @@ final class AssignmentAnalyzer
                             $array_id,
                             $assign_value_type,
                             $offset_value,
-                            $item_type,
+                            TypeVariableResolver::resolveTopLevel($item_type, $codebase),
                         );
 
                         $new_assign_type = Type::combineUnionTypes($item_type, $new_assign_type);

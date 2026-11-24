@@ -1696,6 +1696,9 @@ final class ForeachAnalyzer
             }
         }
 
+        $key_type = $key_type ? TypeVariableResolver::resolveTopLevel($key_type, $codebase) : null;
+        $value_type = $value_type ? TypeVariableResolver::resolveTopLevel($value_type, $codebase) : null;
+
         return null;
     }
 
