@@ -370,6 +370,56 @@ final class AssertionReconciler extends Reconciler
     }
 
     /**
+     * The types a part of the bound of a key-of<T> or value-of<T> stands for: the key-of<T> or value-of<T> itself when
+     * the part is the whole bound, otherwise T with its bound narrowed to the part
+     *
+     * @param non-empty-list<Atomic> $narrowed_atomics the atomics of the bound the type is narrowed to
+     * @return non-empty-list<Atomic>
+     */
+    private static function getTemplateKeyOrValueOfAtomics(
+        Codebase $codebase,
+        TTemplateKeyOf|TTemplateValueOf $template_of,
+        Union $bound,
+        array $narrowed_atomics,
+    ): array {
+        $narrowed_bound = new Union($narrowed_atomics);
+
+        if ($narrowed_bound->getId() === $bound->getId()) {
+            return [$template_of];
+        }
+
+        $template = $template_of->as->isSingle() ? $template_of->as->getSingleAtomic() : null;
+        $key_type = TKeyOf::getArrayKeyType($template_of->as);
+        $value_type = TValueOf::getValueType($template_of->as, $codebase);
+
+        if (!$template instanceof TTemplateParam || $key_type === null || $value_type === null) {
+            return $narrowed_atomics;
+        }
+
+        $narrowed_template = new Union([$template->replaceAs(new Union([new TArray(
+            $template_of instanceof TTemplateKeyOf
+                ? [$narrowed_bound, $value_type]
+                : [$key_type, $narrowed_bound],
+        )]))]);
+
+        return [
+            $template_of instanceof TTemplateKeyOf
+                ? new TTemplateKeyOf(
+                    $template_of->param_name,
+                    $template_of->defining_class,
+                    $narrowed_template,
+                    $template_of->from_docblock,
+                )
+                : new TTemplateValueOf(
+                    $template_of->param_name,
+                    $template_of->defining_class,
+                    $narrowed_template,
+                    $template_of->from_docblock,
+                ),
+        ];
+    }
+
+    /**
      * key-of<T> and value-of<T> are reconciled as their bound, then the part of the result within that bound
      * becomes key-of<T> or value-of<T> again, with T narrowed to it
      *
@@ -437,46 +487,16 @@ final class AssertionReconciler extends Reconciler
                 continue;
             }
 
-            $narrowed_bound = new Union($narrowed_atomics);
-
-            if ($narrowed_bound->getId() === $bound->getId()) {
-                $new_type->addType($template_of);
-                continue;
-            }
-
-            $template = $template_of->as->isSingle() ? $template_of->as->getSingleAtomic() : null;
-            $key_type = TKeyOf::getArrayKeyType($template_of->as);
-            $value_type = TValueOf::getValueType($template_of->as, $codebase);
-
-            if (!$template instanceof TTemplateParam || $key_type === null || $value_type === null) {
-                foreach ($narrowed_atomics as $narrowed_atomic) {
-                    $new_type->addType($narrowed_atomic);
-                }
-
-                continue;
-            }
-
-            $narrowed_template = new Union([$template->replaceAs(new Union([new TArray(
-                $template_of instanceof TTemplateKeyOf
-                    ? [$narrowed_bound, $value_type]
-                    : [$key_type, $narrowed_bound],
-            )]))]);
-
-            $new_type->addType(
-                $template_of instanceof TTemplateKeyOf
-                    ? new TTemplateKeyOf(
-                        $template_of->param_name,
-                        $template_of->defining_class,
-                        $narrowed_template,
-                        $template_of->from_docblock,
-                    )
-                    : new TTemplateValueOf(
-                        $template_of->param_name,
-                        $template_of->defining_class,
-                        $narrowed_template,
-                        $template_of->from_docblock,
-                    ),
+            $template_atomics = self::getTemplateKeyOrValueOfAtomics(
+                $codebase,
+                $template_of,
+                $bound,
+                $narrowed_atomics,
             );
+
+            foreach ($template_atomics as $atomic) {
+                $new_type->addType($atomic);
+            }
         }
 
         return $new_type->freeze();
@@ -870,7 +890,13 @@ final class AssertionReconciler extends Reconciler
                 && ($overlap = Type::intersectUnionTypes($existing_var_type, $bound, $codebase)) !== null
                 && !$overlap->isNever()
             ) {
-                $intersection_type = $overlap;
+                // the narrowed variable keeps its link to T
+                $intersection_type = new Union(self::getTemplateKeyOrValueOfAtomics(
+                    $codebase,
+                    $new_type_part,
+                    $bound,
+                    array_values($overlap->getAtomicTypes()),
+                ));
             }
 
             if ($code_location

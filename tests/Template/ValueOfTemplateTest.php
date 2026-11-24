@@ -49,6 +49,34 @@ final class ValueOfTemplateTest extends TestCase
                         return 0;
                     }',
             ],
+            'narrowedByIdentityToAValueOrAKeyOfATemplateKeepsTheLinkToTheTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array
+                     * @param T $a
+                     * @param value-of<T> $v
+                     * @return value-of<T>
+                     */
+                    function sameValue($a, $v, string $s) {
+                        if ($v === $s) {
+                            return $s;
+                        }
+                        throw new RuntimeException();
+                    }
+
+                    /**
+                     * @template T of array
+                     * @param T $a
+                     * @param key-of<T> $k
+                     * @return key-of<T>
+                     */
+                    function sameKey($a, $k, int $i) {
+                        if ($k === $i) {
+                            return $i;
+                        }
+                        throw new RuntimeException();
+                    }',
+            ],
             'itemOfATemplateArrayAtItsKeyIsItsValue' => [
                 'code' => '<?php
                     /**
