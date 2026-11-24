@@ -2536,7 +2536,8 @@ final class AssignmentAnalyzer
         if ($array instanceof TArray) {
             $can_be_empty = !$array instanceof TNonEmptyArray;
 
-            return $array->type_params[1];
+            // an empty array has no item
+            return $array->type_params[1]->isNever() ? null : $array->type_params[1];
         }
 
         $location = new CodeLocation($statements_analyzer->getSource(), $item->value);
@@ -2729,9 +2730,11 @@ final class AssignmentAnalyzer
         $has_other_type = false;
 
         foreach ($array_type->getAtomicTypes() as $atomic_type) {
-            if ($atomic_type instanceof TKeyedArray
-                && !isset($atomic_type->properties[$offset_value])
-                && ($atomic_type->fallback_params === null || ($atomic_type->is_list && is_string($offset_value)))
+            if (($atomic_type instanceof TKeyedArray
+                    && !isset($atomic_type->properties[$offset_value])
+                    && ($atomic_type->fallback_params === null
+                        || ($atomic_type->is_list && is_string($offset_value))))
+                || ($atomic_type instanceof TArray && $atomic_type->isEmptyArray())
             ) {
                 $has_type_without_key = true;
             } elseif (!$atomic_type instanceof TNull && !$atomic_type instanceof TFalse) {

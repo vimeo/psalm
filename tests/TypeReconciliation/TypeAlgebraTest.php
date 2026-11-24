@@ -4845,6 +4845,44 @@ final class TypeAlgebraTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => ['DocblockTypeContradiction'],
             ],
+            'coalescedOffsetOfAnArrayThatCannotBeIsTheDefault' => [
+                'code' => '<?php
+                    /** @param array{t: null} $a */
+                    function f(array $a): void {
+                        if ($a["t"] !== null) {
+                            $q = $a["o"] ?? "d";
+                            /** @psalm-check-type-exact $q = "d" */
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['DocblockTypeContradiction'],
+            ],
+            'coalescedOffsetOfAVariableThatCannotBeIsTheDefault' => [
+                'code' => '<?php
+                    function f(): void {
+                        $a = null;
+
+                        if ($a !== null) {
+                            $q = $a["o"] ?? "d";
+                            /** @psalm-check-type-exact $q = "d" */
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['TypeDoesNotContainType'],
+            ],
+            'emptyOffsetOfAnArrayThatCannotBeIsNotRedundant' => [
+                'code' => '<?php
+                    /** @param array{t: null} $a */
+                    function f(array $a): void {
+                        if ($a["t"] !== null) {
+                            if (empty($a["o"])) {
+                                echo "x";
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['DocblockTypeContradiction'],
+            ],
             'listIsKeptWhenAnOffsetIsWrittenWhereItCannotBe' => [
                 'code' => '<?php
                     /** @param list{null, int} $a */

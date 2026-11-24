@@ -1667,6 +1667,9 @@ class Reconciler
                             }
                         } elseif ($existing_key_type_part instanceof TClassStringMap) {
                             return Type::getMixed();
+                        } elseif ($existing_key_type_part instanceof TNever && !$inside_loop) {
+                            // a value that cannot be has no item either
+                            return Type::getNever();
                         } elseif ($existing_key_type_part instanceof TNever
                             || ($existing_key_type_part instanceof TMixed
                                 && $existing_key_type_part->from_loop_isset)

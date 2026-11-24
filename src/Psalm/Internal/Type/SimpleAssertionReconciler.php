@@ -262,6 +262,14 @@ final class SimpleAssertionReconciler extends Reconciler
             );
         }
 
+        // a value that cannot be has no item either (a loop's first passes may not know its type yet)
+        if (($assertion instanceof HasStringArrayAccess || $assertion instanceof HasIntOrStringArrayAccess)
+            && $existing_var_type->isNever()
+            && !$inside_loop
+        ) {
+            return $existing_var_type;
+        }
+
         if ($assertion instanceof HasStringArrayAccess) {
             return self::reconcileStringArrayAccess(
                 $assertion,

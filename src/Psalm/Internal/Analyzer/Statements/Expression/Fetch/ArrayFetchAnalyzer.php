@@ -346,7 +346,8 @@ final class ArrayFetchAnalyzer
                 }
             }
 
-            if ($context->inside_isset && !$stmt_type->hasMixed()) {
+            // an item of a value that cannot be is not there to be missing either
+            if ($context->inside_isset && !$stmt_type->hasMixed() && !$stmt_var_type->isNever()) {
                 // a key of a sealed shape is there, unlike one of an array of unknown keys
                 $dim_type = $stmt->dim ? $statements_analyzer->node_data->getType($stmt->dim) : null;
                 $key_is_declared = !$stmt_type->possibly_undefined
@@ -1522,7 +1523,7 @@ final class ArrayFetchAnalyzer
     }
 
     /**
-     * @param  TMixed|TTemplateParam|TNever $type
+     * @param  TMixed|TTemplateParam $type
      */
     public static function handleMixedArrayAccess(
         Context $context,
