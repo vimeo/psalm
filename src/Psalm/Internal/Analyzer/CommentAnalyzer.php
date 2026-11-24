@@ -84,6 +84,21 @@ final class CommentAnalyzer
     }
 
     /**
+     * @param list<array{0: string, 1: int, 2?: string}> $tokens
+     * @psalm-pure
+     */
+    private static function isFollowedByIs(array $tokens, int $offset): bool
+    {
+        for ($i = $offset + 1, $count = count($tokens); $i < $count; ++$i) {
+            if (trim($tokens[$i][0]) !== '') {
+                return $tokens[$i][0] === 'is';
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * The tokens with a reference to a param of the function the comment is in (`$f` in `($f is null ? T : int)`)
      * replaced with the template its conditional return type made of the param, as in the `@return` of the function
      *
@@ -127,7 +142,8 @@ final class CommentAnalyzer
 
         foreach ($tokens as $offset => $token) {
             foreach ($param_templates as $param_reference => $template_name) {
-                if ($token[0] === $param_reference) {
+                // only the subject of a conditional (`$f is ...`), not a `$f` that names a param of a callable
+                if ($token[0] === $param_reference && self::isFollowedByIs($tokens, $offset)) {
                     $tokens[$offset][0] = $template_name;
                 }
             }

@@ -616,6 +616,60 @@ final class ConditionalReturnTypeTest extends TestCase
                     '$bool2' => 'bool',
                 ],
             ],
+            'inlineVarConditionalWithAClassTemplateInABranchIsTheReturnType' => [
+                'code' => '<?php
+                    /** @template TValue */
+                    final class P {
+                        /**
+                         * @template TA
+                         * @param (callable(): TA)|null $a
+                         * @return ($a is null ? TValue : TA)
+                         */
+                        public function top(?callable $a = null): mixed {
+                            /** @var ($a is null ? TValue : TA) $r */
+                            $r = $this->make();
+
+                            return $r;
+                        }
+
+                        /**
+                         * @template TA
+                         * @param (callable(): TA)|null $a
+                         * @return array<string, ($a is null ? TValue : TA)>
+                         */
+                        public function nested(?callable $a = null): array {
+                            /** @var array<string, ($a is null ? TValue : TA)> $r */
+                            $r = $this->makeArray();
+
+                            return $r;
+                        }
+
+                        private function make(): mixed { throw new Exception(); }
+
+                        /** @return array<string, mixed> */
+                        private function makeArray(): array { throw new Exception(); }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment'],
+                'php_version' => '8.0',
+            ],
+            'inlineVarCallableTypeNamingAParamLikeTheFunctionsParamIsNotAConditional' => [
+                'code' => '<?php
+                    /**
+                     * @param (callable(): int)|null $f
+                     * @return ($f is null ? string : int)
+                     */
+                    function withCond(?callable $f = null): string|int {
+                        /** @var callable(string $f): void $cb */
+                        $cb = static function (string $f): void {};
+                        $cb("a");
+
+                        return $f === null ? "" : 1;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'conditionalOnAParamInAnInlineVarIsTheConditionalOfTheReturnType' => [
                 'code' => '<?php
                     /**
