@@ -2077,6 +2077,12 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 && ($codebase->classlike_storage_provider->get($storage->defining_fqcln)
                     ->properties[$function_param->name]->inherited_type ?? false);
 
+            // a docblock type inherited from an overridden method keeps the native types the override adds, which
+            // are checked where the override declares them
+            $inherits_docblock_type = $function_param->has_docblock_type
+                && isset($storage->params[$offset])
+                && !$storage->params[$offset]->has_docblock_type;
+
             if ($signature_type && $signature_type_location && $signature_type->hasObjectType()) {
                 $referenced_type = $signature_type;
                 if ($referenced_type->isNullable()) {
@@ -2207,8 +2213,15 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     }
                 }
 
-                if ($function_param->type_location && !$inherited_type) {
-                    if ($param_type->check(
+                $checked_type = $param_type;
+
+                if ($inherits_docblock_type && $signature_type) {
+                    $checked_types = array_diff_key($param_type->getAtomicTypes(), $signature_type->getAtomicTypes());
+                    $checked_type = $checked_types ? new Union($checked_types) : null;
+                }
+
+                if ($function_param->type_location && !$inherited_type && $checked_type) {
+                    if ($checked_type->check(
                         $this,
                         $function_param->type_location,
                         $storage->suppressed_issues,
@@ -2229,6 +2242,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     'by_ref' => $function_param->by_ref,
                     'parent_nodes' => $parent_nodes,
                 ]);
+                $checked_type = $param_type;
             }
 
             $var_type = $param_type;
@@ -2369,7 +2383,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             }
 
             if ($has_template_types && !$inherited_type) {
-                if ($param_type->check(
+                if ($checked_type?->check(
                     $this->source,
                     $function_param->type_location,
                     $this->suppressed_issues,
@@ -2399,7 +2413,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     );
                 }
 
-                if ($param_type->check(
+                if ($checked_type?->check(
                     $this->source,
                     $function_param->type_location,
                     $this->suppressed_issues,
@@ -2411,6 +2425,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             }
 
             if (($inherited_type
+                    || $inherits_docblock_type
                     || ($function_param->type_location !== $function_param->signature_type_location
                         && $function_param->type?->getId() !== $function_param->signature_type?->getId()))
                 && $function_param->signature_type_location
