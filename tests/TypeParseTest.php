@@ -72,12 +72,12 @@ final class TypeParseTest extends TestCase
 
     public function testThisIntersection(): void
     {
-        $this->assertSame('Foo', (string) Type::parseString('$this&Foo'));
+        $this->assertSame('Foo&static', (string) Type::parseString('$this&Foo'));
     }
 
     public function testThisIntersectionInsideGenericParam(): void
     {
-        $this->assertSame('B<Foo>', (string) Type::parseString('B<$this&Foo>'));
+        $this->assertSame('B<Foo&static>', (string) Type::parseString('B<$this&Foo>'));
     }
 
     public function testThisUnionInsideGenericParam(): void
@@ -1229,7 +1229,7 @@ final class TypeParseTest extends TestCase
     public function testConditionalTypeOnTypeDependingOnTemplate(): void
     {
         $this->assertSame(
-            '(value-of<T> is string ? string : int)',
+            '(value-of<T: as array<array-key, mixed>> is string ? string : int)',
             (string) Type::parseString(
                 '(value-of<T> is string ? string : int)',
                 null,
@@ -1241,7 +1241,7 @@ final class TypeParseTest extends TestCase
     public function testNegatedConditionalTypeOnTypeDependingOnTemplate(): void
     {
         $this->assertSame(
-            '(value-of<T> is string ? int : string)',
+            '(value-of<T: as array<array-key, mixed>> is string ? int : string)',
             (string) Type::parseString(
                 '(value-of<T> is not string ? string : int)',
                 null,
@@ -1565,7 +1565,7 @@ final class TypeParseTest extends TestCase
     public function testValueOfTemplate(): void
     {
         $this->assertSame(
-            'value-of<T>',
+            'value-of<T: as array<array-key, mixed>>',
             (string)Type::parseString('value-of<T>', null, ['T' => ['' => Type::getArray()]]),
         );
     }
