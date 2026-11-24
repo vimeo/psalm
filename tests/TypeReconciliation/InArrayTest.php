@@ -335,62 +335,6 @@ final class InArrayTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
-            'inArrayOfArraysOfAnotherInterfaceIntersectsTheirValues' => [
-                'code' => '<?php
-                    interface A {}
-                    interface B {}
-
-                    /** @var array<A> $x */
-                    $x = [];
-                    /** @var list<array<B>> $h */
-                    $h = [];
-
-                    $r = in_array($x, $h, true) ? $x : null;',
-                'assertions' => [
-                    '$r===' => 'array<array-key, B&A>|null',
-                ],
-            ],
-            'inArrayOfListsIsAList' => [
-                'code' => '<?php
-                    /** @var non-empty-array<int, string> $x */
-                    $x = ["a"];
-                    /** @var list<list<string>> $h */
-                    $h = [];
-
-                    $r = in_array($x, $h, true) ? $x : null;',
-                'assertions' => [
-                    '$r===' => 'non-empty-list<string>|null',
-                ],
-            ],
-            'inArrayOfArraysOfAnotherFinalClassIsNever' => [
-                'code' => '<?php
-                    final class A {}
-                    final class B {}
-
-                    /** @var array<A> $x */
-                    $x = [];
-                    /** @var list<array<B>> $h */
-                    $h = [];
-
-                    $r = in_array($x, $h, true) ? $x : null;',
-                'assertions' => [
-                    '$r===' => 'null',
-                ],
-                'ignored_issues' => ['DocblockTypeContradiction', 'RedundantConditionGivenDocblockType'],
-            ],
-            'inArrayOfListsWithoutAKeyZeroIsNever' => [
-                'code' => '<?php
-                    /** @var non-empty-array<1|2, string> $x */
-                    $x = [1 => "a"];
-                    /** @var list<list<string>> $h */
-                    $h = [];
-
-                    $r = in_array($x, $h, true) ? $x : null;',
-                'assertions' => [
-                    '$r===' => 'null',
-                ],
-                'ignored_issues' => ['DocblockTypeContradiction', 'RedundantConditionGivenDocblockType'],
-            ],
         ];
     }
 

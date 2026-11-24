@@ -2953,6 +2953,22 @@ final class ConstantTest extends TestCase
                     }
                 ',
             ],
+            'constantInheritedThroughParentClassAndInterfaceIsNotAmbiguous' => [
+                'code' => <<<'PHP'
+                    <?php
+                    interface NodeInterface {
+                        public const KEY = 'key';
+                    }
+
+                    interface FieldInterface extends NodeInterface {}
+                    interface RootInterface extends NodeInterface {}
+                    interface PaginationInterface extends RootInterface {}
+
+                    abstract class Field implements FieldInterface {}
+
+                    abstract class Pagination extends Field implements PaginationInterface {}
+                    PHP,
+            ],
         ];
     }
 
@@ -3519,6 +3535,23 @@ final class ConstantTest extends TestCase
                     {
                     }
                 ',
+                'error_message' => 'AmbiguousConstantInheritance',
+            ],
+            'constantInheritedThroughParentClassFromAnotherInterfaceIsAmbiguous' => [
+                'code' => <<<'PHP'
+                    <?php
+                    interface FieldInterface {
+                        public const KEY = 'field';
+                    }
+
+                    interface PaginationInterface {
+                        public const KEY = 'pagination';
+                    }
+
+                    abstract class Field implements FieldInterface {}
+
+                    abstract class Pagination extends Field implements PaginationInterface {}
+                    PHP,
                 'error_message' => 'AmbiguousConstantInheritance',
             ],
             'overrideClassConstFromInterface' => [

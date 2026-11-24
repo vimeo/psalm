@@ -38,6 +38,7 @@ use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Internal\TypeVisitor\TypeChecker;
 use Psalm\Issue\CircularReference;
 use Psalm\Issue\DeprecatedClass;
 use Psalm\Issue\DeprecatedInterface;
@@ -94,6 +95,7 @@ use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\MethodStorage;
 use Psalm\Storage\PropertyStorage;
+use Psalm\Storage\TemplateVariance;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TGenericObject;
@@ -1134,14 +1136,20 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 }
 
                 if (!$property_storage->inherited_type) {
-                    /** @psalm-suppress UnusedMethodCall This call actually has the side effect of creating issues */
-                    $fleshed_out_type->check(
+                    (new TypeChecker(
                         $statements_source,
                         $property_type_location,
                         $storage->suppressed_issues + $statements_source->getSuppressedIssues() + $suppressed,
                         [],
                         false,
-                    );
+                        false,
+                        // a property of a parent class is checked there, one of a trait in the class that uses it
+                        $property_class_storage === $storage || $property_class_storage->is_trait
+                            ? self::getPropertyTypePosition($storage, $property_storage)
+                            : null,
+                        null,
+                        true,
+                    ))->check($fleshed_out_type);
                 }
 
                 if ($property_storage->signature_type) {
@@ -2350,6 +2358,29 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
         }
 
         return $method_analyzer;
+    }
+
+    /**
+     * The position of the type of a property of a class with contravariant templates: one that only the class
+     * writes hands its value out (an output position), any other one also takes values (an invariant one). A
+     * private property is in neither, as a constructor's parameters.
+     *
+     * @psalm-mutation-free
+     */
+    private static function getPropertyTypePosition(
+        ClassLikeStorage $class_storage,
+        PropertyStorage $property_storage,
+    ): ?TemplateVariance {
+        if ($class_storage->template_contravariants === null
+            || $property_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE
+        ) {
+            return null;
+        }
+
+        return $property_storage->readonly
+            || $property_storage->set_visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE
+                ? TemplateVariance::Covariant
+                : TemplateVariance::Invariant;
     }
 
     /**
