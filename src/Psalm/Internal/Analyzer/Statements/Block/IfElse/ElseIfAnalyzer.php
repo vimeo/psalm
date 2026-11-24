@@ -27,6 +27,7 @@ use function array_any;
 use function array_combine;
 use function array_diff_key;
 use function array_filter;
+use function array_intersect_key;
 use function array_key_exists;
 use function array_keys;
 use function array_merge;
@@ -186,6 +187,13 @@ final class ElseIfAnalyzer
         $active_elseif_types = [];
 
         try {
+            $reconcilable_elseif_types = Algebra::getTruthsFromFormula(
+                $elseif_context->clauses,
+                spl_object_id($elseif->cond),
+                $cond_referenced_var_ids,
+                $active_elseif_types,
+            );
+
             if (array_any(
                 $entry_clauses,
                 static fn(Clause $clause): bool => (bool) $clause->possibilities,
@@ -204,17 +212,22 @@ final class ElseIfAnalyzer
                 $omit_keys = array_combine($omit_keys, $omit_keys);
                 $omit_keys = array_diff_key($omit_keys, Algebra::getTruthsFromFormula($entry_clauses));
 
+                // the entry clauses only get in the way when they assert something of the variable the condition
+                // doesn't
+                foreach ($reconcilable_elseif_types as $var_id => $anded_types) {
+                    if (count(array_intersect_key($anded_types, $active_elseif_types[$var_id] ?? []))
+                        === count($anded_types)
+                    ) {
+                        unset($omit_keys[$var_id]);
+                    }
+                }
+
                 $cond_referenced_var_ids = array_diff_key(
                     $cond_referenced_var_ids,
                     $omit_keys,
                 );
             }
-            $reconcilable_elseif_types = Algebra::getTruthsFromFormula(
-                $elseif_context->clauses,
-                spl_object_id($elseif->cond),
-                $cond_referenced_var_ids,
-                $active_elseif_types,
-            );
+
             $negated_elseif_types = Algebra::getTruthsFromFormula($get_negated_clauses());
         } catch (ComplicatedExpressionException) {
             $reconcilable_elseif_types = [];

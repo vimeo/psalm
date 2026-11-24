@@ -788,9 +788,7 @@ final class NamedFunctionCallHandler
                             );
                         } elseif (!isset($context->vars_in_scope[$var_id]) && $type->possibly_undefined === true) {
                             $context->possibly_assigned_var_ids[$var_id] = true;
-                        } elseif (isset($context->vars_in_scope[$var_id])
-                            && $type->possibly_undefined === true
-                            && $flag_value === EXTR_OVERWRITE) {
+                        } elseif (isset($context->vars_in_scope[$var_id]) && $type->possibly_undefined === true) {
                             $type = Type::combineUnionTypes(
                                 $context->vars_in_scope[$var_id],
                                 $type,

@@ -1175,7 +1175,7 @@ final class ConditionalTest extends TestCase
                         /** @psalm-check-type-exact $definition = stdClass */
                     }
 
-                    function g(?stdClass $definition): void {
+                    function g(?object $definition): void {
                         if ($isSimple = $isRoot = null === $definition) {
                             echo "root";
                         } elseif ($definition instanceof stdClass) {
