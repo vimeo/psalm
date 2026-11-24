@@ -217,6 +217,16 @@ final class DocblockParser
                 $docblock->combined_tags[$combined_name] = $combined;
             }
         }
+
+        if (isset($docblock->tags['psalm-inheritors'])
+            || isset($docblock->tags['phpstan-sealed'])
+        ) {
+            if (isset($docblock->tags['psalm-inheritors'])) {
+                $docblock->combined_tags['psalm-inheritors'] = $docblock->tags['psalm-inheritors'];
+            } else {
+                $docblock->combined_tags['psalm-inheritors'] = $docblock->tags['phpstan-sealed'];
+            }
+        }
     }
 
     /**

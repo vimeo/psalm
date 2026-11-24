@@ -3096,6 +3096,18 @@ final class ClassTest extends TestCase
                 'error_message' => 'InheritorViolation',
                 'error_levels' => [],
             ],
+            'classCannotExtendIfNotInInheritorsUsingPhpstanSealed' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @phpstan-sealed FooClass|BarClass
+                     */
+                    class BaseClass {}
+                    class BazClass extends BaseClass {} // this is an error
+                    PHP,
+                'error_message' => 'InheritorViolation',
+                'ignored_issues' => [],
+            ],
             'classCannotImplementIfNotInInheritors' => [
                 'code' => <<<'PHP'
                     <?php
