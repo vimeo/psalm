@@ -12,6 +12,7 @@ use Psalm\Internal\Algebra;
 use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Analyzer\AlgebraAnalyzer;
 use Psalm\Internal\Analyzer\ClosureAnalyzer;
+use Psalm\Internal\Analyzer\ExtensionRequirementAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\PurityWildcardInference;
 use Psalm\Internal\Analyzer\Statements\Expression\ArrayAnalyzer;
@@ -26,7 +27,6 @@ use Psalm\Internal\Analyzer\Statements\Expression\IntMaskComparisonAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\Statements\GlobalAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Codebase\CliOutput;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Codebase\PhpDeprecations;
@@ -985,6 +985,17 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         $function_call_info->function_exists
             = $function_call_info->is_stubbed || $function_call_info->in_call_map || $namespaced_function_exists;
 
+        if ($function_call_info->in_call_map || $function_call_info->is_stubbed) {
+            ExtensionRequirementAnalyzer::check(
+                $codebase,
+                $function_call_info->function_id,
+                false,
+                new CodeLocation($statements_analyzer->getSource(), $function_name),
+                $context,
+                $statements_analyzer->getSuppressedIssues(),
+            );
+        }
+
         if ($function_call_info->function_exists
             && !$stmt->isFirstClassCallable()
             && $codebase->store_node_types
@@ -1866,7 +1877,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                     // handled above
                 } elseif (!$var_type_part instanceof TNamedObject
                     || ($invoke_member = CallableTypeComparator::getInvokeMember($codebase, $var_type_part)) === null
-                    || !$codebase->classlikes->classOrInterfaceExists($invoke_member->value, null, $context)
+                    || !$codebase->classlikes->classOrInterfaceOrEnumExists($invoke_member->value, null, $context)
                 ) {
                     $invalid_function_call_types[] = (string)$var_type_part;
                 } else {
@@ -2077,12 +2088,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                     && isset($context->vars_in_scope[$var_id])
                     && $context->vars_in_scope[$var_id]->hasMixed()
                 ) {
-                    if (!$context->collect_initializations
-                        && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
-                        && (!(($parent_source = $statements_analyzer->getSource())
-                                    instanceof FunctionLikeAnalyzer)
-                                || !$parent_source->getSource() instanceof TraitAnalyzer)
-                    ) {
+                    if ($statements_analyzer->shouldCountMixed($context)) {
                         $codebase->analyzer->decrementMixedCount($statements_analyzer->getFilePath());
                     }
 

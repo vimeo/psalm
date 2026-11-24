@@ -220,10 +220,6 @@ final class ProjectBootstrap
             $project_analyzer->debug_lines = true;
         }
 
-        if (array_key_exists('debug-performance', $options)) {
-            $project_analyzer->debug_performance = true;
-        }
-
         if ($find_references_to !== null) {
             $project_analyzer->getCodebase()->collectLocations();
             $project_analyzer->show_issues = false;
