@@ -1366,7 +1366,9 @@ final class FunctionLikeNodeScanner
                 $storage = $this->storage = new MethodStorage();
             }
 
-            $storage->stubbed = $this->codebase->register_stub_files;
+            // a real file can be scanned during stub registration (a stub extending one of its classes)
+            $storage->stubbed = $this->codebase->register_stub_files
+                && $this->codebase->scanner->isStubFile($this->file_path);
             $storage->defining_fqcln = $fq_classlike_name;
 
             $class_name_parts = explode('\\', $fq_classlike_name);
