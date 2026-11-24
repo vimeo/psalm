@@ -90,18 +90,7 @@ final class UnionTypeComparator
 
         $container_has_template = $container_type->hasTemplateOrStatic();
         $container_type_parts = self::getTypeParts($codebase, $container_type);
-        // Compare iterable and symbolic containers directly; symbolic comparisons
-        // must record constraints on the original input.
-        $compare_iterable_directly = false;
-        foreach ($container_type_parts as $container_part) {
-            if ($container_part instanceof Atomic\TIterable
-                || $container_part instanceof TTemplateParam
-                || $container_part instanceof TTypeVariable
-            ) {
-                $compare_iterable_directly = true;
-                break;
-            }
-        }
+        $compare_iterable_directly = self::hasIterableOrSymbolicPart($container_type_parts);
 
         // the container's int and string literals by key and its other parts, split once an input literal needs them
         $container_literals = null;
@@ -605,6 +594,27 @@ final class UnionTypeComparator
         }
 
         return true;
+    }
+
+    /**
+     * Iterable and symbolic containers are compared with an iterable directly; symbolic comparisons must record
+     * constraints on the original input
+     *
+     * @param list<Atomic> $container_parts
+     * @psalm-pure
+     */
+    private static function hasIterableOrSymbolicPart(array $container_parts): bool
+    {
+        foreach ($container_parts as $container_part) {
+            if ($container_part instanceof Atomic\TIterable
+                || $container_part instanceof TTemplateParam
+                || $container_part instanceof TTypeVariable
+            ) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

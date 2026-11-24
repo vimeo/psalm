@@ -3106,7 +3106,7 @@ final class ClassTest extends TestCase
                     class BazClass extends BaseClass {} // this is an error
                     PHP,
                 'error_message' => 'InheritorViolation',
-                'ignored_issues' => [],
+                'error_levels' => [],
             ],
             'classCannotImplementIfNotInInheritors' => [
                 'code' => <<<'PHP'

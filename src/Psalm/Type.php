@@ -1133,6 +1133,36 @@ abstract class Type
         return $intersection_atomics;
     }
 
+    /**
+     * Containment can leave wider generic parameters: the intersection of arrays intersects their keys and values too
+     */
+    private static function intersectArrayParams(
+        TArray $intersection_atomic,
+        TArray $wider_type,
+        Codebase $codebase,
+        bool $allow_interface_equality,
+        bool $allow_float_int_equality,
+    ): ?TArray {
+        $key_type = self::intersectUnionTypes(
+            $intersection_atomic->type_params[0],
+            $wider_type->type_params[0],
+            $codebase,
+            $allow_interface_equality,
+            $allow_float_int_equality,
+        );
+        $value_type = self::intersectUnionTypes(
+            $intersection_atomic->type_params[1],
+            $wider_type->type_params[1],
+            $codebase,
+            $allow_interface_equality,
+            $allow_float_int_equality,
+        );
+        if ($key_type === null || $value_type === null) {
+            return null;
+        }
+        return $intersection_atomic->setTypeParams([$key_type, $value_type]);
+    }
+
     private static function intersectAtomicTypes(
         Atomic $type_1_atomic,
         Atomic $type_2_atomic,
@@ -1278,25 +1308,13 @@ abstract class Type
                     && !self::hasIntersection($type_2_atomic)
                 ) {
                     if ($intersection_atomic instanceof TArray && $wider_type instanceof TArray) {
-                        // Containment can leave wider generic parameters; intersect keys and values too.
-                        $key_type = self::intersectUnionTypes(
-                            $intersection_atomic->type_params[0],
-                            $wider_type->type_params[0],
+                        return self::intersectArrayParams(
+                            $intersection_atomic,
+                            $wider_type,
                             $codebase,
                             $allow_interface_equality,
                             $allow_float_int_equality,
                         );
-                        $value_type = self::intersectUnionTypes(
-                            $intersection_atomic->type_params[1],
-                            $wider_type->type_params[1],
-                            $codebase,
-                            $allow_interface_equality,
-                            $allow_float_int_equality,
-                        );
-                        if ($key_type === null || $value_type === null) {
-                            return null;
-                        }
-                        return $intersection_atomic->setTypeParams([$key_type, $value_type]);
                     }
                     return $intersection_atomic;
                 }

@@ -16,15 +16,24 @@ use Psalm\Type\Union;
  */
 final class ConditionalTemplateVisitor extends TypeVisitor
 {
+    /**
+     * @psalm-mutation-free
+     */
     private function __construct(private readonly TTemplateParam $template)
     {
     }
 
+    /**
+     * @psalm-pure
+     */
     public static function contains(Union $type, TTemplateParam $template): bool
     {
         return !(new self($template))->traverse($type);
     }
 
+    /**
+     * @psalm-capabilities read-props
+     */
     #[Override]
     protected function enterNode(TypeNode $type): ?int
     {
