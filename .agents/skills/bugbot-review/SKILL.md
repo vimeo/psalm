@@ -38,15 +38,19 @@ and its findings:
 
 ```sh
 deadline=$(( $(date +%s) + 1200 ))
-until gh api repos/vimeo/psalm/pulls/<n>/reviews --paginate --jq ".[] | select(.user.login == \"cursor[bot]\"
-    and .commit_id == \"$head\" and .submitted_at > \"$requested\") | .id" | grep -q .; do
-  [ "$(date +%s)" -lt "$deadline" ] || { echo 'no Bugbot review in 20 minutes'; break; }
+review=
+until review=$(gh api repos/vimeo/psalm/pulls/<n>/reviews --paginate --jq ".[] | select(.user.login ==
+    \"cursor[bot]\" and .commit_id == \"$head\" and .submitted_at > \"$requested\") | .id" | tail -n 1) \
+    && [ -n "$review" ] || [ "$(date +%s)" -ge "$deadline" ]; do
   sleep 60
 done
-gh api repos/vimeo/psalm/pulls/<n>/reviews --paginate --jq ".[] | select(.user.login == \"cursor[bot]\"
-    and .commit_id == \"$head\" and .submitted_at > \"$requested\") | .body"
-gh api repos/vimeo/psalm/pulls/<n>/comments --paginate \
-  --jq ".[] | select(.user.login == \"cursor[bot]\" and .original_commit_id == \"$head\") | {id, path, line, body}"
+if [ -z "$review" ]; then
+  echo 'no Bugbot review in 20 minutes'
+else
+  gh api repos/vimeo/psalm/pulls/<n>/reviews/$review --jq .body
+  gh api repos/vimeo/psalm/pulls/<n>/reviews/$review/comments --paginate \
+    --jq '.[] | {id, path, line: .original_line, body}'
+fi
 ```
 
 If the loop times out without a 👀 or a check, comment `bugbot run` and wait again. Bugbot
