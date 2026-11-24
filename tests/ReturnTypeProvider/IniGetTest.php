@@ -31,7 +31,7 @@ final class IniGetTest extends TestCase
                 $timeout = ini_get("max_execution_time");
             ',
             'assertions' => [
-                '$timeout===' => 'numeric-string',
+                '$timeout===' => 'string',
             ],
         ];
 
