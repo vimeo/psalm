@@ -3570,6 +3570,162 @@ final class MethodCallTest extends TestCase
                 'ignored_issues' => ['DeprecatedMethod'],
                 'php_version' => '7.4',
             ],
+            'overrideWithAnExtraVariadicKeepsTheTemplatesOfTheStaticMethodBound' => [
+                'code' => '<?php
+                    /** @template TValue */
+                    interface Enumerable
+                    {
+                        /**
+                         * @template TWrapValue
+                         * @param iterable<array-key, TWrapValue>|TWrapValue $value
+                         * @return static<TWrapValue>
+                         */
+                        public static function wrap($value);
+
+                        /**
+                         * @template TTimesValue
+                         * @param callable(int): TTimesValue $callback
+                         * @return static<TTimesValue>
+                         */
+                        public static function times(int $number, ?callable $callback = null);
+                    }
+
+                    trait EnumeratesValues
+                    {
+                        /**
+                         * @template TWrapValue
+                         * @param iterable<array-key, TWrapValue>|TWrapValue $value
+                         * @return static<TWrapValue>
+                         */
+                        public static function wrap($value, ...$args)
+                        {
+                            return new static();
+                        }
+
+                        /**
+                         * @template TTimesValue
+                         * @param callable(int): TTimesValue $callback
+                         * @return static<TTimesValue>
+                         */
+                        public static function times(int $number, ?callable $callback = null, ...$args)
+                        {
+                            return new static();
+                        }
+                    }
+
+                    /**
+                     * @template TValue
+                     * @implements Enumerable<TValue>
+                     */
+                    final class Collection implements Enumerable
+                    {
+                        use EnumeratesValues;
+
+                        public function __construct() {}
+                    }
+
+                    /** @param array<string, int>|object $x */
+                    function f($x): void {
+                        $c = Collection::wrap($x);
+                        $t = Collection::times(3, static fn(int $i): string => (string) $i);
+                    }
+
+                    /** @var array<string, int>|object $y */
+                    $c = Collection::wrap($y);',
+                'assertions' => [
+                    '$c===' => 'Collection<int>',
+                ],
+                'ignored_issues' => ['UnusedVariable', 'UnusedParam', 'MissingParamType'],
+                'php_version' => '8.0',
+            ],
+            'overrideOfAStubMethodWithATemplateKeepsItsParameterType' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @psalm-immutable */
+                    final class MyEnumReflection extends ReflectionEnum
+                    {
+                        #[\Override]
+                        public function isSubclassOf(ReflectionClass|string $class): bool
+                        {
+                            return false;
+                        }
+                    }
+
+                    /** @param class-string $name */
+                    function f(MyEnumReflection $r, ReflectionEnum $core, string $name): bool
+                    {
+                        $core->isSubclassOf($name);
+
+                        return $r->isSubclassOf($name);
+                    }
+                PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'overrideDocumentingSomeParamsBindsTheTemplatesOfTheOthers' => [
+                'code' => <<<'PHP'
+                    <?php
+                    abstract class Base
+                    {
+                        /**
+                         * @template T
+                         * @param T $value
+                         * @param string $label
+                         * @return T
+                         */
+                        abstract public function keep($value, $label);
+                    }
+
+                    final class Partial extends Base
+                    {
+                        /**
+                         * @param string $label
+                         */
+                        #[\Override]
+                        public function keep($value, $label)
+                        {
+                            return $value;
+                        }
+                    }
+
+                    function f(Partial $p): int
+                    {
+                        return $p->keep(3, "x");
+                    }
+                PHP,
+            ],
+            'overrideOfAMethodWithATemplateWithoutDocblock' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Base
+                    {
+                        /**
+                         * @template J as object
+                         * @param class-string<J> $class
+                         */
+                        public function take(string $class): bool
+                        {
+                            return true;
+                        }
+                    }
+
+                    final class Child extends Base
+                    {
+                        #[\Override]
+                        public function take(string $class): bool
+                        {
+                            return false;
+                        }
+                    }
+
+                    /** @param class-string<stdClass> $name */
+                    function f(Child $c, string $name): bool
+                    {
+                        return $c->take($name);
+                    }
+                PHP,
+            ],
         ];
     }
 
@@ -4975,6 +5131,27 @@ final class MethodCallTest extends TestCase
                     $_a = (new A)->foo(...);
                 PHP,
                 'error_message' => 'UndefinedMethod',
+            ],
+            'overrideOfAStubMethodWithATemplateStillChecksTheArgument' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class MyEnumReflection extends ReflectionEnum
+                    {
+                        #[\Override]
+                        public function isSubclassOf(ReflectionClass|string $class): bool
+                        {
+                            return false;
+                        }
+                    }
+
+                    function f(MyEnumReflection $r): bool
+                    {
+                        return $r->isSubclassOf(new stdClass);
+                    }
+                PHP,
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
         ];
     }
