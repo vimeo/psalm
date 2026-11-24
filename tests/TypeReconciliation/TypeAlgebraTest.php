@@ -5266,6 +5266,48 @@ final class TypeAlgebraTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'contradictionAfterAnIfThatConditionallyDefinesAVariable' => [
+                'code' => '<?php
+                    function a(array $l): bool {
+                        if (is_array($l) && isset($l["a"])) {
+                            $after = $l["a"];
+                        }
+
+                        if (!is_array($l)) {
+                            return false;
+                        }
+
+                        return true;
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+                'error_levels' => ['RedundantCondition', 'MixedAssignment'],
+            ],
+            'contradictionAfterAnIfThatLeavesWhenItsConditionHolds' => [
+                'code' => '<?php
+                    function a(array $l, bool $b): bool {
+                        if (is_array($l) && $b) {
+                            return true;
+                        }
+
+                        if (!is_array($l)) {
+                            return false;
+                        }
+
+                        return true;
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+                'error_levels' => ['RedundantCondition'],
+            ],
+            'contradictionInAnElseIfAfterAnIfOnTheSameVariable' => [
+                'code' => '<?php
+                    function a(array $l, bool $b): void {
+                        if (is_array($l) && $b) {
+                        } elseif (!is_array($l)) {
+                        }
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+                'error_levels' => ['RedundantCondition'],
+            ],
             'aTernaryConditionReassigningAVariableDropsTheEarlierClausesOfIt' => [
                 'code' => '<?php
                     function g(): ?int {

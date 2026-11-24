@@ -95,6 +95,13 @@ final class IfAnalyzer
             $omit_keys = array_combine($omit_keys, $omit_keys);
             $omit_keys = array_diff_key($omit_keys, Algebra::getTruthsFromFormula($outer_context->clauses));
 
+            // the outer clauses only get in the way when they assert something of the variable the condition doesn't
+            foreach ($reconcilable_if_types as $var_id => $anded_types) {
+                if (count(array_intersect_key($anded_types, $active_if_types[$var_id] ?? [])) === count($anded_types)) {
+                    unset($omit_keys[$var_id]);
+                }
+            }
+
             $cond_referenced_var_ids = array_diff_key(
                 $cond_referenced_var_ids,
                 $omit_keys,
