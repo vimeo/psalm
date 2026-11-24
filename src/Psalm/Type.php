@@ -1181,6 +1181,10 @@ abstract class Type
         bool $allow_interface_equality,
         bool $allow_float_int_equality,
     ): TKeyedArray|TArray|null {
+        if (!$list->isGenericList()) {
+            return $list;
+        }
+
         if ($wider_type instanceof TArray) {
             $wider_value_type = $wider_type->type_params[1];
         } elseif ($wider_type instanceof TKeyedArray && $wider_type->isGenericList()) {
@@ -1370,7 +1374,7 @@ abstract class Type
                             $allow_float_int_equality,
                         );
                     }
-                    if ($intersection_atomic instanceof TKeyedArray && $intersection_atomic->isGenericList()) {
+                    if ($intersection_atomic instanceof TKeyedArray) {
                         return self::intersectListValues(
                             $intersection_atomic,
                             $wider_type,
