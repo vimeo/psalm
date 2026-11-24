@@ -7823,6 +7823,45 @@ final class ConditionalTest extends TestCase
                         if ($o == $s) {
                             /** @psalm-check-type-exact $o = Stringable|int */;
                         }
+                    }
+
+                    function nullableStringableVsLiteral(?Stringable $o): void {
+                        if ($o == "abc") {
+                            /** @psalm-check-type-exact $o = Stringable */;
+                        }
+                    }
+
+                    function objectVsString(object $o, string $s): void {
+                        if ($o == $s) {
+                            /** @psalm-check-type-exact $o = object */;
+                        }
+                    }
+
+                    /**
+                     * @template T of Stringable
+                     * @param T $o
+                     */
+                    function stringableTemplateVsString($o, string $s): void {
+                        if ($o == $s) {
+                            /** @psalm-check-type-exact $o = T */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'looseInequalityWithAnArrayOrObjectIsNotRedundantForBoolOrNull' => [
+                'code' => '<?php
+                    function boolVsArray(bool $b, array $a): void {
+                        if ($b != $a) {}
+                    }
+
+                    function nullableIntVsArray(?int $i, array $a): void {
+                        if ($i != $a) {}
+                    }
+
+                    function boolVsObject(bool $b, object $o): void {
+                        if ($b != $o) {}
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],

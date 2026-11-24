@@ -1041,7 +1041,7 @@ final class AssertionReconciler extends Reconciler
         }
 
         if ($juggled_type->isNever()) {
-            if ($key && $code_location) {
+            if ($key !== null && $code_location !== null) {
                 self::triggerIssueForImpossible(
                     $existing_var_type,
                     $existing_var_type->getId(),
@@ -2329,11 +2329,7 @@ final class AssertionReconciler extends Reconciler
         $atomic_types = $literal_type->getAtomicTypes();
 
         foreach ($existing_var_atomic_types as $atomic_type) {
-            // an `object` may be one with a __toString too
-            if ($atomic_type::class === TObject::class
-                || ($atomic_type instanceof TNamedObject
-                    && $codebase->methodExists(new MethodIdentifier($atomic_type->value, '__tostring')))
-            ) {
+            if (SimpleAssertionReconciler::canBeStringableObject($codebase, $atomic_type)) {
                 $atomic_types[$atomic_type->getKey()] = $atomic_type;
             }
         }
@@ -2464,6 +2460,17 @@ final class AssertionReconciler extends Reconciler
                     && !$existing_var_atomic_type instanceof TLiteralFloat
                 ) {
                     return $existing_var_type;
+                }
+            }
+        }
+
+        if ($assertion instanceof IsLooselyEqual) {
+            foreach ($existing_var_atomic_types as $key => $existing_var_atomic_type) {
+                if (SimpleAssertionReconciler::canBeStringableObject(
+                    $statements_analyzer->getCodebase(),
+                    $existing_var_atomic_type,
+                )) {
+                    $loosely_equal_literals[$key] = $existing_var_atomic_type;
                 }
             }
         }

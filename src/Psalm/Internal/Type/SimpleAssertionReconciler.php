@@ -3075,12 +3075,21 @@ final class SimpleAssertionReconciler extends Reconciler
 
         foreach ($existing_var_type->getAtomicTypes() as $atomic_type) {
             if ($atomic_type instanceof TBool
-                || ($atomic_type instanceof TNamedObject
-                    && $assertion_type instanceof TString
-                    && $codebase->classOrInterfaceExists($atomic_type->value)
-                    && $codebase->methodExists(new MethodIdentifier($atomic_type->value, '__tostring')))
+                || ($assertion_type instanceof TString && self::canBeStringableObject($codebase, $atomic_type))
             ) {
                 $kept_types[] = $atomic_type;
+            } elseif ($atomic_type instanceof TTemplateParam
+                && ($as = self::reconcileLooseEqualityKeptParts(
+                    $assertion,
+                    $codebase,
+                    $atomic_type->as,
+                    $negated,
+                    $inside_loop,
+                )) instanceof Union
+            ) {
+                if (!$as->isNever()) {
+                    $kept_types[] = $atomic_type->replaceAs($as);
+                }
             } else {
                 $other_types[] = $atomic_type;
             }
@@ -3114,6 +3123,17 @@ final class SimpleAssertionReconciler extends Reconciler
         return new Union($other_type->isNever()
             ? $kept_types
             : [...$kept_types, ...array_values($other_type->getAtomicTypes())]);
+    }
+
+    /**
+     * Whether a value of the type can be an object with a __toString(), loosely equal to a string
+     */
+    public static function canBeStringableObject(Codebase $codebase, Atomic $type): bool
+    {
+        return $type::class === TObject::class
+            || ($type instanceof TNamedObject
+                && $codebase->classOrInterfaceExists($type->value)
+                && $codebase->methodExists(new MethodIdentifier($type->value, '__tostring')));
     }
 
     /**
