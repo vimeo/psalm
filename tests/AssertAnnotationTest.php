@@ -387,6 +387,37 @@ final class AssertAnnotationTest extends TestCase
                         }
                     }',
             ],
+            'assertionOnAPropertyIsForgottenAfterAMethodWritingIt' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-template ExpectedType
+                     * @psalm-param ExpectedType $expected
+                     * @psalm-assert =ExpectedType $actual
+                     */
+                    function assertSame(mixed $expected, mixed $actual): void {
+                        if ($expected !== $actual) {
+                            throw new \\Exception();
+                        }
+                    }
+
+                    final class Container {
+                        /** @var list<int> */
+                        public array $prop = [];
+
+                        public function add(int $number): void {
+                            $this->prop[] = $number;
+                        }
+                    }
+
+                    $container = new Container();
+                    $container->add(1);
+                    assertSame([1], $container->prop);
+                    $container->add(2);
+                    assertSame([1, 2], $container->prop);',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'assertIfTrueOnThisOfANullsafeMethodCallLeavesTheNullCheckOfTheReceiverUseful' => [
                 'code' => '<?php
                     interface Stamp {}

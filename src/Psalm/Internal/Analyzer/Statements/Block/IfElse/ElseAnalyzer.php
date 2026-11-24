@@ -131,6 +131,13 @@ final class ElseAnalyzer
                         $else_context->vars_in_scope,
                     )
                         && !array_key_exists($var_id, $changed_var_ids)
+                        && !Reconciler::narrowingKeepsProperty(
+                            $codebase,
+                            $original_context->vars_in_scope[$changed_var_id] ?? null,
+                            $else_context->vars_in_scope[$changed_var_id] ?? null,
+                            $changed_var_id,
+                            $var_id,
+                        )
                     ) {
                         $else_context->removePossibleReference($var_id);
                     }
