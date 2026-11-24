@@ -59,7 +59,6 @@ use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Union;
 use ReflectionProperty;
 
-use function array_filter;
 use function array_values;
 use function assert;
 use function count;
@@ -426,7 +425,7 @@ final class ClassConstAnalyzer
 
             // if we're ignoring that the class doesn't exist, exit anyway, and without the type of the classes before
             if (!$codebase->classlikes->classOrInterfaceOrEnumExists($fq_class_name, null, $context)) {
-                $statements_analyzer->node_data->clearNodeOfTypeAndAssertions($stmt);
+                $statements_analyzer->node_data->setType($stmt, Type::getMixed());
 
                 return true;
             }
@@ -441,7 +440,8 @@ final class ClassConstAnalyzer
                 );
             }
 
-            $statements_analyzer->node_data->clearNodeOfTypeAndAssertions($stmt);
+            // a class whose constant is not typed leaves the fetch mixed
+            $statements_analyzer->node_data->setType($stmt, Type::getMixed());
 
             if (!$stmt->name instanceof PhpParser\Node\Identifier) {
                 $analyzed = self::analyzeLiteralNamedFetch(
@@ -470,21 +470,12 @@ final class ClassConstAnalyzer
                 return false;
             }
 
-            $stmt_types[] = $statements_analyzer->node_data->getType($stmt);
+            $stmt_types[] = $statements_analyzer->node_data->getType($stmt) ?? Type::getMixed();
         }
 
-        // the constant of each class the expression may be
+        // the constant of each class the expression may be, mixed as soon as one of them is not typed
         if (count($stmt_types) > 1) {
-            $statements_analyzer->node_data->clearNodeOfTypeAndAssertions($stmt);
-
-            $known_stmt_types = array_filter($stmt_types);
-
-            if ($known_stmt_types !== [] && count($known_stmt_types) === count($stmt_types)) {
-                $statements_analyzer->node_data->setType(
-                    $stmt,
-                    Type::combineUnionTypeArray(array_values($known_stmt_types), $codebase),
-                );
-            }
+            $statements_analyzer->node_data->setType($stmt, Type::combineUnionTypeArray($stmt_types, $codebase));
         }
 
         return true;

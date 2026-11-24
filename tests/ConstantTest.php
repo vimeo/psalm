@@ -3028,6 +3028,19 @@ final class ConstantTest extends TestCase
                     }',
                 'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:32 - Type null cannot be used as a class',
             ],
+            'constantOfAnObjectOfANonFinalClassWithAnUntypedConstantIsMixed' => [
+                'code' => '<?php
+                    class A {
+                        const N = "a";
+                    }
+
+                    function concat(A $a): string {
+                        return "<" . $a::N;
+                    }',
+                'error_message' => 'MixedOperand',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'constantMissingFromOneClassOfAnObjectIsUndefined' => [
                 'code' => '<?php
                     final class A {
