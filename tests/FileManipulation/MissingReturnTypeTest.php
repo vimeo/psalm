@@ -63,7 +63,7 @@ final class MissingReturnTypeTest extends FileManipulationTestCase
                     /**
                      * @param non-empty-string $s
                      *
-                     * @return non-empty-string
+                     * @psalm-return non-empty-string
                      */
                     function foo(string $s): string {
                         return $s;
@@ -95,7 +95,7 @@ final class MissingReturnTypeTest extends FileManipulationTestCase
                 'issues_to_fix' => ['MissingReturnType'],
                 'safe_types' => true,
             ],
-            'addMissingReturnTypeParenthesisesACompoundStringRefinementOfListValues' => [
+            'addMissingReturnTypeWritesACompoundStringRefinementOfListValuesAsStringInPhpdoc' => [
                 'input' => '<?php
                     /**
                      * @param list<non-falsy-string&numeric-string> $s
@@ -107,7 +107,7 @@ final class MissingReturnTypeTest extends FileManipulationTestCase
                     /**
                      * @param list<non-falsy-string&numeric-string> $s
                      *
-                     * @return (non-falsy-string&numeric-string)[]
+                     * @return string[]
                      *
                      * @psalm-return list<non-falsy-string&numeric-string>
                      */
