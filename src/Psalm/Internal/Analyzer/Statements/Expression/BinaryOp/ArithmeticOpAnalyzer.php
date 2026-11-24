@@ -1439,6 +1439,16 @@ final class ArithmeticOpAnalyzer
     }
 
     /**
+     * A float when the product overflows
+     *
+     * @psalm-pure
+     */
+    private static function multiplyInts(int $left, int $right): int|float
+    {
+        return $left * $right;
+    }
+
+    /**
      * The range `&`, `|`, `^` or `<<` of two non-negative ranges can give, or null when it can't be bounded
      * (an operand may be negative, or the result may overflow). For `&`, one non-negative operand is enough.
      *
@@ -1646,10 +1656,20 @@ final class ArithmeticOpAnalyzer
             $x_2 = $right_type_part->max_bound;
             $y_1 = $left_type_part->min_bound;
             $y_2 = $left_type_part->max_bound;
-            $min_value = min($x_1 * $y_1, $x_1 * $y_2, $x_2 * $y_1, $x_2 * $y_2);
-            $max_value = max($x_1 * $y_1, $x_1 * $y_2, $x_2 * $y_1, $x_2 * $y_2);
+            $products = [
+                self::multiplyInts($x_1, $y_1),
+                self::multiplyInts($x_1, $y_2),
+                self::multiplyInts($x_2, $y_1),
+                self::multiplyInts($x_2, $y_2),
+            ];
+            $min_value = min($products);
+            $max_value = max($products);
 
-            $new_result_type = Type::getIntRange($min_value, $max_value);
+            // a product that overflows is a float: that bound stays open
+            $new_result_type = Type::getIntRange(
+                is_int($min_value) ? $min_value : null,
+                is_int($max_value) ? $max_value : null,
+            );
         } elseif ($right_type_part->isPositiveOrZero() && $left_type_part->isPositiveOrZero()) {
             // both operands are positive, result will be only positive
             $min_operand1 = $left_type_part->min_bound;

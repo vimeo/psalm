@@ -2776,6 +2776,32 @@ final class BinaryOperationTest extends TestCase
                     '$byRange===' => 'int<0, 7>',
                 ],
             ],
+            'bitwiseAndMaskedOperandsMultiplicationOverflow' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function getInt(): int {
+                        return 1;
+                    }
+                    $i = getInt();
+                    $j = getInt();
+                    $r = ($i & 0xFFFFFFFF) * ($j & 0xFFFFFFFF);
+                    $byLiteral = ($i & 0xFFFFFFFFFFFF) * 1000000;
+                    $fits = ($i & 0xFF) * ($j & 0xFF);
+                    /** @var int<-4294967295, 4294967295> $s */
+                    $s = 1;
+                    $bothSigns = $s * ($j & 0xFFFFFFFF);
+                    /** @var int<-4294967295, 1> $n */
+                    $n = 1;
+                    $onlyMinOverflows = $n * ($j & 0xFFFFFFFF);
+                    PHP,
+                'assertions' => [
+                    '$r===' => 'int<0, max>',
+                    '$byLiteral===' => 'int<0, max>',
+                    '$fits===' => 'int<0, 65025>',
+                    '$bothSigns===' => 'int',
+                    '$onlyMinOverflows===' => 'int<min, 4294967295>',
+                ],
+            ],
             'bitwiseOperationsOfUnboundedIntRanges' => [
                 'code' => <<<'PHP'
                     <?php
