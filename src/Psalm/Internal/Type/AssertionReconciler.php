@@ -696,6 +696,7 @@ final class AssertionReconciler extends Reconciler
      * @param Reconciler::RECONCILIATION_* $failed_reconciliation
      * @param   string[]    $suppressed_issues
      * @param-out Reconciler::RECONCILIATION_* $failed_reconciliation
+     * @param-out bool $impossible whether no value of the type can match, which is reported only with a location
      */
     private static function refine(
         StatementsAnalyzer $statements_analyzer,
@@ -707,7 +708,10 @@ final class AssertionReconciler extends Reconciler
         ?CodeLocation $code_location,
         array $suppressed_issues,
         int &$failed_reconciliation,
+        bool &$impossible = false,
     ): Union {
+        $impossible = false;
+
         $codebase = $statements_analyzer->getCodebase();
 
         $old_var_type_string = $existing_var_type->getId();
@@ -984,9 +988,7 @@ final class AssertionReconciler extends Reconciler
                         );
                     }
                 }
-            }
 
-            if ($impossible) {
                 $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
             }
 
@@ -1120,6 +1122,7 @@ final class AssertionReconciler extends Reconciler
         if ($refined_types) {
             $refined_type = new Union($refined_types);
             $failed_reconciliation = Reconciler::RECONCILIATION_OK;
+            $impossible = false;
 
             $refined_type = self::refine(
                 $statements_analyzer,
@@ -1131,9 +1134,10 @@ final class AssertionReconciler extends Reconciler
                 null,
                 [],
                 $failed_reconciliation,
+                $impossible,
             );
 
-            if ($failed_reconciliation !== Reconciler::RECONCILIATION_EMPTY && !$refined_type->isNever()) {
+            if (!$impossible && !$refined_type->isNever()) {
                 $kept_types = [...$kept_types, ...$refined_type->getAtomicTypes()];
             }
         }
