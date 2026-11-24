@@ -80,7 +80,7 @@ a library's connection class), so that what one query stores in a column taints 
 return. Psalm reads the SQL at each call and ignores the queries the annotated method's body runs. See
 [Databases](taint_flow.md#databases).
 
-### `@psalm-database-query $sql [$params] [result]`
+### `@psalm-database-query $sql [$params] [result] [readonly]`
 
 The method runs the SQL given to `$sql`, with the values of its placeholders given to `$params`: a list for `?`, an
 array keyed by name for `:name` and `{name:Type}`.
@@ -127,6 +127,41 @@ The last word says what the method returns of the rows the query selects:
 | `value`            | the first column of the first row                                   | `PDOStatement::fetchColumn()` |
 | `column`           | a list of the first column of each row                              | `fetchAll(PDO::FETCH_COLUMN)` |
 | `none`             | nothing read from the database                                      | `PDO::exec()`                 |
+
+With `readonly`, the method runs only queries that read, like ClickHouse with its `readonly` setting: a query Psalm
+can't parse reads any column, but stores nothing.
+
+```php
+<?php // --taint-analysis
+final class ClickHouse
+{
+    /**
+     * @psalm-database-query $sql $params none
+     */
+    public function write(string $sql, array $params = []): void {}
+
+    /**
+     * @return list<array<string, mixed>>
+     * @psalm-database-query $sql $params rows readonly
+     */
+    public function select(string $sql, array $params = []): array {}
+}
+
+function run(ClickHouse $db, string $sql): void {
+    $db->write(
+        'INSERT INTO users (name, bio) VALUES ({name:String}, {bio:String})',
+        ['name' => 'admin', 'bio' => $_GET['bio'] ?? ''],
+    );
+
+    foreach ($db->select($sql) as $row) {
+        echo (string) $row['bio']; // TaintedHtml
+    }
+
+    foreach ($db->select('SELECT name FROM users') as $user) {
+        echo (string) $user['name']; // no issue (TaintedHtml without readonly)
+    }
+}
+```
 
 ### `@psalm-database-prepare $sql`, `@psalm-database-execute [$params] [result]` and `@psalm-database-bind $key $value`
 

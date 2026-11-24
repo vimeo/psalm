@@ -2297,6 +2297,31 @@ final class TaintTest extends TestCase
                     }',
                 'php_version' => '8.1',
             ],
+            'readonlyQueryTheAnalysisCantParseStoresNothing' => [
+                'code' => '<?php
+                    final class Client {
+                        /**
+                         * @return list<array<string, mixed>>
+                         * @psalm-database-query $sql $bindings rows readonly
+                         */
+                        public function select(string $sql, array $bindings = []): array {
+                            return [];
+                        }
+
+                        /**
+                         * @psalm-database-query $sql $bindings none
+                         */
+                        public function write(string $sql, array $bindings = []): void {}
+                    }
+
+                    function run(Client $db, string $sql): void {
+                        $db->write("INSERT INTO users (name, bio) VALUES (:name, :bio)", ["name" => "admin", "bio" => $_GET["bio"]]);
+                        $db->select($sql, [$_GET["x"]]);
+                        foreach ($db->select("SELECT name FROM users") as $user) {
+                            echo (string) $user["name"];
+                        }
+                    }',
+            ],
             'readOfALocalFileIsNoSource' => [
                 'code' => '<?php
                     echo (string) file_get_contents("/etc/hosts");
@@ -8585,6 +8610,31 @@ final class TaintTest extends TestCase
 
                     function show(PDO $pdo): void {
                         echo (string) $pdo->query("SELECT * FROM accounts")->fetch()["userName"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'readonlyQueryTheAnalysisCantParseReadsAnyColumn' => [
+                'code' => '<?php
+                    final class Client {
+                        /**
+                         * @return list<array<string, mixed>>
+                         * @psalm-database-query $sql $bindings rows readonly
+                         */
+                        public function select(string $sql, array $bindings = []): array {
+                            return [];
+                        }
+
+                        /**
+                         * @psalm-database-query $sql $bindings none
+                         */
+                        public function write(string $sql, array $bindings = []): void {}
+                    }
+
+                    function run(Client $db, string $sql): void {
+                        $db->write("INSERT INTO users (name, bio) VALUES ({name:String}, {bio:String})", ["name" => "admin", "bio" => $_GET["bio"]]);
+                        foreach ($db->select($sql) as $row) {
+                            echo (string) $row["anything"];
+                        }
                     }',
                 'error_message' => 'TaintedHtml',
             ],

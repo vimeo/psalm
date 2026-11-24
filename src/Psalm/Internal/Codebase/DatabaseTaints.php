@@ -38,7 +38,8 @@ use function substr;
  * FunctionLikeStorage::$database_calls)
  * or, for the builtins, by dictionaries/InternalDatabaseMap.php, as lists of these operations:
  * - `query`: runs the SQL given to `sql`, with the values of the placeholders given to `params` if any; what the call
- *   returns holds the rows the query selects, as `result` says (see addResult());
+ *   returns holds the rows the query selects, as `result` says (see addResult()). With `readonly`, the queries can only
+ *   read (the server refuses the others): they store nothing, even if the analysis can't parse them;
  * - `prepare`: the same, but the values of the placeholders are given later to the statement the call returns, by
  *   `execute` (`params`) and `bind` (`value` under the placeholder `key`, `base` being the number of the first
  *   positional placeholder, or the values given from `values` on, in the order of the placeholders);
@@ -66,6 +67,7 @@ use function substr;
  *     from?: int,
  *     result?: 'result'|'rows'|'value'|'column'|'any_value'|'any_column'|'value_or_row'|'none',
  *     optional_first?: int,
+ *     readonly?: true,
  * }
  * @psalm-type Value = array{
  *     holes: list<int>,
@@ -129,7 +131,7 @@ final class DatabaseTaints
 
     /**
      * Adds the operation of a `@psalm-database-$kind` annotation to the storage, or says what is wrong with it:
-     * - `@psalm-database-query $sql [$params] [result]`, `@psalm-database-prepare $sql`;
+     * - `@psalm-database-query $sql [$params] [result] [readonly]`, `@psalm-database-prepare $sql`;
      * - `@psalm-database-execute [$params]` and `@psalm-database-bind $key $value` (a positional placeholder is
      *   numbered from 1) or `@psalm-database-bind ...$values`, for the statement the method is called on;
      * - `@psalm-database-insert $table $data`, `@psalm-database-update $table $data`, `@psalm-database-select $table`;
@@ -146,6 +148,7 @@ final class DatabaseTaints
         $params = [];
         $variadic = false;
         $result = null;
+        $readonly = false;
 
         foreach ($words === false ? [] : $words as $word) {
             if ($word === '' || $word[0] === '*') {
@@ -170,6 +173,8 @@ final class DatabaseTaints
                 }
 
                 $params[] = $offset;
+            } elseif ($word === 'readonly' && $kind === 'query') {
+                $readonly = true;
             } else {
                 foreach (self::RESULTS as $known_result) {
                     if ($word === $known_result) {
@@ -210,6 +215,10 @@ final class DatabaseTaints
 
         if ($result !== null) {
             $spec['result'] = $result;
+        }
+
+        if ($readonly) {
+            $spec['readonly'] = true;
         }
 
         $storage->database_calls[] = $spec;
@@ -350,9 +359,14 @@ final class DatabaseTaints
             }
         }
 
+        if (isset($spec['readonly'])) {
+            // what the analysis can't parse only reads
+            $parsed = $parsed === null ? null : ['writes' => [], 'reads' => $parsed['reads']];
+        }
+
         if ($parsed === null) {
             $parsed = [
-                'writes' => [[
+                'writes' => isset($spec['readonly']) ? [] : [[
                     'table' => null,
                     'column' => null,
                     'value' => [
