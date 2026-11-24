@@ -2842,13 +2842,15 @@ final class ConditionalReturnTypeTest extends TestCase
                     /**
                      * @template K of array-key
                      * @param array<K, mixed> $array
+                     * @return list<K>
                      */
-                    function keys(array $array): void {
+                    function keys(array $array): array {
                         $keys = array_keys($array);
                         /** @psalm-trace $keys */
+                        return $keys;
                     }',
                 'error_message' => 'Trace - src' . DIRECTORY_SEPARATOR
-                    . 'somefile.php:8:50 - $keys: list<K:fn-keys as array-key',
+                    . 'somefile.php:10:25 - $keys: list<K:fn-keys as array-key',
             ],
             'classTemplateBoundedByStringConditionalOnNonFinalStringableClass' => [
                 'code' => '<?php
