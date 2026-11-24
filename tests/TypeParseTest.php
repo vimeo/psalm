@@ -2275,9 +2275,9 @@ final class TypeParseTest extends TestCase
      */
     public static function nativeIntersectionProvider(): iterable
     {
-        yield 'classes before PHP 8.1' => ['Ns\Foo&Other\Bar', 8_00_00, 'Foo', false];
+        yield 'classes before PHP 8.1' => ['Ns\Foo&Other\Bar', 8_00_00, '\Other\Bar', false];
         yield 'classes' => ['Ns\Foo&Other\Bar', 8_01_00, 'Foo&\Other\Bar', true];
-        yield 'Closure before PHP 8.1' => ['Closure&Ns\Foo', 7_04_00, '\Closure', false];
+        yield 'Closure before PHP 8.1' => ['Closure&Ns\Foo', 7_04_00, 'Foo', false];
         yield 'Closure' => ['Closure&Ns\Foo', 8_01_00, '\Closure&Foo', true];
         yield 'generic class' => ['Ns\Foo<int>&Countable', 8_01_00, 'Foo&\Countable', false];
         yield 'callable' => ['Ns\Foo&callable(int):void', 8_01_00, 'Foo', false];

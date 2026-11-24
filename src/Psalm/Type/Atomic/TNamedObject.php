@@ -12,6 +12,7 @@ use Psalm\Storage\Capabilities;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 
+use function array_key_last;
 use function implode;
 use function strtolower;
 use function substr;
@@ -199,7 +200,8 @@ class TNamedObject extends Atomic
 
     /**
      * Intersects $native, the native type of the class, with the classes of the intersection. A type of the
-     * intersection that can't be part of a native intersection is left out, which leaves a wider type.
+     * intersection that can't be part of a native intersection is left out, which leaves a wider type. Before
+     * PHP 8.1, the last class of the intersection is declared alone.
      *
      * @param  array<lowercase-string, string> $aliased_classes
      */
@@ -210,7 +212,7 @@ class TNamedObject extends Atomic
         ?string $this_class,
         int $analysis_php_version_id,
     ): string {
-        if (!$this->extra_types || $analysis_php_version_id < 8_01_00) {
+        if (!$this->extra_types) {
             return $native;
         }
 
@@ -231,6 +233,10 @@ class TNamedObject extends Atomic
             if ($extra_native !== null && $extra_native !== 'static') {
                 $natives[strtolower($extra_native)] ??= $extra_native;
             }
+        }
+
+        if ($analysis_php_version_id < 8_01_00) {
+            return $natives[array_key_last($natives)];
         }
 
         return implode('&', $natives);

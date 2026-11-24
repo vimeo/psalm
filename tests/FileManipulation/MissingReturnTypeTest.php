@@ -206,7 +206,7 @@ final class MissingReturnTypeTest extends FileManipulationTestCase
                     /**
                      * @return Foo&Countable
                      */
-                    function foo(Foo $f): Foo {
+                    function foo(Foo $f): Countable {
                         if ($f instanceof Countable) {
                             return $f;
                         }
