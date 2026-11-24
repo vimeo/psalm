@@ -1053,6 +1053,14 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 );
             }
 
+            $closure_return_types = ReturnTypeAnalyzer::addImplicitVoidReturn(
+                $closure_return_types,
+                $closure_yield_types !== [],
+                $function_stmts,
+                $type_provider,
+                $context->has_returned,
+            );
+
             $closure_return_type = $closure_return_types
                 ? Type::combineUnionTypeArray(
                     $closure_return_types,
