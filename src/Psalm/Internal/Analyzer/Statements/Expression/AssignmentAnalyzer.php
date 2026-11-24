@@ -2634,8 +2634,6 @@ final class AssignmentAnalyzer
     /**
      * Assigns the item of $array_type at $offset_value to a variable of a destructuring. A value that can be
      * anything gives the item no type to carry what it takes, so the item is fetched from the value here.
-     *
-     * @param int-mask-of<TaintKind::*> $removed_taints
      */
     private static function assignDestructuredItem(
         StatementsAnalyzer $statements_analyzer,

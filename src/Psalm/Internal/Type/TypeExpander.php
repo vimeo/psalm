@@ -18,12 +18,14 @@ use Psalm\Storage\Capabilities;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TConditional;
 use Psalm\Type\Atomic\TEnumCase;
+use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TGlobalConstant;
 use Psalm\Type\Atomic\TInt;
@@ -39,8 +41,10 @@ use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TPropertiesOf;
+use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateValueOf;
@@ -603,11 +607,28 @@ final class TypeExpander
             $potential_ints = [];
 
             foreach ($new_value_types as $new_value_type) {
+                // a wildcard like `self::FLAG_*` may also match constants that are not flags
+                if ($new_value_type instanceof TString
+                    || $new_value_type instanceof TFloat
+                    || $new_value_type instanceof TBool
+                    || $new_value_type instanceof TNull
+                    || $new_value_type instanceof TArray
+                    || $new_value_type instanceof TKeyedArray
+                    || $new_value_type instanceof TNamedObject
+                    || $new_value_type instanceof TObject
+                ) {
+                    continue;
+                }
+
                 if (!$new_value_type instanceof TLiteralInt) {
                     return [new TInt()];
                 }
 
                 $potential_ints[] = $new_value_type->value;
+            }
+
+            if ($potential_ints === []) {
+                return [new TInt()];
             }
 
             return TypeParser::getComputedIntsFromMask($potential_ints);
