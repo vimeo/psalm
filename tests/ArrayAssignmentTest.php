@@ -1259,7 +1259,7 @@ final class ArrayAssignmentTest extends TestCase
                         $p["a"]["b"] = 1;
                         $p["a"][$i] = "s";
                         $b = $p["a"]["b"];
-                        /** @psalm-check-type-exact $b = \'b\'|1 */;
+                        /** @psalm-check-type-exact $b = 1 */;
                     }
 
                     function decimalIntString(array $p): void {
