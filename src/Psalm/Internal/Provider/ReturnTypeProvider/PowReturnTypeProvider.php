@@ -90,10 +90,20 @@ final class PowReturnTypeProvider implements FunctionReturnTypeProviderInterface
         }
 
         if ($first_arg_literal === 0 && !$second_arg_can_be_negative) {
-            return Type::getInt(true, 0);
+            if ($second_arg_is_int) {
+                return Type::getInt(true, 0);
+            }
+            if ($second_arg_literal !== null && $second_arg_literal > 0) {
+                return Type::getFloat(0.0);
+            }
         }
         if ($second_arg_literal === 0) {
-            return Type::getInt(true, 1);
+            if ($first_arg_is_int) {
+                return Type::getInt(true, 1);
+            }
+            if ($first_arg_is_float) {
+                return Type::getFloat(1.0);
+            }
         }
         if ($first_arg_literal !== 0 && $first_arg_literal !== null && $second_arg_literal !== null) {
             return Type::getFloat($first_arg_literal ** $second_arg_literal);

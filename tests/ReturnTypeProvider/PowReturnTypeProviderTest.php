@@ -98,5 +98,28 @@ final class PowReturnTypeProviderTest extends TestCase
             ],
             'ignored_issues' => ['DeprecatedSyntax'],
         ];
+        yield 'zeroOperandWithAFloatIsAFloat' => [
+            'code' => '<?php
+                function getFloat(): float {
+                    return 1.0;
+                }
+                $float = getFloat();
+
+                $a = pow(2.5, 0);
+                $b = pow(0, 2.5);
+                $c = pow(0, $float);
+                $d = pow($float, 0);
+                $e = 2.5 ** 0;
+                $f = 0 ** 2.5;
+            ',
+            'assertions' => [
+                '$a===' => 'float(1)',
+                '$b===' => 'float(0)',
+                '$c===' => 'float',
+                '$d===' => 'float(1)',
+                '$e===' => 'float(1)',
+                '$f===' => 'float(0)',
+            ],
+        ];
     }
 }
