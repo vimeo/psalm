@@ -2025,6 +2025,157 @@ final class TypeVariableTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'typeVariableResolvedByForeachOverAListOfIt' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Bag {
+                        /** @param iterable<T> $items */
+                        public function __construct(iterable $items) {}
+
+                        /** @param T $item */
+                        public function add(mixed $item): void {}
+
+                        /** @return list<T> */
+                        public function all(): array { return []; }
+                    }
+
+                    /** @var array<string, int> $counts */
+                    $counts = [];
+                    $names = new Bag(array_keys($counts));
+                    $name = null;
+                    $count = null;
+                    foreach ($names->all() as $name) {
+                        $count = $counts[$name];
+                    }',
+                'assertions' => [
+                    '$name===' => 'null|string',
+                    '$count===' => 'int|null',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'typeVariableResolvedByForeachKey' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /** @param T $value */
+                        public function __construct(private mixed $value) {}
+
+                        /** @param T $value */
+                        public function set(mixed $value): void { $this->value = $value; }
+
+                        /** @return array<T, int> */
+                        public function counts(): array { return []; }
+                    }
+
+                    /** @var string $s */
+                    $s = "a";
+                    $box = new Box($s);
+                    $key = null;
+                    foreach ($box->counts() as $key => $_) {
+                        $_ = [$key => true];
+                    }',
+                'assertions' => [
+                    '$key===' => 'null|string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'typeVariableResolvedByForeachOverAnIteratorAggregate' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @implements IteratorAggregate<int, T>
+                     */
+                    final class Set implements IteratorAggregate {
+                        /** @param iterable<T> $items */
+                        public function __construct(iterable $items) {}
+
+                        /** @param T $item */
+                        public function add(mixed $item): void {}
+
+                        public function getIterator(): Iterator { return new ArrayIterator([]); }
+                    }
+
+                    final class Foo { const C = 1; }
+
+                    $set = new Set([new Foo()]);
+                    $c = null;
+                    foreach ($set as $foo) {
+                        $c = $foo::C;
+                    }',
+                'assertions' => [
+                    '$c===' => '1|null',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'typeVariableResolvedByArrayFetchAndDestructuring' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /** @param T $value */
+                        public function __construct(private mixed $value) {}
+
+                        /** @param T $value */
+                        public function set(mixed $value): void { $this->value = $value; }
+
+                        /** @return non-empty-list<T> */
+                        public function all(): array { return [$this->value]; }
+
+                        /** @return array{0: T, k: T} */
+                        public function shape(): array { return [$this->value, "k" => $this->value]; }
+                    }
+
+                    final class Foo { const C = 1; }
+
+                    $box = new Box(new Foo());
+                    $item = $box->all()[0];
+                    $item_by_key = $box->shape()["k"];
+                    [$first] = $box->all();
+                    ["k" => $kth] = $box->shape();
+                    $fetched = $item::C;
+                    $fetched_by_key = $item_by_key::C;
+                    $destructured = $first::C;
+                    $destructured_by_key = $kth::C;',
+                'assertions' => [
+                    '$fetched===' => '1',
+                    '$fetched_by_key===' => '1',
+                    '$destructured===' => '1',
+                    '$destructured_by_key===' => '1',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'typeVariableOfANestedListResolvedByTheInnerForeach' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /** @param T $value */
+                        public function __construct(private mixed $value) {}
+
+                        /** @param T $value */
+                        public function set(mixed $value): void { $this->value = $value; }
+
+                        /** @return list<list<T>> */
+                        public function chunks(): array { return [[$this->value]]; }
+                    }
+
+                    final class Foo { const C = 1; }
+
+                    $box = new Box(new Foo());
+                    $c = null;
+                    foreach ($box->chunks() as $chunk) {
+                        foreach ($chunk as $foo) {
+                            $c = $foo::C;
+                        }
+                    }',
+                'assertions' => [
+                    '$c===' => '1|null',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'constructorWithSiblingImplementationsSatisfiesInvariantProperty' => [
                 'code' => '<?php
                     /** @template V */
@@ -3570,6 +3721,34 @@ final class TypeVariableTest extends TestCase
                     }',
                 'error_message' => 'IncompatibleTypeParameters - src' . DIRECTORY_SEPARATOR
                     . "somefile.php:11:38 - Type 5 should be a subtype of array",
+            ],
+            'itemOfAWidenedConstructionReadByForeachIsWhatFlowedIn' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Bag {
+                        /** @param iterable<T> $items */
+                        public function __construct(iterable $items) {}
+
+                        /** @param T $item */
+                        public function add(mixed $item): void {}
+
+                        /** @return list<T> */
+                        public function all(): array { return []; }
+                    }
+
+                    /** @param array<string, int> $counts */
+                    function f(array $counts): void {
+                        $names = new Bag(array_keys($counts));
+                        $names->add(42);
+                        foreach ($names->all() as $name) {
+                            echo $counts[$name];
+                        }
+                    }',
+                'error_message' => 'PossiblyInvalidArrayOffset - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:19:34 - Cannot access value on variable $counts using a 42|string offset, '
+                    . 'expecting string',
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
         ];
     }
