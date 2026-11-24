@@ -2269,6 +2269,47 @@ final class TypeParseTest extends TestCase
         self::assertSame('array{a: Foo, ...<string, Bar>}', $type->toNamespacedString('Ns', [], null, false));
     }
 
+    /**
+     * @return iterable<string, array{string, int, ?string, bool}>
+     * @psalm-pure
+     */
+    public static function nativeIntersectionProvider(): iterable
+    {
+        yield 'classes before PHP 8.1' => ['Ns\Foo&Other\Bar', 8_00_00, 'Foo', false];
+        yield 'classes' => ['Ns\Foo&Other\Bar', 8_01_00, 'Foo&\Other\Bar', true];
+        yield 'Closure before PHP 8.1' => ['Closure&Ns\Foo', 7_04_00, '\Closure', false];
+        yield 'Closure' => ['Closure&Ns\Foo', 8_01_00, '\Closure&Foo', true];
+        yield 'generic class' => ['Ns\Foo<int>&Countable', 8_01_00, 'Foo&\Countable', false];
+        yield 'callable' => ['Ns\Foo&callable(int):void', 8_01_00, 'Foo', false];
+        yield 'object shape' => ['Ns\Foo&object{a: int}', 8_01_00, 'Foo', false];
+        yield 'iterable member' => ['Ns\Foo&iterable', 8_01_00, 'Foo', false];
+        yield 'iterable' => ['iterable&Ns\Foo', 8_01_00, 'iterable', false];
+        yield 'nullable before PHP 8.2' => ['(Ns\Foo&Countable)|null', 8_01_00, null, false];
+        yield 'nullable' => ['(Ns\Foo&Countable)|null', 8_02_00, '(Foo&\Countable)|null', true];
+        yield 'union' => ['(Ns\Foo&Countable)|Other\Bar', 8_02_00, '(Foo&\Countable)|\Other\Bar', true];
+    }
+
+    #[DataProvider('nativeIntersectionProvider')]
+    public function testNativeIntersection(
+        string $string,
+        int $php_version_id,
+        ?string $php_type,
+        bool $fully_expressed,
+    ): void {
+        $type = Type::parseString($string);
+
+        self::assertSame($php_type, $type->toPhpString('Ns', [], null, $php_version_id));
+        self::assertSame($fully_expressed, $type->canBeFullyExpressedInPhp($php_version_id));
+    }
+
+    public function testStaticGenericObjectIsDeclaredSelfBeforePhp8(): void
+    {
+        $type = new Union([new TGenericObject('Ns\Foo', [Type::getInt()], false, true)]);
+
+        self::assertSame('self', $type->toPhpString('Ns', [], 'Ns\Foo', 7_04_00));
+        self::assertSame('static', $type->toPhpString('Ns', [], 'Ns\Foo', 8_00_00));
+    }
+
     public function testConditionalKeepsItsTypesInNamespacedString(): void
     {
         $conditional = new TConditional(

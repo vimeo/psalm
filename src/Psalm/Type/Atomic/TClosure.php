@@ -97,7 +97,8 @@ final class TClosure extends TNamedObject
         return $this->params === null
             && $this->return_type === null
             && $this->hasFixedPurity()
-            && $this->getCapabilities() === Capabilities::ALL;
+            && $this->getCapabilities() === Capabilities::ALL
+            && $this->canExpressIntersectionTypesInPhp($analysis_php_version_id);
     }
 
     /**

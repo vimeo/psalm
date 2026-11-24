@@ -240,9 +240,9 @@ trait CallableTrait
         array $aliased_classes,
         ?string $this_class,
         int $analysis_php_version_id,
-    ): string {
+    ): ?string {
         if ($this instanceof TNamedObject) {
-            return parent::toNamespacedString($namespace, $aliased_classes, $this_class, true);
+            return parent::toPhpString($namespace, $aliased_classes, $this_class, $analysis_php_version_id);
         }
 
         return $this->value;

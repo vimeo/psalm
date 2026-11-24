@@ -454,6 +454,19 @@ trait UnionTrait
             $php_types[] = $php_type;
         }
 
+        if (count($php_types) > 1 || $nullable || $falsable) {
+            foreach ($php_types as $i => $php_type) {
+                if (str_contains($php_type, '&')) {
+                    // an intersection in a union is a DNF type
+                    if ($analysis_php_version_id < 8_02_00) {
+                        return null;
+                    }
+
+                    $php_types[$i] = '(' . $php_type . ')';
+                }
+            }
+        }
+
         if ($falsable) {
             if ($nullable) {
                 $php_types['null'] = 'null';
@@ -493,6 +506,14 @@ trait UnionTrait
 
         foreach ($types as $t) {
             if (!$t->canBeFullyExpressedInPhp($analysis_php_version_id)) {
+                return false;
+            }
+
+            if (count($this->types) > 1
+                && $analysis_php_version_id < 8_02_00
+                && $t instanceof TNamedObject
+                && $t->extra_types
+            ) {
                 return false;
             }
         }

@@ -190,6 +190,32 @@ final class MissingReturnTypeTest extends FileManipulationTestCase
                 'issues_to_fix' => ['MissingReturnType'],
                 'safe_types' => true,
             ],
+            'addMissingIntersectionReturnTypeBeforePhp81' => [
+                'input' => '<?php
+                    interface Foo {}
+
+                    function foo(Foo $f) {
+                        if ($f instanceof Countable) {
+                            return $f;
+                        }
+                        throw new Exception();
+                    }',
+                'output' => '<?php
+                    interface Foo {}
+
+                    /**
+                     * @return Foo&Countable
+                     */
+                    function foo(Foo $f): Foo {
+                        if ($f instanceof Countable) {
+                            return $f;
+                        }
+                        throw new Exception();
+                    }',
+                'php_version' => '8.0',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => true,
+            ],
             'addMissingStringReturnType70' => [
                 'input' => '<?php
                     function foo() {
