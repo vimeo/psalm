@@ -2496,6 +2496,19 @@ final class FunctionCallTest extends TestCase
                             return "foo";
                     }',
             ],
+            'getTypeSwitchFallingThroughAnImpossibleCase' => [
+                'code' => '<?php
+                    function f(int $data): string {
+                        switch (gettype($data)) {
+                            case "string":
+                                echo "string";
+                            case "unknown type":
+                                return "s";
+                        }
+
+                        return "";
+                    }',
+            ],
             'functionResolutionInNamespace' => [
                 'code' => '<?php
                     namespace Foo;

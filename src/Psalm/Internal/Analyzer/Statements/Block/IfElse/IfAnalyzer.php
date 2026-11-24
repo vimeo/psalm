@@ -122,7 +122,8 @@ final class IfAnalyzer
                 $statements_analyzer,
                 $statements_analyzer->getTemplateTypeMap() ?: [],
                 $if_context->inside_loop,
-                $outer_context->check_variables
+                // the case a switch falls through into checks the conditions of the cases before it
+                $outer_context->check_variables && !$stmt->getAttribute('switchFallthrough')
                     ? new CodeLocation(
                         $statements_analyzer->getSource(),
                         $stmt->cond instanceof PhpParser\Node\Expr\BooleanNot
