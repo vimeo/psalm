@@ -64,6 +64,7 @@ use function assert;
 use function count;
 use function end;
 use function implode;
+use function is_int;
 use function is_string;
 use function preg_match;
 use function sort;
@@ -1782,7 +1783,7 @@ final class ArrayAssignmentAnalyzer
                 );
 
                 $var_id_additions[] = $var_id_addition;
-                $written_offsets[] = [$var_id_addition, $offset_type !== null];
+                $written_offsets[] = [$var_id_addition, $child_stmt_dim_type];
             } else {
                 $var_id_additions[] = '';
                 $written_offsets[] = null;
@@ -1897,7 +1898,7 @@ final class ArrayAssignmentAnalyzer
         }
 
         if ($root_var_id !== null) {
-            self::removeAliasedOffsets($context, $root_var_id, $written_offsets);
+            self::removeAliasedOffsets($codebase, $context, $root_var_id, $written_offsets);
         }
 
         self::markExternalReferenceAsUsed($statements_analyzer, $context, $root_var_id, $root_var);
@@ -2111,15 +2112,19 @@ final class ArrayAssignmentAnalyzer
 
     /**
      * Forgets what is known about the offsets of an array that the write may overwrite. A known offset at some
-     * depth may be overwritten when, at every depth down to it, its key and the written one may be the same:
-     * they are equal, or either isn't a literal. What is under the written offset is overwritten with it. An appended
-     * offset is a new one, so no known offset is under it.
+     * depth may be overwritten when, at every depth down to it, its key and the written one may be the same: they
+     * are equal, or their types may hold the same key. What is under the written offset is overwritten with it. An
+     * appended offset is a new one, so no known offset is under it.
      *
-     * @param list<array{string, bool}|null> $written_offsets each written key with whether it's a literal,
-     *     null for an appended one
+     * @param list<array{string, Union}|null> $written_offsets each written key with its type, null for an appended
+     *     one
      */
-    private static function removeAliasedOffsets(Context $context, string $root_var_id, array $written_offsets): void
-    {
+    private static function removeAliasedOffsets(
+        Codebase $codebase,
+        Context $context,
+        string $root_var_id,
+        array $written_offsets,
+    ): void {
         foreach ($context->vars_in_scope as $var_id => $_) {
             if (!str_starts_with($var_id, $root_var_id . '[')) {
                 continue;
@@ -2134,7 +2139,7 @@ final class ArrayAssignmentAnalyzer
                     continue 2;
                 }
 
-                [$written_key, $written_key_is_literal] = $written_offset;
+                [$written_key, $written_key_type] = $written_offset;
                 $key = self::getKeyAt($var_id, $position);
 
                 if ($key === null) {
@@ -2143,7 +2148,11 @@ final class ArrayAssignmentAnalyzer
                 }
 
                 if ($key !== $written_key) {
-                    if ($written_key_is_literal && preg_match('/^\[(-?\d+|\'.*\')\]$/', $key) === 1) {
+                    if (!UnionTypeComparator::canExpressionTypesBeIdentical(
+                        $codebase,
+                        self::getArrayKeysOfOffsetType($written_key_type),
+                        self::getArrayKeysOfOffsetType(self::getTypeOfOffset($context, substr($key, 1, -1))),
+                    )) {
                         continue 2;
                     }
 
@@ -2158,6 +2167,40 @@ final class ArrayAssignmentAnalyzer
                 $context->removeVarFromConflictingClauses($var_id);
             }
         }
+    }
+
+    /**
+     * The type of the offset of a var id (`'k'`, `0`, `$k`), array-key when it isn't known
+     */
+    private static function getTypeOfOffset(Context $context, string $offset): Union
+    {
+        $key = self::getLiteralKeyOfOffset($offset);
+
+        if ($key !== null) {
+            return is_int($key) ? Type::getInt(false, $key) : Type::getString($key);
+        }
+
+        return $context->vars_in_scope[$offset] ?? Type::getArrayKey();
+    }
+
+    /**
+     * The keys an offset of this type writes to, an int for a string that may be a decimal integer
+     *
+     * @psalm-mutation-free
+     */
+    private static function getArrayKeysOfOffsetType(Union $offset_type): Union
+    {
+        $key_type = ArrayFetchAnalyzer::castOffsetTypeOfAWrite(
+            ArrayFetchAnalyzer::replaceOffsetTypeWithInts($offset_type),
+        );
+
+        foreach ($key_type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TString && !$atomic_type instanceof TLiteralString) {
+                return Type::combineUnionTypes($key_type, Type::getInt());
+            }
+        }
+
+        return $key_type;
     }
 
     /**
