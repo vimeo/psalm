@@ -111,6 +111,37 @@ final class FunctionTemplateTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'argumentOfUnknownTypeDoesNotBindTheClassTemplateOfTheReceiver' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /** @param T $v */
+                        public function __construct(public mixed $v) {}
+
+                        /**
+                         * @param T $v
+                         * @psalm-this-out Box<T>
+                         */
+                        public function push(mixed $v): void {
+                            $this->v = $v;
+                        }
+                    }
+
+                    /** @var mixed $m */
+                    $m = rand(0, 1) ? 1 : "a";
+
+                    $b = new Box(1);
+                    $b->push(undefined_fn());
+
+                    $d = new Box(1);
+                    $d->push($m);',
+                'assertions' => [
+                    '$b===' => 'Box<`_0:1>',
+                    '$d===' => 'Box<`_1:1>',
+                ],
+                'ignored_issues' => ['MixedArgument', 'UndefinedFunction'],
+                'php_version' => '8.0',
+            ],
             'argumentOfUnknownTypeBindsTheTemplateLikeAMixedOne' => [
                 'code' => '<?php
                     /** @template T */

@@ -238,8 +238,19 @@ final class ArgumentAnalyzer
 
                 // binds the param's templates like a mixed argument, as ArgumentsAnalyzer::analyze() does
                 if ($function_param->type && $template_result && $template_result->template_types) {
-                    TemplateStandinTypeReplacer::replace(
+                    [$bound_param_type] = self::bindClassTemplates(
+                        $statements_analyzer,
+                        $codebase,
+                        $context,
                         $function_param->type,
+                        Type::getMixed(),
+                        $argument_offset,
+                        $class_generic_params,
+                        $template_result,
+                    );
+
+                    TemplateStandinTypeReplacer::replace(
+                        $bound_param_type,
                         $template_result,
                         $codebase,
                         $statements_analyzer,
