@@ -356,10 +356,6 @@ final class CastAnalyzer
     }
 
     /**
-     * A bare class-template type variable stands for the shape inferred at its construction site, and key-of<T> and
-     * value-of<T> for their bound: that is what is being cast
-     */
-    /**
      * The types a value of a template is, as it is one of its bound and every type it is intersected with
      * (`T&Stringable` of a `T as object` is a `Stringable`)
      *
@@ -394,6 +390,10 @@ final class CastAnalyzer
         return $intersected_types;
     }
 
+    /**
+     * A bare class-template type variable stands for the shape inferred at its construction site, and key-of<T> and
+     * value-of<T> for their bound: that is what is being cast
+     */
     private static function resolveOperandType(Union $type, Codebase $codebase): Union
     {
         return TypeExpander::expandTemplateKeyOfAndValueOf(

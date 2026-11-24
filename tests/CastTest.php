@@ -21,6 +21,22 @@ final class CastTest extends TestCase
     #[Override]
     public static function providerValidCodeParse(): iterable
     {
+        yield 'templateBoundedByAClassAndIntersectedWithStringableCastsToString' => [
+            'code' => '<?php
+                interface Foo {}
+
+                /**
+                 * @template T as Foo
+                 * @param T&Stringable $n
+                 */
+                function cast($n): string {
+                    return (string) $n;
+                }',
+            'assertions' => [],
+            'ignored_issues' => [],
+            'php_version' => '8.0',
+        ];
+
         yield 'templateBoundedByObjectAndIntersectedWithStringableCastsToString' => [
             'code' => '<?php
                 /**
