@@ -51,6 +51,74 @@ final class MissingReturnTypeTest extends FileManipulationTestCase
                 'issues_to_fix' => ['MissingReturnType'],
                 'safe_types' => true,
             ],
+            'addMissingReturnTypeTemplatePropertiesOf' => [
+                'input' => '<?php
+                    /**
+                     * @template T of object
+                     * @param properties-of<T> $p
+                     */
+                    function foo(array $p) {
+                        return $p;
+                    }',
+                'output' => '<?php
+                    /**
+                     * @template T of object
+                     *
+                     * @param properties-of<T> $p
+                     *
+                     * @return properties-of<T>
+                     */
+                    function foo(array $p): array {
+                        return $p;
+                    }',
+                'php_version' => '8.0',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => false,
+            ],
+            'addMissingReturnTypeObjectShape71' => [
+                'input' => '<?php
+                    /**
+                     * @param object{a: int} $o
+                     */
+                    function foo($o) {
+                        return $o;
+                    }',
+                'output' => '<?php
+                    /**
+                     * @param object{a: int} $o
+                     *
+                     * @return object
+                     *
+                     * @psalm-return object{a:int}
+                     */
+                    function foo($o) {
+                        return $o;
+                    }',
+                'php_version' => '7.1',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => false,
+            ],
+            'addMissingReturnTypeObjectShape72' => [
+                'input' => '<?php
+                    /**
+                     * @param object{a: int} $o
+                     */
+                    function foo($o) {
+                        return $o;
+                    }',
+                'output' => '<?php
+                    /**
+                     * @param object{a: int} $o
+                     *
+                     * @psalm-return object{a:int}
+                     */
+                    function foo($o): object {
+                        return $o;
+                    }',
+                'php_version' => '7.2',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => false,
+            ],
             'addMissingReturnTypeKeepsTheStringRefinement' => [
                 'input' => '<?php
                     /**
