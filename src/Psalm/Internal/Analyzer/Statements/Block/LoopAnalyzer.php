@@ -704,6 +704,10 @@ final class LoopAnalyzer
             }
         }
 
+        foreach ($loop_scope->forgotten_at_breaks as $var_id => $_) {
+            $loop_parent_context->remove($var_id, false);
+        }
+
         foreach ($loop_parent_context->vars_in_scope as $var_id => $type) {
             if (!isset($loop_context->vars_in_scope[$var_id])) {
                 continue;
