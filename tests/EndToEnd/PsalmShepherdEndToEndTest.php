@@ -313,6 +313,84 @@ final class PsalmShepherdEndToEndTest extends PsalmEndToEndTestCase
     }
 
     /**
+     * Google Apps Script answers the POST with a 302 to the result, which curl fetches with a GET.
+     * Google rejects that GET with HTTP 400 when it still carries the Content-Length of the POST body.
+     */
+    public function testPsalmSendsTheReportToAnEndpointThatRedirectsToItsResult(): void
+    {
+        $this->initProject();
+        $server = stream_socket_server('tcp://127.0.0.1:0', $error_code, $error_message);
+        $this->assertNotFalse($server, $error_message);
+        $address = stream_socket_get_name($server, false);
+        $this->assertIsString($address);
+
+        $process = self::newProcess(
+            [
+                PHP_BINARY,
+                $this->psalm,
+                '-c=' . self::$tmpDir . '/psalm.xml',
+                '--no-cache',
+                self::$tmpDir . '/src/Clean.php',
+                '--shepherd=http://' . $address . '/exec',
+            ],
+            self::$tmpDir,
+            self::githubActions() + self::ciEnvVarsToUnset() + self::agentEnvVarsToUnset(),
+        );
+        $process->start();
+
+        try {
+            [$connection, $post] = self::acceptRequest($server, $process);
+            $this->assertStringStartsWith('POST /exec ', $post);
+            fwrite($connection, "HTTP/1.1 302 Found\r\nLocation: /result\r\nContent-Length: 0\r\nConnection: close\r\n\r\n");
+            fclose($connection);
+
+            [$connection, $get] = self::acceptRequest($server, $process);
+            $this->assertStringStartsWith('GET /result ', $get);
+            $status = preg_match('/^Content-Length:/mi', $get) === 1 ? '400 Bad Request' : '200 OK';
+            fwrite($connection, "HTTP/1.1 $status\r\nContent-Length: 0\r\nConnection: close\r\n\r\n");
+            fclose($connection);
+            $process->wait();
+        } finally {
+            fclose($server);
+        }
+
+        $this->assertStringContainsString('Results sent to Shepherd (127.0.0.1)', $process->getErrorOutput());
+        $this->assertStringNotContainsString('Results not sent to Shepherd', $process->getErrorOutput());
+    }
+
+    /**
+     * Accepts one request and reads it; the body is read only for a POST, so a GET is never waited on
+     *
+     * @param resource $server
+     * @return array{resource, string} the connection and the request line with the headers
+     */
+    private static function acceptRequest($server, Process $process): array
+    {
+        $connection = null;
+        while ($connection === null && $process->isRunning()) {
+            $connection = @stream_socket_accept($server, 1) ?: null;
+        }
+        self::assertNotNull($connection, "Psalm sent no request\n" . $process->getErrorOutput());
+
+        $request = '';
+        while (!str_contains($request, "\r\n\r\n")) {
+            $request .= (string) fread($connection, 8192);
+        }
+        $headers_end = strpos($request, "\r\n\r\n");
+        self::assertIsInt($headers_end);
+        $headers = substr($request, 0, $headers_end);
+
+        if (str_starts_with($headers, 'POST ') && preg_match('/^Content-Length: (\d+)/mi', $headers, $matches) === 1) {
+            $body = substr($request, $headers_end + 4);
+            while (strlen($body) < (int) $matches[1]) {
+                $body .= (string) fread($connection, 65_536);
+            }
+        }
+
+        return [$connection, $headers];
+    }
+
+    /**
      * @return array<string, string>
      * @psalm-pure
      */

@@ -13,7 +13,6 @@ use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 
-use function array_slice;
 use function strtolower;
 
 /**
@@ -139,11 +138,23 @@ final class OutputStreamTaintAnalyzer
         string $function_id,
         array $args,
     ): array {
-        if (($function_id !== 'fprintf' && $function_id !== 'vfprintf') || !isset($args[1])) {
+        if ($function_id !== 'fprintf' && $function_id !== 'vfprintf') {
             return [];
         }
 
-        $format_type = $statements_analyzer->node_data->getType($args[1]->value);
+        // the arguments other than the stream, as printf() would be given them
+        $format_args = [];
+        $offsets = [];
+
+        foreach ($args as $offset => $arg) {
+            if ($arg->name !== null ? $arg->name->name !== 'stream' : $offset !== 0) {
+                $format_args[] = $arg;
+                $offsets[] = $offset;
+            }
+        }
+
+        $format_arg = FunctionCallReturnTypeFetcher::getSprintfFormatArg($format_args);
+        $format_type = $format_arg ? $statements_analyzer->node_data->getType($format_arg->value) : null;
 
         if (!$format_type || !$format_type->allStringLiterals()) {
             return [];
@@ -151,14 +162,13 @@ final class OutputStreamTaintAnalyzer
 
         $removed_taints = [];
 
-        // the format and the values are given after the stream, so offsets are one past those of printf()
         foreach (FunctionCallReturnTypeFetcher::getTaintsRemovedBySprintfFormats(
             ConcatAnalyzer::getLiteralValues($format_type),
-            array_slice($args, 1),
+            $format_args,
             $statements_analyzer->getCodebase()->getInputTaints(),
             $function_id === 'vfprintf',
-        ) as $offset => $taints) {
-            $removed_taints[$offset + 1] = $taints;
+        ) as $index => $taints) {
+            $removed_taints[$offsets[$index]] = $taints;
         }
 
         return $removed_taints;

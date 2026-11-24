@@ -1,0 +1,10 @@
+<?php
+
+class StubbedWithEmptyConstructor
+{
+    public int $n = 0;
+
+    public function __construct(int $n)
+    {
+    }
+}
