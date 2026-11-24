@@ -1857,6 +1857,7 @@ final class PreloaderList {
         \Psalm\Storage\Possibilities::class,
         \Psalm\Storage\PropertyHookStorage::class,
         \Psalm\Storage\PropertyStorage::class,
+        \Psalm\Storage\TemplateVariance::class,
         \Psalm\Storage\UnserializeMemoryUsageSuppressionTrait::class,
         \Psalm\Type::class,
         \Psalm\Type\Atomic::class,
