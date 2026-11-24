@@ -32,6 +32,9 @@ use function class_exists;
 use function count;
 use function dirname;
 use function explode;
+use function fclose;
+use function fgets;
+use function fopen;
 use function function_exists;
 use function intdiv;
 use function interface_exists;
@@ -40,9 +43,12 @@ use function is_string;
 use function ltrim;
 use function max;
 use function min;
+use function preg_match;
+use function rtrim;
 use function str_contains;
 use function str_ends_with;
 use function str_starts_with;
+use function stripslashes;
 use function strpos;
 use function strtolower;
 use function substr;
@@ -89,6 +95,9 @@ final class InternalCallMapHandler
      * @var array<int, array{array<string, string>, array<string, string>}>
      */
     private static array $extensions = [];
+
+    /** @var array<lowercase-string, list<string>>|null */
+    private static ?array $newest_param_names = null;
 
     /**
      * @var array<lowercase-string, array<int|non-empty-string, non-empty-string>>|null
@@ -546,7 +555,7 @@ final class InternalCallMapHandler
         $class_extensions = [];
         foreach ($method_counts as $class => $counts) {
             arsort($counts);
-            $class_extensions[$class] = (string) array_key_first($counts);
+            $class_extensions[$class] = array_key_first($counts);
         }
 
         return self::$extensions[$version] = [$function_extensions, $class_extensions];
@@ -637,7 +646,7 @@ final class InternalCallMapHandler
      *
      * @param array<int, FunctionLikeParameter> $params
      * @return array<int, string>
-     * @psalm-capabilities read-props|read-globals|write-globals
+     * @psalm-capabilities read-props|read-globals|write-globals|io
      */
     public static function getReturnTaintFlows(string $function_id, array $params): array
     {
@@ -650,6 +659,7 @@ final class InternalCallMapHandler
         foreach (self::$taint_flow_map[strtolower($function_id)] ?? [] as $key => $value) {
             // a parameter flows as an argument, or through the path its entry names
             [$param_name, $path_type] = is_int($key) ? [$value, 'arg'] : [$key, $value];
+            $param_name = self::getAnalysedParamName($function_id, $param_name, $params);
 
             foreach ($params as $offset => $param) {
                 if ($param->name === $param_name) {
@@ -659,6 +669,74 @@ final class InternalCallMapHandler
         }
 
         return $flows;
+    }
+
+    /**
+     * The name $params, the parameters of the builtin $function_id in the analysed PHP version, give the parameter the
+     * newest PHP version names $newest_name, which the taint maps use: PHP 8.0 renamed many (count_chars($input) is
+     * count_chars($string) since), keeping their positions. Null if the analysed version has no such parameter.
+     *
+     * @param array<int, FunctionLikeParameter> $params
+     * @psalm-capabilities read-props|read-globals|write-globals|io
+     */
+    public static function getAnalysedParamName(string $function_id, string $newest_name, array $params): ?string
+    {
+        foreach ($params as $param) {
+            if ($param->name === $newest_name) {
+                return $newest_name;
+            }
+        }
+
+        $offset = array_search($newest_name, self::getNewestParamNames($function_id), true);
+
+        return $offset !== false && isset($params[$offset]) ? $params[$offset]->name : null;
+    }
+
+    /**
+     * The names of the parameters of the builtin $function_id in the newest PHP version, for the builtins the taint
+     * maps name parameters of. They are read line by line from the callmap of that version, which var_export()
+     * writes, rather than loaded with the rest of it.
+     *
+     * @return list<string>
+     * @psalm-capabilities read-globals|write-globals|io
+     */
+    public static function getNewestParamNames(string $function_id): array
+    {
+        if (self::$newest_param_names === null) {
+            $root = dirname(__DIR__, 4) . '/dictionaries/';
+            /** @var array<lowercase-string, mixed> $taint_functions */
+            $taint_functions = (require($root . 'InternalTaintFlowMap.php'))
+                + (require($root . 'InternalTaintByRefFlowMap.php'));
+
+            self::$newest_param_names = [];
+            $file = fopen($root . 'CallMap_' . self::MAX_CALLMAP_VERSION . '.php', 'rb');
+            assert($file !== false);
+            $function = null;
+            while (($line = fgets($file)) !== false) {
+                if (preg_match("/^  '((?:[^'\\\\]|\\\\.)*)' => $/", rtrim($line, "\n"), $matches)
+                    && isset($matches[1])
+                ) {
+                    $function = strtolower(stripslashes($matches[1]));
+                    $function = isset($taint_functions[$function]) ? $function : null;
+                    if ($function !== null) {
+                        self::$newest_param_names[$function] = [];
+                    }
+                } elseif ($function !== null
+                    && preg_match("/^    '((?:[^'\\\\]|\\\\.)*)' => /", $line, $matches)
+                    && isset($matches[1])
+                ) {
+                    // without the &, w, =, ... of InternalCallMapHandler::getCallablesFromCallMap()
+                    $arg_name = rtrim(ltrim(stripslashes($matches[1]), '&.'), '=');
+                    $space = strpos($arg_name, ' ');
+                    self::$newest_param_names[$function][] = $space === false
+                        ? $arg_name
+                        : substr($arg_name, $space + 1);
+                }
+            }
+            fclose($file);
+        }
+
+        return self::$newest_param_names[strtolower($function_id)] ?? [];
     }
 
     /**

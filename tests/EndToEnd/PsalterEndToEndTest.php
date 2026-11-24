@@ -134,6 +134,30 @@ final class PsalterEndToEndTest extends PsalmEndToEndTestCase
         ];
     }
 
+    public function testRefactorPrintsNoProgressBarOnAPipedStderr(): void
+    {
+        $this->runPsalmInit();
+        $psalmXml = file_get_contents(self::$tmpDir . '/psalm.xml');
+        $psalmXml = str_replace('<psalm', '<psalm runTaintAnalysis="false"', (string)$psalmXml);
+        file_put_contents(self::$tmpDir . '/psalm.xml', $psalmXml);
+        file_put_contents(
+            self::$tmpDir . '/src/Moves.php',
+            "<?php\n\nnamespace Ns;\n\nclass A\n{\n    public static function foo(): void\n    {\n    }\n}\n\n"
+            . "class B\n{\n}\n",
+        );
+
+        $process = self::newProcess(
+            [PHP_BINARY, $this->psalmRefactor, '--no-cache', '--move', 'Ns\A::foo', '--into', 'Ns\B'],
+            self::$tmpDir,
+            self::agentEnvVarsToUnset(),
+        );
+        $process->run();
+
+        $this->assertSame(0, $process->getExitCode(), $process->getOutput() . $process->getErrorOutput());
+        $this->assertStringContainsString('Scanning files', $process->getErrorOutput());
+        $this->assertDoesNotMatchRegularExpression('/\r(?!\n)/', $process->getErrorOutput());
+    }
+
     /**
      * @param list<string> $args
      */
@@ -215,6 +239,10 @@ final class PsalterEndToEndTest extends PsalmEndToEndTestCase
         yield 'leading backslash on --into' => [
             ['--move', 'Ns\A::foo', '--into', '\Ns\Missing'],
             'Destination class Ns\Missing doesn’t exist',
+        ];
+        yield 'constant renamed to class' => [
+            ['--rename', 'Ns\A::K', '--to', 'Ns\A::class'],
+            'A class constant must not be called class, it is reserved for class name fetching',
         ];
     }
 
@@ -346,6 +374,22 @@ final class PsalterEndToEndTest extends PsalmEndToEndTestCase
         yield 'valid mapping followed by a malformed one' => [
             ['--rename', 'Ns\A::foo', '--to', 'Ns\A::baz', '--rename', 'Ns\B', '--to', 'Foo'],
             'Renaming a namespaced class into the global namespace is not supported',
+        ];
+        yield 'keyword as class name' => [
+            ['--rename', 'Ns\A', '--to', 'Ns\class'],
+            'Cannot use class as a class name as it is reserved',
+        ];
+        yield 'reserved type name as class name' => [
+            ['--rename', 'Ns\A', '--to', 'Ns\Int'],
+            'Cannot use Int as a class name as it is reserved',
+        ];
+        yield 'reserved class name as the class of a renamed member' => [
+            ['--rename', 'Ns\A::foo', '--to', 'Ns\List::foo'],
+            'Cannot use List as a class name as it is reserved',
+        ];
+        yield 'reserved class name as the class a member is moved into' => [
+            ['--move', 'Ns\A::foo', '--into', 'Ns\List'],
+            'Cannot use List as a class name as it is reserved',
         ];
     }
 
@@ -574,6 +618,52 @@ final class PsalterEndToEndTest extends PsalmEndToEndTestCase
                 . 'does-not-exist' . PHP_EOL,
             $process->getErrorOutput(),
         );
+    }
+
+    /**
+     * @param list<string> $args
+     */
+    #[DataProvider('provideCommandsWithAnEmptyOptionValue')]
+    public function testAnEmptyValueOfAnOptionThatRequiresOneIsRejected(
+        string $script,
+        array $args,
+        string $option,
+    ): void {
+        $this->runPsalmInit();
+
+        $process = self::newProcess([PHP_BINARY, $script, ...$args], self::$tmpDir, self::agentEnvVarsToUnset());
+        $process->run();
+
+        $this->assertSame(1, $process->getExitCode(), $process->getOutput() . $process->getErrorOutput());
+        $this->assertStringContainsString('Argument "' . $option . '" requires a value', $process->getErrorOutput());
+    }
+
+    /**
+     * @return iterable<string, array{string, list<string>, string}>
+     * @psalm-pure
+     */
+    public static function provideCommandsWithAnEmptyOptionValue(): iterable
+    {
+        yield 'psalm' => [__DIR__ . '/../../psalm', ['--threads='], '--threads'];
+        yield 'psalm php-version' => [__DIR__ . '/../../psalm', ['--php-version='], '--php-version'];
+        yield 'psalter' => [__DIR__ . '/../../psalter', ['--issues=', '--dry-run'], '--issues'];
+        yield 'psalm-refactor' => [__DIR__ . '/../../psalm-refactor', ['--move=', '--into', 'C'], '--move'];
+        yield 'psalm-language-server' => [__DIR__ . '/../../psalm-language-server', ['--config='], '--config'];
+        yield 'psalm missing value' => [__DIR__ . '/../../psalm', ['--threads'], '--threads'];
+        yield 'psalm missing short value' => [__DIR__ . '/../../psalm', ['-c'], '-c'];
+        yield 'psalm missing php-version value' => [__DIR__ . '/../../psalm', ['--php-version'], '--php-version'];
+    }
+
+    public function testAnOptionalOptionValueMayStayEmpty(): void
+    {
+        $process = self::newProcess(
+            [PHP_BINARY, __DIR__ . '/../../psalm', '--version', '--find-dead-code='],
+            self::$tmpDir,
+            self::agentEnvVarsToUnset(),
+        );
+        $process->run();
+
+        $this->assertSame(0, $process->getExitCode(), $process->getOutput() . $process->getErrorOutput());
     }
 
     public function testAValidOptionAfterLanguageServerIsAccepted(): void

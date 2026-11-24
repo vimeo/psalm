@@ -19,8 +19,8 @@ use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Codebase\ReferenceMapGenerator;
 use Psalm\Internal\Composer;
 use Psalm\Internal\ErrorHandler;
-use Psalm\Internal\Fork\PsalmRestarter;
 use Psalm\Internal\IncludeCollector;
+use Psalm\Internal\Perf;
 use Psalm\Internal\Preloader;
 use Psalm\Internal\Provider\ClassLikeStorageCacheProvider;
 use Psalm\Internal\Provider\FileProvider;
@@ -62,7 +62,6 @@ use function function_exists;
 use function fwrite;
 use function gc_collect_cycles;
 use function gc_disable;
-use function getcwd;
 use function getenv;
 use function implode;
 use function ini_get;
@@ -79,11 +78,11 @@ use function opcache_get_status;
 use function parse_url;
 use function preg_match;
 use function preg_replace;
-use function realpath;
 use function setlocale;
 use function sort;
 use function str_starts_with;
 use function strlen;
+use function strval;
 use function substr;
 use function trim;
 use function wordwrap;
@@ -105,6 +104,7 @@ require_once __DIR__ . '/../IncludeCollector.php';
 require_once __DIR__ . '/../../IssueBuffer.php';
 require_once __DIR__ . '/../../Report.php';
 require_once __DIR__ . '/IdeDetector.php';
+require_once __DIR__ . '/../Perf/Collector.php';
 
 /**
  * @internal
@@ -128,7 +128,8 @@ final class Psalm
         'config:',
         'debug',
         'debug-by-line',
-        'debug-performance',
+        'debug-performance::',
+        'profile::',
         'debug-emitted-issues',
         'diff',
         'disable-extension:',
@@ -202,6 +203,7 @@ final class Psalm
 
         // get options from command line
         $options = CliUtils::getOptions($args, self::SHORT_OPTIONS, self::LONG_OPTIONS);
+        $given_option_names = array_map(strval(...), array_keys($options));
 
         // debug CI environment
         if (!array_key_exists('debug', $options)
@@ -215,11 +217,20 @@ final class Psalm
 
         CliUtils::rejectUnrecognisedOptions($args, self::SHORT_OPTIONS, self::LONG_OPTIONS);
 
+        self::startPerformanceCollector($options, $given_option_names);
+
         $min_type_coverage = self::parseMinTypeCoverageOption($options);
 
         CliUtils::setMemoryLimit($options);
 
-        self::syncShortOptions($options);
+        CliUtils::syncShortOptions($options, [
+            'help' => 'h',
+            'version' => 'v',
+            'init' => 'i',
+            'monochrome' => 'm',
+            'config' => 'c',
+            'root' => 'r',
+        ]);
 
         if (isset($options['c']) && is_array($options['c'])) {
             fwrite(STDERR, 'Too many config files provided' . PHP_EOL);
@@ -237,7 +248,7 @@ final class Psalm
             exit;
         }
 
-        $current_dir = self::getCurrentDir($options);
+        $current_dir = CliUtils::getCurrentDir($options);
 
         if (array_key_exists('init-ci', $options)) {
             self::generateCiConfig($current_dir);
@@ -252,17 +263,12 @@ final class Psalm
         IssueBuffer::captureServer($_SERVER);
 
         $include_collector = new IncludeCollector();
-        $autoloaders = $include_collector->runAndCollect(
-            // we ignore the FQN because of a hack in scoper.inc that needs full path
-            // phpcs:ignore SlevomatCodingStandard.Namespaces.ReferenceUsedNamesOnly.ReferenceViaFullyQualifiedName
-            /** @return list<ClassLoader> */
-            static fn(): array =>
-                CliUtils::requireAutoloaders(
-                    $current_dir,
-                    isset($options['r']),
-                    $vendor_dir,
-                    !array_key_exists('v', $options),
-                ),
+        $autoloaders = CliUtils::loadAutoloaders(
+            $include_collector,
+            $current_dir,
+            isset($options['r']),
+            $vendor_dir,
+            !array_key_exists('v', $options),
         );
 
         $run_taint_analysis = ProjectBootstrap::shouldRunTaintAnalysis($options);
@@ -273,6 +279,8 @@ final class Psalm
         }
 
         $output_format = self::initOutputFormat($options);
+
+        Perf\Collector::step('config');
 
         [$config, $init_source_dir] = self::initConfig(
             $current_dir,
@@ -305,6 +313,7 @@ final class Psalm
         $progress = self::initProgress($options, $config, $in_ci);
 
         $force_jit = $config->force_jit || isset($options['force-jit']);
+        Perf\Collector::step('restart.check');
         self::restart($options, $force_jit, $threads, $scanThreads, $progress);
 
         // after the restart: the process that restarts would print them too
@@ -385,6 +394,7 @@ final class Psalm
             self::clearGlobalCache($config);
         }
 
+        Perf\Collector::step('providers');
         $providers = ProjectBootstrap::initProviders($options, $config, $current_dir);
 
         $stdout_report_options = self::initStdoutReportOptions($options, $show_info, $output_format, $in_ci);
@@ -429,6 +439,8 @@ final class Psalm
             $project_analyzer->checkPaths($paths_to_check);
         }
 
+        Perf\Collector::stage('post');
+
         if ($find_references_to) {
             $project_analyzer->findReferencesTo($find_references_to);
         }
@@ -443,6 +455,9 @@ final class Psalm
             self::generateStubs($options, $providers, $project_analyzer);
         }
 
+        Perf\Collector::stage('report');
+        Perf\Collector::step('baseline');
+
         if (!isset($options['i'])) {
             IssueBuffer::finish(
                 $project_analyzer,
@@ -454,6 +469,41 @@ final class Psalm
         } else {
             self::autoGenerateConfig($project_analyzer, $current_dir, $init_source_dir, $vendor_dir);
         }
+    }
+
+    /**
+     * @param list<string> $given_option_names
+     */
+    private static function startPerformanceCollector(array $options, array $given_option_names): void
+    {
+        if (isset($options['debug-performance'])) {
+            if (isset($options['profile'])) {
+                fwrite(STDERR, 'Only one of --debug-performance and --profile can be given' . PHP_EOL);
+                exit(1);
+            }
+
+            $name = 'debug-performance';
+            /** @var list<string>|string|false $path type guaranteed by argument to getopt() */
+            $path = $options['debug-performance'];
+        } elseif (isset($options['profile'])) {
+            $name = 'profile';
+            /** @var list<string>|string|false $path type guaranteed by argument to getopt() */
+            $path = $options['profile'];
+        } else {
+            return;
+        }
+
+        if (is_array($path)) {
+            fwrite(STDERR, 'Only one --' . $name . ' path can be given' . PHP_EOL);
+            exit(1);
+        }
+
+        if ($path === '') {
+            fwrite(STDERR, '--' . $name . '= needs a path: use --' . $name . '=PATH or no value' . PHP_EOL);
+            exit(1);
+        }
+
+        Perf\Collector::start(is_string($path) ? $path : null, $given_option_names);
     }
 
     /** @return int<1, max> */
@@ -965,33 +1015,6 @@ final class Psalm
         exit;
     }
 
-    private static function getCurrentDir(array $options): string
-    {
-        $cwd = getcwd();
-        if (false === $cwd) {
-            fwrite(STDERR, 'Cannot get current working directory' . PHP_EOL);
-            exit(1);
-        }
-
-        $current_dir = $cwd;
-
-        if (isset($options['r']) && is_string($options['r'])) {
-            $root_path = realpath($options['r']);
-
-            if ($root_path === false) {
-                fwrite(
-                    STDERR,
-                    CliUtils::getRootDirectoryNotFoundMessage($current_dir, $options['r']) . PHP_EOL,
-                );
-                exit(1);
-            }
-
-            $current_dir = $root_path;
-        }
-
-        return $current_dir;
-    }
-
     private static function restart(
         array $options,
         bool $force_jit,
@@ -999,7 +1022,8 @@ final class Psalm
         int $scanThreads,
         Progress $progress,
     ): void {
-        $ini_handler = new PsalmRestarter('PSALM');
+        // grpc is only disabled below when it would break forked workers
+        $ini_handler = CliUtils::createRestarter('PSALM', false);
         $ini_handler->enableJit = $force_jit;
 
         if (isset($options['disable-extension'])) {
@@ -1027,15 +1051,6 @@ final class Psalm
                 . ' (https://github.com/grpc/grpc/issues/20250#issuecomment-531321945)',
             );
         }
-
-        $ini_handler->disableExtensions([
-            'uopz',
-            // extensions that are incompatible with JIT (they are also usually make Psalm slow)
-            'pcov',
-            'blackfire',
-            // Issues w/ parallel forking
-            'uv',
-        ]);
 
         // If Xdebug is enabled, restart without it
         $ini_handler->check();
@@ -1082,6 +1097,7 @@ final class Psalm
             }
         }
 
+        Perf\Collector::step('preload');
         Preloader::preload($progress, $hasJit);
     }
 
@@ -1116,38 +1132,6 @@ final class Psalm
             require_once __DIR__ . '/Refactor.php';
             Refactor::run($argv);
             exit;
-        }
-    }
-
-    /**
-     * @param array<string, false|list<mixed>|string> $options
-     * @param-out array<string, false|list<mixed>|string> $options
-     * @psalm-capabilities write-refs|read-props
-     */
-    private static function syncShortOptions(array &$options): void
-    {
-        if (array_key_exists('help', $options)) {
-            $options['h'] = false;
-        }
-
-        if (array_key_exists('version', $options)) {
-            $options['v'] = false;
-        }
-
-        if (array_key_exists('init', $options)) {
-            $options['i'] = false;
-        }
-
-        if (array_key_exists('monochrome', $options)) {
-            $options['m'] = false;
-        }
-
-        if (isset($options['config'])) {
-            $options['c'] = $options['config'];
-        }
-
-        if (isset($options['root'])) {
-            $options['r'] = $options['root'];
         }
     }
 
@@ -1517,8 +1501,13 @@ final class Psalm
             --debug-by-line
                 Debug information on a line-by-line level
 
-            --debug-performance
-                Show performance information
+            --debug-performance[=PATH]
+                Print where the time and memory went: stages, slowest files, hottest statements and functions.
+                With =PATH, also write all of it as a JSON performance profile to PATH. The path needs the `=`: after a space it is
+                a file to analyse. Debug output (--debug) distorts the timings.
+
+            --profile[=PATH]
+                Alias of --debug-performance.
 
             --debug-emitted-issues
                 Print a php backtrace to stderr when emitting issues.

@@ -34,7 +34,6 @@ use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\Statements\GlobalAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Clause;
 use Psalm\Internal\Codebase\CombinedFlowGraph;
 use Psalm\Internal\Codebase\DataFlowGraph;
@@ -69,6 +68,7 @@ use Psalm\Issue\NoValue;
 use Psalm\Issue\NullReference;
 use Psalm\Issue\ParseError;
 use Psalm\Issue\PossiblyInvalidArrayAccess;
+use Psalm\Issue\PossiblyInvalidArrayOffset;
 use Psalm\Issue\PossiblyInvalidPropertyAssignmentValue;
 use Psalm\Issue\PossiblyNullArrayAccess;
 use Psalm\Issue\PossiblyUndefinedArrayOffset;
@@ -92,6 +92,7 @@ use Psalm\Node\Expr\BinaryOp\VirtualPlus;
 use Psalm\Node\Expr\BinaryOp\VirtualPow;
 use Psalm\Node\Expr\BinaryOp\VirtualShiftLeft;
 use Psalm\Node\Expr\BinaryOp\VirtualShiftRight;
+use Psalm\Node\Expr\VirtualArrayDimFetch;
 use Psalm\Node\Expr\VirtualAssign;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Storage\Assertion\Falsy;
@@ -115,11 +116,14 @@ use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_diff_key;
 use function array_filter;
 use function array_map;
+use function array_pop;
 use function array_values;
 use function assert;
 use function count;
+use function end;
 use function implode;
 use function is_int;
 use function is_string;
@@ -213,10 +217,10 @@ final class AssignmentAnalyzer
     }
 
     /**
-     * Writing a property of a constant (`CONFIG->debug = true`, `CONFIG->items[] = 1`) is a compile error before
-     * PHP 8.6, whatever the types are
+     * Writing a property of a constant (`CONFIG->debug = true`, `CONFIG->items[] = 1`, `unset(CONFIG->debug)`, passing
+     * or binding it by reference) is a compile error before PHP 8.6, whatever the types are
      */
-    private static function checkConstantObjectWrite(StatementsAnalyzer $statements_analyzer, Expr $assign_var): void
+    public static function checkConstantObjectWrite(StatementsAnalyzer $statements_analyzer, Expr $assign_var): void
     {
         if ($statements_analyzer->getCodebase()->analysis_php_version_id >= 8_06_00) {
             return;
@@ -763,14 +767,7 @@ final class AssignmentAnalyzer
                 $statements_analyzer,
             );
 
-            if (!$context->collect_initializations
-                && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
-                && (!(($parent_source = $statements_analyzer->getSource())
-                            instanceof FunctionLikeAnalyzer)
-                        || !$parent_source->getSource() instanceof TraitAnalyzer)
-            ) {
-                $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
-            }
+            $statements_analyzer->countMixed($context, true);
 
             if (!$assign_var instanceof PhpParser\Node\Expr\PropertyFetch
                 && !strpos($root_var_id ?? '', '->')
@@ -810,14 +807,7 @@ final class AssignmentAnalyzer
                 );
             }
         } else {
-            if (!$context->collect_initializations
-                && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
-                && (!(($parent_source = $statements_analyzer->getSource())
-                        instanceof FunctionLikeAnalyzer)
-                    || !$parent_source->getSource() instanceof TraitAnalyzer)
-            ) {
-                $codebase->analyzer->incrementNonMixedCount($statements_analyzer->getFilePath());
-            }
+            $statements_analyzer->countMixed($context, false);
 
             if ($var_id
                 && isset($context->byref_constraints[$var_id])
@@ -1072,7 +1062,8 @@ final class AssignmentAnalyzer
             return;
         }
 
-        $file_path = $statements_analyzer->getRootFilePath();
+        // the type aliases of the file the docblock is in, which an inherited method is not analysed as part of
+        $file_path = $statements_analyzer->getFilePath();
 
         $file_storage_provider = $codebase->file_storage_provider;
 
@@ -1434,6 +1425,8 @@ final class AssignmentAnalyzer
         Context $context,
         ?PhpParser\Node\Stmt $from_stmt,
     ): bool {
+        self::checkConstantObjectWrite($statements_analyzer, $stmt->expr);
+
         // Usage through a reference held by a property or array item can't be tracked, so the referenced
         // variable counts as used, like the value of a regular assignment to one.
         $was_inside_general_use = $context->inside_general_use;
@@ -1824,6 +1817,32 @@ final class AssignmentAnalyzer
         }
 
         return true;
+    }
+
+    /**
+     * The declared type of the items of the array a property holds that $expr fetches: what a `foreach` by reference
+     * over it may write. Null like for getReferencedPropertyType().
+     */
+    public static function getReferencedPropertyItemType(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr $expr,
+        Context $context,
+    ): ?Union {
+        if (!$expr instanceof PropertyFetch
+            && !$expr instanceof PhpParser\Node\Expr\StaticPropertyFetch
+            && !$expr instanceof ArrayDimFetch
+        ) {
+            return null;
+        }
+
+        $property_ids = [];
+
+        return self::getReferencedPropertyType(
+            $statements_analyzer,
+            new VirtualArrayDimFetch($expr, null, $expr->getAttributes()),
+            $context,
+            $property_ids,
+        );
     }
 
     /**
@@ -2619,8 +2638,6 @@ final class AssignmentAnalyzer
     /**
      * Assigns the item of $array_type at $offset_value to a variable of a destructuring. A value that can be
      * anything gives the item no type to carry what it takes, so the item is fetched from the value here.
-     *
-     * @param int-mask-of<TaintKind::*> $removed_taints
      */
     private static function assignDestructuredItem(
         StatementsAnalyzer $statements_analyzer,
@@ -2699,6 +2716,119 @@ final class AssignmentAnalyzer
     }
 
     /**
+     * Reports a literal key or position the arrays the value may be surely lack: sealed shapes without it, and lists
+     * for a string key
+     */
+    private static function checkDestructuredOffsetExists(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr $var,
+        Union $array_type,
+        string|int $offset_value,
+    ): void {
+        $has_type_without_key = false;
+        $has_other_type = false;
+
+        foreach ($array_type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TKeyedArray
+                && !isset($atomic_type->properties[$offset_value])
+                && ($atomic_type->fallback_params === null || ($atomic_type->is_list && is_string($offset_value)))
+            ) {
+                $has_type_without_key = true;
+            } elseif (!$atomic_type instanceof TNull && !$atomic_type instanceof TFalse) {
+                $has_other_type = true;
+            }
+        }
+
+        if (!$has_type_without_key) {
+            return;
+        }
+
+        $message = 'Cannot access value with offset '
+            . (is_string($offset_value) ? "'" . $offset_value . "'" : (string) $offset_value);
+        $location = new CodeLocation($statements_analyzer->getSource(), $var);
+
+        IssueBuffer::maybeAdd(
+            $has_other_type
+                ? new PossiblyInvalidArrayOffset($message, $location)
+                : new InvalidArrayOffset($message, $location),
+            $statements_analyzer->getSuppressedIssues(),
+        );
+    }
+
+    /**
+     * The error PHP refuses to compile a destructuring with, if any. The empty entry of a trailing comma is left out,
+     * and the first entry decides whether the entries are keyed.
+     *
+     * @param PhpParser\Node\Expr\List_|PhpParser\Node\Expr\Array_ $assign_var
+     */
+    private static function getDestructuringCompileError(
+        PhpParser\Node\Expr $assign_var,
+        int $php_version_id,
+    ): ?string {
+        $items = $assign_var->items;
+
+        foreach ($items as $item) {
+            if ($item?->unpack) {
+                return 'Spread operator is not supported in assignments';
+            }
+        }
+
+        // PHP drops one trailing empty entry, the one of a trailing comma (php-parser already did for `[...]`)
+        if ($assign_var->getAttribute('kind') === PhpParser\Node\Expr\List_::KIND_LIST
+            && $items
+            && end($items) === null
+        ) {
+            array_pop($items);
+        }
+
+        $is_keyed = null;
+
+        foreach ($items as $item) {
+            if ($item !== null) {
+                $is_keyed = $item->key !== null;
+                break;
+            }
+        }
+
+        // `list() = $x` was valid before PHP 7.0
+        if ($is_keyed === null) {
+            return $php_version_id >= 7_00_00 ? 'Cannot use empty list' : null;
+        }
+
+        foreach ($items as $item) {
+            if ($item === null) {
+                if ($is_keyed) {
+                    return 'Cannot use empty array entries in keyed array assignment';
+                }
+            } elseif (($item->key !== null) !== $is_keyed) {
+                return 'Cannot mix keyed and unkeyed array entries in assignments';
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @param PhpParser\Node\Expr\List_|PhpParser\Node\Expr\Array_ $assign_var
+     */
+    private static function reportDestructuringCompileError(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr $assign_var,
+    ): void {
+        $compile_error = self::getDestructuringCompileError(
+            $assign_var,
+            $statements_analyzer->getCodebase()->analysis_php_version_id,
+        );
+
+        if ($compile_error !== null) {
+            IssueBuffer::maybeAdd(
+                new ParseError($compile_error, new CodeLocation($statements_analyzer->getSource(), $assign_var)),
+                $statements_analyzer->getSuppressedIssues(),
+            );
+        }
+    }
+
+    /**
      * @param PhpParser\Node\Expr\List_|PhpParser\Node\Expr\Array_ $assign_var
      * @param list<VarDocblockComment> $var_comments
      */
@@ -2714,6 +2844,8 @@ final class AssignmentAnalyzer
         array $var_comments,
         int $removed_taints,
     ): void {
+        self::reportDestructuringCompileError($statements_analyzer, $assign_var);
+
         $assign_value_type = TypeVariableResolver::resolveTopLevel($assign_value_type, $codebase);
 
         if (!$assign_value_type->hasArray()
@@ -2834,16 +2966,6 @@ final class AssignmentAnalyzer
 
                         continue;
                     }
-
-                    if ($assign_value_atomic_type->fallback_params === null) {
-                        IssueBuffer::maybeAdd(
-                            new InvalidArrayOffset(
-                                'Cannot access value with offset ' . $offset,
-                                new CodeLocation($statements_analyzer->getSource(), $var),
-                            ),
-                            $statements_analyzer->getSuppressedIssues(),
-                        );
-                    }
                 }
 
                 if (self::checkDestructuredArrayAccess(
@@ -2962,17 +3084,21 @@ final class AssignmentAnalyzer
 
 
 
-            if (!$assigned) {
-                if ($has_null && !$has_shape_with_key) {
-                    IssueBuffer::maybeAdd(
-                        new PossiblyNullArrayAccess(
-                            'Cannot access array value on null variable ' . $extended_var_id,
-                            new CodeLocation($statements_analyzer->getSource(), $var),
-                        ),
-                        $statements_analyzer->getSuppressedIssues(),
-                    );
-                }
+            if (!$assigned && $has_null && !$has_shape_with_key) {
+                IssueBuffer::maybeAdd(
+                    new PossiblyNullArrayAccess(
+                        'Cannot access array value on null variable ' . $extended_var_id,
+                        new CodeLocation($statements_analyzer->getSource(), $var),
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
+            }
 
+            if ($offset_value !== null) {
+                self::checkDestructuredOffsetExists($statements_analyzer, $var, $assign_value_type, $offset_value);
+            }
+
+            if (!$assigned) {
                 $has_comment_type = false;
 
                 foreach ($var_comments as $var_comment) {
@@ -3129,7 +3255,7 @@ final class AssignmentAnalyzer
 
         // prevents writing to any properties in a mutation-free context
         $statements_analyzer->signalMutation(
-            $pureCompat ? Capabilities::NONE : $mutations,
+            $pureCompat && !$isThis ? Capabilities::NONE : $mutations,
             $context,
             'property assignment',
             ImpurePropertyAssignment::class,
@@ -3263,6 +3389,16 @@ final class AssignmentAnalyzer
                     $var_object_id = spl_object_id($assign_var);
                     $cond_object_id = spl_object_id($assign_value);
 
+                    // whether each mixed variable may be unset
+                    $mixed_vars = [];
+
+                    foreach ($context->vars_in_scope as $context_var_id => $context_type) {
+                        if ($context_type->isMixed()) {
+                            $mixed_vars[$context_var_id] = $context_type->possibly_undefined
+                                || $context_type->possibly_undefined_from_try;
+                        }
+                    }
+
                     try {
                         $cond_clauses = FormulaGenerator::getFormula(
                             $cond_object_id,
@@ -3275,7 +3411,7 @@ final class AssignmentAnalyzer
 
                         $right_clauses = Context::filterClauses(
                             $var_id,
-                            $cond_clauses,
+                            self::forgetItemsOfMixedVars($cond_clauses, $mixed_vars, $cond_object_id),
                         );
 
                         $assignment_clauses = Algebra::combineOredClauses(
@@ -3293,13 +3429,17 @@ final class AssignmentAnalyzer
                         try {
                             $negated_clauses = Context::filterClauses(
                                 $var_id,
-                                FormulaGenerator::getNegatedFormula(
-                                    $cond_clauses,
-                                    $assign_value,
+                                self::forgetItemsOfMixedVars(
+                                    FormulaGenerator::getNegatedFormula(
+                                        $cond_clauses,
+                                        $assign_value,
+                                        $cond_object_id,
+                                        $context->self,
+                                        $statements_analyzer,
+                                        $codebase,
+                                    ),
+                                    $mixed_vars,
                                     $cond_object_id,
-                                    $context->self,
-                                    $statements_analyzer,
-                                    $codebase,
                                 ),
                             );
 
@@ -3351,6 +3491,34 @@ final class AssignmentAnalyzer
                 }
             }
         }
+    }
+
+    /**
+     * The clauses without those on an offset or a property of a mixed variable, which say nothing (see
+     * Clause::forgetItemsOfMixedVars()), unless a clause is about the variable itself, as in an if condition
+     *
+     * @param list<Clause> $clauses
+     * @param array<string, bool> $mixed_vars whether each mixed variable may be unset
+     * @return list<Clause>
+     * @psalm-capabilities read-props
+     */
+    private static function forgetItemsOfMixedVars(array $clauses, array $mixed_vars, int $cond_object_id): array
+    {
+        foreach ($clauses as $clause) {
+            $mixed_vars = array_diff_key($mixed_vars, $clause->possibilities);
+        }
+
+        $known_clauses = [];
+
+        foreach ($clauses as $clause) {
+            $clause = $clause->forgetItemsOfMixedVars($mixed_vars, $cond_object_id);
+
+            if (!$clause->wedge) {
+                $known_clauses[] = $clause;
+            }
+        }
+
+        return $known_clauses;
     }
 
     /**

@@ -6,6 +6,7 @@ namespace Psalm\Tests\Config;
 
 use Composer\Autoload\ClassLoader;
 use DOMDocument;
+use DOMElement;
 use DOMXPath;
 use ErrorException;
 use Override;
@@ -25,9 +26,17 @@ use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\ErrorHandler;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\Scanner\FileScanner;
+use Psalm\Issue\ArgumentIssue;
+use Psalm\Issue\ClassConstantIssue;
+use Psalm\Issue\ClassIssue;
+use Psalm\Issue\FunctionIssue;
+use Psalm\Issue\MethodIssue;
 use Psalm\Issue\PossiblyNullReference;
+use Psalm\Issue\PropertyIssue;
 use Psalm\Issue\TooManyArguments;
 use Psalm\Issue\UndefinedFunction;
+use Psalm\Issue\UnusedBaselineEntry;
+use Psalm\Issue\VariableIssue;
 use Psalm\Tests\Config\Plugin\FileTypeSelfRegisteringPlugin;
 use Psalm\Tests\Config\Plugin\TestPluginIssue;
 use Psalm\Tests\Config\Plugin\TestPluginIssueDefaultLevel;
@@ -44,6 +53,7 @@ use function array_keys;
 use function array_map;
 use function array_pop;
 use function basename;
+use function chmod;
 use function class_exists;
 use function dirname;
 use function error_get_last;
@@ -58,6 +68,9 @@ use function implode;
 use function in_array;
 use function is_array;
 use function is_dir;
+use function is_link;
+use function is_readable;
+use function is_subclass_of;
 use function json_encode;
 use function mkdir;
 use function preg_match;
@@ -389,6 +402,154 @@ final class ConfigTest extends DeferredAnalyzerTestCase
                     $last_error['line'],
                 );
             }
+        }
+    }
+
+    #[RequiresOperatingSystem('^(?!WIN)')]
+    #[DataProvider('providerSymlinkedDirectoryKeepsDirectoryOptions')]
+    public function testSymlinkedDirectoryKeepsDirectoryOptions(
+        string $directory_name,
+        string $link_path,
+        string $link_target,
+    ): void {
+        $root = (string) realpath(sys_get_temp_dir()) . '/psalm_symlink_options_' . uniqid();
+        mkdir($root . '/src', 0777, true);
+        mkdir($root . '/pkgs/a', 0777, true);
+        mkdir($root . '/outside');
+        file_put_contents($root . '/outside/a.php', '<?php');
+        mkdir($root . '/src-shared');
+        file_put_contents($root . '/src-shared/a.php', '<?php');
+
+        try {
+            if (!@symlink(str_replace('{root}', $root, $link_target), $root . '/' . $link_path)) {
+                $this->markTestSkipped('symlinks cannot be created');
+            }
+
+            $config = Config::loadFromXML(
+                $root,
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="' . $directory_name . '" resolveSymlinks="true"
+                            useStrictTypes="true" ignoreTypeStats="true" />
+                    </projectFiles>
+                </psalm>',
+            );
+
+            $file_path = $root . '/' . basename($link_target) . '/a.php';
+
+            $this->assertTrue($config->isInProjectDirs($file_path));
+            $this->assertTrue($config->useStrictTypesForFile($file_path));
+            $this->assertFalse($config->reportTypeStatsForFile($file_path));
+        } finally {
+            if (is_link($root . '/' . $link_path)) {
+                unlink($root . '/' . $link_path);
+            }
+
+            unlink($root . '/outside/a.php');
+            rmdir($root . '/outside');
+            unlink($root . '/src-shared/a.php');
+            rmdir($root . '/src-shared');
+            rmdir($root . '/pkgs/a');
+            rmdir($root . '/pkgs');
+            rmdir($root . '/src');
+            rmdir($root);
+        }
+    }
+
+    /**
+     * @psalm-pure
+     * @return iterable<string, array{string, string, string}>
+     */
+    public static function providerSymlinkedDirectoryKeepsDirectoryOptions(): iterable
+    {
+        yield 'absolute link target' => ['src', 'src/lib', '{root}/outside'];
+        yield 'relative link target' => ['src', 'src/lib', '../outside'];
+        yield 'link in a wildcard directory' => ['pkgs/*', 'pkgs/a/lib', '{root}/outside'];
+        yield 'link target sharing the directory prefix' => ['src', 'src/lib', '{root}/src-shared'];
+    }
+
+    #[RequiresOperatingSystem('^(?!WIN)')]
+    #[DataProvider('providerResolveSymlinksSkipsUnreadableDirectories')]
+    public function testResolveSymlinksSkipsUnreadableDirectories(string $directory_name): void
+    {
+        $root = (string) realpath(sys_get_temp_dir()) . '/psalm_unreadable_' . uniqid();
+        mkdir($root . '/pkgs/a/private', 0777, true);
+        file_put_contents($root . '/pkgs/a/a.php', '<?php');
+        chmod($root . '/pkgs/a/private', 0);
+
+        try {
+            if (is_readable($root . '/pkgs/a/private')) {
+                $this->markTestSkipped('directory permissions are not enforced');
+            }
+
+            $config = Config::loadFromXML(
+                $root,
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="' . $directory_name . '" resolveSymlinks="true" />
+                        <ignoreFiles>
+                            <directory name="pkgs/a/private" />
+                        </ignoreFiles>
+                    </projectFiles>
+                </psalm>',
+            );
+
+            $this->assertTrue($config->isInProjectDirs($root . '/pkgs/a/a.php'));
+        } finally {
+            chmod($root . '/pkgs/a/private', 0777);
+            rmdir($root . '/pkgs/a/private');
+            unlink($root . '/pkgs/a/a.php');
+            rmdir($root . '/pkgs/a');
+            rmdir($root . '/pkgs');
+            rmdir($root);
+        }
+    }
+
+    /**
+     * @psalm-pure
+     * @return iterable<string, array{string}>
+     */
+    public static function providerResolveSymlinksSkipsUnreadableDirectories(): iterable
+    {
+        yield 'directory' => ['pkgs'];
+        yield 'wildcard directory' => ['pkgs/*'];
+    }
+
+    public function testDirectoryOptionsDoNotApplyToSiblingDirectories(): void
+    {
+        $root = (string) realpath(sys_get_temp_dir()) . DIRECTORY_SEPARATOR . 'psalm_sibling_options_' . uniqid();
+        mkdir($root . '/src', 0777, true);
+        mkdir($root . '/src2');
+        file_put_contents($root . '/src/a.php', '<?php');
+        file_put_contents($root . '/src2/b.php', '<?php');
+
+        try {
+            $config = Config::loadFromXML(
+                $root,
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="src" useStrictTypes="true" ignoreTypeStats="true" />
+                        <directory name="src2" />
+                    </projectFiles>
+                </psalm>',
+            );
+
+            $src_file = $root . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'a.php';
+            $src2_file = $root . DIRECTORY_SEPARATOR . 'src2' . DIRECTORY_SEPARATOR . 'b.php';
+
+            $this->assertTrue($config->useStrictTypesForFile($src_file));
+            $this->assertFalse($config->reportTypeStatsForFile($src_file));
+            $this->assertFalse($config->useStrictTypesForFile($src2_file));
+            $this->assertTrue($config->reportTypeStatsForFile($src2_file));
+        } finally {
+            unlink($root . '/src/a.php');
+            unlink($root . '/src2/b.php');
+            rmdir($root . '/src');
+            rmdir($root . '/src2');
+            rmdir($root);
         }
     }
 
@@ -1601,6 +1762,111 @@ final class ConfigTest extends DeferredAnalyzerTestCase
         $this->analyzeFile($file_path, new Context());
     }
 
+    /**
+     * The config narrows an issue of a class, method, property, ... to the ones it names, so the schema must allow
+     * naming them
+     */
+    public function testTheSchemaAllowsNamingWhatAnIssueIsAbout(): void
+    {
+        $schema = new DOMDocument();
+        $schema->load(dirname(__DIR__, 2) . '/config.xsd');
+        $xpath = new DOMXPath($schema);
+        $xpath->registerNamespace('xs', 'http://www.w3.org/2001/XMLSchema');
+
+        $handler_types = [
+            ClassIssue::class => 'ClassIssueHandlerType',
+            MethodIssue::class => 'MethodIssueHandlerType',
+            FunctionIssue::class => 'FunctionIssueHandlerType',
+            PropertyIssue::class => 'PropertyIssueHandlerType',
+            ArgumentIssue::class => 'ArgumentIssueHandlerType',
+            VariableIssue::class => 'VariableIssueHandlerType',
+            ClassConstantIssue::class => 'ClassConstantIssueHandlerType',
+        ];
+
+        $mismatches = [];
+        $checked = 0;
+
+        foreach ($xpath->query('//xs:complexType[@name="IssueHandlersType"]//xs:element') ?: [] as $element) {
+            if (!$element instanceof DOMElement) {
+                continue;
+            }
+
+            $issue_class = 'Psalm\\Issue\\' . $element->getAttribute('name');
+
+            // never instantiated: IssueBuffer::finish() reports it without a class or the config's filters
+            if (!class_exists($issue_class) || $issue_class === UnusedBaselineEntry::class) {
+                continue;
+            }
+
+            foreach ($handler_types as $issue_parent => $handler_type) {
+                if (is_subclass_of($issue_class, $issue_parent)) {
+                    $checked++;
+
+                    if ($element->getAttribute('type') !== $handler_type) {
+                        $mismatches[] = $element->getAttribute('name') . ' is not a ' . $handler_type;
+                    }
+
+                    break;
+                }
+            }
+        }
+
+        $this->assertGreaterThan(50, $checked);
+        $this->assertSame([], $mismatches);
+    }
+
+    public function testAMissingDependencyIsSuppressedByTheNameOfTheDependency(): void
+    {
+        $this->expectNotToPerformAssertions();
+
+        $this->analyzeClassWithAMissingDependency('Not\\Currently\\Installed');
+    }
+
+    public function testAMissingDependencyIsNotSuppressedByTheNameOfTheClassDependingOnIt(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('MissingDependency');
+
+        $this->analyzeClassWithAMissingDependency('Layer');
+    }
+
+    private function analyzeClassWithAMissingDependency(string $referenced_class): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                    <issueHandlers>
+                        <MissingDependency>
+                            <errorLevel type="suppress">
+                                <referencedClass name="' . $referenced_class . '" />
+                            </errorLevel>
+                        </MissingDependency>
+                        <UndefinedClass errorLevel="suppress" />
+                    </issueHandlers>
+                </psalm>',
+            ),
+        );
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                class Layer extends Not\Currently\Installed {}
+
+                function f(): void {
+                    new Layer();
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
     public function testEveryExtensionOfTheSchemaCanBeEnabled(): void
     {
         $schema = new DOMDocument();
@@ -1715,6 +1981,12 @@ final class ConfigTest extends DeferredAnalyzerTestCase
             'openssl',
             '<?php
                 echo OPENSSL_ALGO_SHA256, OPENSSL_KEYTYPE_RSA, OPENSSL_VERSION_NUMBER;',
+        ];
+
+        yield 'pgsql' => [
+            'pgsql',
+            '<?php
+                echo PGSQL_CONNECT_FORCE_NEW, PGSQL_ASSOC, PGSQL_DIAG_SQLSTATE, PGSQL_LIBPQ_VERSION;',
         ];
 
         yield 'intl' => [
@@ -2843,6 +3115,21 @@ final class ConfigTest extends DeferredAnalyzerTestCase
                 '<psalm></psalm>',
                 ['Psalm\SymfonyPsalmPlugin\Plugin'],
             ],
+            'requiredSymfonyComponent' => [
+                ['composer.json' => '{"require": {"symfony/console": "^7"}}'],
+                '<psalm></psalm>',
+                ['Psalm\SymfonyPsalmPlugin\Plugin'],
+            ],
+            'requiredSymfonyAi' => [
+                ['composer.json' => '{"require": {"symfony/ai-platform": "^1"}}'],
+                '<psalm></psalm>',
+                ['Psalm\SymfonyPsalmPlugin\Plugin'],
+            ],
+            'requiredSymfonyPolyfill' => [
+                ['composer.json' => '{"require": {"symfony/polyfill-mbstring": "^1"}}'],
+                '<psalm></psalm>',
+                [],
+            ],
             'requiredDoctrineOrm' => [
                 ['composer.json' => '{"require": {"doctrine/orm": "^3"}}'],
                 '<psalm></psalm>',
@@ -2904,7 +3191,7 @@ final class ConfigTest extends DeferredAnalyzerTestCase
                 [],
             ],
             'requiredOtherLibraries' => [
-                ['composer.json' => '{"require": {"symfony/console": "^7", "guzzlehttp/guzzle": "^7"}}'],
+                ['composer.json' => '{"require": {"monolog/monolog": "^3", "guzzlehttp/guzzle": "^7"}}'],
                 '<psalm></psalm>',
                 [],
             ],
@@ -3840,6 +4127,31 @@ final class ConfigTest extends DeferredAnalyzerTestCase
             $config->getReportingLevelForIssue(
                 new TestPluginIssueDefaultLevel(
                     'test message',
+                    new Raw('aaa', 'aaa.php', 'aaa.php', 1, 2),
+                ),
+            ),
+        );
+    }
+
+    public function testReportInfoFalseSuppressesAnIssueThatTakesInfoFromItsParent(): void
+    {
+        $config = Config::loadFromXML(
+            (string) getcwd(),
+            <<<XML
+            <?xml version="1.0"?>
+            <psalm reportInfo="false">
+                <issueHandlers>
+                    <NullReference errorLevel="info" />
+                </issueHandlers>
+            </psalm>
+            XML,
+        );
+
+        $this->assertSame(
+            Config::REPORT_SUPPRESS,
+            $config->getReportingLevelForIssue(
+                new PossiblyNullReference(
+                    'Cannot call method on possibly null value',
                     new Raw('aaa', 'aaa.php', 'aaa.php', 1, 2),
                 ),
             ),

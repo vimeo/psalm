@@ -8,6 +8,7 @@ use Closure;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
+use Psalm\Internal\Perf;
 use Psalm\Internal\Provider\ReturnTypeProvider\ArrayChunkReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\ArrayColumnReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\ArrayCombineReturnTypeProvider;
@@ -47,11 +48,13 @@ use Psalm\Internal\Provider\ReturnTypeProvider\HexdecReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\HrtimeReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\ImplodeReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\InArrayReturnTypeProvider;
+use Psalm\Internal\Provider\ReturnTypeProvider\IniGetReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\IteratorToArrayReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\MbInternalEncodingReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\MbStrtolowerReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\MinMaxReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\MktimeReturnTypeProvider;
+use Psalm\Internal\Provider\ReturnTypeProvider\NumericCastFunctionReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\ParseUrlReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\PowReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\PropertyExistsReturnTypeProvider;
@@ -116,6 +119,7 @@ final class FunctionReturnTypeProvider
         $this->registerClass(FilterInputReturnTypeProvider::class);
         $this->registerClass(FilterVarReturnTypeProvider::class);
         $this->registerClass(IteratorToArrayReturnTypeProvider::class);
+        $this->registerClass(NumericCastFunctionReturnTypeProvider::class);
         $this->registerClass(ParseUrlReturnTypeProvider::class);
         $this->registerClass(PropertyExistsReturnTypeProvider::class);
         $this->registerClass(StrReplaceReturnTypeProvider::class);
@@ -147,6 +151,7 @@ final class FunctionReturnTypeProvider
         $this->registerClass(GetParentClassReturnTypeProvider::class);
         $this->registerClass(HrtimeReturnTypeProvider::class);
         $this->registerClass(MbStrtolowerReturnTypeProvider::class);
+        $this->registerClass(IniGetReturnTypeProvider::class);
     }
 
     /**
@@ -166,11 +171,12 @@ final class FunctionReturnTypeProvider
     /**
      * @param lowercase-string $function_id
      * @param Closure(FunctionReturnTypeProviderEvent): ?Union $c
-     * @psalm-external-mutation-free
      */
     public function registerClosure(string $function_id, Closure $c): void
     {
-        self::$handlers[$function_id][] = $c;
+        self::$handlers[$function_id][] = Perf\Collector::$enabled
+            ? Perf\Collector::wrap($c, 'FunctionReturnType')
+            : $c;
     }
 
     /**

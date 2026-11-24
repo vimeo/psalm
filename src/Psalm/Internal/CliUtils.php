@@ -16,6 +16,12 @@ use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Cli\Psalm;
 use Psalm\Internal\Cli\Psalter;
 use Psalm\Internal\Cli\Refactor;
+use Psalm\Internal\Fork\PsalmRestarter;
+use Psalm\Progress\DebugProgress;
+use Psalm\Progress\DefaultProgress;
+use Psalm\Progress\LongProgress;
+use Psalm\Progress\Progress;
+use Psalm\Progress\VoidProgress;
 use Psalm\Report;
 use RuntimeException;
 use UnexpectedValueException;
@@ -32,6 +38,7 @@ use function file_exists;
 use function file_get_contents;
 use function file_put_contents;
 use function fwrite;
+use function getcwd;
 use function getenv;
 use function implode;
 use function in_array;
@@ -102,27 +109,33 @@ final class CliUtils
         }
 
         $autoload_files = [];
-
         foreach ($autoload_roots as $autoload_root) {
             $has_autoloader = false;
 
-            $nested_autoload_file = dirname($autoload_root, 2) . DIRECTORY_SEPARATOR . 'autoload.php';
-
-            // note: don't realpath $nested_autoload_file, or phar version will fail
-            if (file_exists($nested_autoload_file)) {
-                if (!in_array($nested_autoload_file, $autoload_files, false)) {
-                    $autoload_files[] = $nested_autoload_file;
-                }
-                $has_autoloader = true;
-            }
-
+            // check if the current dir has a vendor first, before loading any parent directories
+            // since composer uses a flat dependency model, there's only 1 vendor and no nesting
+            // except if psalm would scope the vendor with php-scoper - which we do, but only distribute as phar
+            // therefore that's not an issue here
+            // unless there's a different composer.json path, but that means a different autoload_root iteration too
+            // fix https://github.com/vimeo/psalm/issues/7381
             $vendor_autoload_file =
                 $autoload_root . DIRECTORY_SEPARATOR . $vendor_dir . DIRECTORY_SEPARATOR . 'autoload.php';
 
             // note: don't realpath $vendor_autoload_file, or phar version will fail
             if (file_exists($vendor_autoload_file)) {
-                if (!in_array($vendor_autoload_file, $autoload_files, false)) {
+                if (!in_array($vendor_autoload_file, $autoload_files, true)) {
                     $autoload_files[] = $vendor_autoload_file;
+                }
+                $has_autoloader = true;
+            }
+
+            // if the working/root dir is not vendor/vimeo/psalm, make sure we load psalm's autoloader too
+            $nested_autoload_file = dirname($autoload_root, 2) . DIRECTORY_SEPARATOR . 'autoload.php';
+
+            // note: don't realpath $nested_autoload_file, or phar version will fail
+            if (!$has_autoloader && file_exists($nested_autoload_file)) {
+                if (!in_array($nested_autoload_file, $autoload_files, true)) {
+                    $autoload_files[] = $nested_autoload_file;
                 }
                 $has_autoloader = true;
             }
@@ -192,6 +205,96 @@ final class CliUtils
             || preg_match('/^[A-Za-z]:[\\\\\/]/', $root) === 1;
 
         return 'Could not locate root directory ' . ($is_absolute ? $root : $current_dir . DIRECTORY_SEPARATOR . $root);
+    }
+
+    /**
+     * The project root: `-r`/`--root` if given, the current working directory otherwise
+     */
+    public static function getCurrentDir(array $options): string
+    {
+        $cwd = getcwd();
+        if (false === $cwd) {
+            fwrite(STDERR, 'Cannot get current working directory' . PHP_EOL);
+            exit(1);
+        }
+
+        $current_dir = $cwd;
+
+        if (isset($options['r']) && is_string($options['r'])) {
+            $root_path = realpath($options['r']);
+
+            if ($root_path === false) {
+                fwrite(
+                    STDERR,
+                    self::getRootDirectoryNotFoundMessage($current_dir, $options['r']) . PHP_EOL,
+                );
+                exit(1);
+            }
+
+            $current_dir = $root_path;
+        }
+
+        return $current_dir;
+    }
+
+    /**
+     * Copies each given long option onto its short alias
+     *
+     * @param array<string, false|list<false|string>|string> $options
+     * @param-out array<string, false|list<false|string>|string> $options
+     * @param array<string, string> $long_to_short
+     * @psalm-capabilities write-refs
+     */
+    public static function syncShortOptions(array &$options, array $long_to_short): void
+    {
+        foreach ($long_to_short as $long => $short) {
+            if (array_key_exists($long, $options)) {
+                $options[$short] = $options[$long];
+            }
+        }
+    }
+
+    /**
+     * @return list<ClassLoader>
+     */
+    public static function loadAutoloaders(
+        IncludeCollector $include_collector,
+        string $current_dir,
+        bool $has_explicit_root,
+        string $vendor_dir,
+        bool $project_autoloader_required = true,
+    ): array {
+        return $include_collector->runAndCollect(
+            /** @return list<ClassLoader> */
+            static fn(): array => self::requireAutoloaders(
+                $current_dir,
+                $has_explicit_root,
+                $vendor_dir,
+                $project_autoloader_required,
+            ),
+        );
+    }
+
+    /**
+     * A restarter that also drops the extensions that break forked workers or slow Psalm down
+     */
+    public static function createRestarter(string $prefix, bool $disable_grpc = true): PsalmRestarter
+    {
+        $ini_handler = new PsalmRestarter($prefix);
+        if ($disable_grpc) {
+            $ini_handler->disableExtension('grpc');
+        }
+
+        $ini_handler->disableExtensions([
+            'uopz',
+            // extensions that are incompatible with JIT (they also usually make Psalm slow)
+            'pcov',
+            'blackfire',
+            // Issues w/ parallel forking
+            'uv',
+        ]);
+
+        return $ini_handler;
     }
 
     /**
@@ -266,12 +369,14 @@ final class CliUtils
     }
 
     /**
-     * Exits with code 1 when $args hold an option that isn't in $short_options or $long_options
+     * Exits with code 1 when $args hold an option that isn't in $short_options or $long_options, or a long
+     * option that requires a value but was given an empty one, like "--threads="
      *
      * @param list<string> $args the arguments, without the script name
      * @param list<string> $short_options
      * @param list<string> $long_options
-     * @param list<string> $ignored_options options of the psalm command that forwarded the call, like "--alter"
+     * @param list<string> $ignored_options options of the psalm command that forwarded the call, like "--alter",
+     *      and those the command validates itself
      */
     public static function rejectUnrecognisedOptions(
         array $args,
@@ -279,7 +384,9 @@ final class CliUtils
         array $long_options,
         array $ignored_options = [],
     ): void {
-        foreach (self::parseOptions($args, $short_options, $long_options)[1] as $option) {
+        [, $unrecognised, $empty] = self::parseOptions($args, $short_options, $long_options);
+
+        foreach ($unrecognised as $option) {
             if (in_array($option, $ignored_options, true)) {
                 continue;
             }
@@ -291,20 +398,36 @@ final class CliUtils
             );
             exit(1);
         }
+
+        foreach ($empty as $option) {
+            if (in_array($option, $ignored_options, true)) {
+                continue;
+            }
+
+            fwrite(
+                STDERR,
+                'Argument "' . $option . '" requires a value' . PHP_EOL
+                . 'Type --help to see a list of supported arguments' . PHP_EOL,
+            );
+            exit(1);
+        }
     }
 
     /**
      * @param list<string> $args
      * @param list<string> $short_options
      * @param list<string> $long_options
-     * @return array{array<string, false|list<false|string>|string>, list<string>} the options like getopt()
-     *      returns them, and the options that aren't in $short_options and $long_options, like "-z"
+     * @return array{array<string, false|list<false|string>|string>, list<string>, list<string>} the options like
+     *      getopt() returns them, the options that aren't in $short_options and $long_options, like "-z", and
+     *      the options that require a value but were given an empty one or none, like "--threads=" or a
+     *      trailing "--threads"
      * @psalm-capabilities read-props|write-this-props|write-refs
      */
     private static function parseOptions(array $args, array $short_options, array $long_options): array
     {
         $options = [];
         $unrecognised = [];
+        $empty = [];
 
         for ($i = 0, $count = count($args); $i < $count; ++$i) {
             $arg = $args[$i];
@@ -333,6 +456,10 @@ final class CliUtils
                     $unrecognised[] = '--' . $name;
                 } elseif ($value === '') {
                     // getopt() drops an option given as --name=
+                    if ($arity === ':') {
+                        $empty[] = '--' . $name;
+                    }
+
                     continue;
                 } elseif ($arity === '') {
                     self::addOption($options, $name, false);
@@ -342,6 +469,8 @@ final class CliUtils
                     self::addOption($options, $name, $value);
                 } elseif (isset($args[$i + 1])) {
                     self::addOption($options, $name, $args[++$i]);
+                } else {
+                    $empty[] = '--' . $name;
                 }
 
                 continue;
@@ -368,13 +497,15 @@ final class CliUtils
                     self::addOption($options, $name, $value[0] === '=' ? substr($value, 1) : $value);
                 } elseif ($arity === ':' && isset($args[$i + 1])) {
                     self::addOption($options, $name, $args[++$i]);
+                } elseif ($arity === ':') {
+                    $empty[] = '-' . $name;
                 }
 
                 break;
             }
         }
 
-        return [$options, $unrecognised];
+        return [$options, $unrecognised, $empty];
     }
 
     /**
@@ -811,6 +942,30 @@ final class CliUtils
                 exit(1);
             }
         }
+    }
+
+    /**
+     * The progress of the commands that alter code: psalter and psalm-refactor
+     */
+    public static function getAlterProgress(array $options, bool $in_ci): Progress
+    {
+        if (array_key_exists('debug', $options) || array_key_exists('debug-by-line', $options)) {
+            return new DebugProgress();
+        }
+
+        // CI takes precedence over AI detection: persistent CI logs still want
+        // per-phase breadcrumbs for humans reviewing the build.
+        if (isset($options['no-progress']) || (!$in_ci && self::runningUnderAiAgent())) {
+            return new VoidProgress();
+        }
+
+        if ($in_ci || !self::streamIsInteractive(STDERR)) {
+            // Same rationale as in Psalm.php: a `\r`-based progress bar on a
+            // piped stderr just floods the log with every intermediate update.
+            return new LongProgress(true, false, true);
+        }
+
+        return new DefaultProgress();
     }
 
     public static function runningInCI(): bool

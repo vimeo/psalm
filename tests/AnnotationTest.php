@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Override;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
@@ -24,6 +25,73 @@ final class AnnotationTest extends TestCase
         parent::setUp();
         $codebase = $this->project_analyzer->getCodebase();
         $codebase->reportUnusedVariables();
+    }
+
+    #[DataProvider('providerVariableTagWithoutType')]
+    public function testVariableTagWithoutTypeIsAMisplacedVariable(string $code): void
+    {
+        $this->addFile('somefile.php', $code);
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('Misplaced variable');
+
+        $this->withErrorsThrown(fn() => $this->analyzeFile('somefile.php', new Context()));
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     * @psalm-pure
+     */
+    public static function providerVariableTagWithoutType(): iterable
+    {
+        yield 'property' => [
+            '<?php
+                /**
+                 * @property
+                 *        $p
+                 */
+                final class A {}',
+        ];
+        yield 'propertyRead' => [
+            '<?php
+                /**
+                 * @property-read
+                 *        $p
+                 */
+                final class A {}',
+        ];
+        yield 'global' => [
+            '<?php
+                /**
+                 * @global
+                 *        $g
+                 */
+                function f(): void {}',
+        ];
+        yield 'param' => [
+            '<?php
+                /**
+                 * @param
+                 *        $p
+                 */
+                function f(int $p): void {}',
+        ];
+        yield 'paramOut' => [
+            '<?php
+                /**
+                 * @param-out
+                 *        $p
+                 */
+                function f(?int &$p): void {}',
+        ];
+        yield 'paramClosureThis' => [
+            '<?php
+                /**
+                 * @param-closure-this
+                 *        $c
+                 */
+                function f(Closure $c): void {}',
+        ];
     }
 
     public function testLessSpecificImplementedReturnTypeWithDocblockOnMultipleLines(): void
@@ -1831,7 +1899,7 @@ final class AnnotationTest extends TestCase
                 'code' => '<?php
                     $_arr = ["foo\\bar\nbaz" => "literal"];',
                 'assertions' => [
-                    '$_arr' => 'array{\'foo\\\\bar\nbaz\': string}',
+                    '$_arr' => 'array{"foo\\\\bar\nbaz": string}',
                 ],
             ],
             'doubleSpaceBeforeAt' => [
@@ -1896,6 +1964,26 @@ final class AnnotationTest extends TestCase
                         public const OPEN = 1;
                         public const MODIFIED = 2;
                         public const NEW = 4;
+                    }
+
+                    /**
+                     * @param int-mask-of<FileFlag::*> $flags
+                     */
+                    function takesFlags(int $flags) : void {
+                        echo $flags;
+                    }
+
+                    takesFlags(FileFlag::MODIFIED | FileFlag::NEW);',
+            ],
+            'intMaskOfClassWildcardIgnoresConstantsThatAreNotIntegers' => [
+                'code' => '<?php
+                    final class FileFlag {
+                        public const OPEN = 1;
+                        public const MODIFIED = 2;
+                        public const NEW = 4;
+                        public const NAME = "flags";
+                        public const RATIO = 1.5;
+                        public const NOTHING = null;
                     }
 
                     /**
@@ -2341,6 +2429,59 @@ final class AnnotationTest extends TestCase
                         return $foo;
                     }',
             ],
+            'typeAndVariableLinesOfEachTag' => [
+                'code' => '<?php
+                    /**
+                     * @property int $a
+                     * @property-read string &$b
+                     */
+                    final class A {
+                        public function __get(string $name) {
+                            return null;
+                        }
+                    }
+
+                    /**
+                     * @param int ...$xs
+                     * @return list<int>
+                     */
+                    function variadic(...$xs): array {
+                        return array_values($xs);
+                    }
+
+                    /**
+                     * @param int &$x
+                     * @param-out string $x
+                     */
+                    function byRef(&$x): int {
+                        $old = $x;
+                        $x = "a";
+                        return $old;
+                    }
+
+                    /**
+                     * @global float $g
+                     */
+                    function readGlobal(): float {
+                        global $g;
+                        return $g;
+                    }
+
+                    $o = new A();
+                    $pa = $o->a;
+                    $pb = $o->b;
+                    $xs = variadic(1, 2);
+                    $r = 1;
+                    $old = byRef($r);',
+                'assertions' => [
+                    '$pa===' => 'int',
+                    '$pb===' => 'string',
+                    '$xs===' => 'list<int>',
+                    '$r===' => 'string',
+                    '$old===' => 'int',
+                ],
+                'ignored_issues' => ['UnusedVariable'],
+            ],
             'fileLevelVarDocblockBeforeAUseStatement' => [
                 'code' => '<?php
                     /**
@@ -2551,6 +2692,62 @@ final class AnnotationTest extends TestCase
                 'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:14:27 - '
                     . 'Argument 1 of Foo\f expects 0|4, but 1 provided',
             ],
+            'intMaskOfClassWildcardMatchingAnEnumConstantStillChecksTheArgument' => [
+                'code' => '<?php
+                    enum E { case X; }
+
+                    final class A {
+                        public const F_ONE = 1;
+                        public const F_TWO = 2;
+                        public const F_ENUM = E::X;
+
+                        /** @param int-mask-of<self::F_*> $a */
+                        public static function a(int $a): void {
+                            echo $a;
+                        }
+                    }
+
+                    A::a(1234);',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'intMaskOfClassWildcardMatchingAnArrayConstantStillChecksTheArgument' => [
+                'code' => '<?php
+                    final class A {
+                        public const F_ONE = 1;
+                        public const F_TWO = 2;
+                        public const F_LIST = [];
+
+                        /** @param int-mask-of<self::F_*> $a */
+                        public static function a(int $a): void {
+                            echo $a;
+                        }
+                    }
+
+                    A::a(1234);',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'intMaskOfClassWildcardMatchingAStringConstantStillChecksTheArgument' => [
+                'code' => '<?php
+                    final class FileFlag {
+                        public const OPEN = 1;
+                        public const MODIFIED = 2;
+                        public const NEW = 4;
+                        public const MISTAKE = "string";
+                    }
+
+                    /** @param int-mask-of<FileFlag::*> $flags */
+                    function takesFlags(int $flags): void {
+                        echo $flags;
+                    }
+
+                    takesFlags(1234);',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:14:32 - '
+                    . 'Argument 1 of takesFlags expects 0|1|2|3|4|5|6|7, but 1234 provided',
+            ],
             'intMaskOfANonIntegerConstantOfTheNamespace' => [
                 'code' => '<?php
                     namespace Foo;
@@ -2714,6 +2911,14 @@ final class AnnotationTest extends TestCase
                         global $bar;
                     }',
                 'error_message' => 'InvalidClass',
+            ],
+            'globalWithoutName' => [
+                'code' => '<?php
+                    /**
+                     * @global int
+                     */
+                    function f(): void {}',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:21 - Badly-formatted @global in docblock for f',
             ],
             'globalDocblockUndefinedClass' => [
                 'code' => '<?php

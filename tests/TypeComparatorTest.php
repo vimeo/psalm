@@ -10,9 +10,13 @@ use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TypeTokenizer;
 use Psalm\Type;
+use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TGenericObject;
+use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TPropertiesOf;
+use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Union;
 
 use function array_diff_key;
@@ -39,6 +43,139 @@ final class TypeComparatorTest extends TestCase
                 $type_2,
             ),
         );
+    }
+
+    public function testDecompositionRestrictsMixedArrayKeys(): void
+    {
+        $this->assertTrue(UnionTypeComparator::isContainedBy(
+            $this->project_analyzer->getCodebase(),
+            Type::parseString('iterable<mixed, int>'),
+            new Union([
+                Type::parseString('array<array-key, int>')->getSingleAtomic(),
+                Type::parseString('Traversable<mixed, int>')->getSingleAtomic(),
+            ]),
+        ));
+    }
+
+    #[DataProvider('decomposedIterableInferenceBoundCases')]
+    public function testDecomposedIterablePreservesInferenceBounds(bool $upper): void
+    {
+        $variable = new Union([new TTypeVariable('_test')]);
+        $input_value = $upper ? $variable : Type::getInt();
+        $container_value = $upper ? Type::getInt() : $variable;
+        $result = new TypeComparisonResult();
+        $this->assertTrue(UnionTypeComparator::isContainedBy(
+            $this->project_analyzer->getCodebase(),
+            new Union([new TIterable([Type::getInt(), $input_value])]),
+            new Union([
+                new TArray([Type::getInt(), $container_value]),
+                new TGenericObject('Traversable', [Type::getInt(), $container_value]),
+            ]),
+            false,
+            false,
+            $result,
+        ));
+        $bounds = $upper ? $result->type_variable_upper_bounds : $result->type_variable_lower_bounds;
+        $this->assertNotEmpty($bounds);
+        foreach ($bounds as [$name, $bound]) {
+            $this->assertSame('_test', $name);
+            $this->assertSame('int', $bound->type->getId());
+        }
+    }
+
+    /**
+     * @return iterable<string, array{bool}>
+     * @psalm-pure
+     */
+    public static function decomposedIterableInferenceBoundCases(): iterable
+    {
+        yield 'lower bounds' => [false];
+        yield 'upper bounds' => [true];
+    }
+
+    public function testSymbolicContainerKeepsIterableBound(): void
+    {
+        $input = Type::parseString('iterable<int, string>');
+        $result = new TypeComparisonResult();
+        $this->assertTrue(UnionTypeComparator::isContainedBy(
+            $this->project_analyzer->getCodebase(),
+            $input,
+            new Union([new TTypeVariable('_test')]),
+            false,
+            false,
+            $result,
+        ));
+        $this->assertCount(1, $result->type_variable_lower_bounds);
+        $this->assertSame($input->getId(), $result->type_variable_lower_bounds[0][1]->type->getId());
+    }
+
+    public function testIterableContainedBySeparateArrayAndTraversableAtoms(): void
+    {
+        $container = new Union([
+            Type::parseString('array<string, int>')->getSingleAtomic(),
+            Type::parseString('Traversable<string, int>')->getSingleAtomic(),
+        ]);
+        $result = new TypeComparisonResult();
+        $this->assertTrue(UnionTypeComparator::isContainedBy(
+            $this->project_analyzer->getCodebase(),
+            Type::parseString('iterable<string, int>'),
+            $container,
+            false,
+            false,
+            $result,
+        ));
+        $this->assertNotTrue($result->type_coerced);
+        $this->assertNotTrue($result->type_coerced_from_mixed);
+        $this->assertNotTrue($result->to_string_cast);
+
+        $failure = new TypeComparisonResult();
+        $this->assertFalse(UnionTypeComparator::isContainedBy(
+            $this->project_analyzer->getCodebase(),
+            Type::parseString('iterable<mixed, mixed>'),
+            $container,
+            false,
+            false,
+            $failure,
+        ));
+        $this->assertTrue($failure->type_coerced);
+        $this->assertTrue($failure->type_coerced_from_mixed);
+    }
+
+    #[DataProvider('iterableDiagnosticCases')]
+    public function testIterableDiagnostics(string $input, string $container, bool $coerced, bool $mixed): void
+    {
+        $container_type = Type::parseString($container);
+        foreach ([$container_type, $container_type->setTypes(array_reverse($container_type->getAtomicTypes()))] as $type) {
+            $result = new TypeComparisonResult();
+            $this->assertFalse(UnionTypeComparator::isContainedBy(
+                $this->project_analyzer->getCodebase(),
+                Type::parseString($input),
+                $type,
+                false,
+                false,
+                $result,
+            ));
+            $this->assertSame($coerced, (bool) $result->type_coerced);
+            $this->assertSame($mixed, (bool) $result->type_coerced_from_mixed);
+        }
+    }
+
+    /**
+     * @return iterable<string, array{string, string, bool, bool}>
+     * @psalm-pure
+     */
+    public static function iterableDiagnosticCases(): iterable
+    {
+        yield 'hard keys with mixed values' => ['array<int, mixed>', 'iterable<string, int>', false, true];
+        yield 'valid keys with mixed values' => ['array<string, mixed>', 'iterable<string, int>', true, true];
+        yield 'mixed keys with hard values' => ['array<mixed, string>', 'iterable<int, int>', false, true];
+        yield 'hard keys and values' => ['array<int, string>', 'iterable<string, int>', false, false];
+        yield 'direct iterable coercion' => ['iterable<mixed, mixed>', 'iterable<string>', true, true];
+        yield 'array to iterable coercion' => ['array', 'iterable<string>', true, true];
+        yield 'both halves coerce' => ['iterable<mixed, mixed>', 'array<string>|Traversable<string>', true, true];
+        yield 'array half cannot cover traversable' => ['iterable<mixed, mixed>', 'array<string>', false, false];
+        yield 'uncovered traversable half' => ['iterable<mixed, mixed>', 'array<string>|int', false, false];
+        yield 'known generic mismatch' => ['iterable<string, string>', 'list<int>|Traversable<int, int>', false, false];
     }
 
     /**
@@ -240,6 +377,9 @@ final class TypeComparatorTest extends TestCase
     public static function getSuccessfulComparisons(): array
     {
         return [
+            'iterableUnion' => ['array<string, int>|Traversable<string, int>', 'iterable<string, int>'],
+            'mixedIterableUnion' => ['array<array-key, mixed>|Traversable<mixed, mixed>', 'iterable<mixed, mixed>'],
+            'unparameterizedIterableUnion' => ['array|Traversable', 'iterable'],
             'iterableAcceptsArray' => [
                 'iterable',
                 'array',
@@ -525,6 +665,10 @@ final class TypeComparatorTest extends TestCase
             '1|2',
             "'1'",
         ];
+        yield 'iterableListGenericMismatch' => ['list<int>|Traversable<int, int>', 'iterable<string, string>'];
+        yield 'nestedTraversableIsNotContainer' => ['array<int, Traversable>|int', 'iterable<string, string>'];
+        yield 'iterableKeyMismatch' => ['array<int, string>|Traversable<int, string>', 'iterable<string, string>'];
+        yield 'iterableValueMismatch' => ['array<string, int>|Traversable<string, int>', 'iterable<string, string>'];
     }
 
     #[DataProvider('getDifferentLiterals')]

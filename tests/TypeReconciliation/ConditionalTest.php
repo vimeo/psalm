@@ -196,6 +196,91 @@ final class ConditionalTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'strictFalseComparisonOfACoalesceWithNullIsReachableAfterATruthyCoalesce' => [
+                'code' => '<?php
+                    /** @param array<string, mixed> $context */
+                    function g(array $context): void {
+                        if ($context["k"] ?? false) {
+                            echo 0;
+                        } elseif (false !== ($context["k"] ?? null)) {
+                            echo 1;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'truthyCoalesceWithFalseEstablishesTheKey' => [
+                'code' => '<?php
+                    /** @param array{k?: string} $a */
+                    function both(array $a): string {
+                        if (($a["k"] ?? false) && strlen($a["k"]) > 1) {
+                            return $a["k"];
+                        }
+
+                        return "";
+                    }
+
+                    /** @param array{k?: string|null} $a */
+                    function withNull(array $a): string {
+                        if (!($a["k"] ?? null)) {
+                            return "";
+                        }
+
+                        return $a["k"];
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
+            ],
+            'truthyCoalesceWithAnotherFalsyDefaultEstablishesTheKey' => [
+                'code' => '<?php
+                    /** @param array{k?: string} $a */
+                    function emptyString(array $a): string {
+                        if (($a["k"] ?? "") && strlen($a["k"]) > 1) {
+                            return $a["k"];
+                        }
+
+                        return "";
+                    }
+
+                    /** @param array{k?: string} $a */
+                    function zeroString(array $a): string {
+                        if (($a["k"] ?? "0") && strlen($a["k"]) > 1) {
+                            return $a["k"];
+                        }
+
+                        return "";
+                    }
+
+                    /** @param array{k?: int} $a */
+                    function zero(array $a): int {
+                        if (($a["k"] ?? 0) && $a["k"] > 1) {
+                            return $a["k"];
+                        }
+
+                        return 0;
+                    }
+
+                    /** @param array{k?: float} $a */
+                    function zeroFloat(array $a): float {
+                        if (($a["k"] ?? 0.0) && $a["k"] > 1) {
+                            return $a["k"];
+                        }
+
+                        return 0.0;
+                    }
+
+                    /** @param array{k?: list<int>} $a */
+                    function emptyArray(array $a): int {
+                        if (($a["k"] ?? []) && count($a["k"]) > 1) {
+                            return count($a["k"]);
+                        }
+
+                        return 0;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
+            ],
             'countComparedToAClassConstantNarrowsTheArray' => [
                 'code' => '<?php
                     final class Terms {
@@ -385,6 +470,130 @@ final class ConditionalTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.3',
             ],
+            'instanceofParentNarrowsToTheParentClass' => [
+                'code' => '<?php
+                    interface Shape {}
+
+                    class Box implements Shape {
+                        public function getSize(): int {
+                            return 1;
+                        }
+                    }
+
+                    final class TaggedBox extends Box {
+                        public function narrowed(Shape $shape): int {
+                            if ($shape instanceof parent) {
+                                /** @psalm-check-type-exact $shape = Box */
+                                return $shape->getSize();
+                            }
+
+                            return 0;
+                        }
+
+                        public function negated(Shape $shape): int {
+                            if (!$shape instanceof parent) {
+                                return 0;
+                            }
+
+                            return $shape->getSize();
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+            ],
+            'parentOfTheClassUsingATraitNarrowsInTheTraitCode' => [
+                'code' => '<?php
+                    interface Shape {}
+
+                    class Box implements Shape {
+                        public function getSize(): int {
+                            return 1;
+                        }
+                    }
+
+                    trait T {
+                        public function viaInstanceof(Shape $shape): int {
+                            if ($shape instanceof parent) {
+                                return $shape->getSize();
+                            }
+
+                            return 0;
+                        }
+                    }
+
+                    final class UsesTrait extends Box {
+                        use T;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+            ],
+            'isAParentClassNarrowsToTheParentClass' => [
+                'code' => '<?php
+                    interface Shape {}
+
+                    class Box implements Shape {
+                        public function getSize(): int {
+                            return 1;
+                        }
+                    }
+
+                    final class TaggedBox extends Box {
+                        public function narrowed(Shape $shape): int {
+                            if (is_a($shape, parent::class)) {
+                                /** @psalm-check-type-exact $shape = Box */
+                                return $shape->getSize();
+                            }
+
+                            return 0;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+            ],
+            'getClassIdenticalToParentClassNarrowsToTheParentClass' => [
+                'code' => '<?php
+                    interface Shape {}
+
+                    class Box implements Shape {
+                        public function getSize(): int {
+                            return 1;
+                        }
+                    }
+
+                    final class TaggedBox extends Box {
+                        public function narrowed(Shape $shape): int {
+                            if (get_class($shape) === parent::class) {
+                                return $shape->getSize();
+                            }
+
+                            return 0;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+            ],
+            'classConstantIdenticalToParentClassNarrowsToTheParentClass' => [
+                'code' => '<?php
+                    interface Shape {}
+
+                    class Box implements Shape {
+                        public function getSize(): int {
+                            return 1;
+                        }
+                    }
+
+                    final class TaggedBox extends Box {
+                        public function narrowed(Shape $shape): int {
+                            if ($shape::class === parent::class) {
+                                return $shape->getSize();
+                            }
+
+                            return 0;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+            ],
             'negatedIsFloatCombinesTheRemainingTypes' => [
                 'code' => '<?php
                     /** @var numeric|"a" $x */
@@ -407,6 +616,19 @@ final class ConditionalTest extends TestCase
                             echo $x;
                         }
                     }',
+            ],
+            'varAssignedInTheRightOperandOfAnOrIsDefinedUnderTheSameOr' => [
+                'code' => '<?php
+                    final class Progress {
+                        public function advance(): void {
+                            echo ".";
+                        }
+                    }
+
+                    $a = rand(0, 1) === 1;
+
+                    $a || $p = new Progress;
+                    $a || $p->advance();',
             ],
             'varAssignedUnderNotNullIsDefinedUnderTheSameCheck' => [
                 'code' => '<?php
@@ -763,7 +985,7 @@ final class ConditionalTest extends TestCase
                         }
 
                         $width = $streams[0]["width"];
-                        /** @psalm-check-type-exact $width = mixed */
+                        /** @psalm-check-type-exact $width = non-empty-mixed */
                     }
 
                     /** @param list<mixed> $l */
@@ -1038,7 +1260,7 @@ final class ConditionalTest extends TestCase
                         /** @psalm-check-type-exact $definition = stdClass */
                     }
 
-                    function g(?stdClass $definition): void {
+                    function g(?object $definition): void {
                         if ($isSimple = $isRoot = null === $definition) {
                             echo "root";
                         } elseif ($definition instanceof stdClass) {
@@ -6694,6 +6916,35 @@ final class ConditionalTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'classNotEqualToAFinalClassExcludesIt' => [
+                'code' => '<?php
+                    final class A {}
+                    class B {}
+
+                    /** @var A|stdClass $final */;
+                    if ($final::class === A::class) {
+                        $final_if = $final;
+                    } else {
+                        $final_else = $final;
+                    }
+
+                    /** @var A|stdClass $by_get_class */;
+                    if (get_class($by_get_class) !== A::class) {
+                        $get_class_if = $by_get_class;
+                    }
+
+                    /** @var B|stdClass $not_final */;
+                    if ($not_final::class === B::class) {
+                        $not_final_if = $not_final;
+                    } else {
+                        $not_final_else = $not_final;
+                    }',
+                'assertions' => [
+                    '$final_else===' => 'stdClass',
+                    '$get_class_if===' => 'stdClass',
+                    '$not_final_else===' => 'B|stdClass',
+                ],
+            ],
             'classEqualToTheClassOfAnotherClassStillNarrows' => [
                 'code' => '<?php
                     class Bar {}
@@ -7358,6 +7609,70 @@ final class ConditionalTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'issetOfAnOffsetStoredInAVariableSetsAPossiblyUndefinedMixedVariable' => [
+                'code' => '<?php
+                    /** @return mixed */
+                    function dec(string $s) { return json_decode($s, true); }
+
+                    function f(string $s): void {
+                        if (rand(0, 1)) {
+                            $data = dec($s);
+                        }
+                        $has = isset($data["a"]);
+                        if ($has) {
+                            echo $data["a"];
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment', 'MixedArgument', 'MixedArrayAccess'],
+            ],
+            'emptyOfAnOffsetStoredInAVariableSetsAPossiblyUndefinedMixedVariableWhereFalsy' => [
+                'code' => '<?php
+                    /** @return mixed */
+                    function dec(string $s) { return json_decode($s, true); }
+
+                    function f(string $s): void {
+                        if (rand(0, 1)) {
+                            $data = dec($s);
+                        }
+                        $empty = empty($data["a"]);
+                        if (!$empty) {
+                            echo $data["a"];
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment', 'MixedArgument', 'MixedArrayAccess'],
+            ],
+            'issetOfAnOffsetStoredInAVariableNarrowsAnArray' => [
+                'code' => '<?php
+                    /** @param array{a?: int} $p */
+                    function f(array $p): void {
+                        $has = isset($p["a"]);
+                        if ($has) {
+                            /** @psalm-check-type-exact $p = array{a: int} */;
+                        }
+                    }',
+            ],
+            'issetOfAnOffsetStoredInAVariableNarrowsAMixedVariableCheckedAsArray' => [
+                'code' => '<?php
+                    /** @param mixed $p */
+                    function f($p): void {
+                        $has = is_array($p) && isset($p["a"]);
+                        if ($has) {
+                            /** @psalm-check-type-exact $p = array{a: mixed, ...<array-key, mixed>} */;
+                        }
+                    }',
+            ],
+            'issetOfAnOffsetStoredInAVariableNarrowsAMixedVariableCheckedAsArrayAfterwards' => [
+                'code' => '<?php
+                    /** @param mixed $p */
+                    function f($p): void {
+                        $has = isset($p["a"]) && is_array($p);
+                        if ($has) {
+                            /** @psalm-check-type-exact $p = array{a: mixed, ...<array-key, mixed>} */;
+                        }
+                    }',
+            ],
         ];
     }
 
@@ -7368,6 +7683,19 @@ final class ConditionalTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'coalesceWithFalseInADisjunctionDoesNotEstablishTheKey' => [
+                'code' => '<?php
+                    /** @param array{k?: string} $a */
+                    function f(array $a, bool $other): string {
+                        if (($a["k"] ?? false) || $other) {
+                            return $a["k"];
+                        }
+
+                        return "";
+                    }',
+                'error_message' => 'PossiblyUndefinedArrayOffset',
+                'error_levels' => ['RiskyTruthyFalsyComparison'],
+            ],
             'typeLeftByNegatedTypeChecksStaysFromDocblock' => [
                 'code' => '<?php
                     /** @param string|float|int|bool|null $x */
@@ -7550,6 +7878,63 @@ final class ConditionalTest extends TestCase
                         if (!empty($u["a"])) {
                             echo (string) $u["a"];
                         }
+                    }',
+                'error_message' => 'MixedArrayAccess',
+            ],
+            'mixedOffsetReadWhereNotEmptyOfAnOffsetStoredInAVariableIsTrue' => [
+                'code' => '<?php
+                    /** @param mixed $x */
+                    function g($x): void {}
+
+                    /** @param mixed $p */
+                    function f($p): void {
+                        $has = !empty($p["a"]);
+                        if ($has) {
+                            g($p["b"]);
+                        }
+                    }',
+                'error_message' => 'MixedArrayAccess',
+            ],
+            'mixedOffsetReadWhereIssetOfAnOffsetStoredInAVariableIsTrue' => [
+                'code' => '<?php
+                    /** @param mixed $x */
+                    function g($x): void {}
+
+                    /** @param mixed $p */
+                    function f($p): void {
+                        $has = isset($p["a"]);
+                        if ($has) {
+                            g($p["b"]);
+                        }
+                    }',
+                'error_message' => 'MixedArrayAccess',
+            ],
+            'mixedOffsetReadWhereEmptyOfAnOffsetStoredInAVariableIsFalse' => [
+                'code' => '<?php
+                    /** @param mixed $x */
+                    function g($x): void {}
+
+                    /** @param mixed $p */
+                    function f($p): void {
+                        $empty = empty($p["a"]);
+                        if (!$empty) {
+                            g($p["b"]);
+                        }
+                    }',
+                'error_message' => 'MixedArrayAccess',
+            ],
+            'mixedOffsetReadWhereIssetOfAnOffsetStoredInAVariableIsFalse' => [
+                'code' => '<?php
+                    /** @param mixed $x */
+                    function g($x): void {}
+
+                    /** @param mixed $p */
+                    function f($p, bool $b): void {
+                        $missing = !isset($p["a"]) || $b;
+                        if ($missing) {
+                            return;
+                        }
+                        g($p["b"]);
                     }',
                 'error_message' => 'MixedArrayAccess',
             ],

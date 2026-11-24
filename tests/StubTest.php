@@ -16,7 +16,9 @@ use Psalm\Exception\InvalidClasslikeOverrideException;
 use Psalm\Exception\InvalidMethodOverrideException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\IncludeCollector;
+use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Provider\Providers;
+use Psalm\Storage\Capabilities;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 
 use function array_values;
@@ -163,6 +165,17 @@ final class StubTest extends DeferredAnalyzerTestCase
         );
 
         $this->assertSame([], $config->getStubFiles());
+
+        $directory = dirname(__DIR__) . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR
+            . 'fixtures' . DIRECTORY_SEPARATOR . 'stubs_directory' . DIRECTORY_SEPARATOR;
+
+        $this->assertSame(
+            [
+                $directory . 'nested' . DIRECTORY_SEPARATOR . 'two.php',
+                $directory . 'one.phpstub',
+            ],
+            array_values($config->getPreloadedStubFiles()),
+        );
     }
 
     public function testStubDirectoryMustBeADirectory(): void
@@ -372,6 +385,43 @@ final class StubTest extends DeferredAnalyzerTestCase
         } finally {
             unlink($stub_path);
         }
+    }
+
+    public function testUnannotatedStubbedConstructorWithAnEmptyBodyIsImpure(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('ImpureMethodCall');
+
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+
+                    <stubs>
+                        <file name="tests/fixtures/stubs/empty_constructor.phpstub" />
+                    </stubs>
+                </psalm>',
+            ),
+        );
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @psalm-pure */
+                function make(): StubbedWithEmptyConstructor {
+                    return new StubbedWithEmptyConstructor(1);
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
     }
 
     public function testStubFileClass(): void
@@ -735,6 +785,102 @@ final class StubTest extends DeferredAnalyzerTestCase
 
                 '$d1===' => "5",
                 '$d2===' => "'hello'",
+            ],
+            $context,
+        );
+    }
+
+    public function testPhpStormMetaFunctionOverrideFallsBackToInferredReturnType(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+
+                    <stubs>
+                        <file name="tests/fixtures/stubs/phpstorm.meta.templated.php" />
+                    </stubs>
+                </psalm>',
+            ),
+        );
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                final class Foo {}
+
+                /**
+                 * @template T of object
+                 * @param class-string<T> $c
+                 * @return T
+                 */
+                function makeObject(string $c): object {
+                    throw new RuntimeException($c);
+                }
+
+                /**
+                 * @template T
+                 * @param T $a
+                 * @return T
+                 */
+                function pickType($a, int $b = 0) {
+                    return $a;
+                }
+
+                /**
+                 * @template T
+                 * @param T $a
+                 * @return T
+                 */
+                function pickElement($a, array $b = []) {
+                    return $a;
+                }
+
+                /**
+                 * @return ($s is "a" ? int : string)
+                 */
+                function pickConditional(string $s) {
+                    return $s === "a" ? 1 : $s;
+                }
+
+                /** @return class-string<Foo> */
+                function getFooClass(): string {
+                    return Foo::class;
+                }
+
+                $a = makeObject(stdClass::class);
+                $b = makeObject(getFooClass());
+                $c = pickType(new Foo());
+                $d = pickElement(new Foo());
+                $e = pickElement(new Foo(), [1]);
+                $f = ucfirst("object");
+                $g = ucfirst((string) rand(0, 1));
+                $h = pickConditional("a");
+                $i = pickElement(new Foo(), []);',
+        );
+
+        $context = new Context();
+        $this->analyzeFile($file_path, $context);
+
+        $this->assertContextVars(
+            [
+                '$a===' => 'stdClass',
+                '$b===' => 'Foo',
+                '$c===' => 'Foo',
+                '$d===' => 'Foo',
+                '$e===' => '1',
+                '$f===' => 'stdClass',
+                '$g' => 'string',
+                '$h===' => 'int',
+                '$i===' => 'Foo',
             ],
             $context,
         );
@@ -2617,6 +2763,41 @@ final class StubTest extends DeferredAnalyzerTestCase
         $stub_defined = $codebase->classlike_storage_provider->get('StubDependency\StubbedElsewhere');
         $this->assertFalse($stub_defined->user_defined);
         $this->assertTrue($stub_defined->stubbed);
+    }
+
+    /**
+     * A stub that extends a class from an already scanned real file forces its rescan during stub registration.
+     */
+    public function testRealFileRescannedDuringStubRegistrationKeepsItsTrivialConstructor(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm errorLevel="1">
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+
+                    <stubs>
+                        <file name="tests/fixtures/stubs/stub_extending_trivial_constructor.phpstub" />
+                    </stubs>
+                </psalm>',
+            ),
+        );
+
+        $codebase = $this->project_analyzer->getCodebase();
+        $codebase->scanner->addFileToShallowScan(
+            dirname(__DIR__) . '/tests/fixtures/stub_dependency/TrivialConstructor.php',
+        );
+        $codebase->scanFiles();
+        $codebase->config->visitStubFiles($codebase);
+
+        $constructor = $codebase->methods->getStorage(
+            new MethodIdentifier('StubDependency\TrivialConstructor', '__construct'),
+        );
+        $this->assertFalse($constructor->stubbed);
+        $this->assertSame(Capabilities::WRITE_THIS_PROPS, $constructor->capabilities);
     }
 
     /**
