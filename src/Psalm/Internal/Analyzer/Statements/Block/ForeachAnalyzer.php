@@ -32,9 +32,11 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\ReferenceConstraint;
 use Psalm\Internal\Scope\LoopScope;
 use Psalm\Internal\Type\AssertionReconciler;
 use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
+use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\PurityWildcardPaths;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
@@ -143,6 +145,7 @@ final class ForeachAnalyzer
                         $e->getMessage(),
                         new CodeLocation($statements_analyzer, $stmt),
                     ),
+                    $statements_analyzer->getSuppressedIssues(),
                 );
             }
         }
@@ -317,6 +320,16 @@ final class ForeachAnalyzer
                 $key_type,
                 $value_type,
             );
+
+            [$key_type, $value_type] = self::taintAggregateIteration(
+                $statements_analyzer,
+                $stmt->expr,
+                $iterator_type,
+                $codebase,
+                $context,
+                $key_type,
+                $value_type,
+            );
         }
 
         $foreach_context = clone $context;
@@ -385,6 +398,25 @@ final class ForeachAnalyzer
             // TODO support references with destructuring
             $foreach_context->references_to_external_scope['$' . $stmt->valueVar->name] = true;
             $foreach_context->forgetReferencesPossiblyBound('$' . $stmt->valueVar->name);
+
+            $iterated_var_id = ExpressionIdentifier::getExtendedVarId(
+                $stmt->expr,
+                $statements_analyzer->getFQCLN(),
+                $statements_analyzer,
+            );
+
+            // what is written to the value is written to an item of the property
+            $item_type = $iterated_var_id !== null
+                ? AssignmentAnalyzer::getReferencedPropertyItemType($statements_analyzer, $stmt->expr, $foreach_context)
+                : null;
+
+            if ($item_type !== null && !$item_type->hasMixed()) {
+                $foreach_context->byref_constraints['$' . $stmt->valueVar->name] = new ReferenceConstraint(
+                    $item_type,
+                    false,
+                    ['an item of ' . $iterated_var_id],
+                );
+            }
         }
 
         // PHP evaluates the iterated expression once, before it assigns the value and then a key of the same name
@@ -1173,6 +1205,77 @@ final class ForeachAnalyzer
     }
 
     /**
+     * The keys and values iterating over the IteratorAggregate objects of $aggregate_type gives come from the iterator
+     * their getIterator() returns: what that iterator gives, and if it is an IteratorAggregate in turn, what its own
+     * getIterator() returns.
+     *
+     * @return array{?Union, ?Union}
+     */
+    private static function taintAggregateIteration(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr $aggregate_expr,
+        Union $aggregate_type,
+        Codebase $codebase,
+        Context $context,
+        ?Union $key_type,
+        ?Union $value_type,
+        int $depth = 0,
+    ): array {
+        if ($depth > 3 || !$statements_analyzer->taint_flow_graph) {
+            return [$key_type, $value_type];
+        }
+
+        foreach ($aggregate_type->getAtomicTypes() as $atomic_type) {
+            if (!$atomic_type instanceof TNamedObject
+                || !$codebase->classlikes->classOrInterfaceExists($atomic_type->value)
+                || !self::classLikeIs($codebase, $context, $atomic_type->value, 'IteratorAggregate')
+            ) {
+                continue;
+            }
+
+            // a node holding the aggregate alone, which getIterator() is called on
+            $aggregate = new VirtualMethodCall(
+                $aggregate_expr,
+                new VirtualIdentifier('getIterator', $aggregate_expr->getAttributes()),
+                [],
+                $aggregate_expr->getAttributes(),
+            );
+
+            $statements_analyzer->node_data->setType(
+                $aggregate,
+                new Union([$atomic_type], ['parent_nodes' => $aggregate_type->parent_nodes]),
+            );
+
+            $iterator_type = self::getFakeMethodCallType($statements_analyzer, $aggregate, $context, 'getIterator');
+
+            if ($iterator_type === null) {
+                continue;
+            }
+
+            [$key_type, $value_type] = self::taintObjectIteration(
+                $statements_analyzer,
+                $aggregate_expr,
+                $iterator_type,
+                $key_type,
+                $value_type,
+            );
+
+            [$key_type, $value_type] = self::taintAggregateIteration(
+                $statements_analyzer,
+                $aggregate,
+                $iterator_type,
+                $codebase,
+                $context,
+                $key_type,
+                $value_type,
+                $depth + 1,
+            );
+        }
+
+        return [$key_type, $value_type];
+    }
+
+    /**
      * The marker of foreach loop $stmt if an assignment in its body may put the values of the elements it
      * iterates over back under their key (see ArrayAssignmentAnalyzer::getForeachMarker()): where its function,
      * the loop and its body are, for the taint analysis to know where the value of an element is that of the
@@ -1236,6 +1339,7 @@ final class ForeachAnalyzer
         ?Union &$value_type,
         bool &$always_non_empty_array,
         ?string $foreach_marker = null,
+        bool $forwards_send = false,
     ): ?bool {
         if ($iterator_type->isNull()) {
             IssueBuffer::maybeAdd(
@@ -1510,6 +1614,7 @@ final class ForeachAnalyzer
                         $value_type,
                         $has_valid_iterator,
                         $invalid_iterator_types,
+                        $forwards_send,
                     );
                 } else {
                     $raw_object_types[] = $iterator_atomic_type->value;
@@ -1605,6 +1710,7 @@ final class ForeachAnalyzer
         ?Union &$value_type,
         bool &$has_valid_iterator,
         array &$invalid_iterator_types = [],
+        bool $forwards_send = false,
     ): void {
         if ($iterator_atomic_type->extra_types) {
             $iterator_atomic_types = [
@@ -1659,6 +1765,8 @@ final class ForeachAnalyzer
                     );
 
                     if ($iterator_class_type) {
+                        $star_iterable = self::getStarIterable($codebase, $iterator_atomic_type);
+
                         foreach ($iterator_class_type->getAtomicTypes() as $array_atomic_type) {
                             $key_type_part = null;
                             $value_type_part = null;
@@ -1712,6 +1820,7 @@ final class ForeachAnalyzer
                                             $value_type,
                                             $has_valid_iterator,
                                             $invalid_iterator_types,
+                                            $forwards_send,
                                         );
 
                                         continue;
@@ -1744,6 +1853,8 @@ final class ForeachAnalyzer
                                 break;
                             }
 
+                            self::readStarIterable($codebase, $star_iterable, $key_type_part, $value_type_part);
+
                             $key_type = Type::combineUnionTypes($key_type, $key_type_part);
                             $value_type = Type::combineUnionTypes($value_type, $value_type_part);
                         }
@@ -1752,7 +1863,8 @@ final class ForeachAnalyzer
                     && strtolower($iterator_atomic_type->value) === 'generator'
                 ) {
                     $type_params = $iterator_atomic_type->type_params;
-                    if (isset($type_params[2])
+                    if (!$forwards_send
+                        && isset($type_params[2])
                         && !$type_params[2]->isNullable()
                         && !$type_params[2]->isVoid()
                         && !$type_params[2]->isMixed()
@@ -1878,6 +1990,69 @@ final class ForeachAnalyzer
                 return;
             }
         }
+    }
+
+    /**
+     * The Traversable params of a `*` receiver, or null for any other receiver. They hold the bound of its `*`, which
+     * is lost when getIterator() returns the `*` in an invariant argument (`ArrayIterator<int, *>` holds `mixed`).
+     */
+    private static function getStarIterable(Codebase $codebase, Atomic $receiver): ?TIterable
+    {
+        if (!$receiver instanceof TGenericObject
+            || !$receiver->hasStarProjection()
+            || !isset($codebase->classlike_storage_provider->get($receiver->value)
+                ->template_extended_params['Traversable'])
+        ) {
+            return null;
+        }
+
+        return $receiver->getIterable($codebase);
+    }
+
+    private static function readStarIterable(
+        Codebase $codebase,
+        ?TIterable $star_iterable,
+        Union &$key_type_part,
+        Union &$value_type_part,
+    ): void {
+        if ($star_iterable === null) {
+            return;
+        }
+
+        $key_type_part = self::readStarIterablePart($codebase, $key_type_part, $star_iterable->type_params[0]);
+        $value_type_part = self::readStarIterablePart($codebase, $value_type_part, $star_iterable->type_params[1]);
+    }
+
+    /**
+     * The declared type replaces the iterated part only when it narrows it. A declared type that the part accepts
+     * only through a cast leaves the part as it is. A `*` is written only in docblocks, so the bound it reads is
+     * docblock-defined.
+     */
+    private static function readStarIterablePart(Codebase $codebase, Union $part, Union $declared): Union
+    {
+        if ($declared->isMixed()) {
+            return $part;
+        }
+
+        $comparison_result = new TypeComparisonResult();
+
+        if (!UnionTypeComparator::isContainedBy(
+            $codebase,
+            $declared,
+            $part,
+            false,
+            false,
+            $comparison_result,
+            false,
+            false,
+        )
+            || $comparison_result->to_string_cast
+            || $comparison_result->callable_by_reference_mismatch
+        ) {
+            return $part;
+        }
+
+        return $part->setTypes($declared->getAtomicTypes())->setFromDocblock();
     }
 
     /**

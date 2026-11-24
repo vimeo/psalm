@@ -16,6 +16,12 @@ use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Cli\Psalm;
 use Psalm\Internal\Cli\Psalter;
 use Psalm\Internal\Cli\Refactor;
+use Psalm\Internal\Fork\PsalmRestarter;
+use Psalm\Progress\DebugProgress;
+use Psalm\Progress\DefaultProgress;
+use Psalm\Progress\LongProgress;
+use Psalm\Progress\Progress;
+use Psalm\Progress\VoidProgress;
 use Psalm\Report;
 use RuntimeException;
 use UnexpectedValueException;
@@ -32,6 +38,7 @@ use function file_exists;
 use function file_get_contents;
 use function file_put_contents;
 use function fwrite;
+use function getcwd;
 use function getenv;
 use function implode;
 use function in_array;
@@ -87,7 +94,7 @@ final class CliUtils
 
         $psalm_dir = dirname(__DIR__, 3);
 
-        $in_phar = Phar::running() || strpos(__NAMESPACE__, 'HumbugBox');
+        $in_phar = (extension_loaded('phar') && Phar::running()) || strpos(__NAMESPACE__, 'HumbugBox');
 
         if ($in_phar) {
             require_once __DIR__ . '/../../../vendor/autoload.php';
@@ -195,6 +202,96 @@ final class CliUtils
     }
 
     /**
+     * The project root: `-r`/`--root` if given, the current working directory otherwise
+     */
+    public static function getCurrentDir(array $options): string
+    {
+        $cwd = getcwd();
+        if (false === $cwd) {
+            fwrite(STDERR, 'Cannot get current working directory' . PHP_EOL);
+            exit(1);
+        }
+
+        $current_dir = $cwd;
+
+        if (isset($options['r']) && is_string($options['r'])) {
+            $root_path = realpath($options['r']);
+
+            if ($root_path === false) {
+                fwrite(
+                    STDERR,
+                    self::getRootDirectoryNotFoundMessage($current_dir, $options['r']) . PHP_EOL,
+                );
+                exit(1);
+            }
+
+            $current_dir = $root_path;
+        }
+
+        return $current_dir;
+    }
+
+    /**
+     * Copies each given long option onto its short alias
+     *
+     * @param array<string, false|list<false|string>|string> $options
+     * @param-out array<string, false|list<false|string>|string> $options
+     * @param array<string, string> $long_to_short
+     * @psalm-capabilities write-refs
+     */
+    public static function syncShortOptions(array &$options, array $long_to_short): void
+    {
+        foreach ($long_to_short as $long => $short) {
+            if (array_key_exists($long, $options)) {
+                $options[$short] = $options[$long];
+            }
+        }
+    }
+
+    /**
+     * @return list<ClassLoader>
+     */
+    public static function loadAutoloaders(
+        IncludeCollector $include_collector,
+        string $current_dir,
+        bool $has_explicit_root,
+        string $vendor_dir,
+        bool $project_autoloader_required = true,
+    ): array {
+        return $include_collector->runAndCollect(
+            /** @return list<ClassLoader> */
+            static fn(): array => self::requireAutoloaders(
+                $current_dir,
+                $has_explicit_root,
+                $vendor_dir,
+                $project_autoloader_required,
+            ),
+        );
+    }
+
+    /**
+     * A restarter that also drops the extensions that break forked workers or slow Psalm down
+     */
+    public static function createRestarter(string $prefix, bool $disable_grpc = true): PsalmRestarter
+    {
+        $ini_handler = new PsalmRestarter($prefix);
+        if ($disable_grpc) {
+            $ini_handler->disableExtension('grpc');
+        }
+
+        $ini_handler->disableExtensions([
+            'uopz',
+            // extensions that are incompatible with JIT (they also usually make Psalm slow)
+            'pcov',
+            'blackfire',
+            // Issues w/ parallel forking
+            'uv',
+        ]);
+
+        return $ini_handler;
+    }
+
+    /**
      * @psalm-suppress MixedAssignment
      */
     public static function getVendorDir(string $current_dir): string
@@ -216,7 +313,7 @@ final class CliUtils
             exit(1);
         }
 
-        if (!$composer_json) {
+        if (!is_array($composer_json)) {
             fwrite(
                 STDERR,
                 'Invalid composer.json at ' . $composer_json_path . "\n",
@@ -224,8 +321,7 @@ final class CliUtils
             exit(1);
         }
 
-        if (is_array($composer_json)
-            && isset($composer_json['config'])
+        if (isset($composer_json['config'])
             && is_array($composer_json['config'])
             && isset($composer_json['config']['vendor-dir'])
             && is_string($composer_json['config']['vendor-dir'])
@@ -812,6 +908,30 @@ final class CliUtils
                 exit(1);
             }
         }
+    }
+
+    /**
+     * The progress of the commands that alter code: psalter and psalm-refactor
+     */
+    public static function getAlterProgress(array $options, bool $in_ci): Progress
+    {
+        if (array_key_exists('debug', $options) || array_key_exists('debug-by-line', $options)) {
+            return new DebugProgress();
+        }
+
+        // CI takes precedence over AI detection: persistent CI logs still want
+        // per-phase breadcrumbs for humans reviewing the build.
+        if (isset($options['no-progress']) || (!$in_ci && self::runningUnderAiAgent())) {
+            return new VoidProgress();
+        }
+
+        if ($in_ci || !self::streamIsInteractive(STDERR)) {
+            // Same rationale as in Psalm.php: a `\r`-based progress bar on a
+            // piped stderr just floods the log with every intermediate update.
+            return new LongProgress(true, false, true);
+        }
+
+        return new DefaultProgress();
     }
 
     public static function runningInCI(): bool
