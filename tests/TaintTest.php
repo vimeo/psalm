@@ -5581,6 +5581,26 @@ final class TaintTest extends TestCase
                     $agent = new LlmAgent();
                     $agent->prompt(sanitize_for_llm((string) $_GET["question"]));',
             ],
+            'dontTaintTheValueUnderAnotherKeyOfAnOverrideParameterThroughAVirtualCall' => [
+                'code' => '<?php
+                    interface Client {
+                        /** @param array<string, string> $options */
+                        public function run(string $label, array $options): void;
+                    }
+
+                    final class ShellClient implements Client {
+                        /**
+                         * @param array<string, string> $options
+                         * @psalm-taint-sink shell $options[\'command\']
+                         */
+                        #[Override]
+                        public function run(string $label, array $options): void {}
+                    }
+
+                    function deploy(Client $client): void {
+                        $client->run("a", ["label" => (string) $_GET["x"]]);
+                    }',
+            ],
             'nosqlSinkNotTaintedByString' => [
                 'code' => '<?php
                     /** @psalm-taint-sink nosql $filter */
@@ -17216,6 +17236,48 @@ final class TaintTest extends TestCase
                     $agent = new LlmAgent();
                     $agent->prompt(buildPrompt((string) $_GET["topic"]));',
                 'error_message' => 'TaintedLlmPrompt',
+            ],
+            'taintTheValueUnderAKeyOfAnOverrideParameterThroughAVirtualCall' => [
+                'code' => '<?php
+                    interface Client {
+                        /** @param array<string, string> $options */
+                        public function run(string $label, array $options): void;
+                    }
+
+                    final class ShellClient implements Client {
+                        /**
+                         * @param array<string, string> $options
+                         * @psalm-taint-sink shell $options[\'command\']
+                         */
+                        #[Override]
+                        public function run(string $label, array $options): void {}
+                    }
+
+                    function deploy(Client $client): void {
+                        $client->run("a", ["command" => (string) $_GET["x"]]);
+                    }',
+                'error_message' => 'TaintedShell',
+            ],
+            'taintTheValueUnderAKeyOfAnOverrideParameterThroughAVirtualCallWithNamedArguments' => [
+                'code' => '<?php
+                    interface Client {
+                        /** @param array<string, string> $options */
+                        public function run(string $label, array $options): void;
+                    }
+
+                    final class ShellClient implements Client {
+                        /**
+                         * @param array<string, string> $options
+                         * @psalm-taint-sink shell $options[\'command\']
+                         */
+                        #[Override]
+                        public function run(string $label, array $options): void {}
+                    }
+
+                    function deploy(Client $client): void {
+                        $client->run(options: ["command" => (string) $_GET["x"]], label: "a");
+                    }',
+                'error_message' => 'TaintedShell',
             ],
             'taintedInputFromPhpInputViaFileGetContents' => [
                 'code' => '<?php

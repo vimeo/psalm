@@ -87,22 +87,21 @@ the array given to the parameter a sink:
 
 interface Client {
     /**
-     * @param array<string, mixed> $options
+     * @param array<array-key, mixed> $options
      * @psalm-taint-sink shell $options['command']
      */
     public function run(array $options): void;
 }
 
-function deploy(Client $client): void {
+function deploy(Client $client, string $key): void {
     $input = (string) $_GET["input"];
 
     $client->run(["command" => $input]); // TaintedShell
     $client->run(["label" => $input]);   // no issue
+    $client->run([$key => $input]);      // TaintedShell: $key may be "command"
+    $client->run($_GET);                 // TaintedShell: its keys aren't known
 }
 ```
-
-A value under a key Psalm doesn't know, or in an array whose keys it doesn't know (`$_GET`), may be the one under that
-key, and is reported. Each call is reported on its own.
 
 ### Conditional sinks
 

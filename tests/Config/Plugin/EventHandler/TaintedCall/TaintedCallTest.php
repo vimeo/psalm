@@ -39,6 +39,12 @@ final class TaintedCallTest extends DeferredAnalyzerTestCase
         /** @psalm-taint-sink html $s */
         function sink(string $s): void {}
 
+        /**
+         * @param array<string, string> $options
+         * @psalm-taint-sink html $options[\'x\']
+         */
+        function sink_under_key(array $options): void {}
+
         function show(string $s): void {
             echo $s;
         }
@@ -211,6 +217,10 @@ final class TaintedCallTest extends DeferredAnalyzerTestCase
     public static function providerInvalidCalls(): iterable
     {
         yield 'parameter sink' => ['call_through("sink", (string) $_GET["x"]);', 'TaintedHtml'];
+        yield 'sink of the value under a key' => [
+            'call_through("sink_under_key", ["x" => (string) $_GET["x"]]);',
+            'TaintedHtml',
+        ];
         yield 'body' => ['call_through("show", (string) $_GET["x"]);', 'TaintedHtml'];
         yield 'return' => ['echo call_through("same", (string) $_GET["x"]);', 'TaintedHtml'];
         yield 'flow' => ['echo call_through("flowing", (string) $_GET["x"]);', 'TaintedHtml'];
@@ -259,6 +269,9 @@ final class TaintedCallTest extends DeferredAnalyzerTestCase
     public static function providerValidCalls(): iterable
     {
         yield 'escape' => ['echo call_through("escape", (string) $_GET["x"]);'];
+        yield 'value under a key other than the one of the sink' => [
+            'call_through("sink_under_key", ["y" => (string) $_GET["x"]]);',
+        ];
         yield 'conditional escape taken' => ['echo call_through("maybe_escape", (string) $_GET["x"], true);'];
         yield 'conditional sink not resolved to the taint' => [
             'call_through("query", "other", (string) $_GET["x"]);',
