@@ -151,6 +151,7 @@ use function strtolower;
 use function substr;
 use function substr_count;
 use function sys_get_temp_dir;
+use function trim;
 use function unlink;
 use function usleep;
 use function version_compare;
@@ -653,6 +654,35 @@ final class Config
      * constrain it. An extension only needs no declaration if every PHP version from this one on builds it in.
      */
     public ?int $lowest_composer_php_version_id = null;
+
+    /**
+     * The extensions `<enableExtensions>` lists, by their Composer name, which every package declares.
+     *
+     * @var array<string, true>
+     */
+    private array $enabled_extensions = [];
+
+    /**
+     * The vendor directory of the project, relative to its root.
+     */
+    private string $composer_vendor_dir = 'vendor';
+
+    /**
+     * The packages installed in the project (in its installed.json or composer.lock), by lowercase name: the
+     * packages they require and the extensions they provide or replace.
+     *
+     * @var array<lowercase-string, array{require: list<lowercase-string>, extensions: array<string, true>}>
+     */
+    private array $installed_composer_packages = [];
+
+    /**
+     * The packages of a monorepo, by the directories of their composer.json below the root of the project (see
+     * getComposerPackageOf()): their declared extensions and the lowest PHP version they allow. Null for a directory
+     * in no package, or in one Psalm can't read, whose files take those of the project.
+     *
+     * @var array<string, array{extensions: array<string, true>, lowest_php_version_id: ?int}|null>
+     */
+    private array $composer_packages = [];
 
     /**
      * A list of php extensions supported by Psalm.
@@ -1161,28 +1191,70 @@ final class Config
     }
 
     /**
+     * The extensions a composer.json declares: those it requires (also for development), suggests, provides or
+     * replaces, and those installed packages provide or replace (the polyfills). For the project, those of any
+     * installed package; for a package of a monorepo, those of the packages it requires, directly or through the
+     * packages they require.
+     *
      * @param array<array-key, mixed> $composer_json
+     * @param array<lowercase-string, array{require: list<lowercase-string>, extensions: array<string, true>}>
+     *     $installed_packages
      * @return array<string, true>
+     * @psalm-pure
      */
-    private static function getDeclaredExtensions(array $composer_json, string $base_dir): array
-    {
-        $declarations = [];
+    private static function getDeclaredExtensions(
+        array $composer_json,
+        array $installed_packages,
+        bool $is_project,
+    ): array {
+        $extensions = [];
+        $required = [];
         foreach (['require', 'require-dev', 'suggest', 'provide', 'replace'] as $key) {
-            if (isset($composer_json[$key]) && is_array($composer_json[$key])) {
-                $declarations[] = $composer_json[$key];
+            if (!isset($composer_json[$key]) || !is_array($composer_json[$key])) {
+                continue;
+            }
+
+            foreach (array_keys($composer_json[$key]) as $name) {
+                $name = strtolower((string) $name);
+                if (str_starts_with($name, 'ext-')) {
+                    $extensions[substr($name, 4)] = true;
+                } elseif ($key === 'require' || $key === 'require-dev') {
+                    $required[] = $name;
+                }
             }
         }
 
-        $vendor_dir = 'vendor';
-        if (isset($composer_json['config'])
-            && is_array($composer_json['config'])
-            && isset($composer_json['config']['vendor-dir'])
-            && is_string($composer_json['config']['vendor-dir'])
-        ) {
-            $vendor_dir = $composer_json['config']['vendor-dir'];
+        $reached = [];
+        if ($is_project) {
+            $reached = $installed_packages;
+        } else {
+            while ($required !== []) {
+                $name = array_pop($required);
+                if (isset($reached[$name]) || !isset($installed_packages[$name])) {
+                    continue;
+                }
+
+                $reached[$name] = $installed_packages[$name];
+                $required = [...$required, ...$installed_packages[$name]['require']];
+            }
         }
 
-        // the polyfills installed provide the extensions they replace
+        foreach ($reached as $package) {
+            $extensions += $package['extensions'];
+        }
+
+        return $extensions;
+    }
+
+    /**
+     * The packages installed in a project, from its installed.json, or else its composer.lock, by lowercase name,
+     * and by the names of the packages they provide or replace: the packages they require and the extensions they
+     * provide or replace.
+     *
+     * @return array<lowercase-string, array{require: list<lowercase-string>, extensions: array<string, true>}>
+     */
+    private static function getInstalledPackages(string $base_dir, string $vendor_dir): array
+    {
         $installed_path = $base_dir . DIRECTORY_SEPARATOR . $vendor_dir . DIRECTORY_SEPARATOR . 'composer'
             . DIRECTORY_SEPARATOR . 'installed.json';
         foreach ([$installed_path, Composer::getLockFilePath($base_dir)] as $path) {
@@ -1206,28 +1278,65 @@ final class Config
                 $packages = $installed;
             }
 
+            $by_name = [];
+            $by_alias = [];
             foreach (array_filter($packages, is_array(...)) as $package) {
-                foreach (['provide', 'replace'] as $key) {
-                    if (isset($package[$key]) && is_array($package[$key])) {
-                        $declarations[] = $package[$key];
+                if (!isset($package['name']) || !is_string($package['name'])) {
+                    continue;
+                }
+
+                $require = [];
+                if (isset($package['require']) && is_array($package['require'])) {
+                    foreach (array_keys($package['require']) as $name) {
+                        $require[] = strtolower((string) $name);
                     }
                 }
-            }
 
-            break;
-        }
+                $extensions = [];
+                $aliases = [];
+                foreach (['provide', 'replace'] as $key) {
+                    if (!isset($package[$key]) || !is_array($package[$key])) {
+                        continue;
+                    }
 
-        $extensions = [];
-        foreach ($declarations as $declaration) {
-            foreach (array_keys($declaration) as $name) {
-                $name = strtolower((string) $name);
-                if (str_starts_with($name, 'ext-')) {
-                    $extensions[substr($name, 4)] = true;
+                    foreach (array_keys($package[$key]) as $name) {
+                        $name = strtolower((string) $name);
+                        if (str_starts_with($name, 'ext-')) {
+                            $extensions[substr($name, 4)] = true;
+                        } else {
+                            $aliases[] = $name;
+                        }
+                    }
+                }
+
+                $entry = ['require' => $require, 'extensions' => $extensions];
+                $by_name[strtolower($package['name'])] = $entry;
+                foreach ($aliases as $alias) {
+                    $by_alias[$alias] ??= $entry;
                 }
             }
+
+            return $by_name + $by_alias;
         }
 
-        return $extensions;
+        return [];
+    }
+
+    /**
+     * @param array<array-key, mixed> $composer_json
+     * @psalm-pure
+     */
+    private static function getVendorDir(array $composer_json): string
+    {
+        if (isset($composer_json['config'])
+            && is_array($composer_json['config'])
+            && isset($composer_json['config']['vendor-dir'])
+            && is_string($composer_json['config']['vendor-dir'])
+        ) {
+            return $composer_json['config']['vendor-dir'];
+        }
+
+        return 'vendor';
     }
 
     /**
@@ -1354,13 +1463,17 @@ final class Config
         }
 
         if ($composer_json !== null) {
-            $config->declared_extensions = self::getDeclaredExtensions($composer_json, $config->base_dir);
-
-            $lowest_php_version = self::getLowestPhpVersion($composer_json);
-            if ($lowest_php_version !== null) {
-                $config->lowest_composer_php_version_id = (int) substr($lowest_php_version, 0, 1) * 10_000
-                    + (int) substr($lowest_php_version, 2) * 100;
-            }
+            $config->composer_vendor_dir = self::getVendorDir($composer_json);
+            $config->installed_composer_packages = self::getInstalledPackages(
+                $config->base_dir,
+                $config->composer_vendor_dir,
+            );
+            $config->declared_extensions = self::getDeclaredExtensions(
+                $composer_json,
+                $config->installed_composer_packages,
+                true,
+            );
+            $config->lowest_composer_php_version_id = self::getLowestPhpVersionId($composer_json);
         }
 
         if (isset($config_xml->enableExtensions) && isset($config_xml->enableExtensions->extension)) {
@@ -1369,6 +1482,7 @@ final class Config
                 $extensionName = (string) $extension["name"];
                 assert(array_key_exists($extensionName, $config->php_extensions));
                 $config->php_extensions[$extensionName] = true;
+                $config->enabled_extensions[strtolower($extensionName)] = true;
                 if ($config->declared_extensions !== null) {
                     $config->declared_extensions[strtolower($extensionName)] = true;
                 }
@@ -3971,6 +4085,21 @@ final class Config
     }
 
     /**
+     * The lowest PHP version the `php` requirement of a composer.json allows, as an id (`70300`)
+     *
+     * @param array<array-key, mixed> $composer_json
+     */
+    private static function getLowestPhpVersionId(array $composer_json): ?int
+    {
+        $lowest_php_version = self::getLowestPhpVersion($composer_json);
+        if ($lowest_php_version === null) {
+            return null;
+        }
+
+        return (int) substr($lowest_php_version, 0, 1) * 10_000 + (int) substr($lowest_php_version, 2) * 100;
+    }
+
+    /**
      * The lowest PHP version (`8.2`) the `php` requirement of a composer.json allows
      *
      * @param array<array-key, mixed> $composer_json
@@ -4014,6 +4143,79 @@ final class Config
         }
 
         return null;
+    }
+
+    /**
+     * The extensions declared for a file (see $declared_extensions): those of the package of a monorepo it belongs
+     * to, if any (see getComposerPackageOf()), else those of the project. Null without a composer.json.
+     *
+     * @internal
+     * @return array<string, true>|null
+     */
+    public function getDeclaredExtensionsOf(string $file_path): ?array
+    {
+        if ($this->declared_extensions === null) {
+            return null;
+        }
+
+        return $this->getComposerPackageOf($file_path)['extensions'] ?? $this->declared_extensions;
+    }
+
+    /**
+     * The lowest PHP version the `php` requirement allows for a file (see $lowest_composer_php_version_id): that of
+     * the package of a monorepo it belongs to, if it constrains it, else that of the project.
+     *
+     * @internal
+     */
+    public function getLowestComposerPhpVersionIdOf(string $file_path): ?int
+    {
+        return $this->getComposerPackageOf($file_path)['lowest_php_version_id']
+            ?? $this->lowest_composer_php_version_id;
+    }
+
+    /**
+     * The package of a monorepo a file belongs to: the nearest composer.json above it, below the root of the project
+     * and outside its vendor directory. Null for a file in no such package, or in one whose composer.json can't be
+     * read.
+     *
+     * @return array{extensions: array<string, true>, lowest_php_version_id: ?int}|null
+     */
+    private function getComposerPackageOf(string $file_path): ?array
+    {
+        $root = rtrim($this->base_dir, '/\\');
+        $directory = dirname($file_path);
+        if (!str_starts_with($directory, $root . DIRECTORY_SEPARATOR)) {
+            return null;
+        }
+
+        if (array_key_exists($directory, $this->composer_packages)) {
+            return $this->composer_packages[$directory];
+        }
+
+        $vendor_dir = $root . DIRECTORY_SEPARATOR . trim($this->composer_vendor_dir, '/\\');
+        if ($directory === $vendor_dir || str_starts_with($directory, $vendor_dir . DIRECTORY_SEPARATOR)) {
+            return $this->composer_packages[$directory] = null;
+        }
+
+        $composer_json_path = $directory . DIRECTORY_SEPARATOR . 'composer.json';
+        if (!is_file($composer_json_path)) {
+            $parent = dirname($directory);
+
+            return $this->composer_packages[$directory] = $parent === $root
+                ? null
+                : $this->getComposerPackageOf($parent . DIRECTORY_SEPARATOR . 'composer.json');
+        }
+
+        $composer_json = json_decode((string) file_get_contents($composer_json_path), true);
+        if (!is_array($composer_json)) {
+            return $this->composer_packages[$directory] = null;
+        }
+
+        return $this->composer_packages[$directory] = [
+            'extensions' => self::getDeclaredExtensions($composer_json, $this->installed_composer_packages, false)
+                + $this->enabled_extensions,
+            'lowest_php_version_id' => self::getLowestPhpVersionId($composer_json),
+        ];
     }
 
     /**

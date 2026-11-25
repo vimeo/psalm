@@ -14,8 +14,8 @@ use Psalm\IssueBuffer;
 use function str_replace;
 
 /**
- * Reports the builtin functions and classes of extensions composer.json doesn't declare (see
- * Config::$declared_extensions).
+ * Reports the builtin functions and classes of extensions composer.json doesn't declare: that of the package of a
+ * monorepo the code belongs to, else that of the project (see Config::getDeclaredExtensionsOf()).
  *
  * @internal
  */
@@ -53,7 +53,13 @@ final class ExtensionRequirementAnalyzer
         ?Context $context,
         array $suppressed_issues,
     ): void {
-        $composer_name = self::getUndeclaredExtension($codebase, $function_or_class, $is_class, $context);
+        $composer_name = self::getUndeclaredExtension(
+            $codebase,
+            $function_or_class,
+            $is_class,
+            $code_location->file_path,
+            $context,
+        );
         if ($composer_name === null) {
             return;
         }
@@ -76,15 +82,18 @@ final class ExtensionRequirementAnalyzer
         Codebase $codebase,
         string $function_or_class,
         bool $is_class,
+        string $file_path,
         ?Context $context,
     ): ?string {
-        $declared_extensions = $codebase->config->declared_extensions;
+        $declared_extensions = $codebase->config->getDeclaredExtensionsOf($file_path);
         if ($declared_extensions === null) {
             return null;
         }
 
         // the code also runs on the older PHP versions composer.json allows, which may have been built without it
-        foreach (InternalCallMapHandler::getExtensions($function_or_class, $is_class) as $extension => $since) {
+        $lowest_php_version_id = $codebase->config->getLowestComposerPhpVersionIdOf($file_path);
+        $extensions = InternalCallMapHandler::getExtensions($function_or_class, $is_class, $lowest_php_version_id);
+        foreach ($extensions as $extension => $since) {
             $core_since = self::CORE_EXTENSIONS[$extension] ?? null;
             if ($core_since !== null && $core_since <= $since) {
                 continue;

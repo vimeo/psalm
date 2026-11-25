@@ -59,6 +59,19 @@ package provides or replaces it (the polyfills, such as `symfony/polyfill-mbstri
 [`<enableExtensions>`](../configuration.md#enableextensions) lists it. Without a `composer.json`, the issue isn't
 reported.
 
+In a monorepo, the `composer.json` of a file is that of the package it belongs to: the nearest one above it, below
+the root of the project and outside its vendor directory. The package then declares the extensions it requires,
+requires for development or suggests, and those of the packages it requires that are installed (directly or through
+the packages they require) provide or replace; its `php` requirement, if any, is the one checked. The other files take
+the `composer.json` of the project:
+
+```
+composer.json                     requires ext-mbstring
+packages/cache/composer.json      requires ext-redis
+packages/cache/src/Cache.php      new Redis(): no issue; mb_strlen(): MissingExtensionRequirement
+src/Kernel.php                    mb_strlen(): no issue
+```
+
 The extensions PHP is always built with need no declaration: `Core`, `standard`, `date`, `pcre`, `SPL`, `Reflection`,
 `hash` from PHP 7.4, `json` from PHP 8.0, `random` from PHP 8.2, `uri` and `Zend OPcache` from PHP 8.5. Psalm checks
 the lowest PHP version the `php` requirement of `composer.json` allows:
