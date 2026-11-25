@@ -34,7 +34,6 @@ use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 
 use function array_count_values;
-use function array_diff;
 use function array_fill;
 use function array_filter;
 use function array_flip;
@@ -2170,14 +2169,12 @@ final class TaintTest extends TestCase
             . "\$values->current();\n"
             . "\$values->send((string) \$_GET['value']);\n";
 
-        $lines = $this->getTaintedHtmlLines($code);
-
         if ($call_sites > 16) {
-            // past the cap, `other()` may be linked too
-            $lines = array_values(array_diff($lines, [$call_sites + 3]));
+            // past the cap, the 17th stack at a node is replaced by "any call matches": `other()` is linked too
+            $expected_lines[] = $call_sites + 3;
         }
 
-        self::assertSame($expected_lines, $lines);
+        self::assertSame($expected_lines, $this->getTaintedHtmlLines($code));
     }
 
     /**
@@ -2189,6 +2186,45 @@ final class TaintTest extends TestCase
         return [
             'sixteenCallStacks' => [16],
             'seventeenCallStacks' => [17],
+        ];
+    }
+
+    /**
+     * A generator passed through `$depth` nested calls is linked to what is sent, and only through the call it was
+     * passed in: up to 8 nested calls the search matches each one it left through its arguments with the one it
+     * entered through its return. The 9th gives "any call matches", so the generator of the other call of the first
+     * function is linked too.
+     */
+    #[DataProvider('providerGeneratorSendCallDepthCap')]
+    public function testGeneratorSendCallDepthCap(int $depth): void
+    {
+        $code = "<?php\n"
+            . "function genA(): Generator { \$sent = yield 1; echo \$sent; }\n"
+            . "function genB(): Generator { \$sent = yield 1; echo \$sent; }\n";
+
+        for ($layer = 1; $layer < $depth; $layer++) {
+            $code .= "function layer$layer(Generator \$generator): Generator { return layer" . ($layer + 1)
+                . "(\$generator); }\n";
+        }
+
+        $code .= "function layer$depth(Generator \$generator): Generator { return \$generator; }\n"
+            . "\$values = layer1(genA());\n"
+            . "\$other = layer1(genB());\n"
+            . "\$values->current();\n"
+            . "\$values->send((string) \$_GET['value']);\n";
+
+        self::assertSame($depth > 8 ? [2, 3] : [2], $this->getTaintedHtmlLines($code));
+    }
+
+    /**
+     * @return array<string, array{int}>
+     * @psalm-pure
+     */
+    public static function providerGeneratorSendCallDepthCap(): array
+    {
+        return [
+            'eightNestedCalls' => [8],
+            'nineNestedCalls' => [9],
         ];
     }
 
