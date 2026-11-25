@@ -18,6 +18,60 @@ final class TypeAnnotationTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
+    public function testTypeAliasOfAParentConstructorAnalysedForAChildInAnotherFile(): void
+    {
+        $this->expectNotToPerformAssertions();
+
+        $parent_path = self::$src_dir_path . 'Shape.php';
+        $child_path = self::$src_dir_path . 'Square.php';
+
+        $this->addFile(
+            $parent_path,
+            '<?php
+                namespace Geometry;
+
+                /**
+                 * @psalm-type Size = array{width: int, height: int}
+                 */
+                class Shape {
+                    protected int $sides;
+
+                    public function __construct() {
+                        $this->sides = 4;
+
+                        /** @var Size $size */
+                        $size = array_replace(["width" => 1], ["height" => 1]);
+                        $this->draw($size);
+
+                        /** @var list<Size> $sizes */
+                        $sizes = [array_replace(["width" => 1], ["height" => 1])];
+
+                        /** @var Size $s */
+                        foreach ($sizes as $s) {
+                            $this->draw($s);
+                        }
+                    }
+
+                    /** @param Size $size */
+                    public function draw(array $size): void {
+                        echo $size["width"];
+                    }
+                }',
+        );
+
+        $this->addFile(
+            $child_path,
+            '<?php
+                namespace Geometry;
+
+                final class Square extends Shape {}',
+        );
+
+        $this->project_analyzer->getCodebase()->addFilesToAnalyze([$parent_path => $parent_path]);
+
+        $this->analyzeFile($child_path, new Context());
+    }
+
     public function testNullableReturnOfATypeAliasOfAClassScannedLaterContainsNull(): void
     {
         // files are scanned in the order of their paths
@@ -66,6 +120,66 @@ final class TypeAnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'typeImportInADocblockSeparateFromTheClassDocblock' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-type X = array{a: int}
+                     */
+                    final class Other {}
+
+                    /**
+                     * @psalm-import-type X from Other
+                     * @psalm-type Y = array{key: X}
+                     */
+
+                    /**
+                     * Class doc
+                     */
+                    final class A {
+                        /** @return Y */
+                        public function y(): array {
+                            return ["key" => ["a" => 1]];
+                        }
+
+                        /** @return X */
+                        public function x(): array {
+                            return ["a" => 1];
+                        }
+                    }
+
+                    $y = (new A())->y();
+                    $x = (new A())->x();',
+                'assertions' => [
+                    '$y===' => 'array{key: array{a: int}}',
+                    '$x===' => 'array{a: int}',
+                ],
+            ],
+            'phpstanTypeImportInADocblockSeparateFromTheClassDocblock' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-type Original = array{a: int}
+                     */
+                    final class Other {}
+
+                    /**
+                     * @phpstan-import-type Original from Other as X
+                     */
+
+                    /**
+                     * Class doc
+                     */
+                    final class A {
+                        /** @return X */
+                        public function x(): array {
+                            return ["a" => 1];
+                        }
+                    }
+
+                    $x = (new A())->x();',
+                'assertions' => [
+                    '$x===' => 'array{a: int}',
+                ],
+            ],
             'importedTypeAliasInAnIntersectionOfAnotherAlias' => [
                 'code' => '<?php
                     /**

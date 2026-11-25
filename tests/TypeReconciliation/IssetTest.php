@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Tests\TypeReconciliation;
 
 use Override;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
@@ -75,12 +76,292 @@ final class IssetTest extends TestCase
     }
 
     /**
+     * Taint analysis tracks an offset the negation of `isset()` removes, which changes only the data flow of the
+     * array in the implicit else: the array keeps its type from before the if, as without taint analysis.
+     */
+    #[DataProvider('providerNarrowingOfAnIssetOffset')]
+    public function testArrayTypeAfterNestedNarrowingOfAnIssetOffsetWithTaintAnalysis(string $narrowing): void
+    {
+        $this->project_analyzer->trackTaintedInputs();
+        $this->testValidCode(
+            '<?php
+                final class Definition {}
+
+                function getService(): array {
+                    return [];
+                }
+
+                $service = getService();
+                $definition = isset($service[0]) && $service[0] instanceof Definition ? array_shift($service) : null;
+                if (isset($service["from_callable"])) {
+                    $service["class"] = "Closure";
+                }
+                ' . $narrowing,
+            ['$service===' => "array<array-key, 'Closure'|Definition|mixed>"],
+            ['MixedAssignment'],
+        );
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     * @psalm-pure
+     */
+    public static function providerNarrowingOfAnIssetOffset(): iterable
+    {
+        return [
+            'if' => [
+                'if (isset($service["lazy"])) {
+                    if (is_string($service["lazy"])) {}
+                }',
+            ],
+            'ifElseChain' => [
+                'if (isset($service["lazy"])) {
+                    if (is_string($service["lazy"])) {}
+                } elseif (rand(0, 1)) {
+                } else {
+                }',
+            ],
+            'inASwitchCase' => [
+                'switch (rand(0, 2)) {
+                    case 0:
+                        if (isset($service["lazy"])) {
+                            if (is_string($service["lazy"])) {}
+                        }
+                        break;
+                    default:
+                }',
+            ],
+            'inALoop' => [
+                'while (rand(0, 1)) {
+                    if (isset($service["lazy"])) {
+                        if (is_string($service["lazy"])) {}
+                    }
+                }',
+            ],
+        ];
+    }
+
+    /**
      * @psalm-pure
      */
     #[Override]
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'nullCoalesceOnAnyExpression' => [
+                'code' => '<?php
+                    final class S {
+                        public const NOTHING = null;
+                    }
+
+                    /** @return int|null */
+                    function maybe() {
+                        return null;
+                    }
+
+                    $from_null = null ?? 1;
+                    $from_class_constant = S::NOTHING ?? 2;
+                    $from_operation = (rand(0, 1) ? maybe() : null) ?? 3;',
+                'assertions' => [
+                    '$from_null===' => '1',
+                    '$from_class_constant===' => '2',
+                    '$from_operation===' => 'int',
+                ],
+                'ignored_issues' => ['TypeDoesNotContainType'],
+            ],
+            'nullsafeFetchOnTheLeftOfCoalesceStaysInIssetMode' => [
+                'code' => '<?php
+                    final class Ext {
+                        public int $w = 0;
+                    }
+
+                    /** @param array<string, ?Ext> $list */
+                    function undefinedProperty(array $list, string $k): mixed {
+                        return $list[$k]?->weight ?? -999;
+                    }
+
+                    /** @param array<string, ?Ext> $list */
+                    function definedProperty(array $list, string $k): int {
+                        return $list[$k]?->w ?? -999;
+                    }
+
+                    /** @param array{a?: ?Ext} $arr */
+                    function optionalOffset(array $arr): int {
+                        return $arr["a"]?->w ?? -1;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'issetInALoopOverLiteralKeysOfAnIntersectionShape' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-type HttpOptions = array{
+                     *   headers?: array<string, string | list<string>>,
+                     * }
+                     *
+                     * @psalm-type SerializedAccount = HttpOptions & array{discoveryUri: string, baseUrl?: ?string}
+                     */
+                    final class Account {
+                        /**
+                         * @psalm-param SerializedAccount $props
+                         */
+                        public static function constructFromArray(array $props): string
+                        {
+                            $requiredProps = [\'discoveryUri\'];
+
+                            foreach ($requiredProps as $prop) {
+                                if (!isset($props[$prop])) {
+                                    throw new \\Exception("x");
+                                }
+                            }
+
+                            return $props["discoveryUri"];
+                        }
+                    }',
+            ],
+            'coalesceToNullComparedWithNullNarrowsTheCoalescedOffset' => [
+                'code' => '<?php
+                    final class Item {
+                        public function getName(): string {
+                            return "x";
+                        }
+                    }
+
+                    /** @param array<string, Item> $data */
+                    function repeated(array $data): string {
+                        if (($data["item"] ?? null) !== null) {
+                            return ($data["item"] ?? null)->getName();
+                        }
+                        return "";
+                    }
+
+                    /** @param array<string, Item> $data */
+                    function negated(array $data): string {
+                        if (($data["item"] ?? null) === null) {
+                            return "";
+                        }
+                        return $data["item"]->getName();
+                    }
+
+                    /** @var array<string, Item> $data */
+                    $data = [];
+                    $item = ($data["item"] ?? null) !== null ? ($data["item"] ?? null) : new Item();',
+                'assertions' => [
+                    '$item===' => 'Item',
+                ],
+            ],
+            'coalesceOfASetNonNullVariableIsTheVariable' => [
+                'code' => '<?php
+                    function f(?int $i): ?int {
+                        return $i;
+                    }
+                    $i = f(1);
+                    $result = $i !== null ? ($i ?? "never") : 0;',
+                'assertions' => [
+                    '$result===' => 'int',
+                ],
+                'ignored_issues' => ['RedundantCondition', 'TypeDoesNotContainNull'],
+            ],
+            'offsetUnderOneOfSeveralLiteralKeysIsTheValueOfThoseKeys' => [
+                'code' => '<?php
+                    function getUserIps(): string {
+                        $ips = [];
+                        foreach (["REMOTE_ADDR", "HTTP_X_FORWARDED_FOR", "HTTP_CLIENT_IP"] as $k) {
+                            if (isset($_SERVER[$k])) {
+                                $ips[] = $_SERVER[$k];
+                            }
+                        }
+
+                        return implode(", ", $ips);
+                    }
+
+                    /**
+                     * @param array{a?: non-empty-string, b?: non-empty-string, argv?: list<string>, ...<string, scalar>} $arr
+                     * @param "a"|"b" $k
+                     * @return non-empty-string
+                     */
+                    function setOne(array $arr, string $k): string {
+                        if (isset($arr[$k])) {
+                            return $arr[$k];
+                        }
+                        return "x";
+                    }
+
+                    /**
+                     * @param array{a: int, b: string} $arr
+                     * @param "a"|"c" $k
+                     */
+                    function sealed(array $arr, string $k): int {
+                        if (isset($arr[$k])) {
+                            return $arr[$k];
+                        }
+                        return 0;
+                    }',
+            ],
+            'offsetUnderSeveralLiteralKeysNoneOfWhichASealedShapeListsIsItsValue' => [
+                'code' => '<?php
+                    enum Level: int {
+                        case Debug = 100;
+                        case Info = 200;
+                    }
+
+                    final class Logger {
+                        private const LEVELS = [7 => Level::Debug, 6 => Level::Info];
+
+                        /** @param 100|200|Level $level */
+                        public static function level(int|Level $level): Level {
+                            if (is_int($level) && isset(self::LEVELS[$level])) {
+                                $level = self::LEVELS[$level];
+                            }
+
+                            return $level instanceof Level ? $level : Level::from($level);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['InvalidArrayOffset'],
+                'php_version' => '8.1',
+            ],
+            'stringWithACharacterAtAnOffsetIsNonEmpty' => [
+                'code' => '<?php
+                    /** @return non-empty-string */
+                    function firstIsA(string $s): string {
+                        if ($s[0] === "a") {
+                            return $s;
+                        }
+                        return "a";
+                    }
+
+                    /** @return non-empty-string */
+                    function secondIsSet(string $s): string {
+                        if (isset($s[1])) {
+                            return $s;
+                        }
+                        return "a";
+                    }
+
+                    /**
+                     * @param lowercase-string $s
+                     * @return non-empty-lowercase-string
+                     */
+                    function lowercase(string $s): string {
+                        if (isset($s[1])) {
+                            return $s;
+                        }
+                        return "a";
+                    }
+
+                    /**
+                     * @param ""|"ab" $s
+                     * @return "ab"
+                     */
+                    function literal(string $s): string {
+                        if (isset($s[1])) {
+                            return $s;
+                        }
+                        return "ab";
+                    }',
+            ],
             'issetOnListOffsetDefinesTheOffsetsBeforeIt' => [
                 'code' => <<<'PHP'
                     <?php
@@ -1482,6 +1763,59 @@ final class IssetTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'issetOnNullableMixedInElseif' => [
+                'code' => '<?php
+                    function processParam(mixed $param) : void {
+                        if (rand(0, 1)) {
+                            $param = null;
+                        }
+
+                        if (rand(0, 1)) {
+                        } elseif (isset($param["name"])) {
+                            /**
+                             * @psalm-suppress MixedArgument
+                             */
+                            echo $param["name"];
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'issetOnMixedAssignedInElseifCondition' => [
+                'code' => '<?php
+                    function getMixed(): mixed {
+                        return rand(0, 1) ? ["name" => "a"] : null;
+                    }
+
+                    function processParam() : void {
+                        if (rand(0, 1)) {
+                        } elseif (($param = getMixed()) !== null && isset($param["name"])) {
+                            /**
+                             * @psalm-suppress MixedArgument
+                             */
+                            echo $param["name"];
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment'],
+                'php_version' => '8.0',
+            ],
+            'elseifTooComplicatedToNegateKeepsEarlierNegation' => [
+                'code' => '<?php
+                    function takesInt(int $i): void {}
+
+                    function f(?int $x, ?int $y, bool $a1, bool $b1, bool $a2, bool $b2, bool $a3, bool $b3, bool $a4, bool $b4, bool $a5, bool $b5, bool $a6, bool $b6, bool $a7, bool $b7, bool $a8, bool $b8, bool $a9, bool $b9, bool $a10, bool $b10, bool $a11, bool $b11, bool $a12, bool $b12, bool $a13, bool $b13, bool $a14, bool $b14, bool $a15, bool $b15): void {
+                        if ($x === null) {
+                            return;
+                        } elseif ($y !== null && ($a1 || $b1) && ($a2 || $b2) && ($a3 || $b3) && ($a4 || $b4) && ($a5 || $b5) && ($a6 || $b6) && ($a7 || $b7) && ($a8 || $b8) && ($a9 || $b9) && ($a10 || $b10) && ($a11 || $b11) && ($a12 || $b12) && ($a13 || $b13) && ($a14 || $b14) && ($a15 || $b15)) {
+                            takesInt($x);
+                            takesInt($y);
+                        } else {
+                            takesInt($x);
+                        }
+                    }',
+            ],
             'assertComplex' => [
                 'code' => '<?php
                     function returnsInt(?int $a, ?int $b): int {
@@ -2387,6 +2721,29 @@ final class IssetTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'coalesceOnAConcatenationKeepsOffsetIssues' => [
+                'code' => '<?php
+                    /** @param array{a?: string} $arr */
+                    function f(array $arr): string {
+                        return "x: " . $arr["a"] ?? "none";
+                    }',
+                'error_message' => 'PossiblyUndefinedArrayOffset',
+            ],
+            'coalesceOnAConcatenationKeepsMixedOffsetIssues' => [
+                'code' => '<?php
+                    /** @param mixed $error */
+                    function g($error): string {
+                        return "x: " . $error[0]["description"] ?? "none";
+                    }',
+                'error_message' => 'MixedArrayAccess',
+            ],
+            'coalesceOnAConcatenationKeepsNullOffsetIssuesOfACall' => [
+                'code' => '<?php
+                    function h(): string {
+                        return "x: " . error_get_last()["message"] ?? "none";
+                    }',
+                'error_message' => 'PossiblyNullArrayAccess',
+            ],
             'possiblyUndefinedMixedVariableStaysSoWhereIssetOfOffsetIsFalse' => [
                 'code' => '<?php
                     /** @return mixed */

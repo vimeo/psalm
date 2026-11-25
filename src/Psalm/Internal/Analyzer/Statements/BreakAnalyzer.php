@@ -78,7 +78,7 @@ final class BreakAnalyzer
                 $loop_scope->references_in_scope_at_breaks[] = $context->references_in_scope;
             }
 
-            // what a `break 2` or more leaves is seen after the loop it targets, not in the loops it passes through
+            // what a `break 2` or more redefines is seen after the loop it targets, not in the loops it passes through
             if ($loops_between === 0) {
                 $redefined_vars = $context->getRedefinedVars($loop_scope->loop_parent_context->vars_in_scope);
 
@@ -88,43 +88,47 @@ final class BreakAnalyzer
                         $loop_scope->possibly_redefined_loop_parent_vars[$var] ?? null,
                     );
                 }
+            }
 
-                if ($loop_scope->iteration_count === 0) {
-                    // a variable a break out of the loop leaves undefined is only possibly defined after the loop
-                    foreach ($loop_scope->possibly_defined_loop_parent_vars as $var_id => $type) {
-                        if ($ends_this_loop && !isset($context->vars_in_scope[$var_id])) {
-                            $loop_scope->possibly_defined_loop_parent_vars[$var_id] = $type->setPossiblyUndefined(true);
+            if ($loop_scope->iteration_count === 0) {
+                // a variable a break out of the loop leaves undefined is only possibly defined after the loop
+                foreach ($loop_scope->possibly_defined_loop_parent_vars as $var_id => $type) {
+                    if ($ends_this_loop && !isset($context->vars_in_scope[$var_id])) {
+                        $loop_scope->possibly_defined_loop_parent_vars[$var_id] = $type->setPossiblyUndefined(true);
 
-                            if (str_ends_with($var_id, ']')) {
-                                $loop_scope->unknown_offsets[$var_id] = true;
-                            }
+                        if (str_ends_with($var_id, ']')) {
+                            $loop_scope->unknown_offsets[$var_id] = true;
                         }
                     }
+                }
 
-                    foreach ($context->vars_in_scope as $var_id => $type) {
-                        if (!isset($loop_scope->loop_parent_context->vars_in_scope[$var_id])) {
-                            $previous_type = $loop_scope->possibly_defined_loop_parent_vars[$var_id] ?? null;
+                foreach ($context->vars_in_scope as $var_id => $type) {
+                    // an enclosing loop's variable is possibly undefined where its next iteration starts, but
+                    // defined after this loop if every way out of it defines it (see LoopAnalyzer::setLoopVars)
+                    if (!isset($loop_scope->loop_parent_context->vars_in_scope[$var_id])
+                        || $loop_scope->loop_parent_context->vars_in_scope[$var_id]->possibly_undefined
+                    ) {
+                        $previous_type = $loop_scope->possibly_defined_loop_parent_vars[$var_id] ?? null;
 
-                            if (str_ends_with($var_id, ']')
-                                && ($previous_type
-                                    ? $previous_type->possibly_undefined !== $type->possibly_undefined
-                                    : $ends_this_loop && $loop_scope->break_count > 0)
-                            ) {
-                                $loop_scope->unknown_offsets[$var_id] = true;
-                            }
-
-                            $loop_scope->possibly_defined_loop_parent_vars[$var_id] = Type::combineUnionTypes(
-                                $ends_this_loop && $loop_scope->break_count > 0 && $previous_type === null
-                                    ? $type->setPossiblyUndefined(true)
-                                    : $type,
-                                $previous_type,
-                            );
+                        if (str_ends_with($var_id, ']')
+                            && ($previous_type
+                                ? $previous_type->possibly_undefined !== $type->possibly_undefined
+                                : $ends_this_loop && $loop_scope->break_count > 0)
+                        ) {
+                            $loop_scope->unknown_offsets[$var_id] = true;
                         }
-                    }
 
-                    if ($ends_this_loop) {
-                        ++$loop_scope->break_count;
+                        $loop_scope->possibly_defined_loop_parent_vars[$var_id] = Type::combineUnionTypes(
+                            $ends_this_loop && $loop_scope->break_count > 0 && $previous_type === null
+                                ? $type->setPossiblyUndefined(true)
+                                : $type,
+                            $previous_type,
+                        );
                     }
+                }
+
+                if ($ends_this_loop) {
+                    ++$loop_scope->break_count;
                 }
             }
 
@@ -158,7 +162,9 @@ final class BreakAnalyzer
 
                     if ($target_scope->iteration_count === 0) {
                         foreach ($context->vars_in_scope as $var_id => $type) {
-                            if (!isset($target_scope->loop_parent_context->vars_in_scope[$var_id])) {
+                            if (!isset($target_scope->loop_parent_context->vars_in_scope[$var_id])
+                                || $target_scope->loop_parent_context->vars_in_scope[$var_id]->possibly_undefined
+                            ) {
                                 $target_scope->possibly_defined_loop_parent_vars[$var_id] = Type::combineUnionTypes(
                                     $type,
                                     $target_scope->possibly_defined_loop_parent_vars[$var_id] ?? null,

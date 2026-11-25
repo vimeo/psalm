@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Type\Atomic;
 
 use Override;
+use Psalm\Type;
 
 /**
  * Denotes an anonymous class (i.e. `new class{}`) with potential methods
@@ -34,7 +35,11 @@ final class TAnonymousClassInstance extends TNamedObject
         ?string $this_class,
         int $analysis_php_version_id,
     ): ?string {
-        return $analysis_php_version_id >= 7_02_00 ? ($this->extends ?? 'object') : null;
+        if ($this->extends !== null) {
+            return Type::getStringFromFQCLN($this->extends, $namespace, $aliased_classes, $this_class, true);
+        }
+
+        return $analysis_php_version_id >= 7_02_00 ? 'object' : null;
     }
 
     /**
@@ -47,6 +52,8 @@ final class TAnonymousClassInstance extends TNamedObject
         ?string $this_class,
         bool $use_phpdoc_format,
     ): string {
-        return $this->extends ?? 'object';
+        return $this->extends !== null
+            ? Type::getStringFromFQCLN($this->extends, $namespace, $aliased_classes, $this_class, true)
+            : 'object';
     }
 }

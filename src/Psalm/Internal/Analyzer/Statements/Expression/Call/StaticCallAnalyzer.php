@@ -32,6 +32,7 @@ use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\NonStaticSelfCall;
 use Psalm\Issue\ParentNotFound;
 use Psalm\IssueBuffer;
+use Psalm\Plugin\EventHandler\Event\AddRemoveCallTaintsEvent;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Storage\Capabilities;
 use Psalm\Storage\MethodStorage;
@@ -188,8 +189,9 @@ final class StaticCallAnalyzer extends CallAnalyzer
                     }
                 } elseif ($context->self) {
                     if ($stmt->class->getFirst() === 'static' && isset($context->vars_in_scope['$this'])) {
-                        $fq_class_name = (string) $context->vars_in_scope['$this'];
                         $lhs_type = $context->vars_in_scope['$this'];
+                        $this_atomic = $lhs_type->isSingle() ? $lhs_type->getSingleAtomic() : null;
+                        $fq_class_name = $this_atomic instanceof TNamedObject ? $this_atomic->value : $context->self;
                     } else {
                         $fq_class_name = $context->self;
                     }
@@ -266,7 +268,14 @@ final class StaticCallAnalyzer extends CallAnalyzer
                             ? $context
                             : null,
                         $statements_analyzer->getSuppressedIssues(),
-                        new ClassLikeNameOptions(false, false, false, true, context: $context),
+                        new ClassLikeNameOptions(
+                            false,
+                            false,
+                            false,
+                            true,
+                            context: $context,
+                            required_at_runtime: true,
+                        ),
                         $context->check_classes,
                     );
                 }
@@ -357,7 +366,13 @@ final class StaticCallAnalyzer extends CallAnalyzer
             ? NullsafeChainState::of($stmt->class)
             : NullsafeChainState::None;
 
-        foreach ($lhs_type->getAtomicTypes() as $lhs_type_part) {
+        $lhs_type_parts = $lhs_type->getAtomicTypes();
+
+        // a call to one of several classes asserts only what each of them asserts
+        $targets_if_true_assertions = [];
+        $targets_if_false_assertions = [];
+
+        foreach ($lhs_type_parts as $lhs_type_part) {
             AtomicStaticCallAnalyzer::analyze(
                 $statements_analyzer,
                 $stmt,
@@ -369,6 +384,25 @@ final class StaticCallAnalyzer extends CallAnalyzer
                 $has_existing_method,
                 $args_analyzed,
                 $template_result,
+            );
+
+            if (count($lhs_type_parts) > 1) {
+                $targets_if_true_assertions[] = $statements_analyzer->node_data->getIfTrueAssertions($stmt) ?? [];
+                $targets_if_false_assertions[] = $statements_analyzer->node_data->getIfFalseAssertions($stmt) ?? [];
+
+                $statements_analyzer->node_data->setIfTrueAssertions($stmt, []);
+                $statements_analyzer->node_data->setIfFalseAssertions($stmt, []);
+            }
+        }
+
+        if ($targets_if_true_assertions && $targets_if_false_assertions) {
+            $statements_analyzer->node_data->setIfTrueAssertions(
+                $stmt,
+                self::getCommonAssertions($targets_if_true_assertions),
+            );
+            $statements_analyzer->node_data->setIfFalseAssertions(
+                $stmt,
+                self::getCommonAssertions($targets_if_false_assertions),
             );
         }
 
@@ -570,6 +604,7 @@ final class StaticCallAnalyzer extends CallAnalyzer
                 $codebase,
                 $method_storage,
                 $template_result,
+                $stmt->isFirstClassCallable() ? [] : $stmt->getArgs(),
             )
             : 0;
 
@@ -581,6 +616,16 @@ final class StaticCallAnalyzer extends CallAnalyzer
 
             $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
             $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
+        }
+
+        $call_added_taints = 0;
+        $source_graph = $statements_analyzer->getTaintFlowGraphWithSuppressed();
+        if ($source_graph) {
+            $call_event = new AddRemoveCallTaintsEvent($codebase, $cased_method_id, null, null, $node_location);
+            [$call_added_taints, $call_removed_taints] = $codebase->config->eventDispatcher
+                ->dispatchAddRemoveCallTaints($call_event);
+            $added_taints |= $call_added_taints;
+            $removed_taints |= $call_removed_taints;
         }
 
         if ($conditionally_removed_taints || $added_taints !== 0 || $removed_taints !== 0) {
@@ -597,6 +642,12 @@ final class StaticCallAnalyzer extends CallAnalyzer
                 $added_taints,
                 $conditionally_removed_taints | $removed_taints,
             );
+
+            // what a handler adds to the call is there whatever the call is given
+            $source_taints = $call_added_taints & ~($conditionally_removed_taints | $removed_taints);
+            if ($source_taints !== 0 && $source_graph) {
+                $source_graph->addSource($assignment_node->setTaints($source_taints));
+            }
 
             $return_type_candidate = $return_type_candidate->addParentNodes([$assignment_node->id => $assignment_node]);
         } else {

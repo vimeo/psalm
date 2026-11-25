@@ -954,7 +954,7 @@ final class ArrayKeyExistsTest extends TestCase
                                 $unmerged[$i][$j][] = "b";
                             }
                         }
-                        /** @psalm-check-type-exact $unmerged = array<int<0, max>, array<int<0, max>, list{0: "a"|"b", 1?: "b", ...<"b">}>> */;
+                        /** @psalm-check-type-exact $unmerged = array<int<0, max>, non-empty-array<int<0, max>, list{0: "a"|"b", 1?: "b", ...<"b">}>> */;
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],
@@ -973,7 +973,7 @@ final class ArrayKeyExistsTest extends TestCase
                                 $unmerged[$i][$j][] = "b";
                             }
                         }
-                        /** @psalm-check-type-exact $unmerged = array<int<0, max>, array<int<0, max>, list{0: "a"|"b", 1?: "b", ...<"b">}>> */;
+                        /** @psalm-check-type-exact $unmerged = array<int<0, max>, non-empty-array<int<0, max>, list{0: "a"|"b", 1?: "b", ...<"b">}>> */;
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],
@@ -1015,7 +1015,7 @@ final class ArrayKeyExistsTest extends TestCase
                      */
                     function f($a): void {
                         if (array_key_exists("k", $a)) {
-                            /** @psalm-check-type-exact $a = ArrayAccess<string, int>|array{k: mixed, ...<string, int>} */;
+                            /** @psalm-check-type-exact $a = ArrayAccess<string, int>|array{k: int, ...<string, int>} */;
                         }
                     }',
                 'assertions' => [],

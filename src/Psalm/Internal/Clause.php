@@ -7,6 +7,7 @@ namespace Psalm\Internal;
 use Override;
 use Psalm\Storage\Assertion;
 use Psalm\Storage\Assertion\InArray;
+use Psalm\Storage\Assertion\IsClassEqual;
 use Psalm\Storage\Assertion\IsEqualIsset;
 use Psalm\Storage\Assertion\IsIdentical;
 use Psalm\Storage\Assertion\IsIsset;
@@ -164,19 +165,27 @@ final class Clause implements Stringable
 
     /**
      * The string of the assertion without what only tells comparisons apart: the operand or array it was compared
-     * with, and the whole of a long literal string
+     * with, the whole of a long literal string a type is checked against, and the exact type of an equality
+     * (`=class-string` for `$x === $cs`)
      *
      * @psalm-mutation-free
      */
     public static function getAssertionDisplayString(Assertion $assertion): string
     {
-        if (($assertion instanceof IsIdentical
-                || $assertion instanceof IsNotIdentical
-                || $assertion instanceof IsLooselyEqual
-                || $assertion instanceof IsNotLooselyEqual)
-            && $assertion->comparand !== null
-        ) {
-            return (string) new ($assertion::class)($assertion->type);
+        if ($assertion instanceof IsIdentical) {
+            return '=' . $assertion->type->getAssertionString();
+        }
+
+        if ($assertion instanceof IsNotIdentical) {
+            return '!=' . $assertion->type->getAssertionString();
+        }
+
+        if ($assertion instanceof IsLooselyEqual) {
+            return '~' . $assertion->type->getAssertionString();
+        }
+
+        if ($assertion instanceof IsNotLooselyEqual) {
+            return '!~' . $assertion->type->getAssertionString();
         }
 
         if (($assertion instanceof InArray || $assertion instanceof NotInArray) && $assertion->haystack !== null) {
@@ -399,6 +408,8 @@ final class Clause implements Stringable
                 // comparison with an operand, not for `$a === $b` being false, nor for an assertion of a docblock
                 if (!$type->hasEquality()
                     || ($type instanceof IsNotIdentical && $type->comparand !== null)
+                    // an object whose class is not the one compared with: only a final class is then excluded
+                    || $type instanceof IsClassEqual
                     || (($inner_type = $type->getAtomicType())
                         && ($inner_type instanceof TLiteralInt
                             || $inner_type instanceof TLiteralFloat

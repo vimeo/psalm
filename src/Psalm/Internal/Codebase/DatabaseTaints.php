@@ -7,7 +7,9 @@ namespace Psalm\Internal\Codebase;
 use PhpParser\Node\Arg;
 use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\BinaryOp\Concat;
+use PhpParser\Node\Expr\FuncCall;
 use PhpParser\Node\InterpolatedStringPart;
+use PhpParser\Node\Name;
 use PhpParser\Node\Scalar\InterpolatedString;
 use PhpParser\Node\Scalar\String_;
 use Psalm\CodeLocation;
@@ -15,17 +17,31 @@ use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Storage\FunctionLikeStorage;
+use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TBool;
+use Psalm\Type\Atomic\TFloat;
+use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TKeyedArray;
+use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Union;
 
+use function array_values;
 use function count;
 use function dirname;
+use function in_array;
 use function is_int;
 use function ltrim;
+use function preg_match_all;
 use function preg_split;
+use function sprintf;
 use function str_starts_with;
+use function strlen;
+use function strpos;
 use function strtolower;
 use function substr;
+
+use const PREG_OFFSET_CAPTURE;
+use const PREG_SET_ORDER;
 
 /**
  * What the database holds: the values an INSERT, REPLACE or UPDATE stores in a column flow into what the SELECTs of
@@ -38,12 +54,14 @@ use function substr;
  * FunctionLikeStorage::$database_calls)
  * or, for the builtins, by dictionaries/InternalDatabaseMap.php, as lists of these operations:
  * - `query`: runs the SQL given to `sql`, with the values of the placeholders given to `params` if any; what the call
- *   returns holds the rows the query selects, as `result` says (see addResult());
+ *   returns holds the rows the query selects, as `result` says (see addResult()). With `readonly`, the queries can only
+ *   read (the server refuses the others): they store nothing, even if the analysis can't parse them;
  * - `prepare`: the same, but the values of the placeholders are given later to the statement the call returns, by
  *   `execute` (`params`) and `bind` (`value` under the placeholder `key`, `base` being the number of the first
  *   positional placeholder, or the values given from `values` on, in the order of the placeholders);
  * - `insert` and `update`: store the values of the array given to `data`, under its keys, in the columns of the table
- *   given to `table`;
+ *   given to `table`; under integer keys, which name no column, it holds rows (`[$row]`, a list of rows), each storing
+ *   its values in the columns of its own keys;
  * - `fetch`: what the call returns is from the rows the result given to `from` (or the object the method is called on)
  *   holds, as `result` says.
  *
@@ -66,6 +84,7 @@ use function substr;
  *     from?: int,
  *     result?: 'result'|'rows'|'value'|'column'|'any_value'|'any_column'|'value_or_row'|'none',
  *     optional_first?: int,
+ *     readonly?: true,
  * }
  * @psalm-type Value = array{
  *     holes: list<int>,
@@ -81,6 +100,11 @@ final class DatabaseTaints
     private const ROWS_STORE = 'database rows';
 
     private const RESULTS = ['result', 'rows', 'value', 'column', 'any_value', 'any_column', 'value_or_row', 'none'];
+
+    /** The conversion specifiers of sprintf() but %% */
+    private const SPRINTF_SPECIFIERS = ['b', 'c', 'd', 'e', 'E', 'f', 'F', 'g', 'G', 'h', 'H', 'o', 's', 'u', 'x', 'X'];
+
+    private const SPRINTF_MAX_WIDTH = 1000;
 
     /** @var null|array<lowercase-string, list<Spec>> */
     private static ?array $map = null;
@@ -129,7 +153,7 @@ final class DatabaseTaints
 
     /**
      * Adds the operation of a `@psalm-database-$kind` annotation to the storage, or says what is wrong with it:
-     * - `@psalm-database-query $sql [$params] [result]`, `@psalm-database-prepare $sql`;
+     * - `@psalm-database-query $sql [$params] [result] [readonly]`, `@psalm-database-prepare $sql`;
      * - `@psalm-database-execute [$params]` and `@psalm-database-bind $key $value` (a positional placeholder is
      *   numbered from 1) or `@psalm-database-bind ...$values`, for the statement the method is called on;
      * - `@psalm-database-insert $table $data`, `@psalm-database-update $table $data`, `@psalm-database-select $table`;
@@ -146,6 +170,7 @@ final class DatabaseTaints
         $params = [];
         $variadic = false;
         $result = null;
+        $readonly = false;
 
         foreach ($words === false ? [] : $words as $word) {
             if ($word === '' || $word[0] === '*') {
@@ -170,6 +195,8 @@ final class DatabaseTaints
                 }
 
                 $params[] = $offset;
+            } elseif ($word === 'readonly' && $kind === 'query') {
+                $readonly = true;
             } else {
                 foreach (self::RESULTS as $known_result) {
                     if ($word === $known_result) {
@@ -210,6 +237,10 @@ final class DatabaseTaints
 
         if ($result !== null) {
             $spec['result'] = $result;
+        }
+
+        if ($readonly) {
+            $spec['readonly'] = true;
         }
 
         $storage->database_calls[] = $spec;
@@ -338,11 +369,12 @@ final class DatabaseTaints
 
         $holes = [];
         $sql = self::getText($statements_analyzer, $sql_arg->value, $holes);
-        $parsed = SqlStatement::parse($sql);
+        $parsed = SqlStatement::parse($sql, self::getNumberHoles($statements_analyzer, $holes));
 
         $statement = self::getStatementNode($statements_analyzer, $graph, $spec, $args, $call_location);
 
-        // a query that can't be parsed can store and read anything
+        // a query that can't be parsed can store and read anything: any column, and the rows of any table as a
+        // `SELECT *` reads them
 
         if (isset($spec['params'])) {
             foreach ($args[$spec['params']] ?? [] as $params_arg) {
@@ -350,9 +382,14 @@ final class DatabaseTaints
             }
         }
 
+        if (isset($spec['readonly'])) {
+            // what the analysis can't parse only reads
+            $parsed = $parsed === null ? null : ['writes' => [], 'reads' => $parsed['reads']];
+        }
+
         if ($parsed === null) {
             $parsed = [
-                'writes' => [[
+                'writes' => isset($spec['readonly']) ? [] : [[
                     'table' => null,
                     'column' => null,
                     'value' => [
@@ -364,7 +401,7 @@ final class DatabaseTaints
                 'reads' => [[
                     'keys' => [],
                     'any_key' => true,
-                    'all_columns' => false,
+                    'all_columns' => true,
                     'value' => ['holes' => [], 'placeholders' => [], 'columns' => [[null, null]]],
                 ]],
             ];
@@ -429,10 +466,6 @@ final class DatabaseTaints
                 }
             }
 
-            if ($read['any_key']) {
-                $graph->addPath($read_node, $row_node, 'arrayvalue-assignment');
-            }
-
             foreach ($read['keys'] as $key) {
                 // a node of its own for each key: there is one edge between two nodes
                 $key_node = DataFlowNode::getForAssignment('database column #' . $offset . ' ' . $key, $call_location);
@@ -455,6 +488,11 @@ final class DatabaseTaints
                     'database column #' . $offset,
                     $call_location,
                 );
+            }
+
+            // after the columns by position: it replaces their edge, as any key holds them
+            if ($read['any_key']) {
+                $graph->addPath($read_node, $row_node, 'arrayvalue-assignment');
             }
         }
 
@@ -595,8 +633,6 @@ final class DatabaseTaints
         $table = self::getTableName($statements_analyzer, $args[$spec['table'] ?? -1][0] ?? null);
 
         foreach ($args[$spec['data'] ?? -1] ?? [] as $data_arg) {
-            $data_type = $statements_analyzer->node_data->getType($data_arg->value);
-            $keyed = $data_type !== null && $data_type->isSingle() ? $data_type->getSingleAtomic() : null;
             $data_node = DataFlowNode::getForAssignment('database data', $call_location);
 
             if (!self::addPathsFromArg($statements_analyzer, $graph, $data_arg, $data_node, '=')) {
@@ -605,28 +641,95 @@ final class DatabaseTaints
 
             $graph->addNode($data_node);
 
-            $columns = [];
-            if ($keyed instanceof TKeyedArray && $keyed->fallback_params === null) {
-                foreach ($keyed->properties as $key => $_) {
-                    $columns[] = $data_arg->unpack ? null : (string) $key;
-                }
-            } else {
-                $columns[] = null;
+            if ($data_arg->unpack) {
+                // what is given to the parameter is one of the values unpacked
+                self::addColumnWrite($graph, $table, null, $data_node, 'arrayvalue-fetch', $call_location);
+                continue;
             }
 
-            foreach ($columns as $column) {
-                $write_node = DataFlowNode::getForAssignment('database write ' . ($column ?? '*'), $call_location);
-                $graph->addNode($write_node);
-                $graph->addPath(
-                    $data_node,
-                    $write_node,
-                    $column === null ? 'arrayvalue-fetch' : 'arrayvalue-fetch-\'' . $column . '\'',
-                );
-                self::addWrite($graph, $table, $column, $write_node);
-            }
+            self::addDataWrites(
+                $graph,
+                $table,
+                $statements_analyzer->node_data->getType($data_arg->value),
+                $data_node,
+                $call_location,
+                false,
+            );
         }
 
         return $return_type;
+    }
+
+    /**
+     * Stores the values of $node, an array of the type $type, in the columns of the table its keys name. Integer keys
+     * name no column: what is under them is a row, which stores its values in the columns its own keys name, and a
+     * value under them in a row (`[$id, $name]`) can be in any column.
+     */
+    private static function addDataWrites(
+        TaintFlowGraph $graph,
+        ?string $table,
+        ?Union $type,
+        DataFlowNode $node,
+        CodeLocation $call_location,
+        bool $is_row,
+    ): void {
+        $atomic = $type !== null && $type->isSingle() ? $type->getSingleAtomic() : null;
+
+        if ($atomic instanceof TKeyedArray && $atomic->fallback_params === null) {
+            foreach ($atomic->properties as $key => $value_type) {
+                $path = 'arrayvalue-fetch-\'' . $key . '\'';
+
+                if (!is_int($key) || $is_row) {
+                    self::addColumnWrite($graph, $table, is_int($key) ? null : $key, $node, $path, $call_location);
+                    continue;
+                }
+
+                $row_node = DataFlowNode::getForAssignment($node->label . ' row ' . $key, $call_location);
+                $graph->addNode($row_node);
+                $graph->addPath($node, $row_node, $path);
+                self::addDataWrites($graph, $table, $value_type, $row_node, $call_location, true);
+            }
+
+            return;
+        }
+
+        // a list of rows
+        if (!$is_row && ($atomic instanceof TKeyedArray || $atomic instanceof TArray)) {
+            [$key_type, $value_type] = $atomic instanceof TKeyedArray
+                ? [$atomic->getGenericKeyType(), $atomic->getGenericValueType()]
+                : $atomic->type_params;
+
+            if ($key_type->isInt()) {
+                $row_node = DataFlowNode::getForAssignment($node->label . ' row', $call_location);
+                $graph->addNode($row_node);
+                $graph->addPath($node, $row_node, 'arrayvalue-fetch');
+                self::addDataWrites($graph, $table, $value_type, $row_node, $call_location, true);
+
+                return;
+            }
+        }
+
+        self::addColumnWrite($graph, $table, null, $node, 'arrayvalue-fetch', $call_location);
+    }
+
+    /**
+     * Stores what $path takes of $data in the column, or in any column of the table if it isn't known
+     */
+    private static function addColumnWrite(
+        TaintFlowGraph $graph,
+        ?string $table,
+        ?string $column,
+        DataFlowNode $data,
+        string $path,
+        CodeLocation $call_location,
+    ): void {
+        $write_node = DataFlowNode::getForAssignment(
+            $data->label . ' write ' . ($column ?? '*'),
+            $call_location,
+        );
+        $graph->addNode($write_node);
+        $graph->addPath($data, $write_node, $path);
+        self::addWrite($graph, $table, $column, $write_node);
     }
 
     /**
@@ -961,7 +1064,6 @@ final class DatabaseTaints
      * The text of the SQL, where each part whose text the analysis doesn't know is a hole (see SqlStatement)
      *
      * @param list<Expr> $holes the parts that are holes, in their order
-     * @psalm-capabilities read-props|write-this-props|write-refs
      */
     private static function getText(StatementsAnalyzer $statements_analyzer, Expr $expr, array &$holes): string
     {
@@ -991,9 +1093,126 @@ final class DatabaseTaints
             return $text;
         }
 
+        if ($expr instanceof FuncCall && $expr->name instanceof Name && !$expr->isFirstClassCallable()
+            && TaintStore::getCalledFunctionId($statements_analyzer, $expr->name) === 'sprintf'
+        ) {
+            $text = self::getSprintfText($statements_analyzer, $expr->getArgs(), $holes);
+            if ($text !== null) {
+                return $text;
+            }
+        }
+
         $holes[] = $expr;
 
-        return SqlStatement::HOLE_MARKER . (count($holes) - 1) . SqlStatement::HOLE_MARKER;
+        // what the analysis knows the part starts with, as for the keys of a store (a variable assigned
+        // `'SELECT a FROM t WHERE b = ' . $b`, then concatenated with `' LIMIT 1'`)
+        return TaintStore::getKnownStart($statements_analyzer, $expr)
+            . SqlStatement::HOLE_MARKER . (count($holes) - 1) . SqlStatement::HOLE_MARKER;
+    }
+
+    /**
+     * The text sprintf() gives with a literal format, or null if the analysis can't tell which parts of it come from
+     * which argument, or what text a conversion of an argument whose text it doesn't know puts in
+     *
+     * A conversion of a literal is its text. A plain `%s` is the text of its argument, and a number conversion
+     * (`%d`, `%05.2f`, ...) is a part whose text the analysis doesn't know.
+     *
+     * @param array<array-key, Arg> $args
+     * @param list<Expr> $holes
+     */
+    private static function getSprintfText(StatementsAnalyzer $statements_analyzer, array $args, array &$holes): ?string
+    {
+        $args = array_values($args);
+        foreach ($args as $arg) {
+            if ($arg->unpack || $arg->name !== null) {
+                return null;
+            }
+        }
+
+        $format_type = isset($args[0]) ? $statements_analyzer->node_data->getType($args[0]->value) : null;
+        if ($format_type === null || !$format_type->isSingleStringLiteral()) {
+            return null;
+        }
+
+        $format = $format_type->getSingleStringLiteral()->value;
+        // %[argnum$][flags][width][.precision]specifier, the flags being -, +, space, 0 and 'char in any order
+        preg_match_all(
+            '/%(?:([1-9][0-9]*)\$)?((?:[-+ 0]|\'.)*)(\*|[0-9]*)(\.(?:\*|[0-9]*))?(.)/s',
+            $format,
+            $conversions,
+            PREG_SET_ORDER | PREG_OFFSET_CAPTURE,
+        );
+
+        $text = '';
+        $offset = 0;
+        $next = 1;
+        foreach ($conversions as [[$conversion, $at], [$position], [$flags], [$width], [$precision], [$type]]) {
+            $text .= substr($format, $offset, $at - $offset);
+            $offset = $at + strlen($conversion);
+
+            if ($type === '%') {
+                $text .= '%';
+                continue;
+            }
+
+            // `*` takes the width or the precision from an argument, and a large one would make a long text
+            if ($width === '*' || $precision === '.*' || (int) $width > self::SPRINTF_MAX_WIDTH
+                || (int) substr($precision, 1) > self::SPRINTF_MAX_WIDTH
+                || !in_array($type, self::SPRINTF_SPECIFIERS, true)
+            ) {
+                return null;
+            }
+
+            $argument = $args[$position !== '' ? (int) $position : $next++] ?? null;
+            if ($argument === null) {
+                return null;
+            }
+
+            $argument_type = $statements_analyzer->node_data->getType($argument->value);
+            if ($argument_type !== null && $argument_type->isSingleLiteral()) {
+                $text .= sprintf('%' . $flags . $width . $precision . $type, $argument_type->getSingleLiteral()->value);
+            } elseif ($type === 's' && $flags === '' && $width === '' && $precision === '') {
+                $text .= self::getText($statements_analyzer, $argument->value, $holes);
+            } elseif ($type !== 'c' && $type !== 's' && strpos($flags, '\'') === false) {
+                $holes[] = $argument->value;
+                $text .= SqlStatement::HOLE_MARKER . (count($holes) - 1) . SqlStatement::HOLE_MARKER;
+            } else {
+                // a character, a string cut or padded, or padding of any character
+                return null;
+            }
+        }
+
+        return $text . substr($format, $offset);
+    }
+
+    /**
+     * The holes whose text is a number (an int, a float, a bool or null): they can't hold SQL
+     *
+     * @param list<Expr> $holes
+     * @return list<int>
+     * @psalm-capabilities read-props
+     */
+    private static function getNumberHoles(StatementsAnalyzer $statements_analyzer, array $holes): array
+    {
+        $number_holes = [];
+        foreach ($holes as $offset => $hole) {
+            $type = $statements_analyzer->node_data->getType($hole);
+            if ($type === null) {
+                continue;
+            }
+
+            foreach ($type->getAtomicTypes() as $atomic) {
+                if (!$atomic instanceof TInt && !$atomic instanceof TFloat && !$atomic instanceof TBool
+                    && !$atomic instanceof TNull
+                ) {
+                    continue 2;
+                }
+            }
+
+            $number_holes[] = $offset;
+        }
+
+        return $number_holes;
     }
 
     /**

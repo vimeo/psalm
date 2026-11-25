@@ -30,6 +30,59 @@ final class DoTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'variableAssignedBeforeEveryBreakOfADoWhileInsideALoopIsDefinedAfterIt' => [
+                'code' => '<?php
+                    function pick(): void {
+                        foreach ([1, 2] as $_) {
+                            do {
+                                $picked = rand(0, 5);
+                                if ($picked > 2) {
+                                    break;
+                                }
+                            } while (rand(0, 1));
+                            /** @psalm-check-type-exact $picked = int<0, 5> */;
+                        }
+                    }',
+            ],
+            'doWhileConditionOnAnOffsetOfAMixedVariableDoesNotHoldAfterTheLoop' => [
+                'code' => '<?php
+                    function f(mixed $m): void {
+                        do {
+                            echo "";
+                        } while ($m["x"]);
+
+                        if ($m["x"]) {}
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedArrayAccess'],
+                'php_version' => '8.0',
+            ],
+            'doWhileOffsetOfAMixedVariableAssignedByTheBodyKeepsItsTypeAfterTheLoop' => [
+                'code' => '<?php
+                    function f(mixed $m): void {
+                        do {
+                            $m["x"] = rand(0, 1);
+                        } while ($m["x"]);
+
+                        $z = $m["x"];
+                        /** @psalm-check-type-exact $z = int<0, 1> */
+                        echo $z;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedArrayAssignment', 'MixedArrayAccess'],
+                'php_version' => '8.0',
+            ],
+            'doWhileBarePostDecrementConditionIsMinusOneAfterTheLoop' => [
+                'code' => '<?php
+                    $c = 3;
+                    do {
+                        $c = 0;
+                    } while ($c--);
+                    $afterLoop = $c;',
+                'assertions' => [
+                    '$afterLoop===' => '-1',
+                ],
+            ],
             'doCounterIncrementedThroughAReferenceIsWidened' => [
                 'code' => <<<'PHP'
                     <?php
@@ -52,7 +105,7 @@ final class DoTest extends TestCase
                         do {
                             echo "a";
                         } while (($r += rand(1, 3)) < 100);
-                        /** @psalm-check-type-exact $i = int<1, max> */;
+                        /** @psalm-check-type-exact $i = int<100, 102> */;
                     }
                     PHP,
             ],
@@ -1400,6 +1453,47 @@ final class DoTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'doWhileConditionOnAnOffsetOfATypedArrayStillHoldsAfterTheLoop' => [
+                'code' => '<?php
+                    /** @param array<string, mixed> $m */
+                    function f(array $m): void {
+                        do {
+                            echo "";
+                        } while ($m["x"]);
+
+                        if ($m["x"]) {}
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'varAssignedRightOfLogicalAndInTheConditionIsPossiblyUndefinedAfterTheLoop' => [
+                'code' => '<?php
+                    /** @return int|false */
+                    function h() {
+                        return rand(0, 1) ? 3 : false;
+                    }
+                    do {
+                        $b = (bool) rand(0, 1);
+                    } while ($b and false !== ($j = h()));
+                    echo $j;',
+                'error_message' => 'PossiblyUndefinedGlobalVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:26',
+            ],
+            'varUnsetBeforeContinueIsPossiblyUndefinedAfterTheLoop' => [
+                'code' => '<?php
+                    function f(): void {
+                        $x = 0;
+                        do {
+                            if (rand(0, 1)) {
+                                unset($x);
+                                continue;
+                            }
+                            $x = 1;
+                        } while (rand(0, 1));
+                        echo $x;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
             'doWhilePropertyFetchOnAVariableNullOnlyInTheFirstIteration' => [
                 'code' => <<<'PHP'
                     <?php

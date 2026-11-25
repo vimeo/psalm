@@ -84,6 +84,42 @@ final class ForeachTest extends TestCase
         );
     }
 
+    public function testInvalidIteratorNamesTheScalarTypeWithoutItsValue(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @param non-empty-string $s */
+                function f(string $s): void {
+                    foreach (5 as $_) {}
+                    foreach (1.5 as $_) {}
+                    foreach ("abc" as $_) {}
+                    foreach (true as $_) {}
+                    foreach ($s as $_) {}
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        self::assertSame(
+            [
+                'Cannot iterate over int',
+                'Cannot iterate over float',
+                'Cannot iterate over string',
+                'Cannot iterate over true',
+                'Cannot iterate over string',
+            ],
+            array_map(
+                static fn(IssueData $issue): string => $issue->message,
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
+        );
+    }
+
     public function testAnItemAssignedToAVariableOfAPreviousIterationCreatesTheArray(): void
     {
         $this->project_analyzer->getConfig()->throw_exception = false;
@@ -210,6 +246,248 @@ final class ForeachTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'variableAssignedBeforeABreakTwoLevelsOutInsideALoopIsDefinedAfterTheLoopItLeaves' => [
+                'code' => '<?php
+                    /** @param non-empty-list<non-empty-list<string>> $rows */
+                    function pick(array $rows): void {
+                        foreach ([1, 2] as $_) {
+                            foreach ($rows as $row) {
+                                foreach ($row as $cell) {
+                                    $picked = $cell;
+                                    if ($cell === "x") {
+                                        break 2;
+                                    }
+                                }
+                            }
+                            /** @psalm-check-type-exact $picked = string */;
+                        }
+                    }',
+            ],
+            'variableAssignedBeforeEveryBreakAndContinueOfALoopInsideALoopIsDefinedAfterIt' => [
+                'code' => '<?php
+                    /** @param non-empty-list<string> $candidates */
+                    function pick(array $candidates): void {
+                        foreach ([1, 2] as $_) {
+                            foreach ($candidates as $candidate) {
+                                if ($candidate === "y") {
+                                    $picked = 1;
+                                    continue;
+                                }
+                                $picked = 2;
+                                if (rand(0, 1)) {
+                                    break;
+                                }
+                            }
+                            /** @psalm-check-type-exact $picked = 1|2 */;
+                        }
+                    }',
+            ],
+            'variableAssignedBeforeEveryBreakOfALoopInsideALoopKeepsEveryBreakType' => [
+                'code' => '<?php
+                    /** @param non-empty-list<string> $candidates */
+                    function pick(array $candidates): void {
+                        foreach ([1, 2] as $_) {
+                            foreach ($candidates as $candidate) {
+                                if ($candidate === "y") {
+                                    $picked = 1;
+                                    break;
+                                }
+                                $picked = "s";
+                                break;
+                            }
+                            /** @psalm-check-type-exact $picked = 1|"s" */;
+                        }
+                    }',
+            ],
+            'propertyNarrowedBeforeTheLoopIsKeptAfterABreakNotReassigningItsObject' => [
+                'code' => '<?php
+                    final class D {
+                        public function imm(): string {
+                            return "";
+                        }
+                    }
+
+                    final class O {
+                        public ?D $p = null;
+                    }
+
+                    /** @param list<int> $l */
+                    function keep(O $o, array $l): string {
+                        if ($o->p === null) {
+                            return "";
+                        }
+
+                        foreach ($l as $_) {
+                            if (rand(0, 1)) {
+                                break;
+                            }
+                        }
+
+                        return $o->p->imm();
+                    }',
+            ],
+            'varUnsetAndRedefinedBeforeAJumpStaysDefined' => [
+                'code' => '<?php
+                    /** @param list<int> $items */
+                    function f(array $items): int {
+                        $x = 0;
+                        foreach ($items as $i) {
+                            if ($i > 1) {
+                                unset($x);
+                                $x = 4;
+                                break;
+                            }
+                            if ($i) {
+                                unset($x);
+                                $x = 2;
+                                continue;
+                            }
+                        }
+                        return $x;
+                    }',
+            ],
+            'varUnsetBeforeAContinueThroughFinallyAssigningItStaysDefined' => [
+                'code' => '<?php
+                    /** @param list<int> $items */
+                    function f(array $items): int {
+                        $x = 0;
+                        foreach ($items as $_) {
+                            try {
+                                unset($x);
+                                continue;
+                            } finally {
+                                $x = 3;
+                            }
+                        }
+                        return $x;
+                    }',
+            ],
+            'foreachValueKeyIsNotWhatTheLastIterationWrote' => [
+                'code' => '<?php
+                    final class Id {}
+                    final class Photo {}
+
+                    function takesId(Id $_id): void {}
+
+                    /** @param non-empty-list<array{photo: Id}> $links */
+                    function f(array $links): void {
+                        foreach ($links as $link) {
+                            takesId($link["photo"]);
+                        }
+
+                        foreach ($links as $link) {
+                            takesId($link["photo"]);
+                            $link["photo"] = new Photo();
+                        }
+                    }',
+            ],
+            'whileConditionValueKeyIsNotWhatTheLastIterationWrote' => [
+                'code' => '<?php
+                    final class Id {}
+                    final class Photo {}
+
+                    function takesId(Id $_id): void {}
+
+                    /** @return array{photo: Id}|null */
+                    function nextLink(): ?array {
+                        return rand(0, 1) ? ["photo" => new Id()] : null;
+                    }
+
+                    function f(): void {
+                        $link = nextLink();
+                        if ($link === null) {
+                            return;
+                        }
+                        takesId($link["photo"]);
+
+                        while ($link = nextLink()) {
+                            takesId($link["photo"]);
+                            $link["photo"] = new Photo();
+                        }
+                    }',
+            ],
+            'foreachOverAnIteratorAggregateGivenByACoalesceAssignment' => [
+                'code' => '<?php
+                    /** @implements IteratorAggregate<int, string> */
+                    final class Items implements IteratorAggregate {
+                        #[Override]
+                        public function getIterator(): Iterator {
+                            return new ArrayIterator(["a"]);
+                        }
+                    }
+
+                    final class Holder {
+                        private ?Items $items = null;
+
+                        public function names(): void {
+                            foreach (($this->items ??= new Items()) as $name) {
+                                echo $name;
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'yieldFromAnIteratorAggregateGivenByACoalesceAssignment' => [
+                'code' => '<?php
+                    /** @implements IteratorAggregate<int, string> */
+                    final class Items implements IteratorAggregate {
+                        #[Override]
+                        public function getIterator(): Iterator {
+                            return new ArrayIterator(["a"]);
+                        }
+                    }
+
+                    final class Holder {
+                        private ?Items $items = null;
+
+                        /** @return Generator<int, string, mixed, void> */
+                        public function names(): Generator {
+                            yield from ($this->items ??= new Items());
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'foreachAndYieldFromAnAggregateOfARawIteratorGivenByACoalesceAssignment' => [
+                'code' => '<?php
+                    final class RawIt implements Iterator {
+                        #[Override]
+                        public function current(): string { return "a"; }
+                        #[Override]
+                        public function key(): int { return 0; }
+                        #[Override]
+                        public function next(): void {}
+                        #[Override]
+                        public function rewind(): void {}
+                        #[Override]
+                        public function valid(): bool { return false; }
+                    }
+
+                    final class AggRaw implements IteratorAggregate {
+                        #[Override]
+                        public function getIterator(): RawIt { return new RawIt(); }
+                    }
+
+                    final class H {
+                        private ?AggRaw $aggRaw = null;
+
+                        public function a(): void {
+                            foreach (($this->aggRaw ??= new AggRaw()) as $v) {
+                                echo $v;
+                            }
+                        }
+
+                        public function b(): Generator {
+                            yield from ($this->aggRaw ??= new AggRaw());
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingTemplateParam'],
+                'php_version' => '8.3',
+            ],
             'methodCallOnArrayElementSetInLoop' => [
                 'code' => '<?php
                     final class Box {
@@ -1050,6 +1328,36 @@ final class ForeachTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'foreachOverAClassStringMapReturnedByAStaticMethodWithATemplateOfTheSameName' => [
+                'code' => <<<'PHP'
+                    <?php
+                    interface MappingAttribute {}
+
+                    /** @template T of MappingAttribute */
+                    final class RepeatableAttributeCollection {}
+
+                    final class AttributeReader {
+                        /**
+                         * @return class-string-map<T, T|RepeatableAttributeCollection<T>>
+                         *
+                         * @template T of MappingAttribute
+                         */
+                        public static function read(): array {
+                            return [];
+                        }
+                    }
+
+                    function iterate(): void {
+                        foreach (AttributeReader::read() as $class => $attribute) {
+                            /** @psalm-check-type-exact $class = class-string<MappingAttribute> */
+                            /** @psalm-check-type-exact $attribute = MappingAttribute|RepeatableAttributeCollection<MappingAttribute> */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'foreachSourceIsEvaluatedBeforeTheValueIsAssigned' => [
                 'code' => <<<'PHP'
                     <?php
@@ -1303,6 +1611,42 @@ final class ForeachTest extends TestCase
                         /** @psalm-check-type-exact $continued = list<\'skipped\'|null> */;
                     }',
             ],
+            'variableAssignedBeforeEveryBreakOfANonEmptyLoopInsideALoopIsDefinedAfterIt' => [
+                'code' => '<?php
+                    /** @param non-empty-list<string> $candidates */
+                    function pick(array $candidates): void {
+                        foreach ([1, 2] as $_) {
+                            foreach ($candidates as $candidate) {
+                                $picked = $candidate;
+                                if ($picked !== "x") {
+                                    break;
+                                }
+                            }
+                            /** @psalm-check-type-exact $picked = string */;
+                        }
+                    }',
+            ],
+            'variablePossiblyUndefinedFromATryAssignedBeforeEveryBreakIsDefinedAfterTheLoop' => [
+                'code' => '<?php
+                    function mayThrow(): int {
+                        return 1;
+                    }
+
+                    /** @param non-empty-list<string> $candidates */
+                    function pick(array $candidates): void {
+                        try {
+                            $picked = mayThrow();
+                        } catch (Exception $_) {
+                        }
+                        foreach ($candidates as $candidate) {
+                            $picked = $candidate;
+                            if ($candidate !== "x") {
+                                break;
+                            }
+                        }
+                        /** @psalm-check-type-exact $picked = string */;
+                    }',
+            ],
             'superglobalReadInALoopIsDefinedAfterIt' => [
                 'code' => '<?php
                     function f(): array {
@@ -1313,6 +1657,35 @@ final class ForeachTest extends TestCase
                         }
 
                         return array_keys($GLOBALS);
+                    }',
+            ],
+            'unknownVariableAfterExtractNarrowedByACallInALoop' => [
+                'code' => '<?php
+                    function takesInt(int $_i): void {}
+
+                    /**
+                     * @param list<string> $rows
+                     * @param array<string, mixed> $vars
+                     */
+                    function render(array $rows, array $vars): void {
+                        extract($vars);
+                        foreach ($rows as $_row) {
+                            takesInt($campaignid);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedArgument'],
+            ],
+            'variableDefinedByAByRefClosureUseInALoop' => [
+                'code' => '<?php
+                    /** @param list<int> $c */
+                    function f(array $c): void {
+                        foreach ($c as $_) {
+                            $f = function () use (&$cu): void {
+                                $cu = 1;
+                            };
+                            $f();
+                        }
                     }',
             ],
             'switchVariableWithContinue' => [
@@ -3223,6 +3596,44 @@ final class ForeachTest extends TestCase
                         return $seen;
                     }',
             ],
+            'itemKeyedByTheValueIsForgottenOnEachIteration' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @param array<string, int|string> $r
+                     * @param list<string> $keys
+                     */
+                    function f(array $r, array $keys): void {
+                        $k = 'z';
+                        $r[$k] = 1;
+                        foreach ($keys as $k) {
+                            $y = $r[$k];
+                            /** @psalm-check-type-exact $y = int|string */;
+                            $r[$k] = 1;
+                        }
+                    }
+                PHP,
+            ],
+            'itemKeyedByTheValueIsForgottenOnEachIterationUnderANarrowedKey' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @param array<string, int|string> $r
+                     * @param list<string> $keys
+                     */
+                    function f(array $r, array $keys): void {
+                        $k = 'z';
+                        $r[$k] = 1;
+                        foreach ($keys as $k) {
+                            if ($k === 'a') {
+                                $y = $r[$k];
+                                /** @psalm-check-type-exact $y = int|string */;
+                            }
+                            $r[$k] = 1;
+                        }
+                    }
+                PHP,
+            ],
         ];
     }
 
@@ -3233,6 +3644,297 @@ final class ForeachTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'variableNotAssignedBeforeAContinueInsideALoopIsPossiblyUndefinedAfterIt' => [
+                'code' => '<?php
+                    /** @param non-empty-list<string> $candidates */
+                    function pick(array $candidates): void {
+                        foreach ([1, 2] as $_) {
+                            foreach ($candidates as $candidate) {
+                                if ($candidate === "y") {
+                                    continue;
+                                }
+                                $picked = $candidate;
+                                if ($picked !== "x") {
+                                    break;
+                                }
+                            }
+                            echo $picked;
+                        }
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'undefinedVariableReadInALoopIsMixedOnEveryIteration' => [
+                'code' => '<?php
+                    function takesInt(int $_i): void {}
+
+                    /** @param list<string> $rows */
+                    function render(array $rows): void {
+                        foreach ($rows as $_row) {
+                            takesInt($campaignid);
+                        }
+                    }',
+                'error_message' => 'MixedArgument',
+                'error_levels' => ['UndefinedVariable'],
+            ],
+            'undefinedVariableAssignedOnAnotherPathIsMixedOnEveryIterationOfALoop' => [
+                'code' => '<?php
+                    function takesInt(int $_i): void {}
+
+                    /** @param list<string> $rows */
+                    function render(array $rows): void {
+                        if (rand(0, 1)) {
+                            $campaignid = 5;
+                            return;
+                        }
+                        foreach ($rows as $_row) {
+                            takesInt($campaignid);
+                        }
+                    }',
+                'error_message' => 'MixedArgument',
+                'error_levels' => ['UndefinedVariable'],
+            ],
+            'variableReadWhereUndefinedOnOnePathBeforeALoopKeepsWhatTheLoopAssigns' => [
+                'code' => '<?php
+                    function takesInt(int $_i): void {}
+
+                    /** @param list<string> $rows */
+                    function f(array $rows): void {
+                        if (rand(0, 1)) {
+                            $x = 1;
+                        } else {
+                            /** @psalm-suppress UndefinedVariable, MixedArgument */
+                            takesInt($x);
+                        }
+                        foreach ($rows as $row) {
+                            if (isset($x)) {
+                                takesInt($x);
+                            }
+                            $x = $row;
+                        }
+                    }',
+                'error_message' => 'InvalidScalarArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:14:42 - Argument 1 of takesInt expects int, but 1|string provided',
+            ],
+            'byRefOutParamAfterAnUndefinedReadInALoopKeepsItsType' => [
+                'code' => '<?php
+                    function takesString(string $_s): void {}
+
+                    /** @param list<string> $rows */
+                    function f(array $rows): void {
+                        foreach ($rows as $row) {
+                            /** @psalm-suppress UndefinedVariable, MixedArgument */
+                            if (is_string($matches)) {
+                                takesString($matches);
+                            }
+                            if (preg_match("/a/", $row, $matches)) {
+                                takesString($matches[0]);
+                            }
+                        }
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+            ],
+            'invalidGeneratorIteratorShowsTheRefinedSendType' => [
+                'code' => '<?php
+                    /** @return Generator<int, int, non-empty-string, void> */
+                    function g(): Generator {
+                        $x = yield 1;
+                        echo $x;
+                    }
+
+                    foreach (g() as $_) {}',
+                'error_message' => 'non-null send() type Generator<int, int, non-empty-string',
+            ],
+            'possiblyInvalidGeneratorIteratorShowsTheSendType' => [
+                'code' => '<?php
+                    /** @param list<int>|Generator<int, int, string, void> $a */
+                    function f($a): void {
+                        foreach ($a as $_) {}
+                    }',
+                'error_message' => 'Cannot iterate over generator with non-null send() type Generator<int, int, string',
+            ],
+            'nullableIteratorShowsTheRefinedType' => [
+                'code' => '<?php
+                    /** @param list{5, non-empty-string}|null $a */
+                    function f(?array $a): void {
+                        foreach ($a as $_) {}
+                    }',
+                'error_message' => 'PossiblyNullIterator - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:34 - Cannot iterate over nullable var list{5, non-empty-string}|null',
+            ],
+            'propertyNarrowedBeforeTheLoopIsForgottenAfterABreakReassigningItsObject' => [
+                'code' => '<?php
+                    final class D {
+                        public function imm(): string {
+                            return "";
+                        }
+                    }
+
+                    final class O {
+                        public ?D $p = null;
+                    }
+
+                    /** @param list<int> $l */
+                    function reassign(O $o, array $l): string {
+                        if ($o->p === null) {
+                            return "";
+                        }
+
+                        foreach ($l as $_) {
+                            $o = new O();
+                            break;
+                        }
+
+                        return $o->p->imm();
+                    }',
+                'error_message' => 'PossiblyNullReference',
+            ],
+            'propertyNarrowedBeforeNestedLoopsIsForgottenAfterABreak2ReassigningItsObject' => [
+                'code' => '<?php
+                    final class D {
+                        public function imm(): string {
+                            return "";
+                        }
+                    }
+
+                    final class O {
+                        public ?D $p = null;
+                    }
+
+                    /** @param list<int> $l */
+                    function reassign(O $o, array $l): string {
+                        if ($o->p === null) {
+                            return "";
+                        }
+
+                        foreach ($l as $_) {
+                            while (true) {
+                                $o = new O();
+                                break 2;
+                            }
+                        }
+
+                        return $o->p->imm();
+                    }',
+                'error_message' => 'PossiblyNullReference',
+            ],
+            'offsetNarrowedBeforeTheLoopIsForgottenAfterABreakReassigningItsArray' => [
+                'code' => '<?php
+                    /** @param array{k: int|null} $a */
+                    function reassign(array $a): int {
+                        if ($a["k"] === null) {
+                            return 0;
+                        }
+
+                        foreach ([1] as $_) {
+                            $a = ["k" => null];
+                            break;
+                        }
+
+                        return $a["k"] + 1;
+                    }',
+                'error_message' => 'PossiblyNullOperand',
+            ],
+            'varUnsetBeforeContinueIsPossiblyUndefinedAfterTheLoop' => [
+                'code' => '<?php
+                    /** @param non-empty-list<int> $items */
+                    function f(array $items): void {
+                        $x = 0;
+                        foreach ($items as $i) {
+                            if ($i) {
+                                unset($x);
+                                continue;
+                            }
+                            $x = 5;
+                        }
+                        echo $x;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'varConditionallyUnsetInTheBodyIsPossiblyUndefinedAfterTheLoop' => [
+                'code' => '<?php
+                    /** @param list<int> $items */
+                    function f(array $items): void {
+                        $x = 0;
+                        foreach ($items as $i) {
+                            if ($i) {
+                                unset($x);
+                            }
+                            echo $i;
+                        }
+                        echo $x;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'varUnsetBeforeBreakIsPossiblyUndefinedAfterTheLoop' => [
+                'code' => '<?php
+                    /** @param list<int> $items */
+                    function f(array $items): void {
+                        $x = 0;
+                        foreach ($items as $i) {
+                            if ($i) {
+                                unset($x);
+                                break;
+                            }
+                        }
+                        echo $x;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'varUnsetBeforeOneOfSeveralBreaksIsPossiblyUndefinedAfterTheLoop' => [
+                'code' => '<?php
+                    /** @param list<int> $items */
+                    function f(array $items, bool $other): void {
+                        $x = 0;
+                        foreach ($items as $i) {
+                            if ($i) {
+                                unset($x);
+                                break;
+                            }
+                            if ($other) {
+                                break;
+                            }
+                        }
+                        echo $x;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'varUnsetBeforeOneOfSeveralContinuesIsPossiblyUndefinedAfterTheLoop' => [
+                'code' => '<?php
+                    /** @param list<int> $items */
+                    function f(array $items, bool $other): void {
+                        $x = 0;
+                        foreach ($items as $i) {
+                            if ($i) {
+                                unset($x);
+                                continue;
+                            }
+                            if ($other) {
+                                continue;
+                            }
+                        }
+                        echo $x;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'varUnsetBeforeContinueOfTheOuterLoopIsPossiblyUndefinedAfterIt' => [
+                'code' => '<?php
+                    /**
+                     * @param list<int> $a
+                     * @param list<int> $b
+                     */
+                    function f(array $a, array $b): void {
+                        $x = 0;
+                        foreach ($a as $v) {
+                            foreach ($b as $w) {
+                                if ($w) {
+                                    unset($x);
+                                    continue 2;
+                                }
+                            }
+                            $x = 1;
+                        }
+                        echo $x;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
             'foreachIteratedExpressionAssertedTwiceInTheLoop' => [
                 'code' => '<?php
                     class Entity {
@@ -3550,6 +4252,40 @@ final class ForeachTest extends TestCase
                         }
                     }',
                 'error_message' => 'PossiblyUndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:38',
+            ],
+            'variableAssignedAfterABreakTwoLevelsOutIsPossiblyUndefinedAfterIt' => [
+                'code' => '<?php
+                    /** @param non-empty-list<non-empty-list<string>> $rows */
+                    function pick(array $rows): void {
+                        foreach ([1, 2] as $_) {
+                            foreach ($rows as $row) {
+                                foreach ($row as $cell) {
+                                    if ($cell === "x") {
+                                        break 2;
+                                    }
+                                    $picked = $cell;
+                                }
+                            }
+                            echo $picked;
+                        }
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'variableAssignedAfterABreakInsideALoopIsPossiblyUndefinedAfterIt' => [
+                'code' => '<?php
+                    /** @param non-empty-list<string> $candidates */
+                    function pick(array $candidates): void {
+                        foreach ([1, 2] as $_) {
+                            foreach ($candidates as $candidate) {
+                                if ($candidate === "x") {
+                                    break;
+                                }
+                                $picked = $candidate;
+                            }
+                            echo $picked;
+                        }
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
             ],
             'foreachKeyAndDestructuredValueNotNullAfterBreakingLoopOnNonEmptyArray' => [
                 'code' => '<?php

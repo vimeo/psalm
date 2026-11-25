@@ -12,15 +12,13 @@ use Psalm\Context;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentsAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\CallPurityResolver;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\OverloadSelector;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
-use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\MethodIdentifier;
-use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\ImpureMethodCall;
-use Psalm\IssueBuffer;
 use Psalm\Node\Expr\VirtualArray;
 use Psalm\Node\Scalar\VirtualString;
 use Psalm\Node\VirtualArg;
@@ -82,11 +80,47 @@ final class MissingMethodCallHandler
                     $context,
                     $stmt,
                     $method_id,
-                    $found_method_and_class_storage[0],
+                    new TClosure(
+                        $found_method_and_class_storage[0]->params,
+                        $found_method_and_class_storage[0]->return_type,
+                        $found_method_and_class_storage[0]->capabilities,
+                    ),
+                    $found_method_and_class_storage[0]->template_types ?? [],
                     $found_method_and_class_storage[1],
                     $pseudo_method_class_storage,
                     $mixin_type ?? $lhs_type_part,
                 );
+            } elseif (!$class_storage->hasSealedMethods($config)) {
+                // PHP creates the callable of a method the class forwards to `__call`
+                $result->has_valid_method_call_type = true;
+                $result->existent_method_ids[$method_id->__toString()] = true;
+
+                $call_method_id = new MethodIdentifier($fq_class_name, '__call');
+                $call_declaring_id = $codebase->methods->getDeclaringMethodId($call_method_id);
+
+                if ($call_declaring_id !== null && $codebase->methods->hasStorage($call_declaring_id)) {
+                    $call_storage = $codebase->methods->getStorage($call_declaring_id);
+                    $call_self_class = $fq_class_name;
+
+                    $result->return_type = self::createFirstClassCallableReturnType(
+                        $statements_analyzer,
+                        $codebase,
+                        $context,
+                        $stmt,
+                        $call_method_id,
+                        new TClosure(
+                            null,
+                            $codebase->getMethodReturnType($call_method_id, $call_self_class),
+                            $call_storage->capabilities,
+                        ),
+                        $call_storage->template_types ?? [],
+                        $codebase->classlike_storage_provider->get($call_declaring_id->fq_class_name),
+                        $class_storage,
+                        $lhs_type_part,
+                    );
+                } else {
+                    $result->return_type = Type::getClosure();
+                }
             } else {
                 $result->non_existent_magic_method_ids[] = $method_id->__toString();
                 $result->return_type = Type::getClosure();
@@ -157,14 +191,17 @@ final class MissingMethodCallHandler
 
             [$pseudo_method_storage, $defining_class_storage] = $found_method_and_class_storage;
 
-            $pseudo_method_storage = self::selectOverload(
-                $statements_analyzer,
-                $codebase,
-                $stmt->getArgs(),
-                $context,
-                $defining_class_storage->pseudo_method_overloads[$method_name_lc] ?? null,
-                $pseudo_method_storage,
-            );
+            $overloads = $defining_class_storage->pseudo_method_overloads[$method_name_lc] ?? null;
+
+            if ($overloads !== null) {
+                $pseudo_method_storage = OverloadSelector::select(
+                    $statements_analyzer,
+                    $codebase,
+                    $stmt->getArgs(),
+                    $context,
+                    $overloads,
+                );
+            }
 
             // the templates of a mixin's `@method` are those of the mixin, `$this` and static stay the class
             $found_generic_params = ClassTemplateParamCollector::collect(
@@ -182,6 +219,14 @@ final class MissingMethodCallHandler
             $template_result = new TemplateResult(
                 $pseudo_method_storage->template_types ?? [],
                 $found_generic_params ?? [],
+            );
+
+            ClassTemplateParamCollector::markStarBindings(
+                $template_result,
+                $codebase,
+                $pseudo_method_class_storage,
+                $mixin_type ?? $lhs_type_part,
+                $found_generic_params,
             );
 
             ArgumentsAnalyzer::analyze(
@@ -414,7 +459,12 @@ final class MissingMethodCallHandler
                     $context,
                     $stmt,
                     $method_id,
-                    $pseudo_method_storage,
+                    new TClosure(
+                        $pseudo_method_storage->params,
+                        $pseudo_method_storage->return_type,
+                        $pseudo_method_storage->capabilities,
+                    ),
+                    $pseudo_method_storage->template_types ?? [],
                     $defining_class_storage,
                     $class_storage,
                     $lhs_type_part,
@@ -442,6 +492,14 @@ final class MissingMethodCallHandler
             $template_result = new TemplateResult(
                 $pseudo_method_storage->template_types ?? [],
                 $found_generic_params ?? [],
+            );
+
+            ClassTemplateParamCollector::markStarBindings(
+                $template_result,
+                $codebase,
+                $class_storage,
+                $lhs_type_part,
+                $found_generic_params,
             );
 
             if (ArgumentsAnalyzer::analyze(
@@ -552,6 +610,8 @@ final class MissingMethodCallHandler
     /**
      * The closure of a first-class callable of a pseudo-method, typed as the call (see
      * MethodCallReturnTypeFetcher::getFirstClassCallableType())
+     *
+     * @param array<string, non-empty-array<string, Union>> $method_template_types
      */
     private static function createFirstClassCallableReturnType(
         StatementsAnalyzer $statements_analyzer,
@@ -559,7 +619,8 @@ final class MissingMethodCallHandler
         Context $context,
         PhpParser\Node\Expr\MethodCall $stmt,
         MethodIdentifier $method_id,
-        MethodStorage $pseudo_method_storage,
+        TClosure $closure,
+        array $method_template_types,
         ClassLikeStorage $defining_class_storage,
         ClassLikeStorage $class_storage,
         ?Atomic $lhs_type_part,
@@ -573,171 +634,26 @@ final class MissingMethodCallHandler
             !$statements_analyzer->isStatic() && $method_id->fq_class_name === $context->self,
         );
 
+        $template_result = new TemplateResult([], $found_generic_params ?? []);
+        ClassTemplateParamCollector::markStarBindings(
+            $template_result,
+            $codebase,
+            $class_storage,
+            $lhs_type_part,
+            $found_generic_params,
+        );
+
         return MethodCallReturnTypeFetcher::getFirstClassCallableType(
             $codebase,
             $stmt,
-            new TClosure(
-                $pseudo_method_storage->params,
-                $pseudo_method_storage->return_type,
-                $pseudo_method_storage->capabilities,
-            ),
-            new TemplateResult([], $found_generic_params ?? []),
-            $pseudo_method_storage->template_types ?? [],
+            $closure,
+            $template_result,
+            $method_template_types,
             $defining_class_storage->name,
             $lhs_type_part instanceof Atomic\TNamedObject ? $lhs_type_part : $method_id->fq_class_name,
             $defining_class_storage->parent_class,
             $class_storage->final,
         );
-    }
-
-    /**
-     * The first `@method` of a name declared more than once whose parameters accept the arguments of the call,
-     * the last declared one when none does (its issues are reported)
-     *
-     * @param list<PhpParser\Node\Arg> $args
-     * @param non-empty-list<MethodStorage>|null $overloads
-     */
-    public static function selectOverload(
-        StatementsAnalyzer $statements_analyzer,
-        Codebase $codebase,
-        array $args,
-        Context $context,
-        ?array $overloads,
-        MethodStorage $default,
-    ): MethodStorage {
-        if ($overloads === null) {
-            return $default;
-        }
-
-        $arg_types = self::getArgTypes($statements_analyzer, $args, $context);
-
-        foreach ($overloads as $overload) {
-            if (self::overloadAcceptsArgs($codebase, $overload, $args, $arg_types)) {
-                return $overload;
-            }
-        }
-
-        return $default;
-    }
-
-    /**
-     * The types of the arguments, from a trial analysis that leaves the context, the node types and the issues alone
-     *
-     * @param list<PhpParser\Node\Arg> $args
-     * @return list<?Union>
-     */
-    private static function getArgTypes(
-        StatementsAnalyzer $statements_analyzer,
-        array $args,
-        Context $context,
-    ): array {
-        $trial_context = clone $context;
-        $trial_context->inside_call = true;
-
-        $old_node_data = $statements_analyzer->node_data;
-        $statements_analyzer->node_data = clone $old_node_data;
-
-        IssueBuffer::startRecording();
-
-        $types = [];
-
-        foreach ($args as $arg) {
-            ExpressionAnalyzer::analyze($statements_analyzer, $arg->value, $trial_context);
-            $types[] = $statements_analyzer->node_data->getType($arg->value);
-        }
-
-        IssueBuffer::clearRecordingLevel();
-        IssueBuffer::stopRecording();
-
-        $statements_analyzer->node_data = $old_node_data;
-
-        return $types;
-    }
-
-    /**
-     * Whether the arguments, placed on the parameters by position and by name, fit the overload: each parameter
-     * gets at most one argument of an accepted type, and every required one gets one. The arguments from an
-     * unpacked one on can't be placed, so they are left out.
-     *
-     * @param list<PhpParser\Node\Arg> $args
-     * @param list<?Union> $arg_types
-     */
-    private static function overloadAcceptsArgs(
-        Codebase $codebase,
-        MethodStorage $overload,
-        array $args,
-        array $arg_types,
-    ): bool {
-        $params = $overload->params;
-        $last_offset = count($params) - 1;
-        $variadic = $last_offset >= 0 && $params[$last_offset]->is_variadic;
-
-        $bound = [];
-        $has_unpack = false;
-
-        foreach ($args as $offset => $arg) {
-            if ($arg->unpack) {
-                $has_unpack = true;
-                break;
-            }
-
-            if ($arg->name) {
-                $param_offset = null;
-
-                foreach ($params as $candidate_offset => $candidate) {
-                    if ($candidate->name === $arg->name->name && !$candidate->is_variadic) {
-                        $param_offset = $candidate_offset;
-                        break;
-                    }
-                }
-
-                if ($param_offset === null) {
-                    if (!$variadic) {
-                        return false;
-                    }
-
-                    // a name that no parameter has is collected by the variadic one, which types it
-                    $param_type = $params[$last_offset]->type;
-
-                    if ($param_type && $arg_types[$offset]
-                        && !UnionTypeComparator::isContainedBy($codebase, $arg_types[$offset], $param_type)
-                    ) {
-                        return false;
-                    }
-
-                    continue;
-                }
-
-                if (isset($bound[$param_offset])) {
-                    return false;
-                }
-            } elseif (isset($params[$offset])) {
-                $param_offset = $offset;
-            } elseif ($variadic) {
-                $param_offset = $last_offset;
-            } else {
-                return false;
-            }
-
-            $bound[$param_offset] = true;
-            $param_type = $params[$param_offset]->type;
-
-            if ($param_type && $arg_types[$offset]
-                && !UnionTypeComparator::isContainedBy($codebase, $arg_types[$offset], $param_type)
-            ) {
-                return false;
-            }
-        }
-
-        if (!$has_unpack) {
-            for ($required = 0; $required < $overload->required_param_count; $required++) {
-                if (!isset($bound[$required])) {
-                    return false;
-                }
-            }
-        }
-
-        return true;
     }
 
     /**

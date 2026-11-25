@@ -21,9 +21,9 @@ use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollect
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallPurityAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallReturnTypeFetcher;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodVisibilityAnalyzer;
-use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MissingMethodCallHandler;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\NewAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\OverloadSelector;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\StaticCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
@@ -1059,14 +1059,17 @@ final class AtomicStaticCallAnalyzer
     ): ?bool {
         $codebase = $statements_analyzer->getCodebase();
 
-        $pseudo_method_storage = MissingMethodCallHandler::selectOverload(
-            $statements_analyzer,
-            $codebase,
-            $args,
-            $context,
-            $class_storage->pseudo_static_method_overloads[$method_id->method_name] ?? null,
-            $pseudo_method_storage,
-        );
+        $overloads = $class_storage->pseudo_static_method_overloads[$method_id->method_name] ?? null;
+
+        if ($overloads !== null) {
+            $pseudo_method_storage = OverloadSelector::select(
+                $statements_analyzer,
+                $codebase,
+                $args,
+                $context,
+                $overloads,
+            );
+        }
 
         if (!$context->isSuppressingExceptions($statements_analyzer)) {
             $context->mergeFunctionExceptions(
@@ -1122,6 +1125,14 @@ final class AtomicStaticCallAnalyzer
         ) === false) {
             return false;
         }
+
+        ClassTemplateParamCollector::markStarBindings(
+            $template_result,
+            $codebase,
+            $static_class_storage,
+            $lhs_type_part,
+            $found_generic_params,
+        );
 
         // what `__callStatic` does (if it implements the pseudo-method), and what the purity
         // templates of the pseudo-method (`@method static int run(Closure[_](): int $f)`) are bound to
@@ -1333,6 +1344,13 @@ final class AtomicStaticCallAnalyzer
         );
 
         $template_result = new TemplateResult([], $found_generic_params ?? []);
+        ClassTemplateParamCollector::markStarBindings(
+            $template_result,
+            $codebase,
+            $class_storage,
+            $lhs_type_part,
+            $found_generic_params,
+        );
 
         if ($inferred_template_result) {
             $template_result->lower_bounds += $inferred_template_result->lower_bounds;
@@ -1438,7 +1456,23 @@ final class AtomicStaticCallAnalyzer
 
         $fake_method_call_type = $statements_analyzer->node_data->getType($fake_method_call_expr);
 
+        // a call forwarded to `$this` keeps the conditional assertions of the instance call, on `$this` too
+        $if_true_assertions = $virtual_var_name === 'this'
+            ? $statements_analyzer->node_data->getIfTrueAssertions($fake_method_call_expr)
+            : null;
+        $if_false_assertions = $virtual_var_name === 'this'
+            ? $statements_analyzer->node_data->getIfFalseAssertions($fake_method_call_expr)
+            : null;
+
         $statements_analyzer->node_data = $old_data_provider;
+
+        if ($if_true_assertions !== null) {
+            $statements_analyzer->node_data->setIfTrueAssertions($stmt, $if_true_assertions);
+        }
+
+        if ($if_false_assertions !== null) {
+            $statements_analyzer->node_data->setIfFalseAssertions($stmt, $if_false_assertions);
+        }
 
         if ($fake_method_call_type) {
             $statements_analyzer->node_data->setType($stmt, $fake_method_call_type);

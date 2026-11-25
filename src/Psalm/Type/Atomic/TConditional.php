@@ -65,7 +65,12 @@ final class TConditional extends Atomic
     public function getKey(bool $include_extra = true): string
     {
         return 'TConditional<'
-            . ($this->subject_type !== null ? $this->subject_type->getKey() : $this->param_name)
+            . ($this->subject_type !== null
+                ? $this->subject_type->getId()
+                : $this->param_name . ':' . $this->defining_class)
+            . ' is ' . $this->conditional_type->getId()
+            . ' ? ' . $this->if_type->getId()
+            . ' : ' . $this->else_type->getId()
             . '>';
     }
 
@@ -79,7 +84,7 @@ final class TConditional extends Atomic
     }
 
     #[Override]
-    public function getId(bool $exact = true, bool $nested = false): string
+    public function getId(bool $exact = true): string
     {
         return '('
             . ($this->subject_type !== null ? $this->subject_type->getId($exact) : $this->param_name)
@@ -106,7 +111,6 @@ final class TConditional extends Atomic
 
     /**
      * @param array<lowercase-string, string> $aliased_classes
-     * @psalm-pure
      */
     #[Override]
     public function toNamespacedString(
@@ -115,7 +119,23 @@ final class TConditional extends Atomic
         ?string $this_class,
         bool $use_phpdoc_format,
     ): string {
-        return '';
+        if ($use_phpdoc_format) {
+            return '';
+        }
+
+        $to_string = static fn(Union $type): string => $type->toNamespacedString(
+            $namespace,
+            $aliased_classes,
+            $this_class,
+            false,
+        );
+
+        return '('
+            . ($this->subject_type !== null ? $to_string($this->subject_type) : $this->param_name)
+            . ' is ' . $to_string($this->conditional_type)
+            . ' ? ' . $to_string($this->if_type)
+            . ' : ' . $to_string($this->else_type)
+            . ')';
     }
 
     /**

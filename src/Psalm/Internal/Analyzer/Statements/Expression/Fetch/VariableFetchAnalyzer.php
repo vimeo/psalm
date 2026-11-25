@@ -153,7 +153,15 @@ final class VariableFetchAnalyzer
                     self::addDataFlowToVariable($statements_analyzer, $stmt, $var_name, $stmt_type, $context);
 
                     $context->vars_in_scope[$var_name] = $stmt_type;
-                    $statements_analyzer->node_data->setType($stmt, $stmt_type);
+                    // the variables aren't checked: where the variable isn't assigned, it holds a value from
+                    // elsewhere (extract(), the including scope), so it can be anything (an isset() asks about
+                    // the variable)
+                    $statements_analyzer->node_data->setType(
+                        $stmt,
+                        $stmt_type->possibly_undefined && !$context->inside_isset
+                            ? Type::getMixed()->setParentNodes($stmt_type->parent_nodes)
+                            : $stmt_type,
+                    );
                 }
             } else {
                 $statements_analyzer->node_data->setType($stmt, Type::getMixed());
@@ -189,6 +197,15 @@ final class VariableFetchAnalyzer
 
             if (isset($context->vars_in_scope[$var_name])) {
                 $type = $context->vars_in_scope[$var_name];
+
+                // assigned on some paths only: the others leave it the type it has by default
+                if ($type->possibly_undefined) {
+                    $type = Type::combineUnionTypes(
+                        $type->setPossiblyUndefined(false),
+                        self::getGlobalType($var_name, $codebase->analysis_php_version_id),
+                        $codebase,
+                    );
+                }
 
                 self::taintVariable($statements_analyzer, $context, $var_name, $type, $stmt);
 

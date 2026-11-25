@@ -80,8 +80,14 @@ function paramsToEntries(ReflectionFunctionAbstract $reflectionFunction, string 
         $res[-2] = 'none';
     }
 
-    foreach ($reflectionFunction->getParameters() as $param) {
+    $names = [];
+    foreach ($reflectionFunction->getParameters() as $position => $param) {
         $key = $param->getName();
+        // the arginfo of some PHP 7 functions repeats a name, e.g. oci_lob_is_equal(lob_descriptor, lob_descriptor)
+        if (isset($names[$key])) {
+            $key .= '_' . ($position + 1);
+        }
+        $names[$key] = true;
         if ($param->isVariadic()) {
             $key = "...$key";
         }
@@ -175,6 +181,10 @@ foreach (get_defined_functions() as $sub) {
 // Interfaces are not included in get_declared_classes(); their signatures need separate callmap entries.
 foreach (array_merge(get_declared_classes(), get_declared_interfaces()) as $class) {
     $refl = new ReflectionClass($class);
+    // what an anonymous class of the PHP library of an extension (swoole) declares can't be called by name
+    if ($refl->isAnonymous()) {
+        continue;
+    }
 
     foreach ($refl->getMethods() as $method) {
         $args = paramsToEntries($method, $method->getName() === '__construct' ? 'void' : 'mixed');

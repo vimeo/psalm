@@ -21,6 +21,29 @@ final class ClassStringMapTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'literalClassStringOffsetOfAClassStringMap' => [
+                'code' => '<?php
+                    abstract class Client {}
+                    final class StorageClient extends Client {}
+                    final class TokenClient extends Client {}
+
+                    final class Factory {
+                        /** @var class-string-map<T as Client, T> */
+                        private array $cache = [];
+
+                        public function storage(): StorageClient {
+                            if (!isset($this->cache[StorageClient::class])) {
+                                $this->cache[StorageClient::class] = new StorageClient();
+                            }
+
+                            return $this->cache[StorageClient::class];
+                        }
+
+                        public function cachedToken(): TokenClient {
+                            return $this->cache[TokenClient::class];
+                        }
+                    }',
+            ],
             'basicClassStringMap' => [
                 'code' => '<?php
                     namespace Bar;
@@ -128,6 +151,145 @@ final class ClassStringMapTest extends TestCase
                     }'
                     ,
             ],
+            'classStringMapCombinedWithAnotherArrayHoldsTheBoundOfItsTemplate' => [
+                'code' => '<?php
+                    class Foo {}
+                    class Bar {}
+
+                    /** @return class-string-map<T as Foo, T> */
+                    function getFoos(): array {
+                        return [];
+                    }
+
+                    /** @return class-string-map<T as Bar, T> */
+                    function getBars(): array {
+                        return [];
+                    }
+
+                    /** @return array<int, int> */
+                    function getInts(): array {
+                        return [];
+                    }
+
+                    $a = rand(0, 1) ? getFoos() : getInts();
+                    $b = rand(0, 1) ? getFoos() : getBars();
+                    $c = rand(0, 1) ? getFoos() : getFoos();',
+                'assertions' => [
+                    '$a===' => 'array<class-string<Foo>|int, Foo|int>',
+                    '$b===' => 'array<class-string<Bar>|class-string<Foo>, Bar|Foo>',
+                    '$c===' => 'class-string-map<T as Foo, T:class-string-map as Foo>',
+                ],
+            ],
+            'foreachOverClassStringMapKeepsTheIntersectionOfItsTemplate' => [
+                'code' => '<?php
+                    class Foo {}
+                    interface Bar {
+                        public function bar(): int;
+                    }
+
+                    /**
+                     * @param class-string-map<T as Foo, T&Bar> $m
+                     * @param class-string-map<T, T&Bar> $n
+                     */
+                    function f(array $m, array $n): int {
+                        $i = 0;
+                        foreach ($m as $v) {
+                            $i += $v->bar();
+                        }
+                        foreach ($n as $v) {
+                            $i += $v->bar();
+                        }
+                        return $i;
+                    }',
+            ],
+            'classStringMapBoundWithOfInANamespace' => [
+                'code' => '<?php
+                    namespace NS;
+
+                    class Foo {
+                        public function foo(): int {
+                            return 1;
+                        }
+                    }
+
+                    /**
+                     * @param class-string-map<T of Foo, T> $m
+                     * @param class-string-map<T of \NS\Foo, T> $n
+                     */
+                    function f(array $m, array $n): int {
+                        foreach ($m as $v) {
+                            return $v->foo();
+                        }
+                        foreach ($n as $v) {
+                            return $v->foo();
+                        }
+                        return 0;
+                    }
+
+                    /** @return class-string-map<T of Foo, T> */
+                    function g(): array {
+                        return [];
+                    }
+
+                    $m = g();',
+                'assertions' => [
+                    '$m===' => 'class-string-map<T as NS\Foo, T:class-string-map as NS\Foo>',
+                ],
+            ],
+            'classNamedOfInANamespaceIsStillQualified' => [
+                'code' => '<?php
+                    namespace NS;
+
+                    class of {}
+
+                    /** @return of */
+                    function g() {
+                        return new of();
+                    }
+
+                    $o = g();',
+                'assertions' => [
+                    '$o===' => 'NS\of',
+                ],
+            ],
+            'classStringMapCombinedWithAnotherArrayKeepsOtherTemplates' => [
+                'code' => '<?php
+                    class Foo {}
+
+                    /**
+                     * @template Data of array
+                     * @template Key of key-of<Data>
+                     * @param class-string-map<T as Foo, Data[Key]> $m
+                     * @param array<int, int> $a
+                     * @return array<class-string<Foo>|int, Data[Key]|int>
+                     */
+                    function f(array $m, array $a, bool $b): array {
+                        return $b ? $m : $a;
+                    }',
+            ],
+            'classNamedOfInsideATypeInANamespaceIsStillQualified' => [
+                'code' => '<?php
+                    namespace NS;
+
+                    class of {}
+
+                    /**
+                     * @param ?of $a
+                     * @param list<of> $b
+                     * @param array{a: of} $c
+                     * @param array<int, (of)> $d
+                     * @param null|of $e
+                     * @return list{?of, list<of>, array{a: of}, array<int, of>, ?of}
+                     */
+                    function g($a, $b, $c, $d, $e) {
+                        return [$a, $b, $c, $d, $e];
+                    }
+
+                    $o = g(null, [], ["a" => new of()], [], null);',
+                'assertions' => [
+                    '$o===' => 'list{NS\of|null, list<NS\of>, array{a: NS\of}, array<int, NS\of>, NS\of|null}',
+                ],
+            ],
         ];
     }
 
@@ -138,6 +300,22 @@ final class ClassStringMapTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'literalClassStringOffsetOfAClassStringMapGivenAnotherClass' => [
+                'code' => '<?php
+                    abstract class Client {}
+                    final class StorageClient extends Client {}
+                    final class TokenClient extends Client {}
+
+                    final class Factory {
+                        /** @var class-string-map<T as Client, T> */
+                        private array $cache = [];
+
+                        public function storage(): void {
+                            $this->cache[StorageClient::class] = new TokenClient();
+                        }
+                    }',
+                'error_message' => 'InvalidPropertyAssignmentValue',
+            ],
             'assignInvalidClass' => [
                 'code' => '<?php
                     namespace Bar;

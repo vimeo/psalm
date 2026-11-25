@@ -164,10 +164,10 @@ final class ExpressionIdentifier
         ?string $this_class_name,
         ?FileSource $source = null,
     ): ?string {
-        // the value of `$a ??= $b`, `++$a` and `--$a` is the value `$a` has afterwards
+        // the value of `$a ??= $b`, `$a += $b`, `++$a` and `--$a` is the value `$a` has afterwards
         if ($stmt instanceof PhpParser\Node\Expr\Assign
             || $stmt instanceof PhpParser\Node\Expr\AssignRef
-            || $stmt instanceof PhpParser\Node\Expr\AssignOp\Coalesce
+            || $stmt instanceof PhpParser\Node\Expr\AssignOp
             || $stmt instanceof PhpParser\Node\Expr\PreInc
             || $stmt instanceof PhpParser\Node\Expr\PreDec
         ) {

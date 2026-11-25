@@ -6,13 +6,17 @@ namespace Psalm\Plugin;
 
 use BadMethodCallException;
 use Override;
+use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\IssueData;
+use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\VersionUtils;
+use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\AfterAnalysisInterface;
 use Psalm\Plugin\EventHandler\Event\AfterAnalysisEvent;
 use Psalm\Progress\DebugProgress;
 use Psalm\Progress\Progress;
+use stdClass;
 
 use function array_filter;
 use function array_key_exists;
@@ -26,18 +30,24 @@ use function curl_exec;
 use function curl_getinfo;
 use function curl_init;
 use function curl_setopt;
+use function error_get_last;
 use function explode;
+use function file_put_contents;
 use function function_exists;
+use function in_array;
 use function is_array;
 use function is_string;
 use function json_encode;
+use function ksort;
 use function parse_url;
+use function preg_match;
 use function preg_replace;
 use function rawurldecode;
 use function sprintf;
 use function str_replace;
 use function strip_tags;
 use function strlen;
+use function strtolower;
 use function usort;
 use function var_export;
 
@@ -47,13 +57,35 @@ use const CURLOPT_FOLLOWLOCATION;
 use const CURLOPT_HTTPHEADER;
 use const CURLOPT_POST;
 use const CURLOPT_POSTFIELDS;
+use const CURLOPT_PROTOCOLS;
+use const CURLOPT_REDIR_PROTOCOLS;
 use const CURLOPT_RETURNTRANSFER;
 use const CURLOPT_TIMEOUT;
+use const CURLPROTO_HTTP;
+use const CURLPROTO_HTTPS;
 use const JSON_THROW_ON_ERROR;
 use const PHP_EOL;
 use const PHP_URL_HOST;
+use const PHP_URL_SCHEME;
+use const PHP_VERSION;
 
 /**
+ * @psalm-type ShepherdPayload = array{
+ *     build: array{CI_NAME: mixed, ...<array-key, mixed>},
+ *     git: array<array-key, mixed>,
+ *     issues: list<IssueData>,
+ *     issue_counts: array{baselined: array<string, int<1, max>>, info: array<string, int<1, max>>},
+ *     analysis: array{
+ *         full: bool,
+ *         file_count: int<0, max>,
+ *         target_php_version: string,
+ *         find_unused_code: bool,
+ *         taint_analysis: bool
+ *     },
+ *     coverage: array{int, int},
+ *     level: int<1, 8>,
+ *     versions: array{psalm: string, parser: string, php: string}
+ * }
  * @api
  */
 final class Shepherd implements AfterAnalysisInterface
@@ -66,8 +98,10 @@ final class Shepherd implements AfterAnalysisInterface
         AfterAnalysisEvent $event,
     ): void {
         $progress = $event->getCodebase()->progress;
+        $endpoint = $event->getCodebase()->config->shepherd_endpoint;
+        $writes_a_file = strtolower((string) parse_url($endpoint, PHP_URL_SCHEME)) === 'file';
 
-        if (!function_exists('curl_init')) {
+        if (!$writes_a_file && !function_exists('curl_init')) {
             $progress->warning('Results not sent to Shepherd: ext-curl is missing');
 
             return;
@@ -83,20 +117,20 @@ final class Shepherd implements AfterAnalysisInterface
             return;
         }
 
-        $config = $event->getCodebase()->config;
+        if ($writes_a_file) {
+            self::writePayload($endpoint, $rawPayload, $progress);
 
-        self::sendPayload($config->shepherd_endpoint, $rawPayload, $progress);
+            return;
+        }
+
+        self::sendPayload($endpoint, $rawPayload, $progress);
     }
 
     /**
-     * @return array{
-     *     build: array,
-     *     git: array,
-     *     issues: array,
-     *     coverage: list<int>,
-     *     level: int<1, 8>,
-     *     versions: array<string, string>
-     * }|null
+     * build and git are as loosely typed as AfterAnalysisEvent and SourceControlInfo::toArray() give them. coverage
+     * is the mixed and the non-mixed expression counts.
+     *
+     * @return ShepherdPayload|null
      */
     private static function collectPayloadToSend(AfterAnalysisEvent $event): ?array
     {
@@ -116,7 +150,7 @@ final class Shepherd implements AfterAnalysisInterface
         }
 
         // A pull request is checked out as a merge commit that is not part of it: its review is made on its head
-        /** @var array{head?: array{id?: string}}|null $event_git */
+        /** @var array{head?: array{id?: string|null}}|null $event_git */
         $event_git = $build_info['git'] ?? null;
         $pull_request_head = $event_git['head']['id'] ?? null;
         if (isset($build_info['CI_PR_NUMBER'])
@@ -137,22 +171,106 @@ final class Shepherd implements AfterAnalysisInterface
 
         $codebase = $event->getCodebase();
 
+        $baselined_issue_counts = IssueBuffer::getBaselinedIssueCounts();
+
+        $info_issue_counts = [];
+        foreach ($issues_grouped_by_filename as $file_issues) {
+            foreach ($file_issues as $issue) {
+                if ($issue->severity === IssueData::SEVERITY_INFO) {
+                    $info_issue_counts[$issue->type] = ($info_issue_counts[$issue->type] ?? 0) + 1;
+                }
+            }
+        }
+
+        // exact, as every issue the baseline covers reaches the event with severity info
+        foreach ($baselined_issue_counts as $type => $count) {
+            $remaining = ($info_issue_counts[$type] ?? 0) - $count;
+            if ($remaining > 0) {
+                $info_issue_counts[$type] = $remaining;
+            } else {
+                unset($info_issue_counts[$type]);
+            }
+        }
+
+        ksort($info_issue_counts);
+
         return [
             'build' => $build_info,
             'git' => $source_control_data,
             'issues' => $normalized_data,
+            'issue_counts' => ['baselined' => $baselined_issue_counts, 'info' => $info_issue_counts],
+            'analysis' => [
+                'full' => ProjectAnalyzer::getInstance()->full_run,
+                'file_count' => $codebase->analyzer->getFileCountWithAnalysisResults(),
+                'target_php_version' => Codebase::getPhpVersionString($codebase->analysis_php_version_id),
+                'find_unused_code' => $codebase->find_unused_code !== null,
+                // set exactly when the config or a CLI flag turns taint analysis on
+                'taint_analysis' => $codebase->taint_flow_graph !== null,
+            ],
             'coverage' => $codebase->analyzer->getTotalTypeCoverage($codebase),
             'level' => Config::getInstance()->level,
             'versions' => [
                 'psalm' => VersionUtils::getPsalmVersion(),
                 'parser' => VersionUtils::getPhpParserVersion(),
+                'php' => PHP_VERSION,
             ],
         ];
     }
 
+    /**
+     * @param ShepherdPayload $rawPayload
+     */
+    private static function writePayload(string $endpoint, array $rawPayload, Progress $progress): void
+    {
+        $path = (string) preg_replace('#^file://#i', '', $endpoint);
+        // file://name/... names a host, and /C:name is relative to the current directory of drive C on Windows
+        if (preg_match('#^(?:/?[A-Za-z]:[/\\\\]|/(?![A-Za-z]:))#', $path) !== 1) {
+            $progress->warning('Results not written: use an absolute path, as in file:///path/to/report.json');
+
+            return;
+        }
+
+        // PHP opens file:///C:/... as C:/... on Windows
+        if (@file_put_contents($endpoint, self::encodePayload($rawPayload)) === false) {
+            $error = error_get_last()['message'] ?? 'unknown error';
+            $progress->warning(
+                "Results not written to $path: " . str_replace("file_put_contents($endpoint): ", '', $error),
+            );
+
+            return;
+        }
+
+        $progress->write("Results written to $path" . PHP_EOL);
+    }
+
+    /**
+     * @param ShepherdPayload $rawPayload
+     * @psalm-pure
+     */
+    private static function encodePayload(array $rawPayload): string
+    {
+        // an empty group must encode as {}, not []
+        $rawPayload['issue_counts'] = array_map(
+            static fn(array $counts): stdClass => (object) $counts,
+            $rawPayload['issue_counts'],
+        );
+
+        return json_encode($rawPayload, JSON_THROW_ON_ERROR);
+    }
+
+    /**
+     * @param ShepherdPayload $rawPayload
+     */
     private static function sendPayload(string $endpoint, array $rawPayload, Progress $progress): void
     {
-        $payload = json_encode($rawPayload, JSON_THROW_ON_ERROR);
+        $payload = self::encodePayload($rawPayload);
+
+        // curl also reads local files (file://) and would show them as the response
+        if (!in_array(strtolower((string) parse_url($endpoint, PHP_URL_SCHEME)), ['http', 'https'], true)) {
+            $progress->warning('Results not sent to Shepherd: the URL must use http or https');
+
+            return;
+        }
 
         // Prepare new cURL resource
         $ch = curl_init($endpoint);
@@ -162,19 +280,15 @@ final class Shepherd implements AfterAnalysisInterface
         curl_setopt($ch, CURLOPT_TIMEOUT, 30);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+        curl_setopt($ch, CURLOPT_PROTOCOLS, CURLPROTO_HTTP | CURLPROTO_HTTPS);
+        curl_setopt($ch, CURLOPT_REDIR_PROTOCOLS, CURLPROTO_HTTP | CURLPROTO_HTTPS);
         curl_setopt($ch, CURLINFO_HEADER_OUT, true);
         curl_setopt($ch, CURLOPT_POST, true);
         curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
 
-        // Set HTTP Header for POST request
-        curl_setopt(
-            $ch,
-            CURLOPT_HTTPHEADER,
-            [
-                'Content-Type: application/json',
-                'Content-Length: ' . strlen($payload),
-            ],
-        );
+        // No Content-Length: curl sets it for the POST, but a header set here would also go out with
+        // the GET that follows a redirect, and Google Apps Script answers that GET with HTTP 400.
+        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
 
         // Submit the POST request
         $curl_result = curl_exec($ch);
@@ -267,7 +381,7 @@ final class Shepherd implements AfterAnalysisInterface
         $secrets = array_keys($secrets);
         usort($secrets, static fn(string $a, string $b): int => strlen($b) <=> strlen($a));
 
-        return array_values(array_filter($secrets, static fn(string $secret): bool => $secret !== ''));
+        return $secrets;
     }
 
     /**

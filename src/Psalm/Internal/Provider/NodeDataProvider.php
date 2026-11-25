@@ -10,6 +10,7 @@ use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\FuncCall;
 use PhpParser\Node\Expr\MethodCall;
 use PhpParser\Node\Expr\New_;
+use PhpParser\Node\Expr\NullsafeMethodCall;
 use PhpParser\Node\Expr\StaticCall;
 use PhpParser\Node\Name;
 use PhpParser\Node\Stmt\If_;
@@ -158,7 +159,7 @@ final class NodeDataProvider implements NodeTypeProvider
     }
 
     /**
-     * @param FuncCall|MethodCall|StaticCall|New_ $node
+     * @param FuncCall|MethodCall|NullsafeMethodCall|StaticCall|New_ $node
      * @param array<int, Possibilities>  $assertions
      */
     public function setIfTrueAssertions(Expr $node, array $assertions): void
@@ -167,7 +168,7 @@ final class NodeDataProvider implements NodeTypeProvider
     }
 
     /**
-     * @param Expr\FuncCall|MethodCall|StaticCall|New_ $node
+     * @param Expr\CallLike $node
      * @return array<int, Possibilities>|null
      * @psalm-capabilities read-props
      */
@@ -186,7 +187,7 @@ final class NodeDataProvider implements NodeTypeProvider
     }
 
     /**
-     * @param FuncCall|MethodCall|StaticCall|New_ $node
+     * @param Expr\CallLike $node
      * @return array<int, Possibilities>|null
      * @psalm-capabilities read-props
      */

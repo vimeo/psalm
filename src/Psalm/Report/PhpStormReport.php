@@ -5,12 +5,10 @@ declare(strict_types=1);
 namespace Psalm\Report;
 
 use Override;
-use Psalm\Config;
 use Psalm\Internal\Analyzer\DataFlowNodeData;
 use Psalm\Internal\Analyzer\IssueData;
+use Psalm\Internal\Report\ConsoleIssueFormatter;
 use Psalm\Report;
-
-use function substr;
 
 /**
  * @psalm-external-mutation-free
@@ -18,15 +16,14 @@ use function substr;
  */
 final class PhpStormReport extends Report
 {
-    /**
-     * @psalm-mutation-free
-     */
+    use ConsoleIssueFormatter;
+
     #[Override]
     public function create(): string
     {
         $output = '';
         foreach ($this->issues_data as $issue_data) {
-            $output .= $this->format($issue_data) . "\n" . "\n";
+            $output .= $this->formatIssue($issue_data) . "\n" . "\n";
         }
 
         return $output;
@@ -35,82 +32,20 @@ final class PhpStormReport extends Report
     /**
      * @psalm-mutation-free
      */
-    private function format(IssueData $issue_data): string
+    private function formatIssueHeader(IssueData $issue_data, string $level_label, string $message): string
     {
-        $issue_string = '';
-
-        $is_error = $issue_data->severity === Config::REPORT_ERROR;
-
-        $issue_string .= $this->getSeverityLabel($issue_data);
-
-        $issue_reference = $issue_data->link ? ' (see ' . $issue_data->link . ')' : '';
-
-        $issue_string .= ': ' . $issue_data->type
-            . "\nat " . $this->escapeControlCharacters($issue_data->file_path)
-            . ':' . $issue_data->line_from . ':' . $issue_data->column_from
-            . "\n" . $this->escapeControlCharacters(self::getMessageWithCwe($issue_data)) . $issue_reference . "\n";
-
-
-        if ($issue_data->taint_trace) {
-            $issue_string .= $this->getTaintSnippets($issue_data->taint_trace);
-        } elseif ($this->show_snippet) {
-            $snippet = $issue_data->snippet;
-
-            if (!$this->use_color) {
-                $issue_string .= $this->escapeControlCharacters($snippet);
-            } else {
-                $selection_start = $issue_data->from - $issue_data->snippet_from;
-                $selection_length = $issue_data->to - $issue_data->from;
-
-                $issue_string .= $this->escapeControlCharacters(substr($snippet, 0, $selection_start))
-                    . ($is_error ? "\e[97;41m" : "\e[30;47m")
-                    . $this->escapeControlCharacters(substr($snippet, $selection_start, $selection_length))
-                    . "\e[0m"
-                    . $this->escapeControlCharacters(substr($snippet, $selection_length + $selection_start)) . "\n";
-            }
-        }
-
-        return $issue_string;
+        return $this->getSeverityLabel($issue_data) . $level_label . ': ' . $issue_data->type
+            . "\nat " . $this->getFileReference($issue_data)
+            . "\n" . $message . "\n";
     }
 
     /**
-     * @param non-empty-list<DataFlowNodeData|array{label: string, entry_path_type: string}> $taint_trace
+     * PhpStorm turns absolute paths into links.
+     *
      * @psalm-mutation-free
      */
-    private function getTaintSnippets(array $taint_trace): string
+    private function getFileReference(IssueData|DataFlowNodeData $data): string
     {
-        $snippets = '';
-
-        foreach ($taint_trace as $node_data) {
-            if ($node_data instanceof DataFlowNodeData) {
-                $snippets .= '  ' . $this->escapeControlCharacters($node_data->label)
-                    . ' - ' . $this->escapeControlCharacters($node_data->file_name)
-                    . ':' . $node_data->line_from
-                    . ':' . $node_data->column_from . "\n";
-
-                if ($this->show_snippet) {
-                    $snippet = $node_data->snippet;
-
-                    if (!$this->use_color) {
-                        $snippets .= $this->escapeControlCharacters($snippet) . "\n\n";
-                    } else {
-                        $selection_start = $node_data->from - $node_data->snippet_from;
-                        $selection_length = $node_data->to - $node_data->from;
-
-                        $snippets .= $this->escapeControlCharacters(substr($snippet, 0, $selection_start))
-                            . "\e[30;47m"
-                            . $this->escapeControlCharacters(substr($snippet, $selection_start, $selection_length))
-                            . "\e[0m"
-                            . $this->escapeControlCharacters(substr($snippet, $selection_length + $selection_start))
-                            . "\n\n";
-                    }
-                }
-            } else {
-                $snippets .= '  ' . $this->escapeControlCharacters($node_data['label']) . "\n";
-                $snippets .= '    <no known location>' . "\n\n";
-            }
-        }
-
-        return $snippets;
+        return $this->escapeControlCharacters($data->file_path) . ':' . $data->line_from . ':' . $data->column_from;
     }
 }
