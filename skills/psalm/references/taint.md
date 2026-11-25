@@ -77,7 +77,16 @@ function runRaw(string $query): void {}
 
 /** @psalm-taint-source input */
 function requestParam(string $name): string {}
+
+final class Reply {
+    /** @psalm-taint-source input */
+    public string $body = '';
+}
 ```
+
+`@psalm-taint-source` on a property, or on a promoted constructor parameter, makes every read of it input;
+on a class, `@psalm-taint-source input $name` does it for the magic property `$name`. Libraries use it for
+what their objects hold from outside the program, since Psalm doesn't analyse their code.
 
 `@psalm-taint-escape` on a statement removes the taint from what it assigns. Use it only where the code
 really escapes for that sink. `TaintedTextWithQuotes` is the separate `has_quotes` taint: a sanitiser for

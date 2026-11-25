@@ -48,15 +48,18 @@ function show(QueryInput $input): void {
 
 ### Properties
 
-A property holding what came from outside the program, such as what a server answered, can be a source too: every
-read of it is then input, wherever it is read. This is how a library whose code Psalm doesn't analyze (it is in
-`vendor/`) declares what its objects hold. Annotate the property, or the promoted constructor parameter declaring it:
+A library whose code Psalm doesn't analyze declares what its objects hold on the property, or on the promoted
+constructor parameter declaring it. Every read of it is then input, whatever the object was built from, also in a
+[`@psalm-taint-specialize`](index.md#specializing-classes) class:
 
 ```php
 <?php
-final class Transcript {
+class Transcript {
     /** @psalm-taint-source input */
     public string $text = '';
+
+    /** @psalm-taint-source input */
+    public static string $latest = '';
 
     public function __construct(
         /** @psalm-taint-source input */
@@ -65,35 +68,35 @@ final class Transcript {
     ) {}
 }
 
-function show(Transcript $transcript): void {
-    echo $transcript->text;     // TaintedHtml
-    echo $transcript->language; // TaintedHtml
-    echo $transcript->videoId;  // no issue
+final class TranslatedTranscript extends Transcript {}
+
+function show(Transcript $transcript, TranslatedTranscript $translated): void {
+    echo $transcript->text;      // TaintedHtml
+    echo $transcript->language;  // TaintedHtml
+    echo Transcript::$latest;    // TaintedHtml
+    echo $translated->text;      // TaintedHtml
+    echo $transcript->videoId;   // no issue
 }
 ```
 
-A magic property (`@property`, `@property-read`) is declared on the class, followed by its name:
+A magic property gets its source on the class, followed by its name:
 
 ```php
 <?php
 /**
  * @property-read string $title
+ * @property-read string $slug
  * @psalm-taint-source input $title
  */
 final class Video {
     public function __get(string $name): string { return ''; }
 }
 
-function show(Video $video): void {
+function showVideo(Video $video): void {
     echo $video->title; // TaintedHtml
+    echo $video->slug;  // no issue
 }
 ```
-
-A read gets the sources declared for the property by the class it is read from and by the classes, interfaces and
-traits it extends, implements or uses; static properties work the same way. What is assigned to the property still
-flows to its reads as before, and the sources apply to every object, including the objects of a class with
-[`@psalm-taint-specialize`](index.md#specializing-classes): an object built from safe values still holds input in
-such a property.
 
 ## Custom taints declared in the configuration
 
