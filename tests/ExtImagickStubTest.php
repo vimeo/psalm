@@ -13,7 +13,6 @@ use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
 use function dirname;
-use function extension_loaded;
 
 final class ExtImagickStubTest extends TestCase
 {
@@ -29,14 +28,13 @@ final class ExtImagickStubTest extends TestCase
         $argv = [];
     }
 
-    public function testClassesAreUndefinedWhenExtensionIsDisabled(): void
+    /**
+     * disableExtensions is deprecated: the stub of an extension the code uses is loaded
+     */
+    public function testStubOfADisabledExtensionIsLoaded(): void
     {
-        if (extension_loaded('imagick')) {
-            self::markTestSkipped('A loaded imagick extension defines the classes through reflection');
-        }
-
         $this->expectException(CodeException::class);
-        $this->expectExceptionMessageMatches('/UndefinedClass.*Imagick/');
+        $this->expectExceptionMessageMatches('/^MissingExtensionRequirement - .* Imagick is part of the ext-imagick/');
 
         $this->project_analyzer = new ProjectAnalyzer(
             TestConfig::loadFromXML(

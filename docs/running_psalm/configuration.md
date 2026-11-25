@@ -840,12 +840,7 @@ Optional. Extensions the project uses besides those `composer.json` declares, so
 ```
 
 #### &lt;disableExtensions&gt;
-Optional. Extensions whose stub Psalm doesn't load. Psalm loads the stub of an extension it has one for (`stubs/extensions`) when the code uses one of its classes, functions or constants (the language server loads all of them), whether or not `composer.json` requires the extension.
-```xml
-<disableExtensions>
-  <extension name="gmp"/>
-</disableExtensions>
-```
+Deprecated, and ignored. Psalm loads the stub of an extension it has one for (`stubs/extensions`) when the code uses one of its classes, functions or constants (the language server loads all of them), whether or not `composer.json` requires the extension.
 
 #### &lt;plugins&gt;
 Optional. A list of `<plugin filename="path_to_plugin.php" />` entries. See the [Plugins](plugins/using_plugins.md) section for more information.

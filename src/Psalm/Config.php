@@ -666,7 +666,7 @@ final class Config
     /**
      * The extensions Psalm has a stub for in stubs/extensions, by name (without `ext-`). Values:
      *  - true: composer.json requires the extension, or `<enableExtensions>` lists it: its stub is loaded
-     *  - false: `<disableExtensions>` lists it: its stub isn't loaded
+     *  - false: its stub isn't loaded, for a test of a class the callmap describes
      *  - null: neither: its stub is loaded if the scanned code uses one of its symbols, or by the language server
      *
      * @psalm-readonly-allow-private-mutation
@@ -1150,7 +1150,7 @@ final class Config
         $deprecated_attributes = [];
 
         /** @var list<string> */
-        $deprecated_elements = [];
+        $deprecated_elements = ['disableExtensions'];
 
         $psalm_element_item = $dom_document->getElementsByTagName('psalm')->item(0);
         assert($psalm_element_item !== null);
@@ -1389,14 +1389,6 @@ final class Config
             }
         }
 
-        if (isset($config_xml->disableExtensions) && isset($config_xml->disableExtensions->extension)) {
-            foreach ($config_xml->disableExtensions->extension as $extension) {
-                assert(isset($extension["name"]));
-                $extensionName = (string) $extension["name"];
-                assert(array_key_exists($extensionName, $config->php_extensions));
-                $config->php_extensions[$extensionName] = false;
-            }
-        }
 
         if (isset($config_xml['phpVersion'])) {
             $config->configured_php_version = (string) $config_xml['phpVersion'];

@@ -135,8 +135,7 @@ metadata:
 - A builtin that isn't stubbed (e.g. `Closure`) takes params straight from the call map,
   so sinks on reflected `MethodStorage` are never seen: use `InternalTaintSinkMap`.
 - `stubs/extensions/*.phpstub` load when the scanned code uses one of their classes,
-  functions or constants (unless `<disableExtensions>` lists the extension), so a sink of a
-  stubbed extension goes in its stub only.
+  functions or constants, so a sink of a stubbed extension goes in its stub only.
 - URL-fetching sinks get `file|ssrf|url_component|url_path`; host-only sinks
   (fsockopen) get `ssrf` only.
 - Report dedupe is per (sink, predecessor, origin): SSRF hides url_component and url_path,
