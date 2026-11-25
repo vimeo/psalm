@@ -107,7 +107,6 @@ final class MissingReturnTypeTest extends FileManipulationTestCase
                 'php_version' => '8.0',
                 'issues_to_fix' => ['MissingReturnType'],
                 'safe_types' => false,
-                'allow_backwards_incompatible_changes' => true,
             ],
             'addMissingReturnTypeWritesTheStringRefinementWithoutADocblock' => [
                 'input' => '<?php
