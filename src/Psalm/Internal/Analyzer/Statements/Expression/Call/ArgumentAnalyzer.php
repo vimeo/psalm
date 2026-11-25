@@ -299,6 +299,24 @@ final class ArgumentAnalyzer
             }
         }
 
+        if ($arg->unpack && !$arg_value_type->hasArray() && !$arg_value_type->hasMixed()) {
+            self::processUnpackedIterableTaints(
+                $statements_analyzer,
+                $cased_method_id,
+                $method_id,
+                $argument_offset,
+                $function_call_location,
+                $function_storage,
+                $function_param,
+                $arg_value_type,
+                $arg,
+                $context,
+                $specialize_taint,
+                $in_call_map,
+                $unpacked_argument_offset,
+            );
+        }
+
         if (self::checkFunctionLikeTypeMatches(
             $statements_analyzer,
             $codebase,
@@ -1023,6 +1041,24 @@ final class ArgumentAnalyzer
         int $unpacked_argument_offset = 0,
     ): ?bool {
         $codebase = $statements_analyzer->getCodebase();
+
+        if ($unpack
+            && ($unpacked_atomic_array instanceof TKeyedArray
+                || $unpacked_atomic_array instanceof TArray
+                || $unpacked_atomic_array instanceof TClassStringMap)
+        ) {
+            $input_type = self::getUnpackedElementType(
+                $statements_analyzer,
+                $input_expr,
+                $input_type,
+                self::getUnpackedElementPath(
+                    $codebase,
+                    $unpacked_atomic_array,
+                    $function_param,
+                    $unpacked_argument_offset,
+                ),
+            );
+        }
 
         if ($param_type->hasMixed()) {
             if ($codebase->infer_types_from_usage
@@ -2114,6 +2150,122 @@ final class ArgumentAnalyzer
         }
 
         return false;
+    }
+
+    /**
+     * The path from an unpacked array to the element the parameter takes: `arrayvalue-fetch`, or
+     * `arrayvalue-fetch-'key'` for the element under a known key, null when the parameter takes none of them (its
+     * default value)
+     *
+     * @psalm-mutation-free
+     */
+    private static function getUnpackedElementPath(
+        Codebase $codebase,
+        TKeyedArray|TArray|TClassStringMap $unpacked_atomic_array,
+        FunctionLikeParameter $function_param,
+        int $unpacked_argument_offset,
+    ): ?string {
+        if (!$unpacked_atomic_array instanceof TKeyedArray || $function_param->is_variadic) {
+            return 'arrayvalue-fetch';
+        }
+
+        if ($codebase->analysis_php_version_id >= 8_00_00
+            && isset($unpacked_atomic_array->properties[$function_param->name])
+        ) {
+            return 'arrayvalue-fetch-\'' . $function_param->name . '\'';
+        }
+
+        if ($unpacked_atomic_array->is_list && isset($unpacked_atomic_array->properties[$unpacked_argument_offset])) {
+            return 'arrayvalue-fetch-\'' . $unpacked_argument_offset . '\'';
+        }
+
+        return $unpacked_atomic_array->fallback_params !== null ? 'arrayvalue-fetch' : null;
+    }
+
+    /**
+     * The type of the element of an unpacked argument a parameter takes, holding what the unpacked array or iterable
+     * holds along $path (see getUnpackedElementPath()): its own type only knows what the elements were given where
+     * the array was built, not what was given to the whole array
+     */
+    private static function getUnpackedElementType(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr $unpacked_expr,
+        Union $element_type,
+        ?string $path,
+    ): Union {
+        $graph = $statements_analyzer->data_flow_graph;
+        $unpacked_type = $statements_analyzer->node_data->getType($unpacked_expr);
+        if ($path === null || $graph === null || $unpacked_type === null || $unpacked_type->parent_nodes === []) {
+            return $element_type;
+        }
+
+        $element_node = DataFlowNode::getForAssignment(
+            'unpacked element',
+            new CodeLocation($statements_analyzer->getSource(), $unpacked_expr),
+        );
+        $graph->addNode($element_node);
+
+        foreach ($unpacked_type->parent_nodes as $parent_node) {
+            $graph->addPath($parent_node, $element_node, $path);
+        }
+
+        return $element_type->addParentNodes([$element_node->id => $element_node]);
+    }
+
+    /**
+     * An unpacked iterable that isn't an array passes its elements too, whose taints the parameter takes: those of
+     * an array are processed with the type of its element (see verifyType())
+     */
+    private static function processUnpackedIterableTaints(
+        StatementsAnalyzer $statements_analyzer,
+        ?string $cased_method_id,
+        ?MethodIdentifier $method_id,
+        int $argument_offset,
+        CodeLocation $function_call_location,
+        ?FunctionLikeStorage $function_storage,
+        FunctionLikeParameter $function_param,
+        Union $iterable_type,
+        PhpParser\Node\Arg $arg,
+        Context $context,
+        bool $specialize_taint,
+        bool $in_call_map,
+        int $unpacked_argument_offset,
+    ): void {
+        if ($cased_method_id === null || $statements_analyzer->data_flow_graph === null) {
+            return;
+        }
+
+        $codebase = $statements_analyzer->getCodebase();
+        $element_type = null;
+        foreach ($iterable_type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type->isIterable($codebase)) {
+                $element_type = $codebase->getKeyValueParamsForTraversableObject($atomic_type)[1];
+
+                break;
+            }
+        }
+
+        if ($element_type === null) {
+            return;
+        }
+
+        self::processTaintedness(
+            $statements_analyzer,
+            $cased_method_id,
+            $method_id,
+            $argument_offset,
+            new CodeLocation($statements_analyzer->getSource(), $arg->value),
+            $function_call_location,
+            $function_storage,
+            $function_param,
+            self::getUnpackedElementType($statements_analyzer, $arg->value, $element_type, 'arrayvalue-fetch'),
+            $arg->value,
+            $context,
+            $specialize_taint,
+            $in_call_map,
+            null,
+            $unpacked_argument_offset,
+        );
     }
 
     private static function processTaintedness(

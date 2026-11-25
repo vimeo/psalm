@@ -2621,6 +2621,24 @@ final class TaintTest extends TestCase
     public static function providerValidCodeParse(): array
     {
         return [
+            'unpackedVariableGivesEachParameterTheElementUnderItsKey' => [
+                'code' => '<?php
+                    /** @psalm-taint-specialize */
+                    function second(string $a, string $b): string {
+                        return $b;
+                    }
+
+                    $named = ["a" => (string) $_GET["a"], "b" => "safe"];
+                    echo second(...$named);
+
+                    $positional = [(string) $_GET["a"], "safe"];
+                    echo second(...$positional);',
+            ],
+            'unpackedArrayOfSafeListsIsNotTainted' => [
+                'code' => '<?php
+                    $lists = [["a"], ["b"]];
+                    echo implode("", array_merge(...$lists));',
+            ],
             'offsetOverwrittenInTheBranchWhereItIsSetIsUntaintedAfterTheIf' => [
                 'code' => '<?php
                     function f(array $a): void {
@@ -6303,7 +6321,7 @@ final class TaintTest extends TestCase
                     }',
             ],
             'taintPropertyPassingObjectWithDifferentValue' => [
-                'code' => '<?phps
+                'code' => '<?php
                     /** @psalm-immutable */
                     class User {
                         public string $id;
@@ -8608,6 +8626,77 @@ final class TaintTest extends TestCase
     public static function providerInvalidCodeParse(): array
     {
         return [
+            'unpackedListOfTaintedListsTaintsWhatTheCallReturns' => [
+                'code' => '<?php
+                    /**
+                     * @return list<list<string>>
+                     * @psalm-taint-source input
+                     */
+                    function lists(): array {
+                        return [];
+                    }
+
+                    echo implode("", array_merge(...lists()));',
+                'error_message' => 'TaintedHtml',
+            ],
+            'unpackedTaintedListTaintsAVariadicParameter' => [
+                'code' => '<?php
+                    function joined(string ...$parts): string {
+                        return implode("", $parts);
+                    }
+
+                    /** @var list<string> */
+                    $parts = $_GET["parts"];
+                    echo joined(...$parts);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'unpackedTaintedShapeTaintsTheParameters' => [
+                'code' => '<?php
+                    /**
+                     * @return array{a: string, b: string}
+                     * @psalm-taint-source input
+                     */
+                    function shape(): array {
+                        return ["a" => "", "b" => ""];
+                    }
+
+                    function show(string $a, string $b): void {
+                        echo $b;
+                    }
+
+                    show(...shape());',
+                'error_message' => 'TaintedHtml',
+            ],
+            'unpackedTaintedTraversableTaintsTheParameters' => [
+                'code' => '<?php
+                    /**
+                     * @return Traversable<int, list<string>>
+                     * @psalm-taint-source input
+                     */
+                    function lists(): Traversable {
+                        return new ArrayIterator([]);
+                    }
+
+                    /** @var list<string> $merged */
+                    $merged = array_merge(...lists());
+                    echo implode("", $merged);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'unpackedGeneratorTaintsTheParameters' => [
+                'code' => '<?php
+                    /** @return Generator<int, string> */
+                    function strings(): Generator {
+                        yield (string) $_GET["a"];
+                    }
+
+                    /** @psalm-taint-specialize */
+                    function second(string $a, string $b): string {
+                        return $b;
+                    }
+
+                    echo second("safe", ...strings());',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintSinkOfAFunctionWithOverloadsIsStillChecked' => [
                 'code' => '<?php
                     /**
