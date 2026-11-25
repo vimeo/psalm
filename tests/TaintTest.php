@@ -8530,6 +8530,17 @@ final class TaintTest extends TestCase
                     echo implode("", array_merge(...lists()));',
                 'error_message' => 'TaintedHtml',
             ],
+            'unpackedTaintedListTaintsAVariadicParameter' => [
+                'code' => '<?php
+                    function joined(string ...$parts): string {
+                        return implode("", $parts);
+                    }
+
+                    /** @var list<string> */
+                    $parts = $_GET["parts"];
+                    echo joined(...$parts);',
+                'error_message' => 'TaintedHtml',
+            ],
             'unpackedTaintedShapeTaintsTheParameters' => [
                 'code' => '<?php
                     /**
