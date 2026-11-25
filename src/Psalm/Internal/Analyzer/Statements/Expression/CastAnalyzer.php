@@ -13,6 +13,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallReturnTy
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\CanonicalPaths;
 use Psalm\Internal\Codebase\CombinedFlowGraph;
 use Psalm\Internal\Codebase\PhpDeprecations;
 use Psalm\Internal\Codebase\TaintFlowGraph;
@@ -69,6 +70,7 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Union;
+use UnexpectedValueException;
 
 use function array_merge;
 use function array_pop;
@@ -1174,6 +1176,7 @@ final class CastAnalyzer
 
             if ($statements_analyzer->taint_flow_graph && $cast_type === 'string') {
                 UrlHosts::recordCast($statements_analyzer->taint_flow_graph, $parent_nodes, $cast_node);
+                CanonicalPaths::recordFlow($statements_analyzer->taint_flow_graph, $parent_nodes, $cast_node);
             }
 
             $parent_nodes = [$cast_node->id => $cast_node];
@@ -1257,10 +1260,21 @@ final class CastAnalyzer
         $codebase = $statements_analyzer->getCodebase();
         $project_analyzer = $statements_analyzer->getProjectAnalyzer();
 
+        $cast = match (true) {
+            $stmt instanceof PhpParser\Node\Expr\Cast\Int_ => 'int',
+            $stmt instanceof PhpParser\Node\Expr\Cast\Double => 'float',
+            $stmt instanceof PhpParser\Node\Expr\Cast\Bool_ => 'bool',
+            $stmt instanceof PhpParser\Node\Expr\Cast\String_ => 'string',
+            $stmt instanceof PhpParser\Node\Expr\Cast\Object_ => 'object',
+            $stmt instanceof PhpParser\Node\Expr\Cast\Array_ => 'array',
+            default => throw new UnexpectedValueException('Unexpected redundant cast ' . $stmt::class),
+        };
+        $message = 'Redundant cast (' . $cast . ') applied to ' . $maybe_type->getId();
+
         $file_manipulation = null;
         if ($maybe_type->from_docblock) {
             $issue = new RedundantCastGivenDocblockType(
-                'Redundant cast to ' . $maybe_type->getKey() . ' given docblock-provided type',
+                $message . ' given docblock-provided type',
                 new CodeLocation($statements_analyzer->getSource(), $stmt),
             );
 
@@ -1275,7 +1289,7 @@ final class CastAnalyzer
             }
         } else {
             $issue = new RedundantCast(
-                'Redundant cast to ' . $maybe_type->getKey(),
+                $message,
                 new CodeLocation($statements_analyzer->getSource(), $stmt),
             );
 

@@ -29,6 +29,12 @@ final class TDependentGetDebugType extends TString implements DependentType
     }
 
     #[Override]
+    public function getId(bool $exact = true): string
+    {
+        return 'get-debug-type-of<' . $this->typeof . '>';
+    }
+
+    #[Override]
     public function getVarId(): string
     {
         return $this->typeof;

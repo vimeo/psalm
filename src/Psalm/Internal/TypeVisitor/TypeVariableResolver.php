@@ -6,6 +6,7 @@ namespace Psalm\Internal\TypeVisitor;
 
 use Override;
 use Psalm\Codebase;
+use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TKeyedArray;
@@ -63,6 +64,13 @@ final class TypeVariableResolver extends MutableTypeVisitor
      * still accumulate bounds. Returns the union unchanged when it has no
      * top-level variable to resolve.
      *
+     * Used where a value is read out of a construction (an item of its
+     * `list<`_0>`, the return of a call), since most uses of a value only know
+     * concrete types. The value keeps no link to the variable: what its uses
+     * require doesn't constrain a later widening of the construction, and a
+     * foreach item doesn't see what the loop body adds (the `knownLimit` cases
+     * of TypeVariableTest).
+     *
      * @psalm-external-mutation-free
      */
     public static function resolveTopLevel(Union $type, ?Codebase $codebase): Union
@@ -73,7 +81,7 @@ final class TypeVariableResolver extends MutableTypeVisitor
             return $type;
         }
 
-        return $type->getBuilder()->setTypes(self::keyAtomics($resolved_types))->freeze();
+        return $type->getBuilder()->setTypes(self::keyAtomics($resolved_types, $codebase))->freeze();
     }
 
     /**
@@ -144,15 +152,21 @@ final class TypeVariableResolver extends MutableTypeVisitor
     }
 
     /**
+     * Atomics of the same key (`array<int, int>` resolved next to `array<int, string>`) are combined, not overwritten
+     *
      * @param non-empty-list<Atomic> $atomic_types
      * @return non-empty-array<string, Atomic>
-     * @psalm-pure
+     * @psalm-external-mutation-free
      */
-    private static function keyAtomics(array $atomic_types): array
+    private static function keyAtomics(array $atomic_types, ?Codebase $codebase): array
     {
         $keyed_types = [];
 
         foreach ($atomic_types as $atomic_type) {
+            if (isset($keyed_types[$atomic_type->getKey()])) {
+                return TypeCombiner::combine($atomic_types, $codebase)->getAtomicTypes();
+            }
+
             $keyed_types[$atomic_type->getKey()] = $atomic_type;
         }
 
@@ -209,7 +223,7 @@ final class TypeVariableResolver extends MutableTypeVisitor
             // a `list<T>` is a keyed array whose first entry is a *possibly
             // undefined* `T`, and constructing a bare `new Union` here would drop
             // that flag and silently turn the list into a non-empty-list
-            $type = $type->getBuilder()->setTypes(self::keyAtomics($resolved_types))->freeze();
+            $type = $type->getBuilder()->setTypes(self::keyAtomics($resolved_types, $this->codebase))->freeze();
         }
 
         return null;

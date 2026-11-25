@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Type\Atomic;
 
 use Override;
+use Psalm\Type;
 
 /**
  * Denotes an enum with a specific value
@@ -26,7 +27,7 @@ final class TEnumCase extends TNamedObject
     }
 
     #[Override]
-    public function getId(bool $exact = true, bool $nested = false): string
+    public function getId(bool $exact = true): string
     {
         return 'enum(' . $this->value . '::' . $this->case_name . ')';
     }
@@ -38,7 +39,7 @@ final class TEnumCase extends TNamedObject
         ?string $this_class,
         int $analysis_php_version_id,
     ): ?string {
-        return $this->value;
+        return Type::getStringFromFQCLN($this->value, $namespace, $aliased_classes, $this_class, true);
     }
 
     /**
@@ -60,6 +61,7 @@ final class TEnumCase extends TNamedObject
         ?string $this_class,
         bool $use_phpdoc_format,
     ): string {
-        return $this->value . '::' . $this->case_name;
+        return Type::getStringFromFQCLN($this->value, $namespace, $aliased_classes, $this_class, true)
+            . '::' . $this->case_name;
     }
 }

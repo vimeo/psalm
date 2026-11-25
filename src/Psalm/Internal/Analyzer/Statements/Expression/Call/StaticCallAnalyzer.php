@@ -188,8 +188,9 @@ final class StaticCallAnalyzer extends CallAnalyzer
                     }
                 } elseif ($context->self) {
                     if ($stmt->class->getFirst() === 'static' && isset($context->vars_in_scope['$this'])) {
-                        $fq_class_name = (string) $context->vars_in_scope['$this'];
                         $lhs_type = $context->vars_in_scope['$this'];
+                        $this_atomic = $lhs_type->isSingle() ? $lhs_type->getSingleAtomic() : null;
+                        $fq_class_name = $this_atomic instanceof TNamedObject ? $this_atomic->value : $context->self;
                     } else {
                         $fq_class_name = $context->self;
                     }
@@ -602,6 +603,7 @@ final class StaticCallAnalyzer extends CallAnalyzer
                 $codebase,
                 $method_storage,
                 $template_result,
+                $stmt->isFirstClassCallable() ? [] : $stmt->getArgs(),
             )
             : 0;
 

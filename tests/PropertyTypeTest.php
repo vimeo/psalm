@@ -840,6 +840,35 @@ final class PropertyTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'assignedUnionHasItsWidenedGenericReplaced' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     */
+                    final class Box {
+                        /**
+                         * @param list<T> $v
+                         */
+                        public function __construct(public array $v) {}
+                    }
+
+                    final class H {
+                        /** @var Box<int>|null */
+                        public ?Box $b = null;
+                    }
+
+                    /** @return Box<never>|null */
+                    function emptyBox(): ?Box {
+                        return null;
+                    }
+
+                    $h = new H();
+                    $h->b = emptyBox();
+                    $b = $h->b;',
+                'assertions' => [
+                    '$b===' => 'Box<int>|null',
+                ],
+            ],
             'offsetWriteInitializesAnUninitializedArrayProperty' => [
                 'code' => '<?php
                     final class Bag
@@ -5033,6 +5062,36 @@ final class PropertyTypeTest extends TestCase
                         }
                     }',
                 'error_message' => 'InvalidPropertyAssignmentValue',
+            ],
+            'parentTypeAndInvalidTypeAssignedToProperty' => [
+                'code' => '<?php
+                    final class Foo {}
+
+                    final class A {
+                        public ?Foo $p = null;
+
+                        public function set(object|int $o): void {
+                            $this->p = $o;
+                        }
+                    }',
+                'error_message' => 'PossiblyInvalidPropertyAssignmentValue',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'parentTypeAndInvalidTypeAssignedToStaticProperty' => [
+                'code' => '<?php
+                    final class Foo {}
+
+                    final class A {
+                        public static ?Foo $p = null;
+
+                        public static function set(object|int $o): void {
+                            self::$p = $o;
+                        }
+                    }',
+                'error_message' => 'PossiblyInvalidPropertyAssignmentValue',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'templateOfBoolMakesAValuePossiblyValidForABoolProperty' => [
                 'code' => '<?php

@@ -408,12 +408,15 @@ final class MethodCallReturnTypeFetcher
     /**
      * What the method removes from its return depends on the arguments of this call: its result has a node of its own,
      * as $method_call_node may be shared with the other calls, the last call deciding for all
+     *
+     * @param list<PhpParser\Node\Arg> $args
      */
     private static function escapeReturnByArguments(
         Codebase $codebase,
         TaintFlowGraph|CombinedFlowGraph|VariableUseGraph $graph,
         MethodStorage $method_storage,
         ?TemplateResult $template_result,
+        array $args,
         MethodIdentifier $method_id,
         CodeLocation $node_location,
         DataFlowNode $method_call_node,
@@ -424,6 +427,7 @@ final class MethodCallReturnTypeFetcher
                 $codebase,
                 $method_storage,
                 $template_result,
+                $args,
             )
             : 0;
 
@@ -750,6 +754,7 @@ final class MethodCallReturnTypeFetcher
             $graph,
             $method_storage,
             $template_result,
+            $args,
             $method_id,
             $node_location,
             $method_call_node,

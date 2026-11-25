@@ -17,7 +17,6 @@ use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 
 use function count;
-use function implode;
 
 /**
  * denotes the `iterable` type(which can also result from an `is_iterable` check).
@@ -130,15 +129,11 @@ final class TIterable extends Atomic
     }
 
     #[Override]
-    public function getId(bool $exact = true, bool $nested = false): string
+    public function getId(bool $exact = true): string
     {
         [$type_params, $purity_args] = $this->getTypeParamsAndPurityArgs();
 
-        $extra_types = '';
-
-        if ($this->extra_types) {
-            $extra_types = '&' . implode('&', $this->extra_types);
-        }
+        $extra_types = $this->getIntersectionTypesId($exact);
 
         return $this->value
             . self::formatTypeParams(
@@ -166,7 +161,10 @@ final class TIterable extends Atomic
     #[Override]
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
-        return $this->type_params[0]->isMixed() && $this->type_params[1]->isMixed() && $this->hasDefaultPurity();
+        return !$this->extra_types
+            && $this->type_params[0]->isMixed()
+            && $this->type_params[1]->isMixed()
+            && $this->hasDefaultPurity();
     }
 
     #[Override]
