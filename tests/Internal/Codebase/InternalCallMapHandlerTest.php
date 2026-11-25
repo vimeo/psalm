@@ -286,6 +286,18 @@ final class InternalCallMapHandlerTest extends TestCase
         $this->assertEquals('still_running', $curl_multi_exec_entry->params[1]->name);
     }
 
+    public function testSqlite3ResultColumnNameMayReturnFalse(): void
+    {
+        foreach (['7.0', '7.4', '8.0', '8.5'] as $php_version) {
+            $this->project_analyzer->setPhpVersion($php_version, 'tests');
+            $this->assertSame(
+                'false|string',
+                InternalCallMapHandler::getCallMap()['sqlite3result::columnname'][0],
+                "PHP $php_version",
+            );
+        }
+    }
+
     /**
      * @return iterable<string, array{string, array<int|string, string>}>
      */
