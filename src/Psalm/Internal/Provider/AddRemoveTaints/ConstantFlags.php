@@ -53,8 +53,10 @@ use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Provider\FileStorageProvider;
+use Psalm\Internal\Type\IntMask;
 use Psalm\StatementsSource;
 use Psalm\Storage\ClassLikeStorage;
+use Psalm\Type\Union;
 use ReflectionClass;
 
 use function array_map;
@@ -116,6 +118,31 @@ final class ConstantFlags
         $self = $class !== null ? self::getClass($codebase, $class) : null;
 
         return self::getExpressionBits($codebase, $expr, $self, true, [], $statements_analyzer);
+    }
+
+    /**
+     * The bits every value of the type of the flags of a call PHP code doesn't make has (see
+     * Codebase::addTaintedCall()), and those its values may have: there is no expression to read, only the type the
+     * plugin wiring the call gives, an int literal or a union of them telling the bits
+     *
+     * @return array{int, int}
+     * @psalm-pure
+     */
+    public static function getTypeBits(?Union $type): array
+    {
+        if ($type === null || !$type->allIntLiterals()) {
+            return [0, $type !== null ? IntMask::getPossibleBits($type) ?? -1 : -1];
+        }
+
+        $certain = -1;
+        $possible = 0;
+
+        foreach ($type->getLiteralInts() as $literal) {
+            $certain &= $literal->value;
+            $possible |= $literal->value;
+        }
+
+        return [$certain, $possible];
     }
 
     /**
