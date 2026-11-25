@@ -121,10 +121,12 @@ final class CollectorTest extends TestCase
         $wall = array_column($result['hot']['statements'], 'wall_us', 'line');
         $self = array_column($result['hot']['statements'], 'self_us', 'line');
 
-        // the outer one took about 10 ms with the inner one, and about 5 ms of its own
-        $this->assertGreaterThanOrEqual(10_000, $wall[10]);
-        $this->assertLessThan($wall[10] - 4_000, $self[10]);
-        $this->assertGreaterThanOrEqual(5_000, $self[11]);
+        // the outer one took about 10 ms with the inner one, and about 5 ms of its own (usleep() can return a little
+        // early on Windows)
+        $this->assertGreaterThanOrEqual(9_000, $wall[10]);
+        $this->assertSame($self[11], $wall[11]);
+        $this->assertGreaterThanOrEqual(4_500, $self[11]);
+        $this->assertEqualsWithDelta($wall[10] - $wall[11], $self[10], 1_000);
     }
 
     public function testFunctionLikePassesAreRankedByTheirOwnTime(): void
@@ -147,7 +149,9 @@ final class CollectorTest extends TestCase
         $self = array_column($result['hot']['functions'], 'self_us', 'id');
         $wall = array_column($result['hot']['functions'], 'wall_us', 'id');
         $this->assertSame($self['inner'], $wall['inner']);
-        $this->assertGreaterThanOrEqual(100_000, $wall['outer']);
+        // usleep() can return a little early on Windows
+        $this->assertGreaterThanOrEqual(90_000, $wall['outer']);
+        $this->assertGreaterThan($wall['inner'], $wall['outer']);
         $this->assertEqualsWithDelta($wall['outer'] - $wall['inner'], $self['outer'], 1_000);
     }
 
