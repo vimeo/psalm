@@ -178,6 +178,16 @@ final class SqlStatementTest extends TestCase
             'ALTER TABLE t UPDATE a = 1 WHERE x = %0%',
             'null',
         ];
+        yield 'ALTER TABLE and a number in a WHERE, which can\'t end it' => [
+            'ALTER TABLE t UPDATE a = %0% WHERE x = %1%',
+            'W t.a <- h[0] p[] c[]',
+            [1],
+        ];
+        yield 'another ALTER and a number, which can\'t be a command' => [
+            'ALTER USER u SETTINGS max_threads = %0%',
+            '',
+            [0],
+        ];
         yield 'ALTER TABLE ... UPDATE without WHERE, which the last value then holds' => [
             'ALTER TABLE t UPDATE a = %0%',
             'null',

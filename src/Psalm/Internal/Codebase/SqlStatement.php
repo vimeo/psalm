@@ -81,6 +81,9 @@ final class SqlStatement
     /** Whether the statement ends with the data of an INSERT ... FORMAT (ClickHouse), which can't hold SQL */
     private bool $ends_with_data = false;
 
+    /** @var list<int> the holes whose text is a number, which can't hold SQL */
+    private array $number_holes = [];
+
     /**
      * @param list<Token> $tokens
      */
@@ -111,6 +114,7 @@ final class SqlStatement
 
         // the placeholders are numbered across the statements
         $parser = new self([]);
+        $parser->number_holes = $number_holes;
 
         foreach ([...$tokens, [';', ';', []]] as $token) {
             if ($token[0] !== ';') {
@@ -423,7 +427,7 @@ final class SqlStatement
         $this->position++;
 
         if ($this->peekWord() !== 'table') {
-            return self::containsHole(array_slice($this->tokens, $this->position))
+            return $this->containsHole(array_slice($this->tokens, $this->position))
                 ? null
                 : ['writes' => [], 'reads' => []];
         }
@@ -490,7 +494,7 @@ final class SqlStatement
                 $this->position++;
             }
 
-            if (self::containsHole($rest)) {
+            if ($this->containsHole($rest)) {
                 return null;
             }
 
@@ -506,13 +510,15 @@ final class SqlStatement
     }
 
     /**
+     * Whether the tokens contain a part the analysis doesn't know the text of, but a number, which can hold SQL
+     *
      * @param list<Token> $tokens
-     * @psalm-pure
+     * @psalm-mutation-free
      */
-    private static function containsHole(array $tokens): bool
+    private function containsHole(array $tokens): bool
     {
         foreach ($tokens as $token) {
-            if ($token[0] === 'hole') {
+            if ($token[0] === 'hole' && !in_array((int) $token[1], $this->number_holes, true)) {
                 return true;
             }
         }
