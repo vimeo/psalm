@@ -3220,6 +3220,18 @@ final class AssignmentAnalyzer
                 return;
             }
 
+            // a write under a name that is one of several literals (`$o->{$p}`) may change any of those properties
+            $assigned_var_id = ExpressionIdentifier::getExtendedVarId(
+                $assign_var,
+                $statements_analyzer->getFQCLN(),
+                $statements_analyzer,
+            );
+
+            if ($assigned_var_id !== null) {
+                $context->remove($assigned_var_id);
+                $context->forgetPropertiesAliasedBy($assigned_var_id);
+            }
+
             if (($assign_var_type = $statements_analyzer->node_data->getType($assign_var->var))
                 && !$context->ignore_variable_property
             ) {

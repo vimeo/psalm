@@ -165,6 +165,7 @@ final class InstancePropertyAssignmentAnalyzer
 
             if ($assigned_var_id !== null) {
                 $context->forgetNarrowedShapeProperty($assigned_var_id);
+                $context->forgetPropertiesAliasedBy($assigned_var_id);
             }
         }
 

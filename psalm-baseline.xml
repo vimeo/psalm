@@ -1061,7 +1061,6 @@
       <code><![CDATA[$invalid_fetch_types[0]]]></code>
     </PossiblyUndefinedIntArrayOffset>
     <RiskyTruthyFalsyComparison>
-      <code><![CDATA[!$prop_name]]></code>
       <code><![CDATA[$context->calling_method_id]]></code>
       <code><![CDATA[$context->calling_method_id]]></code>
       <code><![CDATA[$declaring_property_class]]></code>

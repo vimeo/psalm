@@ -531,7 +531,7 @@ final class IfElseAnalyzer
             if ($stamp !== ($parent_remove_vars[$changed_var_id] ?? null)
                 && ($changed_var_id === $var_id
                     ? isset($branch_context->vars_possibly_in_scope[$var_id])
-                    : preg_match('/' . preg_quote($changed_var_id, '/') . '[\]\[\-]/', $var_id) === 1)
+                    : preg_match('/' . preg_quote($changed_var_id, '/') . '[\]\[\-}]/', $var_id) === 1)
             ) {
                 return true;
             }
