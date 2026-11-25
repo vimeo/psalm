@@ -13,6 +13,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallReturnTy
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\CanonicalPaths;
 use Psalm\Internal\Codebase\CombinedFlowGraph;
 use Psalm\Internal\Codebase\PhpDeprecations;
 use Psalm\Internal\Codebase\TaintFlowGraph;
@@ -62,6 +63,7 @@ use Psalm\Type\Atomic\TNonspecificLiteralString;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TNumeric;
 use Psalm\Type\Atomic\TNumericString;
+use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TResource;
 use Psalm\Type\Atomic\TString;
@@ -69,9 +71,11 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Union;
+use UnexpectedValueException;
 
 use function array_merge;
 use function array_pop;
+use function array_shift;
 use function array_values;
 use function count;
 use function range;
@@ -351,6 +355,41 @@ final class CastAnalyzer
         );
 
         return false;
+    }
+
+    /**
+     * The types a value of a template is, as it is one of its bound and every type it is intersected with
+     * (`T&Stringable` of a `T as object` is a `Stringable`)
+     *
+     * @return list<Atomic>
+     * @psalm-pure
+     */
+    public static function getTemplateBoundAtomics(TTemplateParam $template): array
+    {
+        $bound_atomics = array_values($template->as->getAtomicTypes());
+
+        if (!$template->extra_types) {
+            return $bound_atomics;
+        }
+
+        $intersected_types = [];
+
+        foreach ($bound_atomics as $bound_atomic) {
+            if ($bound_atomic instanceof TNamedObject || $bound_atomic instanceof TTemplateParam) {
+                $intersected_types[] = $bound_atomic->setIntersectionTypes(
+                    [...$bound_atomic->extra_types, ...$template->extra_types],
+                );
+            } elseif ($bound_atomic instanceof TObject || $bound_atomic instanceof TMixed) {
+                // an object or anything that is also each of the intersected types is the first of them and the others
+                $extra_types = $template->extra_types;
+                $first_type = array_shift($extra_types);
+                $intersected_types[] = $first_type->setIntersectionTypes($extra_types);
+            } else {
+                $intersected_types[] = $bound_atomic;
+            }
+        }
+
+        return $intersected_types;
     }
 
     /**
@@ -744,7 +783,7 @@ final class CastAnalyzer
             }
 
             if ($atomic_type instanceof TTemplateParam) {
-                $atomic_types = array_merge($atomic_types, $atomic_type->as->getAtomicTypes());
+                $atomic_types = array_merge($atomic_types, self::getTemplateBoundAtomics($atomic_type));
 
                 continue;
             }
@@ -967,7 +1006,7 @@ final class CastAnalyzer
             $atomic_type = array_pop($atomic_types);
 
             if ($atomic_type instanceof TTemplateParam) {
-                $atomic_types = [...$atomic_types, ...array_values($atomic_type->as->getAtomicTypes())];
+                $atomic_types = [...$atomic_types, ...self::getTemplateBoundAtomics($atomic_type)];
 
                 continue;
             }
@@ -1174,6 +1213,7 @@ final class CastAnalyzer
 
             if ($statements_analyzer->taint_flow_graph && $cast_type === 'string') {
                 UrlHosts::recordCast($statements_analyzer->taint_flow_graph, $parent_nodes, $cast_node);
+                CanonicalPaths::recordFlow($statements_analyzer->taint_flow_graph, $parent_nodes, $cast_node);
             }
 
             $parent_nodes = [$cast_node->id => $cast_node];
@@ -1257,10 +1297,21 @@ final class CastAnalyzer
         $codebase = $statements_analyzer->getCodebase();
         $project_analyzer = $statements_analyzer->getProjectAnalyzer();
 
+        $cast = match (true) {
+            $stmt instanceof PhpParser\Node\Expr\Cast\Int_ => 'int',
+            $stmt instanceof PhpParser\Node\Expr\Cast\Double => 'float',
+            $stmt instanceof PhpParser\Node\Expr\Cast\Bool_ => 'bool',
+            $stmt instanceof PhpParser\Node\Expr\Cast\String_ => 'string',
+            $stmt instanceof PhpParser\Node\Expr\Cast\Object_ => 'object',
+            $stmt instanceof PhpParser\Node\Expr\Cast\Array_ => 'array',
+            default => throw new UnexpectedValueException('Unexpected redundant cast ' . $stmt::class),
+        };
+        $message = 'Redundant cast (' . $cast . ') applied to ' . $maybe_type->getId();
+
         $file_manipulation = null;
         if ($maybe_type->from_docblock) {
             $issue = new RedundantCastGivenDocblockType(
-                'Redundant cast to ' . $maybe_type->getKey() . ' given docblock-provided type',
+                $message . ' given docblock-provided type',
                 new CodeLocation($statements_analyzer->getSource(), $stmt),
             );
 
@@ -1275,7 +1326,7 @@ final class CastAnalyzer
             }
         } else {
             $issue = new RedundantCast(
-                'Redundant cast to ' . $maybe_type->getKey(),
+                $message,
                 new CodeLocation($statements_analyzer->getSource(), $stmt),
             );
 

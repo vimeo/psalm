@@ -1293,7 +1293,7 @@ final class TypeExpander
 
             if ($assertion
                 && $return_type->subject_type === null
-                && $return_type->param_name === (string) $return_type->if_type
+                && self::isTheConditionalTemplate($return_type, $return_type->if_type)
             ) {
                 $if_conditional_return_type = TypeCombiner::combine(
                     $if_conditional_return_types,
@@ -1314,7 +1314,7 @@ final class TypeExpander
 
             if ($assertion
                 && $return_type->subject_type === null
-                && $return_type->param_name === (string) $return_type->else_type
+                && self::isTheConditionalTemplate($return_type, $return_type->else_type)
             ) {
                 $else_conditional_return_type = TypeCombiner::combine(
                     $else_conditional_return_types,
@@ -1411,6 +1411,24 @@ final class TypeExpander
             ),
         );
         return [$return_type];
+    }
+
+    /**
+     * Whether a branch of the conditional is its template itself, as `T` in `(T is list ? T : null)`
+     *
+     * @psalm-pure
+     */
+    private static function isTheConditionalTemplate(TConditional $conditional, Union $branch): bool
+    {
+        if (!$branch->isSingle()) {
+            return false;
+        }
+
+        $atomic = $branch->getSingleAtomic();
+
+        return $atomic instanceof TTemplateParam
+            && $atomic->param_name === $conditional->param_name
+            && $atomic->defining_class === $conditional->defining_class;
     }
 
     /**

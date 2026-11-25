@@ -21,7 +21,7 @@ use function array_values;
 use function count;
 use function implode;
 use function in_array;
-use function strrpos;
+use function sort;
 use function substr;
 
 /**
@@ -88,6 +88,13 @@ final class TGenericObject extends TNamedObject
     public function getTypeParamsAndPurityArgs(): array
     {
         return PurityArguments::split($this->type_params);
+    }
+
+    #[Override]
+    public function getId(bool $exact = true): string
+    {
+        return $this->value . $this->getTypeParamsId($exact) . $this->getIntersectionTypesId($exact)
+            . ($this->is_static ? '&static' : '');
     }
 
     /**
@@ -186,20 +193,35 @@ final class TGenericObject extends TNamedObject
     {
         [$type_params, $purity_args] = $this->getTypeParamsAndPurityArgs();
 
-        $s = self::formatTypeParams(
-            $type_params,
-            $purity_args,
-            static fn(Union $type_param): string => $type_param->getKey(),
-            $this,
-        );
+        return $this->value
+            . self::formatTypeParams($type_params, $purity_args, self::getTypeParamKey(...), $this)
+            . ($include_extra ? $this->getIntersectionTypesId(true) : '');
+    }
 
-        $extra_types = '';
+    /**
+     * TypeCombiner merges the generic objects of the same key: those whose type arguments only differ by their
+     * literals or by what their atomic types' keys leave out (`Foo<5>` and `Foo<6>`, `Foo<array{a: int}>` and
+     * `Foo<list<int>>`)
+     *
+     * @psalm-pure
+     */
+    private static function getTypeParamKey(Union $type_param): string
+    {
+        $keys = [];
 
-        if ($include_extra && $this->extra_types) {
-            $extra_types = '&' . implode('&', $this->extra_types);
+        foreach ($type_param->getAtomicTypes() as $atomic_type) {
+            $key = match (true) {
+                $atomic_type instanceof TLiteralInt => 'int',
+                $atomic_type instanceof TLiteralFloat => 'float',
+                $atomic_type instanceof TLiteralString => 'string',
+                default => $atomic_type->getKey(),
+            };
+            $keys[$key] = $key;
         }
 
-        return $this->value . $s . $extra_types;
+        sort($keys);
+
+        return implode('|', $keys);
     }
 
     /**
@@ -211,24 +233,6 @@ final class TGenericObject extends TNamedObject
         return false;
     }
 
-    /**
-     * @param  array<lowercase-string, string> $aliased_classes
-     */
-    #[Override]
-    public function toPhpString(
-        ?string $namespace,
-        array $aliased_classes,
-        ?string $this_class,
-        int $analysis_php_version_id,
-    ): ?string {
-        $result = $this->toNamespacedString($namespace, $aliased_classes, $this_class, true);
-        $intersection = strrpos($result, '&');
-        if ($intersection === false || $analysis_php_version_id >= 8_01_00) {
-            return $result;
-        }
-        return substr($result, $intersection+1);
-    }
-
     #[Override]
     public function equals(Atomic $other_type, bool $ensure_source_equality): bool
     {
@@ -236,7 +240,10 @@ final class TGenericObject extends TNamedObject
             return false;
         }
 
-        if ($this->is_static !== $other_type->is_static) {
+        if ($this->value !== $other_type->value
+            || $this->is_static !== $other_type->is_static
+            || !$this->intersectionTypesEqual($other_type->extra_types, $ensure_source_equality)
+        ) {
             return false;
         }
 

@@ -11,7 +11,6 @@ use Psalm\Context;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Node\Expr\PartialApplication;
 use Psalm\Node\Expr\VirtualIsset;
 use Psalm\Node\Expr\VirtualTernary;
 use Psalm\Node\Expr\VirtualVariable;
@@ -92,24 +91,14 @@ final class CoalesceAnalyzer
             $root_expr = $root_expr->var;
         }
 
-        $has_call_root = $root_expr instanceof PhpParser\Node\Expr\FuncCall
-            || $root_expr instanceof PhpParser\Node\Expr\MethodCall
-            || $root_expr instanceof PhpParser\Node\Expr\StaticCall
-            || $root_expr instanceof PhpParser\Node\Expr\Cast
-            || $root_expr instanceof PhpParser\Node\Expr\Match_
-            || $root_expr instanceof PhpParser\Node\Expr\NullsafePropertyFetch
-            || $root_expr instanceof PhpParser\Node\Expr\NullsafeMethodCall
-            || $root_expr instanceof PhpParser\Node\Expr\Ternary
-            || $root_expr instanceof PhpParser\Node\Expr\BinaryOp\Pipe
-            || $root_expr instanceof PartialApplication
-            // an assignment must run once, and isset() can't take it
-            || $root_expr instanceof PhpParser\Node\Expr\Assign
-            || $root_expr instanceof PhpParser\Node\Expr\AssignRef
-            || $root_expr instanceof PhpParser\Node\Expr\AssignOp
-            || $root_expr instanceof PhpParser\Node\Expr\PreInc
-            || $root_expr instanceof PhpParser\Node\Expr\PreDec
-            || $root_expr instanceof PhpParser\Node\Expr\PostInc
-            || $root_expr instanceof PhpParser\Node\Expr\PostDec;
+        // isset() only takes a variable, or an item or a property of one, of a static property or of a constant: any
+        // other expression (a call, a constant itself, a literal, an operation, an assignment, ...) is evaluated once
+        // into a temporary variable
+        $has_call_root = !$root_expr instanceof PhpParser\Node\Expr\Variable
+            && !$root_expr instanceof PhpParser\Node\Expr\StaticPropertyFetch
+            && !(($root_expr instanceof PhpParser\Node\Expr\ClassConstFetch
+                    || $root_expr instanceof PhpParser\Node\Expr\ConstFetch)
+                && $root_expr !== $left_expr);
 
         $has_untracked_offset = !$has_call_root
             && $left_expr instanceof PhpParser\Node\Expr\ArrayDimFetch
@@ -129,7 +118,18 @@ final class CoalesceAnalyzer
             // properties and offsets that an assignment drops) belongs to the real context
             $was_inside_isset = $context->inside_isset;
             $was_inside_general_use = $context->inside_general_use;
-            $context->inside_isset = true;
+            // `??` gives isset semantics only to the fetch chain above the root, a nullsafe fetch included
+            $fetch_root = $left_expr;
+
+            while ($fetch_root instanceof PhpParser\Node\Expr\ArrayDimFetch
+                || $fetch_root instanceof PhpParser\Node\Expr\PropertyFetch
+                || $fetch_root instanceof PhpParser\Node\Expr\NullsafePropertyFetch
+            ) {
+                $fetch_root = $fetch_root->var;
+            }
+
+            $has_fetch_chain = $fetch_root !== $left_expr;
+            $context->inside_isset = $was_inside_isset || $has_fetch_chain;
             // the value of the left operand decides which side is taken
             $context->inside_general_use = true;
 
@@ -138,7 +138,7 @@ final class CoalesceAnalyzer
             $context->inside_isset = $was_inside_isset;
             $context->inside_general_use = $was_inside_general_use;
 
-            if ($root_expr !== $left_expr) {
+            if ($has_fetch_chain) {
                 $condition_type = $statements_analyzer->node_data->getType($left_expr);
                 if ($condition_type) {
                     $condition_type = $condition_type->setPossiblyUndefined(true);

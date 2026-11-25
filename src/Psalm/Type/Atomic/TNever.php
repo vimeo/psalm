@@ -28,6 +28,15 @@ final class TNever extends Atomic
     }
 
     /**
+     * @psalm-pure
+     */
+    #[Override]
+    public function getId(bool $exact = true): string
+    {
+        return 'never';
+    }
+
+    /**
      * @param array<lowercase-string, string> $aliased_classes
      * @psalm-pure
      */
