@@ -1026,7 +1026,7 @@ final class TaintTest extends TestCase
 
             class_alias(Real::class, Aliased::class);
         ');
-        // the methods of a class declared in a condition in a namespace aren't analyzed
+        // a class declared in a condition, which may not be the one that runs
         $global_file_path = self::$src_dir_path . 'global.php';
         $this->addFile($global_file_path, '<?php
             if (\getenv("LEGACY") === false) {
@@ -10310,6 +10310,32 @@ final class TaintTest extends TestCase
                     function f(): void {
                         H::$acc?->append((string) $_GET["x"]);
                         echo (string) H::$acc?->offsetGet(0);
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintInAMethodOfAClassDeclaredConditionallyInANamespace' => [
+                'code' => '<?php
+                    namespace Foo;
+
+                    if (!class_exists(C::class)) {
+                        final class C {
+                            public function m(): void {
+                                echo (string) $_GET["x"];
+                            }
+                        }
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintInAMethodOfAClassDeclaredConditionallyInABracedNamespace' => [
+                'code' => '<?php
+                    namespace Foo {
+                        if (!class_exists(C::class)) {
+                            final class C {
+                                public function m(): void {
+                                    echo (string) $_GET["x"];
+                                }
+                            }
+                        }
                     }',
                 'error_message' => 'TaintedHtml',
             ],
