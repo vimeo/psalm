@@ -256,6 +256,46 @@ final class TraitTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'parentClassConstantAndStaticPropertyInATraitAreTheOnesOfTheClassUsingIt' => [
+                'code' => '<?php
+                    class Box {
+                        /** @var string */
+                        public const KIND = "box";
+                        public static int $count = 0;
+                        public function getSize(): int {
+                            return 1;
+                        }
+                    }
+
+                    trait Describes {
+                        public function name(): string {
+                            return parent::class;
+                        }
+
+                        public function kind(): string {
+                            return parent::KIND;
+                        }
+
+                        public function count(): int {
+                            return parent::$count;
+                        }
+
+                        public function size(): int {
+                            return parent::getSize();
+                        }
+                    }
+
+                    final class UsesTrait extends Box {
+                        use Describes;
+                    }
+
+                    $name = (new UsesTrait())->name();',
+                'assertions' => [
+                    '$name===' => 'string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'selfConstantInTheTypeOfATraitPropertyIsTheOneOfTheUsingClass' => [
                 'code' => '<?php
                     trait HasKind {
@@ -2273,6 +2313,33 @@ final class TraitTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'parentClassOfATraitUsedByAClassWithoutParent' => [
+                'code' => '<?php
+                    trait Describes {
+                        public function name(): string {
+                            return parent::class;
+                        }
+                    }
+
+                    final class NoParent {
+                        use Describes;
+                    }',
+                'error_message' => 'ParentNotFound - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:36 - Cannot fetch a class'
+                    . ' constant on parent as this class does not extend another',
+            ],
+            'parentStaticPropertyOfATraitUsedByAClassWithoutParent' => [
+                'code' => '<?php
+                    trait Counts {
+                        public function count(): int {
+                            return parent::$count;
+                        }
+                    }
+
+                    final class NoParent {
+                        use Counts;
+                    }',
+                'error_message' => 'ParentNotFound',
+            ],
             'constantOfTheFirstTraitDeclaringItIsDeprecated' => [
                 'code' => '<?php
                     trait HasLimit {

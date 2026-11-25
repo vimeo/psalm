@@ -343,6 +343,19 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
     }
 
     /**
+     * The parent class `parent` stands for in the code being analysed. In a trait it is the parent of the class using
+     * the trait, which is the class of the context.
+     */
+    public static function getParentClassOfContext(Context $context, StatementsSource $source): ?string
+    {
+        $codebase = $source->getCodebase();
+
+        return $context->self !== null && $codebase->classlike_storage_provider->has($context->self)
+            ? $codebase->classlike_storage_provider->get($context->self)->parent_class
+            : $source->getParentFQCLN();
+    }
+
+    /**
      * Reports a static member of the trait $fq_class_name accessed on the trait, and returns whether it is one
      */
     public static function checkTraitMemberAccess(

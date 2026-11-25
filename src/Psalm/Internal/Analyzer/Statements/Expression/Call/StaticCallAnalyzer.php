@@ -539,10 +539,7 @@ final class StaticCallAnalyzer extends CallAnalyzer
 
         $codebase = $statements_analyzer->getCodebase();
 
-        // in a hook a trait declares, the parent is the one of the class using the trait
-        $parent_fq_class_name = $context->self !== null && $codebase->classlike_storage_provider->has($context->self)
-            ? $codebase->classlike_storage_provider->get($context->self)->parent_class
-            : $statements_analyzer->getParentFQCLN();
+        $parent_fq_class_name = ClassLikeAnalyzer::getParentClassOfContext($context, $statements_analyzer);
 
         if ($parent_fq_class_name === null) {
             return false;

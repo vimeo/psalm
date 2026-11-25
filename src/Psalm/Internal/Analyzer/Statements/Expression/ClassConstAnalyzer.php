@@ -176,12 +176,12 @@ final class ClassConstAnalyzer
 
                 $fq_class_name = $context->self;
             } elseif ($first_part_lc === 'parent') {
-                $fq_class_name = $statements_analyzer->getParentFQCLN();
+                $fq_class_name = ClassLikeAnalyzer::getParentClassOfContext($context, $statements_analyzer);
 
                 if ($fq_class_name === null) {
                     return !IssueBuffer::accepts(
                         new ParentNotFound(
-                            'Cannot check property fetch on parent as this class does not extend another',
+                            'Cannot fetch a class constant on parent as this class does not extend another',
                             new CodeLocation($statements_analyzer->getSource(), $stmt),
                         ),
                         $statements_analyzer->getSuppressedIssues(),

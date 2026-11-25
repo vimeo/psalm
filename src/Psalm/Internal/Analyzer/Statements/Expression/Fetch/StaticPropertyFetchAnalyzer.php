@@ -63,7 +63,7 @@ final class StaticPropertyFetchAnalyzer
             && in_array(strtolower($stmt->class->getFirst()), ['self', 'static', 'parent'], true)
         ) {
             if ($stmt->class->getFirst() === 'parent') {
-                $fq_class_name = $statements_analyzer->getParentFQCLN();
+                $fq_class_name = ClassLikeAnalyzer::getParentClassOfContext($context, $statements_analyzer);
 
                 if ($fq_class_name === null) {
                     return !IssueBuffer::accepts(
