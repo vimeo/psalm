@@ -122,6 +122,8 @@ use function str_ends_with;
 use function str_starts_with;
 use function strlen;
 use function strpos;
+use function strrev;
+use function strspn;
 use function strtolower;
 use function strtr;
 use function substr;
@@ -555,10 +557,7 @@ final class TypeParser
         }
 
         if ($parse_tree->value[0] === '"' || $parse_tree->value[0] === '\'') {
-            return Type::getAtomicStringFromLiteral(
-                self::unescapeStringLiteral(substr($parse_tree->value, 1, -1), $parse_tree->value[0]),
-                $from_docblock,
-            );
+            return Type::getAtomicStringFromLiteral(self::getStringLiteralValue($parse_tree->value), $from_docblock);
         }
 
         if (strpos($parse_tree->value, '::')) {
@@ -2572,7 +2571,7 @@ final class TypeParser
 
                 // a quoted key is the string PHP reads from the literal (`"a\nb"` holds a line break)
                 if ($property_key[0] === '\'' || $property_key[0] === '"') {
-                    $property_key = self::unescapeStringLiteral(substr($property_key, 1, -1), $property_key[0]);
+                    $property_key = self::getStringLiteralValue($property_key);
                 }
             } else {
                 throw new TypeParseTreeException(
@@ -2885,6 +2884,26 @@ final class TypeParser
             false,
             $from_docblock,
         );
+    }
+
+    /**
+     * The value of a quoted string literal token, as PHP reads it
+     *
+     * @psalm-pure
+     */
+    private static function getStringLiteralValue(string $token): string
+    {
+        $quote = $token[0];
+        $closing_quote = strlen($token) - 1;
+
+        if ($closing_quote === 0
+            || $token[$closing_quote] !== $quote
+            || strspn(strrev(substr($token, 1, -1)), '\\') % 2 === 1
+        ) {
+            throw new TypeParseTreeException('Unterminated string literal ' . $token);
+        }
+
+        return self::unescapeStringLiteral(substr($token, 1, -1), $quote);
     }
 
     /**

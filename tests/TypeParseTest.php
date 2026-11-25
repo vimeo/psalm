@@ -182,6 +182,26 @@ final class TypeParseTest extends TestCase
         yield 'backslash' => ['a\\'];
     }
 
+    /**
+     * @return iterable<string, array{string}>
+     * @psalm-pure
+     */
+    public static function unterminatedLiteralProvider(): iterable
+    {
+        yield 'no closing quote' => ["'foo"];
+        yield 'other closing quote' => ['"foo\''];
+        yield 'escaped closing quote' => ["'foo\\'"];
+        yield 'lone quote' => ['"'];
+        yield 'unterminated key' => ['array{"a: int}'];
+    }
+
+    #[DataProvider('unterminatedLiteralProvider')]
+    public function testUnterminatedStringLiteralIsInvalid(string $type): void
+    {
+        $this->expectException(TypeParseTreeException::class);
+        Type::parseString($type);
+    }
+
     #[DataProvider('literalStringProvider')]
     public function testLiteralStringReadsBackFromItsIdAndDocblockText(string $value): void
     {
