@@ -898,6 +898,8 @@ final class Populator
     /**
      * Makes $storage, populated from the class or trait $from_lc, populated again with it once what it lacks is
      * scanned (see repopulateStaleClassLikes())
+     *
+     * @psalm-capabilities read-props|write-this-props|write-refs
      */
     private function inheritStaleness(ClassLikeStorage $storage, string $from_lc): void
     {
