@@ -60,7 +60,7 @@ final class TTemplatePropertiesOf extends Atomic
         ?string $this_class,
         int $analysis_php_version_id,
     ): string {
-        return $this->getKey();
+        return 'array';
     }
 
     /**
