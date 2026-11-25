@@ -132,6 +132,154 @@ final class ArrayAssignmentTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'foreachWritingBackUnderItsKeysKeepsTheListShape' => [
+                'code' => '<?php
+                    /** @param list{int, int} $l */
+                    function f(array $l): void {
+                        foreach ($l as $i => $v) {
+                            $l[$i] = (string) $v;
+                        }
+                        /** @psalm-check-type-exact $l = list{decimal-int-string|int, decimal-int-string|int} */;
+                    }',
+            ],
+            'foreachWritingBackUnderItsKeysConditionallyKeepsTheListShape' => [
+                'code' => '<?php
+                    /** @param list{int, int} $l */
+                    function f(array $l, bool $c): void {
+                        foreach ($l as $i => $v) {
+                            if ($c) {
+                                $l[$i] = $v + 1;
+                            }
+                        }
+                        /** @psalm-check-type-exact $l = list{int, int} */;
+                    }',
+            ],
+            'foreachWritingBackUnderItsKeysKeepsNestedListShapes' => [
+                'code' => '<?php
+                    /** @param list{list{int}, list{int}} $l */
+                    function f(array $l): void {
+                        foreach ($l as $i => $_) {
+                            $l[$i][0] = "x";
+                        }
+                        /** @psalm-check-type-exact $l = list{list{"x"|int}, list{"x"|int}} */;
+                    }',
+            ],
+            'foreachWritingUnderTheKeysOfAnotherListMayAddItems' => [
+                'code' => '<?php
+                    /**
+                     * @param list{int, int, int} $a
+                     * @param list{int, int} $l
+                     */
+                    function f(array $a, array $l): void {
+                        foreach ($a as $i => $_) {
+                            $l[$i] = "x";
+                        }
+                        /** @psalm-check-type-exact $l = non-empty-array<int<0, 2>, "x"|int> */;
+                    }',
+            ],
+            'writeUnderTheLastKeyOfAListKeepsItsShape' => [
+                'code' => '<?php
+                    /** @param list{int, int} $l */
+                    function f(array $l): void {
+                        $l[array_key_last($l)] = "x";
+                        /** @psalm-check-type-exact $l = list{"x"|int, "x"|int} */;
+                    }',
+            ],
+            'writeUnderAnIntRangeOfTheItemsOfAListKeepsItsShape' => [
+                'code' => '<?php
+                    /**
+                     * @param list{int, int} $l
+                     * @param int<0, 1> $i
+                     */
+                    function f(array $l, int $i): void {
+                        $l[$i] = "x";
+                        /** @psalm-check-type-exact $l = list{"x"|int, "x"|int} */;
+                    }',
+            ],
+            'writeUnderAnIntRangeOfSomeItemsLeavesTheOthers' => [
+                'code' => '<?php
+                    /**
+                     * @param array{0: int, 1: int, 2: int} $l
+                     * @param int<0, 1> $i
+                     */
+                    function f(array $l, int $i): void {
+                        $l[$i] = "x";
+                        /** @psalm-check-type-exact $l = array{0: "x"|int, 1: "x"|int, 2: int} */;
+                    }',
+            ],
+            'writeUnderAnIntRangeOfAnOptionalItemOfAListMayMakeItNoList' => [
+                'code' => '<?php
+                    /**
+                     * @param list{0: int, 1?: int} $l
+                     * @param int<0, 1> $i
+                     */
+                    function f(array $l, int $i): void {
+                        $l[$i] = "x";
+                        /** @psalm-check-type-exact $l = non-empty-array<int<0, 1>, "x"|int> */;
+                    }',
+            ],
+            'writeUnderLiteralIntKeysOfAListWritesOnlyOneOfThem' => [
+                'code' => '<?php
+                    /**
+                     * @param list{int, int} $l
+                     * @param 0|1 $i
+                     */
+                    function f(array $l, int $i): void {
+                        $l[$i] = "x";
+                        /** @psalm-check-type-exact $l = list{"x"|int, "x"|int} */;
+                    }',
+            ],
+            'writeUnderLiteralIntKeysPastAListMayAddTheItem' => [
+                'code' => '<?php
+                    /**
+                     * @param list{int} $l
+                     * @param 0|1 $i
+                     * @param 0|2 $j
+                     */
+                    function f(array $l, int $i, int $j): void {
+                        $a = $l;
+                        $a[$i] = "x";
+                        /** @psalm-check-type-exact $a = list{0: "x"|int, 1?: "x"} */;
+                        $b = $l;
+                        $b[$j] = "x";
+                        /** @psalm-check-type-exact $b = array{0: "x"|int, 2?: "x"} */;
+                    }',
+            ],
+            'writeUnderLiteralStringKeysWritesOnlyOneOfThem' => [
+                'code' => '<?php
+                    /**
+                     * @param array{a: int, b: int} $l
+                     * @param "a"|"b" $k
+                     */
+                    function f(array $l, string $k): void {
+                        $l[$k] = "x";
+                        /** @psalm-check-type-exact $l = array{a: "x"|int, b: "x"|int} */;
+                        $l[$k] = "y";
+                        /** @psalm-check-type-exact $l = array{a: "x"|"y"|int, b: "x"|"y"|int} */;
+                    }',
+            ],
+            'writeUnderLiteralStringKeysMayAddAnItem' => [
+                'code' => '<?php
+                    /**
+                     * @param array{a: int} $l
+                     * @param "a"|"c" $k
+                     */
+                    function f(array $l, string $k): void {
+                        $l[$k] = "x";
+                        /** @psalm-check-type-exact $l = array{a: "x"|int, c?: "x"} */;
+                    }',
+            ],
+            'nestedWriteUnderLiteralStringKeysWritesOnlyOneOfThem' => [
+                'code' => '<?php
+                    /**
+                     * @param array{a: array{x: int}, b: array{x: int}} $l
+                     * @param "a"|"b" $k
+                     */
+                    function f(array $l, string $k): void {
+                        $l[$k]["x"] = "s";
+                        /** @psalm-check-type-exact $l = array{a: array{x: "s"|int}, b: array{x: "s"|int}} */;
+                    }',
+            ],
             'namedSpreadOfAShapeWrittenUnderAnUnknownKeyMayPassAnyParameter' => [
                 'code' => '<?php
                     /** @param Closure(int $mapper, mixed $from): mixed $c */

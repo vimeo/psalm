@@ -2238,9 +2238,6 @@
     <ComplexMethod>
       <code><![CDATA[expandConditional]]></code>
     </ComplexMethod>
-    <InvalidArgument>
-      <code><![CDATA[$fallback_params]]></code>
-    </InvalidArgument>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[$container_class_storage->template_types]]></code>
       <code><![CDATA[$params]]></code>
