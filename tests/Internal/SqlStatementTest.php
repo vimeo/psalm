@@ -133,6 +133,18 @@ final class SqlStatementTest extends TestCase
             'SELECT \'a FROM t',
             'null',
         ];
+        yield 'the clauses of ClickHouse after the tables' => [
+            'SELECT name FROM t AS x FINAL SAMPLE 1/10 OFFSET 1/2 PREWHERE x.id = ? WHERE x.b = 1 SETTINGS max_threads = 1',
+            'R [name,0] <- h[] p[] c[t.name]',
+        ];
+        yield 'FORMAT ending the tables of a SELECT' => [
+            'SELECT name FROM t FORMAT JSON',
+            'R [name,0] <- h[] p[] c[t.name]',
+        ];
+        yield 'the placeholders of ClickHouse' => [
+            'INSERT INTO t (a, b) VALUES ({a:Nullable(String)}, {b})',
+            'W t.a <- h[] p[a] c[]; W t.b <- h[] p[b] c[]',
+        ];
     }
 
     #[DataProvider('providerQueries')]

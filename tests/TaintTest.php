@@ -2236,6 +2236,30 @@ final class TaintTest extends TestCase
                         echo (string) $row[0];
                     }',
             ],
+            'rowsInsertedAsAListKeepTheirColumnsApart' => [
+                'code' => '<?php
+                    final class Table {
+                        /**
+                         * @psalm-database-insert $table $data
+                         */
+                        public function insert(string $table, array $data): void {}
+
+                        /**
+                         * @return list<array<string, mixed>>
+                         * @psalm-database-query $sql
+                         */
+                        public function all(string $sql): array {
+                            return [];
+                        }
+                    }
+
+                    function run(Table $db): void {
+                        $db->insert("users", [["name" => "admin", "bio" => $_GET["bio"]]]);
+                        foreach ($db->all("SELECT name FROM users") as $user) {
+                            echo (string) $user["name"];
+                        }
+                    }',
+            ],
             'annotationsOfAQueryMethodReplaceItsBody' => [
                 'code' => '<?php
                     final class Db {
@@ -2304,6 +2328,30 @@ final class TaintTest extends TestCase
                         echo (string) $row["Nick"];
                     }',
             ],
+            'clickHouseClausesAndQueryParametersOfASelectAreParsed' => [
+                'code' => '<?php
+                    final class Client {
+                        /**
+                         * @psalm-database-query $sql $bindings none
+                         */
+                        public function write(string $sql, array $bindings = []): void {}
+
+                        /**
+                         * @return list<array<string, mixed>>
+                         * @psalm-database-query $sql $bindings rows
+                         */
+                        public function select(string $sql, array $bindings = []): array {
+                            return [];
+                        }
+                    }
+
+                    function run(Client $db): void {
+                        $db->write("INSERT INTO users (name, bio) VALUES (:name, :bio)", ["name" => "admin", "bio" => $_GET["bio"]]);
+                        foreach ($db->select("SELECT name FROM users FINAL PREWHERE id = {id:UInt64}", ["id" => 1]) as $user) {
+                            echo (string) $user["name"];
+                        }
+                    }',
+            ],
             'pgSelectKeepsTheColumnsApart' => [
                 'code' => '<?php
                     function store(PgSql\Connection $connection): void {
@@ -2317,6 +2365,31 @@ final class TaintTest extends TestCase
                         }
                     }',
                 'php_version' => '8.1',
+            ],
+            'readonlyQueryTheAnalysisCantParseStoresNothing' => [
+                'code' => '<?php
+                    final class Client {
+                        /**
+                         * @return list<array<string, mixed>>
+                         * @psalm-database-query $sql $bindings rows readonly
+                         */
+                        public function select(string $sql, array $bindings = []): array {
+                            return [];
+                        }
+
+                        /**
+                         * @psalm-database-query $sql $bindings none
+                         */
+                        public function write(string $sql, array $bindings = []): void {}
+                    }
+
+                    function run(Client $db, string $sql): void {
+                        $db->write("INSERT INTO users (name, bio) VALUES (:name, :bio)", ["name" => "admin", "bio" => $_GET["bio"]]);
+                        $db->select($sql, [$_GET["x"]]);
+                        foreach ($db->select("SELECT name FROM users") as $user) {
+                            echo (string) $user["name"];
+                        }
+                    }',
             ],
             'readOfALocalFileIsNoSource' => [
                 'code' => '<?php
@@ -8603,6 +8676,57 @@ final class TaintTest extends TestCase
                 'error_message' => 'TaintedHtml',
                 'php_version' => '8.1',
             ],
+            'valueOfARowInsertedAsAListIsStoredInItsColumn' => [
+                'code' => '<?php
+                    final class Table {
+                        /**
+                         * @psalm-database-insert $table $data
+                         */
+                        public function insert(string $table, array $data): void {}
+
+                        /**
+                         * @return list<array<string, mixed>>
+                         * @psalm-database-query $sql
+                         */
+                        public function all(string $sql): array {
+                            return [];
+                        }
+                    }
+
+                    function run(Table $db): void {
+                        $db->insert("users", [["name" => "admin", "bio" => $_GET["bio"]]]);
+                        foreach ($db->all("SELECT bio FROM users") as $user) {
+                            echo (string) $user["bio"];
+                        }
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'positionalValueOfARowCanBeInAnyColumn' => [
+                'code' => '<?php
+                    final class Table {
+                        /**
+                         * @param list<list<mixed>> $rows
+                         * @psalm-database-insert $table $rows
+                         */
+                        public function insert(string $table, array $rows): void {}
+
+                        /**
+                         * @return list<array<string, mixed>>
+                         * @psalm-database-query $sql
+                         */
+                        public function all(string $sql): array {
+                            return [];
+                        }
+                    }
+
+                    function run(Table $db): void {
+                        $db->insert("users", [["admin", $_GET["bio"]]]);
+                        foreach ($db->all("SELECT name FROM users") as $user) {
+                            echo (string) $user["name"];
+                        }
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
             'rowInsertedWithPgInsertIsSelected' => [
                 'code' => '<?php
                     function store(PgSql\Connection $connection): void {
@@ -8660,6 +8784,31 @@ final class TaintTest extends TestCase
 
                     function show(PDO $pdo): void {
                         echo (string) $pdo->query("SELECT * FROM accounts")->fetch()["userName"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'readonlyQueryTheAnalysisCantParseReadsAnyColumn' => [
+                'code' => '<?php
+                    final class Client {
+                        /**
+                         * @return list<array<string, mixed>>
+                         * @psalm-database-query $sql $bindings rows readonly
+                         */
+                        public function select(string $sql, array $bindings = []): array {
+                            return [];
+                        }
+
+                        /**
+                         * @psalm-database-query $sql $bindings none
+                         */
+                        public function write(string $sql, array $bindings = []): void {}
+                    }
+
+                    function run(Client $db, string $sql): void {
+                        $db->write("INSERT INTO users (name, bio) VALUES ({name:String}, {bio:String})", ["name" => "admin", "bio" => $_GET["bio"]]);
+                        foreach ($db->select($sql) as $row) {
+                            echo (string) $row["anything"];
+                        }
                     }',
                 'error_message' => 'TaintedHtml',
             ],
@@ -8792,6 +8941,31 @@ final class TaintTest extends TestCase
                     function run(Db $db): void {
                         $db->all("UPDATE users SET bio = ? WHERE id = ?", [$_GET["bio"], 1]);
                         foreach ($db->all("SELECT bio, name FROM users") as $user) {
+                            echo (string) $user["bio"];
+                        }
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'clickHouseQueryParameterIsStoredInItsColumn' => [
+                'code' => '<?php
+                    final class Client {
+                        /**
+                         * @psalm-database-query $sql $bindings none
+                         */
+                        public function write(string $sql, array $bindings = []): void {}
+
+                        /**
+                         * @return list<array<string, mixed>>
+                         * @psalm-database-query $sql $bindings rows
+                         */
+                        public function select(string $sql, array $bindings = []): array {
+                            return [];
+                        }
+                    }
+
+                    function run(Client $db): void {
+                        $db->write("INSERT INTO users (name, bio) VALUES ({name:String}, {bio:String})", ["name" => "admin", "bio" => $_GET["bio"]]);
+                        foreach ($db->select("SELECT bio FROM users") as $user) {
                             echo (string) $user["bio"];
                         }
                     }',
