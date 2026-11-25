@@ -15,6 +15,7 @@ use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TemplateBound;
+use Psalm\Internal\TypeVisitor\TypeVariableResolver;
 use Psalm\Issue\DocblockTypeContradiction;
 use Psalm\Issue\TypeDoesNotContainNull;
 use Psalm\Issue\TypeDoesNotContainType;
@@ -1613,9 +1614,14 @@ final class AssertionReconciler extends Reconciler
 
         $atomic_comparison_results = new TypeComparisonResult();
 
+        // a type variable is contained by any type, as a bound recorded for later: whether the existing type
+        // already is the asserted one depends on the values the variable holds (`Child<`_0:A>` is no `Parent<A&B>`)
+        $resolved_type_1_atomic = $type_1_atomic;
+        (new TypeVariableResolver($codebase, construction_site_only: false))->traverse($resolved_type_1_atomic);
+
         $atomic_contained_by = AtomicTypeComparator::isContainedBy(
             $codebase,
-            $type_1_atomic,
+            $resolved_type_1_atomic,
             $type_2_atomic,
             $type_1_atomic instanceof TClassString && $type_2_atomic instanceof TClassString,
             false,
@@ -1705,11 +1711,12 @@ final class AssertionReconciler extends Reconciler
         if (($type_2_atomic instanceof TGenericObject
                 || $type_2_atomic instanceof TArray
                 || $type_2_atomic instanceof TIterable)
-            && ($type_1_atomic instanceof TGenericObject
-                || $type_1_atomic instanceof TArray
-                || $type_1_atomic instanceof TIterable)
-            && count($type_2_atomic->type_params) === count($type_1_atomic->type_params)
+            && ($resolved_type_1_atomic instanceof TGenericObject
+                || $resolved_type_1_atomic instanceof TArray
+                || $resolved_type_1_atomic instanceof TIterable)
+            && count($type_2_atomic->type_params) === count($resolved_type_1_atomic->type_params)
         ) {
+            $type_1_atomic = $resolved_type_1_atomic;
             $type_1_params = $type_1_atomic->type_params;
             foreach ($type_2_atomic->type_params as $i => $type_2_param) {
                 $type_1_param = $type_1_params[$i];

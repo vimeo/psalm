@@ -358,12 +358,12 @@ final class TemplateStandinTypeReplacer
                     && !empty($template_result->lower_bounds[$atomic_type->offset_param_name])
                 ) {
                     $array_template_type
-                        = self::getMostSpecificTypeFromBounds(
+                        = self::getReadTypeFromBounds(
                             $template_result->lower_bounds[$atomic_type->array_param_name][$atomic_type->defining_class],
                             $codebase,
                         );
                     $offset_template_type
-                        = self::getMostSpecificTypeFromBounds(
+                        = self::getReadTypeFromBounds(
                             array_values($template_result->lower_bounds[$atomic_type->offset_param_name])[0],
                             $codebase,
                         );
@@ -416,7 +416,7 @@ final class TemplateStandinTypeReplacer
             $template_type = null;
 
             if (isset($template_result->lower_bounds[$atomic_type->param_name][$atomic_type->defining_class])) {
-                $template_type = self::getMostSpecificTypeFromBounds(
+                $template_type = self::getReadTypeFromBounds(
                     $template_result->lower_bounds[$atomic_type->param_name][$atomic_type->defining_class],
                     $codebase,
                 );
@@ -1536,6 +1536,21 @@ final class TemplateStandinTypeReplacer
         }
 
         return true;
+    }
+
+    /**
+     * The type a template stands for where it is read (`class-string<T>`, `key-of<T>`, `T[K]`): a type variable
+     * minted for it at construction is resolved through every value that flowed into it
+     *
+     * @param non-empty-list<TemplateBound> $lower_bounds
+     * @psalm-external-mutation-free
+     */
+    public static function getReadTypeFromBounds(array $lower_bounds, ?Codebase $codebase): Union
+    {
+        return TypeVariableResolver::resolveTopLevel(
+            self::getMostSpecificTypeFromBounds($lower_bounds, $codebase),
+            $codebase,
+        );
     }
 
     /**

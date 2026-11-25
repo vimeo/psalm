@@ -118,5 +118,21 @@ final class ReflectionTest extends TestCase
             'ignored_issues' => [],
             'php_version' => '8.4',
         ];
+        yield 'ReflectionClass of an object names its class' => [
+            'code' => <<<'PHP'
+                <?php
+                $a = new ReflectionClass(new stdClass());
+                $name = $a->getName();
+                $property = $a->name;
+                if (!$a->isSubclassOf(Iterator::class)) {
+                    throw new Exception();
+                }
+                PHP,
+            'assertions' => [
+                '$name===' => 'class-string<stdClass>',
+                '$property===' => 'class-string<stdClass>',
+                '$a===' => 'ReflectionClass<stdClass&Iterator[impure]<mixed, mixed>>',
+            ],
+        ];
     }
 }
