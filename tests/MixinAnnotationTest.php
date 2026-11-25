@@ -7,9 +7,14 @@ namespace Psalm\Tests;
 use Override;
 use Psalm\Context;
 use Psalm\IssueBuffer;
+use Psalm\Plugin\EventHandler\Event\MethodParamsProviderEvent;
+use Psalm\Plugin\EventHandler\Event\MethodReturnTypeProviderEvent;
+use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\InvalidCodeAnalysisWithIssuesTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+use Psalm\Type;
+use Psalm\Type\Union;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -3638,5 +3643,182 @@ final class MixinAnnotationTest extends TestCase
         }
 
         $this->assertSame(['InvalidDocblock'], $issue_types);
+    }
+
+    public function testProvidersOfTheClassWinOverItsMixinForAMethodHiddenByMagicCall(): void
+    {
+        $codebase = $this->project_analyzer->getCodebase();
+        $codebase->methods->return_type_provider->registerClosure(
+            'Host',
+            static fn(MethodReturnTypeProviderEvent $event): ?Union => $event->getMethodNameLowercase() === 'scope'
+                ? Type::getInt()
+                : null,
+        );
+        $codebase->methods->params_provider->registerClosure(
+            'Host',
+            static fn(MethodParamsProviderEvent $event): ?array => $event->getMethodNameLowercase() === 'scope'
+                ? [new FunctionLikeParameter('id', false, Type::getInt(), Type::getInt())]
+                : null,
+        );
+
+        $this->assertSame(
+            ['InvalidScalarArgument on line 29'],
+            $this->getIssues(
+                '<?php
+                    final class Mixin
+                    {
+                        protected function scope(string $id): string
+                        {
+                            return $id;
+                        }
+                    }
+
+                    /** @mixin Mixin */
+                    final class Host
+                    {
+                        /** @return mixed */
+                        public function __call(string $name, array $arguments)
+                        {
+                            return null;
+                        }
+
+                        protected function scope(string $id): string
+                        {
+                            return $id;
+                        }
+                    }
+
+                    function f(Host $host): void
+                    {
+                        $int = $host->scope(1);
+                        /** @psalm-check-type-exact $int = int */
+                        $host->scope("a");
+                    }',
+            ),
+        );
+    }
+
+    public function testReturnTypeProviderOfTheClassWinsOverItsMixinForAStaticMethodHiddenByMagicCallStatic(): void
+    {
+        $this->project_analyzer->getCodebase()->methods->return_type_provider->registerClosure(
+            'Host',
+            static fn(MethodReturnTypeProviderEvent $event): ?Union => $event->getMethodNameLowercase() === 'scope'
+                ? Type::getInt()
+                : null,
+        );
+
+        $this->assertSame(
+            [],
+            $this->getIssues(
+                '<?php
+                    final class Mixin
+                    {
+                        protected static function scope(): string
+                        {
+                            return "";
+                        }
+                    }
+
+                    /** @mixin Mixin */
+                    final class Host
+                    {
+                        /** @return mixed */
+                        public static function __callStatic(string $name, array $arguments)
+                        {
+                            return null;
+                        }
+
+                        protected static function scope(): string
+                        {
+                            return "";
+                        }
+                    }
+
+                    $int = Host::scope();
+                    /** @psalm-check-type-exact $int = int */',
+            ),
+        );
+    }
+
+    public function testMixinStillTypesAHiddenMethodWhenTheReturnTypeProviderOfTheClassDoesNotAnswer(): void
+    {
+        $this->project_analyzer->getCodebase()->methods->return_type_provider->registerClosure(
+            'Host',
+            static fn(MethodReturnTypeProviderEvent $event): ?Union => $event->getMethodNameLowercase() === 'other'
+                ? Type::getInt()
+                : null,
+        );
+
+        $this->assertSame(
+            [],
+            $this->getIssues(
+                '<?php
+                    final class Mixin
+                    {
+                        public function scope(): float
+                        {
+                            return 1.0;
+                        }
+
+                        public static function staticScope(): float
+                        {
+                            return 1.0;
+                        }
+                    }
+
+                    /** @mixin Mixin */
+                    final class Host
+                    {
+                        /** @return mixed */
+                        public function __call(string $name, array $arguments)
+                        {
+                            return null;
+                        }
+
+                        /** @return mixed */
+                        public static function __callStatic(string $name, array $arguments)
+                        {
+                            return null;
+                        }
+
+                        protected function scope(): string
+                        {
+                            return "";
+                        }
+
+                        protected static function staticScope(): string
+                        {
+                            return "";
+                        }
+                    }
+
+                    function f(Host $host): void
+                    {
+                        $float = $host->scope();
+                        /** @psalm-check-type-exact $float = float */
+                        $static_float = Host::staticScope();
+                        /** @psalm-check-type-exact $static_float = float */
+                    }',
+            ),
+        );
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function getIssues(string $code): array
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile($file_path, $code);
+        $this->analyzeFile($file_path, new Context());
+
+        $issue_types = [];
+        foreach (IssueBuffer::getIssuesDataForFile($file_path) as $issue) {
+            $issue_types[] = $issue->type . ' on line ' . $issue->line_from;
+        }
+
+        return $issue_types;
     }
 }

@@ -458,10 +458,25 @@ final class AtomicStaticCallAnalyzer
             && isset($class_storage->declaring_method_ids['__callstatic'])
             && $stmt->getAttribute(ClassAnalyzer::FAKE_CONSTRUCTOR_CALL_ATTRIBUTE) !== true;
 
-        // a `@method static` of the class or of its interfaces wins over its mixins
+        // a `@method static` of the class or of its interfaces, or a return type a provider of the class gives the
+        // call through __callStatic(), wins over its mixins
         if ((!$naive_method_exists || $hidden_by_magic_call)
             && self::findPseudoMethodAndClassStorages($codebase, $class_storage, $method_name_lc, $method_id, false)
                 === null
+            && !($hidden_by_magic_call
+                && !$stmt->isFirstClassCallable()
+                && $codebase->methods->return_type_provider->has($fq_class_name)
+                && $codebase->methods->return_type_provider->getReturnType(
+                    $statements_analyzer,
+                    $fq_class_name,
+                    $method_name_lc,
+                    $stmt,
+                    $context,
+                    new CodeLocation($statements_analyzer->getSource(), $stmt_name),
+                    null,
+                    null,
+                    $method_name_lc,
+                ) !== null)
         ) {
             $mixin = MixinLookup::findMember(
                 $codebase,

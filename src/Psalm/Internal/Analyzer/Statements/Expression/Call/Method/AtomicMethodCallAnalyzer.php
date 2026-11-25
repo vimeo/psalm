@@ -384,14 +384,26 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                 }
             }
 
-            // a `@method` of the class, of its parent classes or of its interfaces, or a method an existence provider
-            // adds to the class, wins over its mixins
+            // a `@method` of the class, of its parent classes or of its interfaces, a method an existence provider
+            // adds to the class, or a return type a provider of the class gives the call through __call(), wins over
+            // its mixins
             if (!$fake_method_exists
                 && MissingMethodCallHandler::findPseudoMethodAndClassStorages(
                     $codebase,
                     $class_storage,
                     $method_name_lc,
                 ) === null
+                && !($hidden_by_magic_call
+                    && !$stmt->isFirstClassCallable()
+                    && $codebase->methods->return_type_provider->has($fq_class_name)
+                    && $codebase->methods->return_type_provider->getReturnType(
+                        $statements_analyzer,
+                        $fq_class_name,
+                        $method_name_lc,
+                        $stmt,
+                        $context,
+                        new CodeLocation($source, $stmt->name),
+                    ) !== null)
             ) {
                 [$mixin, $mixin_method_exists] = self::findMixinWithMethod(
                     $statements_analyzer,
