@@ -4205,6 +4205,31 @@ final class FunctionTemplateTest extends TestCase
                         }
                     }',
             ],
+            'narrowTemplateBoundedByUnionWithTemplateOnTypeAssertion' => [
+                'code' => '<?php
+                    final class Foo {}
+
+                    /**
+                     * @template U of int|string
+                     * @template T of Foo|U
+                     * @param T $x
+                     */
+                    function f($x): void {
+                        if (is_string($x)) {
+                            takesString($x);
+                        }
+
+                        if (!$x instanceof Foo) {
+                            takesIntOrString($x);
+                        }
+                    }
+
+                    function takesString(string $_s): void {}
+
+                    /** @param int|string $_v */
+                    function takesIntOrString($_v): void {}',
+                'assertions' => [],
+            ],
             'narrowTemplateBoundOnInstanceofOfASupertypeAfterNegatedInstanceof' => [
                 'code' => '<?php
                     /**
