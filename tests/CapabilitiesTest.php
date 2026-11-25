@@ -1238,6 +1238,18 @@ final class CapabilitiesTest extends TestCase
                         return random_int(1, 6);
                     }',
             ],
+            'dateTimeConstructorsOnlyNeedTime' => [
+                'code' => '<?php
+                    /** @psalm-capabilities time */
+                    function immutableNow(): DateTimeImmutable {
+                        return new DateTimeImmutable("tomorrow");
+                    }
+
+                    /** @psalm-capabilities time */
+                    function mutableNow(): DateTime {
+                        return new DateTime();
+                    }',
+            ],
             'timeAllowsReadingTheClock' => [
                 'code' => '<?php
                     /** @psalm-capabilities time */
@@ -8793,6 +8805,22 @@ final class CapabilitiesTest extends TestCase
                         return new Linked($sink);
                     }',
                 'error_message' => 'constructor Linked::__construct requires',
+            ],
+            'dateTimeImmutableConstructorRequiresTime' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function make(): DateTimeImmutable {
+                        return new DateTimeImmutable();
+                    }',
+                'error_message' => 'constructor DateTimeImmutable::__construct requires time',
+            ],
+            'dateTimeConstructorRequiresTime' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function make(): DateTime {
+                        return new DateTime("2020-01-01");
+                    }',
+                'error_message' => 'constructor DateTime::__construct requires time',
             ],
             'unannotatedStubbedConstructorWithAnEmptyBodyIsNotTrivial' => [
                 'code' => '<?php
