@@ -678,7 +678,14 @@ final class BinaryOpAnalyzer
         // after the start of a URL fixing its server (the left operand's, and the right operand's own literal start
         // when the left operand is a literal), the right operand can't choose it
         $operand_removed_taints = [
-            $removed_taints,
+            // a value in a string literal (`"[@id='" . $id . "']"`) can only change an XPath query by ending it
+            $removed_taints
+                | (
+                    $statements_analyzer->taint_flow_graph
+                    && ConcatAnalyzer::isQuotedOperand($statements_analyzer, $stmt)
+                        ? TaintKind::INPUT_XPATH
+                        : 0
+                ),
             $removed_taints
                 | ConcatAnalyzer::getTaintsRemovedAfterUrlOrigins($literal_prefixes)
                 | $left_context->getRemovedTaints(),

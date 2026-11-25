@@ -766,7 +766,7 @@ issue:
 | `sql` | [TaintedSql](../running_psalm/issues/TaintedSql.md) | SQL injection: both `sql_in_quotes` (breaking out of quotes) and `sql_unquoted` (SQL syntax outside of them, which `real_escape_string()` keeps) |
 | `nosql` | [TaintedNosql](../running_psalm/issues/TaintedNosql.md) | NoSQL query structure (MongoDB filters, updates, pipelines; arrays and objects only) |
 | `ldap` | [TaintedLdap](../running_psalm/issues/TaintedLdap.md) | LDAP DN or filter injection |
-| `xpath` | [TaintedXpath](../running_psalm/issues/TaintedXpath.md) | XPath expression injection |
+| `xpath` | [TaintedXpath](../running_psalm/issues/TaintedXpath.md) | XPath expression injection: both `xpath_query` (a value outside a string literal of the query) and `xpath_literal` (a quote ending one) |
 | `shell` | [TaintedShell](../running_psalm/issues/TaintedShell.md) | Shell command injection |
 | `eval` | [TaintedEval](../running_psalm/issues/TaintedEval.md) | Arbitrary PHP code execution |
 | `callable` | [TaintedCallable](../running_psalm/issues/TaintedCallable.md) | Calling an attacker-chosen function |
