@@ -948,8 +948,9 @@ final class TaintTest extends TestCase
     /**
      * Only a constant expression tells the bits the flags have for sure: a variable, a parameter or a call may hold
      * any whatever its type, which an assert() compiled out in production, a `@var` or a `@param` with a wrong
-     * caller may make a literal. So may an unqualified constant of a namespace, and the constant of a class Psalm may
-     * not know is the one that runs: declared in a condition, twice, or under a name class_alias() gives it.
+     * caller may make a literal. So may the constant of a class Psalm may not know is the one that runs: declared in a
+     * condition, twice, or under a name class_alias() gives it. An unqualified builtin constant of a namespace that
+     * declares none is the builtin one.
      */
     public function testFlagsOnlyRemoveTaintsWhenTheyAreConstant(): void
     {
@@ -1069,7 +1070,6 @@ final class TaintTest extends TestCase
                 ['somefile.php', 21, 'TaintedHtml'],
                 ['somefile.php', 21, 'TaintedTextWithQuotes'],
                 ['somefile.php', 25, 'TaintedTextWithQuotes'],
-                ['somefile.php', 26, 'TaintedTextWithQuotes'],
                 ['somefile.php', 27, 'TaintedTextWithQuotes'],
                 ['somefile.php', 28, 'TaintedTextWithQuotes'],
                 ['somefile.php', 29, 'TaintedTextWithQuotes'],
@@ -1089,6 +1089,150 @@ final class TaintTest extends TestCase
                 static fn(IssueData $issue): array => [basename($issue->file_name), $issue->line_from, $issue->type],
                 $issues,
             ),
+        );
+    }
+
+    /**
+     * An unqualified constant of a namespace is the global one when no code declares one in the namespace, and a
+     * global constant declared once, by a statement of a file, has the value it is declared with. A closure `use` by
+     * value and an arrow function copy the variable around them, and the global code of a file has the values it
+     * assigns unless a function shares the variable with `global` or `$GLOBALS`.
+     */
+    public function testConstantsAndCapturedVariablesOfConstantFlagsEscape(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile(self::$src_dir_path . 'other.php', '<?php
+            define("TWICE", 0);
+            define("App\Shadowed\JSON_HEX_AMP", 0);
+        ');
+        $this->addFile($file_path, '<?php
+            namespace App {
+                function a(): void {
+                    echo json_encode($_GET["a"], JSON_HEX_TAG | JSON_HEX_AMP);
+                    $flags = ENT_QUOTES;
+                    echo htmlspecialchars((string) $_GET["b"], $flags);
+                }
+            }
+
+            namespace App\Shadowed {
+                const JSON_HEX_TAG = 0;
+
+                function b(): void {
+                    echo json_encode($_GET["c"], JSON_HEX_TAG | \JSON_HEX_AMP);
+                    echo json_encode($_GET["d"], \JSON_HEX_TAG | JSON_HEX_AMP);
+                }
+            }
+
+            namespace {
+                const ONCE = JSON_HEX_TAG | JSON_HEX_AMP;
+                const TWICE = JSON_HEX_TAG | JSON_HEX_AMP;
+                define("DEFINED", JSON_HEX_TAG | JSON_HEX_AMP);
+                if (!defined("GUARDED")) {
+                    define("GUARDED", JSON_HEX_TAG | JSON_HEX_AMP);
+                }
+
+                function c(): void {
+                    echo json_encode($_GET["e"], ONCE);
+                    echo json_encode($_GET["f"], DEFINED);
+                    echo json_encode($_GET["g"], TWICE);
+                    echo json_encode($_GET["h"], GUARDED);
+                }
+
+                function d(int $o): void {
+                    $flags = JSON_HEX_TAG | JSON_HEX_AMP;
+                    $used = function (mixed $v) use ($flags): string {
+                        return (string) json_encode($v, $flags);
+                    };
+                    echo $used($_GET["i"]);
+                    $arrow = fn(mixed $v): string => (string) json_encode($v, $flags);
+                    echo $arrow($_GET["j"]);
+                    $nested = fn(): Closure => fn(mixed $v): string => (string) json_encode($v, $flags);
+                    echo $nested()($_GET["k"]);
+                    $changed = JSON_HEX_TAG | JSON_HEX_AMP;
+                    $later = fn(mixed $v): string => (string) json_encode($v, $changed);
+                    $changed = $o;
+                    echo $later($_GET["l"]);
+                    $inner = JSON_HEX_TAG | JSON_HEX_AMP;
+                    $assigned = function (mixed $v) use ($inner, $o): string {
+                        $inner = $o;
+                        return (string) json_encode($v, $inner);
+                    };
+                    echo $assigned($_GET["m"]);
+                }
+
+                function e(): void {
+                    global $shared;
+                    $shared = 0;
+                }
+
+                $top = JSON_HEX_TAG | JSON_HEX_AMP;
+                echo json_encode($_GET["n"], $top);
+                $shared = JSON_HEX_TAG | JSON_HEX_AMP;
+                echo json_encode($_GET["o"], $shared);
+            }
+        ');
+        $this->project_analyzer->trackTaintedInputs();
+        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
+
+        $this->analyzeFile($file_path, new Context(), false);
+
+        $issues = array_values(array_filter(
+            IssueBuffer::getIssuesDataForFile($file_path),
+            static fn(IssueData $issue): bool => $issue->type === 'TaintedHtml'
+                || ($issue->type === 'TaintedTextWithQuotes' && $issue->line_from === 6),
+        ));
+
+        self::assertEqualsCanonicalizing(
+            [14, 15, 30, 31, 47, 53, 64],
+            array_map(static fn(IssueData $issue): int => $issue->line_from, $issues),
+        );
+    }
+
+    /**
+     * A define() of a name psalm doesn't know may declare any constant, of any namespace, and a write to `$GLOBALS`
+     * under a name it doesn't know any variable of the global code: a builtin constant named as such stays known.
+     */
+    public function testDynamicDefinesAndGlobalsMakeFlagsUnknown(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile(self::$src_dir_path . 'other.php', '<?php
+            function set(string $name): void {
+                define($name, 0);
+                $GLOBALS[$name] = 0;
+            }
+        ');
+        $this->addFile($file_path, '<?php
+            namespace App {
+                function a(): void {
+                    echo json_encode($_GET["a"], JSON_HEX_TAG | JSON_HEX_AMP);
+                    echo json_encode($_GET["b"], \JSON_HEX_TAG | \JSON_HEX_AMP);
+                }
+            }
+
+            namespace {
+                const FLAGS = JSON_HEX_TAG | JSON_HEX_AMP;
+
+                echo json_encode($_GET["c"], FLAGS);
+                echo json_encode($_GET["d"], JSON_HEX_TAG | JSON_HEX_AMP);
+                $top = JSON_HEX_TAG | JSON_HEX_AMP;
+                echo json_encode($_GET["e"], $top);
+            }
+        ');
+        $this->project_analyzer->trackTaintedInputs();
+        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
+
+        $this->analyzeFile($file_path, new Context(), false);
+
+        $issues = array_values(array_filter(
+            IssueBuffer::getIssuesDataForFile($file_path),
+            static fn(IssueData $issue): bool => $issue->type === 'TaintedHtml',
+        ));
+
+        self::assertEqualsCanonicalizing(
+            [4, 12, 15],
+            array_map(static fn(IssueData $issue): int => $issue->line_from, $issues),
         );
     }
 
@@ -1267,6 +1411,10 @@ final class TaintTest extends TestCase
         ];
     }
 
+    /**
+     * @param list<array{int, string}> $expected_issues
+     */
+    #[DataProvider('providerUntrustedClassConstantFlags')]
     public function testUntrustedClassConstantFlagsRemoveNothing(string $code, array $expected_issues): void
     {
         $this->testConfig->throw_exception = false;

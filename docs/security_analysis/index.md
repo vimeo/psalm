@@ -373,9 +373,9 @@ function sanitizeHTML(string $html): string {
 #### Escaping by flags
 
 What `json_encode()`, `htmlspecialchars()` and `htmlentities()` escape depends on their flags. Psalm reads them from
-constant expressions only: int literals, builtin and class constants, variables only ever assigned such expressions,
-and `|`, `&` and ternaries of them, never from a type. In a namespace, write `\JSON_HEX_TAG` or import it with
-`use const`. The decoders give back what the escapes removed:
+constant expressions only, never from a type: int literals, builtin constants, constants and class constants declared
+once with such an expression, variables only ever assigned such expressions (also read by a closure or an arrow
+function), and `|`, `&` and ternaries of them. The decoders give back what the escapes removed:
 
 ```php
 <?php
@@ -408,7 +408,8 @@ helper only outputs JSON inside `<script>` tags, add `@psalm-taint-escape has_qu
 
 Psalm reads a class constant only from a project class declared once, unconditionally, under its own name, while no
 scanned `class_alias()` call has an alias Psalm can't tell. It reads `static::` only on a natively final class or
-constant.
+constant, and a constant only if a `const` statement or a `define()` call outside of a condition or a function
+declares it once.
 
 ## Reports through shared code
 

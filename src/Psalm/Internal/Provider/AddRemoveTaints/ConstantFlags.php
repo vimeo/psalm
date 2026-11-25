@@ -32,23 +32,28 @@ use PhpParser\Node\FunctionLike;
 use PhpParser\Node\Identifier;
 use PhpParser\Node\Name;
 use PhpParser\Node\Scalar\Int_;
+use PhpParser\Node\Scalar\String_;
 use PhpParser\Node\StaticVar;
+use PhpParser\Node\Stmt;
 use PhpParser\Node\Stmt\Catch_;
 use PhpParser\Node\Stmt\ClassLike;
-use PhpParser\Node\Stmt\ClassMethod;
+use PhpParser\Node\Stmt\Declare_;
+use PhpParser\Node\Stmt\Expression;
 use PhpParser\Node\Stmt\Foreach_;
-use PhpParser\Node\Stmt\Function_;
 use PhpParser\Node\Stmt\Global_;
 use PhpParser\Node\Stmt\Namespace_;
 use PhpParser\Node\Stmt\Static_;
 use PhpParser\Node\Stmt\Unset_;
 use PhpParser\NodeFinder;
 use Psalm\Codebase;
+use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\MethodAnalyzer;
+use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Provider\FileStorageProvider;
+use Psalm\StatementsSource;
 use Psalm\Storage\ClassLikeStorage;
 use ReflectionClass;
 
@@ -62,6 +67,7 @@ use function interface_exists;
 use function is_array;
 use function is_int;
 use function is_string;
+use function ltrim;
 use function strtolower;
 
 /**
@@ -131,9 +137,7 @@ final class ConstantFlags
         }
 
         if ($expr instanceof ConstFetch) {
-            $value = self::getBuiltinConstant($expr->name);
-
-            return $value !== null ? [$value, $value] : self::UNKNOWN;
+            return self::getConstantBits($codebase, $expr->name, $visited);
         }
 
         if ($expr instanceof ClassConstFetch) {
@@ -224,12 +228,11 @@ final class ConstantFlags
             || $type->possibly_undefined
             || $type->possibly_undefined_from_try
             || isset($visited['$' . $name])
-            || !$source instanceof FunctionLikeAnalyzer
         ) {
             return self::UNKNOWN;
         }
 
-        $assigned = self::getAssignedValues($statements_analyzer, $source->getFunctionNode(), $name);
+        $assigned = self::getAssignedValues($statements_analyzer, $source, $name);
 
         if ($assigned === null || $assigned === []) {
             return self::UNKNOWN;
@@ -257,20 +260,25 @@ final class ConstantFlags
 
     /**
      * The values the plain assignments of the function-like give the variable, or null if anything else may write
-     * it: a parameter, a closure `use`, a reference, a by-reference argument, a loop, `unset()`, `global`, `static`,
-     * `catch`, `$$name`, `extract()`, `eval()` or an included file. An arrow function reads the variables of the
-     * code around it.
+     * it: a parameter, a closure `use` by reference, a reference, a by-reference argument, a loop, `unset()`,
+     * `global`, `static`, `catch`, `$$name`, `extract()`, `eval()` or an included file. A closure `use` by value and
+     * an arrow function copy the variable of the function-like around them when they are created, so its values are
+     * those of that variable too.
      *
      * @return list<Expr>|null
      */
     private static function getAssignedValues(
         StatementsAnalyzer $statements_analyzer,
-        Closure|Function_|ClassMethod|ArrowFunction $function,
+        StatementsSource $source,
         string $name,
     ): ?array {
-        if ($function instanceof ArrowFunction) {
-            return null;
+        if (!$source instanceof FunctionLikeAnalyzer) {
+            return $source instanceof FileAnalyzer || $source instanceof NamespaceAnalyzer
+                ? self::getGlobalAssignedValues($statements_analyzer, $name)
+                : null;
         }
+
+        $function = $source->getFunctionNode();
 
         foreach ($function->getParams() as $param) {
             if ($param->var instanceof Variable && $param->var->name === $name) {
@@ -278,17 +286,60 @@ final class ConstantFlags
             }
         }
 
+        $captured = $function instanceof ArrowFunction;
+
         if ($function instanceof Closure) {
             foreach ($function->uses as $use) {
                 if ($use->var->name === $name) {
-                    return null;
+                    if ($use->byRef) {
+                        return null;
+                    }
+
+                    $captured = true;
                 }
             }
         }
 
         $assigned = [];
 
-        foreach ($function->getStmts() ?? [] as $stmt) {
+        foreach ($function instanceof ArrowFunction ? [$function->expr] : $function->getStmts() ?? [] as $node) {
+            if (!self::collectAssignedValues($statements_analyzer, $node, $name, $assigned)) {
+                return null;
+            }
+        }
+
+        if (!$captured) {
+            return $assigned;
+        }
+
+        $outer = $source->getSource();
+        $outer_assigned = self::getAssignedValues(
+            $statements_analyzer,
+            $outer instanceof StatementsAnalyzer ? $outer->getSource() : $outer,
+            $name,
+        );
+
+        return $outer_assigned === null ? null : [...$assigned, ...$outer_assigned];
+    }
+
+    /**
+     * The values the plain assignments of the code outside of the function-likes of the file give the variable, or
+     * null if anything else may write it: also a function sharing it with `global` or `$GLOBALS`
+     *
+     * @return list<Expr>|null
+     */
+    private static function getGlobalAssignedValues(StatementsAnalyzer $statements_analyzer, string $name): ?array
+    {
+        foreach (FileStorageProvider::getAll() as $file_storage) {
+            if ($file_storage->has_dynamic_global || isset($file_storage->global_variables[$name])) {
+                return null;
+            }
+        }
+
+        $assigned = [];
+        $codebase = $statements_analyzer->getCodebase();
+
+        foreach ($codebase->getStatementsForFile($statements_analyzer->getFilePath()) as $stmt) {
             if (!self::collectAssignedValues($statements_analyzer, $stmt, $name, $assigned)) {
                 return null;
             }
@@ -440,24 +491,182 @@ final class ConstantFlags
     }
 
     /**
-     * The value of a builtin int constant. The name resolver leaves an unqualified name in a namespace without
-     * `use const` unresolved: it may name a constant of that namespace.
+     * The bits of a constant: a builtin one, which no code can declare again, or one the project declares once, by a
+     * statement of a file or namespace. The name resolver leaves an unqualified name in a namespace without
+     * `use const` unresolved: it is the constant of the namespace if one is declared, else the global one.
+     *
+     * @param array<string, true> $visited
+     * @return array{int, int}
      */
-    private static function getBuiltinConstant(Name $name): ?int
+    private static function getConstantBits(Codebase $codebase, Name $name, array $visited): array
     {
-        $resolved_name = $name->getAttribute('resolvedName');
+        $resolved_name = (string) $name->getAttribute('resolvedName');
 
-        if (!is_string($resolved_name)) {
-            return null;
+        if ($resolved_name === '') {
+            $namespaced_name = (string) $name->getAttribute('namespacedName');
+
+            if ($namespaced_name === '' || self::countConstantDeclarations($namespaced_name) !== 0) {
+                return self::UNKNOWN;
+            }
+
+            $resolved_name = $name->toString();
         }
 
+        $value = self::getBuiltinConstant($resolved_name);
+
+        if ($value !== null) {
+            return [$value, $value];
+        }
+
+        $id = 'const ' . strtolower($resolved_name);
+
+        if (isset($visited[$id]) || self::countConstantDeclarations($resolved_name) !== 1) {
+            return self::UNKNOWN;
+        }
+
+        $value = self::getDeclaredConstantValue($codebase, $resolved_name);
+
+        if ($value === null) {
+            return self::UNKNOWN;
+        }
+
+        $visited[$id] = true;
+
+        return self::getExpressionBits($codebase, $value, null, false, $visited);
+    }
+
+    /**
+     * The value of a builtin int constant
+     *
+     * @psalm-pure
+     */
+    private static function getBuiltinConstant(string $name): ?int
+    {
         foreach (get_defined_constants(true) as $extension => $constants) {
-            if ($extension !== 'user' && isset($constants[$resolved_name])) {
-                return is_int($constants[$resolved_name]) ? $constants[$resolved_name] : null;
+            if ($extension !== 'user' && isset($constants[$name])) {
+                return is_int($constants[$name]) ? $constants[$name] : null;
             }
         }
 
         return null;
+    }
+
+    /**
+     * How many `const` statements and define() calls of the code psalm scanned declare the global constant, or null
+     * if a define() call may declare a name psalm doesn't know
+     *
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    private static function countConstantDeclarations(string $name): ?int
+    {
+        $name_lc = strtolower($name);
+        $count = 0;
+
+        foreach (FileStorageProvider::getAll() as $file_storage) {
+            if ($file_storage->has_dynamic_define) {
+                return null;
+            }
+
+            $count += $file_storage->declared_constants[$name_lc] ?? 0;
+        }
+
+        return $count;
+    }
+
+    /**
+     * The value of the global constant a `const` statement or a define() call declares, as a statement of a file or
+     * namespace of the project, not of a stub
+     */
+    private static function getDeclaredConstantValue(Codebase $codebase, string $name): ?Expr
+    {
+        $name_lc = strtolower($name);
+
+        foreach (FileStorageProvider::getAll() as $file_storage) {
+            if (!isset($file_storage->declared_constants[$name_lc])) {
+                continue;
+            }
+
+            if ($codebase->scanner->isStubFile($file_storage->file_path)) {
+                return null;
+            }
+
+            foreach ($codebase->getStatementsForFile($file_storage->file_path) as $stmt) {
+                $namespace = $stmt instanceof Namespace_ && $stmt->name !== null ? $stmt->name->toString() . '\\' : '';
+
+                foreach ($stmt instanceof Namespace_ ? $stmt->stmts : [$stmt] as $namespace_stmt) {
+                    foreach ($namespace_stmt instanceof Declare_
+                        ? $namespace_stmt->stmts ?? []
+                        : [$namespace_stmt] as $declaration
+                    ) {
+                        $value = self::getConstantValueOfDeclaration($declaration, $namespace, $name_lc);
+
+                        if ($value !== null) {
+                            return $value;
+                        }
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        return null;
+    }
+
+    /**
+     * The value the statement gives the constant if it is a `const` statement or a call of the builtin define()
+     * declaring it
+     *
+     * @param lowercase-string $name_lc
+     */
+    private static function getConstantValueOfDeclaration(Node $declaration, string $namespace, string $name_lc): ?Expr
+    {
+        if ($declaration instanceof Stmt\Const_) {
+            foreach ($declaration->consts as $const) {
+                if (strtolower($namespace . $const->name->name) === $name_lc) {
+                    return $const->value;
+                }
+            }
+
+            return null;
+        }
+
+        if (!$declaration instanceof Expression
+            || !$declaration->expr instanceof FuncCall
+            || !$declaration->expr->name instanceof Name
+            || $declaration->expr->isFirstClassCallable()
+            || $declaration->expr->name->toLowerString() !== 'define'
+        ) {
+            return null;
+        }
+
+        // an unqualified name in a namespace calls the function of the namespace if it has one
+        $namespaced_name = (string) $declaration->expr->name->getAttribute('namespacedName');
+
+        if ($namespaced_name !== '') {
+            foreach (FileStorageProvider::getAll() as $file_storage) {
+                if (isset($file_storage->declaring_function_ids[strtolower($namespaced_name)])) {
+                    return null;
+                }
+            }
+        }
+
+        $constant_name = null;
+        $value = null;
+
+        foreach ($declaration->expr->getArgs() as $offset => $arg) {
+            $arg_name = $arg->name?->name;
+
+            if ($arg_name === 'constant_name' || ($arg_name === null && $offset === 0)) {
+                $constant_name = $arg->value;
+            } elseif ($arg_name === 'value' || ($arg_name === null && $offset === 1)) {
+                $value = $arg->value;
+            }
+        }
+
+        return $constant_name instanceof String_ && strtolower(ltrim($constant_name->value, '\\')) === $name_lc
+            ? $value
+            : null;
     }
 
     /**
