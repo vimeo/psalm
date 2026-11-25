@@ -78,10 +78,14 @@ final class ClassConstAnalyzer
     /**
      * The type the constant has in the classes that use the trait the code is in, null outside a trait or where one of
      * the classes doesn't have the constant
+     *
+     * @param-out bool $is_declared whether a subclass overriding the constant has to keep the returned type
      */
     private static function getConstantTypeOfTheClassesUsingTheTrait(
         StatementsAnalyzer $statements_analyzer,
         string $constant_name,
+        bool $late_static_binding,
+        bool &$is_declared,
     ): ?Union {
         $trait_analyzer = $statements_analyzer->getSource()->getSource();
 
@@ -92,27 +96,49 @@ final class ClassConstAnalyzer
         $codebase = $statements_analyzer->getCodebase();
         $trait_lc = strtolower($trait_analyzer->getFQCLN());
         $types = [];
+        $all_declared = true;
 
         foreach ($codebase->classlike_storage_provider->getAll() as $user_storage) {
             if (!isset($user_storage->used_traits[$trait_lc])) {
                 continue;
             }
 
+            $user_constant = $user_storage->constants[$constant_name] ?? null;
+            $binds_late = $late_static_binding && !$user_storage->final && !$user_constant?->final;
+
             $type = $codebase->classlikes->getClassConstantType(
                 $user_storage->name,
                 $constant_name,
                 ReflectionProperty::IS_PRIVATE,
                 $statements_analyzer,
+                [],
+                $binds_late,
             );
 
             if ($type === null) {
                 return null;
             }
 
+            $all_declared = $all_declared && (!$binds_late || self::hasDeclaredType($user_constant));
             $types[] = $type;
         }
 
-        return $types !== [] ? Type::combineUnionTypeArray($types, $codebase) : null;
+        if ($types === []) {
+            return null;
+        }
+
+        $is_declared = $all_declared;
+
+        return Type::combineUnionTypeArray($types, $codebase);
+    }
+
+    /**
+     * @psalm-pure
+     */
+    public static function hasDeclaredType(?ClassConstantStorage $constant): bool
+    {
+        return $constant !== null
+            && ($constant->signature_type !== null || $constant->type?->from_docblock === true);
     }
 
     public static function analyzeFetch(
@@ -789,6 +815,9 @@ final class ClassConstAnalyzer
             ? strtolower($stmt->class->getFirst())
             : null;
 
+        $is_declared = $class_constant_type->from_docblock || self::hasDeclaredType($const_storage);
+        $may_be_overridden = $late_static_binding;
+
         // a trait is analysed for each class using it, and each class gives the constant its own value: what the
         // code of the trait can rely on is the values they give it together
         if ($class_keyword === 'self'
@@ -797,13 +826,20 @@ final class ClassConstAnalyzer
                 && $stmt->class->name === 'this'
                 && $fq_class_name === $context->self)
         ) {
-            $class_constant_type = self::getConstantTypeOfTheClassesUsingTheTrait(
+            $using_classes_type = self::getConstantTypeOfTheClassesUsingTheTrait(
                 $statements_analyzer,
                 $const_name,
-            ) ?? $class_constant_type;
+                $may_be_a_subclass,
+                $is_declared,
+            );
+
+            if ($using_classes_type !== null) {
+                $class_constant_type = $using_classes_type;
+                $may_be_overridden = $may_be_a_subclass;
+            }
         }
 
-        if ($late_static_binding && !$class_constant_type->from_docblock) {
+        if ($may_be_overridden && !$is_declared) {
             return true;
         }
 

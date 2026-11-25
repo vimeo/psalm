@@ -184,7 +184,8 @@ final class TIterable extends Atomic
             }
         }
 
-        return $this->purity->equals($other_type->purity, $ensure_source_equality, false);
+        return $this->purity->equals($other_type->purity, $ensure_source_equality, false)
+            && $this->intersectionTypesEqual($other_type->extra_types, $ensure_source_equality);
     }
 
     /**

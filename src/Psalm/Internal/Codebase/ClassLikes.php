@@ -3053,8 +3053,11 @@ final class ClassLikes
                 }
             }
 
+            // a subclass may give the constant another value, of its docblock or native type
             $constant_type = $late_static_binding
-                ? $constant_storage->type
+                ? ($constant_storage->type?->from_docblock
+                    ? $constant_storage->type
+                    : $constant_storage->signature_type ?? $constant_storage->type)
                 : ($constant_storage->inferred_type ?? null);
 
             if ($constant_type === null) {

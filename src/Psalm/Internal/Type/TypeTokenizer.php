@@ -473,7 +473,7 @@ final class TypeTokenizer
                     'is not', 'covariant', 'contravariant',
                 ],
                 true,
-            )) {
+            ) || self::isTemplateBoundOf($type_tokens, $i)) {
                 continue;
             }
 
@@ -632,6 +632,65 @@ final class TypeTokenizer
 
         /** @var list<array{0: string, 1: int, 2?: string}> */
         return $type_tokens;
+    }
+
+    /**
+     * Whether the token at `$i` is the `of` of a template bound (`<T of Foo`, `, T of Foo`), where ParseTreeCreator
+     * reads it as a keyword; elsewhere it is a class name
+     *
+     * @param array<int, array{0: string, 1: int, 2?: string}> $type_tokens
+     * @psalm-pure
+     */
+    private static function isTemplateBoundOf(array $type_tokens, int $i): bool
+    {
+        return $type_tokens[$i][0] === 'of'
+            && $i > 1
+            && ($type_tokens[$i - 2][0] === '<' || $type_tokens[$i - 2][0] === ',')
+            && preg_match('/^[a-zA-Z_\\\\]/', $type_tokens[$i - 1][0]) === 1;
+    }
+
+    /**
+     * Whether one of `$operators` appears in `$type_string` outside brackets and quoted strings, such as the `|` of
+     * `A|B` but not of `array<A|B>` or `array{'a|b': int}`
+     *
+     * @psalm-pure
+     */
+    public static function hasTopLevelOperator(string $type_string, string $operators): bool
+    {
+        $depth = 0;
+
+        for ($i = 0, $length = strlen($type_string); $i < $length; $i++) {
+            $char = $type_string[$i];
+
+            switch ($char) {
+                case '\'':
+                case '"':
+                    for ($i++; $i < $length && $type_string[$i] !== $char; $i++) {
+                        if ($type_string[$i] === '\\') {
+                            $i++;
+                        }
+                    }
+                    break;
+                case '(':
+                case '<':
+                case '{':
+                case '[':
+                    $depth++;
+                    break;
+                case ')':
+                case '>':
+                case '}':
+                case ']':
+                    $depth--;
+                    break;
+                default:
+                    if ($depth === 0 && str_contains($operators, $char)) {
+                        return true;
+                    }
+            }
+        }
+
+        return false;
     }
 
     /**

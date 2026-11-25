@@ -1567,6 +1567,83 @@ final class TypeCombinationTest extends TestCase
                     'non-empty-literal-string',
                 ],
             ],
+            'classStringMapAndArrayReplaceTheMapTemplateByItsBound' => [
+                'array<class-string<Foo>|int, Foo|int>',
+                [
+                    'class-string-map<T as Foo, T>',
+                    'array<int, int>',
+                ],
+            ],
+            'classStringMapAndArrayKeepTheIntersectionOfTheMapTemplate' => [
+                'array<class-string<Foo>|int, Foo&Bar|int>',
+                [
+                    'class-string-map<T as Foo, T&Bar>',
+                    'array<int, int>',
+                ],
+            ],
+            'classStringMapWithoutBoundAndArrayKeepTheIntersectionOfTheMapTemplate' => [
+                'array<class-string|int, Bar|int>',
+                [
+                    'class-string-map<T, T&Bar>',
+                    'array<int, int>',
+                ],
+            ],
+            'classStringMapsWithDifferentBoundsReplaceEachTemplateByItsBound' => [
+                'array<class-string<Bar>|class-string<Foo>, Bar|Foo>',
+                [
+                    'class-string-map<T as Foo, T>',
+                    'class-string-map<T as Bar, T>',
+                ],
+            ],
+            'classStringMapsWithDifferentTemplateNamesReplaceEachTemplateByItsBound' => [
+                'array<class-string<Foo>, Foo>',
+                [
+                    'class-string-map<T as Foo, T>',
+                    'class-string-map<U as Foo, U>',
+                ],
+            ],
+            'classStringMapWithoutBoundAndArrayReplaceTheMapTemplateByObject' => [
+                'array<class-string|int, int|list<object>>',
+                [
+                    'class-string-map<T, list<T>>',
+                    'array<int, int>',
+                ],
+            ],
+            'classStringMapAndKeyedArrayReplaceTheMapTemplateByItsBound' => [
+                'array<\'a\'|class-string<Foo>, Foo|int>',
+                [
+                    'class-string-map<T as Foo, T>',
+                    'array{a: int}',
+                ],
+            ],
+            'classStringMapAndListReplaceTheMapTemplateByItsBound' => [
+                'array<class-string<Foo>|int<0, max>, Foo|int>',
+                [
+                    'class-string-map<T as Foo, T>',
+                    'list<int>',
+                ],
+            ],
+            'classStringMapsWithTheSameBoundStayAClassStringMap' => [
+                'class-string-map<T as Foo, (T:class-string-map as Foo)|(list<T:class-string-map as Foo>)>',
+                [
+                    'class-string-map<T as Foo, T>',
+                    'class-string-map<T as Foo, list<T>>',
+                ],
+            ],
+            'classStringMapAndEmptyArrayStayAClassStringMap' => [
+                'class-string-map<T as Foo, T:class-string-map as Foo>',
+                [
+                    'class-string-map<T as Foo, T>',
+                    'array<never, never>',
+                ],
+            ],
+            'classStringMapAndCallableArrayAreNotACallableArray' => [
+                'array<0|1|class-string<Foo>, class-string|non-empty-string|object>',
+                [
+                    'class-string-map<T as Foo, T>',
+                    'callable-array',
+                ],
+            ],
         ];
     }
 

@@ -10,7 +10,9 @@ use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Tests\TestCase;
 use Psalm\Type;
 use Psalm\Type\Atomic\TAnonymousClassInstance;
+use Psalm\Type\Atomic\TCallableObject;
 use Psalm\Type\Atomic\TClassString;
+use Psalm\Type\Atomic\TEnumCase;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TInt;
@@ -20,6 +22,7 @@ use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 use ReflectionClass;
 use ReflectionNamedType;
@@ -90,6 +93,95 @@ final class UnionTest extends TestCase
             new Union([new TGenericObject('Foo', [Type::getInt()], false, true)]),
             new Union([new TGenericObject('Foo', [Type::getInt()], false, true)]),
         );
+    }
+
+    /**
+     * @psalm-pure
+     * @return iterable<string, array{string, string}>
+     */
+    public static function differentIntersections(): iterable
+    {
+        yield 'iterable and its intersection' => ['iterable&Countable', 'iterable'];
+        yield 'object shape and its intersection' => ['object{a: int}&Countable', 'object{a: int}'];
+        yield 'iterables with other intersected types' => [
+            'iterable<int, string>&Countable',
+            'iterable<int, string>&Traversable',
+        ];
+        yield 'named object and its intersection' => ['Foo&Countable', 'Foo'];
+        yield 'generic object and its intersection' => ['Foo<int>&Countable', 'Foo<int>'];
+        yield 'intersected iterables with other type parameters' => [
+            'Foo&iterable<mixed, int>',
+            'Foo&iterable<mixed, string>',
+        ];
+        yield 'intersected types in another order' => ['Foo&Bar&Countable', 'Foo&Countable&Bar'];
+        yield 'other named objects' => ['Foo', 'Bar'];
+        yield 'other generic objects' => ['Foo<int>', 'Bar<int>'];
+    }
+
+    #[DataProvider('differentIntersections')]
+    public function testIntersectionsWithOtherTypesAreNotEqual(string $a, string $b): void
+    {
+        self::assertEquality(false, Type::parseString($a), Type::parseString($b));
+        self::assertEquality(false, Type::parseString($b), Type::parseString($a));
+        self::assertFalse(Type::parseString($a)->getSingleAtomic()->equals(Type::parseString($b)->getSingleAtomic(), true));
+        self::assertFalse(Type::parseString($b)->getSingleAtomic()->equals(Type::parseString($a)->getSingleAtomic(), true));
+    }
+
+    /**
+     * @psalm-pure
+     * @return iterable<string, array{string}>
+     */
+    public static function intersections(): iterable
+    {
+        yield 'iterable' => ['iterable&Countable'];
+        yield 'object shape' => ['object{a: int}&Countable'];
+        yield 'named object' => ['Foo&Bar&Countable'];
+        yield 'generic object' => ['Foo<int>&Countable'];
+        yield 'intersected iterable' => ['Foo&iterable<mixed, int>'];
+    }
+
+    #[DataProvider('intersections')]
+    public function testIntersectionIsEqualToTheSameIntersection(string $type): void
+    {
+        self::assertEquality(true, Type::parseString($type), Type::parseString($type));
+        self::assertTrue(Type::parseString($type)->getSingleAtomic()->equals(
+            Type::parseString($type)->getSingleAtomic(),
+            true,
+        ));
+    }
+
+    public function testTemplateParamIsNotEqualToItsIntersection(): void
+    {
+        $template = new TTemplateParam('T', Type::getMixed(), 'fn-f');
+        $intersection = new TTemplateParam('T', Type::getMixed(), 'fn-f', ['Countable' => new TNamedObject('Countable')]);
+
+        self::assertFalse($template->equals($intersection, true));
+        self::assertFalse($intersection->equals($template, true));
+        self::assertTrue($intersection->equals(
+            new TTemplateParam('T', Type::getMixed(), 'fn-f', ['Countable' => new TNamedObject('Countable')]),
+            true,
+        ));
+        self::assertEquality(false, new Union([$template]), new Union([$intersection]));
+    }
+
+    public function testCallableObjectIsNotEqualToItsIntersection(): void
+    {
+        $callable_object = new TCallableObject();
+        $intersection = $callable_object->addIntersectionType(new TNamedObject('Countable'));
+
+        self::assertFalse($callable_object->equals($intersection, true));
+        self::assertFalse($intersection->equals($callable_object, true));
+        self::assertTrue($intersection->equals(
+            (new TCallableObject())->addIntersectionType(new TNamedObject('Countable')),
+            true,
+        ));
+        self::assertEquality(false, new Union([$callable_object]), new Union([$intersection]));
+    }
+
+    public function testCasesOfAnEnumAreNotEqual(): void
+    {
+        self::assertFalse((new TEnumCase('E', 'A'))->equals(new TEnumCase('E', 'B'), true));
+        self::assertTrue((new TEnumCase('E', 'A'))->equals(new TEnumCase('E', 'A'), true));
     }
 
     public function testListIsNotEqualToAnArrayWithTheSameEntries(): void

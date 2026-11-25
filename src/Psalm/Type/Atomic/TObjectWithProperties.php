@@ -210,7 +210,9 @@ final class TObjectWithProperties extends TObject
             return false;
         }
 
-        if ($this->methods !== $other_type->methods) {
+        if ($this->methods !== $other_type->methods
+            || !$this->intersectionTypesEqual($other_type->extra_types, $ensure_source_equality)
+        ) {
             return false;
         }
 

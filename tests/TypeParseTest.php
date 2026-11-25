@@ -12,15 +12,20 @@ use Psalm\Exception\TypeParseTreeException;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Type\TypeArgumentProjection;
 use Psalm\Type;
+use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TConditional;
 use Psalm\Type\Atomic\TGenericObject;
+use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TIntRange;
+use Psalm\Type\Atomic\TIntersection;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TTemplateKeyOf;
+use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 use ReflectionFunction;
 use ReflectionParameter;
@@ -2131,6 +2136,30 @@ final class TypeParseTest extends TestCase
         self::assertSame('class-string<\Ns\Box<int>>', $type->toNamespacedString(null, [], null, false));
         self::assertSame('class-string<Box<int>>', $type->toNamespacedString('Ns', [], null, false));
         self::assertTrue($type->equals(Type::parseString($type->toNamespacedString(null, [], null, false))));
+    }
+
+    public function testArrayOfUnionWithAQuotedBracketIsParenthesisedInPhpdoc(): void
+    {
+        $type = Type::parseString("array<value-of<array{'<': int}>|z>");
+        self::assertSame("(value-of<array{'<': int}>|z)[]", $type->toNamespacedString(null, [], null, true));
+    }
+
+    public function testArrayOfUnionWrittenAsOneTypeIsNotParenthesisedInPhpdoc(): void
+    {
+        $type = new Union([new TArray([
+            Type::getArrayKey(),
+            new Union([new TInt(), new TIntRange(0, 5)]),
+        ])]);
+        self::assertSame('int[]', $type->toNamespacedString(null, [], null, true));
+    }
+
+    public function testIntersectionParenthesisesAUnionTemplateBoundInPhpdoc(): void
+    {
+        $type = new Union([new TIntersection([
+            new Union([new TTemplateParam('T', Type::parseString('Ns\A|Ns\B'), 'fn-foo')]),
+            new Union([new TNamedObject('Ns\Foo')]),
+        ])]);
+        self::assertSame('(A|B)&Foo', $type->toNamespacedString('Ns', [], null, true));
     }
 
     public function testInterfaceStringKeepsItsKindInNamespacedString(): void

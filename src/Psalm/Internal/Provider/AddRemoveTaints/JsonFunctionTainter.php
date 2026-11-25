@@ -33,6 +33,9 @@ final class JsonFunctionTainter implements RemoveTaintsInterface
      */
     private const HTML_FLAGS = JSON_HEX_TAG | JSON_HEX_AMP;
 
+    /** What json_decode() gives back (see getGivenBackTaints()) */
+    public const GIVEN_BACK_TAINTS = TaintKind::INPUT_HTML | TaintKind::INPUT_HAS_QUOTES | TaintKind::INPUT_HEADER;
+
     /**
      * A JSON string can hold any character as an escape sequence, which the escapes of the text before do not see:
      * what json_decode() gives has the taints they removed back, as `json_decode(json_encode($_GET['a'],
@@ -49,7 +52,7 @@ final class JsonFunctionTainter implements RemoveTaintsInterface
             return 0;
         }
 
-        return TaintKind::INPUT_HTML | TaintKind::INPUT_HAS_QUOTES | TaintKind::INPUT_HEADER;
+        return self::GIVEN_BACK_TAINTS;
     }
 
     #[Override]
@@ -80,6 +83,16 @@ final class JsonFunctionTainter implements RemoveTaintsInterface
             }
         }
 
+        return self::getRemovedTaints($certain_bits, $possible_bits);
+    }
+
+    /**
+     * What a call of json_encode() removes with the bits its flags have for sure, and those they may have
+     *
+     * @psalm-pure
+     */
+    public static function getRemovedTaints(int $certain_bits, int $possible_bits): int
+    {
         $removed_taints = 0;
 
         // every control character is escaped, so the output holds no CR, LF or NUL (the layout of
