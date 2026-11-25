@@ -1094,7 +1094,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
 
                 if ($function_call_info->in_call_map && $function_storage->cased_name !== null) {
                     // a function imported with an alias is called by the alias: its name is the imported one
-                    $imported_name = count($function_name->getParts()) === 1
+                    $imported_name = $function_name->isUnqualified()
                         ? $statements_analyzer->getAliases()->functions[strtolower($function_name->getFirst())]
                             ?? null
                         : null;

@@ -215,6 +215,20 @@ final class FunctionCallTest extends TestCase
                     '$upper===' => 'non-falsy-string',
                 ],
             ],
+            'fullyQualifiedCallOfAFunctionWhoseNameAnotherIsImportedAs' => [
+                'code' => '<?php
+                    namespace App;
+
+                    use function App\\encode as json_encode;
+
+                    function encode(int $value): string {
+                        return (string) $value;
+                    }
+
+                    $local = json_encode(1);
+                    $global = \\json_encode(1);
+                    $relative = namespace\\encode(1);',
+            ],
             'functionCalledWithItsDeclaredCasing' => [
                 'code' => '<?php
                     namespace Foo;
