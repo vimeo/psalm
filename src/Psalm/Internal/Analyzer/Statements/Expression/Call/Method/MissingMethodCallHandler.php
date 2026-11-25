@@ -558,7 +558,7 @@ final class MissingMethodCallHandler
                         $storage,
                         $defining_class_storage,
                         $lhs_type_part,
-                        !$lhs_type_part->is_static || $class_storage->final,
+                        $class_storage->final,
                         false,
                     )
                     : null,

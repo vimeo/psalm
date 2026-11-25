@@ -568,8 +568,32 @@ final class MagicMethodAnnotationTest extends TestCase
                      */
                     interface Box {}
 
-                    function ib(Box $b): string {
-                        return $b->cmp($b);
+                    function getBox(): Box {
+                        throw new RuntimeException();
+                    }
+
+                    $b = getBox();
+                    $r = $b->cmp($b);',
+                'assertions' => [
+                    '$r===' => 'string',
+                ],
+                'ignored_issues' => ['ArgumentTypeCoercion'],
+                'php_version' => '8.0',
+            ],
+            'staticInTheParamsOfAStaticMethodTagIsTheNamedClass' => [
+                'code' => '<?php
+                    /** @method static int make(static $o) */
+                    class SM {
+                        public static function __callStatic(string $name, array $args): mixed {
+                            throw new RuntimeException();
+                        }
+                    }
+
+                    final class SMB extends SM {}
+
+                    function f(SMB $smb): void {
+                        SM::make($smb);
+                        SMB::make($smb);
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],
@@ -2693,6 +2717,38 @@ final class MagicMethodAnnotationTest extends TestCase
                         $box->compare(new Other());
                     }',
                 'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'staticInTheParamsOfAMethodTagOfAnInterfaceMayBeAnotherImplementation' => [
+                'code' => '<?php
+                    /** @method ($o is null ? int : string) cmp(static|null $o = null) */
+                    interface MBox {}
+
+                    final class MBoxB implements MBox {}
+
+                    function f(MBox $b, MBoxB $other): void {
+                        $b->cmp($other);
+                    }',
+                'error_message' => 'ArgumentTypeCoercion',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'staticInTheParamsOfAStaticMethodTagCalledOnAnObjectMayBeASubclass' => [
+                'code' => '<?php
+                    /** @method static int make(static $o) */
+                    class SM {
+                        public static function __callStatic(string $name, array $args): mixed {
+                            throw new RuntimeException();
+                        }
+                    }
+
+                    final class SMB extends SM {}
+
+                    function f(SM $o, SMB $smb): void {
+                        $o::make($smb);
+                    }',
+                'error_message' => 'ArgumentTypeCoercion',
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],
