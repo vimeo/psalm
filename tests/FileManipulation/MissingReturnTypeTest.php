@@ -241,6 +241,230 @@ final class MissingReturnTypeTest extends FileManipulationTestCase
                 'issues_to_fix' => ['MissingReturnType'],
                 'safe_types' => true,
             ],
+            'addMissingReturnTypeParenthesisesAUnionTemplateBoundOfListValues' => [
+                'input' => '<?php
+                    namespace Foo;
+                    interface Baz {}
+                    interface Qux {}
+                    /**
+                     * @template T as Baz|Qux
+                     * @param list<T> $s
+                     */
+                    function foo(array $s) {
+                        return $s;
+                    }',
+                'output' => '<?php
+                    namespace Foo;
+                    interface Baz {}
+                    interface Qux {}
+                    /**
+                     * @template T as Baz|Qux
+                     *
+                     * @param list<T> $s
+                     *
+                     * @return (Baz|Qux)[]
+                     *
+                     * @psalm-return list<T>
+                     */
+                    function foo(array $s) {
+                        return $s;
+                    }',
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => true,
+            ],
+            'addMissingReturnTypeParenthesisesAUnionTemplateBoundOfNullableListValues' => [
+                'input' => '<?php
+                    namespace Foo;
+                    interface Baz {}
+                    interface Qux {}
+                    /**
+                     * @template T as Baz|Qux
+                     * @param list<T>|null $s
+                     */
+                    function foo(?array $s) {
+                        return $s;
+                    }',
+                'output' => '<?php
+                    namespace Foo;
+                    interface Baz {}
+                    interface Qux {}
+                    /**
+                     * @template T as Baz|Qux
+                     *
+                     * @param list<T>|null $s
+                     *
+                     * @return (Baz|Qux)[]|null
+                     *
+                     * @psalm-return list<T>|null
+                     */
+                    function foo(?array $s) {
+                        return $s;
+                    }',
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => true,
+            ],
+            'addMissingReturnTypeParenthesisesAUnionTemplateBoundOfNonEmptyListValues' => [
+                'input' => '<?php
+                    namespace Foo;
+                    interface Baz {}
+                    interface Qux {}
+                    /**
+                     * @template T as Baz|Qux
+                     * @param non-empty-list<T> $s
+                     */
+                    function foo(array $s) {
+                        return $s;
+                    }',
+                'output' => '<?php
+                    namespace Foo;
+                    interface Baz {}
+                    interface Qux {}
+                    /**
+                     * @template T as Baz|Qux
+                     *
+                     * @param non-empty-list<T> $s
+                     *
+                     * @return (Baz|Qux)[]
+                     *
+                     * @psalm-return non-empty-list<T>
+                     */
+                    function foo(array $s) {
+                        return $s;
+                    }',
+                'php_version' => '8.1',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => true,
+            ],
+            'addMissingReturnTypeParenthesisesAUnionTemplateBoundOfShapeValues' => [
+                'input' => '<?php
+                    namespace Foo;
+                    interface Baz {}
+                    interface Qux {}
+                    /**
+                     * @template T as Baz|Qux
+                     * @param T $s
+                     */
+                    function foo($s) {
+                        return [$s];
+                    }',
+                'output' => '<?php
+                    namespace Foo;
+                    interface Baz {}
+                    interface Qux {}
+                    /**
+                     * @template T as Baz|Qux
+                     *
+                     * @param T $s
+                     *
+                     * @return (Baz|Qux)[]
+                     *
+                     * @psalm-return list{T}
+                     */
+                    function foo($s): array {
+                        return [$s];
+                    }',
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => true,
+            ],
+            'addMissingReturnTypeParenthesisesANullableTemplateBoundOfListValues' => [
+                'input' => '<?php
+                    namespace Foo;
+                    interface Baz {}
+                    interface Qux {}
+                    /**
+                     * @template T as ?Baz
+                     * @param list<T> $s
+                     */
+                    function foo(array $s) {
+                        return $s;
+                    }',
+                'output' => '<?php
+                    namespace Foo;
+                    interface Baz {}
+                    interface Qux {}
+                    /**
+                     * @template T as ?Baz
+                     *
+                     * @param list<T> $s
+                     *
+                     * @return (Baz|null)[]
+                     *
+                     * @psalm-return list<T>
+                     */
+                    function foo(array $s) {
+                        return $s;
+                    }',
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => true,
+            ],
+            'addMissingReturnTypeKeepsASingleTemplateBoundOfListValuesBare' => [
+                'input' => '<?php
+                    namespace Foo;
+                    interface Baz {}
+                    interface Qux {}
+                    /**
+                     * @template T as Baz
+                     * @param list<T> $s
+                     */
+                    function foo(array $s) {
+                        return $s;
+                    }',
+                'output' => '<?php
+                    namespace Foo;
+                    interface Baz {}
+                    interface Qux {}
+                    /**
+                     * @template T as Baz
+                     *
+                     * @param list<T> $s
+                     *
+                     * @return Baz[]
+                     *
+                     * @psalm-return list<T>
+                     */
+                    function foo(array $s) {
+                        return $s;
+                    }',
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => true,
+            ],
+            'addMissingReturnTypeParenthesisesAnIntersectionOnlyOnceInNestedLists' => [
+                'input' => '<?php
+                    namespace Foo;
+                    interface Baz {}
+                    interface Qux {}
+                    /**
+                     * @template T as Baz
+                     * @param list<list<Baz&Qux>> $s
+                     */
+                    function foo(array $s) {
+                        return $s;
+                    }',
+                'output' => '<?php
+                    namespace Foo;
+                    interface Baz {}
+                    interface Qux {}
+                    /**
+                     * @template T as Baz
+                     *
+                     * @param list<list<Baz&Qux>> $s
+                     *
+                     * @return (Baz&Qux)[][]
+                     *
+                     * @psalm-return list<list<Baz&Qux>>
+                     */
+                    function foo(array $s) {
+                        return $s;
+                    }',
+                'php_version' => '8.1',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => true,
+            ],
             'addMissingReturnTypeWritesEmptyNumericAsNumeric' => [
                 'input' => '<?php
                     /**

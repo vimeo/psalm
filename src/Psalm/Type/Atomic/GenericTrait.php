@@ -22,7 +22,7 @@ use function array_map;
 use function array_values;
 use function count;
 use function implode;
-use function str_contains;
+use function strlen;
 use function strpos;
 use function substr;
 
@@ -97,6 +97,41 @@ trait GenericTrait
         return $s;
     }
 
+    /**
+     * Checks the text rather than the atomics: a single atomic can be written as a union, such as a template param
+     * written as its bound `A|B`.
+     *
+     * @psalm-pure
+     */
+    private static function hasTopLevelUnionOrIntersection(string $type_string): bool
+    {
+        $depth = 0;
+
+        for ($i = 0, $length = strlen($type_string); $i < $length; $i++) {
+            switch ($type_string[$i]) {
+                case '(':
+                case '<':
+                case '{':
+                case '[':
+                    $depth++;
+                    break;
+                case ')':
+                case '>':
+                case '}':
+                case ']':
+                    $depth--;
+                    break;
+                case '|':
+                case '&':
+                    if ($depth === 0) {
+                        return true;
+                    }
+            }
+        }
+
+        return false;
+    }
+
     #[Override]
     public function getId(bool $exact = true): string
     {
@@ -147,7 +182,7 @@ trait GenericTrait
             $value_type_string = $value_type->toNamespacedString($namespace, $aliased_classes, $this_class, true);
 
             // `[]` binds tighter than `|` and `&`: `(A&B)[]`, not `A&B[]`
-            if (!$value_type->isSingle() || str_contains($value_type_string, '&')) {
+            if (self::hasTopLevelUnionOrIntersection($value_type_string)) {
                 return '(' . $value_type_string . ')[]';
             }
 
