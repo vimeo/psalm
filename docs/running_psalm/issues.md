@@ -267,6 +267,7 @@
  - [TaintedInput](issues/TaintedInput.md)
  - [TaintedLdap](issues/TaintedLdap.md)
  - [TaintedLlmPrompt](issues/TaintedLlmPrompt.md)
+ - [TaintedLlmResponse](issues/TaintedLlmResponse.md)
  - [TaintedNosql](issues/TaintedNosql.md)
  - [TaintedRedirect](issues/TaintedRedirect.md)
  - [TaintedShell](issues/TaintedShell.md)

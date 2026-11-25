@@ -839,6 +839,7 @@ issue:
 | `url_path` | [TaintedUrlPath](../running_psalm/issues/TaintedUrlPath.md) | `.` or `..` segments in a URL path (including URL-encoded) |
 | `sleep` | [TaintedSleep](../running_psalm/issues/TaintedSleep.md) | Controlling wait durations (`sleep()`, cURL timeouts, ...; carried by numbers too) |
 | `llm_prompt` | [TaintedLlmPrompt](../running_psalm/issues/TaintedLlmPrompt.md) | Prompt injection into an LLM |
+| `llm_response` | [TaintedLlmResponse](../running_psalm/issues/TaintedLlmResponse.md) | Forging what an LLM said in a conversation (its assistant turns) |
 | `user_secret` | [TaintedUserSecret](../running_psalm/issues/TaintedUserSecret.md) | Leaking a user-supplied secret |
 | `system_secret` | [TaintedSystemSecret](../running_psalm/issues/TaintedSystemSecret.md) | Leaking a system secret |
 

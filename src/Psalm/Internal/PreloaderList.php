@@ -1456,6 +1456,7 @@ final class PreloaderList {
         \Psalm\Issue\TaintedInput::class,
         \Psalm\Issue\TaintedLdap::class,
         \Psalm\Issue\TaintedLlmPrompt::class,
+        \Psalm\Issue\TaintedLlmResponse::class,
         \Psalm\Issue\TaintedNosql::class,
         \Psalm\Issue\TaintedRedirect::class,
         \Psalm\Issue\TaintedSSRF::class,

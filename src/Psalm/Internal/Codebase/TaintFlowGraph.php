@@ -26,6 +26,7 @@ use Psalm\Issue\TaintedHtmlAttribute;
 use Psalm\Issue\TaintedInclude;
 use Psalm\Issue\TaintedLdap;
 use Psalm\Issue\TaintedLlmPrompt;
+use Psalm\Issue\TaintedLlmResponse;
 use Psalm\Issue\TaintedNosql;
 use Psalm\Issue\TaintedRedirect;
 use Psalm\Issue\TaintedSSRF;
@@ -1738,6 +1739,12 @@ final class TaintFlowGraph extends DataFlowGraph
                 ),
                 TaintKind::INPUT_LLM_PROMPT => new TaintedLlmPrompt(
                     'Detected tainted LLM prompt',
+                    $issue_location,
+                    $issue_trace,
+                    $path,
+                ),
+                TaintKind::INPUT_LLM_RESPONSE => new TaintedLlmResponse(
+                    'Detected tainted LLM response',
                     $issue_location,
                     $issue_trace,
                     $path,
