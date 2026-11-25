@@ -1940,7 +1940,7 @@ final class Populator
         ClassLikeStorage $parent_storage,
     ): void {
         $fq_class_name = $storage->name;
-        $fq_class_name_lc = strtolower($fq_class_name);
+        $parent_name_lc = strtolower($parent_storage->name);
 
         if ($parent_storage->sealed_methods !== null) {
             $storage->sealed_methods = $parent_storage->sealed_methods;
@@ -1963,15 +1963,9 @@ final class Populator
                 $storage->appearing_method_ids[$aliased_method_name] =
                     $parent_storage->is_trait ? $implemented_method_id : $appearing_method_id;
 
-                // A class that declares the method points at itself, so the pointer walk of
-                // Methods::methodExists() references the same ids as a class that only inherits it.
-                $source_class_lc = isset($storage->methods[$aliased_method_name])
-                    ? $fq_class_name_lc
-                    : strtolower($parent_storage->name);
-
                 $storage->inherited_method_sources[$aliased_method_name] = $aliased_method_name === $method_name_lc
-                    ? $source_class_lc
-                    : $source_class_lc . '::' . $method_name_lc;
+                    ? $parent_name_lc
+                    : $parent_name_lc . '::' . $method_name_lc;
             }
         }
 

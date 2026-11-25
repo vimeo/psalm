@@ -386,7 +386,7 @@ final class ClassLikeStorage implements HasAttributesInterface
 
     /**
      * Per method name, the class-like it was inherited from, as `class` or, when a trait alias renames it,
-     * `class::method`. A class that declares the method points at itself.
+     * `class::method`.
      *
      * @internal
      * @var array<lowercase-string, lowercase-string>
