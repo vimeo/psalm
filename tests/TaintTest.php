@@ -593,7 +593,8 @@ final class TaintTest extends TestCase
 
     /**
      * The properties of analyzed code declared as sources are input wherever they are read, inside their class too,
-     * and whatever an object of a specialized class was given: what is assigned to them still flows as well.
+     * and whatever an object of a specialized class was given, unless taints are suppressed there: what is assigned
+     * to them still flows as well.
      */
     public function testSourcesOnPropertiesOfAnalyzedCode(): void
     {
@@ -625,6 +626,13 @@ final class TaintTest extends TestCase
             $box = new Box();
             $box->content = (string) $_GET["content"];
             echo $box->content;
+
+            /** @psalm-suppress TaintedInput */
+            function quiet(Reply $reply): string {
+                return $reply->text;
+            }
+
+            echo quiet($reply);
         ');
         $this->project_analyzer->trackTaintedInputs();
 

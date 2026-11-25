@@ -65,7 +65,7 @@ final class PropertyTaintSources
         string $property_id,
         int $removed_taints,
     ): void {
-        $graph = $statements_analyzer->taint_flow_graph;
+        $graph = $statements_analyzer->getTaintFlowGraphWithSuppressed();
         if ($graph === null) {
             return;
         }
