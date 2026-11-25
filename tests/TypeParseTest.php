@@ -2449,6 +2449,19 @@ final class TypeParseTest extends TestCase
         yield 'pure-callable' => ['pure-callable', 8_00_00, 'callable', false];
         yield 'callable' => ['callable', 8_00_00, 'callable', true];
         yield 'properties-of' => ['properties-of<stdClass>', 8_00_00, 'array', false];
+        yield 'int before PHP 7' => ['int', 5_06_00, null, false];
+        yield 'class before PHP 7' => ['Exception', 5_06_00, null, false];
+        yield 'void before PHP 7.1' => ['void', 7_00_00, null, false];
+        yield 'iterable before PHP 7.1' => ['iterable', 7_00_00, null, false];
+        yield 'nullable before PHP 7.1' => ['?int', 7_00_00, null, false];
+        yield 'object before PHP 7.2' => ['object', 7_01_00, null, false];
+        yield 'object shape before PHP 7.2' => ['object{a: int}', 7_01_00, null, false];
+        yield 'object shape' => ['object{a: int}', 7_02_00, 'object', false];
+        yield 'array-key before PHP 8' => ['array-key', 7_04_00, null, false];
+        yield 'array-key' => ['array-key', 8_00_00, 'int|string', true];
+        yield 'nullable array-key' => ['array-key|null', 8_00_00, 'int|string|null', true];
+        yield 'array-key and string' => ['array-key|string', 8_00_00, 'int|string', true];
+        yield 'key-of' => ['key-of<array{a: int}>', 8_00_00, null, false];
     }
 
     #[DataProvider('nativeTypeProvider')]
