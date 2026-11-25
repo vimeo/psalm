@@ -580,7 +580,7 @@ final class SimpleAssertionReconciler extends Reconciler
             $types = $existing_var_type->getAtomicTypes();
             foreach ($types as $k => $atomic_type) {
                 if ($atomic_type instanceof TTemplateParam && $assertion_type) {
-                    if ($atomic_type->as->hasMixed()
+                    if (self::getTemplateBound($atomic_type)->hasMixed()
                         || $atomic_type->as->hasObject()
                     ) {
                         unset($types[$k]);
@@ -3291,25 +3291,36 @@ final class SimpleAssertionReconciler extends Reconciler
     }
 
     /**
-     * What a template is bounded by, looking through the templates that bound it (`U of T`, `T of string`)
+     * What a template is bounded by, looking through the templates that bound it (`U of T`, `T of string`) also
+     * when they are a part of a union (`T of Foo|U`)
      *
      * @psalm-pure
      */
     private static function getTemplateBound(TTemplateParam $template): Union
     {
-        $bound = $template->as;
+        return self::getTypesWithinBound($template->as);
+    }
 
-        while ($bound->isSingle()) {
-            $atomic = $bound->getSingleAtomic();
-
-            if (!$atomic instanceof TTemplateParam) {
-                break;
-            }
-
-            $bound = $atomic->as;
+    /**
+     * @psalm-pure
+     */
+    private static function getTypesWithinBound(Union $bound): Union
+    {
+        if (!$bound->hasTemplate()) {
+            return $bound;
         }
 
-        return $bound;
+        $types = [];
+
+        foreach ($bound->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TTemplateParam) {
+                $types = [...$types, ...self::getTypesWithinBound($atomic_type->as)->getAtomicTypes()];
+            } else {
+                $types[] = $atomic_type;
+            }
+        }
+
+        return new Union($types);
     }
 
     /**

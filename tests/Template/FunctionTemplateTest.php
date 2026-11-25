@@ -4136,6 +4136,152 @@ final class FunctionTemplateTest extends TestCase
                         $same(fn() => $x);
                     }',
             ],
+            'narrowTemplateBoundOnNegatedTraversable' => [
+                'code' => '<?php
+                    /** @param array<int> $_a */
+                    function takesArray(array $_a): void {}
+
+                    /**
+                     * @template T as iterable<int>
+                     * @param T $i
+                     */
+                    function f(iterable $i): void {
+                        if (!$i instanceof Traversable) {
+                            takesArray($i);
+                        }
+                    }',
+            ],
+            'narrowTemplateBoundOnNegatedLiteralEquality' => [
+                'code' => '<?php
+                    enum Suit {
+                        case Hearts;
+                        case Spades;
+                    }
+
+                    /** @param 2|3 $_i */
+                    function takesTwoOrThree(int $_i): void {}
+
+                    /** @param Suit::Spades $_s */
+                    function takesSpades(Suit $_s): void {}
+
+                    /**
+                     * @template T as 1|2|3
+                     * @param T $i
+                     */
+                    function notOne(int $i): void {
+                        if ($i !== 1) {
+                            takesTwoOrThree($i);
+                        }
+                    }
+
+                    /**
+                     * @template T as Suit
+                     * @param T $s
+                     */
+                    function notHearts(Suit $s): void {
+                        if ($s !== Suit::Hearts) {
+                            takesSpades($s);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'narrowNestedTemplateBoundOnNegatedInstanceof' => [
+                'code' => '<?php
+                    final class A {}
+                    final class B {}
+
+                    function takesA(A $_a): void {}
+
+                    /**
+                     * @template T as A|B
+                     * @template U as T
+                     * @param U $ab
+                     */
+                    function f(object $ab): void {
+                        if (!$ab instanceof B) {
+                            takesA($ab);
+                        }
+                    }',
+            ],
+            'narrowTemplateBoundedByUnionWithTemplateOnTypeAssertion' => [
+                'code' => '<?php
+                    final class Foo {}
+
+                    /**
+                     * @template U of int|string
+                     * @template T of Foo|U
+                     * @param T $x
+                     */
+                    function f($x): void {
+                        if (is_string($x)) {
+                            takesString($x);
+                        }
+
+                        if (!$x instanceof Foo) {
+                            takesIntOrString($x);
+                        }
+                    }
+
+                    function takesString(string $_s): void {}
+
+                    /** @param int|string $_v */
+                    function takesIntOrString($_v): void {}',
+                'assertions' => [],
+            ],
+            'narrowTemplateBoundOnInstanceofOfASupertypeAfterNegatedInstanceof' => [
+                'code' => '<?php
+                    /**
+                     * @template T of DateTimeInterface|string
+                     * @param T $value
+                     */
+                    function f($value): void {
+                        if ($value instanceof DateTimeImmutable) {
+                            return;
+                        }
+
+                        if ($value instanceof DateTimeInterface) {
+                            DateTimeImmutable::createFromInterface($value);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'templateBoundedByUnboundedTemplateCanBeNull' => [
+                'code' => '<?php
+                    /**
+                     * @template U
+                     * @template T of U
+                     * @param T $v
+                     * @return T|int
+                     */
+                    function f($v) {
+                        if ($v === null) {
+                            return 0;
+                        }
+
+                        return $v;
+                    }',
+            ],
+            'templateBoundedByAChainOfUnboundedTemplatesCanBeNull' => [
+                'code' => '<?php
+                    /**
+                     * @template U
+                     * @template V of U
+                     * @template T of V
+                     * @param T $v
+                     * @return T|int
+                     */
+                    function f($v) {
+                        if ($v === null) {
+                            return 0;
+                        }
+
+                        return $v;
+                    }',
+            ],
         ];
     }
 
@@ -5352,6 +5498,29 @@ final class FunctionTemplateTest extends TestCase
                         if ($t === $s) {
                             echo "never";
                         }
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+            ],
+            'templateBoundedByNonNullableTemplateIsNeverNull' => [
+                'code' => '<?php
+                    /**
+                     * @template U of int
+                     * @template T of U
+                     * @param T $v
+                     */
+                    function f($v): void {
+                        if ($v === null) {}
+                    }',
+                'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:29 - T:fn-f as U:fn-f as int does not contain null',
+            ],
+            'templateBoundEmptiedByNegatedLiteralEquality' => [
+                'code' => '<?php
+                    /**
+                     * @template T as 1
+                     * @param T $i
+                     */
+                    function f(int $i): void {
+                        if ($i !== 1) {}
                     }',
                 'error_message' => 'DocblockTypeContradiction',
             ],
