@@ -7,7 +7,9 @@ namespace Psalm\Internal\Codebase;
 use PhpParser\Node\Arg;
 use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\BinaryOp\Concat;
+use PhpParser\Node\Expr\FuncCall;
 use PhpParser\Node\InterpolatedStringPart;
+use PhpParser\Node\Name;
 use PhpParser\Node\Scalar\InterpolatedString;
 use PhpParser\Node\Scalar\String_;
 use Psalm\CodeLocation;
@@ -23,14 +25,23 @@ use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Union;
 
+use function array_values;
 use function count;
 use function dirname;
+use function in_array;
 use function is_int;
 use function ltrim;
+use function preg_match_all;
 use function preg_split;
+use function sprintf;
 use function str_starts_with;
+use function strlen;
+use function strpos;
 use function strtolower;
 use function substr;
+
+use const PREG_OFFSET_CAPTURE;
+use const PREG_SET_ORDER;
 
 /**
  * What the database holds: the values an INSERT, REPLACE or UPDATE stores in a column flow into what the SELECTs of
@@ -89,6 +100,11 @@ final class DatabaseTaints
     private const ROWS_STORE = 'database rows';
 
     private const RESULTS = ['result', 'rows', 'value', 'column', 'any_value', 'any_column', 'value_or_row', 'none'];
+
+    /** The conversion specifiers of sprintf() but %% */
+    private const SPRINTF_SPECIFIERS = ['b', 'c', 'd', 'e', 'E', 'f', 'F', 'g', 'G', 'h', 'H', 'o', 's', 'u', 'x', 'X'];
+
+    private const SPRINTF_MAX_WIDTH = 1000;
 
     /** @var null|array<lowercase-string, list<Spec>> */
     private static ?array $map = null;
@@ -1048,7 +1064,6 @@ final class DatabaseTaints
      * The text of the SQL, where each part whose text the analysis doesn't know is a hole (see SqlStatement)
      *
      * @param list<Expr> $holes the parts that are holes, in their order
-     * @psalm-capabilities read-props|write-this-props|write-refs
      */
     private static function getText(StatementsAnalyzer $statements_analyzer, Expr $expr, array &$holes): string
     {
@@ -1078,9 +1093,96 @@ final class DatabaseTaints
             return $text;
         }
 
+        if ($expr instanceof FuncCall && $expr->name instanceof Name && !$expr->isFirstClassCallable()
+            && TaintStore::getCalledFunctionId($statements_analyzer, $expr->name) === 'sprintf'
+        ) {
+            $text = self::getSprintfText($statements_analyzer, $expr->getArgs(), $holes);
+            if ($text !== null) {
+                return $text;
+            }
+        }
+
         $holes[] = $expr;
 
-        return SqlStatement::HOLE_MARKER . (count($holes) - 1) . SqlStatement::HOLE_MARKER;
+        // what the analysis knows the part starts with, as for the keys of a store (a variable assigned
+        // `'SELECT a FROM t WHERE b = ' . $b`, then concatenated with `' LIMIT 1'`)
+        return TaintStore::getKnownStart($statements_analyzer, $expr)
+            . SqlStatement::HOLE_MARKER . (count($holes) - 1) . SqlStatement::HOLE_MARKER;
+    }
+
+    /**
+     * The text sprintf() gives with a literal format, or null if the analysis can't tell which parts of it come from
+     * which argument, or what text a conversion of an argument whose text it doesn't know puts in
+     *
+     * A conversion of a literal is its text. A plain `%s` is the text of its argument, and a number conversion
+     * (`%d`, `%05.2f`, ...) is a part whose text the analysis doesn't know.
+     *
+     * @param array<array-key, Arg> $args
+     * @param list<Expr> $holes
+     */
+    private static function getSprintfText(StatementsAnalyzer $statements_analyzer, array $args, array &$holes): ?string
+    {
+        $args = array_values($args);
+        foreach ($args as $arg) {
+            if ($arg->unpack || $arg->name !== null) {
+                return null;
+            }
+        }
+
+        $format_type = isset($args[0]) ? $statements_analyzer->node_data->getType($args[0]->value) : null;
+        if ($format_type === null || !$format_type->isSingleStringLiteral()) {
+            return null;
+        }
+
+        $format = $format_type->getSingleStringLiteral()->value;
+        // %[argnum$][flags][width][.precision]specifier, the flags being -, +, space, 0 and 'char in any order
+        preg_match_all(
+            '/%(?:([1-9][0-9]*)\$)?((?:[-+ 0]|\'.)*)(\*|[0-9]*)(\.(?:\*|[0-9]*))?(.)/s',
+            $format,
+            $conversions,
+            PREG_SET_ORDER | PREG_OFFSET_CAPTURE,
+        );
+
+        $text = '';
+        $offset = 0;
+        $next = 1;
+        foreach ($conversions as [[$conversion, $at], [$position], [$flags], [$width], [$precision], [$type]]) {
+            $text .= substr($format, $offset, $at - $offset);
+            $offset = $at + strlen($conversion);
+
+            if ($type === '%') {
+                $text .= '%';
+                continue;
+            }
+
+            // `*` takes the width or the precision from an argument, and a large one would make a long text
+            if ($width === '*' || $precision === '.*' || (int) $width > self::SPRINTF_MAX_WIDTH
+                || (int) substr($precision, 1) > self::SPRINTF_MAX_WIDTH
+                || !in_array($type, self::SPRINTF_SPECIFIERS, true)
+            ) {
+                return null;
+            }
+
+            $argument = $args[$position !== '' ? (int) $position : $next++] ?? null;
+            if ($argument === null) {
+                return null;
+            }
+
+            $argument_type = $statements_analyzer->node_data->getType($argument->value);
+            if ($argument_type !== null && $argument_type->isSingleLiteral()) {
+                $text .= sprintf('%' . $flags . $width . $precision . $type, $argument_type->getSingleLiteral()->value);
+            } elseif ($type === 's' && $flags === '' && $width === '' && $precision === '') {
+                $text .= self::getText($statements_analyzer, $argument->value, $holes);
+            } elseif ($type !== 'c' && $type !== 's' && strpos($flags, '\'') === false) {
+                $holes[] = $argument->value;
+                $text .= SqlStatement::HOLE_MARKER . (count($holes) - 1) . SqlStatement::HOLE_MARKER;
+            } else {
+                // a character, a string cut or padded, or padding of any character
+                return null;
+            }
+        }
+
+        return $text . substr($format, $offset);
     }
 
     /**

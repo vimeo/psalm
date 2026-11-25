@@ -97,6 +97,14 @@ final class SqlStatementTest extends TestCase
             'INSERT INTO t (a, b) VALUES (?, ?) ON DUPLICATE KEY UPDATE b = VALUES(b)',
             'W t.a <- h[] p[0] c[]; W t.b <- h[] p[1] c[]; W t.b <- h[] p[] c[t.b]',
         ];
+        yield 'the rows in a part the analysis doesn\'t know the text of ending the statement, which can go on with it' => [
+            'INSERT INTO t (a, b) VALUES %0%',
+            'null',
+        ];
+        yield 'the rows in a part the analysis doesn\'t know the text of, then ON DUPLICATE KEY UPDATE' => [
+            'INSERT INTO t (a) VALUES %0% ON DUPLICATE KEY UPDATE b = %1%, c = 1',
+            'W t.a <- h[0] p[] c[]; W t.b <- h[1] p[] c[]; W t.c <- h[] p[] c[]',
+        ];
         yield 'no columns named' => [
             'INSERT INTO users VALUES (?, ?)',
             'W users.* <- h[] p[0] c[]; W users.* <- h[] p[1] c[]',
@@ -152,6 +160,60 @@ final class SqlStatementTest extends TestCase
         ];
         yield 'DELETE, which stores nothing' => [
             'DELETE FROM users WHERE id = ?',
+            '',
+        ];
+        yield 'ALTER TABLE ... UPDATE (ClickHouse), which stores as an UPDATE does' => [
+            'ALTER TABLE t ON CLUSTER main UPDATE a = b, c = ? IN PARTITION 1 WHERE d = ?; INSERT INTO x (y) VALUES (?)',
+            'W t.a <- h[] p[] c[t.b]; W t.c <- h[] p[0] c[]; W x.y <- h[] p[2] c[]',
+        ];
+        yield 'ALTER TABLE and a part the analysis doesn\'t know the text of, which can be an UPDATE' => [
+            'ALTER TABLE t %0%',
+            'null',
+        ];
+        yield 'ALTER TABLE ending with a name the analysis doesn\'t know the text of, which can be an UPDATE' => [
+            'ALTER TABLE %0%',
+            'null',
+        ];
+        yield 'the commands of an ALTER TABLE, each UPDATE storing' => [
+            'ALTER TABLE t DELETE WHERE x = 1, UPDATE a = %0% WHERE y IN (1, 2), UPDATE b = %1% WHERE 1',
+            'W t.a <- h[0] p[] c[]; W t.b <- h[1] p[] c[]',
+        ];
+        yield 'ALTER TABLE and a part the analysis doesn\'t know the text of after a command, which can be an UPDATE' => [
+            'ALTER TABLE t DELETE WHERE x = 1, %0%',
+            'null',
+        ];
+        yield 'ALTER TABLE and a part the analysis doesn\'t know the text of in a WHERE, which can end it' => [
+            'ALTER TABLE t UPDATE a = 1 WHERE x = %0%',
+            'null',
+        ];
+        yield 'ALTER TABLE and a number in a WHERE, which can\'t end it' => [
+            'ALTER TABLE t UPDATE a = %0% WHERE x = %1%',
+            'W t.a <- h[0] p[] c[]',
+            [1],
+        ];
+        yield 'another ALTER and a number, which can\'t be a command' => [
+            'ALTER USER u SETTINGS max_threads = %0%',
+            '',
+            [0],
+        ];
+        yield 'ALTER TABLE ... UPDATE without WHERE, which the last value then holds' => [
+            'ALTER TABLE t UPDATE a = %0%',
+            'null',
+        ];
+        yield 'ALTER TABLE ON CLUSTER and a part the analysis doesn\'t know the text of' => [
+            'ALTER TABLE t ON CLUSTER %0% UPDATE a = 1 WHERE 1',
+            'null',
+        ];
+        yield 'ALTER TABLE ON CLUSTER and a part the analysis doesn\'t know the text of glued to the name' => [
+            'ALTER TABLE t ON CLUSTER main%0% UPDATE a = 1 WHERE 1',
+            'null',
+        ];
+        yield 'another ALTER and a part the analysis doesn\'t know the text of' => [
+            'ALTER %0%',
+            'null',
+        ];
+        yield 'the other ALTERs, ATTACH and DETACH, which store nothing' => [
+            'ALTER TABLE t DELETE WHERE a = ?; ALTER TABLE t ADD COLUMN b String DEFAULT ?; DETACH TABLE t; ATTACH TABLE t',
             '',
         ];
         yield 'two statements' => [

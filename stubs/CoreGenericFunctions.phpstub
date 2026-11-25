@@ -1583,12 +1583,15 @@ function printf(string $format, ...$values) {}
 function vprintf(string $format, array $values) {}
 
 /**
+ * A local path, which isn't the URL of a server
+ *
  * @psalm-pure
  *
  * @return string|false
  * @psalm-ignore-falsable-return
  *
  * @psalm-flow ($path) -> return
+ * @psalm-taint-escape ssrf
  */
 function realpath(string $path) {}
 
@@ -1764,6 +1767,10 @@ function ldap_escape(string $value, string $ignore = "", int $flags = 0) : strin
  *
  * @param int<1, 2147483647> $depth
  * @return mixed
+ *
+ * A JSON string can hold any character as an escape sequence: the taints escapes of the JSON text removed are given
+ * back in a plugin
+ *
  * @psalm-flow ($json) -(unserialization)-> return
  */
 function json_decode(string $json, ?bool $associative = null, int $depth = 512, int $flags = 0) {}

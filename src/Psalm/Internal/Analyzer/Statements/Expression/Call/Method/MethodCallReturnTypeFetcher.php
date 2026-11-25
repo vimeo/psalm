@@ -32,6 +32,7 @@ use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\Type\TypeVariableTracker;
 use Psalm\IssueBuffer;
+use Psalm\Plugin\EventHandler\Event\AddRemoveCallTaintsEvent;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\MethodStorage;
@@ -325,6 +326,7 @@ final class MethodCallReturnTypeFetcher
     ): Union {
         $result_added_taints = 0;
         $result_removed_taints = 0;
+        $call_added_taints = 0;
         $taint_flow_graph = $statements_analyzer->getTaintFlowGraphWithSuppressed();
 
         // the event of taintMethodCallResult() is about the receiver; this one is about the call
@@ -339,6 +341,18 @@ final class MethodCallReturnTypeFetcher
 
             $result_added_taints = $dispatcher->dispatchAddTaints($event);
             $result_removed_taints = $dispatcher->dispatchRemoveTaints($event);
+
+            [$call_added_taints, $call_removed_taints] = $dispatcher->dispatchAddRemoveCallTaints(
+                new AddRemoveCallTaintsEvent(
+                    $statements_analyzer->getCodebase(),
+                    $cased_method_id,
+                    null,
+                    null,
+                    new CodeLocation($statements_analyzer->getSource(), $stmt),
+                ),
+            );
+            $result_added_taints |= $call_added_taints;
+            $result_removed_taints |= $call_removed_taints;
         }
 
         self::taintMethodCallResult(
@@ -354,6 +368,7 @@ final class MethodCallReturnTypeFetcher
             $template_result,
             $result_added_taints,
             $result_removed_taints,
+            $call_added_taints,
         );
 
         // a builtin method that only the call map describes, such as one the stub of its extension leaves out when
@@ -408,12 +423,15 @@ final class MethodCallReturnTypeFetcher
     /**
      * What the method removes from its return depends on the arguments of this call: its result has a node of its own,
      * as $method_call_node may be shared with the other calls, the last call deciding for all
+     *
+     * @param list<PhpParser\Node\Arg> $args
      */
     private static function escapeReturnByArguments(
         Codebase $codebase,
         TaintFlowGraph|CombinedFlowGraph|VariableUseGraph $graph,
         MethodStorage $method_storage,
         ?TemplateResult $template_result,
+        array $args,
         MethodIdentifier $method_id,
         CodeLocation $node_location,
         DataFlowNode $method_call_node,
@@ -424,6 +442,7 @@ final class MethodCallReturnTypeFetcher
                 $codebase,
                 $method_storage,
                 $template_result,
+                $args,
             )
             : 0;
 
@@ -491,6 +510,7 @@ final class MethodCallReturnTypeFetcher
         ?TemplateResult $template_result = null,
         int $result_added_taints = 0,
         int $result_removed_taints = 0,
+        int $result_source_taints = 0,
     ): void {
         if (!($graph = $statements_analyzer->getDataFlowGraphWithSuppressed())
             || !$declaring_method_id
@@ -750,6 +770,7 @@ final class MethodCallReturnTypeFetcher
             $graph,
             $method_storage,
             $template_result,
+            $args,
             $method_id,
             $node_location,
             $method_call_node,
@@ -895,6 +916,12 @@ final class MethodCallReturnTypeFetcher
             $return_type_candidate = $return_type_candidate->setParentNodes([
                 $call_result_node->id => $call_result_node,
             ]);
+
+            // what a handler adds to the call is there whatever the call is given
+            $result_source_taints &= ~$removed_taints;
+            if ($result_source_taints !== 0) {
+                $taint_flow_graph->addSource($call_result_node->setTaints($result_source_taints));
+            }
         }
     }
 

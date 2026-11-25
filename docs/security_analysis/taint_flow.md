@@ -295,8 +295,12 @@ Psalm reads a part of the SQL it doesn't know the text of as a value when known 
 function store(PDO $pdo, int $id): void {
     $bio = $pdo->quote($_GET['bio'] ?? '');
     $pdo->exec("INSERT INTO users (bio) FORMAT JSONEachRow $bio");  // ClickHouse
+    $pdo->exec("ALTER TABLE users UPDATE bio = $bio WHERE id = 1"); // ClickHouse
     $pdo->exec("UPDATE users SET bio = $bio WHERE id = 1");
+    $pdo->exec(sprintf('UPDATE users SET bio = %s WHERE id = %d', $bio, $id));
     $pdo->exec("UPDATE users SET bio = $bio WHERE id = $id");
+    $sql = "UPDATE users SET bio = $bio";
+    $pdo->exec("$sql WHERE id = 1");
 }
 
 function show(PDO $pdo): void {
@@ -313,7 +317,10 @@ A statement that ends with such a part can't be parsed, because the part can go 
 function store(PDO $pdo): void {
     $bio = $pdo->quote($_GET['bio'] ?? '');
     $pdo->exec("UPDATE users SET bio = $bio");                           // can't be parsed
+    $pdo->exec(sprintf('UPDATE users SET bio = %s', $bio));              // can't be parsed
     $pdo->exec("UPDATE users SET bio = 'none' /* $bio */ WHERE id = 1"); // can't be parsed
+    $sql = "UPDATE users SET bio = $bio";
+    $pdo->exec($sql);                                                    // can't be parsed
 }
 
 function show(PDO $pdo): void {
@@ -561,6 +568,10 @@ Plugins can add flows that annotations can't express with these `Codebase` metho
   can't carry those taints, as long as it holds the same value: `$validator->fails()` and `passes()` for a result of
   kind `validator`, `count($violations) > 0`, `$violations->count() === 0`, ... for one of kind `violations`. Call it
   from `afterExpressionAnalysis()`.
++ `addTaintedCall($function, $argument_nodes, $argument_types, $call_location, $source = null)`: wires a call of a
+  function or a method from the nodes and the types of its arguments, as Psalm wires a PHP call of it (sinks,
+  conditional sinks and escapes, flows, specialization), and returns the node of what it returns. See
+  [Wiring calls into the taint graph](../running_psalm/plugins/authoring_plugins.md#wiring-calls-into-the-taint-graph).
 + `tracksTaintFlow($source)`: false when taints aren't tracked there, e.g. when `TaintedInput` is suppressed. The
   methods above then add nothing.
 

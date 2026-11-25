@@ -13,6 +13,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallReturnTy
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\CanonicalPaths;
 use Psalm\Internal\Codebase\CombinedFlowGraph;
 use Psalm\Internal\Codebase\PhpDeprecations;
 use Psalm\Internal\Codebase\TaintFlowGraph;
@@ -1175,6 +1176,7 @@ final class CastAnalyzer
 
             if ($statements_analyzer->taint_flow_graph && $cast_type === 'string') {
                 UrlHosts::recordCast($statements_analyzer->taint_flow_graph, $parent_nodes, $cast_node);
+                CanonicalPaths::recordFlow($statements_analyzer->taint_flow_graph, $parent_nodes, $cast_node);
             }
 
             $parent_nodes = [$cast_node->id => $cast_node];

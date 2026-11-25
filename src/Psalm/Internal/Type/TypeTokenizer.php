@@ -650,6 +650,50 @@ final class TypeTokenizer
     }
 
     /**
+     * Whether one of `$operators` appears in `$type_string` outside brackets and quoted strings, such as the `|` of
+     * `A|B` but not of `array<A|B>` or `array{'a|b': int}`
+     *
+     * @psalm-pure
+     */
+    public static function hasTopLevelOperator(string $type_string, string $operators): bool
+    {
+        $depth = 0;
+
+        for ($i = 0, $length = strlen($type_string); $i < $length; $i++) {
+            $char = $type_string[$i];
+
+            switch ($char) {
+                case '\'':
+                case '"':
+                    for ($i++; $i < $length && $type_string[$i] !== $char; $i++) {
+                        if ($type_string[$i] === '\\') {
+                            $i++;
+                        }
+                    }
+                    break;
+                case '(':
+                case '<':
+                case '{':
+                case '[':
+                    $depth++;
+                    break;
+                case ')':
+                case '>':
+                case '}':
+                case ']':
+                    $depth--;
+                    break;
+                default:
+                    if ($depth === 0 && str_contains($operators, $char)) {
+                        return true;
+                    }
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * @psalm-external-mutation-free
      */
     public static function clearCache(): void
