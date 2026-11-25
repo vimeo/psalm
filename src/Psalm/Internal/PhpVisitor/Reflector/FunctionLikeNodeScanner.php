@@ -654,6 +654,8 @@ final class FunctionLikeNodeScanner
                 $var_comment_allow_private_mutation = false;
                 $var_comment_suppressed_issues = [];
                 $var_comment_deprecated = false;
+                $var_comment_internal = false;
+                $var_comment_psalm_internal = [];
                 if ($doc_comment) {
                     $template_types = ($this->existing_function_template_types ?: [])
                         + ($classlike_storage->template_types ?: [])
@@ -677,6 +679,8 @@ final class FunctionLikeNodeScanner
                             $var_comment_allow_private_mutation = $var_comment->allow_private_mutation;
                             $var_comment_suppressed_issues = $var_comment->suppressed_issues;
                             $var_comment_deprecated = $var_comment->deprecated;
+                            $var_comment_internal = $var_comment->internal;
+                            $var_comment_psalm_internal = $var_comment->psalm_internal;
                         }
                     } catch (IncorrectDocblockException $e) {
                         $storage->docblock_issues[] = new MissingDocblockType(
@@ -727,11 +731,26 @@ final class FunctionLikeNodeScanner
                 $property_storage->allow_private_mutation = $var_comment_allow_private_mutation;
                 $property_storage->suppressed_issues = $var_comment_suppressed_issues;
                 $property_storage->deprecated = $var_comment_deprecated;
+                $fq_classlike_name = $classlike_storage->name;
+
+                $property_storage->internal = $var_comment_psalm_internal;
+
+                if ($property_storage->internal === [] && $var_comment_internal && $fq_classlike_name) {
+                    $property_storage->internal = [NamespaceAnalyzer::getNameSpaceRoot($fq_classlike_name)];
+                }
+
                 $property_storage->attributes = $param_storage->attributes;
+
+                foreach ($param_storage->attributes as $attribute) {
+                    if ($attribute->fq_class_name === 'Psalm\\Internal'
+                        && !$property_storage->internal
+                        && $fq_classlike_name
+                    ) {
+                        $property_storage->internal = [NamespaceAnalyzer::getNameSpaceRoot($fq_classlike_name)];
+                    }
+                }
                 $param_storage->promoted_property = true;
                 $property_storage->is_promoted = true;
-
-                $fq_classlike_name = $classlike_storage->name;
 
                 $property_id = $fq_classlike_name . '::$' . $param_storage->name;
 
