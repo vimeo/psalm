@@ -4182,8 +4182,9 @@ final class Config
      */
     private function getComposerPackageOf(string $file_path): ?array
     {
-        $root = rtrim($this->base_dir, '/\\');
-        $directory = dirname($file_path);
+        // on Windows, paths may separate their directories with / too
+        $root = str_replace('/', DIRECTORY_SEPARATOR, rtrim($this->base_dir, '/\\'));
+        $directory = str_replace('/', DIRECTORY_SEPARATOR, dirname($file_path));
         if (!str_starts_with($directory, $root . DIRECTORY_SEPARATOR)) {
             return null;
         }
@@ -4192,7 +4193,8 @@ final class Config
             return $this->composer_packages[$directory];
         }
 
-        $vendor_dir = $root . DIRECTORY_SEPARATOR . trim($this->composer_vendor_dir, '/\\');
+        $vendor_dir = $root . DIRECTORY_SEPARATOR
+            . str_replace('/', DIRECTORY_SEPARATOR, trim($this->composer_vendor_dir, '/\\'));
         if ($directory === $vendor_dir || str_starts_with($directory, $vendor_dir . DIRECTORY_SEPARATOR)) {
             return $this->composer_packages[$directory] = null;
         }
