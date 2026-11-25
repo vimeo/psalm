@@ -1497,14 +1497,16 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
             $constructor_appearing_fqcln = $storage->appearing_method_ids['__construct']->fq_class_name;
 
             $constructor_class_storage = $classlike_storage_provider->get($constructor_declaring_fqcln);
+            $constructor_storage = $constructor_class_storage->methods['__construct'] ?? null;
 
-            // ignore oldstyle constructors and classes without any declared properties
-            if ($constructor_class_storage->user_defined
-                && !$constructor_class_storage->stubbed
-                && isset($constructor_class_storage->methods['__construct'])
+            // ignore oldstyle constructors and classes without any declared properties; a stub that leaves out the
+            // constructor keeps the one of the real class
+            if ($constructor_storage !== null
+                && (($constructor_class_storage->user_defined && !$constructor_class_storage->stubbed)
+                    || ($constructor_class_storage->stubbed
+                        && !$constructor_storage->stubbed
+                        && $constructor_storage->location !== null))
             ) {
-                $constructor_storage = $constructor_class_storage->methods['__construct'];
-
                 $fake_constructor_params = array_map(
                     static function (FunctionLikeParameter $param): PhpParser\Node\Param {
                         $fake_param = (new PhpParser\Builder\Param($param->name));

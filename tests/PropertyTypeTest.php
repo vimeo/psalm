@@ -2354,6 +2354,28 @@ final class PropertyTypeTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'promotedPropertyOfAncestorConstructorCalledByItsName' => [
+                'code' => '<?php
+                    class A
+                    {
+                        public function __construct(
+                            public string $name,
+                        ) {}
+                    }
+
+                    class B extends A {}
+
+                    final class C extends B
+                    {
+                        public function __construct()
+                        {
+                            A::__construct("c");
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'propertyWithoutTypeSuppressingIssueAndAssertingNull' => [
                 'code' => '<?php
                     class A {
@@ -6567,6 +6589,13 @@ final class PropertyTypeTest extends TestCase
                     }
 
                     class B extends A {}',
+                'error_message' => 'MissingConstructor',
+            ],
+            'inheritedConstructorOfAStubbedBuiltinClass' => [
+                'code' => '<?php
+                    final class E extends Exception {
+                        public string $foo;
+                    }',
                 'error_message' => 'MissingConstructor',
             ],
             'abstractClassInheritsPrivateConstructor' => [
