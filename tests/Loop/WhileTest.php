@@ -217,6 +217,22 @@ final class WhileTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'variableAssignedBeforeEveryBreakOfAnEnteredWhileInsideALoopIsDefinedAfterIt' => [
+                'code' => '<?php
+                    function pick(): void {
+                        foreach ([1, 2] as $_) {
+                            $i = 0;
+                            while ($i < 10) {
+                                $picked = $i;
+                                if (rand(0, 1)) {
+                                    break;
+                                }
+                                $i++;
+                            }
+                            /** @psalm-check-type-exact $picked = int<0, 9> */;
+                        }
+                    }',
+            ],
             'compoundAssignmentInTheConditionIsNarrowedByIt' => [
                 'code' => '<?php
                     $try = 8;

@@ -123,13 +123,13 @@ final class TemplateInferredTypeReplacer
                     && !empty($inferred_lower_bounds[$atomic_type->offset_param_name])
                 ) {
                     $array_template_type
-                        = TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
+                        = TemplateStandinTypeReplacer::getReadTypeFromBounds(
                             $inferred_lower_bounds[$atomic_type->array_param_name][$atomic_type->defining_class],
                             $codebase,
                         );
 
                     $offset_template_type
-                        = TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
+                        = TemplateStandinTypeReplacer::getReadTypeFromBounds(
                             array_values($inferred_lower_bounds[$atomic_type->offset_param_name])[0],
                             $codebase,
                         );
@@ -254,7 +254,7 @@ final class TemplateInferredTypeReplacer
         array $inferred_lower_bounds,
     ): array {
         $template_type = isset($inferred_lower_bounds[$atomic_type->param_name][$atomic_type->defining_class])
-            ? TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
+            ? TemplateStandinTypeReplacer::getReadTypeFromBounds(
                 $inferred_lower_bounds[$atomic_type->param_name][$atomic_type->defining_class],
                 $codebase,
             )
@@ -537,7 +537,7 @@ final class TemplateInferredTypeReplacer
             return null;
         }
 
-        $template_type = TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
+        $template_type = TemplateStandinTypeReplacer::getReadTypeFromBounds(
             $inferred_lower_bounds[$atomic_type->param_name][$atomic_type->defining_class],
             $codebase,
         );
@@ -570,7 +570,7 @@ final class TemplateInferredTypeReplacer
             return null;
         }
 
-        $template_type = TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
+        $template_type = TemplateStandinTypeReplacer::getReadTypeFromBounds(
             $inferred_lower_bounds[$atomic_type->param_name][$atomic_type->defining_class],
             $codebase,
         );
