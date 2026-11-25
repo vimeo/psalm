@@ -184,6 +184,32 @@ final class PsalmEndToEndTest extends PsalmEndToEndTestCase
         yield 'review after the report' => [['report.json', '--review', 'code']];
     }
 
+    /**
+     * @param list<string> $args
+     */
+    #[DataProvider('provideConfigPathsThatAreNotFiles')]
+    public function testAConfigPathThatIsNotAFileIsReportedWithoutACrash(array $args): void
+    {
+        $process = self::newProcess([PHP_BINARY, $this->psalm, ...$args], self::$tmpDir, self::agentEnvVarsToUnset());
+        $process->run();
+
+        $output = $process->getOutput() . $process->getErrorOutput();
+        $this->assertSame(1, $process->getExitCode(), $output);
+        $this->assertStringContainsString('is not a readable file', $process->getErrorOutput());
+        $this->assertStringNotContainsString('Uncaught', $output);
+        $this->assertStringNotContainsString('crashed', $output);
+    }
+
+    /**
+     * @return iterable<string, array{list<string>}>
+     * @psalm-pure
+     */
+    public static function provideConfigPathsThatAreNotFiles(): iterable
+    {
+        yield 'a directory' => [['-c', 'src']];
+        yield 'an empty path' => [['-c', '']];
+    }
+
     public function testPsalm(): void
     {
         $this->runPsalmInit(1);

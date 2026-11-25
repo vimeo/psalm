@@ -45,6 +45,8 @@ use function in_array;
 use function ini_set;
 use function is_array;
 use function is_dir;
+use function is_file;
+use function is_readable;
 use function is_scalar;
 use function is_string;
 use function json_decode;
@@ -885,6 +887,11 @@ final class CliUtils
 
         if ($path_to_config === false) {
             fwrite(STDERR, 'Could not resolve path to config ' . (string) ($options['c'] ?? '') . PHP_EOL);
+            exit(1);
+        }
+
+        if ($path_to_config !== null && (!is_file($path_to_config) || !is_readable($path_to_config))) {
+            fwrite(STDERR, 'Config path ' . (string) ($options['c'] ?? '') . ' is not a readable file' . PHP_EOL);
             exit(1);
         }
         return $path_to_config;
