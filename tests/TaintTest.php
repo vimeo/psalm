@@ -2250,6 +2250,13 @@ final class TaintTest extends TestCase
                         echo (string) $row[0];
                     }',
             ],
+            'alterTableUpdateWhereANumberStoresOnlyInItsColumns' => [
+                'code' => '<?php
+                    function run(PDO $pdo, int $id): void {
+                        $pdo->exec("ALTER TABLE users UPDATE bio = " . $pdo->quote($_GET["bio"]) . " WHERE id = $id");
+                        echo (string) $pdo->query("SELECT name FROM users")->fetch()["name"];
+                    }',
+            ],
             'rowsInsertedAsAListKeepTheirColumnsApart' => [
                 'code' => '<?php
                     final class Table {
@@ -8867,6 +8874,14 @@ final class TaintTest extends TestCase
 
                     function show(PDO $pdo): void {
                         echo (string) $pdo->query("SELECT * FROM comments")->fetch()["body"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'alterTableUpdateStoresInItsColumns' => [
+                'code' => '<?php
+                    function run(PDO $pdo): void {
+                        $pdo->exec("ALTER TABLE users UPDATE bio = " . $pdo->quote($_GET["bio"]) . " WHERE id = 1");
+                        echo (string) $pdo->query("SELECT bio FROM users")->fetch()["bio"];
                     }',
                 'error_message' => 'TaintedHtml',
             ],
