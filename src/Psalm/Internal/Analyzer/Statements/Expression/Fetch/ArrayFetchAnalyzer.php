@@ -86,6 +86,7 @@ use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNever;
+use Psalm\Type\Atomic\TNonDecimalIntString;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObject;
@@ -98,6 +99,7 @@ use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Atomic\TTemplateValueOf;
+use Psalm\Type\Atomic\TTraitString;
 use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\MutableUnion;
@@ -1881,7 +1883,10 @@ final class ArrayFetchAnalyzer
                     true,
                     $offset_type->ignore_falsable_issues,
                     $union_comparison_results,
-                );
+                )
+                    // isset() of a string that is numeric looks for the int key it reads as
+                    || ($context->inside_isset
+                        && self::mayReadAsAnIntKey($codebase, $offset_type->freeze(), $expected_offset_type));
 
                 if ($codebase->config->ensure_array_string_offsets_exist
                     && $offset_type_contained_by_expected
@@ -2100,6 +2105,37 @@ final class ArrayFetchAnalyzer
                 );
             }
         }
+    }
+
+    /**
+     * Whether isset() of the offset can find an int key: the strings it may be are numeric ones, read as ints
+     */
+    private static function mayReadAsAnIntKey(Codebase $codebase, Union $offset_type, Union $key_type): bool
+    {
+        if (!$key_type->hasInt()) {
+            return false;
+        }
+
+        $other_types = [];
+        $has_string = false;
+
+        foreach ($offset_type->getAtomicTypes() as $offset_atomic_type) {
+            // a string Psalm knows stays a string key can never be read as an int one
+            if ($offset_atomic_type instanceof TString
+                && !$offset_atomic_type instanceof TLiteralString
+                && !$offset_atomic_type instanceof TClassString
+                && !$offset_atomic_type instanceof TNonDecimalIntString
+                && !$offset_atomic_type instanceof TTraitString
+            ) {
+                $has_string = true;
+            } else {
+                $other_types[] = $offset_atomic_type;
+            }
+        }
+
+        return $has_string
+            && ($other_types === []
+                || UnionTypeComparator::isContainedBy($codebase, new Union($other_types), $key_type));
     }
 
     /**
@@ -2381,7 +2417,9 @@ final class ArrayFetchAnalyzer
                     $offset_type->freeze(),
                     true,
                     $offset_type->ignore_falsable_issues,
-                );
+                )
+                    // a string that is numeric is the int key it reads as
+                    || self::mayReadAsAnIntKey($codebase, $offset_type->freeze(), $key_type);
             }
 
             if (($is_contained

@@ -3537,6 +3537,14 @@ final class ForeachTest extends TestCase
                     foreach (g() as $_) {}',
                 'error_message' => 'non-null send() type Generator<int, int, non-empty-string',
             ],
+            'possiblyInvalidGeneratorIteratorShowsTheSendType' => [
+                'code' => '<?php
+                    /** @param list<int>|Generator<int, int, string, void> $a */
+                    function f($a): void {
+                        foreach ($a as $_) {}
+                    }',
+                'error_message' => 'Cannot iterate over generator with non-null send() type Generator<int, int, string',
+            ],
             'nullableIteratorShowsTheRefinedType' => [
                 'code' => '<?php
                     /** @param list{5, non-empty-string}|null $a */

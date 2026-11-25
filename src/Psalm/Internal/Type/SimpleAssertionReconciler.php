@@ -10,6 +10,7 @@ use Psalm\Codebase;
 use Psalm\Internal\Codebase\ClassConstantByWildcardResolver;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
 use Psalm\Internal\Type\Comparator\CallableTypeComparator;
 use Psalm\Storage\Assertion;
 use Psalm\Storage\Assertion\Any;
@@ -415,6 +416,7 @@ final class SimpleAssertionReconciler extends Reconciler
         ) {
             return self::reconcileIterable(
                 $assertion,
+                $assertion_type,
                 $codebase,
                 $existing_var_type,
                 $key,
@@ -1847,6 +1849,7 @@ final class SimpleAssertionReconciler extends Reconciler
      */
     private static function reconcileIterable(
         Assertion $assertion,
+        TIterable $assertion_type,
         Codebase $codebase,
         Union $existing_var_type,
         ?string $key,
@@ -1861,7 +1864,7 @@ final class SimpleAssertionReconciler extends Reconciler
         $existing_var_atomic_types = $existing_var_type->getAtomicTypes();
 
         if ($existing_var_type->hasMixed() || $existing_var_type->hasTemplate()) {
-            return new Union([new TIterable]);
+            return new Union([$assertion_type]);
         }
 
         $iterable_types = [];
@@ -1878,6 +1881,7 @@ final class SimpleAssertionReconciler extends Reconciler
                 $parts_failed_reconciliation = Reconciler::RECONCILIATION_OK;
                 $iterable_parts = self::reconcileIterable(
                     $assertion,
+                    $assertion_type,
                     $codebase,
                     new Union($parts),
                     null,
@@ -1896,6 +1900,35 @@ final class SimpleAssertionReconciler extends Reconciler
             } else {
                 $redundant = false;
             }
+        }
+
+        if ($assertion_type->extra_types) {
+            $intersected_types = [];
+
+            foreach ($iterable_types as $type) {
+                foreach ($assertion_type->extra_types as $extra_type) {
+                    if (AtomicTypeComparator::isContainedBy($codebase, $type, $extra_type)) {
+                        continue;
+                    }
+
+                    $redundant = false;
+
+                    if (!$type instanceof TNamedObject
+                        && !$type instanceof TIterable
+                        && !$type instanceof TTemplateParam
+                        && !$type instanceof TObjectWithProperties
+                    ) {
+                        // an array is not an object, so it cannot be an instance of the intersected types
+                        continue 2;
+                    }
+
+                    $type = $type->addIntersectionType($extra_type);
+                }
+
+                $intersected_types[] = $type;
+            }
+
+            $iterable_types = $intersected_types;
         }
 
         return self::finishReconciliation(

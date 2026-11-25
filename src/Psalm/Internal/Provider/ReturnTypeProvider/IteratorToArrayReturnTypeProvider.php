@@ -99,14 +99,14 @@ final class IteratorToArrayReturnTypeProvider implements FunctionReturnTypeProvi
                     : null;
 
                 if ($second_arg_type
-                    && ((string) $second_arg_type === 'false')
+                    && $second_arg_type->isFalse()
                 ) {
                     return Type::getList($value_type);
                 }
 
                 $key_type = $key_type
                     && (!isset($call_args[1])
-                        || ($second_arg_type && ((string) $second_arg_type === 'true')))
+                        || ($second_arg_type && $second_arg_type->isTrue()))
                     ? $key_type
                     : Type::getArrayKey();
 

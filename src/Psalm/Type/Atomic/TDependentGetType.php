@@ -12,7 +12,7 @@ use Override;
  * @psalm-immutable
  * @api
  */
-final class TDependentGetType extends TString
+final class TDependentGetType extends TString implements DependentType
 {
     /**
      * @param string $typeof the variable id
@@ -20,6 +20,21 @@ final class TDependentGetType extends TString
     public function __construct(public string $typeof)
     {
         parent::__construct(false);
+    }
+
+    #[Override]
+    public function getVarId(): string
+    {
+        return $this->typeof;
+    }
+
+    /**
+     * @psalm-pure
+     */
+    #[Override]
+    public function getReplacement(): TNonFalsyString
+    {
+        return new TNonFalsyString();
     }
 
     /**

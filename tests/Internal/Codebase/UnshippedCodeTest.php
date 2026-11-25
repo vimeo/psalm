@@ -136,4 +136,41 @@ final class UnshippedCodeTest extends TestCase
         $this->assertFalse($code->contains('Anything', '/root/Stub.php.dist'));
         $this->assertFalse($code->contains('Lib\\Tests\\FooTest', '/elsewhere/tests/FooTest.php'));
     }
+
+    public function testAutoloadDevOverlappingAutoload(): void
+    {
+        $code = UnshippedCode::fromContents(
+            '/root',
+            [
+                'autoload' => [
+                    'psr-4' => ['App\\' => '.', 'Lib\\' => 'lib/'],
+                    'classmap' => ['legacy/'],
+                ],
+                'autoload-dev' => [
+                    'psr-4' => [
+                        'App\\' => './',
+                        'Lib\\' => ['lib/', 'lib-tests/'],
+                        'Lib\\Tests\\' => 'lib/tests/',
+                        'Other\\' => 'lib/',
+                        'Legacy\\' => 'legacy/',
+                    ],
+                    'classmap' => ['lib/stubs/'],
+                ],
+            ],
+            '',
+        );
+
+        // autoload loads the classes from the same directories too
+        $this->assertFalse($code->contains('App\\Foo', '/root/src/Foo.php'));
+        $this->assertFalse($code->contains('App\\Foo', '/root/Foo.php'));
+        $this->assertFalse($code->contains('Lib\\Foo', '/root/lib/Foo.php'));
+        $this->assertFalse($code->contains('Lib\\Tests\\FooTest', '/root/lib/tests/FooTest.php'));
+        $this->assertFalse($code->contains('Lib\\Stub', '/root/lib/stubs/Stub.php'));
+        $this->assertFalse($code->contains('Legacy\\Foo', '/root/legacy/Foo.php'));
+
+        // but not what only autoload-dev loads
+        $this->assertTrue($code->contains('Lib\\FooTest', '/root/lib-tests/FooTest.php'));
+        $this->assertTrue($code->contains('Other\\Foo', '/root/lib/Foo.php'));
+        $this->assertTrue($code->contains('Anything', '/root/lib/stubs/Stub.php'));
+    }
 }

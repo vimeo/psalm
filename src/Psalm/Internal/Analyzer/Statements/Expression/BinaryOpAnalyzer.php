@@ -41,10 +41,13 @@ use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_pop;
+use function array_values;
 use function strlen;
 use function strtolower;
 
@@ -581,25 +584,22 @@ final class BinaryOpAnalyzer
         Union $stmt_left_type,
         Union $stmt_right_type,
     ): void {
-        if ($stmt_left_type->hasString() && $stmt_right_type->hasObjectType()) {
-            [$object_expr, $object_type] = [$stmt->right, $stmt_right_type];
-        } elseif ($stmt_right_type->hasString() && $stmt_left_type->hasObjectType()) {
-            [$object_expr, $object_type] = [$stmt->left, $stmt_left_type];
-        } else {
-            return;
-        }
-
         $codebase = $statements_analyzer->getCodebase();
 
-        foreach ($object_type->getAtomicTypes() as $atomic_type) {
-            if ($atomic_type instanceof TNamedObject) {
+        // an object compared loosely to a string is converted with its __toString
+        foreach ([
+            [$stmt_left_type, $stmt->right, $stmt_right_type],
+            [$stmt_right_type, $stmt->left, $stmt_left_type],
+        ] as [$string_type, $object_expr, $object_type]) {
+            $objects = $string_type->hasString() ? self::getObjectsOf($object_type) : [];
+
+            if (!$objects) {
+                continue;
+            }
+
+            foreach ($objects as $object) {
                 try {
-                    $storage = $codebase->methods->getStorage(
-                        new MethodIdentifier(
-                            $atomic_type->value,
-                            '__tostring',
-                        ),
-                    );
+                    $storage = $codebase->methods->getStorage(new MethodIdentifier($object->value, '__tostring'));
                 } catch (UnexpectedValueException) {
                     continue;
                 }
@@ -613,8 +613,7 @@ final class BinaryOpAnalyzer
                 $statements_analyzer->signalMutation(
                     $storage->capabilities,
                     $context,
-                    'possibly-mutating method '
-                                . $atomic_type->value . '::__toString',
+                    'possibly-mutating method ' . $object->value . '::__toString',
                     ImpureMethodCall::class,
                     $stmt,
                     null,
@@ -622,7 +621,40 @@ final class BinaryOpAnalyzer
                     $var_id === '$this' ? $storage : null,
                 );
             }
+
+            return;
         }
+    }
+
+    /**
+     * The classes a value of $type may be an object of: those of its objects, of the types they are intersected with,
+     * and of the bounds of its templates (with what the templates are intersected with)
+     *
+     * @return list<TNamedObject>
+     * @psalm-pure
+     */
+    private static function getObjectsOf(Union $type): array
+    {
+        $objects = [];
+        $atomic_types = array_values($type->getAtomicTypes());
+
+        while ($atomic_types) {
+            $atomic_type = array_pop($atomic_types);
+
+            if ($atomic_type instanceof TTemplateParam) {
+                $atomic_types = [...$atomic_types, ...CastAnalyzer::getTemplateBoundAtomics($atomic_type)];
+            } elseif ($atomic_type instanceof TNamedObject) {
+                $objects[] = $atomic_type;
+
+                foreach ($atomic_type->extra_types as $extra_type) {
+                    if ($extra_type instanceof TNamedObject) {
+                        $objects[] = $extra_type;
+                    }
+                }
+            }
+        }
+
+        return $objects;
     }
 
     /**
@@ -678,7 +710,14 @@ final class BinaryOpAnalyzer
         // after the start of a URL fixing its server (the left operand's, and the right operand's own literal start
         // when the left operand is a literal), the right operand can't choose it
         $operand_removed_taints = [
-            $removed_taints,
+            // a value in a string literal (`"[@id='" . $id . "']"`) can only change an XPath query by ending it
+            $removed_taints
+                | (
+                    $statements_analyzer->taint_flow_graph
+                    && ConcatAnalyzer::isQuotedOperand($statements_analyzer, $stmt)
+                        ? TaintKind::INPUT_XPATH
+                        : 0
+                ),
             $removed_taints
                 | ConcatAnalyzer::getTaintsRemovedAfterUrlOrigins($literal_prefixes)
                 | $left_context->getRemovedTaints(),

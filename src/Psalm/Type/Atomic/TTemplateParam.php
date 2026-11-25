@@ -60,7 +60,8 @@ final class TTemplateParam extends Atomic
         return $other_type instanceof self
             && $other_type->param_name === $this->param_name
             && $other_type->defining_class === $this->defining_class
-            && $other_type->as->equals($this->as, $ensure_source_equality, false);
+            && $other_type->as->equals($this->as, $ensure_source_equality, false)
+            && $this->intersectionTypesEqual($other_type->extra_types, $ensure_source_equality);
     }
 
     #[Override]

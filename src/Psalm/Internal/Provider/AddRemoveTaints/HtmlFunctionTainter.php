@@ -7,11 +7,13 @@ namespace Psalm\Internal\Provider\AddRemoveTaints;
 use Override;
 use PhpParser;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Plugin\EventHandler\AddTaintsInterface;
+use Psalm\Internal\Type\IntMask;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Plugin\EventHandler\RemoveTaintsInterface;
 use Psalm\Type\TaintKind;
+use Psalm\Type\Union;
 
+use function array_any;
 use function count;
 use function strtolower;
 
@@ -20,34 +22,56 @@ use const ENT_QUOTES;
 /**
  * @internal
  */
-final class HtmlFunctionTainter implements AddTaintsInterface, RemoveTaintsInterface
+final class HtmlFunctionTainter implements RemoveTaintsInterface
 {
     /**
-     * Called to see what taints should be added
+     * html_entity_decode() and htmlspecialchars_decode() give back the html taint, and the has_quotes one unless no
+     * flags they may have decode a quote: ENT_COMPAT decodes &quot;, ENT_QUOTES &#039; too.
      */
-    #[Override]
-    public static function addTaints(AddRemoveTaintsEvent $event): int
-    {
-        return self::getHtmlTaints($event, 'html_entity_decode', 'htmlspecialchars_decode');
+    public static function getGivenBackTaints(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\FuncCall $item,
+    ): int {
+        if ($item->isFirstClassCallable()
+            || !$item->name instanceof PhpParser\Node\Name
+            || count($item->name->getParts()) !== 1
+            || count($item->getArgs()) === 0
+        ) {
+            return 0;
+        }
+
+        $function_id = strtolower($item->name->getFirst());
+
+        if (($function_id !== 'html_entity_decode' && $function_id !== 'htmlspecialchars_decode')
+            || !ConstantFlags::isBuiltin($statements_analyzer, $item->name, $function_id)
+        ) {
+            return 0;
+        }
+
+        $flags_arg = self::getFlagsArg($item);
+
+        // without flags, both quotes are decoded from PHP 8.1 on, and " before
+        if ($flags_arg === null) {
+            return TaintKind::INPUT_HTML | TaintKind::INPUT_HAS_QUOTES;
+        }
+
+        $flags = $statements_analyzer->node_data->getType($flags_arg);
+        $possible_bits = $flags !== null ? IntMask::getPossibleBits($flags) : null;
+
+        if ($possible_bits !== null && ($possible_bits & ENT_QUOTES) === 0) {
+            return TaintKind::INPUT_HTML;
+        }
+
+        return TaintKind::INPUT_HTML | TaintKind::INPUT_HAS_QUOTES;
     }
 
     /**
-     * Called to see what taints should be removed
+     * htmlspecialchars() and htmlentities() escape <, > and & whatever the flags, and both quotes when the flags are
+     * a constant expression with ENT_QUOTES (see ConstantFlags), or without flags from PHP 8.1 on.
      */
     #[Override]
     public static function removeTaints(AddRemoveTaintsEvent $event): int
     {
-        return self::getHtmlTaints($event, 'htmlentities', 'htmlspecialchars');
-    }
-
-    /**
-     * The HTML taints a call to one of the two functions adds or removes, depending on its `flags`
-     */
-    private static function getHtmlTaints(
-        AddRemoveTaintsEvent $event,
-        string $first_function_id,
-        string $second_function_id,
-    ): int {
         $item = $event->getExpr();
         $statements_analyzer = $event->getStatementsSource();
 
@@ -63,32 +87,69 @@ final class HtmlFunctionTainter implements AddTaintsInterface, RemoveTaintsInter
 
         $function_id = strtolower($item->name->getFirst());
 
-        if ($function_id !== $first_function_id && $function_id !== $second_function_id) {
+        if (($function_id !== 'htmlentities' && $function_id !== 'htmlspecialchars')
+            || !ConstantFlags::isBuiltin($statements_analyzer, $item->name, $function_id)
+        ) {
             return 0;
         }
 
-        $second_arg = self::getFlagsArg($item);
-
-        if ($second_arg === null) {
-            if ($statements_analyzer->getCodebase()->analysis_php_version_id >= 8_01_00) {
-                return TaintKind::INPUT_HTML|TaintKind::INPUT_HAS_QUOTES;
-            }
+        // an unpacked argument may hold any flags
+        if (array_any($item->getArgs(), static fn(PhpParser\Node\Arg $arg): bool => $arg->unpack)) {
             return TaintKind::INPUT_HTML;
         }
 
-        $second_arg_value = $statements_analyzer->node_data->getType($second_arg);
+        $flags_arg = self::getFlagsArg($item);
 
-        if (!$second_arg_value || !$second_arg_value->isSingleIntLiteral()) {
-            return TaintKind::INPUT_HTML;
+        if ($flags_arg === null) {
+            return $statements_analyzer->getCodebase()->analysis_php_version_id >= 8_01_00
+                ? TaintKind::INPUT_HTML | TaintKind::INPUT_HAS_QUOTES
+                : TaintKind::INPUT_HTML;
         }
 
-        $second_arg_value = $second_arg_value->getSingleIntLiteral()->value;
+        [$certain_bits] = ConstantFlags::getBits($statements_analyzer, $flags_arg);
 
-        if (($second_arg_value & ENT_QUOTES) === ENT_QUOTES) {
-            return TaintKind::INPUT_HTML|TaintKind::INPUT_HAS_QUOTES;
+        if (($certain_bits & ENT_QUOTES) === ENT_QUOTES) {
+            return TaintKind::INPUT_HTML | TaintKind::INPUT_HAS_QUOTES;
         }
 
         return TaintKind::INPUT_HTML;
+    }
+
+    /**
+     * What a call PHP code doesn't make (see Codebase::addTaintedCall()) of one of the functions gives back and
+     * removes, with the number and the types of its arguments, as for a PHP call
+     *
+     * @param array<int, Union> $argument_types
+     * @return array{int, int}
+     * @psalm-pure
+     */
+    public static function getWiredCallTaints(
+        int $analysis_php_version_id,
+        string $function_id,
+        int $argument_count,
+        array $argument_types,
+    ): array {
+        $has_flags = $argument_count > 1;
+        [$certain_bits, $possible_bits] = ConstantFlags::getTypeBits($argument_types[1] ?? null);
+
+        if ($function_id === 'html_entity_decode' || $function_id === 'htmlspecialchars_decode') {
+            return [
+                $has_flags && ($possible_bits & ENT_QUOTES) === 0
+                    ? TaintKind::INPUT_HTML
+                    : TaintKind::INPUT_HTML | TaintKind::INPUT_HAS_QUOTES,
+                0,
+            ];
+        }
+
+        if ($function_id === 'htmlentities' || $function_id === 'htmlspecialchars') {
+            $escapes_quotes = $has_flags
+                ? ($certain_bits & ENT_QUOTES) === ENT_QUOTES
+                : $analysis_php_version_id >= 8_01_00;
+
+            return [0, $escapes_quotes ? TaintKind::INPUT_HTML | TaintKind::INPUT_HAS_QUOTES : TaintKind::INPUT_HTML];
+        }
+
+        return [0, 0];
     }
 
     /**

@@ -314,7 +314,13 @@ final class GlobalAnalyzer
                 )
                 : $declared_type;
 
-            $context->removeVarFromConflictingClauses($var_id, $type, $statements_analyzer);
+            // the global may hold another object or array now: what is known of its properties and items is gone
+            if (isset($context->vars_in_scope[$var_id])) {
+                $context->removeDescendents($var_id, $context->vars_in_scope[$var_id], $type, $statements_analyzer);
+            } else {
+                $context->removeVarFromConflictingClauses($var_id, $type, $statements_analyzer);
+            }
+
             $context->vars_in_scope[$var_id] = self::taintGlobalRead($statements_analyzer, $context, $var_id, $type);
             $context->vars_possibly_in_scope[$var_id] = true;
         }
