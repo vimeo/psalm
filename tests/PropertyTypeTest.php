@@ -5567,6 +5567,15 @@ final class PropertyTypeTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.6',
             ],
+            'nullCoalesceOnATypedPropertyOfABuiltinClassWithoutADefault' => [
+                'code' => '<?php
+                    function f(PhpToken $t): string {
+                        return $t->text ?? "";
+                    }',
+                'error_message' => 'RedundantCondition',
+                'error_levels' => [],
+                'php_version' => '8.6',
+            ],
             'finalClassFollowsItsOwnOverrideOfTheTraitMethod' => [
                 'code' => '<?php
                     interface H {}
