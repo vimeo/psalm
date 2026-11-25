@@ -840,6 +840,27 @@ final class PropertyTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'staticInThePropertyTypeOfAParentIsTheClassOfTheObjectRead' => [
+                'code' => '<?php
+                    class Node {
+                        /** @var ?static */
+                        public ?self $next = null;
+                        /** @var ?self */
+                        public ?self $prev = null;
+                    }
+                    final class Leaf extends Node {}
+                    $leaf = new Leaf();
+                    $next = $leaf->next;
+                    $prev = $leaf->prev;
+                    $vars = get_object_vars($leaf);
+                    $column = array_column([$leaf], "next");',
+                'assertions' => [
+                    '$next===' => 'Leaf|null',
+                    '$prev===' => 'Node|null',
+                    '$vars===' => 'array{next: Leaf|null, prev: Node|null}',
+                    '$column===' => 'list{Leaf|null}',
+                ],
+            ],
             'assignedUnionHasItsWidenedGenericReplaced' => [
                 'code' => '<?php
                     /**
