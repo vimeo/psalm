@@ -4,7 +4,6 @@
 /box.json.dist export-ignore
 /build export-ignore
 /.circleci export-ignore
-/.claude-plugin export-ignore
 /.agents export-ignore
 /.claude export-ignore
 /AGENTS.md export-ignore

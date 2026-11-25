@@ -13,16 +13,17 @@ vendor/bin/psalm --init
 ## Claude Code
 
 ```text
-/plugin marketplace add vimeo/psalm
+/plugin marketplace add vimeo/psalm#agent-plugins
 /plugin install psalm@psalm
 ```
 
 The plugin adds the MCP tools, the skill, and the language server, which shows Claude Psalm's errors after each edit.
+The `agent-plugins` branch gets each Psalm release, and `/plugin marketplace update psalm` fetches the latest.
 
 ## OpenCode
 
 ```bash
-opencode plugin add 'github:vimeo/psalm#master::path:skills/psalm/opencode'
+opencode plugin add 'github:vimeo/psalm#agent-plugins::path:psalm/opencode'
 ```
 
 Or load the plugin of the installed Psalm, in `opencode.json`:
