@@ -1307,7 +1307,10 @@ final class CapabilitiesTest extends TestCase
                     function nextDay(): DateTimeImmutable {
                         return (new DateTimeImmutable())->add(new DateInterval("P1D"));
                     }
-
+',
+            ],
+            'dateIntervalConstructorIsPure' => [
+                'code' => '<?php
                     /** @psalm-pure */
                     function interval(): DateInterval {
                         return new DateInterval("P1D");
