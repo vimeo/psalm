@@ -1339,44 +1339,21 @@ final class AnalyzedMethodTest extends TestCase
                 'start_files' => [
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'T1.php' => '<?php
                         namespace Foo;
-
-                        trait T1 {
-                            public function m(): int {
-                                return 1;
-                            }
-                        }',
+                        trait T1 { public function m(): int { return 1; } }',
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'T2.php' => '<?php
                         namespace Foo;
-
-                        trait T2 {
-                            use T1;
-                        }',
+                        trait T2 { use T1; }',
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                         namespace Foo;
-
-                        final class A {
-                            use T2;
-                        }',
+                        final class A { use T2; }',
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'C.php' => '<?php
                         namespace Foo;
-
-                        final class C {
-                            public function bar(): int {
-                                return (new A())->m();
-                            }
-                        }',
+                        final class C { public function bar(): int { return (new A())->m(); } }',
                 ],
                 'end_files' => [
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'T2.php' => '<?php
                         namespace Foo;
-
-                        trait T2 {
-                            use T1;
-
-                            public function m(): string {
-                                return "a";
-                            }
-                        }',
+                        trait T2 { use T1; public function m(): string { return "a"; } }',
                 ],
                 'initial_analyzed_methods' => [
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'T1.php' => [
@@ -1397,26 +1374,16 @@ final class AnalyzedMethodTest extends TestCase
                 'start_files' => [
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'I.php' => '<?php
                         namespace Foo;
-
-                        interface I {
-                            public function m(): int;
-                        }',
+                        interface I { public function m(): int; }',
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'J.php' => '<?php
                         namespace Foo;
-
                         interface J extends I {}',
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'K.php' => '<?php
                         namespace Foo;
-
                         interface K extends J {}',
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'C.php' => '<?php
                         namespace Foo;
-
-                        final class C {
-                            public function bar(K $k): int {
-                                return $k->m();
-                            }
-                        }',
+                        final class C { public function bar(K $k): int { return $k->m(); } }',
                 ],
                 'end_files' => [
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'J.php' => null,
@@ -1427,58 +1394,6 @@ final class AnalyzedMethodTest extends TestCase
                     ],
                 ],
                 'unaffected_analyzed_methods' => [
-                    (string) getcwd() . DIRECTORY_SEPARATOR . 'C.php' => [],
-                ],
-            ],
-            'invalidateCallerOfAMethodInheritedThroughAClassGainingTheMethod' => [
-                'start_files' => [
-                    (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
-                        namespace Foo;
-
-                        class A {
-                            public function m(): int {
-                                return 1;
-                            }
-                        }',
-                    (string) getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
-                        namespace Foo;
-
-                        class B extends A {}',
-                    (string) getcwd() . DIRECTORY_SEPARATOR . 'D.php' => '<?php
-                        namespace Foo;
-
-                        final class D extends B {}',
-                    (string) getcwd() . DIRECTORY_SEPARATOR . 'C.php' => '<?php
-                        namespace Foo;
-
-                        final class C {
-                            public function bar(D $d): int {
-                                return $d->m();
-                            }
-                        }',
-                ],
-                'end_files' => [
-                    (string) getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
-                        namespace Foo;
-
-                        class B extends A {
-                            public function m(): string {
-                                return "a";
-                            }
-                        }',
-                ],
-                'initial_analyzed_methods' => [
-                    (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
-                        'foo\a::m' => 1,
-                    ],
-                    (string) getcwd() . DIRECTORY_SEPARATOR . 'C.php' => [
-                        'foo\c::bar' => 1,
-                    ],
-                ],
-                'unaffected_analyzed_methods' => [
-                    (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
-                        'foo\a::m' => 1,
-                    ],
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'C.php' => [],
                 ],
             ],

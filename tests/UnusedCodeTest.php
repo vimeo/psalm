@@ -316,25 +316,19 @@ final class UnusedCodeTest extends TestCase
         $this->addFile(
             $file_path,
             '<?php
-                interface K {
-                    public function k(): int;
-                }
-
+                interface K { public function k(): int; }
                 interface J2 extends I2 {}
-
                 interface I2 extends J2, K {}
 
                 final class Caller {
-                    public function f(I2 $i, J2 $j): int {
-                        return $i->k() + $j->k();
+                    public function f(J2 $j): int {
+                        return $j->k();
                     }
                 }
 
-                /** @var I2 $i */
-                $i = null;
                 /** @var J2 $j */
                 $j = null;
-                echo (new Caller())->f($i, $j);',
+                echo (new Caller())->f($j);',
         );
         $this->analyzeFile($file_path, new Context(), false);
         $this->project_analyzer->consolidateAnalyzedData();
@@ -346,9 +340,9 @@ final class UnusedCodeTest extends TestCase
 
         $references = $this->project_analyzer->getCodebase()->code_use_graph->getAllReferences();
 
-        $this->assertSame(['func caller::f' => true], $references['return i2::k'] ?? null);
-        $this->assertSame(['func caller::f' => true], $references['return j2::k'] ?? null);
-        $this->assertSame(['func caller::f' => true], $references['return k::k'] ?? null);
+        foreach (['j2', 'i2', 'k'] as $interface) {
+            $this->assertSame(['func caller::f' => true], $references['return ' . $interface . '::k'] ?? null);
+        }
     }
 
     public function testDeadDirectCallDoesNotTriggerUnusedReturnOnLiveOverride(): void
