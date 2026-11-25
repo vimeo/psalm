@@ -118,7 +118,8 @@ final class CoalesceAnalyzer
             // properties and offsets that an assignment drops) belongs to the real context
             $was_inside_isset = $context->inside_isset;
             $was_inside_general_use = $context->inside_general_use;
-            // `??` gives isset semantics only to the fetch chain above the root, a nullsafe fetch included
+            // `??` gives isset semantics only to the fetch chain above the root, a nullsafe fetch included, and to the
+            // variable a nullsafe call at the root is made on (`$a?->b() ?? 1` doesn't warn when `$a` is undefined)
             $fetch_root = $left_expr;
 
             while ($fetch_root instanceof PhpParser\Node\Expr\ArrayDimFetch
@@ -129,7 +130,10 @@ final class CoalesceAnalyzer
             }
 
             $has_fetch_chain = $fetch_root !== $left_expr;
-            $context->inside_isset = $was_inside_isset || $has_fetch_chain;
+            $context->inside_isset = $was_inside_isset
+                || $has_fetch_chain
+                || ($fetch_root instanceof PhpParser\Node\Expr\NullsafeMethodCall
+                    && $fetch_root->var instanceof PhpParser\Node\Expr\Variable);
             // the value of the left operand decides which side is taken
             $context->inside_general_use = true;
 
