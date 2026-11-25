@@ -180,6 +180,56 @@ final class ClassStringMapTest extends TestCase
                     '$c===' => 'class-string-map<T as Foo, T:class-string-map as Foo>',
                 ],
             ],
+            'classStringMapBoundWithOfInANamespace' => [
+                'code' => '<?php
+                    namespace NS;
+
+                    class Foo {
+                        public function foo(): int {
+                            return 1;
+                        }
+                    }
+
+                    /**
+                     * @param class-string-map<T of Foo, T> $m
+                     * @param class-string-map<T of \NS\Foo, T> $n
+                     */
+                    function f(array $m, array $n): int {
+                        foreach ($m as $v) {
+                            return $v->foo();
+                        }
+                        foreach ($n as $v) {
+                            return $v->foo();
+                        }
+                        return 0;
+                    }
+
+                    /** @return class-string-map<T of Foo, T> */
+                    function g(): array {
+                        return [];
+                    }
+
+                    $m = g();',
+                'assertions' => [
+                    '$m===' => 'class-string-map<T as NS\Foo, T:class-string-map as NS\Foo>',
+                ],
+            ],
+            'classNamedOfInANamespaceIsStillQualified' => [
+                'code' => '<?php
+                    namespace NS;
+
+                    class of {}
+
+                    /** @return of */
+                    function g() {
+                        return new of();
+                    }
+
+                    $o = g();',
+                'assertions' => [
+                    '$o===' => 'NS\of',
+                ],
+            ],
         ];
     }
 
