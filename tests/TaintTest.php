@@ -8536,6 +8536,19 @@ final class TaintTest extends TestCase
                     echo implode("", $items);',
                 'error_message' => 'TaintedHtml',
             ],
+            'arrayWalkStaticMethodWritingTaintedValuesByReference' => [
+                'code' => '<?php
+                    final class Filler {
+                        public static function fill(string &$item): void {
+                            $item = (string) $_GET["a"];
+                        }
+                    }
+
+                    $items = ["a"];
+                    array_walk($items, [Filler::class, "fill"]);
+                    echo implode("", $items);',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintSinkOfAFunctionWithOverloadsIsStillChecked' => [
                 'code' => '<?php
                     /**
