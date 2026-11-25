@@ -48,6 +48,7 @@ use Psalm\Type\Union;
 
 use function array_filter;
 use function count;
+use function is_nan;
 use function strtolower;
 
 /**
@@ -544,7 +545,10 @@ final class NegatedAssertionReconciler extends Reconciler
                 if ($existing_var_type->getLiteralFloats()) {
                     $did_match_literal_type = true;
 
-                    if ($existing_var_type->removeType($assertion_type->getKey())) {
+                    // `NAN` is equal to no value, itself included
+                    if (!is_nan($assertion_type->value)
+                        && $existing_var_type->removeType($assertion_type->getKey())
+                    ) {
                         $redundant = false;
                     }
                 }
@@ -589,36 +593,38 @@ final class NegatedAssertionReconciler extends Reconciler
             }
         }
 
-        if ($assertion instanceof IsNotLooselyEqual && !$assertion_type instanceof TEnumCase) {
-            // `null` and booleans are compared to a scalar as booleans, except `null` to a string, as `''`
-            if ($assertion_type instanceof TLiteralString) {
-                $is_falsy = $assertion_type->value === '' || $assertion_type->value === '0';
-                $equals_null = $assertion_type->value === '';
-            } else {
-                $is_falsy = $equals_null = (float) $assertion_type->value === 0.0;
-            }
+        $removed_bool_or_null = false;
 
+        if ($assertion instanceof IsNotLooselyEqual && !$assertion_type instanceof TEnumCase) {
             foreach ($existing_var_type->getAtomicTypes() as $atomic_key => $atomic_type) {
-                if (($atomic_type instanceof TNull && $equals_null)
-                    || ($atomic_type instanceof TFalse && $is_falsy)
-                    || ($atomic_type instanceof TTrue && !$is_falsy)
-                ) {
-                    $existing_var_type->removeType($atomic_key);
-                    $redundant = false;
-                } elseif ($atomic_type::class === TBool::class) {
-                    $existing_var_type->removeType($atomic_key);
-                    $existing_var_type->addType($is_falsy ? new TTrue() : new TFalse());
-                    $redundant = false;
+                if (!$atomic_type instanceof TBool && !$atomic_type instanceof TNull) {
+                    continue;
+                }
+
+                $loosely_equal = AssertionReconciler::getLooselyEqualBoolsAndNull($assertion_type, [$atomic_type]);
+
+                if ($loosely_equal === []) {
+                    continue;
+                }
+
+                $existing_var_type->removeType($atomic_key);
+                $redundant = false;
+                $removed_bool_or_null = true;
+
+                if ($atomic_type::class === TBool::class) {
+                    $existing_var_type->addType($loosely_equal[0] instanceof TTrue ? new TFalse() : new TTrue());
                 }
             }
         }
 
         $existing_var_type = $existing_var_type->freeze();
 
+        $always_equal = $removed_bool_or_null && $existing_var_type->isUnionEmpty();
+
         if ($key && $code_location) {
             if (($did_match_literal_type
                     && ($redundant || count($existing_var_atomic_types) === 1))
-                || !$existing_var_type->getAtomicTypes()
+                || $always_equal
             ) {
                 self::triggerIssueForImpossible(
                     $existing_var_type,
@@ -654,7 +660,7 @@ final class NegatedAssertionReconciler extends Reconciler
             }
         }
 
-        return $existing_var_type;
+        return $always_equal ? Type::getNever() : $existing_var_type;
     }
 
     /**

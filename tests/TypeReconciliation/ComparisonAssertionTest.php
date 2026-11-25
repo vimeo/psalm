@@ -143,7 +143,10 @@ final class ComparisonAssertionTest extends TestCase
                     $zeroFloatOrNull = $e == 0.0 ? $e : 1;
 
                     $f = zeroOrFalse();
-                    $unchanged = $f == 0 ? $f : null;',
+                    $unchanged = null;
+                    if ($f == 0) {
+                        $unchanged = $f;
+                    }',
                 'assertions' => [
                     '$zeroOrFalse===' => '0|false|null',
                     '$elseBranch===' => '0|false|null',
@@ -339,6 +342,29 @@ final class ComparisonAssertionTest extends TestCase
                             /** @psalm-check-type-exact $g = false|null */;
                         }
                     }',
+            ],
+            'notLooselyEqualToNanKeepsNan' => [
+                'code' => '<?php
+                    $v = rand(0, 1) ? NAN : true;
+                    $r = $v != NAN ? $v : null;',
+                'assertions' => [
+                    '$r===' => 'float(NAN)|null',
+                ],
+            ],
+            'matchArmOnTheLastEnumCaseBeforeADefaultIsNotReported' => [
+                'code' => '<?php
+                    enum Suit { case Hearts; case Spades; }
+
+                    function f(Suit $s): int {
+                        return match ($s) {
+                            Suit::Hearts => 1,
+                            Suit::Spades => 2,
+                            default => throw new Exception(),
+                        };
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
             'nullsafePropertyNotIdenticalToNullNarrowsTheReceiver' => [
                 'code' => '<?php
@@ -969,6 +995,14 @@ final class ComparisonAssertionTest extends TestCase
                         if ($i != 0) {}
                     }',
                 'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29',
+            ],
+            'looseEqualityToZeroOfZeroOrFalseIsAlwaysTrue' => [
+                'code' => '<?php
+                    /** @param 0|false $f */
+                    function f($f): ?int {
+                        return $f == 0 ? 1 : null;
+                    }',
+                'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:46',
             ],
             'notLooselyEqualToTheEmptyStringOfFalseOrNullIsImpossible' => [
                 'code' => '<?php
