@@ -67,7 +67,11 @@ final class StaticPropertyAssignmentAnalyzer
 
         foreach ($lhs_type->getAtomicTypes() as $lhs_atomic_type) {
             if ($lhs_atomic_type instanceof TNamedObject) {
-                $fq_class_names[] = $lhs_atomic_type->value;
+                $fq_class_names[] = StaticPropertyFetchAnalyzer::getClassNameFromObjectType(
+                    $codebase,
+                    $lhs_atomic_type,
+                    $prop_name,
+                );
             } else {
                 $fq_class_names = [
                     ...$fq_class_names,
