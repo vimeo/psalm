@@ -779,6 +779,7 @@ final class PreloaderList {
         \Psalm\Internal\Cli\Review::class,
         \Psalm\Internal\Codebase\Analyzer::class,
         \Psalm\Internal\Codebase\AssertionsFromInheritanceResolver::class,
+        \Psalm\Internal\Codebase\CanonicalPaths::class,
         \Psalm\Internal\Codebase\ClassConstantByWildcardResolver::class,
         \Psalm\Internal\Codebase\ClassLikes::class,
         \Psalm\Internal\Codebase\CliOutput::class,
