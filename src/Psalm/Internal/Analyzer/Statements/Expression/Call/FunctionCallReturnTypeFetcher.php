@@ -357,18 +357,13 @@ final class FunctionCallReturnTypeFetcher
         if (!$statements_analyzer->data_flow_graph || !$function_storage) {
             return $stmt->isFirstClassCallable()
                 ? $stmt_type
-                : CanonicalPaths::recordRealpath(
+                : UrlHosts::recordParseUrl(
                     $statements_analyzer,
+                    $context,
                     $stmt,
                     $function_id,
-                    UrlHosts::recordParseUrl(
-                        $statements_analyzer,
-                        $context,
-                        $stmt,
-                        $function_id,
-                        $stmt->getArgs(),
-                        $stmt_type,
-                    ),
+                    $stmt->getArgs(),
+                    $stmt_type,
                 );
         }
 
@@ -427,17 +422,20 @@ final class FunctionCallReturnTypeFetcher
             }
         }
 
-        // the host of a URL, which a list of hosts can fix
-        $stmt_type = UrlHosts::recordParseUrl(
+        // the host of a URL, which a list of hosts can fix, and the canonical path realpath() returns
+        return CanonicalPaths::recordRealpath(
             $statements_analyzer,
-            $context,
             $stmt,
             $function_id,
-            $stmt->getArgs(),
-            $stmt_type,
+            UrlHosts::recordParseUrl(
+                $statements_analyzer,
+                $context,
+                $stmt,
+                $function_id,
+                $stmt->getArgs(),
+                $stmt_type,
+            ),
         );
-
-        return CanonicalPaths::recordRealpath($statements_analyzer, $stmt, $function_id, $stmt_type);
     }
 
     // functions whose false return stays reported with ignoreInternalFunctionFalseReturn
