@@ -332,6 +332,7 @@ abstract class CallAnalyzer
         CodeLocation $code_location,
         StatementsAnalyzer $statements_analyzer,
         bool $static_is_called_class = false,
+        ?FunctionLikeStorage $overload = null,
     ): bool {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -346,7 +347,7 @@ abstract class CallAnalyzer
             ) !== false;
         }
 
-        $method_params = $codebase->methods->getMethodParams(
+        $method_params = $overload !== null ? [] : $codebase->methods->getMethodParams(
             $method_id,
             $statements_analyzer,
             $args,
@@ -439,6 +440,13 @@ abstract class CallAnalyzer
                     $statements_analyzer->getCodebase(),
                 );
             }
+        }
+
+        // one storage per call, as for functions: the parameters and the return type of the overload, the sinks,
+        // `@param-out` and the rest of what the real parameters declare
+        if ($overload !== null) {
+            $method_storage = $method_storage?->withOverload($overload);
+            $method_params = $method_storage->params ?? $overload->params;
         }
 
         if (ArgumentsAnalyzer::analyze(
