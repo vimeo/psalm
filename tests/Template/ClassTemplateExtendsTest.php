@@ -111,6 +111,69 @@ final class ClassTemplateExtendsTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'traitMethodImplementingATemplatedInterfaceMethodTakesTheBoundType' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface Setter {
+                        /** @param T $value */
+                        public function set(mixed $value): void;
+                    }
+
+                    trait SetsInt {
+                        /** @param int $value */
+                        public function set(mixed $value): void {}
+                    }
+
+                    /** @implements Setter<int> */
+                    final class Node implements Setter {
+                        use SetsInt;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'traitMethodImplementingATemplatedInterfaceMethodTakesStatic' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface Setter {
+                        /** @param T $value */
+                        public function set(mixed $value): void;
+                    }
+
+                    trait SetsSelf {
+                        /** @param static $value */
+                        public function set(mixed $value): void {}
+                    }
+
+                    /** @implements Setter<static> */
+                    class Node implements Setter {
+                        use SetsSelf;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'traitMethodImplementingATemplatedAbstractParentMethodTakesTheBoundType' => [
+                'code' => '<?php
+                    /** @template T */
+                    abstract class Base {
+                        /** @param T $value */
+                        abstract public function set(mixed $value): void;
+                    }
+
+                    trait SetsInt {
+                        /** @param int $value */
+                        public function set(mixed $value): void {}
+                    }
+
+                    /** @extends Base<int> */
+                    final class Node extends Base {
+                        use SetsInt;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'staticOfAnImplementedTemplateIsTheObjectItIsInferredFrom' => [
                 'code' => '<?php
                     /** @template T */
@@ -6624,6 +6687,27 @@ final class ClassTemplateExtendsTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'traitMethodImplementingATemplatedInterfaceMethodWithAnotherType' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface Setter {
+                        /** @param T $value */
+                        public function set(mixed $value): void;
+                    }
+
+                    trait SetsString {
+                        /** @param string $value */
+                        public function set(mixed $value): void {}
+                    }
+
+                    /** @implements Setter<int> */
+                    final class Node implements Setter {
+                        use SetsString;
+                    }',
+                'error_message' => 'ImplementedParamTypeMismatch',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'extendsTagWithoutClass' => [
                 'code' => '<?php
                     /** @template T */
