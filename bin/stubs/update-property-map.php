@@ -51,7 +51,7 @@ $docDir = realpath(__DIR__ . '/../../build/doc-en');
 
 if (false === $docDir) {
     echo 'PHP doc not found!' . PHP_EOL;
-    echo 'Please execute: git clone git@github.com:php/doc-en.git ' . dirname(__DIR__) . '/build/doc-en';
+    echo 'Please execute: git clone git@github.com:php/doc-en.git ' . dirname(__DIR__, 2) . '/build/doc-en' . PHP_EOL;
     die(1);
 }
 
@@ -105,9 +105,9 @@ foreach ($files as $file) {
         if (isset($stubbedClasses[$class])) {
             continue;
         }
-        foreach ($classSynopsis->xpath('//docbook:fieldsynopsis') as $item) {
+        foreach ($classSynopsis->xpath('.//docbook:fieldsynopsis') as $item) {
             assert($item instanceof SimpleXMLElement);
-            $property = strtolower((string) $item->varname);
+            $property = (string) $item->varname;
             if (isset($classes[$class][$property])) {
                 continue;
             }
@@ -154,7 +154,7 @@ file_put_contents(
 namespace Psalm\Internal;
 
 /**
- * Automatically created by bin/update-property-map.php
+ * Automatically created by bin/stubs/update-property-map.php
  *
  * Please do not modify - adapt the override constants in above file instead.
  */
