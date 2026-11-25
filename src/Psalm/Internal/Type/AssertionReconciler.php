@@ -2159,15 +2159,16 @@ final class AssertionReconciler extends Reconciler
      * The bools and null loosely equal to the scalar: a bool is compared to the scalar cast to bool (`false == 0`),
      * null to a string as "" (`null == ""`) and to anything else as false (`null == 0`)
      *
-     * @param array<string, TBool|TNull> $bools_and_null
+     * @param array<TBool|TNull> $bools_and_null
      * @return list<TBool|TNull>
      * @psalm-pure
      */
-    private static function getLooselyEqualBoolsAndNull(
+    public static function getLooselyEqualBoolsAndNull(
         TLiteralInt|TLiteralString|TLiteralFloat $scalar,
         array $bools_and_null,
     ): array {
-        $scalar_is_truthy = (bool) $scalar->value;
+        // casting `NAN` to bool warns as of PHP 8.5
+        $scalar_is_truthy = $scalar instanceof TLiteralFloat ? $scalar->value !== 0.0 : (bool) $scalar->value;
         $loosely_equal = [];
 
         foreach ($bools_and_null as $atomic_type) {
