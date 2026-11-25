@@ -218,6 +218,16 @@ final class ArrayAssignmentTest extends TestCase
                         /** @psalm-check-type-exact $l = non-empty-array<int<0, 1>, "x"|int> */;
                     }',
             ],
+            'writeUnderAnExistingOffsetOfAListKeepsItNonEmpty' => [
+                'code' => '<?php
+                    /** @param list<int> $l */
+                    function f(array $l, int $k): void {
+                        if (isset($l[$k])) {
+                            $l[$k] = 5;
+                            /** @psalm-check-type-exact $l = non-empty-list<int> */;
+                        }
+                    }',
+            ],
             'writeUnderAnIntRangeUpToTheLargestIntEnds' => [
                 'code' => '<?php
                     /**

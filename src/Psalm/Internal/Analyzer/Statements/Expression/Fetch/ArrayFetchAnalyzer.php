@@ -2162,7 +2162,7 @@ final class ArrayFetchAnalyzer
         // a shape that may be empty is no longer once written: only a shape that can't be keeps its items
         $existing_keys = $appends || !$type->isNonEmpty() ? null : self::getItemKeysOfAWrittenKey($type, $key_type);
 
-        if ($existing_keys !== null || ($key_exists && !$appends)) {
+        if ($existing_keys !== null || ($key_exists && !$appends && $type->isNonEmpty())) {
             [$can_be_int, $can_be_string] = self::getKindsOfAWrittenKey($key_type);
 
             $properties = $type->properties;
