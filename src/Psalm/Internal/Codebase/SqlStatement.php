@@ -28,7 +28,9 @@ use function substr;
  *
  * A table or column the query doesn't name (`INSERT INTO t VALUES (...)`, `SELECT *`, a name with a hole) is null:
  * any of them. Tables, and the columns of values, are lowercase; the column of a write and the keys of a read are
- * named as written. A query parse() doesn't model gives null.
+ * named as written. A query parse() doesn't model gives null, as does a statement ending with a hole whose text can be
+ * SQL (more assignments, ON DUPLICATE KEY UPDATE, ON CONFLICT, RETURNING, a UNION, another statement) and a comment
+ * with a hole (which can end it).
  *
  * The keys of a read are those of the rows fetched it is under: its name and its position, or any key. A read of
  * `all_columns` (`*`, `t.*`) gives each column of the tables of its value under the column's name.
@@ -76,6 +78,9 @@ final class SqlStatement
 
     private int $placeholder_count = 0;
 
+    /** Whether the statement ends with the data of an INSERT ... FORMAT (ClickHouse), which can't hold SQL */
+    private bool $ends_with_data = false;
+
     /**
      * @param list<Token> $tokens
      */
@@ -87,10 +92,12 @@ final class SqlStatement
     /**
      * The writes and reads of the statements of $sql, or null if a statement isn't one parse() models
      *
+     * @param list<int> $number_holes the holes whose text is a number (of an int, a float, a bool or null), which can't
+     *                                hold SQL
      * @return array{writes: list<Write>, reads: list<Read>}|null
      * @psalm-pure
      */
-    public static function parse(string $sql): ?array
+    public static function parse(string $sql, array $number_holes = []): ?array
     {
         $tokens = self::tokenize($sql);
 
@@ -115,12 +122,17 @@ final class SqlStatement
                 continue;
             }
 
+            // what the analysis doesn't know the text of at the end of a statement can go on with it: more
+            // assignments, ON DUPLICATE KEY UPDATE, ON CONFLICT, RETURNING, a UNION or another statement
+            $last = $statement[array_key_last($statement)];
+            $ends_with_hole = $last[0] === 'hole' && !in_array((int) $last[1], $number_holes, true);
+
             $parser->tokens = $statement;
             $parser->position = 0;
             $result = $parser->parseStatement();
             $statement = [];
 
-            if ($result === null) {
+            if ($result === null || ($ends_with_hole && !$parser->ends_with_data)) {
                 return null;
             }
 
@@ -140,6 +152,7 @@ final class SqlStatement
      */
     private function parseStatement(): ?array
     {
+        $this->ends_with_data = false;
         $first = $this->peekWord();
 
         if ($first === 'select' || (($this->tokens[0][0] ?? '') === '(' && $this->containsWordAtDepth('select', 1))) {
@@ -265,6 +278,18 @@ final class SqlStatement
             }
         } elseif ($word === 'default') {
             $this->position += 2;
+        } elseif ($word === 'format') {
+            // INSERT INTO t (a, b) FORMAT JSONEachRow ... (ClickHouse): the parts of the data (up to the end: nothing
+            // follows it) the analysis doesn't know can be in any of the columns, and the data names no column of a
+            // table. A name of the format the analysis doesn't know the text of can hold the data.
+            $value = $this->getValue(array_slice($this->tokens, $this->position + 1), []);
+            $value['columns'] = [];
+            $this->position = count($this->tokens);
+            $this->ends_with_data = true;
+
+            foreach ($columns ?? [null] as $column) {
+                $writes[] = ['table' => $table_name, 'column' => $column, 'value' => $value];
+            }
         } else {
             return null;
         }
@@ -1265,16 +1290,21 @@ final class SqlStatement
             $start = $offset;
 
             // comments
+            // a part the analysis doesn't know the text of in a comment can end it, and the query can go on with it
             if (($char === '-' && ($sql[$offset + 1] ?? '') === '-') || $char === '#') {
                 $end = strpos($sql, "\n", $offset);
-                $offset = $end === false ? $length : $end + 1;
+                $end = $end === false ? $length : $end + 1;
+                if (strpos(substr($sql, $offset, $end - $offset), self::HOLE_MARKER) !== false) {
+                    return null;
+                }
+                $offset = $end;
                 $glued = false;
                 continue;
             }
 
             if ($char === '/' && ($sql[$offset + 1] ?? '') === '*') {
                 $end = strpos($sql, '*/', $offset + 2);
-                if ($end === false) {
+                if ($end === false || strpos(substr($sql, $offset, $end - $offset), self::HOLE_MARKER) !== false) {
                     return null;
                 }
                 $offset = $end + 2;

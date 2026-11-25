@@ -20,9 +20,9 @@ final class SqlStatementTest extends TestCase
     /**
      * The query, where `%n%` is the hole n, and what it writes (`W table.column <- value`) and reads
      * (`R [keys] <- value`, `all` for all the columns under their names), a value being made of holes (`h`),
-     * placeholders (`p`) and columns (`c`)
+     * placeholders (`p`) and columns (`c`), and the holes that are numbers
      *
-     * @return iterable<string, array{string, string}>
+     * @return iterable<string, array{0: string, 1: string, 2?: list<int>}>
      * @psalm-pure
      */
     public static function providerQueries(): iterable
@@ -72,6 +72,14 @@ final class SqlStatementTest extends TestCase
             'W users.name <- h[] p[name] c[]; W users.email <- h[] p[email] c[]; '
                 . 'W users.name <- h[] p[] c[]; W users.email <- h[0] p[] c[]',
         ];
+        yield 'the data after FORMAT, which can be in any of the columns' => [
+            'INSERT INTO t (a, b) FORMAT JSONEachRow {"a": %0%}',
+            'W t.a <- h[0] p[] c[]; W t.b <- h[0] p[] c[]',
+        ];
+        yield 'a name of the format the analysis doesn\'t know the text of, which can hold the data' => [
+            'INSERT INTO t (a, b) FORMAT %0%',
+            'W t.a <- h[0] p[] c[]; W t.b <- h[0] p[] c[]',
+        ];
         yield 'INSERT SET' => [
             'INSERT INTO users SET name = ?, bio = CONCAT(?, bio)',
             'W users.name <- h[] p[0] c[]; W users.bio <- h[] p[1] c[users.bio]',
@@ -106,8 +114,33 @@ final class SqlStatementTest extends TestCase
             'W ?.name <- h[] p[0] c[]',
         ];
         yield 'a table whose name ends with a hole' => [
-            'SELECT name FROM users_%0%',
+            'SELECT name FROM users_%0% WHERE id = 1',
             'R [name,0] <- h[] p[] c[?.name]',
+        ];
+        yield 'a hole ending a statement, which can go on with it' => [
+            'SELECT name FROM users_%0%',
+            'null',
+        ];
+        yield 'a hole ending a statement before another, which can go on with it' => [
+            'UPDATE t SET a = %0%; SELECT b FROM t',
+            'null',
+        ];
+        yield 'a hole followed by known text, which is a value' => [
+            'UPDATE t SET a = %0% WHERE id = %1% LIMIT 1',
+            'W t.a <- h[0] p[] c[]',
+        ];
+        yield 'a hole of a number ending a statement, which can\'t go on with it' => [
+            'UPDATE t SET a = %0% WHERE id = %1%',
+            'W t.a <- h[0] p[] c[]',
+            [1],
+        ];
+        yield 'a hole in a comment, which can end it' => [
+            'UPDATE t SET a = 1 /* %0% */ WHERE id = 1',
+            'null',
+        ];
+        yield 'a hole in a line comment, which can end it' => [
+            "UPDATE t SET a = 1 -- %0%\nWHERE id = 1",
+            'null',
         ];
         yield 'UNION' => [
             'SELECT a FROM t1 UNION SELECT b FROM t2',
@@ -147,10 +180,13 @@ final class SqlStatementTest extends TestCase
         ];
     }
 
+    /**
+     * @param list<int> $number_holes
+     */
     #[DataProvider('providerQueries')]
-    public function testWhatAQueryWritesAndReads(string $sql, string $expected): void
+    public function testWhatAQueryWritesAndReads(string $sql, string $expected, array $number_holes = []): void
     {
-        $parsed = SqlStatement::parse(str_replace('%', SqlStatement::HOLE_MARKER, $sql));
+        $parsed = SqlStatement::parse(str_replace('%', SqlStatement::HOLE_MARKER, $sql), $number_holes);
 
         if ($parsed === null) {
             $this->assertSame($expected, 'null');

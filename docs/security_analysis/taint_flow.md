@@ -276,9 +276,9 @@ function store(PDO $pdo): void {
 }
 
 function show(PDO $pdo, string $table): void {
-    echo (string) $pdo->query("SELECT name FROM $table")->fetchColumn(); // TaintedHtml
-    echo (string) $pdo->query("SELECT * FROM $table")->fetch()['body'];  // TaintedHtml
-    echo (string) $pdo->query("SELECT * FROM $table")->fetch()['name'];  // no issue
+    echo (string) $pdo->query("SELECT name FROM $table LIMIT 1")->fetchColumn(); // TaintedHtml
+    echo (string) $pdo->query("SELECT * FROM $table LIMIT 1")->fetch()['body'];  // TaintedHtml
+    echo (string) $pdo->query("SELECT * FROM $table LIMIT 1")->fetch()['name'];  // no issue
 }
 ```
 
@@ -287,6 +287,39 @@ function show(PDO $pdo, string $table): void {
 - A column a `UNION` of `SELECT *` gives can be any column of their tables.
 - The values given to a prepared statement it can't follow back to the query that prepared it (a statement passed
   to another function) are stored in every column of every table.
+
+Psalm reads a part of the SQL it doesn't know the text of as a value when known SQL follows it, or when it is a number:
+
+```php
+<?php // --taint-analysis
+function store(PDO $pdo, int $id): void {
+    $bio = $pdo->quote($_GET['bio'] ?? '');
+    $pdo->exec("INSERT INTO users (bio) FORMAT JSONEachRow $bio");  // ClickHouse
+    $pdo->exec("UPDATE users SET bio = $bio WHERE id = 1");
+    $pdo->exec("UPDATE users SET bio = $bio WHERE id = $id");
+}
+
+function show(PDO $pdo): void {
+    echo (string) $pdo->query('SELECT bio FROM users')->fetchColumn();  // TaintedHtml
+    echo (string) $pdo->query('SELECT name FROM users')->fetchColumn(); // no issue
+}
+```
+
+A statement that ends with such a part can't be parsed, because the part can go on with it (`'', name = '...'`,
+`ON DUPLICATE KEY UPDATE ...`, another statement). Neither can a statement with such a part in a comment:
+
+```php
+<?php // --taint-analysis
+function store(PDO $pdo): void {
+    $bio = $pdo->quote($_GET['bio'] ?? '');
+    $pdo->exec("UPDATE users SET bio = $bio");                           // can't be parsed
+    $pdo->exec("UPDATE users SET bio = 'none' /* $bio */ WHERE id = 1"); // can't be parsed
+}
+
+function show(PDO $pdo): void {
+    echo (string) $pdo->query('SELECT name FROM users')->fetchColumn(); // TaintedHtml
+}
+```
 
 #### Your own database layer
 
