@@ -22,6 +22,7 @@ use function sort;
 use function str_contains;
 
 use const DIRECTORY_SEPARATOR;
+use const PHP_VERSION_ID;
 
 final class ArrayAccessTest extends TestCase
 {
@@ -1671,6 +1672,52 @@ final class ArrayAccessTest extends TestCase
         );
     }
 
+    public function testOffsetsOfDomNamespaceCollectionsAreReadByPositionOrName(): void
+    {
+        if (PHP_VERSION_ID < 8_04_00) {
+            $this->markTestSkipped('The Dom namespace needs PHP 8.4');
+        }
+
+        $this->project_analyzer->setPhpVersion('8.4', 'tests');
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                function domAttributeAt(Dom\\NamedNodeMap $attributes): ?Dom\\Attr {
+                    return $attributes[0];
+                }
+
+                function domAttributeNamed(Dom\\NamedNodeMap $attributes): ?Dom\\Attr {
+                    return $attributes["href"];
+                }
+
+                function childAt(Dom\\NodeList $children): ?Dom\\Node {
+                    return $children[0];
+                }
+
+                function elementAt(Dom\\HTMLCollection $elements): ?Dom\\Element {
+                    return $elements[0];
+                }
+
+                function elementNamed(Dom\\HTMLCollection $elements): ?Dom\\Element {
+                    return $elements["main"];
+                }
+
+                function entityAt(Dom\\DocumentType $doctype): ?Dom\\Node {
+                    return $doctype->entities[0];
+                }
+
+                function entityNamed(Dom\\DocumentType $doctype): ?Dom\\Node {
+                    return $doctype->entities["e"];
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+        $this->assertTrue(true);
+    }
+
     /**
      * @psalm-pure
      */
@@ -1678,6 +1725,75 @@ final class ArrayAccessTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'offsetOfADomNamedNodeMapOfEitherKindIsRead' => [
+                'code' => '<?php
+                    function either(DOMNamedNodeMap $attributes, int|string $key): ?DOMNode {
+                        return $attributes[$key];
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'issetOfAnOffsetOfATemplateBoundedByLiteralsThatPartlyMatchTheKeys' => [
+                'code' => '<?php
+                    /**
+                     * @template T of \'a\'|\'z\'
+                     * @param array{a: int, b: int} $array
+                     * @param T $o
+                     */
+                    function partialIsset(array $array, $o): bool {
+                        return isset($array[$o]);
+                    }
+
+                    /**
+                     * @template T of \'x\'|\'y\'
+                     * @param array{a: true, b: true} $array
+                     * @param T|\'a\' $o
+                     */
+                    function unionWithTemplate(array $array, $o): bool {
+                        return isset($array[$o]);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'offsetsOfADomNamedNodeMapAreReadByPositionOrName' => [
+                'code' => '<?php
+                    function attributeAt(DOMNamedNodeMap $attributes): ?DOMNode {
+                        return $attributes[0];
+                    }
+
+                    function attributeNamed(DOMNamedNodeMap $attributes): ?DOMNode {
+                        return $attributes["href"];
+                    }',
+            ],
+            'issetOfASealedArrayWithATemplateOffsetBoundedByAUnion' => [
+                'code' => '<?php
+                    final class Types {
+                        const SCALAR = ["int" => true, "bool" => true];
+
+                        /**
+                         * @template TObject of object
+                         * @template TType of string|class-string<TObject>
+                         * @param TType $type
+                         */
+                        public static function isScalar(string $type): bool {
+                            return isset(self::SCALAR[$type]);
+                        }
+                    }',
+            ],
+            'issetOfASealedArrayWithATemplateOffsetBoundedByATemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template TKey of int|string
+                     * @template TOffset of TKey
+                     * @param array{a: true, b: true} $array
+                     * @param TOffset $offset
+                     */
+                    function has(array $array, $offset): bool {
+                        return isset($array[$offset]);
+                    }',
+            ],
             'issetOfAStringOffsetOfIntKeysLooksForANumericString' => [
                 'code' => '<?php
                     function label(string $id): string {
@@ -4328,6 +4444,41 @@ final class ArrayAccessTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'writeToAnOffsetOfADomNamedNodeMapIsInvalid' => [
+                'code' => '<?php
+                    function a(DOMNamedNodeMap $m, DOMAttr $a): void { $m["x"] = $a; }',
+                'error_message' => 'InvalidArrayAssignment',
+                'error_levels' => [],
+                'php_version' => '8.2',
+            ],
+            'appendToADomNodeListIsInvalid' => [
+                'code' => '<?php
+                    function b(DOMNodeList $l, DOMNode $n): void { $l[] = $n; }',
+                'error_message' => 'InvalidArrayAssignment',
+                'error_levels' => [],
+                'php_version' => '8.2',
+            ],
+            'unsetAnOffsetOfADomNamedNodeMapIsInvalid' => [
+                'code' => '<?php
+                    function c(DOMNamedNodeMap $m): void { unset($m[0]); }',
+                'error_message' => 'InvalidArrayAccess',
+                'error_levels' => [],
+                'php_version' => '8.2',
+            ],
+            'offsetOfATemplateBoundedByLiteralsOutsideIssetIsStillReported' => [
+                'code' => '<?php
+                    /**
+                     * @template T of \'x\'|\'y\'
+                     * @param array{a: int, b: int} $array
+                     * @param T $o
+                     */
+                    function outside(array $array, $o): int {
+                        return $array[$o];
+                    }',
+                'error_message' => 'InvalidArrayOffset',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'issetOfANonDecimalIntStringOffsetOfIntKeys' => [
                 'code' => '<?php
                     /**
@@ -4340,6 +4491,18 @@ final class ArrayAccessTest extends TestCase
                 'error_message' => 'InvalidArrayOffset',
                 'error_levels' => [],
                 'php_version' => '8.0',
+            ],
+            'issetOfASealedArrayWithATemplateOffsetBoundedByATypeOfNoKey' => [
+                'code' => '<?php
+                    /**
+                     * @template T of int
+                     * @param array{a: true, b: true} $array
+                     * @param T $offset
+                     */
+                    function has(array $array, $offset): bool {
+                        return isset($array[$offset]);
+                    }',
+                'error_message' => 'InvalidArrayOffset',
             ],
             'issetOfAMixedOrStringOffsetIsStillACoercion' => [
                 'code' => '<?php

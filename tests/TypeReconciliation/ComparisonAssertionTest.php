@@ -143,7 +143,10 @@ final class ComparisonAssertionTest extends TestCase
                     $zeroFloatOrNull = $e == 0.0 ? $e : 1;
 
                     $f = zeroOrFalse();
-                    $unchanged = $f == 0 ? $f : null;',
+                    $unchanged = null;
+                    if ($f == 0) {
+                        $unchanged = $f;
+                    }',
                 'assertions' => [
                     '$zeroOrFalse===' => '0|false|null',
                     '$elseBranch===' => '0|false|null',
@@ -278,6 +281,90 @@ final class ComparisonAssertionTest extends TestCase
                             /** @psalm-check-type-exact $n = 0|null */;
                         }
                     }',
+            ],
+            'notLooselyEqualToAFalsyLiteralRemovesNull' => [
+                'code' => '<?php
+                    /** @param ?non-empty-string $s */
+                    function f($s, ?int $i, ?float $f, ?string $t): string {
+                        if ($i != 0) {
+                            /** @psalm-check-type-exact $i = int */;
+                        }
+                        if ($f != 0.0) {
+                            /** @psalm-check-type-exact $f = float */;
+                        }
+                        if ("" != $t) {
+                            /** @psalm-check-type-exact $t = non-empty-string */;
+                        }
+                        if ($t == "") {
+                        } else {
+                            /** @psalm-check-type-exact $t = non-empty-string */;
+                        }
+                        if ($s != "") {
+                            return $s . "/";
+                        }
+                        return "";
+                    }',
+            ],
+            'notLooselyEqualToAStringOtherThanTheEmptyStringKeepsNull' => [
+                'code' => '<?php
+                    function f(?string $s, ?string $t): void {
+                        if ($s != "0") {
+                            /** @psalm-check-type-exact $s = null|string */;
+                        }
+                        if ($t != "a") {
+                            /** @psalm-check-type-exact $t = null|string */;
+                        }
+                    }',
+            ],
+            'notLooselyEqualToAScalarLiteralRemovesTheLooselyEqualBools' => [
+                'code' => '<?php
+                    /**
+                     * @param string|false $c
+                     * @param string|false $d
+                     */
+                    function f(?bool $a, ?bool $b, $c, $d, ?bool $e, ?bool $g): void {
+                        if ($a != 0) {
+                            /** @psalm-check-type-exact $a = true */;
+                        }
+                        if ($b != 1) {
+                            /** @psalm-check-type-exact $b = false|null */;
+                        }
+                        if ($c != "") {
+                            /** @psalm-check-type-exact $c = non-empty-string */;
+                        }
+                        if ($d != "0") {
+                            /** @psalm-check-type-exact $d = string */;
+                        }
+                        if ($e != "0") {
+                            /** @psalm-check-type-exact $e = null|true */;
+                        }
+                        if ($g != "a") {
+                            /** @psalm-check-type-exact $g = false|null */;
+                        }
+                    }',
+            ],
+            'notLooselyEqualToNanKeepsNan' => [
+                'code' => '<?php
+                    $v = rand(0, 1) ? NAN : true;
+                    $r = $v != NAN ? $v : null;',
+                'assertions' => [
+                    '$r===' => 'float(NAN)|null',
+                ],
+            ],
+            'matchArmOnTheLastEnumCaseBeforeADefaultIsNotReported' => [
+                'code' => '<?php
+                    enum Suit { case Hearts; case Spades; }
+
+                    function f(Suit $s): int {
+                        return match ($s) {
+                            Suit::Hearts => 1,
+                            Suit::Spades => 2,
+                            default => throw new Exception(),
+                        };
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
             'nullsafePropertyNotIdenticalToNullNarrowsTheReceiver' => [
                 'code' => '<?php
@@ -900,6 +987,30 @@ final class ComparisonAssertionTest extends TestCase
                         if ($one != $two) {}
                     }',
                 'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:29 - 2 can never contain 1',
+            ],
+            'notLooselyEqualToZeroOfZeroOrNullIsImpossible' => [
+                'code' => '<?php
+                    /** @param 0|null $i */
+                    function f($i): void {
+                        if ($i != 0) {}
+                    }',
+                'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29',
+            ],
+            'looseEqualityToZeroOfZeroOrFalseIsAlwaysTrue' => [
+                'code' => '<?php
+                    /** @param 0|false $f */
+                    function f($f): ?int {
+                        return $f == 0 ? 1 : null;
+                    }',
+                'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:46',
+            ],
+            'notLooselyEqualToTheEmptyStringOfFalseOrNullIsImpossible' => [
+                'code' => '<?php
+                    /** @param false|null $s */
+                    function f($s): void {
+                        if ($s != "") {}
+                    }',
+                'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29',
             ],
         ];
     }
