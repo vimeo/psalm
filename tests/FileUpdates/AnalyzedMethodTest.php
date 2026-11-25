@@ -52,7 +52,7 @@ final class AnalyzedMethodTest extends TestCase
 
     /**
      * @param array<string, string> $start_files
-     * @param array<string, string> $end_files
+     * @param array<string, string|null> $end_files a file with null contents is deleted
      * @param array<string, string> $ignored_issues
      */
     #[DataProvider('providerTestValidUpdates')]
@@ -96,11 +96,18 @@ final class AnalyzedMethodTest extends TestCase
             'initial analyzed methods are not the same',
         );
 
+        $files_were_deleted = false;
+
         foreach ($end_files as $file_path => $contents) {
-            $this->file_provider->registerFile($file_path, $contents);
+            if ($contents === null) {
+                $this->file_provider->deleteFile($file_path);
+                $files_were_deleted = true;
+            } else {
+                $this->file_provider->registerFile($file_path, $contents);
+            }
         }
 
-        $codebase->reloadFiles($this->project_analyzer, array_keys($end_files));
+        $codebase->reloadFiles($this->project_analyzer, array_keys($end_files), $files_were_deleted);
 
         $codebase->analyzer->loadCachedResults($this->project_analyzer);
 
@@ -112,7 +119,7 @@ final class AnalyzedMethodTest extends TestCase
     }
 
     /**
-     * @return array<string,array{start_files:array<string,string>,end_files:array<string,string>,initial_analyzed_methods:array<string,array<string,int>>,unaffected_analyzed_methods:array<string,array<string,int>>,ignored_issues?:array<string,string>}>
+     * @return array<string,array{start_files:array<string,string>,end_files:array<string,string|null>,initial_analyzed_methods:array<string,array<string,int>>,unaffected_analyzed_methods:array<string,array<string,int>>,ignored_issues?:array<string,string>}>
      */
     public static function providerTestValidUpdates(): array
     {
@@ -1326,6 +1333,153 @@ final class AnalyzedMethodTest extends TestCase
                         'foo\a::__construct' => 2,
                     ],
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'AChild.php' => [],
+                ],
+            ],
+            'invalidateCallerOfAMethodInheritedThroughNestedTraits' => [
+                'start_files' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'T1.php' => '<?php
+                        namespace Foo;
+
+                        trait T1 {
+                            public function m(): int {
+                                return 1;
+                            }
+                        }',
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'T2.php' => '<?php
+                        namespace Foo;
+
+                        trait T2 {
+                            use T1;
+                        }',
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        namespace Foo;
+
+                        final class A {
+                            use T2;
+                        }',
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'C.php' => '<?php
+                        namespace Foo;
+
+                        final class C {
+                            public function bar(): int {
+                                return (new A())->m();
+                            }
+                        }',
+                ],
+                'end_files' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'T2.php' => '<?php
+                        namespace Foo;
+
+                        trait T2 {
+                            use T1;
+
+                            public function m(): string {
+                                return "a";
+                            }
+                        }',
+                ],
+                'initial_analyzed_methods' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'T1.php' => [
+                        'foo\a::m&foo\t1::m' => 1,
+                    ],
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'C.php' => [
+                        'foo\c::bar' => 1,
+                    ],
+                ],
+                'unaffected_analyzed_methods' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'T1.php' => [
+                        'foo\a::m&foo\t1::m' => 1,
+                    ],
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'C.php' => [],
+                ],
+            ],
+            'invalidateCallerOfAMethodInheritedThroughADeletedInterface' => [
+                'start_files' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'I.php' => '<?php
+                        namespace Foo;
+
+                        interface I {
+                            public function m(): int;
+                        }',
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'J.php' => '<?php
+                        namespace Foo;
+
+                        interface J extends I {}',
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'K.php' => '<?php
+                        namespace Foo;
+
+                        interface K extends J {}',
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'C.php' => '<?php
+                        namespace Foo;
+
+                        final class C {
+                            public function bar(K $k): int {
+                                return $k->m();
+                            }
+                        }',
+                ],
+                'end_files' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'J.php' => null,
+                ],
+                'initial_analyzed_methods' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'C.php' => [
+                        'foo\c::bar' => 1,
+                    ],
+                ],
+                'unaffected_analyzed_methods' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'C.php' => [],
+                ],
+            ],
+            'invalidateCallerOfAMethodInheritedThroughAClassGainingTheMethod' => [
+                'start_files' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        namespace Foo;
+
+                        class A {
+                            public function m(): int {
+                                return 1;
+                            }
+                        }',
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
+                        namespace Foo;
+
+                        class B extends A {}',
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'D.php' => '<?php
+                        namespace Foo;
+
+                        final class D extends B {}',
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'C.php' => '<?php
+                        namespace Foo;
+
+                        final class C {
+                            public function bar(D $d): int {
+                                return $d->m();
+                            }
+                        }',
+                ],
+                'end_files' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
+                        namespace Foo;
+
+                        class B extends A {
+                            public function m(): string {
+                                return "a";
+                            }
+                        }',
+                ],
+                'initial_analyzed_methods' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
+                        'foo\a::m' => 1,
+                    ],
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'C.php' => [
+                        'foo\c::bar' => 1,
+                    ],
+                ],
+                'unaffected_analyzed_methods' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
+                        'foo\a::m' => 1,
+                    ],
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'C.php' => [],
                 ],
             ],
         ];

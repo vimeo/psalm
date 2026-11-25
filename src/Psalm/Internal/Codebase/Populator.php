@@ -1963,21 +1963,15 @@ final class Populator
                 $storage->appearing_method_ids[$aliased_method_name] =
                     $parent_storage->is_trait ? $implemented_method_id : $appearing_method_id;
 
-                $this_method_id = $fq_class_name_lc . '::' . $method_name_lc;
+                // A class that declares the method points at itself, so the pointer walk of
+                // Methods::methodExists() references the same ids as a class that only inherits it.
+                $source_class_lc = isset($storage->methods[$aliased_method_name])
+                    ? $fq_class_name_lc
+                    : strtolower($parent_storage->name);
 
-                if (isset($storage->methods[$aliased_method_name])) {
-                    $storage->potential_declaring_method_ids[$aliased_method_name] = [$this_method_id => true];
-                } else {
-                    if (isset($parent_storage->potential_declaring_method_ids[$aliased_method_name])) {
-                        $storage->potential_declaring_method_ids[$aliased_method_name]
-                            = $parent_storage->potential_declaring_method_ids[$aliased_method_name];
-                    }
-
-                    $storage->potential_declaring_method_ids[$aliased_method_name][$this_method_id] = true;
-
-                    $parent_method_id = strtolower($parent_storage->name) . '::' . $method_name_lc;
-                    $storage->potential_declaring_method_ids[$aliased_method_name][$parent_method_id] = true;
-                }
+                $storage->inherited_method_sources[$aliased_method_name] = $aliased_method_name === $method_name_lc
+                    ? $source_class_lc
+                    : $source_class_lc . '::' . $method_name_lc;
             }
         }
 

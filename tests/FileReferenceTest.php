@@ -11,6 +11,7 @@ use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\CacheMode;
 use Psalm\Internal\Codebase\CodeUseGraph;
+use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\FileReferenceCacheProvider;
 use Psalm\Internal\Provider\FileReferenceProvider;
@@ -239,6 +240,81 @@ final class FileReferenceTest extends TestCase
         $all = $graph->getAllReferences();
         $ksort_recursive($all);
         $this->assertSame($expected_references, $all);
+    }
+
+    /**
+     * @param array<string, list<string>> $expected_locations
+     */
+    #[DataProvider('providerReferenceLocationsThroughInheritingClasses')]
+    public function testReferenceLocationsThroughInheritingClasses(string $input_code, array $expected_locations): void
+    {
+        $this->addFile(self::$src_dir_path . 'somefile.php', $input_code);
+        $this->analyzeFile(self::$src_dir_path . 'somefile.php', new Context());
+
+        $found = [];
+
+        foreach (array_keys($expected_locations) as $symbol) {
+            $found[$symbol] = [];
+
+            foreach ($this->project_analyzer->getCodebase()->findReferencesToSymbol($symbol) as $location) {
+                $found[$symbol][] = $location->getLineNumber() . ':' . $location->getColumn()
+                    . ':' . $location->getSelectedText();
+            }
+        }
+
+        $this->assertSame($expected_locations, $found);
+    }
+
+    public function testReferencedMethodsStopAtAClassWhoseStorageIsGone(): void
+    {
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile($file_path, '<?php
+            class A {
+                public function m(): int {
+                    return 1;
+                }
+            }
+
+            class B extends A {}
+
+            class C extends B {}');
+        $this->analyzeFile($file_path, new Context());
+
+        $codebase = $this->project_analyzer->getCodebase();
+        $codebase->classlike_storage_provider->remove('B', $file_path);
+
+        $this->assertTrue($codebase->methods->methodExists($codebase, new MethodIdentifier('C', 'm'), 'caller::f'));
+
+        $references = $codebase->code_use_graph->getAllReferences();
+
+        $this->assertSame(['func caller::f' => true], $references['func c::m'] ?? null);
+        $this->assertSame(['func caller::f' => true], $references['func b::m'] ?? null);
+    }
+
+    public function testReferencedMethodsStopAtAClassAlreadyVisited(): void
+    {
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile($file_path, '<?php
+            class A {
+                public function m(): int {
+                    return 1;
+                }
+            }
+
+            class B extends A {}
+
+            class C extends B {}');
+        $this->analyzeFile($file_path, new Context());
+
+        $codebase = $this->project_analyzer->getCodebase();
+        $codebase->classlike_storage_provider->get('B')->inherited_method_sources['m'] = 'c';
+
+        $this->assertTrue($codebase->methods->methodExists($codebase, new MethodIdentifier('C', 'm'), 'caller::f'));
+
+        $references = $codebase->code_use_graph->getAllReferences();
+
+        $this->assertSame(['func caller::f' => true], $references['func c::m'] ?? null);
+        $this->assertSame(['func caller::f' => true], $references['func b::m'] ?? null);
     }
 
     public function testAnalysisPersistsEveryResultToTheReferenceCache(): void
@@ -537,6 +613,96 @@ final class FileReferenceTest extends TestCase
     }
 
     /**
+     * @return array<string, array{0: string, 1: array<string, list<string>>}>
+     * @psalm-pure
+     */
+    public static function providerReferenceLocationsThroughInheritingClasses(): array
+    {
+        return [
+            'throughClassChain' => [
+                '<?php
+                    class A {
+                        public function m(): int {
+                            return 1;
+                        }
+                    }
+
+                    class B extends A {}
+
+                    class C extends B {}
+
+                    echo (new C())->m();',
+                [
+                    'A::m' => ['12:37:m'],
+                    'B::m' => ['12:37:m'],
+                    'C::m' => ['12:37:m'],
+                ],
+            ],
+            'throughNestedTraits' => [
+                '<?php
+                    trait T1 {
+                        public function m(): int {
+                            return 1;
+                        }
+                    }
+
+                    trait T2 {
+                        use T1;
+                    }
+
+                    class A {
+                        use T2;
+                    }
+
+                    class B extends A {}
+
+                    echo (new B())->m();',
+                [
+                    'T1::m' => ['18:37:m'],
+                    'T2::m' => ['18:37:m'],
+                    'A::m' => ['18:37:m'],
+                    'B::m' => ['18:37:m'],
+                ],
+            ],
+            'throughInterfaceChain' => [
+                '<?php
+                    interface I {
+                        public function m(): int;
+                    }
+
+                    interface J extends I {}
+
+                    interface K extends J {}
+
+                    function f(K $k): int {
+                        return $k->m();
+                    }',
+                [
+                    'I::m' => ['11:36:m'],
+                    'J::m' => ['11:36:m'],
+                    'K::m' => ['11:36:m'],
+                ],
+            ],
+            'throughReflectedParent' => [
+                '<?php
+                    class C extends Exception {}
+
+                    class D extends C {}
+
+                    echo (new D("a"))->getMessage();',
+                [
+                    'Exception::getMessage' => ['6:40:getMessage'],
+                    'C::getMessage' => ['6:40:getMessage'],
+                    'D::getMessage' => ['6:40:getMessage'],
+                    'Exception::__construct' => ['6:27:new D("a")'],
+                    'C::__construct' => ['6:27:new D("a")'],
+                    'D::__construct' => ['6:27:new D("a")'],
+                ],
+            ],
+        ];
+    }
+
+    /**
      * @return array<string, array{
      *              0: string,
      *              1: array<string,array<string,bool>>
@@ -697,6 +863,380 @@ final class FileReferenceTest extends TestCase
                     ],
                     'use-alias use:C:bcf863c38be34a3d' => [
                         'func foo\\d::bat' => true,
+                    ],
+                ],
+            ],
+            'inheritedThroughTraitAliasAndInsteadof' => [
+                '<?php
+                    namespace Foo;
+
+                    trait TA {
+                        public function shared(): int {
+                            return 1;
+                        }
+                    }
+
+                    trait TB {
+                        public function shared(): int {
+                            return $this->onlyFromTB();
+                        }
+                    }
+
+                    class Al {
+                        use TA, TB {
+                            TB::shared insteadof TA;
+                            TA::shared as sharedA;
+                        }
+
+                        private function onlyFromTB(): int {
+                            return 2;
+                        }
+                    }
+
+                    class AlChild extends Al {}
+
+                    final class Caller {
+                        public function viaClass(Al $a): int {
+                            return $a->sharedA();
+                        }
+
+                        public function viaChild(AlChild $a): int {
+                            return $a->sharedA();
+                        }
+                    }',
+                [
+                    'class foo\\al' => [
+                        'class foo\\alchild' => true,
+                        'func foo\\al::shared' => true,
+                        'func foo\\caller::viaclass' => true,
+                    ],
+                    'class foo\\alchild' => [
+                        'func foo\\caller::viachild' => true,
+                    ],
+                    'class foo\\ta' => [
+                        'class foo\\al' => true,
+                        'func foo\\caller::viachild' => true,
+                        'func foo\\caller::viaclass' => true,
+                    ],
+                    'class foo\\tb' => [
+                        'class foo\\al' => true,
+                    ],
+                    'func foo\\al::onlyfromtb' => [
+                        'return foo\\al::onlyfromtb' => true,
+                    ],
+                    'func foo\\al::shared' => [
+                        'return foo\\al::shared' => true,
+                    ],
+                    'func foo\\al::shareda' => [
+                        'return foo\\al::shareda' => true,
+                    ],
+                    'func foo\\alchild::shareda' => [
+                        'return foo\\alchild::shareda' => true,
+                    ],
+                    'func foo\\ta::shared' => [
+                        'return foo\\ta::shared' => true,
+                    ],
+                    'return foo\\al::onlyfromtb' => [
+                        'func foo\\al::shared' => true,
+                    ],
+                    'return foo\\al::shared' => [
+                        'func foo\\caller::viachild' => true,
+                        'func foo\\caller::viaclass' => true,
+                    ],
+                    'return foo\\al::shareda' => [
+                        'func foo\\caller::viachild' => true,
+                    ],
+                    'return foo\\alchild::shareda' => [
+                        'func foo\\caller::viachild' => true,
+                    ],
+                    'return foo\\ta::shared' => [
+                        'func foo\\caller::viachild' => true,
+                        'func foo\\caller::viaclass' => true,
+                    ],
+                    'use-alias use:Al:bcf863c38be34a3d' => [
+                        'func foo\\caller::viaclass' => true,
+                    ],
+                    'use-alias use:AlChild:bcf863c38be34a3d' => [
+                        'func foo\\caller::viachild' => true,
+                    ],
+                ],
+            ],
+            'inheritedThroughNestedTraits' => [
+                '<?php
+                    namespace Foo;
+
+                    trait T1 {
+                        public function m(): int {
+                            return 1;
+                        }
+                    }
+
+                    trait T2 {
+                        use T1;
+                    }
+
+                    class A {
+                        use T2;
+                    }
+
+                    class B extends A {}
+
+                    final class Caller {
+                        public function f(B $b): int {
+                            return $b->m();
+                        }
+                    }',
+                [
+                    'class foo\\a' => [
+                        'class foo\\b' => true,
+                    ],
+                    'class foo\\b' => [
+                        'func foo\\caller::f' => true,
+                    ],
+                    'class foo\\t1' => [
+                        'class foo\\a' => true,
+                        'func foo\\caller::f' => true,
+                    ],
+                    'class foo\\t2' => [
+                        'class foo\\a' => true,
+                    ],
+                    'func foo\\a::m' => [
+                        'return foo\\a::m' => true,
+                    ],
+                    'func foo\\b::m' => [
+                        'return foo\\b::m' => true,
+                    ],
+                    'func foo\\t1::m' => [
+                        'return foo\\t1::m' => true,
+                    ],
+                    'func foo\\t2::m' => [
+                        'return foo\\t2::m' => true,
+                    ],
+                    'return foo\\a::m' => [
+                        'func foo\\caller::f' => true,
+                    ],
+                    'return foo\\b::m' => [
+                        'func foo\\caller::f' => true,
+                    ],
+                    'return foo\\t1::m' => [
+                        'func foo\\caller::f' => true,
+                    ],
+                    'return foo\\t2::m' => [
+                        'func foo\\caller::f' => true,
+                    ],
+                    'use-alias use:B:bcf863c38be34a3d' => [
+                        'func foo\\caller::f' => true,
+                    ],
+                ],
+            ],
+            'inheritedThroughInterfaceChain' => [
+                '<?php
+                    namespace Foo;
+
+                    interface I {
+                        public function m(): int;
+                    }
+
+                    interface J extends I {}
+
+                    interface K extends J {}
+
+                    final class Caller {
+                        public function f(K $k): int {
+                            return $k->m();
+                        }
+                    }',
+                [
+                    'class foo\\i' => [
+                        'class foo\\j' => true,
+                        'func foo\\caller::f' => true,
+                    ],
+                    'class foo\\j' => [
+                        'class foo\\k' => true,
+                    ],
+                    'class foo\\k' => [
+                        'func foo\\caller::f' => true,
+                    ],
+                    'func foo\\i::m' => [
+                        'return foo\\i::m' => true,
+                    ],
+                    'func foo\\j::m' => [
+                        'return foo\\j::m' => true,
+                    ],
+                    'func foo\\k::m' => [
+                        'return foo\\k::m' => true,
+                    ],
+                    'return foo\\i::m' => [
+                        'func foo\\caller::f' => true,
+                    ],
+                    'return foo\\j::m' => [
+                        'func foo\\caller::f' => true,
+                    ],
+                    'return foo\\k::m' => [
+                        'func foo\\caller::f' => true,
+                    ],
+                    'use-alias use:K:bcf863c38be34a3d' => [
+                        'func foo\\caller::f' => true,
+                    ],
+                ],
+            ],
+            'inheritedFromReflectedParent' => [
+                '<?php
+                    namespace Foo;
+
+                    class C extends \\Exception {}
+
+                    class D extends C {}
+
+                    final class Caller {
+                        public function f(): string {
+                            $d = new D("a");
+                            return $d->getMessage();
+                        }
+                    }',
+                [
+                    'class exception' => [
+                        'class foo\\c' => true,
+                        'func foo\\caller::f' => true,
+                    ],
+                    'class foo\\c' => [
+                        'class foo\\d' => true,
+                    ],
+                    'class foo\\d' => [
+                        'func foo\\caller::f' => true,
+                    ],
+                    'func exception::__construct' => [
+                        'return exception::__construct' => true,
+                    ],
+                    'func exception::getmessage' => [
+                        'return exception::getmessage' => true,
+                    ],
+                    'func foo\\c::__construct' => [
+                        'return foo\\c::__construct' => true,
+                    ],
+                    'func foo\\c::getmessage' => [
+                        'return foo\\c::getmessage' => true,
+                    ],
+                    'func foo\\d::__construct' => [
+                        'return foo\\d::__construct' => true,
+                    ],
+                    'func foo\\d::getmessage' => [
+                        'return foo\\d::getmessage' => true,
+                    ],
+                    'func stringable::__construct' => [
+                        'return stringable::__construct' => true,
+                    ],
+                    'func stringable::getmessage' => [
+                        'return stringable::getmessage' => true,
+                    ],
+                    'func throwable::__construct' => [
+                        'return throwable::__construct' => true,
+                    ],
+                    'func throwable::getmessage' => [
+                        'return throwable::getmessage' => true,
+                    ],
+                    'return exception::__construct' => [
+                        'func foo\\caller::f' => true,
+                    ],
+                    'return exception::getmessage' => [
+                        'func foo\\caller::f' => true,
+                    ],
+                    'return foo\\c::__construct' => [
+                        'func foo\\caller::f' => true,
+                    ],
+                    'return foo\\c::getmessage' => [
+                        'func foo\\caller::f' => true,
+                    ],
+                    'return foo\\d::__construct' => [
+                        'func foo\\caller::f' => true,
+                    ],
+                    'return foo\\d::getmessage' => [
+                        'func foo\\caller::f' => true,
+                    ],
+                    'return stringable::__construct' => [
+                        'func foo\\caller::f' => true,
+                    ],
+                    'return stringable::getmessage' => [
+                        'func foo\\caller::f' => true,
+                    ],
+                    'return throwable::__construct' => [
+                        'func foo\\caller::f' => true,
+                    ],
+                    'return throwable::getmessage' => [
+                        'func foo\\caller::f' => true,
+                    ],
+                    'use-alias use:D:bcf863c38be34a3d' => [
+                        'func foo\\caller::f' => true,
+                    ],
+                ],
+            ],
+            'inheritedThroughAnAliasOfANestedTraitMethod' => [
+                '<?php
+                    namespace Foo;
+
+                    trait TX {
+                        public function shared(): int {
+                            return 1;
+                        }
+                    }
+
+                    trait TA {
+                        use TX;
+                    }
+
+                    class A {
+                        use TA {
+                            shared as sharedA;
+                        }
+                    }
+
+                    class B extends A {}
+
+                    final class Caller {
+                        public function f(B $b): int {
+                            return $b->sharedA();
+                        }
+                    }',
+                [
+                    'class foo\\a' => [
+                        'class foo\\b' => true,
+                    ],
+                    'class foo\\b' => [
+                        'func foo\\caller::f' => true,
+                    ],
+                    'class foo\\ta' => [
+                        'class foo\\a' => true,
+                    ],
+                    'class foo\\tx' => [
+                        'class foo\\a' => true,
+                        'func foo\\caller::f' => true,
+                    ],
+                    'func foo\\a::shared' => [
+                        'return foo\\a::shared' => true,
+                    ],
+                    'func foo\\a::shareda' => [
+                        'return foo\\a::shareda' => true,
+                    ],
+                    'func foo\\b::shareda' => [
+                        'return foo\\b::shareda' => true,
+                    ],
+                    'func foo\\ta::shared' => [
+                        'return foo\\ta::shared' => true,
+                    ],
+                    'return foo\\a::shared' => [
+                        'func foo\\caller::f' => true,
+                    ],
+                    'return foo\\a::shareda' => [
+                        'func foo\\caller::f' => true,
+                    ],
+                    'return foo\\b::shareda' => [
+                        'func foo\\caller::f' => true,
+                    ],
+                    'return foo\\ta::shared' => [
+                        'func foo\\caller::f' => true,
+                    ],
+                    'use-alias use:B:bcf863c38be34a3d' => [
+                        'func foo\\caller::f' => true,
                     ],
                 ],
             ],

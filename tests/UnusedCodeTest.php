@@ -308,6 +308,49 @@ final class UnusedCodeTest extends TestCase
         );
     }
 
+    public function testAMethodOfAnInterfaceOutsideACircularInheritanceIsReferencedThroughTheCycle(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                interface K {
+                    public function k(): int;
+                }
+
+                interface J2 extends I2 {}
+
+                interface I2 extends J2, K {}
+
+                final class Caller {
+                    public function f(I2 $i, J2 $j): int {
+                        return $i->k() + $j->k();
+                    }
+                }
+
+                /** @var I2 $i */
+                $i = null;
+                /** @var J2 $j */
+                $j = null;
+                echo (new Caller())->f($i, $j);',
+        );
+        $this->analyzeFile($file_path, new Context(), false);
+        $this->project_analyzer->consolidateAnalyzedData();
+
+        $this->assertSame(
+            ['CircularReference'],
+            array_column(IssueBuffer::getIssuesDataForFile($file_path), 'type'),
+        );
+
+        $references = $this->project_analyzer->getCodebase()->code_use_graph->getAllReferences();
+
+        $this->assertSame(['func caller::f' => true], $references['return i2::k'] ?? null);
+        $this->assertSame(['func caller::f' => true], $references['return j2::k'] ?? null);
+        $this->assertSame(['func caller::f' => true], $references['return k::k'] ?? null);
+    }
+
     public function testDeadDirectCallDoesNotTriggerUnusedReturnOnLiveOverride(): void
     {
         $this->project_analyzer->getConfig()->throw_exception = false;
