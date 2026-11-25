@@ -2428,6 +2428,60 @@ final class TaintTest extends TestCase
                         $receiver->go(...["sink" => "", "other" => (string) $_GET["x"]]);
                     }',
             ],
+            'guardAnUnpackedElementTakesNoTaintOfAnotherElement' => [
+                'code' => '<?php // --taint-analysis
+                    function safe(): string {
+                        return "safe";
+                    }
+
+                    function f(string $first, string $second): void {
+                        echo $first;
+                    }
+
+                    f(...[safe(), (string) $_GET["x"]]);',
+            ],
+            'guardAnOverrideParameterTakesNoTaintOfAnotherUnpackedElement' => [
+                'code' => '<?php // --taint-analysis
+                    function safe(): string {
+                        return "safe";
+                    }
+
+                    class Base {
+                        public function go(string ...$rest): void {}
+                    }
+
+                    class Child extends Base {
+                        /** @psalm-suppress ParamNameMismatch */
+                        #[\Override]
+                        public function go(string $first = "", string ...$rest): void {
+                            echo $first;
+                        }
+                    }
+
+                    function viaParent(Base $receiver): void {
+                        $receiver->go(...[safe(), (string) $_GET["x"]]);
+                    }
+
+                    (new Child())->go(...[safe(), (string) $_GET["x"]]);',
+            ],
+            'guardAnInheritedSinkTakesNoTaintOfAnotherUnpackedElement' => [
+                'code' => '<?php // --taint-analysis
+                    function safe(): string {
+                        return "safe";
+                    }
+
+                    interface I {
+                        /** @psalm-taint-sink shell $command */
+                        public function run(string $label, string $command): void;
+                    }
+
+                    final class Runner implements I {
+                        #[\Override]
+                        public function run(string $label, string $command): void {}
+                    }
+
+                    (new Runner())->run(...[(string) $_GET["x"], safe()]);',
+            ],
             'taintSourceUnderAKeyOfTheReturnOnly' => [
                 'code' => '<?php // --taint-analysis
                     /**
@@ -9275,6 +9329,25 @@ final class TaintTest extends TestCase
 
                     v("", "", k: (string) $_GET["x"]);',
                 'error_message' => 'TaintedHtml',
+            ],
+            'taintTheParameterOfItsOwnUnpackedElement' => [
+                'code' => '<?php // --taint-analysis
+                    function safe(): string {
+                        return "safe";
+                    }
+
+                    interface I {
+                        /** @psalm-taint-sink shell $command */
+                        public function run(string $label, string $command): void;
+                    }
+
+                    final class Runner implements I {
+                        #[\Override]
+                        public function run(string $label, string $command): void {}
+                    }
+
+                    (new Runner())->run(...[safe(), (string) $_GET["x"]]);',
+                'error_message' => 'TaintedShell',
             ],
             'taintTheVariadicWithASecondUnpackedArgument' => [
                 'code' => '<?php // --taint-analysis
