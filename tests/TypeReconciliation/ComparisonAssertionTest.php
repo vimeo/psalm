@@ -580,6 +580,23 @@ final class ComparisonAssertionTest extends TestCase
                         }
                     }',
             ],
+            'identicalToAUnionOfClassStringsKeepsEachOfThem' => [
+                'code' => '<?php
+                    final class A {}
+                    final class B {}
+
+                    /** @param class-string<A>|class-string<B> $y */
+                    function f(string $x, string $y): void {
+                        if ($x === $y) {
+                            /** @psalm-check-type-exact $x = class-string<A>|class-string<B> */;
+                        }
+                        if ($x !== $y) {
+                        } else {
+                            /** @psalm-check-type-exact $x = class-string<A>|class-string<B> */;
+                        }
+                        if ($x === $y && $x === A::class) {}
+                    }',
+            ],
             'intLiteralOnEitherSideOfAnOrderComparison' => [
                 'code' => '<?php
                     function f(int $i): void {
@@ -790,6 +807,57 @@ final class ComparisonAssertionTest extends TestCase
                         return 1;
                     }',
                 'error_message' => 'FalsableReturnStatement',
+            ],
+            'getClassIdenticalToEitherOfTwoTemplatedClassStrings' => [
+                'code' => '<?php
+                    /**
+                     * @template T of object
+                     * @template U of object
+                     * @param class-string<T> $t
+                     * @param class-string<U> $u
+                     * @return T
+                     */
+                    function f(object $o, string $t, string $u): object {
+                        if (get_class($o) === $t || get_class($o) === $u) {
+                            return $o;
+                        }
+                        throw new Exception();
+                    }',
+                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:36 - The inferred type \'(T:fn-f as object)|(U:fn-f as object)\' does not match',
+            ],
+            'getClassLooselyEqualToEitherOfTwoTemplatedClassStrings' => [
+                'code' => '<?php
+                    /**
+                     * @template T of object
+                     * @template U of object
+                     * @param class-string<T> $t
+                     * @param class-string<U> $u
+                     * @return T
+                     */
+                    function f(object $o, string $t, string $u): object {
+                        if (get_class($o) == $t || get_class($o) == $u) {
+                            return $o;
+                        }
+                        throw new Exception();
+                    }',
+                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:36 - The inferred type \'(T:fn-f as object)|(U:fn-f as object)\' does not match',
+            ],
+            'getClassIdenticalToEitherOfTwoTemplatedClassStringsInANegatedCondition' => [
+                'code' => '<?php
+                    /**
+                     * @template T of object
+                     * @template U of object
+                     * @param class-string<T> $t
+                     * @param class-string<U> $u
+                     * @return T
+                     */
+                    function f(object $o, string $t, string $u): object {
+                        if (!(get_class($o) === $t || get_class($o) === $u)) {
+                            throw new Exception();
+                        }
+                        return $o;
+                    }',
+                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:32 - The inferred type \'(T:fn-f as object)|(U:fn-f as object)\' does not match',
             ],
             'looseEqualityOfTrueToZeroIsImpossible' => [
                 'code' => '<?php
