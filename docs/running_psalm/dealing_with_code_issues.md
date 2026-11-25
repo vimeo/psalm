@@ -91,6 +91,32 @@ function (int $a) : string {
 
 If you wish to suppress all issues, you can use `@psalm-suppress all` instead of multiple annotations.
 
+### Marking known problems with `@psalm-fixme`
+
+`@psalm-fixme IssueName` suppresses an issue exactly like `@psalm-suppress`, but marks it
+as a known problem that should eventually be fixed — for example when migrating a
+baseline file to inline annotations. Like any suppression, a `@psalm-fixme` that no
+longer matches an issue is reported by `--find-unused-psalm-suppress`, so fixed issues
+naturally surface their stale annotations.
+
+```php
+<?php
+/**
+ * @psalm-fixme InvalidReturnType
+ */
+function (int $a) : string {
+  return $a;
+}
+```
+
+You can generate these annotations automatically from the issues Psalm currently
+reports with `--add-fixmes`, which inserts a `@psalm-fixme` on the innermost statement
+enclosing each issue (a good way to migrate an existing baseline to inline annotations):
+
+```
+vendor/bin/psalm --add-fixmes
+```
+
 ## Using a baseline file
 
 If you have a bunch of errors and you don't want to fix them all at once, Psalm can grandfather-in errors in existing code, while ensuring that new code doesn't have those same sorts of errors.
