@@ -856,10 +856,9 @@ final class TypeCombiner
             $combination->objectlike_sealed = $combination->objectlike_sealed
                 && $type->fallback_params === null;
 
-            if (!$type->fallback_params
-                || ($combination->objectlike_key_type
-                    ? $combination->objectlike_key_type->getId() !== $type->fallback_params[0]->getId()
-                    : $existing_objectlike_entries)
+            if ($type->fallback_params
+                && $combination->objectlike_key_type
+                && $combination->objectlike_key_type->getId() !== $type->fallback_params[0]->getId()
             ) {
                 $combination->objectlike_same_fallback_key = false;
             }
@@ -876,7 +875,8 @@ final class TypeCombiner
                         ->setPossiblyUndefined($existing_objectlike_entries
                             || $candidate_property_type->possibly_undefined);
                     if ($existing_objectlike_entries && $combination->objectlike_same_fallback_key) {
-                        $combination->objectlike_missing_keys[$candidate_property_name] = true;
+                        $combination->objectlike_missing_keys[$candidate_property_name]
+                            = !$combination->objectlike_some_sealed;
                     }
                 } else {
                     $combination->objectlike_entries[$candidate_property_name] = Type::combineUnionTypes(
@@ -895,6 +895,8 @@ final class TypeCombiner
 
                 if (!$candidate_property_type->possibly_undefined) {
                     $has_defined_keys = true;
+                } elseif ($type->fallback_params === null) {
+                    $combination->objectlike_missing_keys[$candidate_property_name] = false;
                 }
 
                 if ($value_type === null && $combination->fallbackKeyContains($candidate_property_name)) {
@@ -959,18 +961,23 @@ final class TypeCombiner
                 $combination->objectlike_entries[$k] = $combination->objectlike_entries[$k]
                     ->setPossiblyUndefined(true);
                 if ($combination->objectlike_same_fallback_key) {
-                    $combination->objectlike_missing_keys[$k] = true;
+                    $combination->objectlike_missing_keys[$k] = ($combination->objectlike_missing_keys[$k] ?? true)
+                        && $type->fallback_params !== null;
                 }
             }
 
-            if ($combination->objectlike_value_type) {
+            if ($type->fallback_params === null) {
+                $combination->objectlike_some_sealed = true;
+            }
+
+            if ($type->fallback_params) {
                 foreach ($missing_entries as $k => $_) {
                     if (!$combination->fallbackKeyContains($k)) {
                         continue;
                     }
                     $combination->objectlike_entries[$k] =  Type::combineUnionTypes(
                         $combination->objectlike_entries[$k],
-                        $type->fallback_params[1] ?? $combination->objectlike_value_type,
+                        $type->fallback_params[1],
                         $codebase,
                         $overwrite_empty_array,
                     );
@@ -1950,9 +1957,10 @@ final class TypeCombiner
             ) {
                 // a key that every array lacking it may hold in its fallback, with the fallback's type, is the fallback
                 $fallback_value_type = $combination->objectlike_value_type;
-                foreach ($combination->objectlike_missing_keys as $k => $_) {
+                foreach ($combination->objectlike_missing_keys as $k => $only_unsealed_lack_it) {
                     $objectlike_entry = $combination->objectlike_entries[$k];
-                    if ($objectlike_entry->possibly_undefined
+                    if ($only_unsealed_lack_it
+                        && $objectlike_entry->possibly_undefined
                         && $combination->fallbackKeyAlwaysContains($k)
                         && ($objectlike_entry->hasMixed()
                             ? $fallback_value_type->hasMixed()

@@ -9,6 +9,7 @@ use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Type;
 use Psalm\Type\Atomic;
+use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TNamedObject;
@@ -45,13 +46,6 @@ final class KeyedArrayComparator
 
         $container_sealed = $container_type_part instanceof TKeyedArray
             && $container_type_part->fallback_params === null;
-
-        if ($container_sealed
-            && $input_type_part instanceof TKeyedArray
-            && $input_type_part->fallback_params !== null
-        ) {
-            return false;
-        }
 
         if ($container_type_part instanceof TKeyedArray
             && $container_type_part->is_list
@@ -111,6 +105,25 @@ final class KeyedArrayComparator
                 $atomic_comparison_result->missing_shape_fields = array_keys($input_properties);
             }
             return false;
+        }
+
+        // the keys an unsealed input may hold beyond those it declares fit a sealed container as an array<K, V> would
+        if ($container_sealed
+            && $input_type_part instanceof TKeyedArray
+            && $input_type_part->fallback_params !== null
+        ) {
+            $fallback_comparison = new TypeComparisonResult();
+
+            if (!ArrayTypeComparator::isContainedBy(
+                $codebase,
+                new TArray($input_type_part->fallback_params),
+                $container_type_part,
+                $allow_interface_equality,
+                $fallback_comparison,
+            )) {
+                $all_types_contain = false;
+                $atomic_comparison_result?->mergeFailedPart($fallback_comparison);
+            }
         }
 
         // check remaining $input_properties against container's fallback_params
