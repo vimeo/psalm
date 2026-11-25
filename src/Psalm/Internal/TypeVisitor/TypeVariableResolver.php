@@ -35,6 +35,14 @@ final class TypeVariableResolver extends MutableTypeVisitor
     public bool $resolved_a_variable = false;
 
     /**
+     * The variables resolved by the unions the traversal is inside of: a bound that holds the variable
+     * (`$box->add($box)` gives `_0 the bound `Box<`_0>`) keeps it there, or the traversal never ends
+     *
+     * @var array<string, true>
+     */
+    private array $unrolling = [];
+
+    /**
      * A variable minted for an empty construction (e.g. `new Collection()`)
      * stands for `never`; the two flags select how such variables are treated
      * relative to every other variable:
@@ -181,7 +189,9 @@ final class TypeVariableResolver extends MutableTypeVisitor
     #[Override]
     public function traverse(TypeNode &$node): bool
     {
+        $outer_unrolling = $this->unrolling;
         $result = parent::traverse($node);
+        $this->unrolling = $outer_unrolling;
 
         // a list whose element variable resolved to `never` is the empty
         // array, the same shape template replacement gives `list<never>`
@@ -209,12 +219,21 @@ final class TypeVariableResolver extends MutableTypeVisitor
             return null;
         }
 
+        $unrolling = $this->unrolling;
+
+        foreach ($type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TTypeVariable) {
+                $this->unrolling[$atomic_type->name] = true;
+            }
+        }
+
         $resolved_types = self::resolveAtomics(
             $type->getAtomicTypes(),
             $this->codebase,
             $this->only_never_bound,
             $this->keep_never_bound,
             $this->construction_site_only,
+            $unrolling,
         );
 
         if ($resolved_types !== null) {

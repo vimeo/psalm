@@ -177,15 +177,15 @@ final class TemplateInferredTypeReplacer
                     $new_types[] = $new_type;
                 }
             } elseif ($atomic_type instanceof TTemplatePropertiesOf) {
-                $new_type = self::replaceTemplatePropertiesOf(
+                $properties_of_types = self::replaceTemplatePropertiesOf(
                     $codebase,
                     $atomic_type,
                     $inferred_lower_bounds,
                 );
 
-                if ($new_type) {
+                if ($properties_of_types) {
                     $should_set = false;
-                    $new_types[] = $new_type;
+                    $new_types = [...$new_types, ...$properties_of_types];
                 }
             } elseif ($atomic_type instanceof TIntersection) {
                 $intersected_types = [];
@@ -558,16 +558,20 @@ final class TemplateInferredTypeReplacer
     }
 
     /**
+     * The properties of each class the template stands for: `properties-of<A|B>` is
+     * `properties-of<A>|properties-of<B>`
+     *
      * @param array<string, array<string, non-empty-list<TemplateBound>>> $inferred_lower_bounds
+     * @return list<TPropertiesOf>
      * @psalm-external-mutation-free
      */
     private static function replaceTemplatePropertiesOf(
         ?Codebase $codebase,
         TTemplatePropertiesOf $atomic_type,
         array $inferred_lower_bounds,
-    ): ?Atomic {
+    ): array {
         if (!isset($inferred_lower_bounds[$atomic_type->param_name][$atomic_type->defining_class])) {
-            return null;
+            return [];
         }
 
         $template_type = TemplateStandinTypeReplacer::getReadTypeFromBounds(
@@ -575,15 +579,20 @@ final class TemplateInferredTypeReplacer
             $codebase,
         );
 
-        $classlike_type = $template_type->getSingleAtomic();
-        if (!$classlike_type instanceof TNamedObject) {
-            return null;
+        $properties_of_types = [];
+
+        foreach ($template_type->getAtomicTypes() as $classlike_type) {
+            if (!$classlike_type instanceof TNamedObject) {
+                return [];
+            }
+
+            $properties_of_types[] = new TPropertiesOf(
+                $classlike_type,
+                $atomic_type->visibility_filter,
+            );
         }
 
-        return new TPropertiesOf(
-            $classlike_type,
-            $atomic_type->visibility_filter,
-        );
+        return $properties_of_types;
     }
 
     /**
