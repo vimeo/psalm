@@ -169,16 +169,58 @@ final class ArrayFunctionCallTest extends TestCase
                     $values = [];
                     unset($values[rand(0, 1)]);
 
-                    $first = null;
                     $items = null;
+                    $other = null;
 
                     if (count($values) === 1) {
-                        $first = array_key_first($values);
                         $items = $values;
+                    } else {
+                        $other = $values;
                     }',
                 'assertions' => [
-                    '$first===' => 'int<0, max>|null',
                     '$items===' => 'non-empty-array<int<0, max>, int>|null',
+                    '$other===' => 'array{0?: int, ...<int<0, max>, int>}|null',
+                ],
+            ],
+            'firstKeyOfAnArrayThatMayBeEmptyAfterUnsetIsNotNullWhenCounted' => [
+                'code' => '<?php
+                    /** @param list<int> $values */
+                    function afterUnset(array $values, int $k): int {
+                        unset($values[$k]);
+                        if (count($values) === 1) {
+                            return $values[array_key_first($values)];
+                        }
+                        return 0;
+                    }',
+            ],
+            'countOfTwoOnAnArrayThatMayBeEmptyAfterUnsetMakesItNonEmpty' => [
+                'code' => '<?php
+                    /** @var list<int> $values */
+                    $values = [];
+                    unset($values[rand(0, 1)]);
+
+                    $items = null;
+
+                    if (count($values) === 2) {
+                        $items = $values;
+                        if (count($values) === 2) {}
+                    }',
+                'assertions' => [
+                    '$items===' => 'non-empty-array<int<0, max>, int>|null',
+                ],
+            ],
+            'countOfAShapeWithAnOptionalLiteralKeyAndAFallbackKeepsTheKeyType' => [
+                'code' => '<?php
+                    /** @var array{a?: int, ...<string, string>} $x */
+                    $x = [];
+
+                    $a = 0;
+
+                    if (count($x) === 1) {
+                        $a = $x["a"] ?? 0;
+                    }',
+                'assertions' => [
+                    '$a===' => 'int',
                 ],
             ],
             'arrayKeyExistsNotFindingALiteralFallbackKeyOfAnUnsealedShape' => [
