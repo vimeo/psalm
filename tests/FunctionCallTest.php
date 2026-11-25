@@ -3403,6 +3403,32 @@ final class FunctionCallTest extends TestCase
                 'ignored_issues' => ['DeprecatedSyntax'],
                 'php_version' => '8.0',
             ],
+            'getTypeAndGetDebugTypeAreNonFalsy' => [
+                'code' => '<?php
+                    /** @return non-empty-string */
+                    function a(mixed $x): string {
+                        $t = gettype($x);
+                        return $t;
+                    }
+                    /** @return non-falsy-string */
+                    function b(mixed $x): string {
+                        $t = gettype($x);
+                        return $t;
+                    }
+                    /** @return non-empty-string */
+                    function c(mixed $x): string {
+                        $t = get_debug_type($x);
+                        return $t;
+                    }
+                    /** @return non-falsy-string */
+                    function d(mixed $x): string {
+                        $t = get_debug_type($x);
+                        return $t;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'getTypeDoubleThenInt' => [
                 'code' => '<?php
                     function safe_float(mixed $val): bool {
