@@ -6,6 +6,7 @@ namespace Psalm\Type\Atomic;
 
 use Override;
 use Psalm\Type;
+use Psalm\Type\Atomic;
 
 /**
  * Denotes an enum with a specific value
@@ -30,6 +31,14 @@ final class TEnumCase extends TNamedObject
     public function getId(bool $exact = true): string
     {
         return 'enum(' . $this->value . '::' . $this->case_name . ')';
+    }
+
+    #[Override]
+    public function equals(Atomic $other_type, bool $ensure_source_equality): bool
+    {
+        return $other_type instanceof self
+            && $this->case_name === $other_type->case_name
+            && parent::equals($other_type, $ensure_source_equality);
     }
 
     #[Override]

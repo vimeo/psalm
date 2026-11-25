@@ -13,6 +13,8 @@ use Psalm\Type\Atomic;
 
 use function array_map;
 use function array_merge;
+use function array_values;
+use function count;
 use function implode;
 
 /**
@@ -46,6 +48,32 @@ trait HasIntersectionTrait
                 $this->extra_types,
             ),
         );
+    }
+
+    /**
+     * The intersected types are compared in order, like the ids that Union::equals() compares when they are cached,
+     * and by key like the atomic types of a union
+     *
+     * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties|TCallableObject> $other_types
+     * @psalm-mutation-free
+     */
+    protected function intersectionTypesEqual(array $other_types, bool $ensure_source_equality): bool
+    {
+        if (count($this->extra_types) !== count($other_types)) {
+            return false;
+        }
+
+        $other_types = array_values($other_types);
+
+        foreach (array_values($this->extra_types) as $i => $extra_type) {
+            if ($extra_type->getKey() !== $other_types[$i]->getKey()
+                || !$extra_type->equals($other_types[$i], $ensure_source_equality)
+            ) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**

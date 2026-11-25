@@ -355,6 +355,10 @@ final class TypeComparatorTest extends TestCase
      */
     public static function getCoercibleComparisons(): iterable
     {
+        yield 'objectShapeIntoObjectShapeIntersection' => [
+            'object{a: int}&Countable',
+            'object{a: int}',
+        ];
         yield 'callableStringIntoLowercaseString' => [
             'lowercase-string',
             'callable-string',
@@ -388,6 +392,10 @@ final class TypeComparatorTest extends TestCase
     public static function getSuccessfulComparisons(): array
     {
         return [
+            'objectShapeIntersectionAcceptsItsIntersection' => [
+                'object{a: int}&Countable',
+                'object{a: int}&Countable',
+            ],
             'iterableUnion' => ['array<string, int>|Traversable<string, int>', 'iterable<string, int>'],
             'mixedIterableUnion' => ['array<array-key, mixed>|Traversable<mixed, mixed>', 'iterable<mixed, mixed>'],
             'unparameterizedIterableUnion' => ['array|Traversable', 'iterable'],
@@ -556,6 +564,14 @@ final class TypeComparatorTest extends TestCase
      */
     public static function getUnsuccessfulComparisons(): iterable
     {
+        yield 'iterableIntersectionDoesNotAcceptIterable' => [
+            'iterable&Countable',
+            'iterable',
+        ];
+        yield 'iterableIntersectionDoesNotAcceptArray' => [
+            'iterable<int, string>&Countable',
+            'list<string>',
+        ];
         yield 'objectOrStringDoesNotAcceptIterable' => [
             'object|string',
             'iterable<int>',

@@ -947,6 +947,49 @@ abstract class Type
     }
 
     /**
+     * e.g. iterable<string, int> and iterable[pure]<mixed, mixed> are iterable[pure]<string, int>
+     */
+    private static function intersectIterables(
+        TIterable $type_1_atomic,
+        TIterable $type_2_atomic,
+        Codebase $codebase,
+        bool $allow_interface_equality,
+        bool $allow_float_int_equality,
+    ): ?TIterable {
+        if (UnionTypeComparator::isContainedBy($codebase, $type_1_atomic->purity, $type_2_atomic->purity)) {
+            $purity = $type_1_atomic->purity;
+        } elseif (UnionTypeComparator::isContainedBy($codebase, $type_2_atomic->purity, $type_1_atomic->purity)) {
+            $purity = $type_2_atomic->purity;
+        } else {
+            return null;
+        }
+
+        $key_type = self::intersectUnionTypes(
+            $type_1_atomic->type_params[0],
+            $type_2_atomic->type_params[0],
+            $codebase,
+            $allow_interface_equality,
+            $allow_float_int_equality,
+        );
+        $value_type = self::intersectUnionTypes(
+            $type_1_atomic->type_params[1],
+            $type_2_atomic->type_params[1],
+            $codebase,
+            $allow_interface_equality,
+            $allow_float_int_equality,
+        );
+
+        if ($key_type === null || $value_type === null || $key_type->isNever() || $value_type->isNever()) {
+            return null;
+        }
+
+        return $type_1_atomic
+            ->setTypeParams([$key_type, $value_type])
+            ->setPurity($purity)
+            ->setIntersectionTypes(array_merge($type_1_atomic->extra_types, $type_2_atomic->extra_types));
+    }
+
+    /**
      * e.g. array and iterable<int, Foo> are array<int, Foo>
      */
     private static function intersectArrayWithIterable(
@@ -1318,6 +1361,21 @@ abstract class Type
                 }
                 return $int_intersection;
             }
+        }
+
+        if ($type_1_atomic instanceof TIterable
+            && $type_2_atomic instanceof TIterable
+            && ($iterable_intersection = self::intersectIterables(
+                $type_1_atomic,
+                $type_2_atomic,
+                $codebase,
+                $allow_interface_equality,
+                $allow_float_int_equality,
+            )) !== null
+        ) {
+            $intersection_performed = true;
+
+            return $iterable_intersection;
         }
 
         if (null === $intersection_atomic) {
