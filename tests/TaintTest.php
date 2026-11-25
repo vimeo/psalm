@@ -18,6 +18,7 @@ use Psalm\Context;
 use Psalm\Exception\CodeException;
 use Psalm\Internal\Analyzer\DataFlowNodeData;
 use Psalm\Internal\Analyzer\IssueData;
+use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\AddTaintsInterface;
 use Psalm\Plugin\EventHandler\AfterExpressionAnalysisInterface;
@@ -938,6 +939,112 @@ final class TaintTest extends TestCase
                 [38, 'TaintedHtml'],
                 [38, 'TaintedTextWithQuotes'],
                 [39, 'TaintedHtml'],
+                [39, 'TaintedTextWithQuotes'],
+                [40, 'TaintedHtml'],
+                [40, 'TaintedTextWithQuotes'],
+            ],
+            array_map(static fn(IssueData $issue): array => [$issue->line_from, $issue->type], $issues),
+        );
+    }
+
+    /**
+     * What a plugin supplying the return type of a call gives it, here the type of its argument, flows on, minus what
+     * the method of the call removes from its return.
+     */
+    public function testTaintOfAProvidedTypeGoesThroughTheEscapesOfTheMethod(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile($file_path, '<?php
+            class Request {
+                public function wrap(string $v): string {
+                    return "";
+                }
+
+                /** @psalm-taint-escape html */
+                public function escaped(string $v): string {
+                    return "";
+                }
+
+                /** @psalm-taint-escape ($escape is true ? "html" : null) */
+                public function escapedIf(string $v, bool $escape): string {
+                    return "";
+                }
+
+                public static function wrapStatic(string $v): string {
+                    return "";
+                }
+
+                /** @psalm-taint-escape html */
+                public static function escapedStatic(string $v): string {
+                    return "";
+                }
+
+                /** @psalm-taint-escape ($escape is true ? "html" : null) */
+                public static function escapedIfStatic(string $v, bool $escape): string {
+                    return "";
+                }
+            }
+
+            $request = new Request();
+            echo $request->wrap((string) $_GET["x"]);
+            echo $request->escaped((string) $_GET["x"]);
+            echo $request->escapedIf((string) $_GET["x"], true);
+            echo $request->escapedIf((string) $_GET["x"], false);
+            echo Request::wrapStatic((string) $_GET["x"]);
+            echo Request::escapedStatic((string) $_GET["x"]);
+            echo Request::escapedIfStatic((string) $_GET["x"], true);
+            echo Request::escapedIfStatic((string) $_GET["x"], false);
+        ');
+        $this->project_analyzer->setPhpVersion('8.0', 'tests');
+        $this->project_analyzer->trackTaintedInputs();
+
+        $codebase = $this->project_analyzer->getCodebase();
+        $socket = new PluginRegistrationSocket($codebase->config, $codebase);
+        $socket->registerHooksFromClass((new class implements MethodReturnTypeProviderInterface {
+            /**
+             * @psalm-pure
+             * @return array<string>
+             */
+            #[Override]
+            public static function getClassLikeNames(): array
+            {
+                return ['Request'];
+            }
+
+            /**
+             * @psalm-capabilities read-props
+             */
+            #[Override]
+            public static function getMethodReturnType(MethodReturnTypeProviderEvent $event): ?Union
+            {
+                $source = $event->getSource();
+
+                return $source instanceof StatementsAnalyzer
+                    ? $source->node_data->getType($event->getCallArgs()[0]->value)
+                    : null;
+            }
+        })::class);
+        $codebase->config->initializePlugins($this->project_analyzer);
+
+        $this->analyzeFile($file_path, new Context(), false);
+
+        $issues = array_values(array_filter(
+            IssueBuffer::getIssuesDataForFile($file_path),
+            static fn(IssueData $issue): bool => !in_array($issue->type, self::IGNORE, true),
+        ));
+
+        self::assertEqualsCanonicalizing(
+            [
+                [33, 'TaintedHtml'],
+                [33, 'TaintedTextWithQuotes'],
+                [34, 'TaintedTextWithQuotes'],
+                [35, 'TaintedTextWithQuotes'],
+                [36, 'TaintedHtml'],
+                [36, 'TaintedTextWithQuotes'],
+                [37, 'TaintedHtml'],
+                [37, 'TaintedTextWithQuotes'],
+                [38, 'TaintedTextWithQuotes'],
                 [39, 'TaintedTextWithQuotes'],
                 [40, 'TaintedHtml'],
                 [40, 'TaintedTextWithQuotes'],
@@ -16064,6 +16171,19 @@ final class TaintTest extends TestCase
                 'code' => '<?php
                     $archive = new PharData("/tmp/a.tar"); $archive->extractTo((string) $_GET["dir"]);',
                 'error_message' => 'TaintedFile',
+            ],
+            'taintedAppendChildOfAProviderTypedMethodCall' => [
+                'code' => '<?php
+                    /** @psalm-taint-source input */
+                    function source(): DOMNode {
+                        return new DOMElement("a");
+                    }
+
+                    /** @psalm-taint-sink html $node */
+                    function sink(DOMNode $node): void {}
+
+                    sink((new DOMElement("p"))->appendChild(source()));',
+                'error_message' => 'TaintedHtml',
             ],
             'taintedSsrfInDomDocumentLoad' => [
                 'code' => '<?php
