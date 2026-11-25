@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Psalm\Tests\Type;
 
+use LogicException;
+use Override;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Psalm\Storage\Capabilities;
 use Psalm\Tests\TestCase;
@@ -142,6 +144,36 @@ final class AtomicIdTest extends TestCase
             'value-of<T:Foo as object>',
         ];
         yield 'void' => [new TVoid(), 'void', 'void'];
+    }
+
+    public function testIdMustBeWrittenByADirectSubclass(): void
+    {
+        $atomic = new class extends Atomic {
+            #[Override]
+            public function getKey(bool $include_extra = true): string
+            {
+                return foo;
+            }
+
+            #[Override]
+            public function toPhpString(
+                ?string $namespace,
+                array $aliased_classes,
+                ?string $this_class,
+                int $analysis_php_version_id,
+            ): ?string {
+                return null;
+            }
+
+            #[Override]
+            public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
+            {
+                return false;
+            }
+        };
+
+        $this->expectException(LogicException::class);
+        $atomic->getId();
     }
 
     public function testIdIsDeclaredWithTheKey(): void
