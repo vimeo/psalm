@@ -949,6 +949,48 @@ abstract class Type
     /**
      * e.g. array and iterable<int, Foo> are array<int, Foo>
      */
+    /**
+     * e.g. iterable<string, int> and iterable[pure]<mixed, mixed> are iterable[pure]<string, int>
+     */
+    private static function intersectIterables(
+        TIterable $type_1_atomic,
+        TIterable $type_2_atomic,
+        Codebase $codebase,
+        bool $allow_interface_equality,
+        bool $allow_float_int_equality,
+    ): ?TIterable {
+        if (UnionTypeComparator::isContainedBy($codebase, $type_1_atomic->purity, $type_2_atomic->purity)) {
+            $purity = $type_1_atomic->purity;
+        } elseif (UnionTypeComparator::isContainedBy($codebase, $type_2_atomic->purity, $type_1_atomic->purity)) {
+            $purity = $type_2_atomic->purity;
+        } else {
+            return null;
+        }
+
+        $type_params = [];
+
+        foreach ($type_1_atomic->type_params as $i => $type_param) {
+            $type_param_intersection = self::intersectUnionTypes(
+                $type_param,
+                $type_2_atomic->type_params[$i],
+                $codebase,
+                $allow_interface_equality,
+                $allow_float_int_equality,
+            );
+
+            if ($type_param_intersection === null || $type_param_intersection->isNever()) {
+                return null;
+            }
+
+            $type_params[] = $type_param_intersection;
+        }
+
+        return $type_1_atomic
+            ->setTypeParams($type_params)
+            ->setPurity($purity)
+            ->setIntersectionTypes(array_merge($type_1_atomic->extra_types, $type_2_atomic->extra_types));
+    }
+
     private static function intersectArrayWithIterable(
         Codebase $codebase,
         Atomic $type_1_atomic,
@@ -1318,6 +1360,21 @@ abstract class Type
                 }
                 return $int_intersection;
             }
+        }
+
+        if ($type_1_atomic instanceof TIterable
+            && $type_2_atomic instanceof TIterable
+            && ($iterable_intersection = self::intersectIterables(
+                $type_1_atomic,
+                $type_2_atomic,
+                $codebase,
+                $allow_interface_equality,
+                $allow_float_int_equality,
+            )) !== null
+        ) {
+            $intersection_performed = true;
+
+            return $iterable_intersection;
         }
 
         if (null === $intersection_atomic) {

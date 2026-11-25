@@ -133,7 +133,9 @@ final class NegatedAssertionReconciler extends Reconciler
 
         if (($assertion instanceof IsNotType
                 && $assertion_type instanceof TIterable
-                && $assertion_type->type_params[1]->isMixed())
+                && $assertion_type->type_params[1]->isMixed()
+                // an array is not an instance of the intersected types
+                && !$assertion_type->extra_types)
             || $assertion instanceof IsNotCountable
         ) {
             $existing_var_type->removeType('array');
@@ -255,7 +257,9 @@ final class NegatedAssertionReconciler extends Reconciler
 
             $is_direct_hit = $assertion_type
                 && (!$same_key_type
-                    || $same_key_type::class === $assertion_type::class
+                    // the key of an iterable leaves out its intersected types
+                    || ($same_key_type::class === $assertion_type::class
+                        && !($assertion_type instanceof TIterable && $assertion_type->extra_types))
                     || AtomicTypeComparator::isContainedBy($codebase, $same_key_type, $assertion_type))
                 && (!$late_static_assertion || self::isLateStatic($same_key_type))
                 && $existing_var_type->removeType($assertion_type->getKey());
@@ -264,7 +268,8 @@ final class NegatedAssertionReconciler extends Reconciler
             if ($assertion_type) {
                 // an object that is Traversable is iterable, with the same key and value types
                 $object_assertion_type = $assertion_type instanceof TIterable
-                    ? new TGenericObject('Traversable', $assertion_type->type_params)
+                    ? (new TGenericObject('Traversable', $assertion_type->type_params))
+                        ->setIntersectionTypes($assertion_type->extra_types)
                     : $assertion_type;
 
                 if ($object_assertion_type instanceof TNamedObject) {

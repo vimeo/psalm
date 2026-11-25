@@ -334,6 +334,52 @@ final class AssertAnnotationTest extends TestCase
                 'ignored_issues' => ['MixedAssignment'],
                 'php_version' => '8.0',
             ],
+            'negatedIterableIntersectionKeepsWhatMayNotBeCountable' => [
+                'code' => '<?php
+                    /** @psalm-assert-if-true iterable&Countable $x */
+                    function isCountable(mixed $x): bool {
+                        return is_iterable($x) && $x instanceof Countable;
+                    }
+
+                    function t(): Traversable { return new ArrayIterator([]); }
+                    /** @return iterable|int */
+                    function i() { return 1; }
+
+                    $t = t();
+                    if (isCountable($t)) {
+                        throw new Exception();
+                    }
+                    $i = i();
+                    if (isCountable($i)) {
+                        throw new Exception();
+                    }',
+                'assertions' => [
+                    '$t' => 'Traversable[impure]<mixed, mixed>',
+                    '$i' => 'int|iterable<mixed, mixed>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'negatedIterableIntersectionKeepsAnArray' => [
+                'code' => '<?php
+                    /** @psalm-assert-if-true iterable&Countable $x */
+                    function isCountable(mixed $x): bool {
+                        return is_iterable($x) && $x instanceof Countable;
+                    }
+
+                    /** @return array<int> */
+                    function a(): array { return []; }
+
+                    $a = a();
+                    if (isCountable($a)) {
+                        throw new Exception();
+                    }',
+                'assertions' => [
+                    '$a' => 'array<array-key, int>',
+                ],
+                'ignored_issues' => ['TypeDoesNotContainType'],
+                'php_version' => '8.0',
+            ],
             'assertIterableIntersectionOnABoundedTemplate' => [
                 'code' => '<?php
                     /**
