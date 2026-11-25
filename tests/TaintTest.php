@@ -762,8 +762,10 @@ final class TaintTest extends TestCase
             self::markTestSkipped('Without the pdo extension, only its stub declares PDO');
         }
 
-        $this->testConfig->php_extensions['pdo'] = false;
-        $this->testConfig->throw_exception = false;
+        $config = $this->testConfig;
+        self::assertInstanceOf(TestConfig::class, $config);
+        $config->disableExtension('pdo');
+        $config->throw_exception = false;
         $file_path = self::$src_dir_path . 'somefile.php';
         $this->addFile($file_path, '<?php
             function run(PDO $pdo): void {
