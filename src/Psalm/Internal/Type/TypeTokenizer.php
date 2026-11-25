@@ -677,6 +677,7 @@ final class TypeTokenizer
 
         return false;
     }
+
     /**
      * @psalm-external-mutation-free
      */
