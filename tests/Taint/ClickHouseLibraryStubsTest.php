@@ -71,6 +71,25 @@ final class ClickHouseLibraryStubsTest extends LibraryStubsTestCase
                     'TaintedSql on line 7',
                 ],
             ],
+            'storedRows' => [
+                '<?php
+                    $client = new ClickHouseDB\Client();
+                    $client->insert("visits", [["page" => "home", "agent" => (string) $_GET["agent"]]], ["page", "agent"]);
+                    $client->insertAssocBulk("clicks", ["page" => "home", "agent" => (string) $_GET["agent"]]);
+                    function select(ClickHouseDB\Client $client, string $sql): void { $client->select($sql); }
+                    foreach ($client->select("SELECT page, agent FROM visits")->rows() as $row) {
+                        echo (string) $row["page"];
+                        echo (string) $row["agent"];
+                    }
+                    echo (string) $client->select("SELECT page FROM clicks FINAL")->rows()[0]["page"];
+                    echo (string) $client->select("SELECT agent FROM clicks FINAL")->fetchOne("agent");',
+                [
+                    'TaintedHtml on line 11',
+                    'TaintedHtml on line 8',
+                    'TaintedTextWithQuotes on line 11',
+                    'TaintedTextWithQuotes on line 8',
+                ],
+            ],
             'outputFile' => [
                 '<?php
                     new ClickHouseDB\Query\WriteToFile((string) $_GET["file"]);',

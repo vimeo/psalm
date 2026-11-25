@@ -558,7 +558,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
                     try {
                         $checked_type = $context->vars_in_scope[$checked_var_id];
 
-                        $path = $statements_analyzer->getRootFilePath();
+                        $path = $statements_analyzer->getFilePath();
                         $file_storage = $codebase->file_storage_provider->get($path);
 
                         $check_tokens = TypeTokenizer::getFullyQualifiedTokens(
@@ -624,14 +624,19 @@ final class StatementsAnalyzer extends SourceAnalyzer
         PhpParser\Node\Stmt\ClassLike $stmt,
         ?Context $global_context,
     ): void {
+        // the storage is keyed by the name in the namespace the class is declared in
+        $fq_class_name = $stmt->name !== null
+            ? Type::getFQCLNFromString($stmt->name->name, $statements_analyzer->getAliases())
+            : null;
+
         try {
-            if ($stmt instanceof PhpParser\Node\Stmt\Interface_ && $stmt->name !== null) {
-                (new InterfaceAnalyzer($stmt, $statements_analyzer->source, $stmt->name->name))->analyze();
+            if ($stmt instanceof PhpParser\Node\Stmt\Interface_ && $fq_class_name !== null) {
+                (new InterfaceAnalyzer($stmt, $statements_analyzer->source, $fq_class_name))->analyze();
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Class_ || $stmt instanceof PhpParser\Node\Stmt\Enum_) {
                 $class_analyzer = new ClassAnalyzer(
                     $stmt,
                     $statements_analyzer->source,
-                    $stmt->name->name ?? null,
+                    $fq_class_name,
                 );
 
                 $class_analyzer->analyze(null, $global_context);
@@ -772,7 +777,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
                 && !$stmt instanceof PhpParser\Node\Stmt\Return_
                 && !$stmt instanceof PhpParser\Node\Stmt\Property
             ) {
-                $file_path = $statements_analyzer->getRootFilePath();
+                $file_path = $statements_analyzer->getFilePath();
 
                 $file_storage_provider = $codebase->file_storage_provider;
 
@@ -821,11 +826,14 @@ final class StatementsAnalyzer extends SourceAnalyzer
                         $context,
                     );
 
-                    if ($var_comment->var_id === '$this'
-                        && $var_comment->type
-                        && $codebase->classExists((string)$var_comment->type, null, $context)
+                    $this_type = $var_comment->var_id === '$this' && $var_comment->type?->isSingle()
+                        ? $var_comment->type->getSingleAtomic()
+                        : null;
+
+                    if ($this_type instanceof TNamedObject
+                        && $codebase->classExists($this_type->value, null, $context)
                     ) {
-                        $statements_analyzer->setFQCLN((string)$var_comment->type);
+                        $statements_analyzer->setFQCLN($this_type->value);
                     }
                 }
             }

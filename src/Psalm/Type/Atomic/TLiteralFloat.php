@@ -7,6 +7,7 @@ namespace Psalm\Type\Atomic;
 use Override;
 
 use function is_nan;
+use function sprintf;
 
 /**
  * Denotes a floating point value where the exact numeric value is known.
@@ -24,23 +25,36 @@ final class TLiteralFloat extends TFloat
     #[Override]
     public function getKey(bool $include_extra = true): string
     {
-        if (is_nan($this->value)) {
-            return 'float(NAN)';
-        }
-        return 'float(' . $this->value . ')';
+        return 'float(' . $this->getValueString() . ')';
     }
 
     #[Override]
-    public function getId(bool $exact = true, bool $nested = false): string
+    public function getId(bool $exact = true): string
     {
         if (!$exact) {
             return 'float';
         }
+
+        return 'float(' . $this->getValueString() . ')';
+    }
+
+    /**
+     * The value in full, whatever the `precision` and `serialize_precision` settings: a float cut to fewer digits
+     * could read the same as another
+     */
+    private function getValueString(): string
+    {
         if (is_nan($this->value)) {
-            return 'float(NAN)';
+            return 'NAN';
         }
 
-        return 'float(' . $this->value . ')';
+        $value = (string) $this->value;
+
+        for ($digits = 15; (float) $value !== $this->value && $digits <= 17; $digits++) {
+            $value = sprintf("%.{$digits}G", $this->value);
+        }
+
+        return $value;
     }
 
     /**

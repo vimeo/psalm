@@ -2901,6 +2901,11 @@ final class ArgumentsAnalyzer
                                 static fn(int|string $key): bool => is_int($key),
                             )
                         ) {
+                            // the rest of an unsealed shape may hold any of the other parameters
+                            if ($atomic_arg_type->fallback_params !== null) {
+                                return;
+                            }
+
                             //if we have a single shape, we'll check param names
                             foreach ($atomic_arg_type->properties as $property_name => $_property_type) {
                                 foreach ($function_params as $k => $param) {

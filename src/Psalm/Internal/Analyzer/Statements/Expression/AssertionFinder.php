@@ -31,6 +31,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ArrayFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
+use Psalm\Internal\Codebase\CanonicalPaths;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Codebase\StringContext;
 use Psalm\Internal\Codebase\TaintValidations;
@@ -79,6 +80,7 @@ use Psalm\Storage\Assertion\IsNotType;
 use Psalm\Storage\Assertion\IsType;
 use Psalm\Storage\Assertion\MatchesPattern;
 use Psalm\Storage\Assertion\NestedAssertions;
+use Psalm\Storage\Assertion\NonEmpty;
 use Psalm\Storage\Assertion\NonEmptyCountable;
 use Psalm\Storage\Assertion\NotNonEmptyCountable;
 use Psalm\Storage\Assertion\Truthy;
@@ -308,6 +310,20 @@ final class AssertionFinder
             return [];
         }
 
+        // `($a['k'] ?? false)` is truthy when `$a['k']` is set and truthy, as for `!empty($a['k'])`; the other falsy
+        // defaults (`?? 0`, `?? ''`, `?? []`) mean the same
+        if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Coalesce
+            && FormulaGenerator::isFalsyLiteral($conditional->right)
+            && ($coalesced_var_name = ExpressionIdentifier::getExtendedVarId(
+                $conditional->left,
+                $this_class_name,
+                $source,
+            )) !== null
+        ) {
+            // as `!empty($a['k'])`, which also holds for an item that may be missing
+            return [[$coalesced_var_name => [[new NonEmpty()]]]];
+        }
+
         $string_length_assertions = self::getStringLengthAssertions($conditional, $this_class_name, $source);
         if ($string_length_assertions) {
             return $string_length_assertions;
@@ -498,6 +514,12 @@ final class AssertionFinder
             && ($pattern_match = self::getPatternMatchComparedToOne($conditional))
         ) {
             return self::getPatternMatchAssertions($pattern_match, $source, $this_class_name, $negated);
+        }
+
+        if ($source instanceof StatementsAnalyzer
+            && ($prefix_assertions = self::getCanonicalPathPrefixAssertions($conditional, $source, $negated)) !== []
+        ) {
+            return $prefix_assertions;
         }
 
         $null_position = self::hasNullVariable($conditional, $source);
@@ -1003,6 +1025,7 @@ final class AssertionFinder
             return [
                 ...self::processCustomAssertion($expr, $this_class_name, $source),
                 ...self::getUrlStartAssertions($expr, $source, $this_class_name),
+                ...CanonicalPaths::getAssertions($source, $expr->getArgs(), false),
             ];
         } else {
             return self::processCustomAssertion($expr, $this_class_name, $source);
@@ -1197,7 +1220,7 @@ final class AssertionFinder
             return false;
         }
 
-        return $type->getId() === 'bool' && !$type->possibly_undefined;
+        return $type->isBool() && !$type->possibly_undefined;
     }
 
     /**
@@ -3543,6 +3566,39 @@ final class AssertionFinder
     }
 
     /**
+     * The assertion that a canonical path starts with a directory (`strpos($path, '/var/app/') === 0`), or none
+     *
+     * @return list<non-empty-array<string, non-empty-list<non-empty-list<Assertion>>>>
+     */
+    private static function getCanonicalPathPrefixAssertions(
+        PhpParser\Node\Expr\BinaryOp $conditional,
+        StatementsAnalyzer $source,
+        bool $negated,
+    ): array {
+        // `strpos() == 0` is also true when it didn't find the prefix (false)
+        if (!$conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical
+            && !$conditional instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical
+        ) {
+            return [];
+        }
+
+        $sides = [[$conditional->left, $conditional->right], [$conditional->right, $conditional->left]];
+        foreach ($sides as [$call, $zero]) {
+            if ($call instanceof PhpParser\Node\Expr\FuncCall
+                && $call->name instanceof PhpParser\Node\Name
+                && $call->name->toLowerString() === 'strpos'
+                && !$call->isFirstClassCallable()
+                && $zero instanceof PhpParser\Node\Scalar\Int_
+                && $zero->value === 0
+            ) {
+                return CanonicalPaths::getAssertions($source, $call->getArgs(), $negated);
+            }
+        }
+
+        return [];
+    }
+
+    /**
      * Whether $expr can be falsy other than by being false, so that comparing it to false strictly doesn't tell
      * whether it is truthy
      *
@@ -3763,7 +3819,7 @@ final class AssertionFinder
                         // - The array may have one of the types but not the others.
                         //
                         // NOTE: the negation of the negation is the original assertion.
-                        if ($value_type->getId() !== '' && !$value_type->isMixed() && !$value_type->hasTemplate()) {
+                        if (!$value_type->isUnionEmpty() && !$value_type->isMixed() && !$value_type->hasTemplate()) {
                             $assertions[] = new InArray($value_type, $haystack);
                         }
                     } else {

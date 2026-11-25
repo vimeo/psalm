@@ -1211,7 +1211,7 @@ final class IntRangeTest extends TestCase
                     ',
                 'assertions' => [
                     '$d===' => 'int',
-                    '$e===' => 'int',
+                    '$e===' => 'int<0, max>',
                     '$f===' => 'int',
                     '$g===' => 'int',
                     '$h===' => 'int',
@@ -1447,7 +1447,7 @@ final class IntRangeTest extends TestCase
                     $_arr[1] = $int;
                     $_arr[$int] = 2;',
                 'assertions' => [
-                    '$_arr===' => 'non-empty-array<int<0, max>, int<0, max>>',
+                    '$_arr===' => 'array{1: int<1, max>, ...<int<0, max>, int<0, max>>}',
                 ],
             ],
             'nonNegativeIntCombinedWithIntRange' => [
@@ -1461,7 +1461,7 @@ final class IntRangeTest extends TestCase
                     $_arr[1] = $int;
                     $_arr[$int] = 2;',
                 'assertions' => [
-                    '$_arr===' => 'non-empty-array<int<0, max>, int<0, max>>',
+                    '$_arr===' => 'array{0: 0|2, 1: int<0, max>, ...<int<0, max>, int<0, max>>}',
                 ],
             ],
             'negativeIntCombinedWithIntRange' => [
@@ -1474,7 +1474,7 @@ final class IntRangeTest extends TestCase
                     $_arr[-1] = $int;
                     $_arr[$int] = -2;',
                 'assertions' => [
-                    '$_arr===' => 'non-empty-array<int<min, -1>, int<min, -1>>',
+                    '$_arr===' => 'array{-1: int<min, -1>, ...<int<min, -1>, int<min, -1>>}',
                 ],
             ],
             'nonPositiveIntCombinedWithIntRange' => [
@@ -1488,7 +1488,7 @@ final class IntRangeTest extends TestCase
                     $_arr[-1] = $int;
                     $_arr[$int] = -2;',
                 'assertions' => [
-                    '$_arr===' => 'non-empty-array<int<min, 0>, int<min, 0>>',
+                    '$_arr===' => 'array{-1: int<min, 0>, 0: -2|0, ...<int<min, 0>, int<min, 0>>}',
                 ],
             ],
             'noErrorPushingBigShapeIntoConstant' => [

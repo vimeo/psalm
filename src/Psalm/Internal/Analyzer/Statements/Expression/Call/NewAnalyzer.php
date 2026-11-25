@@ -36,6 +36,7 @@ use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\Type\TypeVariableBounds;
+use Psalm\Internal\TypeVisitor\ContainsStaticVisitor;
 use Psalm\Issue\AbstractInstantiation;
 use Psalm\Issue\DeprecatedClass;
 use Psalm\Issue\ImpureMethodCall;
@@ -78,10 +79,13 @@ use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Atomic\TUnknownClassString;
 use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
+use UnexpectedValueException;
 
 use function array_key_first;
 use function array_keys;
 use function array_map;
+use function array_pop;
+use function array_push;
 use function array_search;
 use function array_values;
 use function count;
@@ -89,7 +93,6 @@ use function in_array;
 use function is_int;
 use function is_string;
 use function ltrim;
-use function preg_match;
 use function reset;
 use function strtolower;
 
@@ -352,7 +355,12 @@ final class NewAnalyzer extends CallAnalyzer
             }
 
             if ($stmt->class instanceof PhpParser\Node\Stmt\Class_) {
-                $extends = $stmt->class->extends ? (string) $stmt->class->extends : null;
+                $extends = $stmt->class->extends
+                    ? ClassLikeAnalyzer::getFQCLNFromNameObject(
+                        $stmt->class->extends,
+                        $statements_analyzer->getAliases(),
+                    )
+                    : null;
                 $result_atomic_type = new TAnonymousClassInstance($fq_class_name, false, $extends);
             } else {
                 //if the class is a Name, it can't represent a child
@@ -575,9 +583,13 @@ final class NewAnalyzer extends CallAnalyzer
             if ($source instanceof FunctionLikeAnalyzer) {
                 $function_storage = $source->getFunctionLikeStorage($statements_analyzer);
 
-                if ($function_storage->return_type
-                    && preg_match('/\bstatic\b/', $function_storage->return_type->getId())
-                ) {
+                $static_visitor = new ContainsStaticVisitor();
+
+                if ($function_storage->return_type) {
+                    $static_visitor->traverse($function_storage->return_type);
+                }
+
+                if ($static_visitor->matches()) {
                     IssueBuffer::maybeAdd(
                         new UnsafeGenericInstantiation(
                             'Cannot safely instantiate generic class ' . $fq_class_name
@@ -2025,7 +2037,7 @@ final class NewAnalyzer extends CallAnalyzer
      * @return array<string, true>
      * @psalm-mutation-free
      */
-    private static function getUnconstrainableTemplates(ClassLikeStorage $storage): array
+    private static function getUnconstrainableTemplates(Codebase $codebase, ClassLikeStorage $storage): array
     {
         $unconstrainable = [];
 
@@ -2033,34 +2045,60 @@ final class NewAnalyzer extends CallAnalyzer
             $unconstrainable[$template_name] = true;
         }
 
-        foreach ($storage->methods as $method_name => $method_storage) {
+        // the members the class inherits constrain its templates through what it passes to the parent's
+        foreach ($storage->declaring_method_ids as $method_name => $declaring_method_id) {
             if (!$unconstrainable) {
                 break;
             }
 
-            if ($method_name === '__construct'
-                || $method_storage->visibility !== ClassLikeAnalyzer::VISIBILITY_PUBLIC
+            if ($method_name === '__construct') {
+                continue;
+            }
+
+            try {
+                $method_storage = $codebase->methods->getStorage($declaring_method_id);
+            } catch (UnexpectedValueException) {
+                continue;
+            }
+
+            if (($storage->trait_visibility_map[$method_name] ?? $method_storage->visibility)
+                !== ClassLikeAnalyzer::VISIBILITY_PUBLIC
             ) {
                 continue;
             }
 
-            foreach ($method_storage->params as $param) {
-                if ($param->type) {
-                    foreach ($param->type->getTemplateTypes() as $template_type) {
-                        unset($unconstrainable[$template_type->param_name]);
+            // an implementation that doesn't document its parameters has those of the methods it overrides
+            $method_params = [$method_storage->params];
+
+            foreach ($storage->overridden_method_ids[$method_name] ?? [] as $overridden_method_id) {
+                try {
+                    $method_params[] = $codebase->methods->getStorage($overridden_method_id)->params;
+                } catch (UnexpectedValueException) {
+                    continue;
+                }
+            }
+
+            foreach ($method_params as $params) {
+                foreach ($params as $param) {
+                    if ($param->type) {
+                        self::removeConstrainableTemplates($unconstrainable, $param->type, $storage);
                     }
                 }
             }
         }
 
-        foreach ($storage->properties as $property_storage) {
+        foreach ($storage->declaring_property_ids as $property_name => $declaring_class) {
             if (!$unconstrainable) {
                 break;
             }
 
+            $property_storage = $codebase->classlike_storage_provider->get($declaring_class)
+                ->properties[$property_name] ?? null;
+
             // A `readonly` property cannot be assigned after construction unless it is
             // `public(set)` and not promoted, so it is not a channel through which the template can be constrained.
-            if ($property_storage->visibility !== ClassLikeAnalyzer::VISIBILITY_PUBLIC
+            if ($property_storage === null
+                || $property_storage->visibility !== ClassLikeAnalyzer::VISIBILITY_PUBLIC
                 || ($property_storage->readonly
                     && (!$property_storage->readonly_public_set || $property_storage->is_promoted))
             ) {
@@ -2068,9 +2106,7 @@ final class NewAnalyzer extends CallAnalyzer
             }
 
             if ($property_storage->type) {
-                foreach ($property_storage->type->getTemplateTypes() as $template_type) {
-                    unset($unconstrainable[$template_type->param_name]);
-                }
+                self::removeConstrainableTemplates($unconstrainable, $property_storage->type, $storage);
             }
         }
 
@@ -2095,6 +2131,49 @@ final class NewAnalyzer extends CallAnalyzer
         }
 
         return $unconstrainable;
+    }
+
+    /**
+     * Removes from $unconstrainable the templates of the class $type mentions, directly or through a template of a
+     * parent class, interface or trait the class passes them to (not a template of a method, whatever its name)
+     *
+     * @param array<string, true> $unconstrainable
+     * @psalm-mutation-free
+     */
+    private static function removeConstrainableTemplates(
+        array &$unconstrainable,
+        Union $type,
+        ClassLikeStorage $storage,
+    ): void {
+        $class_lc = strtolower($storage->name);
+        $seen = [];
+        $pending = $type->getTemplateTypes();
+
+        // a template of an ancestor may be passed on through the templates of the classes in between
+        while ($pending) {
+            $template_type = array_pop($pending);
+
+            if (strtolower($template_type->defining_class) === $class_lc) {
+                unset($unconstrainable[$template_type->param_name]);
+
+                continue;
+            }
+
+            $seen_key = strtolower($template_type->defining_class) . '::' . $template_type->param_name;
+
+            if (isset($seen[$seen_key])) {
+                continue;
+            }
+
+            $seen[$seen_key] = true;
+
+            $extended_type = $storage->template_extended_params[$template_type->defining_class]
+                [$template_type->param_name] ?? null;
+
+            if ($extended_type) {
+                array_push($pending, ...$extended_type->getTemplateTypes());
+            }
+        }
     }
 
     /**
@@ -2158,7 +2237,7 @@ final class NewAnalyzer extends CallAnalyzer
         ?MethodStorage $method_storage,
     ): array {
         $codebase = $statements_analyzer->getCodebase();
-        $unconstrainable_templates = self::getUnconstrainableTemplates($storage);
+        $unconstrainable_templates = self::getUnconstrainableTemplates($codebase, $storage);
         $inferred_lower_bounds = self::getInferredLowerBounds($template_result);
         $generic_param_types = [];
 

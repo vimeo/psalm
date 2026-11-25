@@ -44,7 +44,7 @@ use Psalm\Internal\IncludeCollector;
 use Psalm\Internal\Lz4Serializer;
 use Psalm\Internal\Perf;
 use Psalm\Internal\Provider\AddRemoveTaints\HtmlFunctionTainter;
-use Psalm\Internal\Provider\AddRemoveTaints\JsonEncodeTainter;
+use Psalm\Internal\Provider\AddRemoveTaints\JsonFunctionTainter;
 use Psalm\Internal\Scanner\FileScanner;
 use Psalm\Internal\ZstdSerializer;
 use Psalm\Issue\ArgumentIssue;
@@ -1233,7 +1233,6 @@ final class Config
     /**
      * @param non-empty-string $file_contents
      * @psalm-suppress MixedAssignment
-     * @psalm-suppress MixedPropertyFetch
      * @throws ConfigException
      */
     private static function fromXmlAndPaths(
@@ -1662,14 +1661,12 @@ final class Config
         }
 
         if (isset($config_xml->mockClasses) && isset($config_xml->mockClasses->class)) {
-            /** @var SimpleXMLElement $mock_class */
             foreach ($config_xml->mockClasses->class as $mock_class) {
                 $config->mock_classes[] = strtolower((string)$mock_class['name']);
             }
         }
 
         if (isset($config_xml->universalObjectCrates) && isset($config_xml->universalObjectCrates->class)) {
-            /** @var SimpleXMLElement $universal_object_crate */
             foreach ($config_xml->universalObjectCrates->class as $universal_object_crate) {
                 $classString = (string) $universal_object_crate['name'];
                 $config->addUniversalObjectCrate($classString);
@@ -1700,21 +1697,18 @@ final class Config
         }
 
         if (isset($config_xml->unsuppressibleIssues) && isset($config_xml->unsuppressibleIssues->issue)) {
-            /** @var SimpleXMLElement $unsuppressible_issue */
             foreach ($config_xml->unsuppressibleIssues->issue as $unsuppressible_issue) {
                 $config->addUnsuppressibleIssue((string) $unsuppressible_issue['name']);
             }
         }
 
         if (isset($config_xml->forbiddenFunctions) && isset($config_xml->forbiddenFunctions->function)) {
-            /** @var SimpleXMLElement $forbidden_function */
             foreach ($config_xml->forbiddenFunctions->function as $forbidden_function) {
                 $config->forbidden_functions[strtolower((string) $forbidden_function['name'])] = true;
             }
         }
 
         if (isset($config_xml->forbiddenConstants) && isset($config_xml->forbiddenConstants->constant)) {
-            /** @var SimpleXMLElement $forbidden_function */
             foreach ($config_xml->forbiddenConstants->constant as $forbidden_function) {
                 $config->forbidden_constants[(string) $forbidden_function['name']] = true;
             }
@@ -1846,7 +1840,6 @@ final class Config
         }
 
         if (isset($config_xml->globals) && isset($config_xml->globals->var)) {
-            /** @var SimpleXMLElement $var */
             foreach ($config_xml->globals->var as $var) {
                 $config->globals['$' . (string) $var['name']] = (string) $var['type'];
             }
@@ -2296,10 +2289,10 @@ final class Config
         }
 
         new HtmlFunctionTainter();
-        new JsonEncodeTainter();
+        new JsonFunctionTainter();
 
         $socket->registerHooksFromClass(HtmlFunctionTainter::class);
-        $socket->registerHooksFromClass(JsonEncodeTainter::class);
+        $socket->registerHooksFromClass(JsonFunctionTainter::class);
     }
 
     private function loadPlugin(ProjectAnalyzer $projectAnalyzer, string $pluginClassName): PluginInterface

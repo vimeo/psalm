@@ -29,6 +29,12 @@ final class TDependentGetDebugType extends TString implements DependentType
     }
 
     #[Override]
+    public function getId(bool $exact = true): string
+    {
+        return 'get-debug-type-of<' . $this->typeof . '>';
+    }
+
+    #[Override]
     public function getVarId(): string
     {
         return $this->typeof;
@@ -38,9 +44,9 @@ final class TDependentGetDebugType extends TString implements DependentType
      * @psalm-pure
      */
     #[Override]
-    public function getReplacement(): TString
+    public function getReplacement(): TNonFalsyString
     {
-        return new TString();
+        return new TNonFalsyString();
     }
 
     /**

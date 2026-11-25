@@ -167,6 +167,12 @@ final class ArrayAssignmentAnalyzer
 
         $root_type = $statements_analyzer->node_data->getType($root_array_expr) ?? Type::getMixed();
 
+        // an array that cannot be (in code a condition proved unreachable) is not made by writing to it; a property is
+        // also never where it is not initialized yet (`!isset($this->p)`), which the write initializes
+        $root_is_never = $root_type->isNever()
+            && !$root_array_expr instanceof PhpParser\Node\Expr\PropertyFetch
+            && !$root_array_expr instanceof PhpParser\Node\Expr\StaticPropertyFetch;
+
         if ($root_type->hasMixed()) {
             $vars_before_read = $context->vars_in_scope;
 
@@ -307,7 +313,9 @@ final class ArrayAssignmentAnalyzer
         $new_child_type->removeType('null');
         $new_child_type = $new_child_type->freeze();
 
-        if (!$root_type->hasObjectType()) {
+        if ($root_is_never) {
+            $root_type = Type::getNever()->setParentNodes($new_child_type->parent_nodes);
+        } elseif (!$root_type->hasObjectType()) {
             $root_type = $new_child_type;
         }
 
@@ -1550,8 +1558,13 @@ final class ArrayAssignmentAnalyzer
 
         $from_countable_object_like = false;
 
-        $array_atomic_type = null;
-        if (!$current_dim && !$context->inside_loop) {
+        $array_atomic_type = self::writeUnknownKeyOfTheRootShape(
+            $root_type,
+            $current_dim,
+            $array_atomic_type_array,
+            $array_atomic_type_list,
+        );
+        if ($array_atomic_type === null && !$current_dim && !$context->inside_loop) {
             $atomic_root_types = $root_type->getAtomicTypes();
 
             if (isset($atomic_root_types['array'])) {
@@ -1730,6 +1743,33 @@ final class ArrayAssignmentAnalyzer
         }
 
         return $new_child_type;
+    }
+
+    /**
+     * The shape an array is after a write under a key whose value isn't known, or an append
+     *
+     * @param array{Union, Union}|null $written
+     * @psalm-capabilities read-props|write-this-props
+     */
+    private static function writeUnknownKeyOfTheRootShape(
+        Union $root_type,
+        ?PhpParser\Node\Expr $current_dim,
+        ?array $written,
+        ?Union $appended,
+    ): ?TKeyedArray {
+        $root_array_type = $root_type->getAtomicTypes()['array'] ?? null;
+
+        if (!$root_array_type instanceof TKeyedArray) {
+            return null;
+        }
+
+        if ($written !== null) {
+            return ArrayFetchAnalyzer::writeUnknownKeyOfAShape($root_array_type, $written[0], $written[1]);
+        }
+
+        return !$current_dim && $appended !== null
+            ? ArrayFetchAnalyzer::writeUnknownKeyOfAShape($root_array_type, Type::getInt(), $appended, true)
+            : null;
     }
 
     /**
@@ -2022,13 +2062,32 @@ final class ArrayAssignmentAnalyzer
                     ]);
                 }
 
-                $new_child_type = Type::combineUnionTypes(
+                $written_key_type = $current_dim ? $statements_analyzer->node_data->getType($current_dim) : null;
+                $child_shape = self::writeUnknownKeyOfTheRootShape(
                     $child_stmt_type,
-                    $array_assignment_type,
-                    $codebase,
-                    true,
-                    true,
+                    $current_dim,
+                    $written_key_type
+                        ? [
+                            $written_key_type->hasMixed()
+                                ? Type::getArrayKey()
+                                : ArrayFetchAnalyzer::castOffsetTypeOfAWrite(
+                                    ArrayFetchAnalyzer::replaceOffsetTypeWithInts($written_key_type),
+                                ),
+                            $current_type,
+                        ]
+                        : null,
+                    $current_type,
                 );
+
+                $new_child_type = $child_shape
+                    ? $child_stmt_type->setTypes([$child_shape])
+                    : Type::combineUnionTypes(
+                        $child_stmt_type,
+                        $array_assignment_type,
+                        $codebase,
+                        true,
+                        true,
+                    );
             }
             if ($new_child_type->hasNull() || $new_child_type->possibly_undefined) {
                 $new_child_type = $new_child_type->getBuilder();
@@ -2492,7 +2551,7 @@ final class ArrayAssignmentAnalyzer
             if ($object_id) {
                 $var_id_addition = '[' . $object_id . '->' . $child_stmt->dim->name->name . ']';
             } else {
-                $var_id_addition = '[' . $child_stmt_dim_type . ']';
+                $var_id_addition = '[' . $child_stmt_dim_type->getId(false) . ']';
             }
 
             return [null, $var_id_addition, true];
@@ -2511,7 +2570,7 @@ final class ArrayAssignmentAnalyzer
             return [null, $var_id_addition, true];
         }
 
-        $var_id_addition = '[' . $child_stmt_dim_type . ']';
+        $var_id_addition = '[' . $child_stmt_dim_type->getId(false) . ']';
 
         return [null, $var_id_addition, false];
     }

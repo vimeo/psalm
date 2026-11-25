@@ -804,6 +804,72 @@ final class ArrayAccessTest extends TestCase
         );
     }
 
+    public function testAnOffsetReadAndWrittenIsReportedOnce(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @param array<string, int> $a */
+                function incr(array $a, mixed $k): void { $a[$k]++; }
+
+                /** @param array<string, int> $a */
+                function plusEq(array $a, mixed $k): void { $a[$k] += 1; }
+
+                function byRef(?int &$i): void { $i = 1; }
+
+                /** @param array<string, int> $a */
+                function refArg(array $a, mixed $k): void { byRef($a[$k]); }
+
+                /** @param array<string, int> $a */
+                function invalid(array $a, stdClass $k): void { $a[$k]++; }
+
+                /** @param array<string, int> $a */
+                function possiblyInvalid(array $a, stdClass|string $k): void { $a[$k] += 1; }
+
+                /** @param array<string, array<string, int>> $a */
+                function nested(array $a, mixed $k, mixed $j): void { $a[$k][$j]++; }
+
+                /** @param array<string, int> $a */
+                function incrInLoop(array $a, mixed $k): void {
+                    foreach ([1, 2] as $_) {
+                        $a[$k]++;
+                    }
+                }
+
+                /** @param array<string, int> $a */
+                function coalesceAssign(array $a, stdClass|string $k): void { $a[$k] ??= 1; }',
+        );
+        $this->analyzeFile($file_path, new Context());
+
+        $messages = [];
+        foreach (IssueBuffer::getIssuesDataForFile($file_path) as $issue) {
+            if (str_contains($issue->message, 'Cannot access')) {
+                $messages[] = $issue->line_from . ' ' . $issue->type . ': ' . $issue->message;
+            }
+        }
+
+        $this->assertSame(
+            [
+                '3 MixedArrayOffset: Cannot access value on variable $a using mixed offset',
+                '6 MixedArrayOffset: Cannot access value on variable $a using mixed offset',
+                '11 MixedArrayOffset: Cannot access value on variable $a using mixed offset',
+                '14 InvalidArrayOffset: Cannot access value on variable $a using a stdClass offset, '
+                    . 'expecting array-key',
+                '17 PossiblyInvalidArrayOffset: Cannot access value on variable $a using a stdClass|string offset, '
+                    . 'expecting string',
+                '20 MixedArrayOffset: Cannot access value on variable $a using mixed offset',
+                '20 MixedArrayOffset: Cannot access value on variable $a[$k] using mixed offset',
+                '25 MixedArrayOffset: Cannot access value on variable $a using mixed offset',
+                '30 PossiblyInvalidArrayOffset: Cannot access value on variable $a[$k] using a stdClass|string offset, '
+                    . 'expecting array-key',
+            ],
+            $messages,
+        );
+    }
+
     public function testMessagesNameAnArrayWithoutVariable(): void
     {
         $this->project_analyzer->getConfig()->throw_exception = false;
@@ -1612,6 +1678,33 @@ final class ArrayAccessTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'issetOfAStringOffsetOfIntKeysLooksForANumericString' => [
+                'code' => '<?php
+                    function label(string $id): string {
+                        $labels = ["1" => "foo", "2" => "bar"];
+
+                        if (isset($labels[$id])) {
+                            return $labels[$id];
+                        }
+
+                        return "";
+                    }
+
+                    function labelOrEmpty(string $id): string {
+                        $labels = ["1" => "foo", "2" => "bar"];
+
+                        return $labels[$id] ?? "";
+                    }
+
+                    /** @param array<int, string> $names */
+                    function name(array $names, string $id): string {
+                        if (isset($names[$id])) {
+                            return $names[$id];
+                        }
+
+                        return "";
+                    }',
+            ],
             'appendToATypedArrayObjectOrArrayIterator' => [
                 'code' => '<?php
                     final class Bag {
@@ -4235,6 +4328,31 @@ final class ArrayAccessTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'issetOfANonDecimalIntStringOffsetOfIntKeys' => [
+                'code' => '<?php
+                    /**
+                     * @param array<int, string> $names
+                     * @param non-decimal-int-string $id
+                     */
+                    function has(array $names, string $id): bool {
+                        return isset($names[$id]);
+                    }',
+                'error_message' => 'InvalidArrayOffset',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'issetOfAMixedOrStringOffsetIsStillACoercion' => [
+                'code' => '<?php
+                    /** @param array<array-key, string> $names */
+                    function has(array $names, mixed $id, string $default, bool $useId): bool {
+                        $key = $useId ? $id : $default;
+
+                        return isset($names[$key]);
+                    }',
+                'error_message' => 'MixedArrayTypeCoercion',
+                'error_levels' => ['MixedAssignment'],
+                'php_version' => '8.0',
+            ],
             'plainWriteOfAWrongValueIntoAnArrayAccessItemIsStillChecked' => [
                 'code' => '<?php
                     /** @implements ArrayAccess<string, list<int>> */

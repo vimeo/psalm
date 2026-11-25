@@ -94,8 +94,15 @@ final class TPropertiesOf extends Atomic
         return self::tokenNameForFilter($this->visibility_filter) . '<' . $this->classlike_type . '>';
     }
 
+    #[Override]
+    public function getId(bool $exact = true): string
+    {
+        return self::tokenNameForFilter($this->visibility_filter) . '<' . $this->classlike_type->getId() . '>';
+    }
+
     /**
      * @param  array<lowercase-string, string> $aliased_classes
+     * @psalm-pure
      */
     #[Override]
     public function toPhpString(
@@ -104,7 +111,7 @@ final class TPropertiesOf extends Atomic
         ?string $this_class,
         int $analysis_php_version_id,
     ): string {
-        return $this->getKey();
+        return 'array';
     }
 
     /**
