@@ -1937,6 +1937,35 @@ final class FunctionCallTest extends TestCase
                     extract($a);
                     takesInt($foo);',
             ],
+            'possiblyUndefinedVariableAfterExtractIsReadAsDefined' => [
+                'code' => '<?php
+                    function takesInt(int $_i): void {}
+
+                    /** @param array<string, mixed> $vars */
+                    function f(array $vars): void {
+                        extract($vars);
+                        if (rand(0, 1)) {
+                            $a = 1;
+                        }
+                        takesInt($a);
+                    }',
+            ],
+            'possiblyUndefinedVariableAfterExtractCheckedWithIsset' => [
+                'code' => '<?php
+                    function takesInt(int $_i): void {}
+
+                    /** @param array<string, mixed> $vars */
+                    function f(array $vars): void {
+                        extract($vars);
+                        if (rand(0, 1)) {
+                            $a = 1;
+                        }
+                        if (isset($a)) {
+                            takesInt($a);
+                        }
+                        takesInt($a ?? 0);
+                    }',
+            ],
             'extractSkipExtr' => [
                 'code' => '<?php
                     $a = 1;

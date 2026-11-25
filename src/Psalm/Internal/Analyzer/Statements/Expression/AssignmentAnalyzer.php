@@ -2331,10 +2331,6 @@ final class AssignmentAnalyzer
                 StaticPropertyAssignmentAnalyzer::forgetAliasesOfStaticProperty($codebase, $context, $var_id);
             }
 
-            if ($stmt instanceof PhpParser\Node\Expr\Variable) {
-                $statements_analyzer->unregisterUndefinedVariableRead($var_id);
-            }
-
             if (!$context->hasVariable($var_id)) {
                 $context->vars_possibly_in_scope[$var_id] = true;
 

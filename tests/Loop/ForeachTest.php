@@ -1659,37 +1659,7 @@ final class ForeachTest extends TestCase
                         return array_keys($GLOBALS);
                     }',
             ],
-            'undefinedVariableNarrowedByACallIsUndefinedWhenTheNextIterationStarts' => [
-                'code' => '<?php
-                    function takesInt(int $i): void {}
-
-                    /** @param list<string> $rows */
-                    function render(array $rows): void {
-                        foreach ($rows as $_row) {
-                            takesInt($campaignid);
-                        }
-                    }',
-                'assertions' => [],
-                'ignored_issues' => ['UndefinedVariable', 'MixedArgument'],
-            ],
-            'undefinedVariableDefinedElsewhereNarrowedByACallIsUndefinedWhenTheNextIterationStarts' => [
-                'code' => '<?php
-                    function takesInt(int $i): void {}
-
-                    /** @param list<string> $rows */
-                    function render(array $rows): void {
-                        if (rand(0, 1)) {
-                            $campaignid = 5;
-                            return;
-                        }
-                        foreach ($rows as $_row) {
-                            takesInt($campaignid);
-                        }
-                    }',
-                'assertions' => [],
-                'ignored_issues' => ['UndefinedVariable', 'MixedArgument'],
-            ],
-            'unknownVariableAfterExtractNarrowedByACallIsUndefinedWhenTheNextIterationStarts' => [
+            'unknownVariableAfterExtractNarrowedByACallInALoop' => [
                 'code' => '<?php
                     function takesInt(int $_i): void {}
 
@@ -1703,8 +1673,6 @@ final class ForeachTest extends TestCase
                             takesInt($campaignid);
                         }
                     }',
-                'assertions' => [],
-                'ignored_issues' => ['MixedArgument'],
             ],
             'variableDefinedByAByRefClosureUseInALoop' => [
                 'code' => '<?php
@@ -3692,6 +3660,57 @@ final class ForeachTest extends TestCase
                         }
                     }',
                 'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'undefinedVariableReadInALoopIsMixedOnEveryIteration' => [
+                'code' => '<?php
+                    function takesInt(int $_i): void {}
+
+                    /** @param list<string> $rows */
+                    function render(array $rows): void {
+                        foreach ($rows as $_row) {
+                            takesInt($campaignid);
+                        }
+                    }',
+                'error_message' => 'MixedArgument',
+                'error_levels' => ['UndefinedVariable'],
+            ],
+            'undefinedVariableAssignedOnAnotherPathIsMixedOnEveryIterationOfALoop' => [
+                'code' => '<?php
+                    function takesInt(int $_i): void {}
+
+                    /** @param list<string> $rows */
+                    function render(array $rows): void {
+                        if (rand(0, 1)) {
+                            $campaignid = 5;
+                            return;
+                        }
+                        foreach ($rows as $_row) {
+                            takesInt($campaignid);
+                        }
+                    }',
+                'error_message' => 'MixedArgument',
+                'error_levels' => ['UndefinedVariable'],
+            ],
+            'variableReadWhereUndefinedOnOnePathBeforeALoopKeepsWhatTheLoopAssigns' => [
+                'code' => '<?php
+                    function takesInt(int $_i): void {}
+
+                    /** @param list<string> $rows */
+                    function f(array $rows): void {
+                        if (rand(0, 1)) {
+                            $x = 1;
+                        } else {
+                            /** @psalm-suppress UndefinedVariable, MixedArgument */
+                            takesInt($x);
+                        }
+                        foreach ($rows as $row) {
+                            if (isset($x)) {
+                                takesInt($x);
+                            }
+                            $x = $row;
+                        }
+                    }',
+                'error_message' => 'InvalidScalarArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:14:42 - Argument 1 of takesInt expects int, but 1|string provided',
             ],
             'byRefOutParamAfterAnUndefinedReadInALoopKeepsItsType' => [
                 'code' => '<?php
