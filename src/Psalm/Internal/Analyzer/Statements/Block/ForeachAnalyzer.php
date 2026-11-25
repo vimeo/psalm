@@ -42,6 +42,7 @@ use Psalm\Internal\Type\PurityWildcardPaths;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Internal\TypeVisitor\ClassStringMapBoundReplacer;
 use Psalm\Internal\TypeVisitor\TypeVariableResolver;
 use Psalm\Issue\ImpureMethodCall;
 use Psalm\Issue\InvalidDocblock;
@@ -1451,12 +1452,12 @@ final class ForeachAnalyzer
                 // the key is a class of the bound, and what is stored under it an object of that class
                 $key_type = Type::combineUnionTypes(
                     $key_type,
-                    $iterator_atomic_type->getBoundKeyParam(),
+                    ClassStringMapBoundReplacer::getKeyType($iterator_atomic_type),
                 );
 
                 $value_type = Type::combineUnionTypes(
                     $value_type,
-                    $iterator_atomic_type->getBoundValueParam($codebase),
+                    ClassStringMapBoundReplacer::getValueType($iterator_atomic_type),
                 );
 
                 $has_valid_iterator = true;

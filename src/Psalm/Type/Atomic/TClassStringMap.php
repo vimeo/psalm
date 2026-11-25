@@ -246,27 +246,4 @@ final class TClassStringMap extends Atomic
             ),
         ]);
     }
-
-    /**
-     * The key type once the map's template is replaced by its bound
-     */
-    public function getBoundKeyParam(): Union
-    {
-        return new Union([new TClassString($this->as_type->value ?? 'object', $this->as_type)]);
-    }
-
-    /**
-     * The value type once the map's template is replaced by its bound
-     */
-    public function getBoundValueParam(?Codebase $codebase): Union
-    {
-        return TemplateInferredTypeReplacer::replace(
-            $this->value_param,
-            new TemplateResult(
-                [],
-                [$this->param_name => ['class-string-map' => new Union([$this->as_type ?? new TObject()])]],
-            ),
-            $codebase,
-        );
-    }
 }

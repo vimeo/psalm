@@ -230,6 +230,44 @@ final class ClassStringMapTest extends TestCase
                     '$o===' => 'NS\of',
                 ],
             ],
+            'classStringMapCombinedWithAnotherArrayKeepsOtherTemplates' => [
+                'code' => '<?php
+                    class Foo {}
+
+                    /**
+                     * @template Data of array
+                     * @template Key of key-of<Data>
+                     * @param class-string-map<T as Foo, Data[Key]> $m
+                     * @param array<int, int> $a
+                     * @return array<class-string<Foo>|int, Data[Key]|int>
+                     */
+                    function f(array $m, array $a, bool $b): array {
+                        return $b ? $m : $a;
+                    }',
+            ],
+            'classNamedOfInsideATypeInANamespaceIsStillQualified' => [
+                'code' => '<?php
+                    namespace NS;
+
+                    class of {}
+
+                    /**
+                     * @param ?of $a
+                     * @param list<of> $b
+                     * @param array{a: of} $c
+                     * @param array<int, (of)> $d
+                     * @param null|of $e
+                     * @return list{?of, list<of>, array{a: of}, array<int, of>, ?of}
+                     */
+                    function g($a, $b, $c, $d, $e) {
+                        return [$a, $b, $c, $d, $e];
+                    }
+
+                    $o = g(null, [], ["a" => new of()], [], null);',
+                'assertions' => [
+                    '$o===' => 'list{NS\of|null, list<NS\of>, array{a: NS\of}, array<int, NS\of>, NS\of|null}',
+                ],
+            ],
         ];
     }
 

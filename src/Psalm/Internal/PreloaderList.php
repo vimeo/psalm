@@ -1082,6 +1082,7 @@ final class PreloaderList {
         \Psalm\Internal\TypeVisitor\AmbiguousTemplateRemover::class,
         \Psalm\Internal\TypeVisitor\CanContainObjectTypeVisitor::class,
         \Psalm\Internal\TypeVisitor\CapturedValueVisitor::class,
+        \Psalm\Internal\TypeVisitor\ClassStringMapBoundReplacer::class,
         \Psalm\Internal\TypeVisitor\ClasslikeReplacer::class,
         \Psalm\Internal\TypeVisitor\ConditionalSubjectReplacer::class,
         \Psalm\Internal\TypeVisitor\ConditionalTemplateVisitor::class,

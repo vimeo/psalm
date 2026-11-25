@@ -7,6 +7,7 @@ namespace Psalm\Internal\Type;
 use InvalidArgumentException;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\Statements\Expression\ArrayAnalyzer;
+use Psalm\Internal\TypeVisitor\ClassStringMapBoundReplacer;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\Scalar;
@@ -758,7 +759,12 @@ final class TypeCombiner
 
         if ($type instanceof TClassStringMap) {
             // the map's template is only kept if the result is a class-string-map again
-            foreach ([$type->getBoundKeyParam(), $type->getBoundValueParam($codebase)] as $i => $type_param) {
+            $type_params = [
+                ClassStringMapBoundReplacer::getKeyType($type),
+                ClassStringMapBoundReplacer::getValueType($type),
+            ];
+
+            foreach ($type_params as $i => $type_param) {
                 // See https://github.com/vimeo/psalm/pull/9439#issuecomment-1464563015
                 /** @psalm-suppress PropertyTypeCoercion */
                 $combination->array_type_params[$i] = Type::combineUnionTypes(
