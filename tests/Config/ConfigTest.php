@@ -2674,7 +2674,10 @@ final class ConfigTest extends DeferredAnalyzerTestCase
         $this->assertContains(self::getExtensionStubPath('mongodb'), $config->internal_stubs);
     }
 
-    public function testStubOfADisabledExtensionIsNotLoaded(): void
+    /**
+     * disableExtensions is deprecated: the stub of an extension the code uses is loaded
+     */
+    public function testStubOfADisabledExtensionIsLoaded(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             Config::loadFromXML(
@@ -2699,7 +2702,7 @@ final class ConfigTest extends DeferredAnalyzerTestCase
         $codebase->scanFiles();
         $config->visitStubFiles($codebase);
 
-        $this->assertNotContains(self::getExtensionStubPath('redis'), $config->internal_stubs);
+        $this->assertContains(self::getExtensionStubPath('redis'), $config->internal_stubs);
         $this->assertContains(self::getExtensionStubPath('decimal'), $config->internal_stubs);
     }
 
