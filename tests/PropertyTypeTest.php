@@ -753,6 +753,27 @@ final class PropertyTypeTest extends TestCase
                         return $e->attributes->item(0);
                     }',
             ],
+            'propertyMapTypesCamelCaseProperties' => [
+                'code' => '<?php
+                    namespace MongoDB\Driver;
+
+                    final class WriteConcernError {}
+
+                    final class WriteResult {
+                        /** @var mixed */
+                        public $insertedCount = null;
+                        /** @var mixed */
+                        public $writeConcernError = null;
+                    }
+
+                    $r = new WriteResult();
+                    $inserted = $r->insertedCount;
+                    $error = $r->writeConcernError;',
+                'assertions' => [
+                    '$inserted===' => 'int|null',
+                    '$error===' => 'MongoDB\Driver\WriteConcernError|null',
+                ],
+            ],
             'goodArrayProperties' => [
                 'code' => '<?php
                     interface I1 {}
@@ -3037,6 +3058,27 @@ final class PropertyTypeTest extends TestCase
                     }
 
                     echo (new A)->foo;',
+                'error_message' => 'UndefinedPropertyFetch',
+            ],
+            'propertyMapDoesNotAddLowercaseTwinOfCamelCaseProperty' => [
+                'code' => '<?php
+                    namespace MongoDB\Driver;
+
+                    final class WriteResult {
+                        /** @var mixed */
+                        public $insertedCount;
+                    }
+
+                    function foo(WriteResult $r): void {
+                        echo $r->insertedcount;
+                    }',
+                'error_message' => 'UndefinedPropertyFetch',
+            ],
+            'propertyMapDoesNotAddLowercaseTwinOfStubbedDomProperty' => [
+                'code' => '<?php
+                    function foo(DOMDocumentType $d): string {
+                        return $d->publicid;
+                    }',
                 'error_message' => 'UndefinedPropertyFetch',
             ],
             'undefinedThisPropertyAssignment' => [
