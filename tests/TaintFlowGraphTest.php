@@ -15,6 +15,7 @@ use Psalm\Internal\DataFlow\Path;
 use Psalm\IssueBuffer;
 use Psalm\Storage\FunctionStorage;
 use Psalm\Type\TaintKind;
+use ReflectionMethod;
 use ReflectionProperty;
 
 use function array_diff;
@@ -560,6 +561,47 @@ final class TaintFlowGraphTest extends TestCase
         }
 
         return $issue_types;
+    }
+
+    /**
+     * linkGeneratorSends() walks back from what a send reaches, looking for generators. It only walks the nodes a
+     * generator's return node or what a generator receives flows into: from any other node it can't find one.
+     */
+    public function testGeneratorSendWalkSkipsNodesNoGeneratorFlowsInto(): void
+    {
+        $storage = new FunctionStorage();
+        $node = static fn(string $id, ?string $key = null): DataFlowNode
+            => DataFlowNode::getForMethodReturn($id, $storage, specialization_key: $key);
+
+        $graph = new TaintFlowGraph();
+        $edge = static function (DataFlowNode $from, DataFlowNode $to) use ($graph): void {
+            $graph->addNode($from);
+            $graph->addNode($to);
+            $graph->addPath($from, $to, '=');
+        };
+
+        $generator = $node('gen');
+        $received = $node('gen received');
+        $graph->addNode($received);
+        $graph->addGenerator($generator, $received);
+
+        // the generator, and what it receives, flow into $target; so does data no generator flows into
+        $edge($generator, $node('target'));
+        $edge($received, $node('relay'));
+        $edge($node('data'), $node('more data'));
+        $edge($node('more data'), $node('target'));
+        $edge($node('callee'), $node('callee', 'call'));
+        $edge($node('callee', 'call'), $node('target'));
+
+        /** @var array<string, array<string, true>> $reverse */
+        $reverse = (new ReflectionMethod(TaintFlowGraph::class, 'getReverseEdges'))->invoke($graph);
+        /** @var array<string, true> $reaching */
+        $reaching = (new ReflectionMethod(TaintFlowGraph::class, 'getNodesReachingGeneratorSentNodes'))
+            ->invoke($graph, $reverse);
+
+        $ids = array_keys($reaching);
+        sort($ids);
+        $this->assertSame(['gen', 'gen received', 'relay', 'target'], $ids);
     }
 
     /**

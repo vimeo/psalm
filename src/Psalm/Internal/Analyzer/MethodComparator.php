@@ -1102,7 +1102,10 @@ final class MethodComparator
                     $implementer_called_class_name,
                     $implementer_called_class_storage->parent_class,
                 );
+            }
 
+            // the templates of the guide are what the class using the trait binds them to (`@implements Setter<int>`)
+            if ($implementer_called_class_storage->template_extended_params !== null) {
                 self::transformTemplates(
                     $implementer_called_class_storage->template_extended_params,
                     $guide_class_name,

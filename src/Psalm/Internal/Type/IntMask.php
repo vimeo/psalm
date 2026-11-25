@@ -141,8 +141,8 @@ final class IntMask
             return null;
         }
 
-        $left_bits = self::getOperandBits($left_type);
-        $right_bits = self::getOperandBits($right_type);
+        $left_bits = self::getPossibleBits($left_type);
+        $right_bits = self::getPossibleBits($right_type);
 
         if ($stmt instanceof BinaryOp\BitwiseAnd) {
             return ($left_bits ?? -1) & ($right_bits ?? -1);
@@ -192,12 +192,20 @@ final class IntMask
     }
 
     /**
-     * The bits an operand of a bitwise operation may have, or null when they are unknown.
+     * The bits the ints a type holds may have, or null when they are unknown: those of an int-mask, or of literals.
+     * A type that may be anything else than an int is unknown, even when it carries the bits of a mask: a string or
+     * a float of `int-mask<1, 2>|string` may be any int once coerced.
      *
      * @psalm-pure
      */
-    private static function getOperandBits(Union $type): ?int
+    public static function getPossibleBits(Union $type): ?int
     {
+        foreach ($type->getAtomicTypes() as $atomic) {
+            if (!$atomic instanceof TInt) {
+                return null;
+            }
+        }
+
         if ($type->int_mask_bits !== null) {
             return $type->int_mask_bits;
         }

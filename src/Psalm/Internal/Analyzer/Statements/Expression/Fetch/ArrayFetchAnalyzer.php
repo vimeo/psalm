@@ -86,6 +86,7 @@ use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNever;
+use Psalm\Type\Atomic\TNonDecimalIntString;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObject;
@@ -98,6 +99,7 @@ use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Atomic\TTemplateValueOf;
+use Psalm\Type\Atomic\TTraitString;
 use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\MutableUnion;
@@ -317,15 +319,18 @@ final class ArrayFetchAnalyzer
                 $stmt_var_type = $non_null_var_type->freeze();
             }
 
-            $stmt_type = self::getArrayAccessTypeGivenOffset(
-                $statements_analyzer,
-                $stmt,
-                $stmt_var_type,
-                $used_key_type,
-                false,
-                $extended_var_id,
-                $context,
-                null,
+            $stmt_type = TypeVariableResolver::resolveTopLevel(
+                self::getArrayAccessTypeGivenOffset(
+                    $statements_analyzer,
+                    $stmt,
+                    $stmt_var_type,
+                    $used_key_type,
+                    false,
+                    $extended_var_id,
+                    $context,
+                    null,
+                ),
+                $codebase,
             );
 
             $own_type = $stmt_type;
@@ -346,7 +351,8 @@ final class ArrayFetchAnalyzer
                 }
             }
 
-            if ($context->inside_isset && !$stmt_type->hasMixed()) {
+            // an item of a value that cannot be is not there to be missing either
+            if ($context->inside_isset && !$stmt_type->hasMixed() && !$stmt_var_type->isNever()) {
                 // a key of a sealed shape is there, unlike one of an array of unknown keys
                 $dim_type = $stmt->dim ? $statements_analyzer->node_data->getType($stmt->dim) : null;
                 $key_is_declared = !$stmt_type->possibly_undefined
@@ -892,6 +898,7 @@ final class ArrayFetchAnalyzer
         } elseif ($stmt->dim instanceof PhpParser\Node\Scalar\Int_) {
             $key_values[] = new TLiteralInt($stmt->dim->value);
         } elseif ($stmt->dim && ($stmt_dim_type = $statements_analyzer->node_data->getType($stmt->dim))) {
+            $stmt_dim_type = self::replaceTemplatesWithBounds($stmt_dim_type);
             $string_literals = $stmt_dim_type->getLiteralStrings();
             $int_literals = $stmt_dim_type->getLiteralInts();
 
@@ -1009,9 +1016,16 @@ final class ArrayFetchAnalyzer
                 }
             }
 
+            // a value that cannot be has no item either
+            if ($type instanceof TNever) {
+                $array_access_type = Type::combineUnionTypes($array_access_type, Type::getNever());
+                $has_valid_expected_offset = true;
+
+                continue;
+            }
+
             if ($type instanceof TMixed
                 || $type instanceof TTemplateParam
-                || $type instanceof TNever
             ) {
                 if (!$type instanceof TTemplateParam || $type->as->isMixed() || !$type->as->isSingle()) {
                     $array_access_type = self::handleMixedArrayAccess(
@@ -1515,7 +1529,7 @@ final class ArrayFetchAnalyzer
     }
 
     /**
-     * @param  TMixed|TTemplateParam|TNever $type
+     * @param  TMixed|TTemplateParam $type
      */
     public static function handleMixedArrayAccess(
         Context $context,
@@ -1580,7 +1594,7 @@ final class ArrayFetchAnalyzer
 
         return Type::combineUnionTypes(
             $array_access_type,
-            Type::getMixed($type instanceof TNever || ($type instanceof TMixed && $type->from_loop_isset)),
+            Type::getMixed($type instanceof TMixed && $type->from_loop_isset),
         );
     }
 
@@ -1870,7 +1884,10 @@ final class ArrayFetchAnalyzer
                     true,
                     $offset_type->ignore_falsable_issues,
                     $union_comparison_results,
-                );
+                )
+                    // isset() of a string that is numeric looks for the int key it reads as
+                    || ($context->inside_isset
+                        && self::mayReadAsAnIntKey($codebase, $offset_type->freeze(), $expected_offset_type));
 
                 if ($codebase->config->ensure_array_string_offsets_exist
                     && $offset_type_contained_by_expected
@@ -2089,6 +2106,37 @@ final class ArrayFetchAnalyzer
                 );
             }
         }
+    }
+
+    /**
+     * Whether isset() of the offset can find an int key: the strings it may be are numeric ones, read as ints
+     */
+    private static function mayReadAsAnIntKey(Codebase $codebase, Union $offset_type, Union $key_type): bool
+    {
+        if (!$key_type->hasInt()) {
+            return false;
+        }
+
+        $other_types = [];
+        $has_string = false;
+
+        foreach ($offset_type->getAtomicTypes() as $offset_atomic_type) {
+            // a string Psalm knows stays a string key can never be read as an int one
+            if ($offset_atomic_type instanceof TString
+                && !$offset_atomic_type instanceof TLiteralString
+                && !$offset_atomic_type instanceof TClassString
+                && !$offset_atomic_type instanceof TNonDecimalIntString
+                && !$offset_atomic_type instanceof TTraitString
+            ) {
+                $has_string = true;
+            } else {
+                $other_types[] = $offset_atomic_type;
+            }
+        }
+
+        return $has_string
+            && ($other_types === []
+                || UnionTypeComparator::isContainedBy($codebase, new Union($other_types), $key_type));
     }
 
     /**
@@ -2367,10 +2415,12 @@ final class ArrayFetchAnalyzer
                 $is_contained = UnionTypeComparator::isContainedBy(
                     $codebase,
                     $key_type,
-                    $offset_type->freeze(),
+                    self::replaceTemplatesWithBounds($offset_type->freeze()),
                     true,
                     $offset_type->ignore_falsable_issues,
-                );
+                )
+                    // a string that is numeric is the int key it reads as
+                    || self::mayReadAsAnIntKey($codebase, $offset_type->freeze(), $key_type);
             }
 
             if (($is_contained
@@ -2473,6 +2523,28 @@ final class ArrayFetchAnalyzer
                 $array_access_type = Type::getMixed();
             }
         }
+    }
+
+    /**
+     * The type with each template param replaced by its bound, which is what a value of the type may be
+     *
+     * @psalm-pure
+     */
+    private static function replaceTemplatesWithBounds(Union $type): Union
+    {
+        $atomic_types = [];
+
+        foreach ($type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TTemplateParam) {
+                foreach (self::replaceTemplatesWithBounds($atomic_type->as)->getAtomicTypes() as $bound_type) {
+                    $atomic_types[] = $bound_type;
+                }
+            } else {
+                $atomic_types[] = $atomic_type;
+            }
+        }
+
+        return $type->setTypes($atomic_types);
     }
 
     /**

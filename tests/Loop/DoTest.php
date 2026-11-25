@@ -30,6 +30,34 @@ final class DoTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'doWhileConditionOnAnOffsetOfAMixedVariableDoesNotHoldAfterTheLoop' => [
+                'code' => '<?php
+                    function f(mixed $m): void {
+                        do {
+                            echo "";
+                        } while ($m["x"]);
+
+                        if ($m["x"]) {}
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedArrayAccess'],
+                'php_version' => '8.0',
+            ],
+            'doWhileOffsetOfAMixedVariableAssignedByTheBodyKeepsItsTypeAfterTheLoop' => [
+                'code' => '<?php
+                    function f(mixed $m): void {
+                        do {
+                            $m["x"] = rand(0, 1);
+                        } while ($m["x"]);
+
+                        $z = $m["x"];
+                        /** @psalm-check-type-exact $z = int<0, 1> */
+                        echo $z;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedArrayAssignment', 'MixedArrayAccess'],
+                'php_version' => '8.0',
+            ],
             'doWhileBarePostDecrementConditionIsMinusOneAfterTheLoop' => [
                 'code' => '<?php
                     $c = 3;
@@ -63,7 +91,7 @@ final class DoTest extends TestCase
                         do {
                             echo "a";
                         } while (($r += rand(1, 3)) < 100);
-                        /** @psalm-check-type-exact $i = int<1, max> */;
+                        /** @psalm-check-type-exact $i = int<100, 102> */;
                     }
                     PHP,
             ],
@@ -1411,6 +1439,20 @@ final class DoTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'doWhileConditionOnAnOffsetOfATypedArrayStillHoldsAfterTheLoop' => [
+                'code' => '<?php
+                    /** @param array<string, mixed> $m */
+                    function f(array $m): void {
+                        do {
+                            echo "";
+                        } while ($m["x"]);
+
+                        if ($m["x"]) {}
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'varAssignedRightOfLogicalAndInTheConditionIsPossiblyUndefinedAfterTheLoop' => [
                 'code' => '<?php
                     /** @return int|false */

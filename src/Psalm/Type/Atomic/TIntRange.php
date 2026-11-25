@@ -35,6 +35,12 @@ final class TIntRange extends TInt
         return 'int<' . ($this->min_bound ?? 'min') . ', ' . ($this->max_bound ?? 'max') . '>';
     }
 
+    #[Override]
+    public function getId(bool $exact = true): string
+    {
+        return 'int<' . ($this->min_bound ?? 'min') . ', ' . ($this->max_bound ?? 'max') . '>';
+    }
+
     /**
      * @psalm-pure
      */

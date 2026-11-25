@@ -65,7 +65,12 @@ final class TConditional extends Atomic
     public function getKey(bool $include_extra = true): string
     {
         return 'TConditional<'
-            . ($this->subject_type !== null ? $this->subject_type->getKey() : $this->param_name)
+            . ($this->subject_type !== null
+                ? $this->subject_type->getId()
+                : $this->param_name . ':' . $this->defining_class)
+            . ' is ' . $this->conditional_type->getId()
+            . ' ? ' . $this->if_type->getId()
+            . ' : ' . $this->else_type->getId()
             . '>';
     }
 
@@ -79,7 +84,7 @@ final class TConditional extends Atomic
     }
 
     #[Override]
-    public function getId(bool $exact = true, bool $nested = false): string
+    public function getId(bool $exact = true): string
     {
         return '('
             . ($this->subject_type !== null ? $this->subject_type->getId($exact) : $this->param_name)
