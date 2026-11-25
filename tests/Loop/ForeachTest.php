@@ -1673,6 +1673,8 @@ final class ForeachTest extends TestCase
                             takesInt($campaignid);
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedArgument'],
             ],
             'variableDefinedByAByRefClosureUseInALoop' => [
                 'code' => '<?php

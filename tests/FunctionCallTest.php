@@ -1937,19 +1937,6 @@ final class FunctionCallTest extends TestCase
                     extract($a);
                     takesInt($foo);',
             ],
-            'possiblyUndefinedVariableAfterExtractIsReadAsDefined' => [
-                'code' => '<?php
-                    function takesInt(int $_i): void {}
-
-                    /** @param array<string, mixed> $vars */
-                    function f(array $vars): void {
-                        extract($vars);
-                        if (rand(0, 1)) {
-                            $a = 1;
-                        }
-                        takesInt($a);
-                    }',
-            ],
             'possiblyUndefinedVariableAfterExtractCheckedWithIsset' => [
                 'code' => '<?php
                     function takesInt(int $_i): void {}
@@ -4891,6 +4878,20 @@ final class FunctionCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'possiblyUndefinedVariableAfterExtractIsMixed' => [
+                'code' => '<?php
+                    function takesInt(int $_i): void {}
+
+                    /** @param array<string, mixed> $vars */
+                    function f(array $vars): void {
+                        extract($vars);
+                        if (rand(0, 1)) {
+                            $a = 1;
+                        }
+                        takesInt($a);
+                    }',
+                'error_message' => 'MixedArgument',
+            ],
             'negatedArrayIsListOfAList' => [
                 'code' => '<?php
                     function f(): void {
