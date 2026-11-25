@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Tests\TypeReconciliation;
 
 use Override;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
@@ -75,12 +76,123 @@ final class IssetTest extends TestCase
     }
 
     /**
+     * Taint analysis tracks an offset the negation of `isset()` removes, which changes only the data flow of the
+     * array in the implicit else: the array keeps its type from before the if, as without taint analysis.
+     */
+    #[DataProvider('providerNarrowingOfAnIssetOffset')]
+    public function testArrayTypeAfterNestedNarrowingOfAnIssetOffsetWithTaintAnalysis(string $narrowing): void
+    {
+        $this->project_analyzer->trackTaintedInputs();
+        $this->testValidCode(
+            '<?php
+                final class Definition {}
+
+                function getService(): array {
+                    return [];
+                }
+
+                $service = getService();
+                $definition = isset($service[0]) && $service[0] instanceof Definition ? array_shift($service) : null;
+                if (isset($service["from_callable"])) {
+                    $service["class"] = "Closure";
+                }
+                ' . $narrowing,
+            ['$service===' => "array<array-key, 'Closure'|Definition|mixed>"],
+            ['MixedAssignment'],
+        );
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     * @psalm-pure
+     */
+    public static function providerNarrowingOfAnIssetOffset(): iterable
+    {
+        return [
+            'if' => [
+                'if (isset($service["lazy"])) {
+                    if (is_string($service["lazy"])) {}
+                }',
+            ],
+            'ifElseChain' => [
+                'if (isset($service["lazy"])) {
+                    if (is_string($service["lazy"])) {}
+                } elseif (rand(0, 1)) {
+                } else {
+                }',
+            ],
+            'inASwitchCase' => [
+                'switch (rand(0, 2)) {
+                    case 0:
+                        if (isset($service["lazy"])) {
+                            if (is_string($service["lazy"])) {}
+                        }
+                        break;
+                    default:
+                }',
+            ],
+            'inALoop' => [
+                'while (rand(0, 1)) {
+                    if (isset($service["lazy"])) {
+                        if (is_string($service["lazy"])) {}
+                    }
+                }',
+            ],
+        ];
+    }
+
+    /**
      * @psalm-pure
      */
     #[Override]
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'nullCoalesceOnAnyExpression' => [
+                'code' => '<?php
+                    final class S {
+                        public const NOTHING = null;
+                    }
+
+                    /** @return int|null */
+                    function maybe() {
+                        return null;
+                    }
+
+                    $from_null = null ?? 1;
+                    $from_class_constant = S::NOTHING ?? 2;
+                    $from_operation = (rand(0, 1) ? maybe() : null) ?? 3;',
+                'assertions' => [
+                    '$from_null===' => '1',
+                    '$from_class_constant===' => '2',
+                    '$from_operation===' => 'int',
+                ],
+                'ignored_issues' => ['TypeDoesNotContainType'],
+            ],
+            'nullsafeFetchOnTheLeftOfCoalesceStaysInIssetMode' => [
+                'code' => '<?php
+                    final class Ext {
+                        public int $w = 0;
+                    }
+
+                    /** @param array<string, ?Ext> $list */
+                    function undefinedProperty(array $list, string $k): mixed {
+                        return $list[$k]?->weight ?? -999;
+                    }
+
+                    /** @param array<string, ?Ext> $list */
+                    function definedProperty(array $list, string $k): int {
+                        return $list[$k]?->w ?? -999;
+                    }
+
+                    /** @param array{a?: ?Ext} $arr */
+                    function optionalOffset(array $arr): int {
+                        return $arr["a"]?->w ?? -1;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'issetInALoopOverLiteralKeysOfAnIntersectionShape' => [
                 'code' => '<?php
                     /**
@@ -2609,6 +2721,29 @@ final class IssetTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'coalesceOnAConcatenationKeepsOffsetIssues' => [
+                'code' => '<?php
+                    /** @param array{a?: string} $arr */
+                    function f(array $arr): string {
+                        return "x: " . $arr["a"] ?? "none";
+                    }',
+                'error_message' => 'PossiblyUndefinedArrayOffset',
+            ],
+            'coalesceOnAConcatenationKeepsMixedOffsetIssues' => [
+                'code' => '<?php
+                    /** @param mixed $error */
+                    function g($error): string {
+                        return "x: " . $error[0]["description"] ?? "none";
+                    }',
+                'error_message' => 'MixedArrayAccess',
+            ],
+            'coalesceOnAConcatenationKeepsNullOffsetIssuesOfACall' => [
+                'code' => '<?php
+                    function h(): string {
+                        return "x: " . error_get_last()["message"] ?? "none";
+                    }',
+                'error_message' => 'PossiblyNullArrayAccess',
+            ],
             'possiblyUndefinedMixedVariableStaysSoWhereIssetOfOffsetIsFalse' => [
                 'code' => '<?php
                     /** @return mixed */

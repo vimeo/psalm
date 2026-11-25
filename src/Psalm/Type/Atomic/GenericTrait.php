@@ -14,6 +14,7 @@ use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeArgumentProjection;
+use Psalm\Internal\Type\TypeTokenizer;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
@@ -97,36 +98,21 @@ trait GenericTrait
     }
 
     #[Override]
-    public function getId(bool $exact = true, bool $nested = false): string
+    public function getId(bool $exact = true): string
+    {
+        return $this->value . $this->getTypeParamsId($exact);
+    }
+
+    private function getTypeParamsId(bool $exact): string
     {
         [$type_params, $purity_args] = $this->getTypeParamsAndPurityArgs();
 
-        $s = self::formatTypeParams(
+        return self::formatTypeParams(
             $type_params,
             $purity_args,
             static fn(Union $type_param): string => $type_param->getId($exact),
             $this instanceof TGenericObject ? $this : null,
         );
-
-        $extra_types = '';
-
-        if ($this instanceof TNamedObject) {
-            if ($this->extra_types) {
-                $extra_types = '&' . implode(
-                    '&',
-                    array_map(
-                        static fn(Atomic $type): string => $type->getId($exact, true),
-                        $this->extra_types,
-                    ),
-                );
-            }
-
-            if ($this->is_static) {
-                $extra_types .= '&static';
-            }
-        }
-
-        return $this->value . $s . $extra_types;
     }
 
     /**
@@ -160,7 +146,8 @@ trait GenericTrait
 
             $value_type_string = $value_type->toNamespacedString($namespace, $aliased_classes, $this_class, true);
 
-            if (!$value_type->isSingle()) {
+            // `[]` binds tighter than `|` and `&`: `(A&B)[]`, not `A&B[]`
+            if (TypeTokenizer::hasTopLevelOperator($value_type_string, '|&')) {
                 return '(' . $value_type_string . ')[]';
             }
 

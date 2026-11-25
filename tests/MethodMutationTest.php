@@ -230,12 +230,12 @@ final class MethodMutationTest extends TestCase
 
     public function testMethodInheritedFromAnotherFileSeesConstantsOfRootFile(): void
     {
-        $this->assertSame('int', $this->getCountSetBy(new MethodIdentifier('Child', 'setcount')));
+        $this->assertSame('5', $this->getCountSetBy(new MethodIdentifier('Child', 'setcount')));
     }
 
     public function testMethodOfAnotherFileSeesConstantsOfRootFile(): void
     {
-        $this->assertSame('int', $this->getCountSetBy(new MethodIdentifier('Base', 'setcount')));
+        $this->assertSame('5', $this->getCountSetBy(new MethodIdentifier('Base', 'setcount')));
     }
 
     /**

@@ -33,7 +33,7 @@ final class TClassConstant extends Atomic
     }
 
     #[Override]
-    public function getId(bool $exact = true, bool $nested = false): string
+    public function getId(bool $exact = true): string
     {
         return $this->fq_classlike_name . '::' . $this->const_name;
     }

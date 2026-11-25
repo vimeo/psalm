@@ -22,7 +22,18 @@ function queryExpression(SimpleXMLElement $xml) : array|false|null {
 ## Mitigations
 
 - Don't build the query from user input; compare against a value read from the document.
-- Allowlist the characters the input may contain, and reject quotes.
+- Allowlist the characters the input may contain, and reject quotes. In a string literal of the query, rejecting quotes is enough:
+
+```php
+<?php
+
+function findUser(DOMXPath $xpath, string $id): void {
+    if (preg_match('/^[a-z0-9 ]+$/iD', $id)) {
+        $xpath->query("//user[@id='" . $id . "']"); // no issue
+        $xpath->query("//user[@id=" . $id . "]");   // TaintedXpath: a space makes `1 or 1`
+    }
+}
+```
 
 ## Further resources
 

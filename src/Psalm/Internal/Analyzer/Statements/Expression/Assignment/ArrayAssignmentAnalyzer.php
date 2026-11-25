@@ -167,6 +167,12 @@ final class ArrayAssignmentAnalyzer
 
         $root_type = $statements_analyzer->node_data->getType($root_array_expr) ?? Type::getMixed();
 
+        // an array that cannot be (in code a condition proved unreachable) is not made by writing to it; a property is
+        // also never where it is not initialized yet (`!isset($this->p)`), which the write initializes
+        $root_is_never = $root_type->isNever()
+            && !$root_array_expr instanceof PhpParser\Node\Expr\PropertyFetch
+            && !$root_array_expr instanceof PhpParser\Node\Expr\StaticPropertyFetch;
+
         if ($root_type->hasMixed()) {
             $vars_before_read = $context->vars_in_scope;
 
@@ -307,7 +313,9 @@ final class ArrayAssignmentAnalyzer
         $new_child_type->removeType('null');
         $new_child_type = $new_child_type->freeze();
 
-        if (!$root_type->hasObjectType()) {
+        if ($root_is_never) {
+            $root_type = Type::getNever()->setParentNodes($new_child_type->parent_nodes);
+        } elseif (!$root_type->hasObjectType()) {
             $root_type = $new_child_type;
         }
 
@@ -2543,7 +2551,7 @@ final class ArrayAssignmentAnalyzer
             if ($object_id) {
                 $var_id_addition = '[' . $object_id . '->' . $child_stmt->dim->name->name . ']';
             } else {
-                $var_id_addition = '[' . $child_stmt_dim_type . ']';
+                $var_id_addition = '[' . $child_stmt_dim_type->getId(false) . ']';
             }
 
             return [null, $var_id_addition, true];
@@ -2562,7 +2570,7 @@ final class ArrayAssignmentAnalyzer
             return [null, $var_id_addition, true];
         }
 
-        $var_id_addition = '[' . $child_stmt_dim_type . ']';
+        $var_id_addition = '[' . $child_stmt_dim_type->getId(false) . ']';
 
         return [null, $var_id_addition, false];
     }

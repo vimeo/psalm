@@ -136,6 +136,8 @@ final class TypeCombination
     /** @var array<string, ?TNamedObject> */
     public array $class_string_map_as_types = [];
 
+    public ?Union $class_string_map_value_param = null;
+
     /**
      * @psalm-assert-if-true !null $this->objectlike_key_type
      * @psalm-assert-if-true !null $this->objectlike_value_type

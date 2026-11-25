@@ -403,12 +403,19 @@ final class StaticPropertyFetchAnalyzer
 
         if ($var_id) {
             if ($property->type) {
+                // `self` of a property declared in a trait is the class using it
+                $self_class_storage = $class_storage->is_trait
+                    ? $codebase->classlikes->getStorageFor(
+                        $codebase->properties->getAppearingClassForProperty($property_id, true) ?? $fq_class_name,
+                    ) ?? $class_storage
+                    : $class_storage;
+
                 $context->vars_in_scope[$var_id] = TypeExpander::expandUnion(
                     $codebase,
                     $property->type,
-                    $class_storage->name,
-                    $class_storage->name,
-                    $class_storage->parent_class,
+                    $self_class_storage->name,
+                    $self_class_storage->name,
+                    $self_class_storage->parent_class,
                 );
             } else {
                 $context->vars_in_scope[$var_id] = Type::getMixed();

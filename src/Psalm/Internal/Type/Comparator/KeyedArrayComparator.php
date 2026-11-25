@@ -34,6 +34,15 @@ final class KeyedArrayComparator
         bool $allow_interface_equality,
         ?TypeComparisonResult $atomic_comparison_result,
     ): bool {
+        if ($container_type_part instanceof TKeyedArray
+            && $container_type_part->is_callable
+            && $input_type_part instanceof TKeyedArray
+            && !$input_type_part->is_callable
+            && CallableTypeComparator::isLiteralPairOfNoMethod($codebase, $input_type_part)
+        ) {
+            return false;
+        }
+
         $container_sealed = $container_type_part instanceof TKeyedArray
             && $container_type_part->fallback_params === null;
 

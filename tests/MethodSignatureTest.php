@@ -772,6 +772,20 @@ final class MethodSignatureTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'pureGeneratorImplementingAnIterableReturnType' => [
+                'code' => '<?php
+                    interface I {
+                        /** @return iterable<string, int> */
+                        public static function provide(): iterable;
+                    }
+
+                    final class C implements I {
+                        /** @psalm-pure */
+                        public static function provide(): iterable {
+                            yield "a" => 1;
+                        }
+                    }',
+            ],
             'methodAnnotationNarrowingTheReturnTypeOfANativeMethodNeedsNoSignature' => [
                 'code' => '<?php
                     /**

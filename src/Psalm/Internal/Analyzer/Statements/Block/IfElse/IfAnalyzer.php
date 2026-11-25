@@ -538,6 +538,12 @@ final class IfAnalyzer
 
         $redefined_vars = $if_context->getRedefinedVars($outer_context->vars_in_scope);
 
+        foreach ($redefined_vars as $var_id => $type) {
+            if ($type->equals($outer_context->vars_in_scope[$var_id], true, false)) {
+                $if_scope->data_flow_only_redefined_vars[$var_id] = true;
+            }
+        }
+
         foreach (array_diff_key($if_context->vars_in_scope, $outer_context->vars_in_scope) as $new_var => $type) {
             // only variables the branch defines: `$a->b` and `$a['b']` are narrowings of an expression, `isset($a)`
             // doesn't define `$a`, and the type of a variable possibly defined before the branch (by an earlier

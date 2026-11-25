@@ -265,6 +265,28 @@ if (preg_match('/^api.example.com$/', $host)) {
 }
 ```
 
+A path that starts with a directory (`str_starts_with()`, or `strpos()` compared to `0` with `===`) is a local file,
+not a server. The path `realpath()` returns has no `..` left, so it is also in that directory:
+
+```php
+<?php
+/** @psalm-taint-source input */
+function getParam(string $name): string {
+    return (string) ($_GET[$name] ?? '');
+}
+
+$path = realpath('/var/app/data/' . getParam('name'));
+if ($path !== false && str_starts_with($path, '/var/app/data/')) {
+    file_put_contents($path, 'data'); // no issue
+}
+
+$path = getParam('path');
+if (str_starts_with($path, '/var/app/data/')) {
+    fsockopen($path, 80);             // no issue
+    file_put_contents($path, 'data'); // TaintedFile: /var/app/data/../../etc/passwd
+}
+```
+
 #### Allowlist helper functions
 
 If a helper validates input against a list of allowed values, annotate it with `@psalm-assert-if-true` and those
@@ -327,6 +349,7 @@ function processVar(string $str, bool $escape = true): string {
 
 echo processVar($_GET['text'], false); // TaintedHtml
 echo processVar($_GET['text'], true); // no issue
+echo processVar(...[$_GET['text'], true]); // TaintedHtml: an unpacked argument isn't read
 ```
 
 Where you can, accept and store user input as plain text fields rather than blocks of HTML, so that it can always be
@@ -347,10 +370,46 @@ function sanitizeHTML(string $html): string {
 }
 ```
 
-**Note on `json_encode()`:** Psalm automatically strips `html` when the flags are statically known to include both
-`JSON_HEX_TAG` and `JSON_HEX_AMP`. It never strips `has_quotes`, because JSON strings are wrapped in `"` which can break
-out of a double-quoted HTML attribute. If your helper only outputs JSON inside `<script>` tags — or passes
-`JSON_HEX_APOS` for a single-quoted attribute — add `@psalm-taint-escape has_quotes` to the helper.
+#### Escaping by flags
+
+What `json_encode()`, `htmlspecialchars()` and `htmlentities()` escape depends on their flags. Psalm reads them from
+constant expressions only, never from a type: int literals, builtin constants, constants and class constants declared
+once with such an expression, variables only ever assigned such expressions (also read by a closure or an arrow
+function), and `|`, `&` and ternaries of them. The decoders give back what the escapes removed:
+
+```php
+<?php
+
+final class Json
+{
+    public const FLAGS = JSON_HEX_TAG | JSON_HEX_AMP;
+}
+
+/** @param 3 $three */
+function show(int $flags, int $three): void
+{
+    echo json_encode($_GET['a'], Json::FLAGS); // TaintedTextWithQuotes, but no TaintedHtml
+    $hex = JSON_HEX_TAG | JSON_HEX_AMP;
+    echo json_encode($_GET['a'], $hex); // TaintedTextWithQuotes, but no TaintedHtml
+    echo json_encode($_GET['a'], $flags | JSON_HEX_TAG | JSON_HEX_AMP); // TaintedTextWithQuotes
+    echo json_encode($_GET['a'], $three); // TaintedHtml
+    echo json_decode(json_encode($_GET['a'], Json::FLAGS)); // TaintedHtml
+    echo htmlspecialchars($_GET['a'], ENT_QUOTES); // no issue
+    echo htmlspecialchars($_GET['a'], ENT_NOQUOTES); // TaintedTextWithQuotes
+    echo htmlspecialchars(...[$_GET['a'], ENT_QUOTES]); // TaintedTextWithQuotes
+    echo html_entity_decode(htmlspecialchars($_GET['a'], ENT_QUOTES)); // TaintedHtml
+    header('X-Data: ' . json_encode($_GET['a'])); // no issue
+    header('X-Data: ' . json_encode($_GET['a'], JSON_PRETTY_PRINT)); // TaintedHeader
+}
+```
+
+`json_encode()` always keeps `has_quotes`, because the `"` around a JSON string ends a double-quoted attribute. If your
+helper only outputs JSON inside `<script>` tags, add `@psalm-taint-escape has_quotes` to it.
+
+Psalm reads a class constant only from a project class declared once, unconditionally, under its own name, while no
+scanned `class_alias()` call has an alias Psalm can't tell. It reads `static::` only on a natively final class or
+constant, and a constant only if a `const` statement or a `define()` call outside of a condition or a function
+declares it once.
 
 ## Reports through shared code
 
@@ -722,6 +781,7 @@ Psalm treats the following built-in inputs as taint sources:
 | **Client-controlled `$_SERVER` entries** | Request headers (`HTTP_*`), URI fields (`REQUEST_URI`, `QUERY_STRING`, `PATH_INFO`, `PHP_SELF`, `argv`, ...), `REQUEST_METHOD`, `CONTENT_TYPE`, HTTP auth credentials, redirected equivalents (`REDIRECT_*`), and any read using a non-literal key (`$_SERVER[$key]`) |
 | **Uploaded files** | Each file's `name`, `type`, and `full_path` in `$_FILES` |
 | **PSR-7 HTTP messages** | Return values of `Psr\Http\Message\ServerRequestInterface`, `ResponseInterface`, `UriInterface`, `StreamInterface`, `UploadedFileInterface`, and implementations (covering framework requests and HTTP client responses such as Guzzle) |
+| **Symfony HTTP client responses** | `getContent()`, `toArray()`, `getHeaders()` and `getInfo()` of `Symfony\Contracts\HttpClient\ResponseInterface`, and the content of the chunks `HttpClientInterface::stream()` yields |
 | **Input streams** | `STDIN`; `fopen()`, `file_get_contents()`, and `file()` on literal `php://input` or `php://stdin`; and stream readers (`fgets()`, `fread()`, `stream_get_contents()`, ...) reading those handles |
 | **Server responses** | `fopen()`, `file_get_contents()`, and `file()` on a URL starting with a literal `http://`, `https://`, `ftp://` or `ftps://` (as `file_get_contents('https://api.example.com/items/' . $id)`), and stream readers reading those handles |
 | **Databases** | What the program stored in a database, where it reads it back (see [Databases](taint_flow.md#databases)) |
@@ -743,8 +803,8 @@ function handle(ServerRequestInterface $request): void {
 }
 ```
 
-Psalm also ships [library stubs](../running_psalm/configuration.md#loadlibrarystubs) (Guzzle, amphp, the MongoDB
-library, ...) and auto-enables the [Symfony and Laravel plugins](../running_psalm/configuration.md#loadlibraryplugins)
+Psalm also ships [library stubs](../running_psalm/configuration.md#loadlibrarystubs) (Guzzle, amphp, Symfony HttpClient,
+the MongoDB library, ...) and auto-enables the [Symfony and Laravel plugins](../running_psalm/configuration.md#loadlibraryplugins)
 to declare their sources and sinks. To add your own, see [custom taint sources](custom_taint_sources.md).
 
 ### Where user input must not go
@@ -766,7 +826,7 @@ issue:
 | `sql` | [TaintedSql](../running_psalm/issues/TaintedSql.md) | SQL injection: both `sql_in_quotes` (breaking out of quotes) and `sql_unquoted` (SQL syntax outside of them, which `real_escape_string()` keeps) |
 | `nosql` | [TaintedNosql](../running_psalm/issues/TaintedNosql.md) | NoSQL query structure (MongoDB filters, updates, pipelines; arrays and objects only) |
 | `ldap` | [TaintedLdap](../running_psalm/issues/TaintedLdap.md) | LDAP DN or filter injection |
-| `xpath` | [TaintedXpath](../running_psalm/issues/TaintedXpath.md) | XPath expression injection |
+| `xpath` | [TaintedXpath](../running_psalm/issues/TaintedXpath.md) | XPath expression injection: both `xpath_query` (a value outside a string literal of the query) and `xpath_literal` (a quote ending one) |
 | `shell` | [TaintedShell](../running_psalm/issues/TaintedShell.md) | Shell command injection |
 | `eval` | [TaintedEval](../running_psalm/issues/TaintedEval.md) | Arbitrary PHP code execution |
 | `callable` | [TaintedCallable](../running_psalm/issues/TaintedCallable.md) | Calling an attacker-chosen function |

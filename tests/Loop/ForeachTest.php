@@ -84,6 +84,42 @@ final class ForeachTest extends TestCase
         );
     }
 
+    public function testInvalidIteratorNamesTheScalarTypeWithoutItsValue(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @param non-empty-string $s */
+                function f(string $s): void {
+                    foreach (5 as $_) {}
+                    foreach (1.5 as $_) {}
+                    foreach ("abc" as $_) {}
+                    foreach (true as $_) {}
+                    foreach ($s as $_) {}
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        self::assertSame(
+            [
+                'Cannot iterate over int',
+                'Cannot iterate over float',
+                'Cannot iterate over string',
+                'Cannot iterate over true',
+                'Cannot iterate over string',
+            ],
+            array_map(
+                static fn(IssueData $issue): string => $issue->message,
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
+        );
+    }
+
     public function testAnItemAssignedToAVariableOfAPreviousIterationCreatesTheArray(): void
     {
         $this->project_analyzer->getConfig()->throw_exception = false;
@@ -3490,6 +3526,33 @@ final class ForeachTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'invalidGeneratorIteratorShowsTheRefinedSendType' => [
+                'code' => '<?php
+                    /** @return Generator<int, int, non-empty-string, void> */
+                    function g(): Generator {
+                        $x = yield 1;
+                        echo $x;
+                    }
+
+                    foreach (g() as $_) {}',
+                'error_message' => 'non-null send() type Generator<int, int, non-empty-string',
+            ],
+            'possiblyInvalidGeneratorIteratorShowsTheSendType' => [
+                'code' => '<?php
+                    /** @param list<int>|Generator<int, int, string, void> $a */
+                    function f($a): void {
+                        foreach ($a as $_) {}
+                    }',
+                'error_message' => 'Cannot iterate over generator with non-null send() type Generator<int, int, string',
+            ],
+            'nullableIteratorShowsTheRefinedType' => [
+                'code' => '<?php
+                    /** @param list{5, non-empty-string}|null $a */
+                    function f(?array $a): void {
+                        foreach ($a as $_) {}
+                    }',
+                'error_message' => 'PossiblyNullIterator - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:34 - Cannot iterate over nullable var list{5, non-empty-string}|null',
+            ],
             'propertyNarrowedBeforeTheLoopIsForgottenAfterABreakReassigningItsObject' => [
                 'code' => '<?php
                     final class D {
