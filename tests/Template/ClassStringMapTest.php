@@ -151,6 +151,35 @@ final class ClassStringMapTest extends TestCase
                     }'
                     ,
             ],
+            'classStringMapCombinedWithAnotherArrayHoldsTheBoundOfItsTemplate' => [
+                'code' => '<?php
+                    class Foo {}
+                    class Bar {}
+
+                    /** @return class-string-map<T as Foo, T> */
+                    function getFoos(): array {
+                        return [];
+                    }
+
+                    /** @return class-string-map<T as Bar, T> */
+                    function getBars(): array {
+                        return [];
+                    }
+
+                    /** @return array<int, int> */
+                    function getInts(): array {
+                        return [];
+                    }
+
+                    $a = rand(0, 1) ? getFoos() : getInts();
+                    $b = rand(0, 1) ? getFoos() : getBars();
+                    $c = rand(0, 1) ? getFoos() : getFoos();',
+                'assertions' => [
+                    '$a===' => 'array<class-string<Foo>|int, Foo|int>',
+                    '$b===' => 'array<class-string<Bar>|class-string<Foo>, Bar|Foo>',
+                    '$c===' => 'class-string-map<T as Foo, T:class-string-map as Foo>',
+                ],
+            ],
         ];
     }
 

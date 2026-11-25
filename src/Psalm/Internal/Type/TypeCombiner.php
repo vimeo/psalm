@@ -757,7 +757,8 @@ final class TypeCombiner
         }
 
         if ($type instanceof TClassStringMap) {
-            foreach ([$type->getStandinKeyParam(), $type->value_param] as $i => $type_param) {
+            // the map's template is only kept if the result is a class-string-map again
+            foreach ([$type->getBoundKeyParam(), $type->getBoundValueParam($codebase)] as $i => $type_param) {
                 // See https://github.com/vimeo/psalm/pull/9439#issuecomment-1464563015
                 /** @psalm-suppress PropertyTypeCoercion */
                 $combination->array_type_params[$i] = Type::combineUnionTypes(
@@ -769,11 +770,19 @@ final class TypeCombiner
             }
 
             $combination->array_always_filled = false;
+            $combination->all_arrays_lists = false;
+            $combination->all_arrays_callable = false;
 
             if ($combination->all_arrays_class_string_maps !== false) {
                 $combination->all_arrays_class_string_maps = true;
                 $combination->class_string_map_names[$type->param_name] = true;
                 $combination->class_string_map_as_types[(string) $type->as_type] = $type->as_type;
+                $combination->class_string_map_value_param = Type::combineUnionTypes(
+                    $combination->class_string_map_value_param,
+                    $type->value_param,
+                    $codebase,
+                    $overwrite_empty_array,
+                );
             }
 
             return null;
@@ -2151,13 +2160,14 @@ final class TypeCombiner
             }
         } else {
             if ($combination->all_arrays_class_string_maps
+                && $combination->class_string_map_value_param
                 && count($combination->class_string_map_as_types) === 1
                 && count($combination->class_string_map_names) === 1
             ) {
                 $array_type = new TClassStringMap(
                     array_keys($combination->class_string_map_names)[0],
                     array_values($combination->class_string_map_as_types)[0],
-                    $generic_type_params[1],
+                    $combination->class_string_map_value_param,
                 );
             } elseif ($combination->all_arrays_lists) {
                 $array_type = Type::getListAtomic($generic_type_params[1]);
