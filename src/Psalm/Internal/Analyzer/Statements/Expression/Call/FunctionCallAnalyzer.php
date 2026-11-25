@@ -1951,7 +1951,11 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                         $stmt,
                     );
 
-                    self::addToTypeOfCall($statements_analyzer, $real_stmt, null);
+                    // a callable-string is the string form of a callable that may have been declared
+                    // with a return type: the other parts of the union give the type
+                    if (!$var_type_part instanceof TCallableString) {
+                        self::addToTypeOfCall($statements_analyzer, $real_stmt, null);
+                    }
                 } elseif ($var_type_part instanceof TString
                     || $var_type_part instanceof TArray
                     || ($var_type_part instanceof TKeyedArray

@@ -218,10 +218,6 @@ final class CallableTest extends TestCase
                     function e(): Engine {
                         throw new RuntimeException();
                     }
-                    /** @return callable-string */
-                    function cs(): string {
-                        return "strlen";
-                    }
                     function c(): Closure {
                         return fn(string $s): int => 1;
                     }
@@ -230,23 +226,40 @@ final class CallableTest extends TestCase
                         return [e(), "render"];
                     }
                     $e = e();
-                    $cs = cs();
                     $c = c();
                     $dyn = dyn();
                     $b = rand(0, 1) === 1;
-                    $withString = ($b ? [$e, "render"] : $cs)("x");
-                    $withStringFirst = ($b ? $cs : [$e, "render"])("x");
                     $withClosureObject = ($b ? [$e, "render"] : $c)("x");
-                    $withDynamicMethod = ($b ? [$e, "render"] : $dyn)("x");
-                    $closureWithString = ($b ? fn(string $s): int => 1 : $cs)("x");',
+                    $withDynamicMethod = ($b ? [$e, "render"] : $dyn)("x");',
                 'assertions' => [
-                    '$withString===' => 'mixed',
-                    '$withStringFirst===' => 'mixed',
                     '$withClosureObject===' => 'mixed',
                     '$withDynamicMethod===' => 'mixed',
-                    '$closureWithString===' => 'mixed',
                 ],
                 'ignored_issues' => ['MixedAssignment'],
+                'php_version' => '8.0',
+            ],
+            'callOfAUnionWithACallableStringTakesTheTypeOfTheOtherParts' => [
+                'code' => '<?php
+                    interface Engine {
+                        public function render(string $f): string|Stringable;
+                    }
+                    function e(): Engine {
+                        throw new RuntimeException();
+                    }
+                    /** @return callable-string */
+                    function cs(): string {
+                        return "strlen";
+                    }
+                    $e = e();
+                    $cs = cs();
+                    $b = rand(0, 1) === 1;
+                    $withString = ($b ? [$e, "render"] : $cs)("x");
+                    $withStringFirst = ($b ? $cs : [$e, "render"])("x");',
+                'assertions' => [
+                    '$withString===' => 'Stringable|string',
+                    '$withStringFirst===' => 'Stringable|string',
+                ],
+                'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
             'callOfACallableArrayGivesTheMethodTemplatesTheirBounds' => [
