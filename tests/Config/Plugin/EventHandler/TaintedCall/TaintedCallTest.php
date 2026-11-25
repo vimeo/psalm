@@ -232,6 +232,14 @@ final class TaintedCallTest extends DeferredAnalyzerTestCase
             'echo call_through("html_entity_decode", escape((string) $_GET["x"]));',
             'TaintedHtml',
         ];
+        yield 'json decoder giving back what was escaped' => [
+            'echo call_through("json_decode", call_through("json_encode", $_GET["x"], JSON_HEX_TAG | JSON_HEX_AMP));',
+            'TaintedHtml',
+        ];
+        yield 'builtin given flags that may not escape' => [
+            'echo call_through("json_encode", $_GET["x"], rand(0, 1) ? JSON_HEX_TAG | JSON_HEX_AMP : JSON_HEX_TAG);',
+            'TaintedHtml',
+        ];
         yield 'call event adding to the return of a method call' => [
             'echo (new Instance())->dirty("safe");',
             'TaintedHtml',
@@ -269,6 +277,9 @@ final class TaintedCallTest extends DeferredAnalyzerTestCase
         yield 'builtin escaping by its flags' => [
             'echo call_through("htmlspecialchars", (string) $_GET["x"], ENT_QUOTES);
             echo call_through("json_encode", $_GET["y"], JSON_HEX_TAG | JSON_HEX_AMP);',
+        ];
+        yield 'builtin given flags that always escape' => [
+            'echo call_through("json_encode", $_GET["y"], rand(0, 1) ? JSON_HEX_TAG | JSON_HEX_AMP : JSON_HEX_TAG | JSON_HEX_AMP | JSON_PRETTY_PRINT);',
         ];
         yield 'decoder giving nothing back to what holds no input' => [
             'echo call_through("html_entity_decode", "safe");',
