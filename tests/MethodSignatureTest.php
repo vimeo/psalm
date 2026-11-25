@@ -39,6 +39,10 @@ final class MethodSignatureTest extends TestCase
             '<?php
                 use Ds\\Collection;
 
+                function size(Collection $c): int {
+                    return $c->count();
+                }
+
                 final class Bag {
                     /** @psalm-mutation-free */
                     public function isEmpty(): int {
