@@ -10,7 +10,9 @@ use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Tests\TestCase;
 use Psalm\Type;
 use Psalm\Type\Atomic\TAnonymousClassInstance;
+use Psalm\Type\Atomic\TCallableObject;
 use Psalm\Type\Atomic\TClassString;
+use Psalm\Type\Atomic\TEnumCase;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TInt;
@@ -160,6 +162,26 @@ final class UnionTest extends TestCase
             true,
         ));
         self::assertEquality(false, new Union([$template]), new Union([$intersection]));
+    }
+
+    public function testCallableObjectIsNotEqualToItsIntersection(): void
+    {
+        $callable_object = new TCallableObject();
+        $intersection = $callable_object->addIntersectionType(new TNamedObject('Countable'));
+
+        self::assertFalse($callable_object->equals($intersection, true));
+        self::assertFalse($intersection->equals($callable_object, true));
+        self::assertTrue($intersection->equals(
+            (new TCallableObject())->addIntersectionType(new TNamedObject('Countable')),
+            true,
+        ));
+        self::assertEquality(false, new Union([$callable_object]), new Union([$intersection]));
+    }
+
+    public function testCasesOfAnEnumAreNotEqual(): void
+    {
+        self::assertFalse((new TEnumCase('E', 'A'))->equals(new TEnumCase('E', 'B'), true));
+        self::assertTrue((new TEnumCase('E', 'A'))->equals(new TEnumCase('E', 'A'), true));
     }
 
     public function testListIsNotEqualToAnArrayWithTheSameEntries(): void

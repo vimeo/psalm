@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Type\Atomic;
 
 use Override;
+use Psalm\Type\Atomic;
 
 /**
  * Denotes an object that is also `callable` (i.e. it has `__invoke` defined).
@@ -48,7 +49,22 @@ final class TCallableObject extends TObject
         if ($this->callable !== null) {
             $id .= $this->callable->getParamString() . $this->callable->getReturnTypeString();
         }
-        return $id;
+        return $id . $this->getIntersectionTypesId($exact);
+    }
+
+    #[Override]
+    public function equals(Atomic $other_type, bool $ensure_source_equality): bool
+    {
+        if (!$other_type instanceof self
+            || ($this->callable === null) !== ($other_type->callable === null)
+            || !$this->intersectionTypesEqual($other_type->extra_types, $ensure_source_equality)
+        ) {
+            return false;
+        }
+
+        return $this->callable === null
+            || $other_type->callable === null
+            || $this->callable->equals($other_type->callable, $ensure_source_equality);
     }
 
     /**

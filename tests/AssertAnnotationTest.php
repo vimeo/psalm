@@ -309,6 +309,50 @@ final class AssertAnnotationTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'assertIterableIntersectionKeepsTheIntersectedTypes' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-assert iterable&Countable $x
+                     */
+                    function assertCountable(mixed $x): void {}
+
+                    function m(): mixed { return 1; }
+                    function t(): Traversable { return new ArrayIterator([]); }
+                    function o(): object { return new ArrayObject([]); }
+
+                    $m = m();
+                    assertCountable($m);
+                    $t = t();
+                    assertCountable($t);
+                    $o = o();
+                    assertCountable($o);',
+                'assertions' => [
+                    '$m' => 'iterable<mixed, mixed>&Countable',
+                    '$t' => 'Traversable[impure]<mixed, mixed>&Countable',
+                    '$o' => 'Traversable&Countable',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+                'php_version' => '8.0',
+            ],
+            'assertIterableIntersectionOnABoundedTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-assert iterable&Countable $x
+                     */
+                    function assertCountable(mixed $x): void {}
+
+                    /**
+                     * @template T of iterable<int, string>
+                     * @param T $x
+                     */
+                    function f($x): int {
+                        assertCountable($x);
+                        return count($x);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'assertionOnAPropertyIsForgottenAfterAMethodWritingIt' => [
                 'code' => '<?php
                     /**
@@ -5859,6 +5903,35 @@ final class AssertAnnotationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'assertIterableIntersectionOnAnArray' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-assert iterable&Countable $x
+                     */
+                    function assertCountable(mixed $x): void {}
+
+                    /** @param array<int> $x */
+                    function f(array $x): void {
+                        assertCountable($x);
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'assertIterableIntersectionOnAnIntersection' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-assert iterable&Countable $x
+                     */
+                    function assertCountable(mixed $x): void {}
+
+                    function f(Countable&Traversable $x): void {
+                        assertCountable($x);
+                    }',
+                'error_message' => 'RedundantCondition',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'assertIfFalseOfANullsafeMethodCallDoesNotHoldWhereItIsFalsy' => [
                 'code' => '<?php
                     final class M {
