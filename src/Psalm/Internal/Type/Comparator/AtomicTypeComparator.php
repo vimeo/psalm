@@ -607,29 +607,6 @@ final class AtomicTypeComparator
             return true;
         }
 
-        // a conditional is one of its branches, which a template in the container may be
-        if ($container_type_part instanceof TTemplateParam && $input_type_part instanceof TConditional) {
-            $input_branch_parts = [
-                ...$input_type_part->if_type->getAtomicTypes(),
-                ...$input_type_part->else_type->getAtomicTypes(),
-            ];
-
-            foreach ($input_branch_parts as $input_branch_part) {
-                if (self::isContainedBy(
-                    $codebase,
-                    $input_branch_part,
-                    $container_type_part,
-                    $allow_interface_equality,
-                    $allow_float_int_equality,
-                    $atomic_comparison_result,
-                )) {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
         if ($container_type_part instanceof TTemplateParam && $input_type_part instanceof TTemplateParam) {
             return UnionTypeComparator::isContainedBy(
                 $codebase,

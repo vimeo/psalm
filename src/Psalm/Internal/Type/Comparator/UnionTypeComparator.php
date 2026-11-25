@@ -13,6 +13,7 @@ use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TClassConstant;
+use Psalm\Type\Atomic\TConditional;
 use Psalm\Type\Atomic\TEmptyMixed;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TGenericObject;
@@ -97,11 +98,11 @@ final class UnionTypeComparator
         $other_container_parts = [];
 
         // key-of<T> and value-of<T> are within their bound, but only key-of<T> and value-of<T> are within them
-        $input_atomic_types = array_reverse(self::getTypeParts(
+        $input_atomic_types = array_reverse(self::withConditionalsSplit(self::getTypeParts(
             $codebase,
             $input_type,
             !self::hasTemplateKeyOrValueOf($container_type),
-        ));
+        )));
 
         // every input part no container part accepts is examined before the comparison fails, so that the result
         // does not depend on the order of the input parts
@@ -911,6 +912,35 @@ final class UnionTypeComparator
         }
 
         return false;
+    }
+
+    /**
+     * A conditional is contained if each of its branches is, possibly by different container parts
+     * (`($a is null ? T : TA)` by `T|TA`), so it is compared as the parts of its branches
+     *
+     * @param list<Atomic> $atomic_types
+     * @return list<Atomic>
+     * @psalm-pure
+     */
+    private static function withConditionalsSplit(array $atomic_types): array
+    {
+        $split_types = [];
+
+        foreach ($atomic_types as $atomic_type) {
+            if ($atomic_type instanceof TConditional) {
+                $split_types = [
+                    ...$split_types,
+                    ...self::withConditionalsSplit([
+                        ...array_values($atomic_type->if_type->getAtomicTypes()),
+                        ...array_values($atomic_type->else_type->getAtomicTypes()),
+                    ]),
+                ];
+            } else {
+                $split_types[] = $atomic_type;
+            }
+        }
+
+        return $split_types;
     }
 
     /**

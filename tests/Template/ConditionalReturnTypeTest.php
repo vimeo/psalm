@@ -9,6 +9,8 @@ use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
+use const DIRECTORY_SEPARATOR;
+
 final class ConditionalReturnTypeTest extends TestCase
 {
     use ValidCodeAnalysisTestTrait;
@@ -2887,6 +2889,52 @@ final class ConditionalReturnTypeTest extends TestCase
                         $result = 1;
                     }',
                 'error_message' => 'InvalidDocblock',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'implementedConditionalReturnTypeWithABranchOutsideTheInheritedOneIsReported' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface Box {
+                        /**
+                         * @template TA
+                         * @param (callable(): TA)|null $a
+                         * @return ($a is null ? T : TA)
+                         */
+                        public function get(?callable $a = null): mixed;
+                    }
+
+                    /** @implements Box<int> */
+                    final class IntBox implements Box {
+                        /**
+                         * @template TA
+                         * @param (callable(): TA)|null $a
+                         * @return ($a is null ? string : TA)
+                         */
+                        #[\Override]
+                        public function get(?callable $a = null): mixed {
+                            return $a === null ? "x" : $a();
+                        }
+                    }',
+                'error_message' => 'ImplementedReturnTypeMismatch - src' . DIRECTORY_SEPARATOR . 'somefile.php:17:36',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
+            'inlineVarConditionalWithABranchOutsideTheParamTypeIsReported' => [
+                'code' => '<?php
+                    /**
+                     * @param (callable(): int)|null $f
+                     * @return ($f is null ? string : int)
+                     */
+                    function concrete(?callable $f = null): string|int {
+                        /** @var ($f is null ? string : int) $r */
+                        $r = $f === null ? "" : 1;
+                        takeInt($r);
+                        return $r;
+                    }
+
+                    function takeInt(int $i): void {}',
+                'error_message' => 'InvalidScalarArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:33',
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],
