@@ -64,6 +64,7 @@ use Psalm\Type\Atomic\TLowercaseString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNonDecimalIntString;
+use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNonEmptyLowercaseString;
 use Psalm\Type\Atomic\TNonEmptyMixed;
 use Psalm\Type\Atomic\TNonEmptyNonspecificLiteralString;
@@ -1389,6 +1390,106 @@ final class AssertionReconciler extends Reconciler
     }
 
     /**
+     * @psalm-pure
+     */
+    private static function isArrayKeyOfKnownKind(Union $key_type): bool
+    {
+        foreach ($key_type->getAtomicTypes() as $atomic_type) {
+            if (!$atomic_type instanceof TInt
+                && !$atomic_type instanceof TString
+                && !$atomic_type instanceof TArrayKey
+            ) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * The keyed array with its values filtered by the value type of the iterable
+     */
+    private static function filterKeyedArrayWithIterable(
+        Codebase $codebase,
+        TKeyedArray $keyed_array,
+        TArray|TIterable $iterable,
+        bool &$any_scalar_type_match_found,
+    ): ?Atomic {
+        [$iterable_key, $iterable_value] = $iterable->type_params;
+        $generic_key = $keyed_array->getGenericKeyType();
+
+        // an array that has an item has a key both types allow, an empty one needs none
+        if (($iterable instanceof TNonEmptyArray || $keyed_array->isNonEmpty())
+            && self::isArrayKeyOfKnownKind($generic_key)
+            && self::isArrayKeyOfKnownKind($iterable_key)
+            && Type::intersectUnionTypes($generic_key, $iterable_key, $codebase) === null
+        ) {
+            return null;
+        }
+
+        $type_1_properties = $keyed_array->properties;
+        foreach ($type_1_properties as &$type_1_param) {
+            $filtered_param = self::filterTypeWithAnother(
+                $codebase,
+                $type_1_param,
+                $iterable_value,
+                $any_scalar_type_match_found,
+            );
+
+            if ($filtered_param === null) {
+                return null;
+            }
+
+            if ($type_1_param->getId() !== $filtered_param->getId()) {
+                $type_1_param = $filtered_param->setPossiblyUndefined($type_1_param->possibly_undefined);
+            }
+        }
+        unset($type_1_param);
+
+        if ($keyed_array->fallback_params === null) {
+            $fallback_types = null;
+        } else {
+            [$fallback_key, $fallback_value] = $keyed_array->fallback_params;
+            $filtered_fallback = self::filterTypeWithAnother(
+                $codebase,
+                $fallback_value,
+                $iterable_value,
+                $any_scalar_type_match_found,
+            );
+            // no value fits both types, so there can't be any extra entry
+            $fallback_types = $filtered_fallback === null ? null : [$fallback_key, $filtered_fallback];
+        }
+
+        $filtered_atomic_type = TKeyedArray::make(
+            $type_1_properties,
+            $keyed_array->class_strings,
+            $fallback_types,
+            $keyed_array->is_list,
+            $keyed_array->from_docblock,
+        );
+
+        if (!$filtered_atomic_type instanceof TKeyedArray) {
+            return $filtered_atomic_type;
+        }
+
+        $filtered_atomic_type = $filtered_atomic_type->setIsCallable($keyed_array->is_callable);
+
+        // a non-empty array that is a list has a first item
+        if ($iterable instanceof TNonEmptyArray
+            && $filtered_atomic_type->is_list
+            && $filtered_atomic_type->fallback_params !== null
+            && !$filtered_atomic_type->isNonEmpty()
+        ) {
+            $properties = $filtered_atomic_type->properties;
+            $properties[0] = ($properties[0] ?? $filtered_atomic_type->fallback_params[1])
+                ->setPossiblyUndefined(false);
+            $filtered_atomic_type = $filtered_atomic_type->setProperties($properties);
+        }
+
+        return $filtered_atomic_type;
+    }
+
+    /**
      * The object half of an iterable is a Traversable, which can be narrowed to any of its subclasses
      *
      * @return array{Atomic, Atomic}
@@ -1674,43 +1775,30 @@ final class AssertionReconciler extends Reconciler
                 || $type_2_atomic instanceof TIterable)
             && $type_1_atomic instanceof TKeyedArray
         ) {
-            $type_2_param = $type_2_atomic->type_params[1];
-            $type_1_properties = $type_1_atomic->properties;
-            foreach ($type_1_properties as &$type_1_param) {
-                $type_2_param = self::filterTypeWithAnother(
-                    $codebase,
-                    $type_1_param,
-                    $type_2_param,
-                    $any_scalar_type_match_found,
-                );
-
-                if ($type_2_param === null) {
-                    return null;
-                }
-
-                if ($type_1_param->getId() !== $type_2_param->getId()) {
-                    $type_1_param = $type_2_param->setPossiblyUndefined($type_1_param->possibly_undefined);
-                }
-            }
-            unset($type_1_param);
-
-            if ($type_1_atomic->fallback_params === null) {
-                $fallback_types = null;
-            } else {
-                //any fallback type is now the value of iterable
-                $fallback_types = [$type_1_atomic->fallback_params[0], $type_2_param];
-            }
-
-            $filtered_atomic_type = TKeyedArray::make(
-                $type_1_properties,
-                $type_1_atomic->class_strings,
-                $fallback_types,
-                $type_1_atomic->is_list,
-                $type_1_atomic->from_docblock,
+            $matching_atomic_type = self::filterKeyedArrayWithIterable(
+                $codebase,
+                $type_1_atomic,
+                $type_2_atomic,
+                $any_scalar_type_match_found,
             );
-            $matching_atomic_type = $filtered_atomic_type instanceof TKeyedArray
-                ? $filtered_atomic_type->setIsCallable($type_1_atomic->is_callable)
-                : $filtered_atomic_type;
+
+            if ($matching_atomic_type === null) {
+                return null;
+            }
+
+            $atomic_comparison_results->type_coerced = true;
+        } elseif ($type_1_atomic instanceof TArray && $type_2_atomic instanceof TKeyedArray) {
+            $matching_atomic_type = self::filterKeyedArrayWithIterable(
+                $codebase,
+                $type_2_atomic,
+                $type_1_atomic,
+                $any_scalar_type_match_found,
+            );
+
+            if ($matching_atomic_type === null) {
+                return null;
+            }
+
             $atomic_comparison_results->type_coerced = true;
         }
 

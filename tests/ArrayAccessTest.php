@@ -1678,6 +1678,56 @@ final class ArrayAccessTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'issetOfAnOffsetOfATemplateBoundedByLiteralsThatPartlyMatchTheKeys' => [
+                'code' => '<?php
+                    /**
+                     * @template T of \'a\'|\'z\'
+                     * @param array{a: int, b: int} $array
+                     * @param T $o
+                     */
+                    function partialIsset(array $array, $o): bool {
+                        return isset($array[$o]);
+                    }
+
+                    /**
+                     * @template T of \'x\'|\'y\'
+                     * @param array{a: true, b: true} $array
+                     * @param T|\'a\' $o
+                     */
+                    function unionWithTemplate(array $array, $o): bool {
+                        return isset($array[$o]);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'issetOfASealedArrayWithATemplateOffsetBoundedByAUnion' => [
+                'code' => '<?php
+                    final class Types {
+                        const SCALAR = ["int" => true, "bool" => true];
+
+                        /**
+                         * @template TObject of object
+                         * @template TType of string|class-string<TObject>
+                         * @param TType $type
+                         */
+                        public static function isScalar(string $type): bool {
+                            return isset(self::SCALAR[$type]);
+                        }
+                    }',
+            ],
+            'issetOfASealedArrayWithATemplateOffsetBoundedByATemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template TKey of int|string
+                     * @template TOffset of TKey
+                     * @param array{a: true, b: true} $array
+                     * @param TOffset $offset
+                     */
+                    function has(array $array, $offset): bool {
+                        return isset($array[$offset]);
+                    }',
+            ],
             'issetOfAStringOffsetOfIntKeysLooksForANumericString' => [
                 'code' => '<?php
                     function label(string $id): string {
@@ -4328,6 +4378,20 @@ final class ArrayAccessTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'offsetOfATemplateBoundedByLiteralsOutsideIssetIsStillReported' => [
+                'code' => '<?php
+                    /**
+                     * @template T of \'x\'|\'y\'
+                     * @param array{a: int, b: int} $array
+                     * @param T $o
+                     */
+                    function outside(array $array, $o): int {
+                        return $array[$o];
+                    }',
+                'error_message' => 'InvalidArrayOffset',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'issetOfANonDecimalIntStringOffsetOfIntKeys' => [
                 'code' => '<?php
                     /**
@@ -4340,6 +4404,18 @@ final class ArrayAccessTest extends TestCase
                 'error_message' => 'InvalidArrayOffset',
                 'error_levels' => [],
                 'php_version' => '8.0',
+            ],
+            'issetOfASealedArrayWithATemplateOffsetBoundedByATypeOfNoKey' => [
+                'code' => '<?php
+                    /**
+                     * @template T of int
+                     * @param array{a: true, b: true} $array
+                     * @param T $offset
+                     */
+                    function has(array $array, $offset): bool {
+                        return isset($array[$offset]);
+                    }',
+                'error_message' => 'InvalidArrayOffset',
             ],
             'issetOfAMixedOrStringOffsetIsStillACoercion' => [
                 'code' => '<?php
