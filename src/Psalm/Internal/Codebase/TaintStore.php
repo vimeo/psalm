@@ -25,6 +25,7 @@ use Psalm\Aliases;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
+use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\MethodAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\FunctionCallReturnTypeFetcher;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -115,12 +116,22 @@ final class TaintStore
         }
 
         if ($flow->kind === TaintFlowAnnotation::STORE_READ) {
+            // `Store::$data[$key] -> $callback()`: what the callables given to the parameter are called with
+            $callable_param = null;
+            if ($flow->callable_param !== null) {
+                $callable_param = self::getParamOffset($storage, $flow->callable_param);
+                if ($callable_param === null) {
+                    return;
+                }
+            }
+
             $storage->taint_store_reads[] = [
                 'store' => $store,
                 'key' => $key,
                 'is_list' => $flow->store_key_is_list,
                 'path_type' => $flow->path_type,
                 'is_late_bound' => $is_late_bound,
+                'callable_param' => $callable_param,
             ];
 
             return;
@@ -235,10 +246,26 @@ final class TaintStore
         }
 
         foreach ($storage->taint_store_reads as $read) {
-            $read_node = DataFlowNode::getForAssignment(
-                'store read ' . $read['store'],
-                $call_location,
-            );
+            if ($read['callable_param'] !== null) {
+                // into the arguments the callables given to the parameter are called with (see
+                // FunctionCallReturnTypeFetcher::getCallableArgumentSourceNodes()), when the call follows them
+                if ($cased_function_id === null || !isset($args[$read['callable_param']])) {
+                    continue;
+                }
+
+                $read_node = DataFlowNode::getForCallableParamStoreRead(
+                    $method_id
+                        ? FunctionLikeAnalyzer::getCasedBodyMethodId($statements_analyzer->getCodebase(), $method_id)
+                        : $cased_function_id,
+                    $read['callable_param'],
+                    $specialization_location,
+                );
+            } else {
+                $read_node = DataFlowNode::getForAssignment(
+                    'store read ' . $read['store'],
+                    $call_location,
+                );
+            }
             $graph->addNode($read_node);
 
             $names = self::getKeyNames($statements_analyzer, $read['key'], $read['is_list'], $args);
@@ -246,7 +273,9 @@ final class TaintStore
                 self::addRead($graph, $store, $names, $read_node, $read['path_type']);
             }
 
-            $return_type = $return_type->addParentNodes([$read_node->id => $read_node]);
+            if ($read['callable_param'] === null) {
+                $return_type = $return_type->addParentNodes([$read_node->id => $read_node]);
+            }
         }
 
         return $return_type;

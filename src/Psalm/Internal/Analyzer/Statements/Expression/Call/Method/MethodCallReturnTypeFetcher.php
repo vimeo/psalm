@@ -803,6 +803,19 @@ final class MethodCallReturnTypeFetcher
             }
         }
 
+        // `@psalm-flow ($this) -> $callback()`: the callables given to the method get the object it is called on
+        if ($method_storage->callable_param_argument_this_sources !== []) {
+            $receiver_node = DataFlowNode::getForCallReceiver(
+                FunctionLikeAnalyzer::getCasedBodyMethodId($codebase, $method_id),
+                $specialize_call ? $node_location : null,
+            );
+            $taint_flow_graph->addNode($receiver_node);
+
+            foreach ($receiver_parent_nodes as $parent_node) {
+                $taint_flow_graph->addPath($parent_node, $receiver_node, '=');
+            }
+        }
+
         $dispatch_node = self::getReturnDispatchNode(
             $codebase,
             $taint_flow_graph,

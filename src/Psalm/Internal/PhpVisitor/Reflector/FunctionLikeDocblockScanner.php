@@ -1485,8 +1485,26 @@ final class FunctionLikeDocblockScanner
                     }
 
                     foreach ($flow->sources as $source_param) {
+                        // the object the method is called on
+                        if ($source_param === 'this') {
+                            $storage->callable_param_argument_this_sources[$callable_offset] = $flow->path_type;
+
+                            continue;
+                        }
+
+                        // what the callables given to the parameter return
+                        $returns = str_ends_with($source_param, '()');
+                        $source_param = $returns ? substr($source_param, 0, -2) : $source_param;
+
                         foreach ($storage->params as $i => $param_storage) {
-                            if ($param_storage->name === $source_param) {
+                            if ($param_storage->name !== $source_param) {
+                                continue;
+                            }
+
+                            if ($returns) {
+                                $storage->callable_param_argument_callable_sources[$callable_offset][$i]
+                                    = $flow->path_type;
+                            } else {
                                 $storage->callable_param_argument_sources[$callable_offset][$i] = $flow->path_type;
                             }
                         }
@@ -1676,6 +1694,10 @@ final class FunctionLikeDocblockScanner
 
         if (!$has_this && $parsed_flow->isOfProperty()) {
             return '@psalm-flow names a property of $this, which only a method that is not static has';
+        }
+
+        if (!$has_this && in_array('this', $parsed_flow->sources, true)) {
+            return '@psalm-flow names $this, which only a method that is not static has';
         }
 
         foreach ($parsed_flow->getParamNames() as $name) {

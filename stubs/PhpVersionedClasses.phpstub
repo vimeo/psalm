@@ -212,6 +212,10 @@ namespace {
      * position of a generator, where a fiber is suspended is engine state, not an effect: what its
      * getters return is forgotten when it is started or resumed.
      *
+     * What fibers pass each other goes through keyed stores shared by all of them (`Fiber::$arguments`, what start()
+     * calls the callback with; `Fiber::$resumed`, what resume() sends to suspend(); `Fiber::$suspended`, what
+     * suspend() hands back to start() and resume(); `Fiber::$returns`, what the callback returns to getReturn()).
+     *
      * @psalm-purity-template TPurity(impure)
      *
      * @since 8.1
@@ -221,28 +225,38 @@ namespace {
         /**
          * @param callable[TPurity] $callback
          * @psalm-pure
+         * @psalm-flow Fiber::$arguments[*] -> $callback()
+         * @psalm-flow ($callback()) -> Fiber::$returns[*]
          */
         public function __construct(callable $callback) {}
 
         /**
          * @psalm-pure
          * @psalm-purity-from-template TPurity
+         * @psalm-flow ($args) -> Fiber::$arguments[*]
+         * @psalm-flow Fiber::$suspended[*] -> return
          */
         public function start(mixed ...$args): mixed {}
 
         /**
          * @psalm-pure
          * @psalm-purity-from-template TPurity
+         * @psalm-flow ($value) -> Fiber::$resumed[*]
+         * @psalm-flow Fiber::$suspended[*] -> return
          */
         public function resume(mixed $value = null): mixed {}
 
         /**
          * @psalm-pure
          * @psalm-purity-from-template TPurity
+         * @psalm-flow Fiber::$suspended[*] -> return
          */
         public function throw(Throwable $exception): mixed {}
 
-        /** @psalm-pure */
+        /**
+         * @psalm-pure
+         * @psalm-flow Fiber::$returns[*] -> return
+         */
         public function getReturn(): mixed {}
 
         /** @psalm-pure */
@@ -269,6 +283,8 @@ namespace {
          * that code does until it resumes this fiber is its own effect.
          *
          * @psalm-pure
+         * @psalm-flow ($value) -> Fiber::$suspended[*]
+         * @psalm-flow Fiber::$resumed[*] -> return
          */
         public static function suspend(mixed $value = null): mixed {}
     }

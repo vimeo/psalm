@@ -177,7 +177,60 @@ function listen(Events $events): void
 ```
 
 `-> $listener()` states that the callables given to `$listener` are called with what is given to `$payload`, as their
-arguments.
+arguments. A callable as a source gives them what the callables return, as `array_reduce()` gives its callback the
+carry its previous call returned:
+
+```php
+<?php // --taint-analysis
+interface Retry
+{
+    /**
+     * @param callable(string): string $attempt
+     * @psalm-taint-specialize
+     * @psalm-flow ($attempt()) -> $attempt()
+     */
+    public function run(callable $attempt): void;
+}
+
+function retry(Retry $retry): void
+{
+    $retry->run(function (string $previous): string {
+        echo $previous; // TaintedHtml
+        return (string) ($_GET['x'] ?? '');
+    });
+}
+```
+
+`$this` gives them the object the method is called on, and a keyed store (see below) what it holds:
+
+```php
+<?php // --taint-analysis
+final class Events
+{
+    public function __construct(public string $payload) {}
+
+    /** @psalm-flow ($this) -> $callback() */
+    public function dispatch(callable $callback): void {}
+}
+
+final class Bus
+{
+    /** @psalm-flow ($message) -> Bus::$queue[*] */
+    public static function send(string $message): void {}
+
+    /** @psalm-flow Bus::$queue[*] -> $handler() */
+    public static function consume(callable $handler): void {}
+}
+
+(new Events((string) $_GET['a']))->dispatch(static function (Events $events): void {
+    echo $events->payload; // TaintedHtml
+});
+
+Bus::send((string) $_GET['a']);
+Bus::consume(static function (string $message): void {
+    echo $message; // TaintedHtml
+});
+```
 
 ### Keyed stores
 

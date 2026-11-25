@@ -77,6 +77,7 @@ use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function array_all;
+use function array_any;
 use function array_filter;
 use function array_keys;
 use function array_shift;
@@ -2351,6 +2352,12 @@ final class ArgumentAnalyzer
             if (!$in_call_map
                 || isset($callable_param_storage->return_source_callable_params[$callable_param_offset])
                 || isset($callable_param_storage->callable_param_argument_sources[$callable_param_offset])
+                || isset($callable_param_storage->callable_param_argument_callable_sources[$callable_param_offset])
+                || isset($callable_param_storage->callable_param_argument_this_sources[$callable_param_offset])
+                || array_any(
+                    $callable_param_storage->taint_store_reads,
+                    static fn(array $read): bool => $read['callable_param'] === $callable_param_offset,
+                )
             ) {
                 FunctionCallReturnTypeFetcher::taintCallablePassedToParam(
                     $statements_analyzer,
