@@ -156,7 +156,9 @@ final class BreakAnalyzer
 
                     if ($target_scope->iteration_count === 0) {
                         foreach ($context->vars_in_scope as $var_id => $type) {
-                            if (!isset($target_scope->loop_parent_context->vars_in_scope[$var_id])) {
+                            if (!isset($target_scope->loop_parent_context->vars_in_scope[$var_id])
+                                || $target_scope->loop_parent_context->vars_in_scope[$var_id]->possibly_undefined
+                            ) {
                                 $target_scope->possibly_defined_loop_parent_vars[$var_id] = Type::combineUnionTypes(
                                     $type,
                                     $target_scope->possibly_defined_loop_parent_vars[$var_id] ?? null,

@@ -246,6 +246,59 @@ final class ForeachTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'variableAssignedBeforeABreakTwoLevelsOutInsideALoopIsDefinedAfterTheLoopItLeaves' => [
+                'code' => '<?php
+                    /** @param non-empty-list<non-empty-list<string>> $rows */
+                    function pick(array $rows): void {
+                        foreach ([1, 2] as $_) {
+                            foreach ($rows as $row) {
+                                foreach ($row as $cell) {
+                                    $picked = $cell;
+                                    if ($cell === "x") {
+                                        break 2;
+                                    }
+                                }
+                            }
+                            /** @psalm-check-type-exact $picked = string */;
+                        }
+                    }',
+            ],
+            'variableAssignedBeforeEveryBreakAndContinueOfALoopInsideALoopIsDefinedAfterIt' => [
+                'code' => '<?php
+                    /** @param non-empty-list<string> $candidates */
+                    function pick(array $candidates): void {
+                        foreach ([1, 2] as $_) {
+                            foreach ($candidates as $candidate) {
+                                if ($candidate === "y") {
+                                    $picked = 1;
+                                    continue;
+                                }
+                                $picked = 2;
+                                if (rand(0, 1)) {
+                                    break;
+                                }
+                            }
+                            /** @psalm-check-type-exact $picked = 1|2 */;
+                        }
+                    }',
+            ],
+            'variableAssignedBeforeEveryBreakOfALoopInsideALoopKeepsEveryBreakType' => [
+                'code' => '<?php
+                    /** @param non-empty-list<string> $candidates */
+                    function pick(array $candidates): void {
+                        foreach ([1, 2] as $_) {
+                            foreach ($candidates as $candidate) {
+                                if ($candidate === "y") {
+                                    $picked = 1;
+                                    break;
+                                }
+                                $picked = "s";
+                                break;
+                            }
+                            /** @psalm-check-type-exact $picked = 1|"s" */;
+                        }
+                    }',
+            ],
             'propertyNarrowedBeforeTheLoopIsKeptAfterABreakNotReassigningItsObject' => [
                 'code' => '<?php
                     final class D {
@@ -3562,6 +3615,25 @@ final class ForeachTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'variableNotAssignedBeforeAContinueInsideALoopIsPossiblyUndefinedAfterIt' => [
+                'code' => '<?php
+                    /** @param non-empty-list<string> $candidates */
+                    function pick(array $candidates): void {
+                        foreach ([1, 2] as $_) {
+                            foreach ($candidates as $candidate) {
+                                if ($candidate === "y") {
+                                    continue;
+                                }
+                                $picked = $candidate;
+                                if ($picked !== "x") {
+                                    break;
+                                }
+                            }
+                            echo $picked;
+                        }
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
             'invalidGeneratorIteratorShowsTheRefinedSendType' => [
                 'code' => '<?php
                     /** @return Generator<int, int, non-empty-string, void> */
