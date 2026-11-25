@@ -1097,7 +1097,7 @@ final class AssertAnnotationTest extends TestCase
                     assertA($b);
                     assertB($b);',
                 'assertions' => [
-                    '$b===' => 'object{a:int}&object{b:string}',
+                    '$b===' => 'object{a:int, b:string}',
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.0',
