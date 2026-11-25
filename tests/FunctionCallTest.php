@@ -24,6 +24,28 @@ final class FunctionCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'strtolowerAndStrtoupperOfLiterals' => [
+                'code' => '<?php
+                    $lower = strtolower("Hello");
+                    $upper = strtoupper(rand(0, 1) ? "get" : "Post");
+                    $accented = strtolower("ÄRGER");',
+                'assertions' => [
+                    '$lower===' => "'hello'",
+                    '$upper===' => "'GET'|'POST'",
+                    '$accented===' => "'Ärger'",
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'strtolowerOfANonAsciiLiteralBeforePhp82' => [
+                'code' => '<?php
+                    $accented = strtolower("ÄRGER");',
+                'assertions' => [
+                    '$accented===' => 'non-empty-lowercase-string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'negatedArrayIsListKeepsAnArrayThatMayBeAList' => [
                 'code' => '<?php
                     /** @param array<int, int> $a */
@@ -224,7 +246,7 @@ final class FunctionCallTest extends TestCase
                     $json = encode([1]);
                     $upper = up("x");',
                 'assertions' => [
-                    '$upper===' => 'non-falsy-string',
+                    '$upper===' => "'X'",
                 ],
             ],
             'fullyQualifiedCallOfAFunctionWhoseNameAnotherIsImportedAs' => [
@@ -4895,6 +4917,15 @@ final class FunctionCallTest extends TestCase
                     function f(string $k): void {
                         $l = strtolower($k);
                         if ($l === \'c\') {}
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+            ],
+            'strtoupperOfDocblockLiteralsKeepsFromDocblock' => [
+                'code' => '<?php
+                    /** @param \'a\'|\'b\' $k */
+                    function f(string $k): void {
+                        $u = strtoupper($k);
+                        if ($u === \'C\') {}
                     }',
                 'error_message' => 'DocblockTypeContradiction',
             ],

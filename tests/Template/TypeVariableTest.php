@@ -443,6 +443,116 @@ final class TypeVariableTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'unboundConstructorTemplateHeldBySiblingConstraints' => [
+                'code' => '<?php
+                    /**
+                     * @template TItem of int
+                     * @template TList as list<TItem>
+                     */
+                    final class Lists {
+                        public function __construct() {}
+
+                        /** @param TList $list */
+                        public function add(array $list): void {}
+                    }
+
+                    /**
+                     * @template T1 of int
+                     * @template T2 of list<T1>
+                     * @template T3 of list<T2>
+                     */
+                    final class Chain {
+                        public function __construct() {}
+
+                        /** @param T3 $lists */
+                        public function add(array $lists): void {}
+                    }
+
+                    /** @param Iterator<int, SplFileInfo> $files */
+                    function f(Iterator $files, RecursiveDirectoryIterator $dir): void {
+                        $lists = new Lists();
+                        $lists->add([1, 2]);
+                        $lists->add([3]);
+
+                        $chain = new Chain();
+                        $chain->add([[1]]);
+
+                        $all = new AppendIterator();
+                        $all->append($files);
+                        $all->append(new RecursiveIteratorIterator($dir));
+                    }',
+            ],
+            'unboundConstructorTemplateHeldByInvariantSiblingConstraint' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /** @param T $value */
+                        public function __construct(public mixed $value) {}
+                    }
+
+                    /**
+                     * @template T
+                     * @template TBox of Box<T>
+                     */
+                    final class Shelf {
+                        public function __construct() {}
+
+                        /** @param TBox $box */
+                        public function put(Box $box): void {}
+                    }
+
+                    /**
+                     * @param Box<int> $a
+                     * @param Box<int> $b
+                     */
+                    function f(Box $a, Box $b): void {
+                        $shelf = new Shelf();
+                        $shelf->put($a);
+                        $shelf->put($b);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'unboundConstructorTemplateHeldByAWideningBoundSibling' => [
+                'code' => '<?php
+                    /**
+                     * @template TValue
+                     * @template TIterator of Iterator<int, TValue>
+                     */
+                    final class Holder {
+                        /** @param TValue $value */
+                        public function __construct($value) {}
+
+                        /** @param TIterator $iterator */
+                        public function put(Iterator $iterator): void {}
+                    }
+
+                    /** @param Iterator<int, int> $ints */
+                    function f(Iterator $ints): void {
+                        $holder = new Holder("x");
+                        $holder->put($ints);
+                    }',
+            ],
+            'unboundConstructorTemplateViolatingSiblingConstraintIsSuppressed' => [
+                'code' => '<?php
+                    /**
+                     * @template TItem of int
+                     * @template TList as list<TItem>
+                     */
+                    final class Lists {
+                        public function __construct() {}
+
+                        /** @param TList $list */
+                        public function add(array $list): void {}
+                    }
+
+                    function f(): void {
+                        $lists = new Lists();
+                        /** @psalm-suppress IncompatibleTypeParameters */
+                        $lists->add(["a"]);
+                    }',
+            ],
             'falseArgumentRecordsABoundOnATypeVariable' => [
                 'code' => '<?php
                     /**
@@ -3553,6 +3663,77 @@ final class TypeVariableTest extends TestCase
                         });
                     }',
                 'error_message' => 'IncompatibleTypeParameters',
+            ],
+            'unboundConstructorTemplateViolatesSiblingConstraint' => [
+                'code' => '<?php
+                    /**
+                     * @template TItem of int
+                     * @template TList as list<TItem>
+                     */
+                    final class Lists {
+                        public function __construct() {}
+
+                        /** @param TList $list */
+                        public function add(array $list): void {}
+                    }
+
+                    function bad(): void {
+                        $lists = new Lists();
+                        $lists->add(["a"]);
+                    }',
+                'error_message' => 'somefile.php:15:37 - Type \'a\' should be a subtype of int',
+            ],
+            'unboundConstructorTemplateViolatesChainedSiblingConstraints' => [
+                'code' => '<?php
+                    /**
+                     * @template T1 of int
+                     * @template T2 of list<T1>
+                     * @template T3 of list<T2>
+                     */
+                    final class Chain {
+                        public function __construct() {}
+
+                        /** @param T3 $lists */
+                        public function add(array $lists): void {}
+                    }
+
+                    function bad(): void {
+                        $chain = new Chain();
+                        $chain->add([["a"]]);
+                    }',
+                'error_message' => 'somefile.php:16:37 - Type \'a\' should be a subtype of int',
+            ],
+            'unboundConstructorTemplateViolatesInvariantSiblingConstraint' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /** @param T $value */
+                        public function __construct(public mixed $value) {}
+                    }
+
+                    /**
+                     * @template T
+                     * @template TBox of Box<T>
+                     */
+                    final class Shelf {
+                        public function __construct() {}
+
+                        /** @param TBox $box */
+                        public function put(Box $box): void {}
+                    }
+
+                    /**
+                     * @param Box<int> $ints
+                     * @param Box<string> $strings
+                     */
+                    function f(Box $ints, Box $strings): void {
+                        $shelf = new Shelf();
+                        $shelf->put($ints);
+                        $shelf->put($strings);
+                    }',
+                'error_message' => 'somefile.php:25:37 - Type int should be a subtype of string',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'typeVariableBoundViolation' => [
                 'code' => '<?php

@@ -57,6 +57,60 @@ final class ClassTemplateTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'nullCoalescingATemplatePropertyBoundedByANullableStringToAString' => [
+                'code' => '<?php
+                    /**
+                     * @template-covariant T of non-empty-string|null
+                     */
+                    final class X implements Stringable
+                    {
+                        /**
+                         * @param T $value
+                         */
+                        public function __construct(private ?string $value)
+                        {
+                        }
+
+                        public function __toString(): string
+                        {
+                            return $this->value ?? \'\';
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'nullableArrayOfAnInterfaceTemplateBoundByTheClassTemplatePassedBackInALoop' => [
+                'code' => '<?php
+                    /**
+                     * @template T1 of array|object
+                     */
+                    interface ExampleInterface
+                    {
+                        /**
+                         * @param ?T1[] $args
+                         * @return ?T1[]
+                         */
+                        public function run(?array $args): ?array;
+                    }
+
+                    /**
+                     * @template T2 of array|object
+                     */
+                    final class Example
+                    {
+                        /**
+                         * @param ExampleInterface<T2> $example
+                         */
+                        public function run(ExampleInterface $example): void
+                        {
+                            $arg = null;
+                            do {
+                                $arg = $example->run($arg);
+                            } while ($arg !== null);
+                        }
+                    }',
+            ],
             'classTemplateBoundNamingATemplateDeclaredAfterIt' => [
                 'code' => '<?php
                     /** @template-covariant TValue */

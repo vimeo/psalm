@@ -898,6 +898,7 @@ final class ArrayFetchAnalyzer
         } elseif ($stmt->dim instanceof PhpParser\Node\Scalar\Int_) {
             $key_values[] = new TLiteralInt($stmt->dim->value);
         } elseif ($stmt->dim && ($stmt_dim_type = $statements_analyzer->node_data->getType($stmt->dim))) {
+            $stmt_dim_type = self::replaceTemplatesWithBounds($stmt_dim_type);
             $string_literals = $stmt_dim_type->getLiteralStrings();
             $int_literals = $stmt_dim_type->getLiteralInts();
 
@@ -2420,7 +2421,7 @@ final class ArrayFetchAnalyzer
                 $is_contained = UnionTypeComparator::isContainedBy(
                     $codebase,
                     $key_type,
-                    $offset_type->freeze(),
+                    self::replaceTemplatesWithBounds($offset_type->freeze()),
                     true,
                     $offset_type->ignore_falsable_issues,
                 )
@@ -2528,6 +2529,28 @@ final class ArrayFetchAnalyzer
                 $array_access_type = Type::getMixed();
             }
         }
+    }
+
+    /**
+     * The type with each template param replaced by its bound, which is what a value of the type may be
+     *
+     * @psalm-pure
+     */
+    private static function replaceTemplatesWithBounds(Union $type): Union
+    {
+        $atomic_types = [];
+
+        foreach ($type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TTemplateParam) {
+                foreach (self::replaceTemplatesWithBounds($atomic_type->as)->getAtomicTypes() as $bound_type) {
+                    $atomic_types[] = $bound_type;
+                }
+            } else {
+                $atomic_types[] = $atomic_type;
+            }
+        }
+
+        return $type->setTypes($atomic_types);
     }
 
     /**

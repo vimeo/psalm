@@ -4026,6 +4026,7 @@ return array (
     -1 => 'bool',
     'cid' => 'int',
     'throw_exception=' => 'bool',
+    'reason=' => 'mixed',
   ),
   'co::create' => 
   array (
@@ -4177,7 +4178,7 @@ return array (
   ),
   'co::statvfs' => 
   array (
-    -1 => 'array<array-key, mixed>',
+    -1 => 'array<array-key, mixed>|false',
     'path' => 'string',
   ),
   'co::suspend' => 
@@ -4541,174 +4542,14 @@ return array (
   ),
   'co\\defer' => 
   array (
-    0 => 'mixed',
+    -1 => 'void',
     'fn' => 'callable[impure]',
-    -2 => 'none',
-  ),
-  'co\\fastcgi\\client::__construct' => 
-  array (
-    0 => 'void',
-    'host' => 'string',
-    'port=' => 'int',
-    'ssl=' => 'bool',
-    -2 => 'none',
-  ),
-  'co\\fastcgi\\client::call' => 
-  array (
-    -1 => 'string',
-    'url' => 'string',
-    'path' => 'string',
-    'data=' => 'mixed',
-    'timeout=' => 'float',
-  ),
-  'co\\fastcgi\\client::execute' => 
-  array (
-    -1 => 'Swoole\\FastCGI\\Response',
-    'request' => 'Swoole\\FastCGI\\Request',
-    'timeout=' => 'float',
-  ),
-  'co\\fastcgi\\client::ioexception' => 
-  array (
-    -1 => 'void',
-    'errno=' => 'int|null',
-  ),
-  'co\\fastcgi\\client::parseurl' => 
-  array (
-    -1 => 'array<array-key, mixed>',
-    'url' => 'string',
-  ),
-  'co\\fastcgi\\client\\exception::__construct' => 
-  array (
-    0 => 'void',
-    'message=' => 'string',
-    'code=' => 'int',
-    'previous=' => 'Throwable|null',
-    -2 => 'none',
-  ),
-  'co\\fastcgi\\client\\exception::__tostring' => 
-  array (
-    -1 => 'string',
-  ),
-  'co\\fastcgi\\client\\exception::__wakeup' => 
-  array (
-    -1 => 'void',
-    -2 => 'tentative',
-  ),
-  'co\\fastcgi\\client\\exception::getcode' => 
-  array (
-    0 => 'mixed',
-    -2 => 'none',
-  ),
-  'co\\fastcgi\\client\\exception::getfile' => 
-  array (
-    -1 => 'string',
-  ),
-  'co\\fastcgi\\client\\exception::getline' => 
-  array (
-    -1 => 'int',
-  ),
-  'co\\fastcgi\\client\\exception::getmessage' => 
-  array (
-    -1 => 'string',
-  ),
-  'co\\fastcgi\\client\\exception::getprevious' => 
-  array (
-    -1 => 'Throwable|null',
-  ),
-  'co\\fastcgi\\client\\exception::gettrace' => 
-  array (
-    -1 => 'array<array-key, mixed>',
-  ),
-  'co\\fastcgi\\client\\exception::gettraceasstring' => 
-  array (
-    -1 => 'string',
-  ),
-  'co\\fastcgi\\proxy::__construct' => 
-  array (
-    0 => 'void',
-    'url' => 'string',
-    'documentRoot=' => 'string',
-    -2 => 'none',
-  ),
-  'co\\fastcgi\\proxy::getparam' => 
-  array (
-    -1 => 'null|string',
-    'name' => 'string',
-  ),
-  'co\\fastcgi\\proxy::getparams' => 
-  array (
-    -1 => 'array<array-key, mixed>',
-  ),
-  'co\\fastcgi\\proxy::pass' => 
-  array (
-    -1 => 'void',
-    'userRequest' => 'Swoole\\FastCGI\\HttpRequest|Swoole\\Http\\Request',
-    'userResponse' => 'Swoole\\Http\\Response',
-  ),
-  'co\\fastcgi\\proxy::staticfilefiltrate' => 
-  array (
-    -1 => 'bool',
-    'request' => 'Swoole\\FastCGI\\HttpRequest',
-    'userResponse' => 'Swoole\\Http\\Response',
-  ),
-  'co\\fastcgi\\proxy::translaterequest' => 
-  array (
-    -1 => 'Swoole\\FastCGI\\HttpRequest',
-    'userRequest' => 'Swoole\\Http\\Request',
-  ),
-  'co\\fastcgi\\proxy::translateresponse' => 
-  array (
-    -1 => 'void',
-    'response' => 'Swoole\\FastCGI\\HttpResponse',
-    'userResponse' => 'Swoole\\Http\\Response',
-  ),
-  'co\\fastcgi\\proxy::withaddedparams' => 
-  array (
-    -1 => 'Swoole\\Coroutine\\FastCGI\\Proxy',
-    'params' => 'array<array-key, mixed>',
-  ),
-  'co\\fastcgi\\proxy::withhttps' => 
-  array (
-    -1 => 'Swoole\\Coroutine\\FastCGI\\Proxy',
-    'https' => 'bool',
-  ),
-  'co\\fastcgi\\proxy::withindex' => 
-  array (
-    -1 => 'Swoole\\Coroutine\\FastCGI\\Proxy',
-    'index' => 'string',
-  ),
-  'co\\fastcgi\\proxy::withoutparam' => 
-  array (
-    -1 => 'Swoole\\Coroutine\\FastCGI\\Proxy',
-    'name' => 'string',
-  ),
-  'co\\fastcgi\\proxy::withparam' => 
-  array (
-    -1 => 'Swoole\\Coroutine\\FastCGI\\Proxy',
-    'name' => 'string',
-    'value' => 'string',
-  ),
-  'co\\fastcgi\\proxy::withparams' => 
-  array (
-    -1 => 'Swoole\\Coroutine\\FastCGI\\Proxy',
-    'params' => 'array<array-key, mixed>',
-  ),
-  'co\\fastcgi\\proxy::withstaticfilefilter' => 
-  array (
-    -1 => 'Swoole\\Coroutine\\FastCGI\\Proxy',
-    'filter' => 'callable[impure]|null',
-  ),
-  'co\\fastcgi\\proxy::withtimeout' => 
-  array (
-    -1 => 'Swoole\\Coroutine\\FastCGI\\Proxy',
-    'timeout' => 'float',
   ),
   'co\\go' => 
   array (
-    0 => 'mixed',
+    -1 => 'false|int',
     'fn' => 'callable[impure]',
     '...args=' => 'mixed',
-    -2 => 'none',
   ),
   'co\\http2\\client::__construct' => 
   array (
@@ -4960,7 +4801,8 @@ return array (
   'co\\http\\client::setdata' => 
   array (
     -1 => 'bool',
-    'data' => 'array<array-key, mixed>|string',
+    'data' => 'mixed',
+    'length=' => 'int|null',
   ),
   'co\\http\\client::setdefer' => 
   array (
@@ -5036,6 +4878,11 @@ return array (
     'ssl=' => 'bool',
     'reuse_port=' => 'bool',
     -2 => 'none',
+  ),
+  'co\\http\\server::flushhttp2queue' => 
+  array (
+    -1 => 'void',
+    'conn' => 'Swoole\\Coroutine\\Socket',
   ),
   'co\\http\\server::handle' => 
   array (
@@ -5214,10 +5061,9 @@ return array (
   ),
   'co\\run' => 
   array (
-    0 => 'mixed',
+    -1 => 'bool',
     'fn' => 'callable[impure]',
     '...args=' => 'mixed',
-    -2 => 'none',
   ),
   'co\\scheduler::add' => 
   array (
@@ -5258,6 +5104,11 @@ return array (
   array (
     -1 => 'void',
     'fn' => 'callable[impure]',
+  ),
+  'co\\server::istransientaccepterror' => 
+  array (
+    -1 => 'bool',
+    'errCode' => 'int',
   ),
   'co\\server::set' => 
   array (
@@ -5337,6 +5188,11 @@ return array (
     'port=' => 'int',
     'timeout=' => 'float',
   ),
+  'co\\socket::export' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+  ),
   'co\\socket::getboundcid' => 
   array (
     -1 => 'int',
@@ -5374,6 +5230,8 @@ return array (
   array (
     -1 => 'false|string',
     'length=' => 'int',
+    'timeout=' => 'float',
+    'flags=' => 'int',
   ),
   'co\\socket::readvector' => 
   array (
@@ -5570,7 +5428,7 @@ return array (
   ),
   'co\\system::statvfs' => 
   array (
-    -1 => 'array<array-key, mixed>',
+    -1 => 'array<array-key, mixed>|false',
     'path' => 'string',
   ),
   'co\\system::wait' => 
@@ -33507,6 +33365,7 @@ return array (
   array (
     -1 => 'false|int',
     'func' => 'callable[impure]',
+    '...params=' => 'mixed',
   ),
   'gopher_parsedir' => 
   array (
@@ -91626,7 +91485,7 @@ return array (
     0 => 'mixed',
     'session' => 'mixed',
     'command' => 'string',
-    'pty=' => 'bool',
+    'pty=' => 'null|string',
     'env=' => 'array<array-key, mixed>|null',
     'width=' => 'int',
     'height=' => 'int',
@@ -91649,18 +91508,37 @@ return array (
   ),
   'ssh2_forward_accept' => 
   array (
-    -1 => 'false|resource',
-    'listener' => 'resource',
+    0 => 'mixed',
+    'listener' => 'mixed',
     '&host=' => 'null|string',
     '&port=' => 'int|null',
+    -2 => 'none',
   ),
   'ssh2_forward_listen' => 
   array (
-    -1 => 'false|resource',
+    0 => 'mixed',
     'session' => 'mixed',
     'port' => 'int',
     'host=' => 'string',
     'max_connections=' => 'int',
+    -2 => 'none',
+  ),
+  'ssh2_hostkey' => 
+  array (
+    -1 => 'array<array-key, mixed>|false',
+    'session' => 'mixed',
+  ),
+  'ssh2_keepalive_config' => 
+  array (
+    -1 => 'void',
+    'session' => 'mixed',
+    'want_reply' => 'bool',
+    'interval' => 'int',
+  ),
+  'ssh2_keepalive_send' => 
+  array (
+    -1 => 'false|int',
+    'session' => 'mixed',
   ),
   'ssh2_methods_negotiated' => 
   array (
@@ -91720,6 +91598,19 @@ return array (
   array (
     -1 => 'bool',
     'channel' => 'mixed',
+  ),
+  'ssh2_send_signal' => 
+  array (
+    -1 => 'bool',
+    'channel' => 'mixed',
+    'signal' => 'string',
+  ),
+  'ssh2_set_timeout' => 
+  array (
+    -1 => 'void',
+    'session' => 'mixed',
+    'seconds' => 'int',
+    'microseconds=' => 'int',
   ),
   'ssh2_sftp' => 
   array (
@@ -95169,8 +95060,7 @@ return array (
   ),
   'swoole\\arrayobject::current' => 
   array (
-    0 => 'mixed',
-    -2 => 'none',
+    -1 => 'mixed',
   ),
   'swoole\\arrayobject::delete' => 
   array (
@@ -95265,8 +95155,7 @@ return array (
   ),
   'swoole\\arrayobject::key' => 
   array (
-    0 => 'mixed',
-    -2 => 'none',
+    -1 => 'int|null|string',
   ),
   'swoole\\arrayobject::keys' => 
   array (
@@ -95304,7 +95193,7 @@ return array (
   array (
     -1 => 'static',
     'fn' => 'callable[impure]',
-    '...args=' => 'mixed',
+    '...args=' => 'array<array-key, mixed>',
   ),
   'swoole\\arrayobject::natcasesort' => 
   array (
@@ -95316,20 +95205,17 @@ return array (
   ),
   'swoole\\arrayobject::next' => 
   array (
-    0 => 'mixed',
-    -2 => 'none',
+    -1 => 'void',
   ),
   'swoole\\arrayobject::offsetexists' => 
   array (
-    0 => 'mixed',
+    -1 => 'bool',
     'key' => 'mixed',
-    -2 => 'none',
   ),
   'swoole\\arrayobject::offsetget' => 
   array (
-    0 => 'mixed',
+    -1 => 'mixed',
     'key' => 'mixed',
-    -2 => 'none',
   ),
   'swoole\\arrayobject::offsetset' => 
   array (
@@ -95406,8 +95292,7 @@ return array (
   ),
   'swoole\\arrayobject::rewind' => 
   array (
-    0 => 'mixed',
-    -2 => 'none',
+    -1 => 'void',
   ),
   'swoole\\arrayobject::rsort' => 
   array (
@@ -95475,6 +95360,7 @@ return array (
   array (
     -1 => 'Swoole\\ArrayObject',
     'string' => 'Stringable|Swoole\\StringObject|string',
+    'allowed_classes=' => 'array<array-key, mixed>|bool',
   ),
   'swoole\\arrayobject::usort' => 
   array (
@@ -95920,11 +95806,27 @@ return array (
     'constructor' => 'callable[impure]',
     'size=' => 'int',
     'proxy=' => 'null|string',
+    'destructor=' => 'callable[impure]|null',
     -2 => 'none',
+  ),
+  'swoole\\connectionpool::assertcanreturn' => 
+  array (
+    -1 => 'void',
+    'connection' => 'mixed',
   ),
   'swoole\\connectionpool::close' => 
   array (
     -1 => 'void',
+  ),
+  'swoole\\connectionpool::discard' => 
+  array (
+    -1 => 'void',
+    'connection' => 'object',
+  ),
+  'swoole\\connectionpool::dispose' => 
+  array (
+    -1 => 'void',
+    'connection' => 'object',
   ),
   'swoole\\connectionpool::fill' => 
   array (
@@ -95945,6 +95847,12 @@ return array (
     -1 => 'void',
     'connection' => 'mixed',
   ),
+  'swoole\\connectionpool::withconnection' => 
+  array (
+    -1 => 'mixed',
+    'callback' => 'callable[impure]',
+    'timeout=' => 'float',
+  ),
   'swoole\\coroutine::call_user_func' => 
   array (
     0 => 'mixed',
@@ -95963,6 +95871,7 @@ return array (
     -1 => 'bool',
     'cid' => 'int',
     'throw_exception=' => 'bool',
+    'reason=' => 'mixed',
   ),
   'swoole\\coroutine::cli_wait' => 
   array (
@@ -96118,7 +96027,7 @@ return array (
   ),
   'swoole\\coroutine::statvfs' => 
   array (
-    -1 => 'array<array-key, mixed>',
+    -1 => 'array<array-key, mixed>|false',
     'path' => 'string',
   ),
   'swoole\\coroutine::suspend' => 
@@ -96180,6 +96089,7 @@ return array (
     -1 => 'array<array-key, mixed>',
     'tasks' => 'array<array-key, mixed>',
     'timeout=' => 'float',
+    '&completed=' => 'mixed',
   ),
   'swoole\\coroutine\\canceledexception::__construct' => 
   array (
@@ -96218,6 +96128,10 @@ return array (
   'swoole\\coroutine\\canceledexception::getprevious' => 
   array (
     -1 => 'Throwable|null',
+  ),
+  'swoole\\coroutine\\canceledexception::getreason' => 
+  array (
+    -1 => 'mixed',
   ),
   'swoole\\coroutine\\canceledexception::gettrace' => 
   array (
@@ -96549,179 +96463,18 @@ return array (
   ),
   'swoole\\coroutine\\deadlock_check' => 
   array (
-    0 => 'mixed',
-    -2 => 'none',
+    -1 => 'void',
   ),
   'swoole\\coroutine\\defer' => 
   array (
-    0 => 'mixed',
+    -1 => 'void',
     'fn' => 'callable[impure]',
-    -2 => 'none',
-  ),
-  'swoole\\coroutine\\fastcgi\\client::__construct' => 
-  array (
-    0 => 'void',
-    'host' => 'string',
-    'port=' => 'int',
-    'ssl=' => 'bool',
-    -2 => 'none',
-  ),
-  'swoole\\coroutine\\fastcgi\\client::call' => 
-  array (
-    -1 => 'string',
-    'url' => 'string',
-    'path' => 'string',
-    'data=' => 'mixed',
-    'timeout=' => 'float',
-  ),
-  'swoole\\coroutine\\fastcgi\\client::execute' => 
-  array (
-    -1 => 'Swoole\\FastCGI\\Response',
-    'request' => 'Swoole\\FastCGI\\Request',
-    'timeout=' => 'float',
-  ),
-  'swoole\\coroutine\\fastcgi\\client::ioexception' => 
-  array (
-    -1 => 'void',
-    'errno=' => 'int|null',
-  ),
-  'swoole\\coroutine\\fastcgi\\client::parseurl' => 
-  array (
-    -1 => 'array<array-key, mixed>',
-    'url' => 'string',
-  ),
-  'swoole\\coroutine\\fastcgi\\client\\exception::__construct' => 
-  array (
-    0 => 'void',
-    'message=' => 'string',
-    'code=' => 'int',
-    'previous=' => 'Throwable|null',
-    -2 => 'none',
-  ),
-  'swoole\\coroutine\\fastcgi\\client\\exception::__tostring' => 
-  array (
-    -1 => 'string',
-  ),
-  'swoole\\coroutine\\fastcgi\\client\\exception::__wakeup' => 
-  array (
-    -1 => 'void',
-    -2 => 'tentative',
-  ),
-  'swoole\\coroutine\\fastcgi\\client\\exception::getcode' => 
-  array (
-    0 => 'mixed',
-    -2 => 'none',
-  ),
-  'swoole\\coroutine\\fastcgi\\client\\exception::getfile' => 
-  array (
-    -1 => 'string',
-  ),
-  'swoole\\coroutine\\fastcgi\\client\\exception::getline' => 
-  array (
-    -1 => 'int',
-  ),
-  'swoole\\coroutine\\fastcgi\\client\\exception::getmessage' => 
-  array (
-    -1 => 'string',
-  ),
-  'swoole\\coroutine\\fastcgi\\client\\exception::getprevious' => 
-  array (
-    -1 => 'Throwable|null',
-  ),
-  'swoole\\coroutine\\fastcgi\\client\\exception::gettrace' => 
-  array (
-    -1 => 'array<array-key, mixed>',
-  ),
-  'swoole\\coroutine\\fastcgi\\client\\exception::gettraceasstring' => 
-  array (
-    -1 => 'string',
-  ),
-  'swoole\\coroutine\\fastcgi\\proxy::__construct' => 
-  array (
-    0 => 'void',
-    'url' => 'string',
-    'documentRoot=' => 'string',
-    -2 => 'none',
-  ),
-  'swoole\\coroutine\\fastcgi\\proxy::getparam' => 
-  array (
-    -1 => 'null|string',
-    'name' => 'string',
-  ),
-  'swoole\\coroutine\\fastcgi\\proxy::getparams' => 
-  array (
-    -1 => 'array<array-key, mixed>',
-  ),
-  'swoole\\coroutine\\fastcgi\\proxy::pass' => 
-  array (
-    -1 => 'void',
-    'userRequest' => 'Swoole\\FastCGI\\HttpRequest|Swoole\\Http\\Request',
-    'userResponse' => 'Swoole\\Http\\Response',
-  ),
-  'swoole\\coroutine\\fastcgi\\proxy::staticfilefiltrate' => 
-  array (
-    -1 => 'bool',
-    'request' => 'Swoole\\FastCGI\\HttpRequest',
-    'userResponse' => 'Swoole\\Http\\Response',
-  ),
-  'swoole\\coroutine\\fastcgi\\proxy::translaterequest' => 
-  array (
-    -1 => 'Swoole\\FastCGI\\HttpRequest',
-    'userRequest' => 'Swoole\\Http\\Request',
-  ),
-  'swoole\\coroutine\\fastcgi\\proxy::translateresponse' => 
-  array (
-    -1 => 'void',
-    'response' => 'Swoole\\FastCGI\\HttpResponse',
-    'userResponse' => 'Swoole\\Http\\Response',
-  ),
-  'swoole\\coroutine\\fastcgi\\proxy::withaddedparams' => 
-  array (
-    -1 => 'Swoole\\Coroutine\\FastCGI\\Proxy',
-    'params' => 'array<array-key, mixed>',
-  ),
-  'swoole\\coroutine\\fastcgi\\proxy::withhttps' => 
-  array (
-    -1 => 'Swoole\\Coroutine\\FastCGI\\Proxy',
-    'https' => 'bool',
-  ),
-  'swoole\\coroutine\\fastcgi\\proxy::withindex' => 
-  array (
-    -1 => 'Swoole\\Coroutine\\FastCGI\\Proxy',
-    'index' => 'string',
-  ),
-  'swoole\\coroutine\\fastcgi\\proxy::withoutparam' => 
-  array (
-    -1 => 'Swoole\\Coroutine\\FastCGI\\Proxy',
-    'name' => 'string',
-  ),
-  'swoole\\coroutine\\fastcgi\\proxy::withparam' => 
-  array (
-    -1 => 'Swoole\\Coroutine\\FastCGI\\Proxy',
-    'name' => 'string',
-    'value' => 'string',
-  ),
-  'swoole\\coroutine\\fastcgi\\proxy::withparams' => 
-  array (
-    -1 => 'Swoole\\Coroutine\\FastCGI\\Proxy',
-    'params' => 'array<array-key, mixed>',
-  ),
-  'swoole\\coroutine\\fastcgi\\proxy::withstaticfilefilter' => 
-  array (
-    -1 => 'Swoole\\Coroutine\\FastCGI\\Proxy',
-    'filter' => 'callable[impure]|null',
-  ),
-  'swoole\\coroutine\\fastcgi\\proxy::withtimeout' => 
-  array (
-    -1 => 'Swoole\\Coroutine\\FastCGI\\Proxy',
-    'timeout' => 'float',
   ),
   'swoole\\coroutine\\go' => 
   array (
-    0 => 'mixed',
+    -1 => 'false|int',
     'fn' => 'callable[impure]',
     '...args=' => 'mixed',
-    -2 => 'none',
   ),
   'swoole\\coroutine\\http2\\client::__construct' => 
   array (
@@ -97093,7 +96846,8 @@ return array (
   'swoole\\coroutine\\http\\client::setdata' => 
   array (
     -1 => 'bool',
-    'data' => 'array<array-key, mixed>|string',
+    'data' => 'mixed',
+    'length=' => 'int|null',
   ),
   'swoole\\coroutine\\http\\client::setdefer' => 
   array (
@@ -97169,6 +96923,13 @@ return array (
     'headers' => 'array<array-key, mixed>|null',
     'cookies' => 'array<array-key, mixed>|null',
     -2 => 'none',
+  ),
+  'swoole\\coroutine\\http\\clientproxy::fromheaders' => 
+  array (
+    -1 => 'Swoole\\Coroutine\\Http\\ClientProxy',
+    'body' => 'string',
+    'lines' => 'array<array-key, mixed>',
+    'defaultStatus=' => 'int',
   ),
   'swoole\\coroutine\\http\\clientproxy::getbody' => 
   array (
@@ -97251,6 +97012,11 @@ return array (
     'ssl=' => 'bool',
     'reuse_port=' => 'bool',
     -2 => 'none',
+  ),
+  'swoole\\coroutine\\http\\server::flushhttp2queue' => 
+  array (
+    -1 => 'void',
+    'conn' => 'Swoole\\Coroutine\\Socket',
   ),
   'swoole\\coroutine\\http\\server::handle' => 
   array (
@@ -97448,6 +97214,7 @@ return array (
     'list' => 'array<array-key, mixed>',
     'fn' => 'callable[impure]',
     'timeout=' => 'float',
+    '&completed=' => 'mixed',
   ),
   'swoole\\coroutine\\parallel' => 
   array (
@@ -97457,10 +97224,9 @@ return array (
   ),
   'swoole\\coroutine\\run' => 
   array (
-    0 => 'mixed',
+    -1 => 'bool',
     'fn' => 'callable[impure]',
     '...args=' => 'mixed',
-    -2 => 'none',
   ),
   'swoole\\coroutine\\scheduler::add' => 
   array (
@@ -97501,6 +97267,11 @@ return array (
   array (
     -1 => 'void',
     'fn' => 'callable[impure]',
+  ),
+  'swoole\\coroutine\\server::istransientaccepterror' => 
+  array (
+    -1 => 'bool',
+    'errCode' => 'int',
   ),
   'swoole\\coroutine\\server::set' => 
   array (
@@ -97580,6 +97351,11 @@ return array (
     'port=' => 'int',
     'timeout=' => 'float',
   ),
+  'swoole\\coroutine\\socket::export' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+  ),
   'swoole\\coroutine\\socket::getboundcid' => 
   array (
     -1 => 'int',
@@ -97617,6 +97393,8 @@ return array (
   array (
     -1 => 'false|string',
     'length=' => 'int',
+    'timeout=' => 'float',
+    'flags=' => 'int',
   ),
   'swoole\\coroutine\\socket::readvector' => 
   array (
@@ -97813,7 +97591,7 @@ return array (
   ),
   'swoole\\coroutine\\system::statvfs' => 
   array (
-    -1 => 'array<array-key, mixed>',
+    -1 => 'array<array-key, mixed>|false',
     'path' => 'string',
   ),
   'swoole\\coroutine\\system::wait' => 
@@ -97973,6 +97751,12 @@ return array (
   array (
     -1 => 'string',
   ),
+  'swoole\\curl\\handler::checkprotocol' => 
+  array (
+    -1 => 'bool',
+    'scheme' => 'string',
+    'redirect=' => 'bool',
+  ),
   'swoole\\curl\\handler::close' => 
   array (
     -1 => 'void',
@@ -97992,28 +97776,41 @@ return array (
   ),
   'swoole\\curl\\handler::exec' => 
   array (
-    0 => 'mixed',
-    -2 => 'none',
+    -1 => 'bool|string',
   ),
   'swoole\\curl\\handler::execute' => 
   array (
-    0 => 'mixed',
-    -2 => 'none',
+    -1 => 'bool|string',
+  ),
+  'swoole\\curl\\handler::executerequest' => 
+  array (
+    -1 => 'bool',
+    'client' => 'Swoole\\Coroutine\\Http\\Client',
+    'deadline' => 'float|null',
+    '&timedOut' => 'bool',
   ),
   'swoole\\curl\\handler::getcontent' => 
   array (
-    0 => 'mixed',
-    -2 => 'none',
+    -1 => 'null|string',
   ),
   'swoole\\curl\\handler::getinfo' => 
   array (
-    0 => 'mixed',
-    -2 => 'none',
+    -1 => 'mixed',
+    'opt=' => 'int|null',
+  ),
+  'swoole\\curl\\handler::getorigin' => 
+  array (
+    -1 => 'array<array-key, mixed>',
+    'urlInfo' => 'array<array-key, mixed>',
   ),
   'swoole\\curl\\handler::getredirecturl' => 
   array (
     -1 => 'array<array-key, mixed>',
     'location' => 'string',
+  ),
+  'swoole\\curl\\handler::getrequestheaders' => 
+  array (
+    -1 => 'array<array-key, mixed>',
   ),
   'swoole\\curl\\handler::geturl' => 
   array (
@@ -98029,21 +97826,32 @@ return array (
     -1 => 'bool',
     'proxyIp' => 'null|string',
     'proxyPort' => 'int|null',
+    'deadline' => 'float|null',
   ),
   'swoole\\curl\\handler::isavailable' => 
   array (
     -1 => 'bool',
   ),
+  'swoole\\curl\\handler::remainingtimeout' => 
+  array (
+    -1 => 'float',
+    'deadline' => 'float|null',
+    'timeout=' => 'float',
+  ),
+  'swoole\\curl\\handler::removedotsegments' => 
+  array (
+    -1 => 'string',
+    'path' => 'string',
+  ),
   'swoole\\curl\\handler::reset' => 
   array (
-    0 => 'mixed',
-    -2 => 'none',
+    -1 => 'bool',
   ),
   'swoole\\curl\\handler::seterror' => 
   array (
     -1 => 'void',
-    'code' => 'mixed',
-    'msg=' => 'mixed',
+    'code' => 'int',
+    'msg=' => 'string',
   ),
   'swoole\\curl\\handler::setheader' => 
   array (
@@ -98068,6 +97876,11 @@ return array (
     -1 => 'void',
     'port' => 'int',
   ),
+  'swoole\\curl\\handler::settimeouterror' => 
+  array (
+    -1 => 'bool',
+    'timeBegin' => 'float',
+  ),
   'swoole\\curl\\handler::seturl' => 
   array (
     -1 => 'bool',
@@ -98084,10 +97897,35 @@ return array (
     -1 => 'string',
     'parsedUrl' => 'array<array-key, mixed>',
   ),
+  'swoole\\curl\\handler::updateresponseinfo' => 
+  array (
+    -1 => 'void',
+    'client' => 'Swoole\\Coroutine\\Http\\Client',
+    'timeBegin' => 'float',
+  ),
+  'swoole\\curl\\handler::usenextaddress' => 
+  array (
+    -1 => 'Swoole\\Coroutine\\Http\\Client',
+    'client' => 'Swoole\\Coroutine\\Http\\Client',
+    'connectTimeout=' => 'float|null',
+    'bodyLength=' => 'int|null',
+  ),
+  'swoole\\database\\detectslostconnections::causedbyerrorinfo' => 
+  array (
+    -1 => 'bool',
+    'info' => 'array<array-key, mixed>',
+  ),
   'swoole\\database\\detectslostconnections::causedbylostconnection' => 
   array (
     -1 => 'bool',
     'e' => 'Throwable',
+  ),
+  'swoole\\database\\detectslostconnections::matches' => 
+  array (
+    -1 => 'bool',
+    'message' => 'string',
+    'state' => 'string',
+    'driverError' => 'int',
   ),
   'swoole\\database\\mysqliconfig::getcharset' => 
   array (
@@ -98112,6 +97950,10 @@ return array (
   'swoole\\database\\mysqliconfig::getport' => 
   array (
     -1 => 'int',
+  ),
+  'swoole\\database\\mysqliconfig::getretryonlostconnection' => 
+  array (
+    -1 => 'bool',
   ),
   'swoole\\database\\mysqliconfig::getunixsocket' => 
   array (
@@ -98150,6 +97992,11 @@ return array (
   array (
     -1 => 'Swoole\\Database\\MysqliConfig',
     'port' => 'int',
+  ),
+  'swoole\\database\\mysqliconfig::withretryonlostconnection' => 
+  array (
+    -1 => 'Swoole\\Database\\MysqliConfig',
+    'retry' => 'bool',
   ),
   'swoole\\database\\mysqliconfig::withunixsocket' => 
   array (
@@ -98214,9 +98061,24 @@ return array (
     'size=' => 'int',
     -2 => 'none',
   ),
+  'swoole\\database\\mysqlipool::assertcanreturn' => 
+  array (
+    -1 => 'void',
+    'connection' => 'mixed',
+  ),
+  'swoole\\database\\mysqlipool::clean' => 
+  array (
+    -1 => 'bool',
+    'connection' => 'Swoole\\Database\\MysqliProxy',
+  ),
   'swoole\\database\\mysqlipool::close' => 
   array (
     -1 => 'void',
+  ),
+  'swoole\\database\\mysqlipool::discard' => 
+  array (
+    -1 => 'void',
+    'connection' => 'object',
   ),
   'swoole\\database\\mysqlipool::fill' => 
   array (
@@ -98236,6 +98098,12 @@ return array (
   array (
     -1 => 'void',
     'connection' => 'mixed',
+  ),
+  'swoole\\database\\mysqlipool::withconnection' => 
+  array (
+    -1 => 'mixed',
+    'callback' => 'callable[impure]',
+    'timeout=' => 'float',
   ),
   'swoole\\database\\mysqliproxy::__call' => 
   array (
@@ -98274,7 +98142,7 @@ return array (
   'swoole\\database\\mysqliproxy::__isset' => 
   array (
     0 => 'mixed',
-    'name' => 'mixed',
+    'name' => 'string',
     -2 => 'none',
   ),
   'swoole\\database\\mysqliproxy::__set' => 
@@ -98291,7 +98159,7 @@ return array (
   'swoole\\database\\mysqliproxy::change_user' => 
   array (
     -1 => 'bool',
-    'user' => 'string',
+    'username' => 'string',
     'password' => 'string',
     'database' => 'null|string',
   ),
@@ -98303,6 +98171,14 @@ return array (
   array (
     -1 => 'bool',
   ),
+  'swoole\\database\\mysqliproxy::islost' => 
+  array (
+    -1 => 'bool',
+  ),
+  'swoole\\database\\mysqliproxy::markaslost' => 
+  array (
+    -1 => 'void',
+  ),
   'swoole\\database\\mysqliproxy::options' => 
   array (
     -1 => 'bool',
@@ -98312,6 +98188,11 @@ return array (
   'swoole\\database\\mysqliproxy::reconnect' => 
   array (
     -1 => 'void',
+  ),
+  'swoole\\database\\mysqliproxy::rememberautocommit' => 
+  array (
+    -1 => 'void',
+    'enable' => 'bool',
   ),
   'swoole\\database\\mysqliproxy::reset' => 
   array (
@@ -98327,6 +98208,15 @@ return array (
     -1 => 'bool',
     'option' => 'int',
     'value' => 'mixed',
+  ),
+  'swoole\\database\\mysqliproxy::setretryonlostconnection' => 
+  array (
+    -1 => 'void',
+    'retry' => 'bool',
+  ),
+  'swoole\\database\\mysqliproxy::shouldretryonlostconnection' => 
+  array (
+    -1 => 'bool',
   ),
   'swoole\\database\\mysqlistatementproxy::__call' => 
   array (
@@ -98367,7 +98257,7 @@ return array (
   'swoole\\database\\mysqlistatementproxy::__isset' => 
   array (
     0 => 'mixed',
-    'name' => 'mixed',
+    'name' => 'string',
     -2 => 'none',
   ),
   'swoole\\database\\mysqlistatementproxy::__set' => 
@@ -98384,19 +98274,23 @@ return array (
   'swoole\\database\\mysqlistatementproxy::attr_set' => 
   array (
     -1 => 'bool',
-    'attr' => 'mixed',
-    'mode' => 'mixed',
+    'attribute' => 'int',
+    'value' => 'int',
   ),
   'swoole\\database\\mysqlistatementproxy::bind_param' => 
   array (
     -1 => 'bool',
-    'types' => 'mixed',
-    '&...arguments=' => 'mixed',
+    'types' => 'string',
+    '&...vars=' => 'mixed',
   ),
   'swoole\\database\\mysqlistatementproxy::bind_result' => 
   array (
     -1 => 'bool',
-    '&...arguments=' => 'mixed',
+    '&...vars=' => 'mixed',
+  ),
+  'swoole\\database\\mysqlistatementproxy::reprepare' => 
+  array (
+    -1 => 'void',
   ),
   'swoole\\database\\objectproxy::__call' => 
   array (
@@ -98435,7 +98329,7 @@ return array (
   'swoole\\database\\objectproxy::__isset' => 
   array (
     0 => 'mixed',
-    'name' => 'mixed',
+    'name' => 'string',
     -2 => 'none',
   ),
   'swoole\\database\\objectproxy::__set' => 
@@ -98480,6 +98374,10 @@ return array (
   'swoole\\database\\pdoconfig::getport' => 
   array (
     -1 => 'int',
+  ),
+  'swoole\\database\\pdoconfig::getretryonlostconnection' => 
+  array (
+    -1 => 'bool',
   ),
   'swoole\\database\\pdoconfig::getunixsocket' => 
   array (
@@ -98528,6 +98426,11 @@ return array (
     -1 => 'Swoole\\Database\\PDOConfig',
     'port' => 'int',
   ),
+  'swoole\\database\\pdoconfig::withretryonlostconnection' => 
+  array (
+    -1 => 'Swoole\\Database\\PDOConfig',
+    'retry' => 'bool',
+  ),
   'swoole\\database\\pdoconfig::withunixsocket' => 
   array (
     -1 => 'Swoole\\Database\\PDOConfig',
@@ -98545,6 +98448,16 @@ return array (
     'size=' => 'int',
     -2 => 'none',
   ),
+  'swoole\\database\\pdopool::assertcanreturn' => 
+  array (
+    -1 => 'void',
+    'connection' => 'mixed',
+  ),
+  'swoole\\database\\pdopool::clean' => 
+  array (
+    -1 => 'bool',
+    'connection' => 'Swoole\\Database\\PDOProxy',
+  ),
   'swoole\\database\\pdopool::close' => 
   array (
     -1 => 'void',
@@ -98553,6 +98466,11 @@ return array (
   array (
     -1 => 'string',
     'driver' => 'string',
+  ),
+  'swoole\\database\\pdopool::discard' => 
+  array (
+    -1 => 'void',
+    'connection' => 'object',
   ),
   'swoole\\database\\pdopool::fill' => 
   array (
@@ -98572,6 +98490,12 @@ return array (
   array (
     -1 => 'void',
     'connection' => 'mixed',
+  ),
+  'swoole\\database\\pdopool::withconnection' => 
+  array (
+    -1 => 'mixed',
+    'callback' => 'callable[impure]',
+    'timeout=' => 'float',
   ),
   'swoole\\database\\pdoproxy::__call' => 
   array (
@@ -98610,7 +98534,7 @@ return array (
   'swoole\\database\\pdoproxy::__isset' => 
   array (
     0 => 'mixed',
-    'name' => 'mixed',
+    'name' => 'string',
     -2 => 'none',
   ),
   'swoole\\database\\pdoproxy::__set' => 
@@ -98623,6 +98547,11 @@ return array (
   array (
     -1 => 'void',
     'name' => 'string',
+  ),
+  'swoole\\database\\pdoproxy::errorinfoislostconnection' => 
+  array (
+    -1 => 'bool',
+    'info' => 'array<array-key, mixed>',
   ),
   'swoole\\database\\pdoproxy::getround' => 
   array (
@@ -98662,6 +98591,15 @@ return array (
     'attribute' => 'int',
     'value' => 'mixed',
   ),
+  'swoole\\database\\pdoproxy::setretryonlostconnection' => 
+  array (
+    -1 => 'void',
+    'retry' => 'bool',
+  ),
+  'swoole\\database\\pdoproxy::shouldretryonlostconnection' => 
+  array (
+    -1 => 'bool',
+  ),
   'swoole\\database\\pdostatementproxy::__call' => 
   array (
     0 => 'mixed',
@@ -98700,7 +98638,7 @@ return array (
   'swoole\\database\\pdostatementproxy::__isset' => 
   array (
     0 => 'mixed',
-    'name' => 'mixed',
+    'name' => 'string',
     -2 => 'none',
   ),
   'swoole\\database\\pdostatementproxy::__set' => 
@@ -98717,32 +98655,47 @@ return array (
   'swoole\\database\\pdostatementproxy::bindcolumn' => 
   array (
     -1 => 'bool',
-    'column' => 'mixed',
-    '&param' => 'mixed',
-    'type=' => 'mixed',
-    'maxlen=' => 'mixed',
-    'driverdata=' => 'mixed',
+    'column' => 'int|string',
+    '&var' => 'mixed',
+    'type=' => 'int',
+    'maxLength=' => 'int',
+    'driverOptions=' => 'mixed',
   ),
   'swoole\\database\\pdostatementproxy::bindparam' => 
   array (
     -1 => 'bool',
-    'parameter' => 'mixed',
-    '&variable' => 'mixed',
-    'data_type=' => 'mixed',
-    'length=' => 'mixed',
-    'driver_options=' => 'mixed',
+    'param' => 'int|string',
+    '&var' => 'mixed',
+    'type=' => 'int',
+    'maxLength=' => 'int',
+    'driverOptions=' => 'mixed',
   ),
   'swoole\\database\\pdostatementproxy::bindvalue' => 
   array (
     -1 => 'bool',
-    'parameter' => 'mixed',
+    'param' => 'int|string',
     'value' => 'mixed',
-    'data_type=' => 'mixed',
+    'type=' => 'int',
+  ),
+  'swoole\\database\\pdostatementproxy::errorinfoislostconnection' => 
+  array (
+    -1 => 'bool',
+    'statementInfo' => 'array<array-key, mixed>',
+    'connectionInfo' => 'array<array-key, mixed>',
   ),
   'swoole\\database\\pdostatementproxy::parameterkey' => 
   array (
     -1 => 'int|string',
     'param' => 'int|string',
+  ),
+  'swoole\\database\\pdostatementproxy::reexecute' => 
+  array (
+    -1 => 'mixed',
+    'arguments' => 'array<array-key, mixed>',
+  ),
+  'swoole\\database\\pdostatementproxy::reprepare' => 
+  array (
+    -1 => 'bool',
   ),
   'swoole\\database\\pdostatementproxy::setattribute' => 
   array (
@@ -98754,7 +98707,7 @@ return array (
   array (
     -1 => 'bool',
     'mode' => 'int',
-    '...params=' => 'mixed',
+    '...args=' => 'mixed',
   ),
   'swoole\\database\\redisconfig::getauth' => 
   array (
@@ -98850,9 +98803,24 @@ return array (
     'size=' => 'int',
     -2 => 'none',
   ),
+  'swoole\\database\\redispool::assertcanreturn' => 
+  array (
+    -1 => 'void',
+    'connection' => 'mixed',
+  ),
+  'swoole\\database\\redispool::clean' => 
+  array (
+    -1 => 'bool',
+    'connection' => 'Redis',
+  ),
   'swoole\\database\\redispool::close' => 
   array (
     -1 => 'void',
+  ),
+  'swoole\\database\\redispool::discard' => 
+  array (
+    -1 => 'void',
+    'connection' => 'object',
   ),
   'swoole\\database\\redispool::fill' => 
   array (
@@ -98872,6 +98840,12 @@ return array (
   array (
     -1 => 'void',
     'connection' => 'mixed',
+  ),
+  'swoole\\database\\redispool::withconnection' => 
+  array (
+    -1 => 'mixed',
+    'callback' => 'callable[impure]',
+    'timeout=' => 'float',
   ),
   'swoole\\error::__construct' => 
   array (
@@ -99124,1396 +99098,6 @@ return array (
   'swoole\\exitexception::gettraceasstring' => 
   array (
     -1 => 'string',
-  ),
-  'swoole\\fastcgi\\frameparser::hasframe' => 
-  array (
-    -1 => 'bool',
-    'binaryBuffer' => 'string',
-  ),
-  'swoole\\fastcgi\\frameparser::parseframe' => 
-  array (
-    -1 => 'Swoole\\FastCGI\\Record',
-    '&binaryBuffer' => 'string',
-  ),
-  'swoole\\fastcgi\\httprequest::__tostring' => 
-  array (
-    -1 => 'string',
-  ),
-  'swoole\\fastcgi\\httprequest::convertheadernametoparamname' => 
-  array (
-    0 => 'mixed',
-    'name' => 'string',
-    -2 => 'none',
-  ),
-  'swoole\\fastcgi\\httprequest::convertparamnametoheadername' => 
-  array (
-    0 => 'mixed',
-    'name' => 'string',
-    -2 => 'none',
-  ),
-  'swoole\\fastcgi\\httprequest::getbody' => 
-  array (
-    -1 => 'string',
-  ),
-  'swoole\\fastcgi\\httprequest::getcontentlength' => 
-  array (
-    -1 => 'int|null',
-  ),
-  'swoole\\fastcgi\\httprequest::getcontenttype' => 
-  array (
-    -1 => 'null|string',
-  ),
-  'swoole\\fastcgi\\httprequest::getdocumentroot' => 
-  array (
-    -1 => 'null|string',
-  ),
-  'swoole\\fastcgi\\httprequest::getdocumenturi' => 
-  array (
-    -1 => 'null|string',
-  ),
-  'swoole\\fastcgi\\httprequest::geterror' => 
-  array (
-    -1 => 'string',
-  ),
-  'swoole\\fastcgi\\httprequest::getgatewayinterface' => 
-  array (
-    -1 => 'null|string',
-  ),
-  'swoole\\fastcgi\\httprequest::getheader' => 
-  array (
-    -1 => 'null|string',
-    'name' => 'string',
-  ),
-  'swoole\\fastcgi\\httprequest::getheaders' => 
-  array (
-    -1 => 'array<array-key, mixed>',
-  ),
-  'swoole\\fastcgi\\httprequest::getkeepconn' => 
-  array (
-    -1 => 'bool',
-  ),
-  'swoole\\fastcgi\\httprequest::getmethod' => 
-  array (
-    -1 => 'null|string',
-  ),
-  'swoole\\fastcgi\\httprequest::getparam' => 
-  array (
-    -1 => 'null|string',
-    'name' => 'string',
-  ),
-  'swoole\\fastcgi\\httprequest::getparams' => 
-  array (
-    -1 => 'array<array-key, mixed>',
-  ),
-  'swoole\\fastcgi\\httprequest::getquerystring' => 
-  array (
-    -1 => 'null|string',
-  ),
-  'swoole\\fastcgi\\httprequest::getredirectstatus' => 
-  array (
-    -1 => 'null|string',
-  ),
-  'swoole\\fastcgi\\httprequest::getremoteaddr' => 
-  array (
-    -1 => 'null|string',
-  ),
-  'swoole\\fastcgi\\httprequest::getremoteport' => 
-  array (
-    -1 => 'int|null',
-  ),
-  'swoole\\fastcgi\\httprequest::getrequesturi' => 
-  array (
-    -1 => 'null|string',
-  ),
-  'swoole\\fastcgi\\httprequest::getscheme' => 
-  array (
-    -1 => 'null|string',
-  ),
-  'swoole\\fastcgi\\httprequest::getscriptfilename' => 
-  array (
-    -1 => 'null|string',
-  ),
-  'swoole\\fastcgi\\httprequest::getscriptname' => 
-  array (
-    -1 => 'null|string',
-  ),
-  'swoole\\fastcgi\\httprequest::getserveraddr' => 
-  array (
-    -1 => 'null|string',
-  ),
-  'swoole\\fastcgi\\httprequest::getservername' => 
-  array (
-    -1 => 'null|string',
-  ),
-  'swoole\\fastcgi\\httprequest::getserverport' => 
-  array (
-    -1 => 'int|null',
-  ),
-  'swoole\\fastcgi\\httprequest::getserverprotocol' => 
-  array (
-    -1 => 'null|string',
-  ),
-  'swoole\\fastcgi\\httprequest::getserversoftware' => 
-  array (
-    -1 => 'null|string',
-  ),
-  'swoole\\fastcgi\\httprequest::withaddedparams' => 
-  array (
-    -1 => 'static',
-    'params' => 'array<array-key, mixed>',
-  ),
-  'swoole\\fastcgi\\httprequest::withbody' => 
-  array (
-    -1 => 'Swoole\\FastCGI\\HttpRequest',
-    'body' => 'Stringable|array<array-key, mixed>|string',
-  ),
-  'swoole\\fastcgi\\httprequest::withcontentlength' => 
-  array (
-    -1 => 'Swoole\\FastCGI\\HttpRequest',
-    'contentLength' => 'int',
-  ),
-  'swoole\\fastcgi\\httprequest::withcontenttype' => 
-  array (
-    -1 => 'Swoole\\FastCGI\\HttpRequest',
-    'contentType' => 'string',
-  ),
-  'swoole\\fastcgi\\httprequest::withdocumentroot' => 
-  array (
-    -1 => 'Swoole\\FastCGI\\HttpRequest',
-    'documentRoot' => 'string',
-  ),
-  'swoole\\fastcgi\\httprequest::withdocumenturi' => 
-  array (
-    -1 => 'Swoole\\FastCGI\\HttpRequest',
-    'documentUri' => 'string',
-  ),
-  'swoole\\fastcgi\\httprequest::witherror' => 
-  array (
-    -1 => 'static',
-    'error' => 'string',
-  ),
-  'swoole\\fastcgi\\httprequest::withgatewayinterface' => 
-  array (
-    -1 => 'Swoole\\FastCGI\\HttpRequest',
-    'gatewayInterface' => 'string',
-  ),
-  'swoole\\fastcgi\\httprequest::withheader' => 
-  array (
-    -1 => 'Swoole\\FastCGI\\HttpRequest',
-    'name' => 'string',
-    'value' => 'string',
-  ),
-  'swoole\\fastcgi\\httprequest::withheaders' => 
-  array (
-    -1 => 'Swoole\\FastCGI\\HttpRequest',
-    'headers' => 'array<array-key, mixed>',
-  ),
-  'swoole\\fastcgi\\httprequest::withkeepconn' => 
-  array (
-    -1 => 'Swoole\\FastCGI\\Request',
-    'keepConn' => 'bool',
-  ),
-  'swoole\\fastcgi\\httprequest::withmethod' => 
-  array (
-    -1 => 'Swoole\\FastCGI\\HttpRequest',
-    'method' => 'string',
-  ),
-  'swoole\\fastcgi\\httprequest::withoutcontentlength' => 
-  array (
-    -1 => 'void',
-  ),
-  'swoole\\fastcgi\\httprequest::withoutcontenttype' => 
-  array (
-    -1 => 'void',
-  ),
-  'swoole\\fastcgi\\httprequest::withoutdocumentroot' => 
-  array (
-    -1 => 'void',
-  ),
-  'swoole\\fastcgi\\httprequest::withoutdocumenturi' => 
-  array (
-    -1 => 'void',
-  ),
-  'swoole\\fastcgi\\httprequest::withoutgatewayinterface' => 
-  array (
-    -1 => 'void',
-  ),
-  'swoole\\fastcgi\\httprequest::withoutheader' => 
-  array (
-    -1 => 'void',
-    'name' => 'string',
-  ),
-  'swoole\\fastcgi\\httprequest::withoutmethod' => 
-  array (
-    -1 => 'void',
-  ),
-  'swoole\\fastcgi\\httprequest::withoutparam' => 
-  array (
-    -1 => 'static',
-    'name' => 'string',
-  ),
-  'swoole\\fastcgi\\httprequest::withoutquerystring' => 
-  array (
-    -1 => 'void',
-  ),
-  'swoole\\fastcgi\\httprequest::withoutredirectstatus' => 
-  array (
-    -1 => 'void',
-  ),
-  'swoole\\fastcgi\\httprequest::withoutremoteaddr' => 
-  array (
-    -1 => 'void',
-  ),
-  'swoole\\fastcgi\\httprequest::withoutremoteport' => 
-  array (
-    -1 => 'void',
-  ),
-  'swoole\\fastcgi\\httprequest::withoutrequesturi' => 
-  array (
-    -1 => 'void',
-  ),
-  'swoole\\fastcgi\\httprequest::withoutscheme' => 
-  array (
-    -1 => 'void',
-  ),
-  'swoole\\fastcgi\\httprequest::withoutscriptfilename' => 
-  array (
-    -1 => 'void',
-  ),
-  'swoole\\fastcgi\\httprequest::withoutscriptname' => 
-  array (
-    -1 => 'void',
-  ),
-  'swoole\\fastcgi\\httprequest::withoutserveraddr' => 
-  array (
-    -1 => 'void',
-  ),
-  'swoole\\fastcgi\\httprequest::withoutservername' => 
-  array (
-    -1 => 'void',
-  ),
-  'swoole\\fastcgi\\httprequest::withoutserverport' => 
-  array (
-    -1 => 'void',
-  ),
-  'swoole\\fastcgi\\httprequest::withoutserverprotocol' => 
-  array (
-    -1 => 'void',
-  ),
-  'swoole\\fastcgi\\httprequest::withoutserversoftware' => 
-  array (
-    -1 => 'void',
-  ),
-  'swoole\\fastcgi\\httprequest::withparam' => 
-  array (
-    -1 => 'static',
-    'name' => 'string',
-    'value' => 'string',
-  ),
-  'swoole\\fastcgi\\httprequest::withparams' => 
-  array (
-    -1 => 'static',
-    'params' => 'array<array-key, mixed>',
-  ),
-  'swoole\\fastcgi\\httprequest::withprotocolversion' => 
-  array (
-    -1 => 'Swoole\\FastCGI\\HttpRequest',
-    'protocolVersion' => 'string',
-  ),
-  'swoole\\fastcgi\\httprequest::withquery' => 
-  array (
-    -1 => 'Swoole\\FastCGI\\HttpRequest',
-    'query' => 'mixed',
-  ),
-  'swoole\\fastcgi\\httprequest::withquerystring' => 
-  array (
-    -1 => 'Swoole\\FastCGI\\HttpRequest',
-    'queryString' => 'string',
-  ),
-  'swoole\\fastcgi\\httprequest::withredirectstatus' => 
-  array (
-    -1 => 'Swoole\\FastCGI\\HttpRequest',
-    'redirectStatus' => 'string',
-  ),
-  'swoole\\fastcgi\\httprequest::withremoteaddr' => 
-  array (
-    -1 => 'Swoole\\FastCGI\\HttpRequest',
-    'remoteAddr' => 'string',
-  ),
-  'swoole\\fastcgi\\httprequest::withremoteport' => 
-  array (
-    -1 => 'Swoole\\FastCGI\\HttpRequest',
-    'remotePort' => 'int',
-  ),
-  'swoole\\fastcgi\\httprequest::withrequesturi' => 
-  array (
-    -1 => 'Swoole\\FastCGI\\HttpRequest',
-    'requestUri' => 'string',
-  ),
-  'swoole\\fastcgi\\httprequest::withscheme' => 
-  array (
-    -1 => 'Swoole\\FastCGI\\HttpRequest',
-    'scheme' => 'string',
-  ),
-  'swoole\\fastcgi\\httprequest::withscriptfilename' => 
-  array (
-    -1 => 'Swoole\\FastCGI\\HttpRequest',
-    'scriptFilename' => 'string',
-  ),
-  'swoole\\fastcgi\\httprequest::withscriptname' => 
-  array (
-    -1 => 'Swoole\\FastCGI\\HttpRequest',
-    'scriptName' => 'string',
-  ),
-  'swoole\\fastcgi\\httprequest::withserveraddr' => 
-  array (
-    -1 => 'Swoole\\FastCGI\\HttpRequest',
-    'serverAddr' => 'string',
-  ),
-  'swoole\\fastcgi\\httprequest::withservername' => 
-  array (
-    -1 => 'Swoole\\FastCGI\\HttpRequest',
-    'serverName' => 'string',
-  ),
-  'swoole\\fastcgi\\httprequest::withserverport' => 
-  array (
-    -1 => 'Swoole\\FastCGI\\HttpRequest',
-    'serverPort' => 'int',
-  ),
-  'swoole\\fastcgi\\httprequest::withserverprotocol' => 
-  array (
-    -1 => 'Swoole\\FastCGI\\HttpRequest',
-    'serverProtocol' => 'string',
-  ),
-  'swoole\\fastcgi\\httprequest::withserversoftware' => 
-  array (
-    -1 => 'Swoole\\FastCGI\\HttpRequest',
-    'serverSoftware' => 'string',
-  ),
-  'swoole\\fastcgi\\httprequest::withuri' => 
-  array (
-    -1 => 'Swoole\\FastCGI\\HttpRequest',
-    'uri' => 'string',
-  ),
-  'swoole\\fastcgi\\httpresponse::__construct' => 
-  array (
-    0 => 'void',
-    'records=' => 'array<array-key, mixed>',
-    -2 => 'none',
-  ),
-  'swoole\\fastcgi\\httpresponse::getbody' => 
-  array (
-    -1 => 'string',
-  ),
-  'swoole\\fastcgi\\httpresponse::geterror' => 
-  array (
-    -1 => 'string',
-  ),
-  'swoole\\fastcgi\\httpresponse::getheader' => 
-  array (
-    -1 => 'null|string',
-    'name' => 'string',
-  ),
-  'swoole\\fastcgi\\httpresponse::getheaders' => 
-  array (
-    -1 => 'array<array-key, mixed>',
-  ),
-  'swoole\\fastcgi\\httpresponse::getparam' => 
-  array (
-    -1 => 'null|string',
-    'name' => 'string',
-  ),
-  'swoole\\fastcgi\\httpresponse::getparams' => 
-  array (
-    -1 => 'array<array-key, mixed>',
-  ),
-  'swoole\\fastcgi\\httpresponse::getreasonphrase' => 
-  array (
-    -1 => 'string',
-  ),
-  'swoole\\fastcgi\\httpresponse::getsetcookieheaderlines' => 
-  array (
-    -1 => 'array<array-key, mixed>',
-  ),
-  'swoole\\fastcgi\\httpresponse::getstatuscode' => 
-  array (
-    -1 => 'int',
-  ),
-  'swoole\\fastcgi\\httpresponse::verify' => 
-  array (
-    -1 => 'bool',
-    'records' => 'array<array-key, mixed>',
-  ),
-  'swoole\\fastcgi\\httpresponse::withaddedparams' => 
-  array (
-    -1 => 'static',
-    'params' => 'array<array-key, mixed>',
-  ),
-  'swoole\\fastcgi\\httpresponse::withbody' => 
-  array (
-    -1 => 'Swoole\\FastCGI\\Message',
-    'body' => 'Stringable|string',
-  ),
-  'swoole\\fastcgi\\httpresponse::witherror' => 
-  array (
-    -1 => 'static',
-    'error' => 'string',
-  ),
-  'swoole\\fastcgi\\httpresponse::withheader' => 
-  array (
-    -1 => 'Swoole\\FastCGI\\HttpResponse',
-    'name' => 'string',
-    'value' => 'string',
-  ),
-  'swoole\\fastcgi\\httpresponse::withheaders' => 
-  array (
-    -1 => 'Swoole\\FastCGI\\HttpResponse',
-    'headers' => 'array<array-key, mixed>',
-  ),
-  'swoole\\fastcgi\\httpresponse::withoutparam' => 
-  array (
-    -1 => 'static',
-    'name' => 'string',
-  ),
-  'swoole\\fastcgi\\httpresponse::withparam' => 
-  array (
-    -1 => 'static',
-    'name' => 'string',
-    'value' => 'string',
-  ),
-  'swoole\\fastcgi\\httpresponse::withparams' => 
-  array (
-    -1 => 'static',
-    'params' => 'array<array-key, mixed>',
-  ),
-  'swoole\\fastcgi\\httpresponse::withreasonphrase' => 
-  array (
-    -1 => 'Swoole\\FastCGI\\HttpResponse',
-    'reasonPhrase' => 'string',
-  ),
-  'swoole\\fastcgi\\httpresponse::withsetcookieheaderline' => 
-  array (
-    -1 => 'Swoole\\FastCGI\\HttpResponse',
-    'value' => 'string',
-  ),
-  'swoole\\fastcgi\\httpresponse::withstatuscode' => 
-  array (
-    -1 => 'Swoole\\FastCGI\\HttpResponse',
-    'statusCode' => 'int',
-  ),
-  'swoole\\fastcgi\\message::getbody' => 
-  array (
-    -1 => 'string',
-  ),
-  'swoole\\fastcgi\\message::geterror' => 
-  array (
-    -1 => 'string',
-  ),
-  'swoole\\fastcgi\\message::getparam' => 
-  array (
-    -1 => 'null|string',
-    'name' => 'string',
-  ),
-  'swoole\\fastcgi\\message::getparams' => 
-  array (
-    -1 => 'array<array-key, mixed>',
-  ),
-  'swoole\\fastcgi\\message::withaddedparams' => 
-  array (
-    -1 => 'static',
-    'params' => 'array<array-key, mixed>',
-  ),
-  'swoole\\fastcgi\\message::withbody' => 
-  array (
-    -1 => 'Swoole\\FastCGI\\Message',
-    'body' => 'Stringable|string',
-  ),
-  'swoole\\fastcgi\\message::witherror' => 
-  array (
-    -1 => 'static',
-    'error' => 'string',
-  ),
-  'swoole\\fastcgi\\message::withoutparam' => 
-  array (
-    -1 => 'static',
-    'name' => 'string',
-  ),
-  'swoole\\fastcgi\\message::withparam' => 
-  array (
-    -1 => 'static',
-    'name' => 'string',
-    'value' => 'string',
-  ),
-  'swoole\\fastcgi\\message::withparams' => 
-  array (
-    -1 => 'static',
-    'params' => 'array<array-key, mixed>',
-  ),
-  'swoole\\fastcgi\\record::__tostring' => 
-  array (
-    -1 => 'string',
-  ),
-  'swoole\\fastcgi\\record::getcontentdata' => 
-  array (
-    -1 => 'string',
-  ),
-  'swoole\\fastcgi\\record::getcontentlength' => 
-  array (
-    -1 => 'int',
-  ),
-  'swoole\\fastcgi\\record::getpaddinglength' => 
-  array (
-    -1 => 'int',
-  ),
-  'swoole\\fastcgi\\record::getrequestid' => 
-  array (
-    -1 => 'int',
-  ),
-  'swoole\\fastcgi\\record::gettype' => 
-  array (
-    -1 => 'int',
-  ),
-  'swoole\\fastcgi\\record::getversion' => 
-  array (
-    -1 => 'int',
-  ),
-  'swoole\\fastcgi\\record::packpayload' => 
-  array (
-    -1 => 'string',
-  ),
-  'swoole\\fastcgi\\record::setcontentdata' => 
-  array (
-    -1 => 'Swoole\\FastCGI\\Record',
-    'data' => 'string',
-  ),
-  'swoole\\fastcgi\\record::setrequestid' => 
-  array (
-    -1 => 'Swoole\\FastCGI\\Record',
-    'requestId' => 'int',
-  ),
-  'swoole\\fastcgi\\record::unpack' => 
-  array (
-    -1 => 'static',
-    'binaryData' => 'string',
-  ),
-  'swoole\\fastcgi\\record::unpackpayload' => 
-  array (
-    -1 => 'void',
-    'self' => 'Swoole\\FastCGI\\Record',
-    'binaryData' => 'string',
-  ),
-  'swoole\\fastcgi\\record\\abortrequest::__construct' => 
-  array (
-    0 => 'void',
-    'requestId' => 'int',
-    -2 => 'none',
-  ),
-  'swoole\\fastcgi\\record\\abortrequest::__tostring' => 
-  array (
-    -1 => 'string',
-  ),
-  'swoole\\fastcgi\\record\\abortrequest::getcontentdata' => 
-  array (
-    -1 => 'string',
-  ),
-  'swoole\\fastcgi\\record\\abortrequest::getcontentlength' => 
-  array (
-    -1 => 'int',
-  ),
-  'swoole\\fastcgi\\record\\abortrequest::getpaddinglength' => 
-  array (
-    -1 => 'int',
-  ),
-  'swoole\\fastcgi\\record\\abortrequest::getrequestid' => 
-  array (
-    -1 => 'int',
-  ),
-  'swoole\\fastcgi\\record\\abortrequest::gettype' => 
-  array (
-    -1 => 'int',
-  ),
-  'swoole\\fastcgi\\record\\abortrequest::getversion' => 
-  array (
-    -1 => 'int',
-  ),
-  'swoole\\fastcgi\\record\\abortrequest::packpayload' => 
-  array (
-    -1 => 'string',
-  ),
-  'swoole\\fastcgi\\record\\abortrequest::setcontentdata' => 
-  array (
-    -1 => 'Swoole\\FastCGI\\Record',
-    'data' => 'string',
-  ),
-  'swoole\\fastcgi\\record\\abortrequest::setrequestid' => 
-  array (
-    -1 => 'Swoole\\FastCGI\\Record',
-    'requestId' => 'int',
-  ),
-  'swoole\\fastcgi\\record\\abortrequest::unpack' => 
-  array (
-    -1 => 'static',
-    'binaryData' => 'string',
-  ),
-  'swoole\\fastcgi\\record\\abortrequest::unpackpayload' => 
-  array (
-    -1 => 'void',
-    'self' => 'Swoole\\FastCGI\\Record',
-    'binaryData' => 'string',
-  ),
-  'swoole\\fastcgi\\record\\beginrequest::__construct' => 
-  array (
-    0 => 'void',
-    'role=' => 'int',
-    'flags=' => 'int',
-    'reserved=' => 'string',
-    -2 => 'none',
-  ),
-  'swoole\\fastcgi\\record\\beginrequest::__tostring' => 
-  array (
-    -1 => 'string',
-  ),
-  'swoole\\fastcgi\\record\\beginrequest::getcontentdata' => 
-  array (
-    -1 => 'string',
-  ),
-  'swoole\\fastcgi\\record\\beginrequest::getcontentlength' => 
-  array (
-    -1 => 'int',
-  ),
-  'swoole\\fastcgi\\record\\beginrequest::getflags' => 
-  array (
-    -1 => 'int',
-  ),
-  'swoole\\fastcgi\\record\\beginrequest::getpaddinglength' => 
-  array (
-    -1 => 'int',
-  ),
-  'swoole\\fastcgi\\record\\beginrequest::getrequestid' => 
-  array (
-    -1 => 'int',
-  ),
-  'swoole\\fastcgi\\record\\beginrequest::getrole' => 
-  array (
-    -1 => 'int',
-  ),
-  'swoole\\fastcgi\\record\\beginrequest::gettype' => 
-  array (
-    -1 => 'int',
-  ),
-  'swoole\\fastcgi\\record\\beginrequest::getversion' => 
-  array (
-    -1 => 'int',
-  ),
-  'swoole\\fastcgi\\record\\beginrequest::packpayload' => 
-  array (
-    -1 => 'string',
-  ),
-  'swoole\\fastcgi\\record\\beginrequest::setcontentdata' => 
-  array (
-    -1 => 'Swoole\\FastCGI\\Record',
-    'data' => 'string',
-  ),
-  'swoole\\fastcgi\\record\\beginrequest::setrequestid' => 
-  array (
-    -1 => 'Swoole\\FastCGI\\Record',
-    'requestId' => 'int',
-  ),
-  'swoole\\fastcgi\\record\\beginrequest::unpack' => 
-  array (
-    -1 => 'static',
-    'binaryData' => 'string',
-  ),
-  'swoole\\fastcgi\\record\\beginrequest::unpackpayload' => 
-  array (
-    -1 => 'void',
-    'self' => 'Swoole\\FastCGI\\Record',
-    'binaryData' => 'string',
-  ),
-  'swoole\\fastcgi\\record\\data::__construct' => 
-  array (
-    0 => 'void',
-    'contentData' => 'string',
-    -2 => 'none',
-  ),
-  'swoole\\fastcgi\\record\\data::__tostring' => 
-  array (
-    -1 => 'string',
-  ),
-  'swoole\\fastcgi\\record\\data::getcontentdata' => 
-  array (
-    -1 => 'string',
-  ),
-  'swoole\\fastcgi\\record\\data::getcontentlength' => 
-  array (
-    -1 => 'int',
-  ),
-  'swoole\\fastcgi\\record\\data::getpaddinglength' => 
-  array (
-    -1 => 'int',
-  ),
-  'swoole\\fastcgi\\record\\data::getrequestid' => 
-  array (
-    -1 => 'int',
-  ),
-  'swoole\\fastcgi\\record\\data::gettype' => 
-  array (
-    -1 => 'int',
-  ),
-  'swoole\\fastcgi\\record\\data::getversion' => 
-  array (
-    -1 => 'int',
-  ),
-  'swoole\\fastcgi\\record\\data::packpayload' => 
-  array (
-    -1 => 'string',
-  ),
-  'swoole\\fastcgi\\record\\data::setcontentdata' => 
-  array (
-    -1 => 'Swoole\\FastCGI\\Record',
-    'data' => 'string',
-  ),
-  'swoole\\fastcgi\\record\\data::setrequestid' => 
-  array (
-    -1 => 'Swoole\\FastCGI\\Record',
-    'requestId' => 'int',
-  ),
-  'swoole\\fastcgi\\record\\data::unpack' => 
-  array (
-    -1 => 'static',
-    'binaryData' => 'string',
-  ),
-  'swoole\\fastcgi\\record\\data::unpackpayload' => 
-  array (
-    -1 => 'void',
-    'self' => 'Swoole\\FastCGI\\Record',
-    'binaryData' => 'string',
-  ),
-  'swoole\\fastcgi\\record\\endrequest::__construct' => 
-  array (
-    0 => 'void',
-    'protocolStatus=' => 'int',
-    'appStatus=' => 'int',
-    'reserved=' => 'string',
-    -2 => 'none',
-  ),
-  'swoole\\fastcgi\\record\\endrequest::__tostring' => 
-  array (
-    -1 => 'string',
-  ),
-  'swoole\\fastcgi\\record\\endrequest::getappstatus' => 
-  array (
-    -1 => 'int',
-  ),
-  'swoole\\fastcgi\\record\\endrequest::getcontentdata' => 
-  array (
-    -1 => 'string',
-  ),
-  'swoole\\fastcgi\\record\\endrequest::getcontentlength' => 
-  array (
-    -1 => 'int',
-  ),
-  'swoole\\fastcgi\\record\\endrequest::getpaddinglength' => 
-  array (
-    -1 => 'int',
-  ),
-  'swoole\\fastcgi\\record\\endrequest::getprotocolstatus' => 
-  array (
-    -1 => 'int',
-  ),
-  'swoole\\fastcgi\\record\\endrequest::getrequestid' => 
-  array (
-    -1 => 'int',
-  ),
-  'swoole\\fastcgi\\record\\endrequest::gettype' => 
-  array (
-    -1 => 'int',
-  ),
-  'swoole\\fastcgi\\record\\endrequest::getversion' => 
-  array (
-    -1 => 'int',
-  ),
-  'swoole\\fastcgi\\record\\endrequest::packpayload' => 
-  array (
-    -1 => 'string',
-  ),
-  'swoole\\fastcgi\\record\\endrequest::setcontentdata' => 
-  array (
-    -1 => 'Swoole\\FastCGI\\Record',
-    'data' => 'string',
-  ),
-  'swoole\\fastcgi\\record\\endrequest::setrequestid' => 
-  array (
-    -1 => 'Swoole\\FastCGI\\Record',
-    'requestId' => 'int',
-  ),
-  'swoole\\fastcgi\\record\\endrequest::unpack' => 
-  array (
-    -1 => 'static',
-    'binaryData' => 'string',
-  ),
-  'swoole\\fastcgi\\record\\endrequest::unpackpayload' => 
-  array (
-    -1 => 'void',
-    'self' => 'Swoole\\FastCGI\\Record',
-    'binaryData' => 'string',
-  ),
-  'swoole\\fastcgi\\record\\getvalues::__construct' => 
-  array (
-    0 => 'void',
-    'keys' => 'array<array-key, mixed>',
-    -2 => 'none',
-  ),
-  'swoole\\fastcgi\\record\\getvalues::__tostring' => 
-  array (
-    -1 => 'string',
-  ),
-  'swoole\\fastcgi\\record\\getvalues::getcontentdata' => 
-  array (
-    -1 => 'string',
-  ),
-  'swoole\\fastcgi\\record\\getvalues::getcontentlength' => 
-  array (
-    -1 => 'int',
-  ),
-  'swoole\\fastcgi\\record\\getvalues::getpaddinglength' => 
-  array (
-    -1 => 'int',
-  ),
-  'swoole\\fastcgi\\record\\getvalues::getrequestid' => 
-  array (
-    -1 => 'int',
-  ),
-  'swoole\\fastcgi\\record\\getvalues::gettype' => 
-  array (
-    -1 => 'int',
-  ),
-  'swoole\\fastcgi\\record\\getvalues::getvalues' => 
-  array (
-    -1 => 'array<array-key, mixed>',
-  ),
-  'swoole\\fastcgi\\record\\getvalues::getversion' => 
-  array (
-    -1 => 'int',
-  ),
-  'swoole\\fastcgi\\record\\getvalues::packpayload' => 
-  array (
-    -1 => 'string',
-  ),
-  'swoole\\fastcgi\\record\\getvalues::setcontentdata' => 
-  array (
-    -1 => 'Swoole\\FastCGI\\Record',
-    'data' => 'string',
-  ),
-  'swoole\\fastcgi\\record\\getvalues::setrequestid' => 
-  array (
-    -1 => 'Swoole\\FastCGI\\Record',
-    'requestId' => 'int',
-  ),
-  'swoole\\fastcgi\\record\\getvalues::unpack' => 
-  array (
-    -1 => 'static',
-    'binaryData' => 'string',
-  ),
-  'swoole\\fastcgi\\record\\getvalues::unpackpayload' => 
-  array (
-    -1 => 'void',
-    'self' => 'Swoole\\FastCGI\\Record',
-    'binaryData' => 'string',
-  ),
-  'swoole\\fastcgi\\record\\getvaluesresult::__construct' => 
-  array (
-    0 => 'void',
-    'values' => 'array<array-key, mixed>',
-    -2 => 'none',
-  ),
-  'swoole\\fastcgi\\record\\getvaluesresult::__tostring' => 
-  array (
-    -1 => 'string',
-  ),
-  'swoole\\fastcgi\\record\\getvaluesresult::getcontentdata' => 
-  array (
-    -1 => 'string',
-  ),
-  'swoole\\fastcgi\\record\\getvaluesresult::getcontentlength' => 
-  array (
-    -1 => 'int',
-  ),
-  'swoole\\fastcgi\\record\\getvaluesresult::getpaddinglength' => 
-  array (
-    -1 => 'int',
-  ),
-  'swoole\\fastcgi\\record\\getvaluesresult::getrequestid' => 
-  array (
-    -1 => 'int',
-  ),
-  'swoole\\fastcgi\\record\\getvaluesresult::gettype' => 
-  array (
-    -1 => 'int',
-  ),
-  'swoole\\fastcgi\\record\\getvaluesresult::getvalues' => 
-  array (
-    -1 => 'array<array-key, mixed>',
-  ),
-  'swoole\\fastcgi\\record\\getvaluesresult::getversion' => 
-  array (
-    -1 => 'int',
-  ),
-  'swoole\\fastcgi\\record\\getvaluesresult::packpayload' => 
-  array (
-    -1 => 'string',
-  ),
-  'swoole\\fastcgi\\record\\getvaluesresult::setcontentdata' => 
-  array (
-    -1 => 'Swoole\\FastCGI\\Record',
-    'data' => 'string',
-  ),
-  'swoole\\fastcgi\\record\\getvaluesresult::setrequestid' => 
-  array (
-    -1 => 'Swoole\\FastCGI\\Record',
-    'requestId' => 'int',
-  ),
-  'swoole\\fastcgi\\record\\getvaluesresult::unpack' => 
-  array (
-    -1 => 'static',
-    'binaryData' => 'string',
-  ),
-  'swoole\\fastcgi\\record\\getvaluesresult::unpackpayload' => 
-  array (
-    -1 => 'void',
-    'self' => 'Swoole\\FastCGI\\Record',
-    'binaryData' => 'string',
-  ),
-  'swoole\\fastcgi\\record\\params::__construct' => 
-  array (
-    0 => 'void',
-    'values' => 'array<array-key, mixed>',
-    -2 => 'none',
-  ),
-  'swoole\\fastcgi\\record\\params::__tostring' => 
-  array (
-    -1 => 'string',
-  ),
-  'swoole\\fastcgi\\record\\params::getcontentdata' => 
-  array (
-    -1 => 'string',
-  ),
-  'swoole\\fastcgi\\record\\params::getcontentlength' => 
-  array (
-    -1 => 'int',
-  ),
-  'swoole\\fastcgi\\record\\params::getpaddinglength' => 
-  array (
-    -1 => 'int',
-  ),
-  'swoole\\fastcgi\\record\\params::getrequestid' => 
-  array (
-    -1 => 'int',
-  ),
-  'swoole\\fastcgi\\record\\params::gettype' => 
-  array (
-    -1 => 'int',
-  ),
-  'swoole\\fastcgi\\record\\params::getvalues' => 
-  array (
-    -1 => 'array<array-key, mixed>',
-  ),
-  'swoole\\fastcgi\\record\\params::getversion' => 
-  array (
-    -1 => 'int',
-  ),
-  'swoole\\fastcgi\\record\\params::packpayload' => 
-  array (
-    -1 => 'string',
-  ),
-  'swoole\\fastcgi\\record\\params::setcontentdata' => 
-  array (
-    -1 => 'Swoole\\FastCGI\\Record',
-    'data' => 'string',
-  ),
-  'swoole\\fastcgi\\record\\params::setrequestid' => 
-  array (
-    -1 => 'Swoole\\FastCGI\\Record',
-    'requestId' => 'int',
-  ),
-  'swoole\\fastcgi\\record\\params::unpack' => 
-  array (
-    -1 => 'static',
-    'binaryData' => 'string',
-  ),
-  'swoole\\fastcgi\\record\\params::unpacklength' => 
-  array (
-    -1 => 'int',
-    'binaryData' => 'string',
-    'contentLength' => 'int',
-    '&offset' => 'int',
-  ),
-  'swoole\\fastcgi\\record\\params::unpackpayload' => 
-  array (
-    -1 => 'void',
-    'self' => 'Swoole\\FastCGI\\Record',
-    'binaryData' => 'string',
-  ),
-  'swoole\\fastcgi\\record\\stderr::__construct' => 
-  array (
-    0 => 'void',
-    'contentData' => 'string',
-    -2 => 'none',
-  ),
-  'swoole\\fastcgi\\record\\stderr::__tostring' => 
-  array (
-    -1 => 'string',
-  ),
-  'swoole\\fastcgi\\record\\stderr::getcontentdata' => 
-  array (
-    -1 => 'string',
-  ),
-  'swoole\\fastcgi\\record\\stderr::getcontentlength' => 
-  array (
-    -1 => 'int',
-  ),
-  'swoole\\fastcgi\\record\\stderr::getpaddinglength' => 
-  array (
-    -1 => 'int',
-  ),
-  'swoole\\fastcgi\\record\\stderr::getrequestid' => 
-  array (
-    -1 => 'int',
-  ),
-  'swoole\\fastcgi\\record\\stderr::gettype' => 
-  array (
-    -1 => 'int',
-  ),
-  'swoole\\fastcgi\\record\\stderr::getversion' => 
-  array (
-    -1 => 'int',
-  ),
-  'swoole\\fastcgi\\record\\stderr::packpayload' => 
-  array (
-    -1 => 'string',
-  ),
-  'swoole\\fastcgi\\record\\stderr::setcontentdata' => 
-  array (
-    -1 => 'Swoole\\FastCGI\\Record',
-    'data' => 'string',
-  ),
-  'swoole\\fastcgi\\record\\stderr::setrequestid' => 
-  array (
-    -1 => 'Swoole\\FastCGI\\Record',
-    'requestId' => 'int',
-  ),
-  'swoole\\fastcgi\\record\\stderr::unpack' => 
-  array (
-    -1 => 'static',
-    'binaryData' => 'string',
-  ),
-  'swoole\\fastcgi\\record\\stderr::unpackpayload' => 
-  array (
-    -1 => 'void',
-    'self' => 'Swoole\\FastCGI\\Record',
-    'binaryData' => 'string',
-  ),
-  'swoole\\fastcgi\\record\\stdin::__construct' => 
-  array (
-    0 => 'void',
-    'contentData' => 'string',
-    -2 => 'none',
-  ),
-  'swoole\\fastcgi\\record\\stdin::__tostring' => 
-  array (
-    -1 => 'string',
-  ),
-  'swoole\\fastcgi\\record\\stdin::getcontentdata' => 
-  array (
-    -1 => 'string',
-  ),
-  'swoole\\fastcgi\\record\\stdin::getcontentlength' => 
-  array (
-    -1 => 'int',
-  ),
-  'swoole\\fastcgi\\record\\stdin::getpaddinglength' => 
-  array (
-    -1 => 'int',
-  ),
-  'swoole\\fastcgi\\record\\stdin::getrequestid' => 
-  array (
-    -1 => 'int',
-  ),
-  'swoole\\fastcgi\\record\\stdin::gettype' => 
-  array (
-    -1 => 'int',
-  ),
-  'swoole\\fastcgi\\record\\stdin::getversion' => 
-  array (
-    -1 => 'int',
-  ),
-  'swoole\\fastcgi\\record\\stdin::packpayload' => 
-  array (
-    -1 => 'string',
-  ),
-  'swoole\\fastcgi\\record\\stdin::setcontentdata' => 
-  array (
-    -1 => 'Swoole\\FastCGI\\Record',
-    'data' => 'string',
-  ),
-  'swoole\\fastcgi\\record\\stdin::setrequestid' => 
-  array (
-    -1 => 'Swoole\\FastCGI\\Record',
-    'requestId' => 'int',
-  ),
-  'swoole\\fastcgi\\record\\stdin::unpack' => 
-  array (
-    -1 => 'static',
-    'binaryData' => 'string',
-  ),
-  'swoole\\fastcgi\\record\\stdin::unpackpayload' => 
-  array (
-    -1 => 'void',
-    'self' => 'Swoole\\FastCGI\\Record',
-    'binaryData' => 'string',
-  ),
-  'swoole\\fastcgi\\record\\stdout::__construct' => 
-  array (
-    0 => 'void',
-    'contentData' => 'string',
-    -2 => 'none',
-  ),
-  'swoole\\fastcgi\\record\\stdout::__tostring' => 
-  array (
-    -1 => 'string',
-  ),
-  'swoole\\fastcgi\\record\\stdout::getcontentdata' => 
-  array (
-    -1 => 'string',
-  ),
-  'swoole\\fastcgi\\record\\stdout::getcontentlength' => 
-  array (
-    -1 => 'int',
-  ),
-  'swoole\\fastcgi\\record\\stdout::getpaddinglength' => 
-  array (
-    -1 => 'int',
-  ),
-  'swoole\\fastcgi\\record\\stdout::getrequestid' => 
-  array (
-    -1 => 'int',
-  ),
-  'swoole\\fastcgi\\record\\stdout::gettype' => 
-  array (
-    -1 => 'int',
-  ),
-  'swoole\\fastcgi\\record\\stdout::getversion' => 
-  array (
-    -1 => 'int',
-  ),
-  'swoole\\fastcgi\\record\\stdout::packpayload' => 
-  array (
-    -1 => 'string',
-  ),
-  'swoole\\fastcgi\\record\\stdout::setcontentdata' => 
-  array (
-    -1 => 'Swoole\\FastCGI\\Record',
-    'data' => 'string',
-  ),
-  'swoole\\fastcgi\\record\\stdout::setrequestid' => 
-  array (
-    -1 => 'Swoole\\FastCGI\\Record',
-    'requestId' => 'int',
-  ),
-  'swoole\\fastcgi\\record\\stdout::unpack' => 
-  array (
-    -1 => 'static',
-    'binaryData' => 'string',
-  ),
-  'swoole\\fastcgi\\record\\stdout::unpackpayload' => 
-  array (
-    -1 => 'void',
-    'self' => 'Swoole\\FastCGI\\Record',
-    'binaryData' => 'string',
-  ),
-  'swoole\\fastcgi\\record\\unknowntype::__construct' => 
-  array (
-    0 => 'void',
-    'type' => 'int',
-    'reserved=' => 'string',
-    -2 => 'none',
-  ),
-  'swoole\\fastcgi\\record\\unknowntype::__tostring' => 
-  array (
-    -1 => 'string',
-  ),
-  'swoole\\fastcgi\\record\\unknowntype::getcontentdata' => 
-  array (
-    -1 => 'string',
-  ),
-  'swoole\\fastcgi\\record\\unknowntype::getcontentlength' => 
-  array (
-    -1 => 'int',
-  ),
-  'swoole\\fastcgi\\record\\unknowntype::getpaddinglength' => 
-  array (
-    -1 => 'int',
-  ),
-  'swoole\\fastcgi\\record\\unknowntype::getrequestid' => 
-  array (
-    -1 => 'int',
-  ),
-  'swoole\\fastcgi\\record\\unknowntype::gettype' => 
-  array (
-    -1 => 'int',
-  ),
-  'swoole\\fastcgi\\record\\unknowntype::getunrecognizedtype' => 
-  array (
-    -1 => 'int',
-  ),
-  'swoole\\fastcgi\\record\\unknowntype::getversion' => 
-  array (
-    -1 => 'int',
-  ),
-  'swoole\\fastcgi\\record\\unknowntype::packpayload' => 
-  array (
-    -1 => 'string',
-  ),
-  'swoole\\fastcgi\\record\\unknowntype::setcontentdata' => 
-  array (
-    -1 => 'Swoole\\FastCGI\\Record',
-    'data' => 'string',
-  ),
-  'swoole\\fastcgi\\record\\unknowntype::setrequestid' => 
-  array (
-    -1 => 'Swoole\\FastCGI\\Record',
-    'requestId' => 'int',
-  ),
-  'swoole\\fastcgi\\record\\unknowntype::unpack' => 
-  array (
-    -1 => 'static',
-    'binaryData' => 'string',
-  ),
-  'swoole\\fastcgi\\record\\unknowntype::unpackpayload' => 
-  array (
-    -1 => 'void',
-    'self' => 'Swoole\\FastCGI\\Record',
-    'binaryData' => 'string',
-  ),
-  'swoole\\fastcgi\\request::__tostring' => 
-  array (
-    -1 => 'string',
-  ),
-  'swoole\\fastcgi\\request::getbody' => 
-  array (
-    -1 => 'string',
-  ),
-  'swoole\\fastcgi\\request::geterror' => 
-  array (
-    -1 => 'string',
-  ),
-  'swoole\\fastcgi\\request::getkeepconn' => 
-  array (
-    -1 => 'bool',
-  ),
-  'swoole\\fastcgi\\request::getparam' => 
-  array (
-    -1 => 'null|string',
-    'name' => 'string',
-  ),
-  'swoole\\fastcgi\\request::getparams' => 
-  array (
-    -1 => 'array<array-key, mixed>',
-  ),
-  'swoole\\fastcgi\\request::withaddedparams' => 
-  array (
-    -1 => 'static',
-    'params' => 'array<array-key, mixed>',
-  ),
-  'swoole\\fastcgi\\request::withbody' => 
-  array (
-    -1 => 'Swoole\\FastCGI\\Message',
-    'body' => 'Stringable|string',
-  ),
-  'swoole\\fastcgi\\request::witherror' => 
-  array (
-    -1 => 'static',
-    'error' => 'string',
-  ),
-  'swoole\\fastcgi\\request::withkeepconn' => 
-  array (
-    -1 => 'Swoole\\FastCGI\\Request',
-    'keepConn' => 'bool',
-  ),
-  'swoole\\fastcgi\\request::withoutparam' => 
-  array (
-    -1 => 'static',
-    'name' => 'string',
-  ),
-  'swoole\\fastcgi\\request::withparam' => 
-  array (
-    -1 => 'static',
-    'name' => 'string',
-    'value' => 'string',
-  ),
-  'swoole\\fastcgi\\request::withparams' => 
-  array (
-    -1 => 'static',
-    'params' => 'array<array-key, mixed>',
-  ),
-  'swoole\\fastcgi\\response::__construct' => 
-  array (
-    0 => 'void',
-    'records' => 'array<array-key, mixed>',
-    -2 => 'none',
-  ),
-  'swoole\\fastcgi\\response::getbody' => 
-  array (
-    -1 => 'string',
-  ),
-  'swoole\\fastcgi\\response::geterror' => 
-  array (
-    -1 => 'string',
-  ),
-  'swoole\\fastcgi\\response::getparam' => 
-  array (
-    -1 => 'null|string',
-    'name' => 'string',
-  ),
-  'swoole\\fastcgi\\response::getparams' => 
-  array (
-    -1 => 'array<array-key, mixed>',
-  ),
-  'swoole\\fastcgi\\response::verify' => 
-  array (
-    -1 => 'bool',
-    'records' => 'array<array-key, mixed>',
-  ),
-  'swoole\\fastcgi\\response::withaddedparams' => 
-  array (
-    -1 => 'static',
-    'params' => 'array<array-key, mixed>',
-  ),
-  'swoole\\fastcgi\\response::withbody' => 
-  array (
-    -1 => 'Swoole\\FastCGI\\Message',
-    'body' => 'Stringable|string',
-  ),
-  'swoole\\fastcgi\\response::witherror' => 
-  array (
-    -1 => 'static',
-    'error' => 'string',
-  ),
-  'swoole\\fastcgi\\response::withoutparam' => 
-  array (
-    -1 => 'static',
-    'name' => 'string',
-  ),
-  'swoole\\fastcgi\\response::withparam' => 
-  array (
-    -1 => 'static',
-    'name' => 'string',
-    'value' => 'string',
-  ),
-  'swoole\\fastcgi\\response::withparams' => 
-  array (
-    -1 => 'static',
-    'params' => 'array<array-key, mixed>',
   ),
   'swoole\\http\\client::__destruct' => 
   array (
@@ -100810,9 +99394,27 @@ return array (
   'swoole\\http\\response::sendfile' => 
   array (
     -1 => 'bool',
-    'filename' => 'string',
+    'filename' => 'Swoole\\SendFile|string',
     'offset=' => 'int',
     'length=' => 'int',
+    'delete_file=' => 'bool',
+  ),
+  'swoole\\http\\response::sendhttp2file' => 
+  array (
+    -1 => 'void',
+    'file' => 'string',
+    'offset' => 'int',
+    'length' => 'int',
+  ),
+  'swoole\\http\\response::sendhttp2response' => 
+  array (
+    -1 => 'void',
+    'content' => 'string',
+  ),
+  'swoole\\http\\response::sendstaticfile' => 
+  array (
+    -1 => 'void',
+    'request' => 'Swoole\\Http\\Request',
   ),
   'swoole\\http\\response::setcookie' => 
   array (
@@ -101057,9 +99659,10 @@ return array (
   array (
     -1 => 'bool',
     'conn_fd' => 'int',
-    'filename' => 'string',
+    'filename' => 'Swoole\\SendFile|string',
     'offset=' => 'int',
     'length=' => 'int',
+    'delete_file=' => 'bool',
   ),
   'swoole\\http\\server::sendmessage' => 
   array (
@@ -101336,7 +99939,7 @@ return array (
   ),
   'swoole\\multibytestringobject::ltrim' => 
   array (
-    -1 => 'Swoole\\StringObject',
+    -1 => 'static',
   ),
   'swoole\\multibytestringobject::pos' => 
   array (
@@ -101370,7 +99973,7 @@ return array (
   ),
   'swoole\\multibytestringobject::rtrim' => 
   array (
-    -1 => 'Swoole\\StringObject',
+    -1 => 'static',
   ),
   'swoole\\multibytestringobject::split' => 
   array (
@@ -101433,11 +100036,16 @@ return array (
     'sql' => 'string',
     'callback' => 'callable[impure]',
   ),
+  'swoole\\nameresolver::__clone' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+  ),
   'swoole\\nameresolver::__construct' => 
   array (
     0 => 'void',
-    'url' => 'mixed',
-    'prefix=' => 'mixed',
+    'url' => 'string',
+    'prefix=' => 'string',
     -2 => 'none',
   ),
   'swoole\\nameresolver::checkresponse' => 
@@ -101447,9 +100055,18 @@ return array (
   ),
   'swoole\\nameresolver::checkserverurl' => 
   array (
-    0 => 'mixed',
+    -1 => 'void',
     'url' => 'string',
-    -2 => 'none',
+  ),
+  'swoole\\nameresolver::clearcache' => 
+  array (
+    -1 => 'void',
+    'name=' => 'null|string',
+  ),
+  'swoole\\nameresolver::decoderesponse' => 
+  array (
+    -1 => 'array<array-key, mixed>|stdClass',
+    'response' => 'Swoole\\Coroutine\\Http\\ClientProxy',
   ),
   'swoole\\nameresolver::getcluster' => 
   array (
@@ -101458,12 +100075,24 @@ return array (
   ),
   'swoole\\nameresolver::getfilter' => 
   array (
-    0 => 'mixed',
-    -2 => 'none',
+    -1 => 'callable[impure]|null',
+  ),
+  'swoole\\nameresolver::getserverip' => 
+  array (
+    -1 => 'string',
   ),
   'swoole\\nameresolver::hasfilter' => 
   array (
     -1 => 'bool',
+  ),
+  'swoole\\nameresolver::heartbeat' => 
+  array (
+    0 => 'mixed',
+    'name' => 'string',
+    'ip' => 'string',
+    'port' => 'int',
+    'options=' => 'array<array-key, mixed>',
+    -2 => 'none',
   ),
   'swoole\\nameresolver::join' => 
   array (
@@ -101486,23 +100115,109 @@ return array (
     'name' => 'string',
     -2 => 'none',
   ),
+  'swoole\\nameresolver::notifywaiters' => 
+  array (
+    -1 => 'void',
+    'key' => 'string',
+    'cluster' => 'Swoole\\NameResolver\\Cluster|null',
+    'error' => 'Throwable|null',
+  ),
+  'swoole\\nameresolver::prepareregistrationoptions' => 
+  array (
+    -1 => 'array<array-key, mixed>',
+    'name' => 'string',
+    'ip' => 'string',
+    'port' => 'int',
+    'options' => 'array<array-key, mixed>',
+    'interval' => 'float',
+  ),
+  'swoole\\nameresolver::register' => 
+  array (
+    -1 => 'Swoole\\NameResolver\\Registration',
+    'name' => 'string',
+    'ip' => 'string',
+    'port' => 'int',
+    'options=' => 'array<array-key, mixed>',
+    'interval=' => 'float',
+  ),
+  'swoole\\nameresolver::request' => 
+  array (
+    -1 => 'Swoole\\Coroutine\\Http\\ClientProxy',
+    'method' => 'string',
+    'path' => 'string',
+    'body=' => 'mixed',
+    'query=' => 'array<array-key, mixed>',
+    'headers=' => 'array<array-key, mixed>',
+  ),
+  'swoole\\nameresolver::requestblocking' => 
+  array (
+    -1 => 'Swoole\\Coroutine\\Http\\ClientProxy',
+    'method' => 'string',
+    'path' => 'string',
+    'body' => 'mixed',
+    'query' => 'array<array-key, mixed>',
+    'headers' => 'array<array-key, mixed>',
+  ),
+  'swoole\\nameresolver::resolvecluster' => 
+  array (
+    -1 => 'Swoole\\NameResolver\\Cluster|null',
+    'name' => 'string',
+  ),
+  'swoole\\nameresolver::validatename' => 
+  array (
+    -1 => 'void',
+    'name' => 'string',
+  ),
+  'swoole\\nameresolver::validatenode' => 
+  array (
+    -1 => 'void',
+    'name' => 'string',
+    'ip' => 'string',
+    'port' => 'int',
+    'weight=' => 'float|int',
+  ),
+  'swoole\\nameresolver::withcache' => 
+  array (
+    -1 => 'Swoole\\NameResolver',
+    'ttl' => 'float',
+    'capacity=' => 'int',
+    'negativeTtl=' => 'float',
+  ),
   'swoole\\nameresolver::withfilter' => 
   array (
     -1 => 'Swoole\\NameResolver',
     'fn' => 'callable[impure]',
+  ),
+  'swoole\\nameresolver::withhttpoptions' => 
+  array (
+    -1 => 'Swoole\\NameResolver',
+    'options' => 'array<array-key, mixed>',
+  ),
+  'swoole\\nameresolver::withtimeout' => 
+  array (
+    -1 => 'Swoole\\NameResolver',
+    'seconds' => 'float',
   ),
   'swoole\\nameresolver\\cluster::add' => 
   array (
     -1 => 'void',
     'host' => 'string',
     'port' => 'int',
-    'weight=' => 'int',
+    'weight=' => 'float|int',
   ),
   'swoole\\nameresolver\\cluster::count' => 
   array (
     -1 => 'int',
   ),
+  'swoole\\nameresolver\\cluster::getnodes' => 
+  array (
+    -1 => 'array<array-key, mixed>',
+  ),
   'swoole\\nameresolver\\cluster::pop' => 
+  array (
+    -1 => 'array<array-key, mixed>|false',
+  ),
+  'swoole\\nameresolver\\consul::__clone' => 
   array (
     0 => 'mixed',
     -2 => 'none',
@@ -101510,8 +100225,8 @@ return array (
   'swoole\\nameresolver\\consul::__construct' => 
   array (
     0 => 'void',
-    'url' => 'mixed',
-    'prefix=' => 'mixed',
+    'url' => 'string',
+    'prefix=' => 'string',
     -2 => 'none',
   ),
   'swoole\\nameresolver\\consul::checkresponse' => 
@@ -101521,9 +100236,26 @@ return array (
   ),
   'swoole\\nameresolver\\consul::checkserverurl' => 
   array (
-    0 => 'mixed',
+    -1 => 'void',
     'url' => 'string',
-    -2 => 'none',
+  ),
+  'swoole\\nameresolver\\consul::clearcache' => 
+  array (
+    -1 => 'void',
+    'name=' => 'null|string',
+  ),
+  'swoole\\nameresolver\\consul::consulrequest' => 
+  array (
+    -1 => 'Swoole\\Coroutine\\Http\\ClientProxy',
+    'method' => 'string',
+    'path' => 'string',
+    'body=' => 'mixed',
+    'query=' => 'array<array-key, mixed>',
+  ),
+  'swoole\\nameresolver\\consul::decoderesponse' => 
+  array (
+    -1 => 'array<array-key, mixed>|stdClass',
+    'response' => 'Swoole\\Coroutine\\Http\\ClientProxy',
   ),
   'swoole\\nameresolver\\consul::enablemaintenancemode' => 
   array (
@@ -101531,6 +100263,8 @@ return array (
     'name' => 'string',
     'ip' => 'string',
     'port' => 'int',
+    'enable=' => 'bool',
+    'reason=' => 'string',
   ),
   'swoole\\nameresolver\\consul::getcluster' => 
   array (
@@ -101539,8 +100273,11 @@ return array (
   ),
   'swoole\\nameresolver\\consul::getfilter' => 
   array (
-    0 => 'mixed',
-    -2 => 'none',
+    -1 => 'callable[impure]|null',
+  ),
+  'swoole\\nameresolver\\consul::getserverip' => 
+  array (
+    -1 => 'string',
   ),
   'swoole\\nameresolver\\consul::getserviceid' => 
   array (
@@ -101552,6 +100289,14 @@ return array (
   'swoole\\nameresolver\\consul::hasfilter' => 
   array (
     -1 => 'bool',
+  ),
+  'swoole\\nameresolver\\consul::heartbeat' => 
+  array (
+    -1 => 'bool',
+    'name' => 'string',
+    'ip' => 'string',
+    'port' => 'int',
+    'options=' => 'array<array-key, mixed>',
   ),
   'swoole\\nameresolver\\consul::join' => 
   array (
@@ -101574,10 +100319,89 @@ return array (
     'name' => 'string',
     -2 => 'none',
   ),
+  'swoole\\nameresolver\\consul::prepareregistrationoptions' => 
+  array (
+    -1 => 'array<array-key, mixed>',
+    'name' => 'string',
+    'ip' => 'string',
+    'port' => 'int',
+    'options' => 'array<array-key, mixed>',
+    'interval' => 'float',
+  ),
+  'swoole\\nameresolver\\consul::register' => 
+  array (
+    -1 => 'Swoole\\NameResolver\\Registration',
+    'name' => 'string',
+    'ip' => 'string',
+    'port' => 'int',
+    'options=' => 'array<array-key, mixed>',
+    'interval=' => 'float',
+  ),
+  'swoole\\nameresolver\\consul::request' => 
+  array (
+    -1 => 'Swoole\\Coroutine\\Http\\ClientProxy',
+    'method' => 'string',
+    'path' => 'string',
+    'body=' => 'mixed',
+    'query=' => 'array<array-key, mixed>',
+    'headers=' => 'array<array-key, mixed>',
+  ),
+  'swoole\\nameresolver\\consul::updatehealth' => 
+  array (
+    -1 => 'bool',
+    'checkId' => 'string',
+    'status' => 'string',
+    'output=' => 'string',
+  ),
+  'swoole\\nameresolver\\consul::validatename' => 
+  array (
+    -1 => 'void',
+    'name' => 'string',
+  ),
+  'swoole\\nameresolver\\consul::validatenode' => 
+  array (
+    -1 => 'void',
+    'name' => 'string',
+    'ip' => 'string',
+    'port' => 'int',
+    'weight=' => 'float|int',
+  ),
+  'swoole\\nameresolver\\consul::withcache' => 
+  array (
+    -1 => 'Swoole\\NameResolver',
+    'ttl' => 'float',
+    'capacity=' => 'int',
+    'negativeTtl=' => 'float',
+  ),
+  'swoole\\nameresolver\\consul::withdatacenter' => 
+  array (
+    -1 => 'Swoole\\NameResolver\\Consul',
+    'datacenter' => 'string',
+  ),
   'swoole\\nameresolver\\consul::withfilter' => 
   array (
     -1 => 'Swoole\\NameResolver',
     'fn' => 'callable[impure]',
+  ),
+  'swoole\\nameresolver\\consul::withhttpoptions' => 
+  array (
+    -1 => 'Swoole\\NameResolver',
+    'options' => 'array<array-key, mixed>',
+  ),
+  'swoole\\nameresolver\\consul::withnamespace' => 
+  array (
+    -1 => 'Swoole\\NameResolver\\Consul',
+    'namespace' => 'string',
+  ),
+  'swoole\\nameresolver\\consul::withtimeout' => 
+  array (
+    -1 => 'Swoole\\NameResolver',
+    'seconds' => 'float',
+  ),
+  'swoole\\nameresolver\\consul::withtoken' => 
+  array (
+    -1 => 'Swoole\\NameResolver\\Consul',
+    'token' => 'string',
   ),
   'swoole\\nameresolver\\context::__construct' => 
   array (
@@ -101632,12 +100456,22 @@ return array (
   array (
     -1 => 'string',
   ),
+  'swoole\\nameresolver\\nacos::__clone' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+  ),
   'swoole\\nameresolver\\nacos::__construct' => 
   array (
     0 => 'void',
-    'url' => 'mixed',
-    'prefix=' => 'mixed',
+    'url' => 'string',
+    'prefix=' => 'string',
     -2 => 'none',
+  ),
+  'swoole\\nameresolver\\nacos::checkmutation' => 
+  array (
+    -1 => 'void',
+    'response' => 'Swoole\\Coroutine\\Http\\ClientProxy',
   ),
   'swoole\\nameresolver\\nacos::checkresponse' => 
   array (
@@ -101646,9 +100480,18 @@ return array (
   ),
   'swoole\\nameresolver\\nacos::checkserverurl' => 
   array (
-    0 => 'mixed',
+    -1 => 'void',
     'url' => 'string',
-    -2 => 'none',
+  ),
+  'swoole\\nameresolver\\nacos::clearcache' => 
+  array (
+    -1 => 'void',
+    'name=' => 'null|string',
+  ),
+  'swoole\\nameresolver\\nacos::decoderesponse' => 
+  array (
+    -1 => 'array<array-key, mixed>|stdClass',
+    'response' => 'Swoole\\Coroutine\\Http\\ClientProxy',
   ),
   'swoole\\nameresolver\\nacos::getcluster' => 
   array (
@@ -101657,12 +100500,30 @@ return array (
   ),
   'swoole\\nameresolver\\nacos::getfilter' => 
   array (
-    0 => 'mixed',
-    -2 => 'none',
+    -1 => 'callable[impure]|null',
+  ),
+  'swoole\\nameresolver\\nacos::getserverip' => 
+  array (
+    -1 => 'string',
   ),
   'swoole\\nameresolver\\nacos::hasfilter' => 
   array (
     -1 => 'bool',
+  ),
+  'swoole\\nameresolver\\nacos::heartbeat' => 
+  array (
+    -1 => 'float',
+    'name' => 'string',
+    'ip' => 'string',
+    'port' => 'int',
+    'options=' => 'array<array-key, mixed>',
+  ),
+  'swoole\\nameresolver\\nacos::instance' => 
+  array (
+    -1 => 'array<array-key, mixed>',
+    'name' => 'string',
+    'ip' => 'string',
+    'port' => 'int',
   ),
   'swoole\\nameresolver\\nacos::join' => 
   array (
@@ -101685,16 +100546,110 @@ return array (
     'name' => 'string',
     -2 => 'none',
   ),
+  'swoole\\nameresolver\\nacos::nacosrequest' => 
+  array (
+    -1 => 'Swoole\\Coroutine\\Http\\ClientProxy',
+    'method' => 'string',
+    'path' => 'string',
+    'params' => 'array<array-key, mixed>',
+  ),
+  'swoole\\nameresolver\\nacos::prepareregistrationoptions' => 
+  array (
+    -1 => 'array<array-key, mixed>',
+    'name' => 'string',
+    'ip' => 'string',
+    'port' => 'int',
+    'options' => 'array<array-key, mixed>',
+    'interval' => 'float',
+  ),
+  'swoole\\nameresolver\\nacos::register' => 
+  array (
+    -1 => 'Swoole\\NameResolver\\Registration',
+    'name' => 'string',
+    'ip' => 'string',
+    'port' => 'int',
+    'options=' => 'array<array-key, mixed>',
+    'interval=' => 'float',
+  ),
+  'swoole\\nameresolver\\nacos::request' => 
+  array (
+    -1 => 'Swoole\\Coroutine\\Http\\ClientProxy',
+    'method' => 'string',
+    'path' => 'string',
+    'body=' => 'mixed',
+    'query=' => 'array<array-key, mixed>',
+    'headers=' => 'array<array-key, mixed>',
+  ),
+  'swoole\\nameresolver\\nacos::validatename' => 
+  array (
+    -1 => 'void',
+    'name' => 'string',
+  ),
+  'swoole\\nameresolver\\nacos::validatenode' => 
+  array (
+    -1 => 'void',
+    'name' => 'string',
+    'ip' => 'string',
+    'port' => 'int',
+    'weight=' => 'float|int',
+  ),
+  'swoole\\nameresolver\\nacos::withaccesstoken' => 
+  array (
+    -1 => 'Swoole\\NameResolver\\Nacos',
+    'token' => 'string',
+  ),
+  'swoole\\nameresolver\\nacos::withcache' => 
+  array (
+    -1 => 'Swoole\\NameResolver',
+    'ttl' => 'float',
+    'capacity=' => 'int',
+    'negativeTtl=' => 'float',
+  ),
+  'swoole\\nameresolver\\nacos::withcluster' => 
+  array (
+    -1 => 'Swoole\\NameResolver\\Nacos',
+    'cluster' => 'string',
+  ),
+  'swoole\\nameresolver\\nacos::withephemeral' => 
+  array (
+    -1 => 'Swoole\\NameResolver\\Nacos',
+    'ephemeral' => 'bool',
+  ),
   'swoole\\nameresolver\\nacos::withfilter' => 
   array (
     -1 => 'Swoole\\NameResolver',
     'fn' => 'callable[impure]',
   ),
+  'swoole\\nameresolver\\nacos::withgroup' => 
+  array (
+    -1 => 'Swoole\\NameResolver\\Nacos',
+    'group' => 'string',
+  ),
+  'swoole\\nameresolver\\nacos::withhttpoptions' => 
+  array (
+    -1 => 'Swoole\\NameResolver',
+    'options' => 'array<array-key, mixed>',
+  ),
+  'swoole\\nameresolver\\nacos::withnamespace' => 
+  array (
+    -1 => 'Swoole\\NameResolver\\Nacos',
+    'namespace' => 'string',
+  ),
+  'swoole\\nameresolver\\nacos::withtimeout' => 
+  array (
+    -1 => 'Swoole\\NameResolver',
+    'seconds' => 'float',
+  ),
+  'swoole\\nameresolver\\redis::__clone' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+  ),
   'swoole\\nameresolver\\redis::__construct' => 
   array (
     0 => 'void',
-    'url' => 'mixed',
-    'prefix=' => 'mixed',
+    'url' => 'string',
+    'prefix=' => 'string',
     -2 => 'none',
   ),
   'swoole\\nameresolver\\redis::checkresponse' => 
@@ -101704,14 +100659,29 @@ return array (
   ),
   'swoole\\nameresolver\\redis::checkserverurl' => 
   array (
-    0 => 'mixed',
+    -1 => 'void',
     'url' => 'string',
-    -2 => 'none',
+  ),
+  'swoole\\nameresolver\\redis::clearcache' => 
+  array (
+    -1 => 'void',
+    'name=' => 'null|string',
   ),
   'swoole\\nameresolver\\redis::connect' => 
   array (
-    0 => 'mixed',
-    -2 => 'none',
+    -1 => 'Redis',
+  ),
+  'swoole\\nameresolver\\redis::decoderesponse' => 
+  array (
+    -1 => 'array<array-key, mixed>|stdClass',
+    'response' => 'Swoole\\Coroutine\\Http\\ClientProxy',
+  ),
+  'swoole\\nameresolver\\redis::execute' => 
+  array (
+    -1 => 'mixed',
+    'script' => 'string',
+    'name' => 'string',
+    'arguments=' => 'array<array-key, mixed>',
   ),
   'swoole\\nameresolver\\redis::getcluster' => 
   array (
@@ -101720,12 +100690,23 @@ return array (
   ),
   'swoole\\nameresolver\\redis::getfilter' => 
   array (
-    0 => 'mixed',
-    -2 => 'none',
+    -1 => 'callable[impure]|null',
+  ),
+  'swoole\\nameresolver\\redis::getserverip' => 
+  array (
+    -1 => 'string',
   ),
   'swoole\\nameresolver\\redis::hasfilter' => 
   array (
     -1 => 'bool',
+  ),
+  'swoole\\nameresolver\\redis::heartbeat' => 
+  array (
+    -1 => 'bool',
+    'name' => 'string',
+    'ip' => 'string',
+    'port' => 'int',
+    'options=' => 'array<array-key, mixed>',
   ),
   'swoole\\nameresolver\\redis::join' => 
   array (
@@ -101748,10 +100729,203 @@ return array (
     'name' => 'string',
     -2 => 'none',
   ),
+  'swoole\\nameresolver\\redis::prepareregistrationoptions' => 
+  array (
+    -1 => 'array<array-key, mixed>',
+    'name' => 'string',
+    'ip' => 'string',
+    'port' => 'int',
+    'options' => 'array<array-key, mixed>',
+    'interval' => 'float',
+  ),
+  'swoole\\nameresolver\\redis::register' => 
+  array (
+    -1 => 'Swoole\\NameResolver\\Registration',
+    'name' => 'string',
+    'ip' => 'string',
+    'port' => 'int',
+    'options=' => 'array<array-key, mixed>',
+    'interval=' => 'float',
+  ),
+  'swoole\\nameresolver\\redis::request' => 
+  array (
+    -1 => 'Swoole\\Coroutine\\Http\\ClientProxy',
+    'method' => 'string',
+    'path' => 'string',
+    'body=' => 'mixed',
+    'query=' => 'array<array-key, mixed>',
+    'headers=' => 'array<array-key, mixed>',
+  ),
+  'swoole\\nameresolver\\redis::validatename' => 
+  array (
+    -1 => 'void',
+    'name' => 'string',
+  ),
+  'swoole\\nameresolver\\redis::validatenode' => 
+  array (
+    -1 => 'void',
+    'name' => 'string',
+    'ip' => 'string',
+    'port' => 'int',
+    'weight=' => 'float|int',
+  ),
+  'swoole\\nameresolver\\redis::withcache' => 
+  array (
+    -1 => 'Swoole\\NameResolver',
+    'ttl' => 'float',
+    'capacity=' => 'int',
+    'negativeTtl=' => 'float',
+  ),
   'swoole\\nameresolver\\redis::withfilter' => 
   array (
     -1 => 'Swoole\\NameResolver',
     'fn' => 'callable[impure]',
+  ),
+  'swoole\\nameresolver\\redis::withhttpoptions' => 
+  array (
+    -1 => 'Swoole\\NameResolver',
+    'options' => 'array<array-key, mixed>',
+  ),
+  'swoole\\nameresolver\\redis::withtimeout' => 
+  array (
+    -1 => 'Swoole\\NameResolver',
+    'seconds' => 'float',
+  ),
+  'swoole\\nameresolver\\redis::withtlsoptions' => 
+  array (
+    -1 => 'Swoole\\NameResolver\\Redis',
+    'options' => 'array<array-key, mixed>',
+  ),
+  'swoole\\nameresolver\\redis::withttl' => 
+  array (
+    -1 => 'Swoole\\NameResolver\\Redis',
+    'seconds' => 'float',
+  ),
+  'swoole\\nameresolver\\registration::__clone' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+  ),
+  'swoole\\nameresolver\\registration::__construct' => 
+  array (
+    0 => 'void',
+    'resolver' => 'Swoole\\NameResolver',
+    'name' => 'string',
+    'ip' => 'string',
+    'port' => 'int',
+    'options' => 'array<array-key, mixed>',
+    'interval' => 'float',
+    -2 => 'none',
+  ),
+  'swoole\\nameresolver\\registration::__serialize' => 
+  array (
+    -1 => 'array<array-key, mixed>',
+  ),
+  'swoole\\nameresolver\\registration::__unserialize' => 
+  array (
+    -1 => 'void',
+    'data' => 'array<array-key, mixed>',
+  ),
+  'swoole\\nameresolver\\registration::deregister' => 
+  array (
+    -1 => 'bool',
+  ),
+  'swoole\\nameresolver\\registration::getlasterror' => 
+  array (
+    -1 => 'Throwable|null',
+  ),
+  'swoole\\nameresolver\\registration::getlastheartbeat' => 
+  array (
+    -1 => 'float|null',
+  ),
+  'swoole\\nameresolver\\registration::heartbeatifrunning' => 
+  array (
+    -1 => 'void',
+  ),
+  'swoole\\nameresolver\\registration::isrunning' => 
+  array (
+    -1 => 'bool',
+  ),
+  'swoole\\nameresolver\\registration::onerror' => 
+  array (
+    -1 => 'Swoole\\NameResolver\\Registration',
+    'handler' => 'callable[impure]',
+  ),
+  'swoole\\nameresolver\\registration::recover' => 
+  array (
+    -1 => 'void',
+    'error' => 'Swoole\\NameResolver\\Exception',
+  ),
+  'swoole\\nameresolver\\registration::renew' => 
+  array (
+    -1 => 'void',
+  ),
+  'swoole\\nameresolver\\registration::renewifrunning' => 
+  array (
+    -1 => 'void',
+  ),
+  'swoole\\nameresolver\\registration::run' => 
+  array (
+    -1 => 'void',
+  ),
+  'swoole\\nameresolver\\registration::stop' => 
+  array (
+    -1 => 'bool',
+  ),
+  'swoole\\nameresolver\\registration::stoprenewal' => 
+  array (
+    -1 => 'void',
+  ),
+  'swoole\\nameresolver\\serviceregistration::__construct' => 
+  array (
+    0 => 'void',
+    'config' => 'array<array-key, mixed>',
+    -2 => 'none',
+  ),
+  'swoole\\nameresolver\\serviceregistration::configuration' => 
+  array (
+    -1 => 'array<array-key, mixed>|null',
+    'server' => 'object',
+    'settings' => 'array<array-key, mixed>',
+  ),
+  'swoole\\nameresolver\\serviceregistration::finish' => 
+  array (
+    -1 => 'void',
+  ),
+  'swoole\\nameresolver\\serviceregistration::isactive' => 
+  array (
+    -1 => 'bool',
+  ),
+  'swoole\\nameresolver\\serviceregistration::report' => 
+  array (
+    -1 => 'void',
+    'error' => 'Throwable',
+  ),
+  'swoole\\nameresolver\\serviceregistration::run' => 
+  array (
+    -1 => 'void',
+  ),
+  'swoole\\nameresolver\\serviceregistration::shutdownserver' => 
+  array (
+    -1 => 'void',
+    'server' => 'Swoole\\Server',
+  ),
+  'swoole\\nameresolver\\serviceregistration::start' => 
+  array (
+    -1 => 'Swoole\\NameResolver\\Registration|null',
+    'server' => 'object',
+    'settings' => 'array<array-key, mixed>',
+  ),
+  'swoole\\nameresolver\\serviceregistration::startserver' => 
+  array (
+    -1 => 'void',
+    'server' => 'Swoole\\Server',
+  ),
+  'swoole\\nameresolver\\serviceregistration::stopserver' => 
+  array (
+    -1 => 'void',
+    'server' => 'Swoole\\Server',
+    'deregister=' => 'bool',
   ),
   'swoole\\objectproxy::__call' => 
   array (
@@ -101786,7 +100960,7 @@ return array (
   'swoole\\objectproxy::__isset' => 
   array (
     0 => 'mixed',
-    'name' => 'mixed',
+    'name' => 'string',
     -2 => 'none',
   ),
   'swoole\\objectproxy::__set' => 
@@ -101965,6 +101139,10 @@ return array (
     'func' => 'callable[impure]',
     'enableCoroutine=' => 'bool',
   ),
+  'swoole\\process\\manager::assertstopped' => 
+  array (
+    -1 => 'void',
+  ),
   'swoole\\process\\manager::getipctype' => 
   array (
     -1 => 'int',
@@ -101982,6 +101160,10 @@ return array (
   array (
     -1 => 'Swoole\\Process\\Manager',
     'msgQueueKey' => 'int',
+  ),
+  'swoole\\process\\manager::shutdown' => 
+  array (
+    -1 => 'bool',
   ),
   'swoole\\process\\manager::start' => 
   array (
@@ -102071,6 +101253,10 @@ return array (
     'func' => 'callable[impure]',
     'enableCoroutine=' => 'bool',
   ),
+  'swoole\\process\\processmanager::assertstopped' => 
+  array (
+    -1 => 'void',
+  ),
   'swoole\\process\\processmanager::getipctype' => 
   array (
     -1 => 'int',
@@ -102088,6 +101274,10 @@ return array (
   array (
     -1 => 'Swoole\\Process\\Manager',
     'msgQueueKey' => 'int',
+  ),
+  'swoole\\process\\processmanager::shutdown' => 
+  array (
+    -1 => 'bool',
   ),
   'swoole\\process\\processmanager::start' => 
   array (
@@ -102206,7 +101396,7 @@ return array (
   ),
   'swoole\\redis\\server::gethandler' => 
   array (
-    -1 => 'Closure[impure]',
+    -1 => 'callable[impure]|null',
     'command' => 'string',
   ),
   'swoole\\redis\\server::getlasterror' => 
@@ -102285,9 +101475,10 @@ return array (
   array (
     -1 => 'bool',
     'conn_fd' => 'int',
-    'filename' => 'string',
+    'filename' => 'Swoole\\SendFile|string',
     'offset=' => 'int',
     'length=' => 'int',
+    'delete_file=' => 'bool',
   ),
   'swoole\\redis\\server::sendmessage' => 
   array (
@@ -102370,11 +101561,15 @@ return array (
     'args' => 'array<array-key, mixed>',
     -2 => 'none',
   ),
+  'swoole\\remoteobject::__clone' => 
+  array (
+    -1 => 'void',
+  ),
   'swoole\\remoteobject::__construct' => 
   array (
     0 => 'void',
-    'coroutineId' => 'mixed',
-    'clientId' => 'mixed',
+    'coroutineId' => 'int',
+    'clientId' => 'string',
     -2 => 'none',
   ),
   'swoole\\remoteobject::__destruct' => 
@@ -102457,6 +101652,11 @@ return array (
   array (
     -1 => 'int',
   ),
+  'swoole\\remoteobject::iterate' => 
+  array (
+    -1 => 'mixed',
+    'method' => 'string',
+  ),
   'swoole\\remoteobject::key' => 
   array (
     -1 => 'mixed',
@@ -102538,6 +101738,14 @@ return array (
     'array' => 'array<array-key, mixed>',
     -2 => 'none',
   ),
+  'swoole\\remoteobject\\client::flushreleasedobjects' => 
+  array (
+    -1 => 'void',
+  ),
+  'swoole\\remoteobject\\client::flushreleasequeue' => 
+  array (
+    -1 => 'void',
+  ),
   'swoole\\remoteobject\\client::genuuid' => 
   array (
     -1 => 'string',
@@ -102555,12 +101763,39 @@ return array (
   array (
     -1 => 'bool',
   ),
+  'swoole\\remoteobject\\client::release' => 
+  array (
+    -1 => 'void',
+    'objectId' => 'int',
+  ),
+  'swoole\\remoteobject\\client::request' => 
+  array (
+    -1 => 'array<array-key, mixed>',
+    'path' => 'string',
+    'array' => 'array<array-key, mixed>',
+  ),
+  'swoole\\remoteobject\\client::withlock' => 
+  array (
+    -1 => 'mixed',
+    'callback' => 'callable[impure]',
+  ),
   'swoole\\remoteobject\\context::__construct' => 
   array (
     0 => 'void',
     'request' => 'Swoole\\Http\\Request',
     'response' => 'Swoole\\Http\\Response',
     -2 => 'none',
+  ),
+  'swoole\\remoteobject\\context::checkdata' => 
+  array (
+    -1 => 'void',
+    'item' => 'mixed',
+    'depth=' => 'int',
+  ),
+  'swoole\\remoteobject\\context::decode' => 
+  array (
+    -1 => 'mixed',
+    'value' => 'string',
   ),
   'swoole\\remoteobject\\context::end' => 
   array (
@@ -102666,12 +101901,27 @@ return array (
     -1 => 'void',
     'ctx' => 'Swoole\\RemoteObject\\Context',
   ),
+  'swoole\\remoteobject\\server::_clone' => 
+  array (
+    -1 => 'void',
+    'ctx' => 'Swoole\\RemoteObject\\Context',
+  ),
   'swoole\\remoteobject\\server::_destroy' => 
   array (
     -1 => 'void',
     'ctx' => 'Swoole\\RemoteObject\\Context',
   ),
+  'swoole\\remoteobject\\server::_destroy_batch' => 
+  array (
+    -1 => 'void',
+    'ctx' => 'Swoole\\RemoteObject\\Context',
+  ),
   'swoole\\remoteobject\\server::_isset_property' => 
+  array (
+    -1 => 'void',
+    'ctx' => 'Swoole\\RemoteObject\\Context',
+  ),
+  'swoole\\remoteobject\\server::_iterate' => 
   array (
     -1 => 'void',
     'ctx' => 'Swoole\\RemoteObject\\Context',
@@ -102729,13 +101979,32 @@ return array (
   'swoole\\remoteobject\\server::addobject' => 
   array (
     -1 => 'int',
+    'ctx' => 'Swoole\\RemoteObject\\Context',
     'object' => 'mixed',
+  ),
+  'swoole\\remoteobject\\server::decodearguments' => 
+  array (
+    -1 => 'array<array-key, mixed>',
+    'ctx' => 'Swoole\\RemoteObject\\Context',
+  ),
+  'swoole\\remoteobject\\server::decodevalue' => 
+  array (
+    -1 => 'mixed',
+    'ctx' => 'Swoole\\RemoteObject\\Context',
+    'name' => 'string',
   ),
   'swoole\\remoteobject\\server::marshal' => 
   array (
     -1 => 'mixed',
     'ctx' => 'Swoole\\RemoteObject\\Context',
     'data' => 'mixed',
+  ),
+  'swoole\\remoteobject\\server::onclose' => 
+  array (
+    -1 => 'void',
+    'server' => 'Swoole\\Http\\Server',
+    'fd' => 'Swoole\\Server\\Event|int',
+    'reactorId=' => 'int',
   ),
   'swoole\\remoteobject\\server::onrequest' => 
   array (
@@ -102746,6 +102015,26 @@ return array (
   'swoole\\remoteobject\\server::onstart' => 
   array (
     -1 => 'void',
+  ),
+  'swoole\\remoteobject\\server::releaseconnection' => 
+  array (
+    -1 => 'void',
+    'fd' => 'int',
+  ),
+  'swoole\\remoteobject\\server::releaseobject' => 
+  array (
+    -1 => 'void',
+    'objectId' => 'int',
+  ),
+  'swoole\\remoteobject\\server::releaseobjects' => 
+  array (
+    -1 => 'void',
+    'objects' => 'array<array-key, mixed>',
+  ),
+  'swoole\\remoteobject\\server::resolveobject' => 
+  array (
+    -1 => 'mixed',
+    'objectId' => 'int|string',
   ),
   'swoole\\remoteobject\\server::start' => 
   array (
@@ -102769,6 +102058,12 @@ return array (
   array (
     -1 => 'bool',
     'flags' => 'int',
+  ),
+  'swoole\\sendfile::__construct' => 
+  array (
+    0 => 'void',
+    'filename' => 'string',
+    -2 => 'none',
   ),
   'swoole\\server::__construct' => 
   array (
@@ -102951,9 +102246,10 @@ return array (
   array (
     -1 => 'bool',
     'conn_fd' => 'int',
-    'filename' => 'string',
+    'filename' => 'Swoole\\SendFile|string',
     'offset=' => 'int',
     'length=' => 'int',
+    'delete_file=' => 'bool',
   ),
   'swoole\\server::sendmessage' => 
   array (
@@ -103032,6 +102328,10 @@ return array (
     -1 => 'int',
     'a' => 'array<array-key, mixed>',
   ),
+  'swoole\\server\\admin::getmemorysize' => 
+  array (
+    -1 => 'int',
+  ),
   'swoole\\server\\admin::getobjectmemorysize' => 
   array (
     -1 => 'int',
@@ -103039,21 +102339,23 @@ return array (
   ),
   'swoole\\server\\admin::getprocesscpuusage' => 
   array (
-    0 => 'mixed',
-    'pid' => 'mixed',
-    -2 => 'none',
+    -1 => 'array<array-key, mixed>',
+    'pid' => 'int|string',
+  ),
+  'swoole\\server\\admin::getprocessinfofromps' => 
+  array (
+    -1 => 'array<array-key, mixed>|null',
+    'pid' => 'int|string',
   ),
   'swoole\\server\\admin::getprocessmemoryrealusage' => 
   array (
-    0 => 'mixed',
-    'pid=' => 'mixed',
-    -2 => 'none',
+    -1 => 'int',
+    'pid=' => 'int|string',
   ),
   'swoole\\server\\admin::getprocessstatus' => 
   array (
-    0 => 'mixed',
-    'pid=' => 'mixed',
-    -2 => 'none',
+    -1 => 'array<array-key, mixed>',
+    'pid=' => 'int|string',
   ),
   'swoole\\server\\admin::getstringmemorysize' => 
   array (
@@ -103069,40 +102371,36 @@ return array (
   ),
   'swoole\\server\\admin::handlergetall' => 
   array (
-    0 => 'mixed',
+    -1 => 'array<array-key, mixed>',
     'server' => 'Swoole\\Server',
     'process' => 'Swoole\\StringObject',
-    'cmd' => 'mixed',
-    'data' => 'mixed',
+    'cmd' => 'string',
+    'data' => 'array<array-key, mixed>|null',
     'json_decode=' => 'bool',
-    -2 => 'none',
   ),
   'swoole\\server\\admin::handlergetallreactor' => 
   array (
-    0 => 'mixed',
-    'cmd' => 'mixed',
-    'data' => 'mixed',
+    -1 => 'array<array-key, mixed>',
+    'cmd' => 'string',
+    'data' => 'array<array-key, mixed>|null',
     'server' => 'Swoole\\Server',
     'json_decode=' => 'bool',
-    -2 => 'none',
   ),
   'swoole\\server\\admin::handlergetalltaskworker' => 
   array (
-    0 => 'mixed',
-    'cmd' => 'mixed',
-    'data' => 'mixed',
+    -1 => 'array<array-key, mixed>',
+    'cmd' => 'string',
+    'data' => 'array<array-key, mixed>|null',
     'server' => 'Swoole\\Server',
     'json_decode=' => 'bool',
-    -2 => 'none',
   ),
   'swoole\\server\\admin::handlergetallworker' => 
   array (
-    0 => 'mixed',
-    'cmd' => 'mixed',
-    'data' => 'mixed',
+    -1 => 'array<array-key, mixed>',
+    'cmd' => 'string',
+    'data' => 'array<array-key, mixed>|null',
     'server' => 'Swoole\\Server',
     'json_decode=' => 'bool',
-    -2 => 'none',
   ),
   'swoole\\server\\admin::handlergetclassinfo' => 
   array (
@@ -103141,21 +102439,19 @@ return array (
   ),
   'swoole\\server\\admin::handlergetmanager' => 
   array (
-    0 => 'mixed',
-    'cmd' => 'mixed',
-    'data' => 'mixed',
+    -1 => 'array<array-key, mixed>',
+    'cmd' => 'string',
+    'data' => 'array<array-key, mixed>|null',
     'server' => 'Swoole\\Server',
     'json_decode=' => 'bool',
-    -2 => 'none',
   ),
   'swoole\\server\\admin::handlergetmaster' => 
   array (
-    0 => 'mixed',
-    'cmd' => 'mixed',
-    'data' => 'mixed',
+    -1 => 'array<array-key, mixed>',
+    'cmd' => 'string',
+    'data' => 'array<array-key, mixed>|null',
     'server' => 'Swoole\\Server',
     'json_decode=' => 'bool',
-    -2 => 'none',
   ),
   'swoole\\server\\admin::handlergetobjectbyhandle' => 
   array (
@@ -103222,10 +102518,9 @@ return array (
   ),
   'swoole\\server\\admin::handlermulti' => 
   array (
-    0 => 'mixed',
+    -1 => 'array<array-key, mixed>',
     'server' => 'Swoole\\Server',
     'list' => 'array<array-key, mixed>',
-    -2 => 'none',
   ),
   'swoole\\server\\admin::havemanagerprocess' => 
   array (
@@ -103244,10 +102539,14 @@ return array (
   ),
   'swoole\\server\\admin::json' => 
   array (
-    0 => 'mixed',
+    -1 => 'false|string',
     'data' => 'mixed',
-    'code=' => 'mixed',
-    -2 => 'none',
+    'code=' => 'int',
+  ),
+  'swoole\\server\\admin::shellexec' => 
+  array (
+    -1 => 'string',
+    'command' => 'string',
   ),
   'swoole\\server\\admin::start' => 
   array (
@@ -103352,7 +102651,7 @@ return array (
   ),
   'swoole\\server\\port::set' => 
   array (
-    -1 => 'void',
+    -1 => 'bool',
     'settings' => 'array<array-key, mixed>',
   ),
   'swoole\\server\\task::finish' => 
@@ -103435,9 +102734,8 @@ return array (
   ),
   'swoole\\stringobject::ipos' => 
   array (
-    0 => 'mixed',
+    -1 => 'false|int',
     'needle' => 'string',
-    -2 => 'none',
   ),
   'swoole\\stringobject::lastindexof' => 
   array (
@@ -103455,7 +102753,7 @@ return array (
   ),
   'swoole\\stringobject::ltrim' => 
   array (
-    -1 => 'Swoole\\StringObject',
+    -1 => 'static',
   ),
   'swoole\\stringobject::pos' => 
   array (
@@ -103487,7 +102785,7 @@ return array (
   ),
   'swoole\\stringobject::rtrim' => 
   array (
-    -1 => 'Swoole\\StringObject',
+    -1 => 'static',
   ),
   'swoole\\stringobject::split' => 
   array (
@@ -103502,10 +102800,9 @@ return array (
   ),
   'swoole\\stringobject::substr' => 
   array (
-    0 => 'mixed',
+    -1 => 'static',
     'offset' => 'int',
     'length=' => 'int|null',
-    -2 => 'none',
   ),
   'swoole\\stringobject::tostring' => 
   array (
@@ -103526,6 +102823,25 @@ return array (
     'table_size' => 'int',
     'conflict_proportion=' => 'float',
     -2 => 'none',
+  ),
+  'swoole\\table::add' => 
+  array (
+    -1 => 'bool',
+    'key' => 'string',
+    'values' => 'array<array-key, mixed>',
+  ),
+  'swoole\\table::cmpdel' => 
+  array (
+    -1 => 'bool',
+    'key' => 'string',
+    'expected' => 'array<array-key, mixed>',
+  ),
+  'swoole\\table::cmpset' => 
+  array (
+    -1 => 'bool',
+    'key' => 'string',
+    'expected' => 'array<array-key, mixed>',
+    'values' => 'array<array-key, mixed>',
   ),
   'swoole\\table::column' => 
   array (
@@ -103548,7 +102864,7 @@ return array (
   ),
   'swoole\\table::decr' => 
   array (
-    -1 => 'float|int',
+    -1 => 'false|float|int',
     'key' => 'string',
     'column' => 'string',
     'incrby=' => 'float|int',
@@ -103583,6 +102899,12 @@ return array (
     'key' => 'string',
     'field=' => 'null|string',
   ),
+  'swoole\\table::getdel' => 
+  array (
+    -1 => 'array<array-key, mixed>|false|float|int|string',
+    'key' => 'string',
+    'field=' => 'null|string',
+  ),
   'swoole\\table::getmemorysize' => 
   array (
     -1 => 'int',
@@ -103593,7 +102915,7 @@ return array (
   ),
   'swoole\\table::incr' => 
   array (
-    -1 => 'float|int',
+    -1 => 'false|float|int',
     'key' => 'string',
     'column' => 'string',
     'incrby=' => 'float|int',
@@ -103620,6 +102942,12 @@ return array (
   array (
     -1 => 'array<array-key, mixed>|false',
   ),
+  'swoole\\table::update' => 
+  array (
+    -1 => 'bool',
+    'key' => 'string',
+    'values' => 'array<array-key, mixed>',
+  ),
   'swoole\\table::valid' => 
   array (
     -1 => 'bool',
@@ -103631,15 +102959,24 @@ return array (
     'threadNum' => 'int',
     -2 => 'none',
   ),
+  'swoole\\thread\\pool::containsonlydeclarations' => 
+  array (
+    -1 => 'bool',
+    'statements' => 'array<array-key, mixed>',
+  ),
+  'swoole\\thread\\pool::createrunner' => 
+  array (
+    -1 => 'string',
+  ),
   'swoole\\thread\\pool::createthread' => 
   array (
     -1 => 'void',
-    'index' => 'mixed',
+    'index' => 'int',
   ),
   'swoole\\thread\\pool::isvalidphpfile' => 
   array (
     -1 => 'bool',
-    'filePath' => 'mixed',
+    'filePath' => 'string',
   ),
   'swoole\\thread\\pool::shutdown' => 
   array (
@@ -103667,8 +103004,8 @@ return array (
   'swoole\\thread\\runnable::__construct' => 
   array (
     0 => 'void',
-    'running' => 'mixed',
-    'index' => 'mixed',
+    'running' => 'Swoole\\Thread\\Atomic',
+    'index' => 'int',
     -2 => 'none',
   ),
   'swoole\\thread\\runnable::isrunning' => 
@@ -103889,7 +103226,7 @@ return array (
   ),
   'swoole\\websocket\\closeframe::unpack' => 
   array (
-    -1 => 'Swoole\\WebSocket\\Frame',
+    -1 => 'Swoole\\WebSocket\\Frame|false',
     'data' => 'string',
   ),
   'swoole\\websocket\\frame::__tostring' => 
@@ -103905,7 +103242,7 @@ return array (
   ),
   'swoole\\websocket\\frame::unpack' => 
   array (
-    -1 => 'Swoole\\WebSocket\\Frame',
+    -1 => 'Swoole\\WebSocket\\Frame|false',
     'data' => 'string',
   ),
   'swoole\\websocket\\server::__construct' => 
@@ -104122,9 +103459,10 @@ return array (
   array (
     -1 => 'bool',
     'conn_fd' => 'int',
-    'filename' => 'string',
+    'filename' => 'Swoole\\SendFile|string',
     'offset=' => 'int',
     'length=' => 'int',
+    'delete_file=' => 'bool',
   ),
   'swoole\\websocket\\server::sendmessage' => 
   array (
@@ -104196,7 +103534,7 @@ return array (
   ),
   'swoole\\websocket\\server::unpack' => 
   array (
-    -1 => 'Swoole\\WebSocket\\Frame',
+    -1 => 'Swoole\\WebSocket\\Frame|false',
     'data' => 'string',
   ),
   'swoole_array' => 
@@ -104206,16 +103544,15 @@ return array (
   ),
   'swoole_array_default_value' => 
   array (
-    0 => 'mixed',
+    -1 => 'mixed',
     'array' => 'array<array-key, mixed>',
     'key' => 'mixed',
     'default_value=' => 'mixed',
-    -2 => 'none',
   ),
   'swoole_array_list' => 
   array (
     -1 => 'Swoole\\ArrayObject',
-    '...arrray=' => 'mixed',
+    '...array=' => 'mixed',
   ),
   'swoole_async_dns_lookup' => 
   array (
@@ -104330,16 +103667,20 @@ return array (
   ),
   'swoole_curl_exec' => 
   array (
-    0 => 'mixed',
+    -1 => 'bool|string',
     'obj' => 'Swoole\\Curl\\Handler',
-    -2 => 'none',
   ),
   'swoole_curl_getinfo' => 
   array (
-    0 => 'mixed',
+    -1 => 'mixed',
     'obj' => 'Swoole\\Curl\\Handler',
-    'opt=' => 'int',
-    -2 => 'none',
+    'opt=' => 'int|null',
+  ),
+  'swoole_curl_getinfo_integer' => 
+  array (
+    -1 => 'false|int',
+    'info' => 'array<array-key, mixed>',
+    'opt' => 'int',
   ),
   'swoole_curl_init' => 
   array (
@@ -104348,15 +103689,13 @@ return array (
   ),
   'swoole_curl_multi_getcontent' => 
   array (
-    0 => 'mixed',
+    -1 => 'null|string',
     'obj' => 'Swoole\\Curl\\Handler',
-    -2 => 'none',
   ),
   'swoole_curl_reset' => 
   array (
-    0 => 'mixed',
+    -1 => 'void',
     'obj' => 'Swoole\\Curl\\Handler',
-    -2 => 'none',
   ),
   'swoole_curl_setopt' => 
   array (
@@ -104369,7 +103708,7 @@ return array (
   array (
     -1 => 'bool',
     'obj' => 'Swoole\\Curl\\Handler',
-    'array' => 'mixed',
+    'array' => 'array<array-key, mixed>',
   ),
   'swoole_dns_check_record' => 
   array (
@@ -104381,16 +103720,16 @@ return array (
   array (
     -1 => 'bool',
     'hostname' => 'string',
-    '&hosts' => 'array<array-key, mixed>',
-    '&weights=' => 'array<array-key, mixed>|null',
+    '&hosts' => 'mixed',
+    '&weights=' => 'mixed',
   ),
   'swoole_dns_get_record' => 
   array (
     -1 => 'array<array-key, mixed>|false',
     'hostname' => 'string',
     'type=' => 'int',
-    '&authoritative_name_servers=' => 'array<array-key, mixed>|null',
-    '&additional_records=' => 'array<array-key, mixed>|null',
+    '&authoritative_name_servers=' => 'mixed',
+    '&additional_records=' => 'mixed',
     'raw=' => 'bool',
   ),
   'swoole_errno' => 
@@ -104472,11 +103811,14 @@ return array (
   ),
   'swoole_exec' => 
   array (
-    0 => 'mixed',
+    -1 => 'false|string',
     'command' => 'string',
     '&output=' => 'mixed',
     '&returnVar=' => 'mixed',
-    -2 => 'none',
+  ),
+  'swoole_get_default_remote_object_api_key' => 
+  array (
+    -1 => 'string',
   ),
   'swoole_get_default_remote_object_client' => 
   array (
@@ -104520,16 +103862,15 @@ return array (
   ),
   'swoole_gethostbynamel' => 
   array (
-    0 => 'mixed',
+    -1 => 'array<array-key, mixed>|false',
     'domain' => 'string',
-    -2 => 'none',
   ),
   'swoole_getmxrr' => 
   array (
     -1 => 'bool',
     'hostname' => 'string',
-    '&hosts' => 'array<array-key, mixed>',
-    '&weights=' => 'array<array-key, mixed>|null',
+    '&hosts' => 'mixed',
+    '&weights=' => 'mixed',
   ),
   'swoole_hashcode' => 
   array (
@@ -104595,7 +103936,8 @@ return array (
     'to' => 'string',
     'subject' => 'string',
     'message' => 'string',
-    'headers=' => 'array<array-key, mixed>',
+    'additional_headers=' => 'array<array-key, mixed>|string',
+    'additional_params=' => 'string',
   ),
   'swoole_mbstring' => 
   array (
@@ -104787,16 +104129,16 @@ return array (
     -1 => 'array<array-key, mixed>',
     'hostname' => 'string',
     'type' => 'int',
-    'authoritative_name_servers=' => 'array<array-key, mixed>|null',
-    'additional_records=' => 'array<array-key, mixed>|null',
+    'authoritative_name_servers=' => 'mixed',
+    'additional_records=' => 'mixed',
     'raw=' => 'bool',
   ),
   'swoole_real_getmxrr' => 
   array (
     -1 => 'array<array-key, mixed>',
     'hostname' => 'string',
-    'hosts=' => 'array<array-key, mixed>|null',
-    'weights=' => 'array<array-key, mixed>|null',
+    'hosts=' => 'mixed',
+    'weights=' => 'mixed',
   ),
   'swoole_select' => 
   array (
@@ -104813,15 +104155,13 @@ return array (
   ),
   'swoole_shell_exec' => 
   array (
-    0 => 'mixed',
+    -1 => 'false|null|string',
     'cmd' => 'string',
-    -2 => 'none',
   ),
   'swoole_socket_accept' => 
   array (
-    0 => 'mixed',
+    -1 => 'Swoole\\Coroutine\\Socket|false',
     'socket' => 'Swoole\\Coroutine\\Socket',
-    -2 => 'none',
   ),
   'swoole_socket_bind' => 
   array (
@@ -104832,79 +104172,74 @@ return array (
   ),
   'swoole_socket_clear_error' => 
   array (
-    0 => 'mixed',
+    -1 => 'void',
     'socket=' => 'Swoole\\Coroutine\\Socket|null',
-    -2 => 'none',
   ),
   'swoole_socket_close' => 
   array (
-    0 => 'mixed',
+    -1 => 'void',
     'socket' => 'Swoole\\Coroutine\\Socket',
-    -2 => 'none',
   ),
   'swoole_socket_connect' => 
   array (
-    0 => 'mixed',
+    -1 => 'bool',
     'socket' => 'Swoole\\Coroutine\\Socket',
     'address' => 'string',
     'port=' => 'int',
-    -2 => 'none',
   ),
   'swoole_socket_create' => 
   array (
-    0 => 'mixed',
+    -1 => 'Swoole\\Coroutine\\Socket|false',
     'domain' => 'int',
     'type' => 'int',
     'protocol' => 'int',
-    -2 => 'none',
   ),
   'swoole_socket_create_listen' => 
   array (
-    0 => 'mixed',
+    -1 => 'Swoole\\Coroutine\\Socket|false',
     'port' => 'int',
     'backlog=' => 'int',
-    -2 => 'none',
   ),
   'swoole_socket_create_pair' => 
   array (
-    0 => 'mixed',
+    -1 => 'bool',
     'domain' => 'int',
     'type' => 'int',
     'protocol' => 'int',
-    '&pair' => 'array<array-key, mixed>',
-    -2 => 'none',
+    '&pair' => 'mixed',
+  ),
+  'swoole_socket_export_stream' => 
+  array (
+    -1 => 'mixed',
+    'socket' => 'Swoole\\Coroutine\\Socket',
   ),
   'swoole_socket_get_option' => 
   array (
-    0 => 'mixed',
+    -1 => 'mixed',
     'socket' => 'Swoole\\Coroutine\\Socket',
     'level' => 'int',
     'optname' => 'int',
-    -2 => 'none',
   ),
   'swoole_socket_getopt' => 
   array (
-    0 => 'mixed',
+    -1 => 'mixed',
     'socket' => 'Swoole\\Coroutine\\Socket',
     'level' => 'int',
     'optname' => 'int',
-    -2 => 'none',
   ),
   'swoole_socket_getpeername' => 
   array (
-    0 => 'mixed',
+    -1 => 'bool',
     'socket' => 'Swoole\\Coroutine\\Socket',
     '&address' => 'mixed',
     '&port=' => 'mixed',
-    -2 => 'none',
   ),
   'swoole_socket_getsockname' => 
   array (
-    0 => 'mixed',
+    -1 => 'bool',
     'socket' => 'Swoole\\Coroutine\\Socket',
     '&address' => 'mixed',
     '&port=' => 'mixed',
-    -2 => 'none',
   ),
   'swoole_socket_import_stream' => 
   array (
@@ -104922,65 +104257,63 @@ return array (
     'socket' => 'Swoole\\Coroutine\\Socket',
     'backlog=' => 'int',
   ),
+  'swoole_socket_nonblocking_warning' => 
+  array (
+    -1 => 'void',
+    'function' => 'string',
+  ),
   'swoole_socket_read' => 
   array (
-    0 => 'mixed',
+    -1 => 'false|string',
     'socket' => 'Swoole\\Coroutine\\Socket',
     'length' => 'int',
     'type=' => 'int',
-    -2 => 'none',
   ),
   'swoole_socket_recv' => 
   array (
-    0 => 'mixed',
+    -1 => 'false|int',
     'socket' => 'Swoole\\Coroutine\\Socket',
     '&buffer' => 'mixed',
     'length' => 'int',
     'flags' => 'int',
-    -2 => 'none',
   ),
   'swoole_socket_recvfrom' => 
   array (
-    0 => 'mixed',
+    -1 => 'false|int',
     'socket' => 'Swoole\\Coroutine\\Socket',
     '&buffer' => 'mixed',
     'length' => 'int',
     'flags' => 'int',
     '&name' => 'mixed',
     '&port=' => 'mixed',
-    -2 => 'none',
   ),
   'swoole_socket_send' => 
   array (
-    0 => 'mixed',
+    -1 => 'false|int',
     'socket' => 'Swoole\\Coroutine\\Socket',
     'buffer' => 'string',
     'length' => 'int',
     'flags' => 'int',
-    -2 => 'none',
   ),
   'swoole_socket_sendto' => 
   array (
-    0 => 'mixed',
+    -1 => 'false|int',
     'socket' => 'Swoole\\Coroutine\\Socket',
     'buffer' => 'string',
     'length' => 'int',
     'flags' => 'int',
     'addr' => 'string',
     'port=' => 'int',
-    -2 => 'none',
   ),
   'swoole_socket_set_block' => 
   array (
-    0 => 'mixed',
+    -1 => 'bool',
     'socket' => 'Swoole\\Coroutine\\Socket',
-    -2 => 'none',
   ),
   'swoole_socket_set_nonblock' => 
   array (
-    0 => 'mixed',
+    -1 => 'bool',
     'socket' => 'Swoole\\Coroutine\\Socket',
-    -2 => 'none',
   ),
   'swoole_socket_set_option' => 
   array (
@@ -105006,11 +104339,10 @@ return array (
   ),
   'swoole_socket_write' => 
   array (
-    0 => 'mixed',
+    -1 => 'false|int',
     'socket' => 'Swoole\\Coroutine\\Socket',
     'buffer' => 'string',
-    'length=' => 'int',
-    -2 => 'none',
+    'length=' => 'int|null',
   ),
   'swoole_strerror' => 
   array (
@@ -105041,12 +104373,6 @@ return array (
     'length=' => 'int',
     'options=' => 'array<array-key, mixed>',
   ),
-  'swoole_table' => 
-  array (
-    -1 => 'Swoole\\Table',
-    'size' => 'int',
-    'fields' => 'string',
-  ),
   'swoole_test_kernel_coroutine' => 
   array (
     -1 => 'void',
@@ -105058,6 +104384,7 @@ return array (
     -1 => 'false|int',
     'ms' => 'int',
     'callback' => 'callable[impure]',
+    '...params=' => 'mixed',
   ),
   'swoole_timer_clear' => 
   array (
@@ -105091,6 +104418,7 @@ return array (
     -1 => 'false|int',
     'ms' => 'int',
     'callback' => 'callable[impure]',
+    '...params=' => 'mixed',
   ),
   'swoole_tracer_leak_detect' => 
   array (
