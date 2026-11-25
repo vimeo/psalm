@@ -19,8 +19,10 @@ use Psalm\Storage\Assertion\IsNotType;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TEnumCase;
+use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TInt;
@@ -36,9 +38,11 @@ use Psalm\Type\Atomic\TNonEmptyNonspecificLiteralString;
 use Psalm\Type\Atomic\TNonEmptyString;
 use Psalm\Type\Atomic\TNonFalsyString;
 use Psalm\Type\Atomic\TNonspecificLiteralString;
+use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTraitString;
+use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
 
@@ -585,11 +589,36 @@ final class NegatedAssertionReconciler extends Reconciler
             }
         }
 
+        if ($assertion instanceof IsNotLooselyEqual && !$assertion_type instanceof TEnumCase) {
+            // `null` and booleans are compared to a scalar as booleans, except `null` to a string, as `''`
+            if ($assertion_type instanceof TLiteralString) {
+                $is_falsy = $assertion_type->value === '' || $assertion_type->value === '0';
+                $equals_null = $assertion_type->value === '';
+            } else {
+                $is_falsy = $equals_null = (float) $assertion_type->value === 0.0;
+            }
+
+            foreach ($existing_var_type->getAtomicTypes() as $atomic_key => $atomic_type) {
+                if (($atomic_type instanceof TNull && $equals_null)
+                    || ($atomic_type instanceof TFalse && $is_falsy)
+                    || ($atomic_type instanceof TTrue && !$is_falsy)
+                ) {
+                    $existing_var_type->removeType($atomic_key);
+                    $redundant = false;
+                } elseif ($atomic_type::class === TBool::class) {
+                    $existing_var_type->removeType($atomic_key);
+                    $existing_var_type->addType($is_falsy ? new TTrue() : new TFalse());
+                    $redundant = false;
+                }
+            }
+        }
+
         $existing_var_type = $existing_var_type->freeze();
 
         if ($key && $code_location) {
-            if ($did_match_literal_type
-                && ($redundant || count($existing_var_atomic_types) === 1)
+            if (($did_match_literal_type
+                    && ($redundant || count($existing_var_atomic_types) === 1))
+                || !$existing_var_type->getAtomicTypes()
             ) {
                 self::triggerIssueForImpossible(
                     $existing_var_type,

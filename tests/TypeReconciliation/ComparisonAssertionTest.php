@@ -279,6 +279,67 @@ final class ComparisonAssertionTest extends TestCase
                         }
                     }',
             ],
+            'notLooselyEqualToAFalsyLiteralRemovesNull' => [
+                'code' => '<?php
+                    /** @param ?non-empty-string $s */
+                    function f($s, ?int $i, ?float $f, ?string $t): string {
+                        if ($i != 0) {
+                            /** @psalm-check-type-exact $i = int */;
+                        }
+                        if ($f != 0.0) {
+                            /** @psalm-check-type-exact $f = float */;
+                        }
+                        if ("" != $t) {
+                            /** @psalm-check-type-exact $t = non-empty-string */;
+                        }
+                        if ($t == "") {
+                        } else {
+                            /** @psalm-check-type-exact $t = non-empty-string */;
+                        }
+                        if ($s != "") {
+                            return $s . "/";
+                        }
+                        return "";
+                    }',
+            ],
+            'notLooselyEqualToAStringOtherThanTheEmptyStringKeepsNull' => [
+                'code' => '<?php
+                    function f(?string $s, ?string $t): void {
+                        if ($s != "0") {
+                            /** @psalm-check-type-exact $s = null|string */;
+                        }
+                        if ($t != "a") {
+                            /** @psalm-check-type-exact $t = null|string */;
+                        }
+                    }',
+            ],
+            'notLooselyEqualToAScalarLiteralRemovesTheLooselyEqualBools' => [
+                'code' => '<?php
+                    /**
+                     * @param string|false $c
+                     * @param string|false $d
+                     */
+                    function f(?bool $a, ?bool $b, $c, $d, ?bool $e, ?bool $g): void {
+                        if ($a != 0) {
+                            /** @psalm-check-type-exact $a = true */;
+                        }
+                        if ($b != 1) {
+                            /** @psalm-check-type-exact $b = false|null */;
+                        }
+                        if ($c != "") {
+                            /** @psalm-check-type-exact $c = non-empty-string */;
+                        }
+                        if ($d != "0") {
+                            /** @psalm-check-type-exact $d = string */;
+                        }
+                        if ($e != "0") {
+                            /** @psalm-check-type-exact $e = null|true */;
+                        }
+                        if ($g != "a") {
+                            /** @psalm-check-type-exact $g = false|null */;
+                        }
+                    }',
+            ],
             'nullsafePropertyNotIdenticalToNullNarrowsTheReceiver' => [
                 'code' => '<?php
                     final class A { public ?int $p = null; }
@@ -900,6 +961,22 @@ final class ComparisonAssertionTest extends TestCase
                         if ($one != $two) {}
                     }',
                 'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:29 - 2 can never contain 1',
+            ],
+            'notLooselyEqualToZeroOfZeroOrNullIsImpossible' => [
+                'code' => '<?php
+                    /** @param 0|null $i */
+                    function f($i): void {
+                        if ($i != 0) {}
+                    }',
+                'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29',
+            ],
+            'notLooselyEqualToTheEmptyStringOfFalseOrNullIsImpossible' => [
+                'code' => '<?php
+                    /** @param false|null $s */
+                    function f($s): void {
+                        if ($s != "") {}
+                    }',
+                'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29',
             ],
         ];
     }
