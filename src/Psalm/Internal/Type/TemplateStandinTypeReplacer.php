@@ -206,11 +206,33 @@ final class TemplateStandinTypeReplacer
 
         $had_template = false;
 
+        // a class string a `class-string<T>` of the union takes binds that atom, not a bare template of the union
+        // (`Foo::class` for `class-string<T>|T` is not a `T`)
+        $class_string_atomic_types = [];
+
+        foreach ($original_atomic_types as $original_atomic_type) {
+            if ($original_atomic_type instanceof TTemplateParamClass) {
+                $class_string_atomic_types[] = new TClassString(
+                    $original_atomic_type->as,
+                    $original_atomic_type->as_type,
+                );
+            }
+        }
+
         foreach ($original_atomic_types as $key => $atomic_type) {
             $matches_input_key = $input_type && $input_type->hasType($key);
+            $atomic_input_type = $matches_input_key ? $input_type : $other_input_type;
+
+            if ($atomic_input_type && $class_string_atomic_types && $atomic_type instanceof TTemplateParam) {
+                $atomic_input_type = self::removeContainedAtomicTypes(
+                    $codebase,
+                    $atomic_input_type,
+                    $class_string_atomic_types,
+                );
+            }
 
             // nothing is left to infer the other atoms from, so keep them as they are
-            if (!$matches_input_key && $input_type && !$other_input_type) {
+            if ($input_type && !$atomic_input_type) {
                 $atomic_types[] = $atomic_type;
                 continue;
             }
@@ -221,7 +243,7 @@ final class TemplateStandinTypeReplacer
                 $template_result,
                 $codebase,
                 $statements_analyzer,
-                $matches_input_key ? $input_type : $other_input_type,
+                $atomic_input_type,
                 $input_arg_offset,
                 $calling_class,
                 $calling_function,
@@ -264,6 +286,29 @@ final class TemplateStandinTypeReplacer
         }
 
         return $union_type;
+    }
+
+    /**
+     * @param non-empty-list<Atomic> $container_atomic_types
+     */
+    private static function removeContainedAtomicTypes(
+        Codebase $codebase,
+        Union $input_type,
+        array $container_atomic_types,
+    ): ?Union {
+        $builder = $input_type->getBuilder();
+
+        foreach ($input_type->getAtomicTypes() as $input_key => $input_atomic_type) {
+            if (array_any(
+                $container_atomic_types,
+                static fn(Atomic $atomic_type): bool
+                    => AtomicTypeComparator::isContainedBy($codebase, $input_atomic_type, $atomic_type),
+            )) {
+                $builder->removeType($input_key);
+            }
+        }
+
+        return $builder->isUnionEmpty() ? null : $builder->freeze();
     }
 
     /**
@@ -1424,18 +1469,31 @@ final class TemplateStandinTypeReplacer
             }
 
             if ($generic_param) {
-                // the template is inside the class-string, as it is inside `list<T>`: for the same argument, this
-                // bound wins over the class-string a bare `T` of the union takes (`Foo::class` for `class-string<T>|T`)
-                $bound = new TemplateBound($generic_param, $depth + 1, $input_arg_offset);
-
                 if (isset($template_result->lower_bounds[$atomic_type->param_name][$atomic_type->defining_class])
                     && !self::isConstraintFallbackOnly(
                         $template_result->lower_bounds[$atomic_type->param_name][$atomic_type->defining_class],
                     )
                 ) {
-                    $template_result->lower_bounds[$atomic_type->param_name][$atomic_type->defining_class][] = $bound;
+                    $template_result->lower_bounds[$atomic_type->param_name][$atomic_type->defining_class] = [
+                        new TemplateBound(
+                            Type::combineUnionTypes(
+                                $generic_param,
+                                self::getMostSpecificTypeFromBounds(
+                                    $template_result->lower_bounds[$atomic_type->param_name][$atomic_type->defining_class],
+                                    $codebase,
+                                ),
+                            ),
+                            $depth,
+                        ),
+                    ];
                 } else {
-                    $template_result->lower_bounds[$atomic_type->param_name][$atomic_type->defining_class] = [$bound];
+                    $template_result->lower_bounds[$atomic_type->param_name][$atomic_type->defining_class] = [
+                        new TemplateBound(
+                            $generic_param,
+                            $depth,
+                            $input_arg_offset,
+                        ),
+                    ];
                 }
             }
         } else {
@@ -1553,30 +1611,8 @@ final class TemplateStandinTypeReplacer
      */
     public static function getMostSpecificTypeFromBounds(array $lower_bounds, ?Codebase $codebase): Union
     {
-        return self::selectMostSpecificBounds($lower_bounds, $codebase)[0];
-    }
-
-    /**
-     * The bounds getMostSpecificTypeFromBounds() takes the type from
-     *
-     * @param non-empty-list<TemplateBound>  $lower_bounds
-     * @return non-empty-list<TemplateBound>
-     * @psalm-external-mutation-free
-     */
-    public static function getMostSpecificBounds(array $lower_bounds, ?Codebase $codebase): array
-    {
-        return self::selectMostSpecificBounds($lower_bounds, $codebase)[1];
-    }
-
-    /**
-     * @param non-empty-list<TemplateBound>  $lower_bounds
-     * @return array{Union, non-empty-list<TemplateBound>}
-     * @psalm-external-mutation-free
-     */
-    private static function selectMostSpecificBounds(array $lower_bounds, ?Codebase $codebase): array
-    {
         if (count($lower_bounds) === 1) {
-            return [reset($lower_bounds)->type, $lower_bounds];
+            return reset($lower_bounds)->type;
         }
 
         // a purity template must allow everything each position it was inferred from requires, however deep
@@ -1587,7 +1623,7 @@ final class TemplateStandinTypeReplacer
                 $joined = Type::combineUnionTypes($joined, $template_bound->type, $codebase);
             }
 
-            return [$joined, $lower_bounds];
+            return $joined;
         }
 
         usort(
@@ -1598,37 +1634,23 @@ final class TemplateStandinTypeReplacer
         $current_depth = null;
         $current_type = null;
         $had_invariant = false;
-        // an argument is bound by its deepest bounds (`1` rather than `list<1>` for `T|list<T>`), unless they are
-        // never; the arguments together by the union of theirs
-        $argument_depths = [];
-        $argument_types = [];
-        $kept_bounds = [];
+        $last_arg_offset = -1;
 
         foreach ($lower_bounds as $template_bound) {
-            $depth = $template_bound->appearance_depth;
+            if ($current_depth === null) {
+                $current_depth = $template_bound->appearance_depth;
+            } elseif ($current_depth !== $template_bound->appearance_depth && $current_type) {
+                if (!$current_type->isNever()
+                    && ($had_invariant || $last_arg_offset === $template_bound->arg_offset)
+                ) {
+                    // escape switches when matching on invariant generic params
+                    // and when matching
+                    break;
+                }
 
-            // a bound of an invariant generic param pins the template: shallower bounds are not taken
-            if ($had_invariant && $depth !== $current_depth && !$current_type?->isNever()) {
-                break;
+                $current_depth = $template_bound->appearance_depth;
             }
 
-            $argument = $template_bound->arg_offset ?? -1;
-
-            if (isset($argument_depths[$argument])
-                && $argument_depths[$argument] !== $depth
-                && !$argument_types[$argument]->isNever()
-            ) {
-                continue;
-            }
-
-            $argument_depths[$argument] = $depth;
-            $argument_types[$argument] = Type::combineUnionTypes(
-                $argument_types[$argument] ?? null,
-                $template_bound->type,
-                $codebase,
-            );
-
-            $current_depth = $depth;
             $had_invariant = $had_invariant ?: $template_bound->equality_bound_classlike !== null;
 
             $current_type = Type::combineUnionTypes(
@@ -1637,10 +1659,10 @@ final class TemplateStandinTypeReplacer
                 $codebase,
             );
 
-            $kept_bounds[] = $template_bound;
+            $last_arg_offset = $template_bound->arg_offset;
         }
 
-        return [$current_type ?? Type::getMixed(), $kept_bounds];
+        return $current_type ?? Type::getMixed();
     }
 
     /**

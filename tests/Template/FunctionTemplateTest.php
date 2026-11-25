@@ -166,22 +166,27 @@ final class FunctionTemplateTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
-            'templateOrListOfTemplateIsBoundByEachArgument' => [
+            'classStringOrObjectTemplateKeepsTheObjectOfTheArgument' => [
                 'code' => '<?php
-                    /**
-                     * @template T
-                     * @param T|list<T> $a
-                     * @param T|list<T> $b
-                     * @return list<T>
-                     */
-                    function h($a, $b): array { return []; }
+                    final class Foo {}
+                    final class Bar {}
 
-                    $listFirst = h([1], "x");
-                    $listSecond = h("x", [1]);',
+                    /**
+                     * @template T as object
+                     * @param class-string<T>|T $m
+                     * @return T
+                     */
+                    function o(mixed $m): object { throw new Exception(); }
+
+                    /** @var class-string<Foo>|Bar $classOrObject */
+                    $classOrObject = new Bar();
+
+                    $r = o($classOrObject);',
                 'assertions' => [
-                    '$listFirst===' => 'list<\'x\'|1>',
-                    '$listSecond===' => 'list<\'x\'|1>',
+                    '$r===' => 'Bar|Foo',
                 ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'paramOutOfATemplateIsTheTypeOfTheArgumentBindingIt' => [
                 'code' => '<?php
@@ -4112,6 +4117,26 @@ final class FunctionTemplateTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'classStringAndInvariantParamsOfDifferentClassesAreIncompatible' => [
+                'code' => '<?php
+                    final class A {}
+                    final class B {}
+
+                    /** @template T */
+                    final class Box {}
+
+                    /**
+                     * @template T
+                     * @param class-string<T> $class
+                     * @param Box<T> $box
+                     */
+                    function inv(string $class, Box $box): void {}
+
+                    /** @var Box<A> $box */
+                    $box = new Box();
+                    inv(B::class, $box);',
+                'error_message' => 'InvalidArgument',
+            ],
             'callableOfATemplateOfTheCallerStillChecksItsArgument' => [
                 'code' => '<?php
                     /**

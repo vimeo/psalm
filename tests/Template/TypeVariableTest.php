@@ -497,6 +497,30 @@ final class TypeVariableTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'constructorClassStringParamsAreBoundByEachArgument' => [
+                'code' => '<?php
+                    final class Foo {}
+                    final class Bar {}
+
+                    /** @template T */
+                    final class Pair
+                    {
+                        /**
+                         * @param class-string<T> $a
+                         * @param class-string<T> $b
+                         */
+                        public function __construct(string $a, string $b) {}
+
+                        /** @param T $t */
+                        public function set(mixed $t): void {}
+                    }
+
+                    $pair = new Pair(Foo::class, Bar::class);
+                    $pair->set(new Bar());',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'unboundConstructorTemplateHeldBySiblingConstraints' => [
                 'code' => '<?php
                     /**
