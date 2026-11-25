@@ -96,7 +96,6 @@ final class TPropertiesOf extends Atomic
 
     /**
      * @param  array<lowercase-string, string> $aliased_classes
-     * @psalm-pure
      */
     #[Override]
     public function toPhpString(
@@ -105,7 +104,7 @@ final class TPropertiesOf extends Atomic
         ?string $this_class,
         int $analysis_php_version_id,
     ): string {
-        return 'array';
+        return $this->getKey();
     }
 
     /**
