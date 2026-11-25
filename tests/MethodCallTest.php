@@ -1482,6 +1482,27 @@ final class MethodCallTest extends TestCase
                         }
                     }',
             ],
+            'sqlite3ResultColumnNameMayReturnFalse' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function columnName(SQLite3Result $result): void {
+                        $name = $result->columnName(0);
+                        /** @psalm-check-type-exact $name = false|string */
+                    }
+                    PHP,
+            ],
+            'sqlite3ResultColumnNameMayReturnFalsePhp8' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function columnName(SQLite3Result $result): void {
+                        $name = $result->columnName(0);
+                        /** @psalm-check-type-exact $name = false|string */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
         ];
     }
 
