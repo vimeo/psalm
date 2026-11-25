@@ -177,8 +177,29 @@ function listen(Events $events): void
 ```
 
 `-> $listener()` states that the callables given to `$listener` are called with what is given to `$payload`, as their
-arguments. A callable parameter as a source, `($reducer()) -> $reducer()`, gives them what the callables given to it
-return, as `array_reduce()` gives its callback the carry its previous call returned.
+arguments. A callable as a source gives them what the callables return, as `array_reduce()` gives its callback the
+carry its previous call returned:
+
+```php
+<?php // --taint-analysis
+interface Retry
+{
+    /**
+     * @param callable(string): string $attempt
+     * @psalm-taint-specialize
+     * @psalm-flow ($attempt()) -> $attempt()
+     */
+    public function run(callable $attempt): void;
+}
+
+function retry(Retry $retry): void
+{
+    $retry->run(function (string $previous): string {
+        echo $previous; // TaintedHtml
+        return (string) ($_GET['x'] ?? '');
+    });
+}
+```
 
 ### Keyed stores
 

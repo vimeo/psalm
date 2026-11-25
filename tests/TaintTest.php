@@ -18617,6 +18617,25 @@ final class TaintTest extends TestCase
                     echo array_reduce([(string) $_GET["bad"]], fn(string $carry, string $item): string => $carry . $item, "");',
                 'error_message' => 'TaintedHtml',
             ],
+            'taintReturnedByACallableToItsNextCallThroughAFlowAnnotation' => [
+                'code' => '<?php
+                    interface Retry {
+                        /**
+                         * @param callable(string): string $attempt
+                         * @psalm-taint-specialize
+                         * @psalm-flow ($attempt()) -> $attempt()
+                         */
+                        public function run(callable $attempt): void;
+                    }
+
+                    function retry(Retry $retry): void {
+                        $retry->run(function (string $previous): string {
+                            echo $previous;
+                            return (string) ($_GET["x"] ?? "");
+                        });
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintPassedToTheArrayReduceCallback' => [
                 'code' => '<?php
                     array_reduce([(string) $_GET["bad"]], function (string $carry, string $item): string {
