@@ -412,6 +412,7 @@ final class Codebase
             $providers->classlike_storage_provider,
             $providers->file_storage_provider,
             $this->classlikes,
+            $this->scanner,
             $providers->file_reference_provider,
             $progress,
         );
