@@ -4265,6 +4265,23 @@ final class FunctionTemplateTest extends TestCase
                         return $v;
                     }',
             ],
+            'templateBoundedByAChainOfUnboundedTemplatesCanBeNull' => [
+                'code' => '<?php
+                    /**
+                     * @template U
+                     * @template V of U
+                     * @template T of V
+                     * @param T $v
+                     * @return T|int
+                     */
+                    function f($v) {
+                        if ($v === null) {
+                            return 0;
+                        }
+
+                        return $v;
+                    }',
+            ],
         ];
     }
 

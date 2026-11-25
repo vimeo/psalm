@@ -580,7 +580,7 @@ final class SimpleAssertionReconciler extends Reconciler
             $types = $existing_var_type->getAtomicTypes();
             foreach ($types as $k => $atomic_type) {
                 if ($atomic_type instanceof TTemplateParam && $assertion_type) {
-                    if ($atomic_type->as->hasMixed()
+                    if (self::getTemplateBound($atomic_type)->hasMixed()
                         || $atomic_type->as->hasObject()
                     ) {
                         unset($types[$k]);
