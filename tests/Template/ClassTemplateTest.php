@@ -6775,6 +6775,67 @@ final class ClassTemplateTest extends TestCase
                     $map = new Map();
                     f($map);',
             ],
+            'templateBoundByStaticReadOnThis' => [
+                'code' => '<?php
+                    /**
+                     * @template T of static
+                     */
+                    class SelfBound {
+                        /** @return T */
+                        public function get() {
+                            throw new Exception();
+                        }
+
+                        /** @return T */
+                        public static function getStatic() {
+                            throw new Exception();
+                        }
+
+                        /** @return T */
+                        public function viaThis() {
+                            return $this->get();
+                        }
+
+                        /** @return T */
+                        public function chained() {
+                            return $this->get()->get()->get();
+                        }
+
+                        /** @return T */
+                        public function viaStatic() {
+                            return static::getStatic();
+                        }
+
+                        /** @return T */
+                        public function inClosure() {
+                            return (fn() => $this->get())();
+                        }
+
+                        /** @return T|static */
+                        public function inLoop(bool $b) {
+                            $x = $this;
+                            while ($b) {
+                                $x = $x->get();
+                            }
+                            return $x;
+                        }
+                    }
+
+                    /**
+                     * @template T of static|null
+                     */
+                    class NullableSelfBound {
+                        /** @return T */
+                        public function get() {
+                            throw new Exception();
+                        }
+
+                        /** @return list<T> */
+                        public function all() {
+                            return [$this->get()];
+                        }
+                    }',
+            ],
         ];
     }
 
@@ -6785,6 +6846,23 @@ final class ClassTemplateTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'templateBoundByStaticReadOnThisIsTheTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template T of static
+                     */
+                    class SelfBound {
+                        /** @return T */
+                        public function get() {
+                            throw new Exception();
+                        }
+
+                        public function test(): int {
+                            return $this->get()->get();
+                        }
+                    }',
+                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:12:36 - The inferred type \'T:SelfBound as SelfBound<T:SelfBound as SelfBound&static>&static',
+            ],
             'staticWithOtherTypeArgumentsOfATemplateReceiverIsNotTheTemplate' => [
                 'code' => '<?php
                     /**

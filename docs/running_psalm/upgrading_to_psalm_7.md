@@ -6,7 +6,7 @@ For most projects, upgrading is as simple as updating the Composer dependency:
 composer require --dev vimeo/psalm:^7.0 -W
 ```
 
-`-W` lets Composer also upgrade Psalm's own dependencies that your lock file pins to older versions (for example `amphp/parallel` or `nikic/php-parser`); without it Composer refuses the update. If your `composer.json` requires `psalm/plugin-phpunit`, add `psalm/plugin-phpunit:^0.21` to the same command.
+`-W` lets Composer also upgrade Psalm's own dependencies that your lock file pins to older versions (for example `amphp/parallel` or `nikic/php-parser`); without it Composer refuses the update. If your `composer.json` requires `psalm/plugin-phpunit`, add `psalm/plugin-phpunit:^1.3.6` to the same command.
 
 `--set-baseline` writes a fresh baseline. `--update-baseline` isn't enough here: it only removes fixed entries and doesn't add new ones.
 
@@ -31,6 +31,6 @@ The rest of this page covers what some projects will notice. The complete list o
 - **Dead code in libraries:** graph-based detection also reports code used only by other unused code, cycles included. Mark entry points and public API with `@psalm-api` (or `@api`).
 - **`--output-format=compact`** now selects the new compact format. Use `table` for the old output.
 - **PHP 8.1 and 32-bit PHP** are no longer supported for running Psalm. Code targeting older PHP versions can still be analysed.
-- **`psalm/plugin-phpunit`:** Psalm 7 requires `^0.21 || ^0.22 || ^1.0`. Projects that pin `^0.19` or `^0.20` must raise the constraint.
+- **`psalm/plugin-phpunit`:** Psalm 7.22 and later require `^1.3.6` (7.0 to 7.21: `^0.21 || ^0.22 || ^1.0`). Projects that pin an older version must raise the constraint.
 - **Docker:** use the official image, `ghcr.io/psalm/psalm`.
 - **Plugins:** taints are integers (`TaintKind` bitmask) in the plugin API. `TKeyedArray` is built with `TKeyedArray::make()`. Several `Codebase` methods take a `Context`. Plugins must require `psalm/psalm-plugin-api` (`^0.4`), because from now on a Psalm minor or patch release may break the plugin API (see [psalm/psalm-plugin-api](https://packagist.org/packages/psalm/psalm-plugin-api)).

@@ -1748,6 +1748,23 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
         }
 
         if (!$storage->abstract && $uninitialized_typed_properties) {
+            // a stub that leaves out the constructor keeps the real one, whose body isn't analysed: what it
+            // initializes is unknown
+            if (isset($storage->declaring_method_ids['__construct'])) {
+                $constructor_class_storage = $classlike_storage_provider->get(
+                    $storage->declaring_method_ids['__construct']->fq_class_name,
+                );
+                $constructor_storage = $constructor_class_storage->methods['__construct'] ?? null;
+
+                if ($constructor_class_storage->stubbed
+                    && $constructor_storage !== null
+                    && !$constructor_storage->stubbed
+                    && $constructor_storage->location !== null
+                ) {
+                    return;
+                }
+            }
+
             foreach ($uninitialized_typed_properties as $id => $uninitialized_property) {
                 if ($uninitialized_property->location) {
                     IssueBuffer::maybeAdd(

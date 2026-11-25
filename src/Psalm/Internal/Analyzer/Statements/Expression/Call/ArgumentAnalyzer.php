@@ -2368,8 +2368,10 @@ final class ArgumentAnalyzer
             }
         }
 
+        // each parameter an unpacked argument fills takes its own elements of it
         $argument_value_node = DataFlowNode::getForAssignment(
-            'call to ' . $cased_method_id,
+            'call to ' . $cased_method_id
+                . ($unpacked_argument_offset !== null ? ' unpacked #' . ($unpacked_argument_offset + 1) : ''),
             $arg_location,
         );
 
