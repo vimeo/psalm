@@ -212,11 +212,11 @@ namespace {
      * position of a generator, where a fiber is suspended is engine state, not an effect: what its
      * getters return is forgotten when it is started or resumed.
      *
-     * @psalm-purity-template TPurity(impure)
-     *
      * What fibers pass each other goes through keyed stores shared by all of them (`Fiber::$arguments`, what start()
      * calls the callback with; `Fiber::$resumed`, what resume() sends to suspend(); `Fiber::$suspended`, what
      * suspend() hands back to start() and resume(); `Fiber::$returns`, what the callback returns to getReturn()).
+     *
+     * @psalm-purity-template TPurity(impure)
      *
      * @since 8.1
      */
