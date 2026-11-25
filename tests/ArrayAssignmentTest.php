@@ -229,53 +229,6 @@ final class ArrayAssignmentTest extends TestCase
                         /** @psalm-check-type-exact $l = non-empty-array<int<0, 1>, "x"|int> */;
                     }',
             ],
-            'writeUnderAnIntOrItsNumericStringReplacesTheItem' => [
-                'code' => '<?php
-                    /** @param 0|"0" $k */
-                    function f(int|string $k): void {
-                        $l = [1];
-                        $l[$k] = "x";
-                        /** @psalm-check-type-exact $l = list{"x"} */;
-                    }',
-                'assertions' => [],
-                'ignored_issues' => [],
-                'php_version' => '8.0',
-            ],
-            'writeUnderLiteralIntKeysOfAListWritesOnlyOneOfThem' => [
-                'code' => '<?php
-                    /**
-                     * @param list{int, int} $l
-                     * @param 0|1 $i
-                     */
-                    function f(array $l, int $i): void {
-                        $l[$i] = "x";
-                        /** @psalm-check-type-exact $l = list{"x"|int, "x"|int} */;
-                    }',
-            ],
-            'writeUnderLiteralStringKeysWritesOnlyOneOfThem' => [
-                'code' => '<?php
-                    /**
-                     * @param array{a: int, b: int} $l
-                     * @param "a"|"b" $k
-                     */
-                    function f(array $l, string $k): void {
-                        $l[$k] = "x";
-                        /** @psalm-check-type-exact $l = array{a: "x"|int, b: "x"|int} */;
-                        $l[$k] = "y";
-                        /** @psalm-check-type-exact $l = array{a: "x"|"y"|int, b: "x"|"y"|int} */;
-                    }',
-            ],
-            'nestedWriteUnderLiteralStringKeysWritesOnlyOneOfThem' => [
-                'code' => '<?php
-                    /**
-                     * @param array{a: array{x: int}, b: array{x: int}} $l
-                     * @param "a"|"b" $k
-                     */
-                    function f(array $l, string $k): void {
-                        $l[$k]["x"] = "s";
-                        /** @psalm-check-type-exact $l = array{a: array{x: "s"|int}, b: array{x: "s"|int}} */;
-                    }',
-            ],
             'namedSpreadOfAShapeWrittenUnderAnUnknownKeyMayPassAnyParameter' => [
                 'code' => '<?php
                     /** @param Closure(int $mapper, mixed $from): mixed $c */

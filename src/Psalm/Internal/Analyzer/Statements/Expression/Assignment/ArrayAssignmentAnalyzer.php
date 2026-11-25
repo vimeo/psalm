@@ -869,33 +869,6 @@ final class ArrayAssignmentAnalyzer
     }
 
     /**
-     * Whether the keys are several distinct items the shape surely has (PHP writes `'0'` under `0`)
-     *
-     * @param non-empty-list<TLiteralInt|TLiteralString> $key_values
-     * @psalm-pure
-     */
-    private static function writesOneOfSeveralItems(TKeyedArray $type, array $key_values): bool
-    {
-        $keys = [];
-
-        foreach ($key_values as $key_value) {
-            $int_key = ArrayAnalyzer::getLiteralArrayKeyInt($key_value->value);
-            $key = $int_key === false ? $key_value->value : $int_key;
-
-            if (!isset($type->properties[$key])
-                || $type->properties[$key]->possibly_undefined
-                || $type->properties[$key]->isNever()
-            ) {
-                return false;
-            }
-
-            $keys[$key] = true;
-        }
-
-        return count($keys) > 1;
-    }
-
-    /**
      * @param non-empty-list<TLiteralInt|TLiteralString> $key_values
      */
     private static function updateTypeWithKeyValues(
@@ -921,15 +894,11 @@ final class ArrayAssignmentAnalyzer
                 $has_matching_objectlike_property = true;
             } elseif ($type instanceof TKeyedArray) {
                 $properties = $type->properties;
-                $writes_one_of_its_items = self::writesOneOfSeveralItems($type, $key_values);
                 foreach ($key_values as $key_value) {
                     if (isset($properties[$key_value->value])) {
                         $has_matching_objectlike_property = true;
 
-                        // of several items the shape surely has, only one is written: the others keep their value
-                        $properties[$key_value->value] = $writes_one_of_its_items
-                            ? Type::combineUnionTypes($properties[$key_value->value], $current_type, $codebase)
-                            : $current_type;
+                        $properties[$key_value->value] = $current_type;
                     }
                 }
 
