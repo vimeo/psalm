@@ -210,6 +210,75 @@ final class CallableTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'callOfAUnionWithACallablePartOfUnknownReturnTypeIsMixed' => [
+                'code' => '<?php
+                    interface Engine {
+                        public function render(string $f): string|Stringable;
+                    }
+                    function e(): Engine {
+                        throw new RuntimeException();
+                    }
+                    /** @return callable-string */
+                    function cs(): string {
+                        return "strlen";
+                    }
+                    function c(): Closure {
+                        return fn(string $s): int => 1;
+                    }
+                    /** @return array{Engine, string} */
+                    function dyn(): array {
+                        return [e(), "render"];
+                    }
+                    $e = e();
+                    $cs = cs();
+                    $c = c();
+                    $dyn = dyn();
+                    $b = rand(0, 1) === 1;
+                    $withString = ($b ? [$e, "render"] : $cs)("x");
+                    $withStringFirst = ($b ? $cs : [$e, "render"])("x");
+                    $withClosureObject = ($b ? [$e, "render"] : $c)("x");
+                    $withDynamicMethod = ($b ? [$e, "render"] : $dyn)("x");
+                    $closureWithString = ($b ? fn(string $s): int => 1 : $cs)("x");',
+                'assertions' => [
+                    '$withString===' => 'mixed',
+                    '$withStringFirst===' => 'mixed',
+                    '$withClosureObject===' => 'mixed',
+                    '$withDynamicMethod===' => 'mixed',
+                    '$closureWithString===' => 'mixed',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+                'php_version' => '8.0',
+            ],
+            'callOfACallableArrayGivesTheMethodTemplatesTheirBounds' => [
+                'code' => '<?php
+                    final class A {
+                        /**
+                         * @template T
+                         * @param T $x
+                         * @return T
+                         */
+                        public function id(mixed $x): mixed {
+                            return $x;
+                        }
+                        /**
+                         * @template T of int|string
+                         * @param T $x
+                         * @return list<T>
+                         */
+                        public function wrap(int|string $x): array {
+                            return [$x];
+                        }
+                    }
+                    $a = new A();
+                    $unbounded = [$a, "id"]("x");
+                    $bounded = [$a, "wrap"]("x");',
+                'assertions' => [
+                    '$unbounded===' => 'mixed',
+                    '$bounded===' => 'list<int|string>',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+                'php_version' => '8.0',
+            ],
             'literalArraysOfAnExistingMethodAreCallableArrays' => [
                 'code' => '<?php
                     final class Foo {
