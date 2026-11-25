@@ -2627,13 +2627,8 @@ final class TypeParser
             return new TArray([Type::getNever($from_docblock), Type::getNever($from_docblock)], $from_docblock);
         }
 
+        $fallback_params = null;
         if ($extra_params) {
-            if ($is_list && count($extra_params) !== 1) {
-                throw new TypeParseTreeException('Must have exactly one extra field!');
-            }
-            if (!$is_list && count($extra_params) !== 2) {
-                throw new TypeParseTreeException('Must have exactly two extra fields!');
-            }
             $final_extra_params = $is_list ? [Type::getListKey(true)] : [];
             foreach ($extra_params as $child_tree) {
                 $child_type = self::getTypeFromTree(
@@ -2649,7 +2644,12 @@ final class TypeParser
                 }
                 $final_extra_params []= $child_type;
             }
-            $extra_params = $final_extra_params;
+            if (count($final_extra_params) !== 2) {
+                throw new TypeParseTreeException(
+                    $is_list ? 'Must have exactly one extra field!' : 'Must have exactly two extra fields!',
+                );
+            }
+            $fallback_params = $final_extra_params;
         }
         return $callable
             ? TKeyedArray::makeCallable(
@@ -2660,7 +2660,7 @@ final class TypeParser
             ) : TKeyedArray::make(
                 $properties,
                 $class_strings,
-                $extra_params ?? ($sealed
+                $fallback_params ?? ($sealed
                     ? null
                     : [$is_list ? Type::getListKey() : Type::getArrayKey(), Type::getMixed()]
                 ),
