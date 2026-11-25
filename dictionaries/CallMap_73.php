@@ -4,7 +4,8 @@ return array (
   '_' => 
   array (
     0 => 'string',
-    'message' => 'string',
+    'msgid' => 'string',
+    -2 => 'none',
   ),
   '__halt_compiler' => 
   array (
@@ -3322,6 +3323,7 @@ return array (
     0 => 'string',
     'domain' => 'string',
     'codeset' => 'string',
+    -2 => 'none',
   ),
   'bindec' => 
   array (
@@ -3332,8 +3334,9 @@ return array (
   'bindtextdomain' => 
   array (
     0 => 'string',
-    'domain' => 'string',
-    'directory' => 'string',
+    'domain_name' => 'string',
+    'dir' => 'string',
+    -2 => 'none',
   ),
   'birdstep_autocommit' => 
   array (
@@ -3426,59 +3429,69 @@ return array (
   'bzclose' => 
   array (
     0 => 'bool',
-    'bz' => 'resource',
+    'fp' => 'resource',
+    -2 => 'none',
   ),
   'bzcompress' => 
   array (
     0 => 'int|string',
-    'data' => 'string',
-    'block_size=' => 'int',
-    'work_factor=' => 'int',
+    'source' => 'string',
+    'blocksize=' => 'int',
+    'workfactor=' => 'int',
+    -2 => 'none',
   ),
   'bzdecompress' => 
   array (
     0 => 'false|int|string',
-    'data' => 'string',
-    'use_less_memory=' => 'int',
+    'source' => 'string',
+    'small=' => 'int',
+    -2 => 'none',
   ),
   'bzerrno' => 
   array (
     0 => 'int',
     'bz' => 'resource',
+    -2 => 'none',
   ),
   'bzerror' => 
   array (
     0 => 'array<array-key, mixed>',
     'bz' => 'resource',
+    -2 => 'none',
   ),
   'bzerrstr' => 
   array (
     0 => 'string',
     'bz' => 'resource',
+    -2 => 'none',
   ),
   'bzflush' => 
   array (
     0 => 'bool',
-    'bz' => 'resource',
+    'fp' => 'resource',
+    -2 => 'none',
   ),
   'bzopen' => 
   array (
     0 => 'false|resource',
     'file' => 'resource|string',
     'mode' => 'string',
+    -2 => 'none',
   ),
   'bzread' => 
   array (
     0 => 'false|string',
     'bz' => 'resource',
     'length=' => 'int',
+    -2 => 'none',
   ),
   'bzwrite' => 
   array (
     0 => 'false|int',
-    'bz' => 'resource',
-    'data' => 'string',
+    'fp' => 'resource',
+    'str' => 'string',
     'length=' => 'int',
+    -2 => 'none',
   ),
   'cachingiterator::__construct' => 
   array (
@@ -3579,17 +3592,20 @@ return array (
     'calendar' => 'int',
     'month' => 'int',
     'year' => 'int',
+    -2 => 'none',
   ),
   'cal_from_jd' => 
   array (
     0 => 'array{abbrevdayname: string, abbrevmonth: string, date: string, day: int, dayname: string, dow: int, month: int, monthname: string, year: int}',
-    'julian_day' => 'int',
+    'jd' => 'int',
     'calendar' => 'int',
+    -2 => 'none',
   ),
   'cal_info' => 
   array (
     0 => 'array<array-key, mixed>',
     'calendar=' => 'int',
+    -2 => 'none',
   ),
   'cal_to_jd' => 
   array (
@@ -3598,6 +3614,7 @@ return array (
     'month' => 'int',
     'day' => 'int',
     'year' => 'int',
+    -2 => 'none',
   ),
   'calcul_hmac' => 
   array (
@@ -17181,96 +17198,112 @@ return array (
   'dba_close' => 
   array (
     0 => 'void',
-    'dba' => 'resource',
+    'handle' => 'resource',
+    -2 => 'none',
   ),
   'dba_delete' => 
   array (
     0 => 'bool',
     'key' => 'array<array-key, mixed>|string',
-    'dba' => 'resource',
+    'handle' => 'resource',
+    -2 => 'none',
   ),
   'dba_exists' => 
   array (
     0 => 'bool',
     'key' => 'array<array-key, mixed>|string',
-    'dba' => 'resource',
+    'handle' => 'resource',
+    -2 => 'none',
   ),
   'dba_fetch' => 
   array (
     0 => 'false|string',
     'key' => 'array<array-key, mixed>|string',
     'skip' => 'int',
-    'dba' => 'resource',
+    'handle=' => 'resource',
+    -2 => 'none',
   ),
   'dba_fetch\'1' => 
   array (
     0 => 'false|string',
     'key' => 'array<array-key, mixed>|string',
     'skip' => 'resource',
+    -2 => 'none',
   ),
   'dba_firstkey' => 
   array (
     0 => 'string',
-    'dba' => 'resource',
+    'handle' => 'resource',
+    -2 => 'none',
   ),
   'dba_handlers' => 
   array (
     0 => 'array<array-key, mixed>',
     'full_info=' => 'bool',
+    -2 => 'none',
   ),
   'dba_insert' => 
   array (
     0 => 'bool',
     'key' => 'array<array-key, mixed>|string',
     'value' => 'string',
-    'dba' => 'resource',
+    'handle' => 'resource',
+    -2 => 'none',
   ),
   'dba_key_split' => 
   array (
     0 => 'array<array-key, mixed>|false',
     'key' => 'false|null|string',
+    -2 => 'none',
   ),
   'dba_list' => 
   array (
     0 => 'array<array-key, mixed>',
+    -2 => 'none',
   ),
   'dba_nextkey' => 
   array (
     0 => 'string',
-    'dba' => 'resource',
+    'handle' => 'resource',
+    -2 => 'none',
   ),
   'dba_open' => 
   array (
     0 => 'resource',
     'path' => 'string',
     'mode' => 'string',
-    'handler=' => 'string',
-    '...handler_params=' => 'string',
+    'handlername=' => 'string',
+    '...handler_parameters=' => 'string',
+    -2 => 'none',
   ),
   'dba_optimize' => 
   array (
     0 => 'bool',
-    'dba' => 'resource',
+    'handle' => 'resource',
+    -2 => 'none',
   ),
   'dba_popen' => 
   array (
     0 => 'resource',
     'path' => 'string',
     'mode' => 'string',
-    'handler=' => 'string',
-    '...handler_params=' => 'string',
+    'handlername=' => 'string',
+    '...handler_parameters=' => 'string',
+    -2 => 'none',
   ),
   'dba_replace' => 
   array (
     0 => 'bool',
     'key' => 'array<array-key, mixed>|string',
     'value' => 'string',
-    'dba' => 'resource',
+    'handle' => 'resource',
+    -2 => 'none',
   ),
   'dba_sync' => 
   array (
     0 => 'bool',
-    'dba' => 'resource',
+    'handle' => 'resource',
+    -2 => 'none',
   ),
   'dbase_add_record' => 
   array (
@@ -17667,18 +17700,20 @@ return array (
   'dcgettext' => 
   array (
     0 => 'string',
-    'domain' => 'string',
-    'message' => 'string',
+    'domain_name' => 'string',
+    'msgid' => 'string',
     'category' => 'int',
+    -2 => 'none',
   ),
   'dcngettext' => 
   array (
     0 => 'string',
     'domain' => 'string',
-    'singular' => 'string',
-    'plural' => 'string',
+    'msgid1' => 'string',
+    'msgid2' => 'string',
     'count' => 'int',
     'category' => 'int',
+    -2 => 'none',
   ),
   'deaggregate' => 
   array (
@@ -17793,8 +17828,9 @@ return array (
   'dgettext' => 
   array (
     0 => 'string',
-    'domain' => 'string',
-    'message' => 'string',
+    'domain_name' => 'string',
+    'msgid' => 'string',
+    -2 => 'none',
   ),
   'dio_close' => 
   array (
@@ -18169,9 +18205,10 @@ return array (
   array (
     0 => 'string',
     'domain' => 'string',
-    'singular' => 'string',
-    'plural' => 'string',
+    'msgid1' => 'string',
+    'msgid2' => 'string',
     'count' => 'int',
+    -2 => 'none',
   ),
   'dns_check_record' => 
   array (
@@ -22572,13 +22609,14 @@ return array (
   array (
     0 => 'int',
     'year=' => 'int',
-    'mode=' => 'int',
+    -2 => 'none',
   ),
   'easter_days' => 
   array (
     0 => 'int',
     'year=' => 'int',
-    'mode=' => 'int',
+    'method=' => 'int',
+    -2 => 'none',
   ),
   'echo' => 
   array (
@@ -23063,61 +23101,72 @@ return array (
   array (
     0 => 'array<array-key, mixed>|false',
     'broker' => 'resource',
+    -2 => 'none',
   ),
   'enchant_broker_dict_exists' => 
   array (
     0 => 'bool',
     'broker' => 'resource',
     'tag' => 'string',
+    -2 => 'none',
   ),
   'enchant_broker_free' => 
   array (
     0 => 'bool',
     'broker' => 'resource',
+    -2 => 'none',
   ),
   'enchant_broker_free_dict' => 
   array (
     0 => 'bool',
-    'dictionary' => 'resource',
+    'dict' => 'resource',
+    -2 => 'none',
   ),
   'enchant_broker_get_dict_path' => 
   array (
     0 => 'string',
     'broker' => 'resource',
-    'type' => 'int',
+    'name' => 'int',
+    -2 => 'none',
   ),
   'enchant_broker_get_error' => 
   array (
     0 => 'false|string',
     'broker' => 'resource',
+    -2 => 'none',
   ),
   'enchant_broker_init' => 
   array (
     0 => 'false|resource',
+    -2 => 'none',
   ),
   'enchant_broker_list_dicts' => 
   array (
     0 => 'array<int, array{lang_tag: string, provider_desc: string, provider_file: string, provider_name: string}>|false',
     'broker' => 'resource',
+    -2 => 'none',
   ),
   'enchant_broker_request_dict' => 
   array (
     0 => 'false|resource',
     'broker' => 'resource',
     'tag' => 'string',
+    -2 => 'none',
   ),
   'enchant_broker_request_pwl_dict' => 
   array (
     0 => 'false|resource',
     'broker' => 'resource',
     'filename' => 'string',
+    -2 => 'none',
   ),
   'enchant_broker_set_dict_path' => 
   array (
     0 => 'bool',
     'broker' => 'resource',
-    'type' => 'int',
-    'path' => 'string',
+    'name' => 'int',
+    'value' => 'string',
+    -2 => 'none',
   ),
   'enchant_broker_set_ordering' => 
   array (
@@ -23125,60 +23174,70 @@ return array (
     'broker' => 'resource',
     'tag' => 'string',
     'ordering' => 'string',
+    -2 => 'none',
   ),
   'enchant_dict_add_to_personal' => 
   array (
     0 => 'void',
-    'dictionary' => 'resource',
+    'dict' => 'resource',
     'word' => 'string',
+    -2 => 'none',
   ),
   'enchant_dict_add_to_session' => 
   array (
     0 => 'void',
-    'dictionary' => 'resource',
+    'dict' => 'resource',
     'word' => 'string',
+    -2 => 'none',
   ),
   'enchant_dict_check' => 
   array (
     0 => 'bool',
-    'dictionary' => 'resource',
+    'dict' => 'resource',
     'word' => 'string',
+    -2 => 'none',
   ),
   'enchant_dict_describe' => 
   array (
     0 => 'array<array-key, mixed>',
-    'dictionary' => 'resource',
+    'dict' => 'resource',
+    -2 => 'none',
   ),
   'enchant_dict_get_error' => 
   array (
     0 => 'string',
-    'dictionary' => 'resource',
+    'dict' => 'resource',
+    -2 => 'none',
   ),
   'enchant_dict_is_in_session' => 
   array (
     0 => 'bool',
-    'dictionary' => 'resource',
+    'dict' => 'resource',
     'word' => 'string',
+    -2 => 'none',
   ),
   'enchant_dict_quick_check' => 
   array (
     0 => 'bool',
-    'dictionary' => 'resource',
+    'dict' => 'resource',
     'word' => 'string',
     '&w suggestions=' => 'array<int, string>',
+    -2 => 'none',
   ),
   'enchant_dict_store_replacement' => 
   array (
     0 => 'void',
-    'dictionary' => 'resource',
-    'misspelled' => 'string',
-    'correct' => 'string',
+    'dict' => 'resource',
+    'mis' => 'string',
+    'cor' => 'string',
+    -2 => 'none',
   ),
   'enchant_dict_suggest' => 
   array (
     0 => 'array<array-key, mixed>',
-    'dictionary' => 'resource',
+    'dict' => 'resource',
     'word' => 'string',
+    -2 => 'none',
   ),
   'end' => 
   array (
@@ -24891,6 +24950,12 @@ return array (
     0 => 'void',
     -2 => 'none',
   ),
+  'eventutil::createsocket' => 
+  array (
+    0 => 'mixed',
+    'fd' => 'mixed',
+    -2 => 'none',
+  ),
   'eventutil::getlastsocketerrno' => 
   array (
     0 => 'int',
@@ -25782,28 +25847,32 @@ return array (
   'exif_imagetype' => 
   array (
     0 => 'false|int',
-    'filename' => 'string',
+    'imagefile' => 'string',
+    -2 => 'none',
   ),
   'exif_read_data' => 
   array (
     0 => 'array<array-key, mixed>|false',
-    'file' => 'resource|string',
-    'required_sections=' => 'string',
-    'as_arrays=' => 'bool',
+    'filename' => 'resource|string',
+    'sections_needed=' => 'string',
+    'sub_arrays=' => 'bool',
     'read_thumbnail=' => 'bool',
+    -2 => 'none',
   ),
   'exif_tagname' => 
   array (
     0 => 'false|string',
     'index' => 'int',
+    -2 => 'none',
   ),
   'exif_thumbnail' => 
   array (
     0 => 'false|string',
-    'file' => 'string',
+    'filename' => 'string',
     '&w width=' => 'int',
     '&w height=' => 'int',
-    '&w image_type=' => 'int',
+    '&w imagetype=' => 'int',
+    -2 => 'none',
   ),
   'exp' => 
   array (
@@ -28168,6 +28237,7 @@ return array (
     'month' => 'int',
     'day' => 'int',
     'year' => 'int',
+    -2 => 'none',
   ),
   'fribidi_log2vis' => 
   array (
@@ -30555,7 +30625,8 @@ return array (
   'gettext' => 
   array (
     0 => 'string',
-    'message' => 'string',
+    'msgid' => 'string',
+    -2 => 'none',
   ),
   'gettimeofday' => 
   array (
@@ -32430,6 +32501,7 @@ return array (
     'month' => 'int',
     'day' => 'int',
     'year' => 'int',
+    -2 => 'none',
   ),
   'gridobj::set' => 
   array (
@@ -44218,179 +44290,207 @@ return array (
   'imap_8bit' => 
   array (
     0 => 'false|string',
-    'string' => 'string',
+    'text' => 'string',
+    -2 => 'none',
   ),
   'imap_alerts' => 
   array (
     0 => 'array<array-key, mixed>|false',
+    -2 => 'none',
   ),
   'imap_append' => 
   array (
     0 => 'bool',
-    'imap' => 'resource',
+    'stream_id' => 'resource',
     'folder' => 'string',
     'message' => 'string',
     'options=' => 'string',
-    'internal_date=' => 'string',
+    'date=' => 'string',
+    -2 => 'none',
   ),
   'imap_base64' => 
   array (
     0 => 'false|string',
-    'string' => 'string',
+    'text' => 'string',
+    -2 => 'none',
   ),
   'imap_binary' => 
   array (
     0 => 'false|string',
-    'string' => 'string',
+    'text' => 'string',
+    -2 => 'none',
   ),
   'imap_body' => 
   array (
     0 => 'false|string',
-    'imap' => 'resource',
-    'message_num' => 'int',
-    'flags=' => 'int',
+    'stream_id' => 'resource',
+    'msg_no' => 'int',
+    'options=' => 'int',
+    -2 => 'none',
   ),
   'imap_bodystruct' => 
   array (
     0 => 'false|stdClass',
-    'imap' => 'resource',
-    'message_num' => 'int',
+    'stream_id' => 'resource',
+    'msg_no' => 'int',
     'section' => 'string',
+    -2 => 'none',
   ),
   'imap_check' => 
   array (
     0 => 'false|stdClass',
-    'imap' => 'resource',
+    'stream_id' => 'resource',
+    -2 => 'none',
   ),
   'imap_clearflag_full' => 
   array (
     0 => 'bool',
-    'imap' => 'resource',
+    'stream_id' => 'resource',
     'sequence' => 'string',
     'flag' => 'string',
     'options=' => 'int',
+    -2 => 'none',
   ),
   'imap_close' => 
   array (
     0 => 'bool',
-    'imap' => 'resource',
-    'flags=' => 'int',
+    'stream_id' => 'resource',
+    'options=' => 'int',
+    -2 => 'none',
   ),
   'imap_create' => 
   array (
     0 => 'bool',
-    'imap' => 'resource',
+    'stream_id' => 'resource',
     'mailbox' => 'string',
+    -2 => 'none',
   ),
   'imap_createmailbox' => 
   array (
     0 => 'bool',
-    'imap' => 'resource',
+    'stream_id' => 'resource',
     'mailbox' => 'string',
+    -2 => 'none',
   ),
   'imap_delete' => 
   array (
     0 => 'bool',
-    'imap' => 'resource',
-    'message_nums' => 'string',
-    'flags=' => 'int',
+    'stream_id' => 'resource',
+    'msg_no' => 'string',
+    'options=' => 'int',
+    -2 => 'none',
   ),
   'imap_deletemailbox' => 
   array (
     0 => 'bool',
-    'imap' => 'resource',
+    'stream_id' => 'resource',
     'mailbox' => 'string',
+    -2 => 'none',
   ),
   'imap_errors' => 
   array (
     0 => 'array<array-key, mixed>|false',
+    -2 => 'none',
   ),
   'imap_expunge' => 
   array (
     0 => 'bool',
-    'imap' => 'resource',
+    'stream_id' => 'resource',
+    -2 => 'none',
   ),
   'imap_fetch_overview' => 
   array (
     0 => 'array<array-key, mixed>|false',
-    'imap' => 'resource',
+    'stream_id' => 'resource',
     'sequence' => 'string',
-    'flags=' => 'int',
+    'options=' => 'int',
+    -2 => 'none',
   ),
   'imap_fetchbody' => 
   array (
     0 => 'false|string',
-    'imap' => 'resource',
-    'message_num' => 'int',
+    'stream_id' => 'resource',
+    'msg_no' => 'int',
     'section' => 'string',
-    'flags=' => 'int',
+    'options=' => 'int',
+    -2 => 'none',
   ),
   'imap_fetchheader' => 
   array (
     0 => 'false|string',
-    'imap' => 'resource',
-    'message_num' => 'int',
-    'flags=' => 'int',
+    'stream_id' => 'resource',
+    'msg_no' => 'int',
+    'options=' => 'int',
+    -2 => 'none',
   ),
   'imap_fetchmime' => 
   array (
     0 => 'false|string',
-    'imap' => 'resource',
-    'message_num' => 'int',
+    'stream_id' => 'resource',
+    'msg_no' => 'int',
     'section' => 'string',
-    'flags=' => 'int',
+    'options=' => 'int',
+    -2 => 'none',
   ),
   'imap_fetchstructure' => 
   array (
     0 => 'false|stdClass',
-    'imap' => 'resource',
-    'message_num' => 'int',
-    'flags=' => 'int',
+    'stream_id' => 'resource',
+    'msg_no' => 'int',
+    'options=' => 'int',
+    -2 => 'none',
   ),
   'imap_fetchtext' => 
   array (
     0 => 'false|string',
-    'imap' => 'resource',
-    'message_num' => 'int',
-    'flags=' => 'int',
+    'stream_id' => 'resource',
+    'msg_no' => 'int',
+    'options=' => 'int',
+    -2 => 'none',
   ),
   'imap_gc' => 
   array (
     0 => 'bool',
-    'imap' => 'resource',
-    'flags' => 'int',
+    'stream_id' => 'resource',
+    'flags=' => 'int',
+    -2 => 'none',
   ),
   'imap_get_quota' => 
   array (
     0 => 'array<array-key, mixed>|false',
-    'imap' => 'resource',
-    'quota_root' => 'string',
+    'stream_id' => 'resource',
+    'qroot' => 'string',
+    -2 => 'none',
   ),
   'imap_get_quotaroot' => 
   array (
     0 => 'array<array-key, mixed>|false',
-    'imap' => 'resource',
-    'mailbox' => 'string',
+    'stream_id' => 'resource',
+    'mbox' => 'string',
+    -2 => 'none',
   ),
   'imap_getacl' => 
   array (
     0 => 'array<array-key, mixed>|false',
-    'imap' => 'resource',
+    'stream_id' => 'resource',
     'mailbox' => 'string',
+    -2 => 'none',
   ),
   'imap_getmailboxes' => 
   array (
     0 => 'array<array-key, mixed>|false',
-    'imap' => 'resource',
-    'reference' => 'string',
+    'stream_id' => 'resource',
+    'ref' => 'string',
     'pattern' => 'string',
+    -2 => 'none',
   ),
   'imap_getsubscribed' => 
   array (
     0 => 'array<array-key, mixed>|false',
-    'imap' => 'resource',
-    'reference' => 'string',
+    'stream_id' => 'resource',
+    'ref' => 'string',
     'pattern' => 'string',
+    -2 => 'none',
   ),
   'imap_header' => 
   array (
@@ -44400,60 +44500,69 @@ return array (
     'from_length=' => 'int',
     'subject_length=' => 'int',
     'default_host=' => 'string',
+    -2 => 'none',
   ),
   'imap_headerinfo' => 
   array (
     0 => 'false|stdClass',
-    'imap' => 'resource',
-    'message_num' => 'int',
+    'stream_id' => 'resource',
+    'msg_no' => 'int',
     'from_length=' => 'int',
     'subject_length=' => 'int',
     'default_host=' => 'null|string',
+    -2 => 'none',
   ),
   'imap_headers' => 
   array (
     0 => 'array<array-key, mixed>|false',
-    'imap' => 'resource',
+    'stream_id' => 'resource',
+    -2 => 'none',
   ),
   'imap_last_error' => 
   array (
     0 => 'false|string',
+    -2 => 'none',
   ),
   'imap_list' => 
   array (
     0 => 'array<array-key, mixed>|false',
-    'imap' => 'resource',
-    'reference' => 'string',
+    'stream_id' => 'resource',
+    'ref' => 'string',
     'pattern' => 'string',
+    -2 => 'none',
   ),
   'imap_listmailbox' => 
   array (
     0 => 'array<array-key, mixed>|false',
-    'imap' => 'resource',
-    'reference' => 'string',
+    'stream_id' => 'resource',
+    'ref' => 'string',
     'pattern' => 'string',
+    -2 => 'none',
   ),
   'imap_listscan' => 
   array (
     0 => 'array<array-key, mixed>|false',
-    'imap' => 'resource',
-    'reference' => 'string',
+    'stream_id' => 'resource',
+    'ref' => 'string',
     'pattern' => 'string',
     'content' => 'string',
+    -2 => 'none',
   ),
   'imap_listsubscribed' => 
   array (
     0 => 'array<array-key, mixed>|false',
-    'imap' => 'resource',
-    'reference' => 'string',
+    'stream_id' => 'resource',
+    'ref' => 'string',
     'pattern' => 'string',
+    -2 => 'none',
   ),
   'imap_lsub' => 
   array (
     0 => 'array<array-key, mixed>|false',
-    'imap' => 'resource',
-    'reference' => 'string',
+    'stream_id' => 'resource',
+    'ref' => 'string',
     'pattern' => 'string',
+    -2 => 'none',
   ),
   'imap_mail' => 
   array (
@@ -44464,60 +44573,70 @@ return array (
     'additional_headers=' => 'string',
     'cc=' => 'string',
     'bcc=' => 'string',
-    'return_path=' => 'string',
+    'rpath=' => 'string',
+    -2 => 'none',
   ),
   'imap_mail_compose' => 
   array (
     0 => 'false|string',
     'envelope' => 'array<array-key, mixed>',
-    'bodies' => 'array<array-key, mixed>',
+    'body' => 'array<array-key, mixed>',
+    -2 => 'none',
   ),
   'imap_mail_copy' => 
   array (
     0 => 'bool',
-    'imap' => 'resource',
-    'message_nums' => 'string',
+    'stream_id' => 'resource',
+    'msglist' => 'string',
     'mailbox' => 'string',
-    'flags=' => 'int',
+    'options=' => 'int',
+    -2 => 'none',
   ),
   'imap_mail_move' => 
   array (
     0 => 'bool',
-    'imap' => 'resource',
-    'message_nums' => 'string',
+    'stream_id' => 'resource',
+    'sequence' => 'string',
     'mailbox' => 'string',
-    'flags=' => 'int',
+    'options=' => 'int',
+    -2 => 'none',
   ),
   'imap_mailboxmsginfo' => 
   array (
     0 => 'stdClass',
-    'imap' => 'resource',
+    'stream_id' => 'resource',
+    -2 => 'none',
   ),
   'imap_mime_header_decode' => 
   array (
     0 => 'array<array-key, mixed>|false',
-    'string' => 'string',
+    'str' => 'string',
+    -2 => 'none',
   ),
   'imap_msgno' => 
   array (
     0 => 'int',
-    'imap' => 'resource',
-    'message_uid' => 'int',
+    'stream_id' => 'resource',
+    'unique_msg_id' => 'int',
+    -2 => 'none',
   ),
   'imap_mutf7_to_utf8' => 
   array (
     0 => 'false|string',
-    'string' => 'string',
+    'in' => 'string',
+    -2 => 'none',
   ),
   'imap_num_msg' => 
   array (
     0 => 'false|int',
-    'imap' => 'resource',
+    'stream_id' => 'resource',
+    -2 => 'none',
   ),
   'imap_num_recent' => 
   array (
     0 => 'int',
-    'imap' => 'resource',
+    'stream_id' => 'resource',
+    -2 => 'none',
   ),
   'imap_open' => 
   array (
@@ -44525,190 +44644,218 @@ return array (
     'mailbox' => 'string',
     'user' => 'string',
     'password' => 'string',
-    'flags=' => 'int',
-    'retries=' => 'int',
-    'options=' => 'array<array-key, mixed>',
+    'options=' => 'int',
+    'n_retries=' => 'int',
+    'params=' => 'array<array-key, mixed>',
+    -2 => 'none',
   ),
   'imap_ping' => 
   array (
     0 => 'bool',
-    'imap' => 'resource',
+    'stream_id' => 'resource',
+    -2 => 'none',
   ),
   'imap_qprint' => 
   array (
     0 => 'false|string',
-    'string' => 'string',
+    'text' => 'string',
+    -2 => 'none',
   ),
   'imap_rename' => 
   array (
     0 => 'bool',
-    'imap' => 'resource',
-    'from' => 'string',
-    'to' => 'string',
+    'stream_id' => 'resource',
+    'old_name' => 'string',
+    'new_name' => 'string',
+    -2 => 'none',
   ),
   'imap_renamemailbox' => 
   array (
     0 => 'bool',
-    'imap' => 'resource',
-    'from' => 'string',
-    'to' => 'string',
+    'stream_id' => 'resource',
+    'old_name' => 'string',
+    'new_name' => 'string',
+    -2 => 'none',
   ),
   'imap_reopen' => 
   array (
     0 => 'bool',
-    'imap' => 'resource',
+    'stream_id' => 'resource',
     'mailbox' => 'string',
-    'flags=' => 'int',
-    'retries=' => 'int',
+    'options=' => 'int',
+    'n_retries=' => 'int',
+    -2 => 'none',
   ),
   'imap_rfc822_parse_adrlist' => 
   array (
     0 => 'array<array-key, mixed>',
-    'string' => 'string',
-    'default_hostname' => 'string',
+    'address_string' => 'string',
+    'default_host' => 'string',
+    -2 => 'none',
   ),
   'imap_rfc822_parse_headers' => 
   array (
     0 => 'stdClass',
     'headers' => 'string',
-    'default_hostname=' => 'string',
+    'default_host=' => 'string',
+    -2 => 'none',
   ),
   'imap_rfc822_write_address' => 
   array (
     0 => 'false|string',
     'mailbox' => 'string',
-    'hostname' => 'string',
+    'host' => 'string',
     'personal' => 'string',
+    -2 => 'none',
   ),
   'imap_savebody' => 
   array (
     0 => 'bool',
-    'imap' => 'resource',
+    'stream_id' => 'resource',
     'file' => 'resource|string',
-    'message_num' => 'int',
+    'msg_no' => 'int',
     'section=' => 'string',
-    'flags=' => 'int',
+    'options=' => 'int',
+    -2 => 'none',
   ),
   'imap_scan' => 
   array (
     0 => 'array<array-key, mixed>|false',
-    'imap' => 'resource',
-    'reference' => 'string',
+    'stream_id' => 'resource',
+    'ref' => 'string',
     'pattern' => 'string',
     'content' => 'string',
+    -2 => 'none',
   ),
   'imap_scanmailbox' => 
   array (
     0 => 'array<array-key, mixed>|false',
-    'imap' => 'resource',
-    'reference' => 'string',
+    'stream_id' => 'resource',
+    'ref' => 'string',
     'pattern' => 'string',
     'content' => 'string',
+    -2 => 'none',
   ),
   'imap_search' => 
   array (
     0 => 'array<array-key, mixed>|false',
-    'imap' => 'resource',
+    'stream_id' => 'resource',
     'criteria' => 'string',
-    'flags=' => 'int',
+    'options=' => 'int',
     'charset=' => 'string',
+    -2 => 'none',
   ),
   'imap_set_quota' => 
   array (
     0 => 'bool',
-    'imap' => 'resource',
-    'quota_root' => 'string',
+    'stream_id' => 'resource',
+    'qroot' => 'string',
     'mailbox_size' => 'int',
+    -2 => 'none',
   ),
   'imap_setacl' => 
   array (
     0 => 'bool',
-    'imap' => 'resource',
+    'stream_id' => 'resource',
     'mailbox' => 'string',
-    'user_id' => 'string',
+    'id' => 'string',
     'rights' => 'string',
+    -2 => 'none',
   ),
   'imap_setflag_full' => 
   array (
     0 => 'bool',
-    'imap' => 'resource',
+    'stream_id' => 'resource',
     'sequence' => 'string',
     'flag' => 'string',
     'options=' => 'int',
+    -2 => 'none',
   ),
   'imap_sort' => 
   array (
     0 => 'array<array-key, mixed>|false',
-    'imap' => 'resource',
+    'stream_id' => 'resource',
     'criteria' => 'int',
     'reverse' => 'int',
-    'flags=' => 'int',
+    'options=' => 'int',
     'search_criteria=' => 'string',
     'charset=' => 'string',
+    -2 => 'none',
   ),
   'imap_status' => 
   array (
     0 => 'false|stdClass',
-    'imap' => 'resource',
+    'stream_id' => 'resource',
     'mailbox' => 'string',
-    'flags' => 'int',
+    'options' => 'int',
+    -2 => 'none',
   ),
   'imap_subscribe' => 
   array (
     0 => 'bool',
-    'imap' => 'resource',
+    'stream_id' => 'resource',
     'mailbox' => 'string',
+    -2 => 'none',
   ),
   'imap_thread' => 
   array (
     0 => 'array<array-key, mixed>|false',
-    'imap' => 'resource',
-    'flags=' => 'int',
+    'stream_id' => 'resource',
+    'options=' => 'int',
+    -2 => 'none',
   ),
   'imap_timeout' => 
   array (
     0 => 'bool|int',
     'timeout_type' => 'int',
     'timeout=' => 'int',
+    -2 => 'none',
   ),
   'imap_uid' => 
   array (
     0 => 'false|int',
-    'imap' => 'resource',
-    'message_num' => 'int',
+    'stream_id' => 'resource',
+    'msg_no' => 'int',
+    -2 => 'none',
   ),
   'imap_undelete' => 
   array (
     0 => 'bool',
-    'imap' => 'resource',
-    'message_nums' => 'string',
+    'stream_id' => 'resource',
+    'msg_no' => 'string',
     'flags=' => 'int',
+    -2 => 'none',
   ),
   'imap_unsubscribe' => 
   array (
     0 => 'bool',
-    'imap' => 'resource',
+    'stream_id' => 'resource',
     'mailbox' => 'string',
+    -2 => 'none',
   ),
   'imap_utf7_decode' => 
   array (
     0 => 'false|string',
-    'string' => 'string',
+    'buf' => 'string',
+    -2 => 'none',
   ),
   'imap_utf7_encode' => 
   array (
     0 => 'string',
-    'string' => 'string',
+    'buf' => 'string',
+    -2 => 'none',
   ),
   'imap_utf8' => 
   array (
     0 => 'string',
     'mime_encoded_text' => 'string',
+    -2 => 'none',
   ),
   'imap_utf8_to_mutf7' => 
   array (
     0 => 'false|string',
-    'string' => 'string',
+    'in' => 'string',
+    -2 => 'none',
   ),
   'implode' => 
   array (
@@ -47744,41 +47891,48 @@ return array (
   'jddayofweek' => 
   array (
     0 => 'int|string',
-    'julian_day' => 'int',
+    'juliandaycount' => 'int',
     'mode=' => 'int',
+    -2 => 'none',
   ),
   'jdmonthname' => 
   array (
     0 => 'string',
-    'julian_day' => 'int',
+    'juliandaycount' => 'int',
     'mode' => 'int',
+    -2 => 'none',
   ),
   'jdtofrench' => 
   array (
     0 => 'string',
-    'julian_day' => 'int',
+    'juliandaycount' => 'int',
+    -2 => 'none',
   ),
   'jdtogregorian' => 
   array (
     0 => 'string',
-    'julian_day' => 'int',
+    'juliandaycount' => 'int',
+    -2 => 'none',
   ),
   'jdtojewish' => 
   array (
     0 => 'string',
-    'julian_day' => 'int',
+    'juliandaycount' => 'int',
     'hebrew=' => 'bool',
-    'flags=' => 'int',
+    'fl=' => 'int',
+    -2 => 'none',
   ),
   'jdtojulian' => 
   array (
     0 => 'string',
-    'julian_day' => 'int',
+    'juliandaycount' => 'int',
+    -2 => 'none',
   ),
   'jdtounix' => 
   array (
     0 => 'false|int',
-    'julian_day' => 'int',
+    'jday' => 'int',
+    -2 => 'none',
   ),
   'jewishtojd' => 
   array (
@@ -47786,6 +47940,7 @@ return array (
     'month' => 'int',
     'day' => 'int',
     'year' => 'int',
+    -2 => 'none',
   ),
   'jobqueue_license_info' => 
   array (
@@ -48045,6 +48200,7 @@ return array (
     'month' => 'int',
     'day' => 'int',
     'year' => 'int',
+    -2 => 'none',
   ),
   'kadm5_chpass_principal' => 
   array (
@@ -48671,112 +48827,125 @@ return array (
   'ldap_add' => 
   array (
     0 => 'bool',
-    'ldap' => 'resource',
+    'link_identifier' => 'resource',
     'dn' => 'string',
     'entry' => 'array<array-key, mixed>',
-    'controls=' => 'array<array-key, mixed>',
+    'servercontrols=' => 'array<array-key, mixed>',
+    -2 => 'none',
   ),
   'ldap_add_ext' => 
   array (
     0 => 'false|resource',
-    'ldap' => 'resource',
+    'link_identifier' => 'resource',
     'dn' => 'string',
     'entry' => 'array<array-key, mixed>',
-    'controls=' => 'array<array-key, mixed>',
+    'servercontrols=' => 'array<array-key, mixed>',
+    -2 => 'none',
   ),
   'ldap_bind' => 
   array (
     0 => 'bool',
-    'ldap' => 'resource',
-    'dn=' => 'null|string',
-    'password=' => 'null|string',
+    'link_identifier' => 'resource',
+    'bind_rdn=' => 'null|string',
+    'bind_password=' => 'null|string',
+    -2 => 'none',
   ),
   'ldap_bind_ext' => 
   array (
     0 => 'false|resource',
-    'ldap' => 'resource',
-    'dn=' => 'null|string',
-    'password=' => 'null|string',
-    'controls=' => 'array<array-key, mixed>',
+    'link_identifier' => 'resource',
+    'bind_rdn=' => 'null|string',
+    'bind_password=' => 'null|string',
+    'servercontrols=' => 'array<array-key, mixed>',
+    -2 => 'none',
   ),
   'ldap_close' => 
   array (
     0 => 'bool',
-    'ldap' => 'resource',
+    'link_identifier' => 'resource',
+    -2 => 'none',
   ),
   'ldap_compare' => 
   array (
     0 => 'bool|int',
-    'ldap' => 'resource',
+    'link_identifier' => 'resource',
     'dn' => 'string',
     'attribute' => 'string',
     'value' => 'string',
-    'controls=' => 'array<array-key, mixed>',
+    'servercontrols=' => 'array<array-key, mixed>',
+    -2 => 'none',
   ),
   'ldap_connect' => 
   array (
     0 => 'false|resource',
-    'uri=' => 'null|string',
+    'hostname=' => 'null|string',
     'port=' => 'int',
-    'wallet=' => 'string',
-    'password=' => 'string',
-    'auth_mode=' => 'int',
+    -2 => 'none',
   ),
   'ldap_control_paged_result' => 
   array (
     0 => 'bool',
-    'link_identifier' => 'resource',
+    'link' => 'resource',
     'pagesize' => 'int',
     'iscritical=' => 'bool',
     'cookie=' => 'string',
+    -2 => 'none',
   ),
   'ldap_control_paged_result_response' => 
   array (
     0 => 'bool',
-    'link_identifier' => 'resource',
-    'result_identifier' => 'resource',
-    '&w cookie' => 'string',
-    '&w estimated' => 'int',
+    'link' => 'resource',
+    'result' => 'resource',
+    '&w cookie=' => 'string',
+    '&w estimated=' => 'int',
+    -2 => 'none',
   ),
   'ldap_count_entries' => 
   array (
     0 => 'int',
-    'ldap' => 'resource',
-    'result' => 'resource',
+    'link_identifier' => 'resource',
+    'result_identifier' => 'resource',
+    -2 => 'none',
   ),
   'ldap_delete' => 
   array (
     0 => 'bool',
-    'ldap' => 'resource',
+    'link_identifier' => 'resource',
     'dn' => 'string',
-    'controls=' => 'array<array-key, mixed>',
+    'servercontrols=' => 'array<array-key, mixed>',
+    -2 => 'none',
   ),
   'ldap_delete_ext' => 
   array (
     0 => 'false|resource',
-    'ldap' => 'resource',
+    'link_identifier' => 'resource',
     'dn' => 'string',
-    'controls=' => 'array<array-key, mixed>',
+    'servercontrols=' => 'array<array-key, mixed>',
+    -2 => 'none',
   ),
   'ldap_dn2ufn' => 
   array (
     0 => 'false|string',
     'dn' => 'string',
+    -2 => 'none',
   ),
   'ldap_err2str' => 
   array (
     0 => 'string',
     'errno' => 'int',
+    -2 => 'none',
   ),
   'ldap_errno' => 
   array (
     0 => 'int',
-    'ldap' => 'resource',
+    'link_identifier' => 'resource',
+    -2 => 'none',
   ),
   'ldap_error' => 
   array (
     0 => 'string',
-    'ldap' => 'resource',
+    'link_identifier' => 'resource',
+    -2 => 'none',
   ),
   'ldap_escape' => 
   array (
@@ -48784,259 +48953,293 @@ return array (
     'value' => 'string',
     'ignore=' => 'string',
     'flags=' => 'int',
+    -2 => 'none',
   ),
   'ldap_exop' => 
   array (
     0 => 'bool|resource',
-    'ldap' => 'resource',
-    'request_oid' => 'string',
-    'request_data=' => 'null|string',
-    'controls=' => 'array<array-key, mixed>|null',
-    '&w response_data=' => 'string',
-    '&w response_oid=' => 'string',
+    'link' => 'resource',
+    'reqoid' => 'string',
+    'reqdata=' => 'null|string',
+    'servercontrols=' => 'array<array-key, mixed>|null',
+    '&w retdata=' => 'string',
+    '&w retoid=' => 'string',
+    -2 => 'none',
   ),
   'ldap_exop_passwd' => 
   array (
     0 => 'bool|string',
-    'ldap' => 'resource',
+    'link' => 'resource',
     'user=' => 'string',
-    'old_password=' => 'string',
-    'new_password=' => 'string',
-    '&w controls=' => 'array<array-key, mixed>',
+    'oldpw=' => 'string',
+    'newpw=' => 'string',
+    '&w serverctrls=' => 'array<array-key, mixed>',
+    -2 => 'none',
   ),
   'ldap_exop_refresh' => 
   array (
     0 => 'false|int',
-    'ldap' => 'resource',
+    'link' => 'resource',
     'dn' => 'string',
     'ttl' => 'int',
+    -2 => 'none',
   ),
   'ldap_exop_whoami' => 
   array (
     0 => 'false|string',
-    'ldap' => 'resource',
+    'link' => 'resource',
+    -2 => 'none',
   ),
   'ldap_explode_dn' => 
   array (
     0 => 'array<array-key, mixed>|false',
     'dn' => 'string',
     'with_attrib' => 'int',
+    -2 => 'none',
   ),
   'ldap_first_attribute' => 
   array (
     0 => 'false|string',
-    'ldap' => 'resource',
-    'entry' => 'resource',
+    'link_identifier' => 'resource',
+    'result_entry_identifier' => 'resource',
+    -2 => 'none',
   ),
   'ldap_first_entry' => 
   array (
     0 => 'false|resource',
-    'ldap' => 'resource',
-    'result' => 'resource',
+    'link_identifier' => 'resource',
+    'result_identifier' => 'resource',
+    -2 => 'none',
   ),
   'ldap_first_reference' => 
   array (
     0 => 'false|resource',
-    'ldap' => 'resource',
+    'link' => 'resource',
     'result' => 'resource',
+    -2 => 'none',
   ),
   'ldap_free_result' => 
   array (
     0 => 'bool',
-    'ldap' => 'resource',
+    'link_identifier' => 'resource',
+    -2 => 'none',
   ),
   'ldap_get_attributes' => 
   array (
     0 => 'array<array-key, mixed>',
-    'ldap' => 'resource',
-    'entry' => 'resource',
+    'link_identifier' => 'resource',
+    'result_entry_identifier' => 'resource',
+    -2 => 'none',
   ),
   'ldap_get_dn' => 
   array (
     0 => 'false|string',
-    'ldap' => 'resource',
-    'entry' => 'resource',
+    'link_identifier' => 'resource',
+    'result_entry_identifier' => 'resource',
+    -2 => 'none',
   ),
   'ldap_get_entries' => 
   array (
     0 => 'array<array-key, mixed>|false',
-    'ldap' => 'resource',
-    'result' => 'resource',
+    'link_identifier' => 'resource',
+    'result_identifier' => 'resource',
+    -2 => 'none',
   ),
   'ldap_get_option' => 
   array (
     0 => 'bool',
-    'ldap' => 'resource',
+    'link_identifier' => 'resource',
     'option' => 'int',
-    '&w value=' => 'array<array-key, mixed>|int|string',
+    '&w retval' => 'array<array-key, mixed>|int|string',
+    -2 => 'none',
   ),
   'ldap_get_values' => 
   array (
     0 => 'array<array-key, mixed>|false',
-    'ldap' => 'resource',
-    'entry' => 'resource',
+    'link_identifier' => 'resource',
+    'result_entry_identifier' => 'resource',
     'attribute' => 'string',
+    -2 => 'none',
   ),
   'ldap_get_values_len' => 
   array (
     0 => 'array<array-key, mixed>|false',
-    'ldap' => 'resource',
-    'entry' => 'resource',
+    'link_identifier' => 'resource',
+    'result_entry_identifier' => 'resource',
     'attribute' => 'string',
+    -2 => 'none',
   ),
   'ldap_list' => 
   array (
     0 => 'false|resource',
-    'ldap' => 'array<array-key, mixed>|resource',
-    'base' => 'array<array-key, mixed>|string',
+    'link_identifier' => 'array<array-key, mixed>|resource',
+    'base_dn' => 'array<array-key, mixed>|string',
     'filter' => 'array<array-key, mixed>|string',
     'attributes=' => 'array<array-key, mixed>',
-    'attributes_only=' => 'int',
+    'attrsonly=' => 'int',
     'sizelimit=' => 'int',
     'timelimit=' => 'int',
     'deref=' => 'int',
-    'controls=' => 'array<array-key, mixed>',
+    'servercontrols=' => 'array<array-key, mixed>',
+    -2 => 'none',
   ),
   'ldap_mod_add' => 
   array (
     0 => 'bool',
-    'ldap' => 'resource',
+    'link_identifier' => 'resource',
     'dn' => 'string',
     'entry' => 'array<array-key, mixed>',
-    'controls=' => 'array<array-key, mixed>',
+    'servercontrols=' => 'array<array-key, mixed>',
+    -2 => 'none',
   ),
   'ldap_mod_add_ext' => 
   array (
     0 => 'false|resource',
-    'ldap' => 'resource',
+    'link_identifier' => 'resource',
     'dn' => 'string',
     'entry' => 'array<array-key, mixed>',
-    'controls=' => 'array<array-key, mixed>',
+    'servercontrols=' => 'array<array-key, mixed>',
+    -2 => 'none',
   ),
   'ldap_mod_del' => 
   array (
     0 => 'bool',
-    'ldap' => 'resource',
+    'link_identifier' => 'resource',
     'dn' => 'string',
     'entry' => 'array<array-key, mixed>',
-    'controls=' => 'array<array-key, mixed>',
+    'servercontrols=' => 'array<array-key, mixed>',
+    -2 => 'none',
   ),
   'ldap_mod_del_ext' => 
   array (
     0 => 'false|resource',
-    'ldap' => 'resource',
+    'link_identifier' => 'resource',
     'dn' => 'string',
     'entry' => 'array<array-key, mixed>',
-    'controls=' => 'array<array-key, mixed>',
+    'servercontrols=' => 'array<array-key, mixed>',
+    -2 => 'none',
   ),
   'ldap_mod_replace' => 
   array (
     0 => 'bool',
-    'ldap' => 'resource',
+    'link_identifier' => 'resource',
     'dn' => 'string',
     'entry' => 'array<array-key, mixed>',
-    'controls=' => 'array<array-key, mixed>',
+    'servercontrols=' => 'array<array-key, mixed>',
+    -2 => 'none',
   ),
   'ldap_mod_replace_ext' => 
   array (
     0 => 'false|resource',
-    'ldap' => 'resource',
+    'link_identifier' => 'resource',
     'dn' => 'string',
     'entry' => 'array<array-key, mixed>',
-    'controls=' => 'array<array-key, mixed>',
+    'servercontrols=' => 'array<array-key, mixed>',
+    -2 => 'none',
   ),
   'ldap_modify' => 
   array (
     0 => 'bool',
-    'ldap' => 'resource',
+    'link_identifier' => 'resource',
     'dn' => 'string',
     'entry' => 'array<array-key, mixed>',
-    'controls=' => 'array<array-key, mixed>',
+    'servercontrols=' => 'array<array-key, mixed>',
+    -2 => 'none',
   ),
   'ldap_modify_batch' => 
   array (
     0 => 'bool',
-    'ldap' => 'resource',
+    'link_identifier' => 'resource',
     'dn' => 'string',
     'modifications_info' => 'array<array-key, mixed>',
-    'controls=' => 'array<array-key, mixed>',
+    'servercontrols=' => 'array<array-key, mixed>',
+    -2 => 'none',
   ),
   'ldap_next_attribute' => 
   array (
     0 => 'false|string',
-    'ldap' => 'resource',
-    'entry' => 'resource',
+    'link_identifier' => 'resource',
+    'result_entry_identifier' => 'resource',
+    -2 => 'none',
   ),
   'ldap_next_entry' => 
   array (
     0 => 'false|resource',
-    'ldap' => 'resource',
-    'entry' => 'resource',
+    'link_identifier' => 'resource',
+    'result_identifier' => 'resource',
+    -2 => 'none',
   ),
   'ldap_next_reference' => 
   array (
     0 => 'false|resource',
-    'ldap' => 'resource',
+    'link' => 'resource',
     'entry' => 'resource',
+    -2 => 'none',
   ),
   'ldap_parse_exop' => 
   array (
     0 => 'bool',
-    'ldap' => 'resource',
+    'link' => 'resource',
     'result' => 'resource',
-    '&w response_data=' => 'string',
-    '&w response_oid=' => 'string',
+    '&w retdata' => 'string',
+    '&w retoid' => 'string',
+    -2 => 'none',
   ),
   'ldap_parse_reference' => 
   array (
     0 => 'bool',
-    'ldap' => 'resource',
+    'link' => 'resource',
     'entry' => 'resource',
     '&w referrals' => 'array<array-key, mixed>',
+    -2 => 'none',
   ),
   'ldap_parse_result' => 
   array (
     0 => 'bool',
-    'ldap' => 'resource',
+    'link' => 'resource',
     'result' => 'resource',
-    '&w error_code' => 'int',
-    '&w matched_dn=' => 'string',
-    '&w error_message=' => 'string',
+    '&w errcode' => 'int',
+    '&w matcheddn=' => 'string',
+    '&w errmsg=' => 'string',
     '&w referrals=' => 'array<array-key, mixed>',
-    '&w controls=' => 'array<array-key, mixed>',
+    '&w serverctrls=' => 'array<array-key, mixed>',
+    -2 => 'none',
   ),
   'ldap_read' => 
   array (
     0 => 'false|resource',
-    'ldap' => 'array<array-key, mixed>|resource',
-    'base' => 'array<array-key, mixed>|string',
+    'link_identifier' => 'array<array-key, mixed>|resource',
+    'base_dn' => 'array<array-key, mixed>|string',
     'filter' => 'array<array-key, mixed>|string',
     'attributes=' => 'array<array-key, mixed>',
-    'attributes_only=' => 'int',
+    'attrsonly=' => 'int',
     'sizelimit=' => 'int',
     'timelimit=' => 'int',
     'deref=' => 'int',
-    'controls=' => 'array<array-key, mixed>',
+    'servercontrols=' => 'array<array-key, mixed>',
+    -2 => 'none',
   ),
   'ldap_rename' => 
   array (
     0 => 'bool',
-    'ldap' => 'resource',
+    'link_identifier' => 'resource',
     'dn' => 'string',
-    'new_rdn' => 'string',
-    'new_parent' => 'string',
-    'delete_old_rdn' => 'bool',
-    'controls=' => 'array<array-key, mixed>',
+    'newrdn' => 'string',
+    'newparent' => 'string',
+    'deleteoldrdn' => 'bool',
+    'servercontrols=' => 'array<array-key, mixed>',
+    -2 => 'none',
   ),
   'ldap_rename_ext' => 
   array (
     0 => 'false|resource',
-    'ldap' => 'resource',
+    'link_identifier' => 'resource',
     'dn' => 'string',
-    'new_rdn' => 'string',
-    'new_parent' => 'string',
-    'delete_old_rdn' => 'bool',
-    'controls=' => 'array<array-key, mixed>',
+    'newrdn' => 'string',
+    'newparent' => 'string',
+    'deleteoldrdn' => 'bool',
+    'servercontrols=' => 'array<array-key, mixed>',
+    -2 => 'none',
   ),
   'ldap_sasl_bind' => 
   array (
@@ -49053,40 +49256,45 @@ return array (
   'ldap_search' => 
   array (
     0 => 'array<array-key, resource>|false|resource',
-    'ldap' => 'array<array-key, resource>|resource',
-    'base' => 'array<array-key, mixed>|string',
+    'link_identifier' => 'array<array-key, resource>|resource',
+    'base_dn' => 'array<array-key, mixed>|string',
     'filter' => 'array<array-key, mixed>|string',
     'attributes=' => 'array<array-key, mixed>',
-    'attributes_only=' => 'int',
+    'attrsonly=' => 'int',
     'sizelimit=' => 'int',
     'timelimit=' => 'int',
     'deref=' => 'int',
-    'controls=' => 'array<array-key, mixed>',
+    'servercontrols=' => 'array<array-key, mixed>',
+    -2 => 'none',
   ),
   'ldap_set_option' => 
   array (
     0 => 'bool',
-    'ldap' => 'null|resource',
+    'link_identifier' => 'null|resource',
     'option' => 'int',
-    'value' => 'mixed',
+    'newval' => 'mixed',
+    -2 => 'none',
   ),
   'ldap_set_rebind_proc' => 
   array (
     0 => 'bool',
-    'ldap' => 'resource',
+    'link' => 'resource',
     'callback' => 'callable[impure]',
+    -2 => 'none',
   ),
   'ldap_sort' => 
   array (
     0 => 'bool',
-    'link_identifier' => 'resource',
-    'result_identifier' => 'resource',
+    'link' => 'resource',
+    'result' => 'resource',
     'sortfilter' => 'string',
+    -2 => 'none',
   ),
   'ldap_start_tls' => 
   array (
     0 => 'bool',
-    'ldap' => 'resource',
+    'link_identifier' => 'resource',
+    -2 => 'none',
   ),
   'ldap_t61_to_8859' => 
   array (
@@ -49096,7 +49304,8 @@ return array (
   'ldap_unbind' => 
   array (
     0 => 'bool',
-    'ldap' => 'resource',
+    'link_identifier' => 'resource',
+    -2 => 'none',
   ),
   'leak' => 
   array (
@@ -57303,50 +57512,57 @@ return array (
   array (
     0 => 'false|resource',
     'key' => 'int',
-    'permissions=' => 'int',
+    'perms=' => 'int',
+    -2 => 'none',
   ),
   'msg_queue_exists' => 
   array (
     0 => 'bool',
     'key' => 'int',
+    -2 => 'none',
   ),
   'msg_receive' => 
   array (
     0 => 'bool',
     'queue' => 'resource',
-    'desired_message_type' => 'int',
-    '&w received_message_type' => 'int',
-    'max_message_size' => 'int',
+    'desiredmsgtype' => 'int',
+    '&w msgtype' => 'int',
+    'maxsize' => 'int',
     '&w message' => 'mixed',
     'unserialize=' => 'bool',
     'flags=' => 'int',
-    '&w error_code=' => 'int',
+    '&w errorcode=' => 'int',
+    -2 => 'none',
   ),
   'msg_remove_queue' => 
   array (
     0 => 'bool',
     'queue' => 'resource',
+    -2 => 'none',
   ),
   'msg_send' => 
   array (
     0 => 'bool',
     'queue' => 'resource',
-    'message_type' => 'int',
+    'msgtype' => 'int',
     'message' => 'mixed',
     'serialize=' => 'bool',
     'blocking=' => 'bool',
-    '&w error_code=' => 'int',
+    '&w errorcode=' => 'int',
+    -2 => 'none',
   ),
   'msg_set_queue' => 
   array (
     0 => 'bool',
     'queue' => 'resource',
     'data' => 'array<array-key, mixed>',
+    -2 => 'none',
   ),
   'msg_stat_queue' => 
   array (
     0 => 'array<array-key, mixed>',
     'queue' => 'resource',
+    -2 => 'none',
   ),
   'msgfmt_create' => 
   array (
@@ -60464,9 +60680,10 @@ return array (
   'ngettext' => 
   array (
     0 => 'string',
-    'singular' => 'string',
-    'plural' => 'string',
+    'msgid1' => 'string',
+    'msgid2' => 'string',
     'count' => 'int',
+    -2 => 'none',
   ),
   'nl2br' => 
   array (
@@ -61247,77 +61464,276 @@ return array (
     'input' => 'string',
     'mode=' => 'int',
   ),
+  'oci-collection::append' => 
+  array (
+    0 => 'mixed',
+    'value' => 'mixed',
+    -2 => 'none',
+  ),
+  'oci-collection::assign' => 
+  array (
+    0 => 'mixed',
+    'collection_from' => 'mixed',
+    -2 => 'none',
+  ),
+  'oci-collection::assignelem' => 
+  array (
+    0 => 'mixed',
+    'index' => 'mixed',
+    'value' => 'mixed',
+    -2 => 'none',
+  ),
+  'oci-collection::free' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+  ),
+  'oci-collection::getelem' => 
+  array (
+    0 => 'mixed',
+    'index' => 'mixed',
+    -2 => 'none',
+  ),
+  'oci-collection::max' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+  ),
+  'oci-collection::size' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+  ),
+  'oci-collection::trim' => 
+  array (
+    0 => 'mixed',
+    'number' => 'mixed',
+    -2 => 'none',
+  ),
+  'oci-lob::append' => 
+  array (
+    0 => 'mixed',
+    'lob_descriptor_from' => 'mixed',
+    -2 => 'none',
+  ),
+  'oci-lob::close' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+  ),
+  'oci-lob::eof' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+  ),
+  'oci-lob::erase' => 
+  array (
+    0 => 'mixed',
+    'offset=' => 'mixed',
+    'length=' => 'mixed',
+    -2 => 'none',
+  ),
+  'oci-lob::export' => 
+  array (
+    0 => 'mixed',
+    'filename' => 'mixed',
+    'start=' => 'mixed',
+    'length=' => 'mixed',
+    -2 => 'none',
+  ),
+  'oci-lob::flush' => 
+  array (
+    0 => 'mixed',
+    'flag=' => 'mixed',
+    -2 => 'none',
+  ),
+  'oci-lob::free' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+  ),
+  'oci-lob::getbuffering' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+  ),
+  'oci-lob::import' => 
+  array (
+    0 => 'mixed',
+    'filename' => 'mixed',
+    -2 => 'none',
+  ),
+  'oci-lob::load' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+  ),
+  'oci-lob::read' => 
+  array (
+    0 => 'mixed',
+    'length' => 'mixed',
+    -2 => 'none',
+  ),
+  'oci-lob::rewind' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+  ),
+  'oci-lob::save' => 
+  array (
+    0 => 'mixed',
+    'data' => 'mixed',
+    'offset=' => 'mixed',
+    -2 => 'none',
+  ),
+  'oci-lob::savefile' => 
+  array (
+    0 => 'mixed',
+    'filename' => 'mixed',
+    -2 => 'none',
+  ),
+  'oci-lob::seek' => 
+  array (
+    0 => 'mixed',
+    'offset' => 'mixed',
+    'whence=' => 'mixed',
+    -2 => 'none',
+  ),
+  'oci-lob::setbuffering' => 
+  array (
+    0 => 'mixed',
+    'mode' => 'mixed',
+    -2 => 'none',
+  ),
+  'oci-lob::size' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+  ),
+  'oci-lob::tell' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+  ),
+  'oci-lob::truncate' => 
+  array (
+    0 => 'mixed',
+    'length=' => 'mixed',
+    -2 => 'none',
+  ),
+  'oci-lob::write' => 
+  array (
+    0 => 'mixed',
+    'string' => 'mixed',
+    'length=' => 'mixed',
+    -2 => 'none',
+  ),
+  'oci-lob::writetemporary' => 
+  array (
+    0 => 'mixed',
+    'data' => 'mixed',
+    'type=' => 'mixed',
+    -2 => 'none',
+  ),
+  'oci-lob::writetofile' => 
+  array (
+    0 => 'mixed',
+    'filename' => 'mixed',
+    'start=' => 'mixed',
+    'length=' => 'mixed',
+    -2 => 'none',
+  ),
   'oci_bind_array_by_name' => 
   array (
     0 => 'bool',
-    'statement' => 'resource',
-    'param' => 'string',
-    '&rw var' => 'array<array-key, mixed>',
-    'max_array_length' => 'int',
-    'max_item_length=' => 'int',
+    'statement_resource' => 'resource',
+    'column_name' => 'string',
+    '&variable' => 'array<array-key, mixed>',
+    'maximum_array_length' => 'int',
+    'maximum_item_length=' => 'int',
     'type=' => 'int',
+    -2 => 'none',
   ),
   'oci_bind_by_name' => 
   array (
     0 => 'bool',
-    'statement' => 'resource',
-    'param' => 'string',
-    '&rw var' => 'mixed',
-    'max_length=' => 'int',
+    'statement_resource' => 'resource',
+    'column_name' => 'string',
+    '&variable' => 'mixed',
+    'maximum_length=' => 'int',
     'type=' => 'int',
+    -2 => 'none',
   ),
   'oci_cancel' => 
   array (
     0 => 'bool',
-    'statement' => 'resource',
+    'statement_resource' => 'resource',
+    -2 => 'none',
   ),
   'oci_client_version' => 
   array (
     0 => 'string',
+    -2 => 'none',
   ),
   'oci_close' => 
   array (
     0 => 'bool',
-    'connection' => 'resource',
+    'connection_resource' => 'resource',
+    -2 => 'none',
   ),
   'oci_collection_append' => 
   array (
     0 => 'bool',
     'collection' => 'string',
+    'value' => 'mixed',
+    -2 => 'none',
   ),
   'oci_collection_assign' => 
   array (
     0 => 'bool',
-    'to' => 'object',
+    'collection_to' => 'object',
+    'collection_from' => 'mixed',
+    -2 => 'none',
   ),
   'oci_collection_element_assign' => 
   array (
     0 => 'bool',
     'collection' => 'int',
     'index' => 'string',
+    'value' => 'mixed',
+    -2 => 'none',
   ),
   'oci_collection_element_get' => 
   array (
     0 => 'string',
     'collection' => 'int',
+    'index' => 'mixed',
+    -2 => 'none',
   ),
   'oci_collection_max' => 
   array (
     0 => 'int',
+    'collection' => 'mixed',
+    -2 => 'none',
   ),
   'oci_collection_size' => 
   array (
     0 => 'int',
+    'collection' => 'mixed',
+    -2 => 'none',
   ),
   'oci_collection_trim' => 
   array (
     0 => 'bool',
     'collection' => 'int',
+    'number' => 'mixed',
+    -2 => 'none',
   ),
   'oci_commit' => 
   array (
     0 => 'bool',
-    'connection' => 'resource',
+    'connection_resource' => 'resource',
+    -2 => 'none',
   ),
   'oci_connect' => 
   array (
@@ -61325,122 +61741,145 @@ return array (
     'username' => 'string',
     'password' => 'string',
     'connection_string=' => 'string',
-    'encoding=' => 'string',
+    'character_set=' => 'string',
     'session_mode=' => 'int',
+    -2 => 'none',
   ),
   'oci_define_by_name' => 
   array (
     0 => 'bool',
-    'statement' => 'resource',
-    'column' => 'string',
-    '&w var' => 'mixed',
+    'statement_resource' => 'resource',
+    'column_name' => 'string',
+    '&w variable' => 'mixed',
     'type=' => 'int',
+    -2 => 'none',
   ),
   'oci_error' => 
   array (
     0 => 'array<array-key, mixed>|false',
-    'connection_or_statement=' => 'resource',
+    'connection_or_statement_resource=' => 'resource',
+    -2 => 'none',
   ),
   'oci_execute' => 
   array (
     0 => 'bool',
-    'statement' => 'resource',
+    'statement_resource' => 'resource',
     'mode=' => 'int',
+    -2 => 'none',
   ),
   'oci_fetch' => 
   array (
     0 => 'bool',
-    'statement' => 'resource',
+    'statement_resource' => 'resource',
+    -2 => 'none',
   ),
   'oci_fetch_all' => 
   array (
     0 => 'false|int',
-    'statement' => 'resource',
+    'statement_resource' => 'resource',
     '&w output' => 'array<array-key, mixed>',
-    'offset=' => 'int',
-    'limit=' => 'int',
+    'skip=' => 'int',
+    'maximum_rows=' => 'int',
     'flags=' => 'int',
+    -2 => 'none',
   ),
   'oci_fetch_array' => 
   array (
     0 => 'array<array-key, mixed>|false',
-    'statement' => 'resource',
+    'statement_resource' => 'resource',
     'mode=' => 'int',
+    -2 => 'none',
   ),
   'oci_fetch_assoc' => 
   array (
     0 => 'array<array-key, mixed>|false',
-    'statement' => 'resource',
+    'statement_resource' => 'resource',
+    -2 => 'none',
   ),
   'oci_fetch_object' => 
   array (
     0 => 'false|object',
-    'statement' => 'resource',
+    'statement_resource' => 'resource',
+    -2 => 'none',
   ),
   'oci_fetch_row' => 
   array (
     0 => 'array<array-key, mixed>|false',
-    'statement' => 'resource',
+    'statement_resource' => 'resource',
+    -2 => 'none',
   ),
   'oci_field_is_null' => 
   array (
     0 => 'bool',
-    'statement' => 'resource',
-    'column' => 'mixed',
+    'statement_resource' => 'resource',
+    'column_number_or_name' => 'mixed',
+    -2 => 'none',
   ),
   'oci_field_name' => 
   array (
     0 => 'false|string',
-    'statement' => 'resource',
-    'column' => 'mixed',
+    'statement_resource' => 'resource',
+    'column_number_or_name' => 'mixed',
+    -2 => 'none',
   ),
   'oci_field_precision' => 
   array (
     0 => 'false|int',
-    'statement' => 'resource',
-    'column' => 'mixed',
+    'statement_resource' => 'resource',
+    'column_number_or_name' => 'mixed',
+    -2 => 'none',
   ),
   'oci_field_scale' => 
   array (
     0 => 'false|int',
-    'statement' => 'resource',
-    'column' => 'mixed',
+    'statement_resource' => 'resource',
+    'column_number_or_name' => 'mixed',
+    -2 => 'none',
   ),
   'oci_field_size' => 
   array (
     0 => 'false|int',
-    'statement' => 'resource',
-    'column' => 'mixed',
+    'statement_resource' => 'resource',
+    'column_number_or_name' => 'mixed',
+    -2 => 'none',
   ),
   'oci_field_type' => 
   array (
     0 => 'false|mixed',
-    'statement' => 'resource',
-    'column' => 'mixed',
+    'statement_resource' => 'resource',
+    'column_number_or_name' => 'mixed',
+    -2 => 'none',
   ),
   'oci_field_type_raw' => 
   array (
     0 => 'false|int',
-    'statement' => 'resource',
-    'column' => 'mixed',
+    'statement_resource' => 'resource',
+    'column_number_or_name' => 'mixed',
+    -2 => 'none',
   ),
   'oci_free_collection' => 
   array (
     0 => 'bool',
+    'collection' => 'mixed',
+    -2 => 'none',
   ),
   'oci_free_cursor' => 
   array (
     0 => 'bool',
-    'statement' => 'resource',
+    'statement_resource' => 'resource',
+    -2 => 'none',
   ),
   'oci_free_descriptor' => 
   array (
     0 => 'bool',
+    'lob_descriptor' => 'mixed',
+    -2 => 'none',
   ),
   'oci_free_statement' => 
   array (
     0 => 'bool',
-    'statement' => 'resource',
+    'statement_resource' => 'resource',
+    -2 => 'none',
   ),
   'oci_get_implicit' => 
   array (
@@ -61450,17 +61889,21 @@ return array (
   'oci_get_implicit_resultset' => 
   array (
     0 => 'false|resource',
-    'statement' => 'resource',
+    'statement_resource' => 'resource',
+    -2 => 'none',
   ),
   'oci_internal_debug' => 
   array (
     0 => 'void',
-    'onoff' => 'bool',
+    'mode' => 'bool',
+    -2 => 'none',
   ),
   'oci_lob_append' => 
   array (
     0 => 'bool',
-    'to' => 'object',
+    'lob_descriptor_to' => 'object',
+    'lob_descriptor_from' => 'mixed',
+    -2 => 'none',
   ),
   'oci_lob_close' => 
   array (
@@ -61469,86 +61912,116 @@ return array (
   'oci_lob_copy' => 
   array (
     0 => 'bool',
-    'to' => 'OCILob',
-    'from' => 'OCILob',
+    'lob_descriptor_to' => 'OCILob',
+    'lob_descriptor_from' => 'OCILob',
     'length=' => 'int',
+    -2 => 'none',
   ),
   'oci_lob_eof' => 
   array (
     0 => 'bool',
+    'lob_descriptor' => 'mixed',
+    -2 => 'none',
   ),
   'oci_lob_erase' => 
   array (
     0 => 'int',
-    'lob' => 'int',
-    'offset' => 'int',
+    'lob_descriptor' => 'int',
+    'offset=' => 'int',
+    'length=' => 'mixed',
+    -2 => 'none',
   ),
   'oci_lob_export' => 
   array (
     0 => 'bool',
-    'lob' => 'string',
+    'lob_descriptor' => 'string',
     'filename' => 'int',
-    'offset' => 'int',
+    'start=' => 'int',
+    'length=' => 'mixed',
+    -2 => 'none',
   ),
   'oci_lob_flush' => 
   array (
     0 => 'bool',
-    'lob' => 'int',
+    'lob_descriptor' => 'int',
+    'flag=' => 'mixed',
+    -2 => 'none',
   ),
   'oci_lob_import' => 
   array (
     0 => 'bool',
-    'lob' => 'string',
+    'lob_descriptor' => 'string',
+    'filename' => 'mixed',
+    -2 => 'none',
   ),
   'oci_lob_is_equal' => 
   array (
     0 => 'bool',
-    'lob1' => 'OCILob',
-    'lob2' => 'OCILob',
+    'lob_descriptor' => 'OCILob',
+    'lob_descriptor_2' => 'OCILob',
+    -2 => 'none',
   ),
   'oci_lob_load' => 
   array (
     0 => 'string',
+    'lob_descriptor' => 'mixed',
+    -2 => 'none',
   ),
   'oci_lob_read' => 
   array (
     0 => 'string',
-    'lob' => 'int',
+    'lob_descriptor' => 'int',
+    'length' => 'mixed',
+    -2 => 'none',
   ),
   'oci_lob_rewind' => 
   array (
     0 => 'bool',
+    'lob_descriptor' => 'mixed',
+    -2 => 'none',
   ),
   'oci_lob_save' => 
   array (
     0 => 'bool',
-    'lob' => 'string',
+    'lob_descriptor' => 'string',
     'data' => 'int',
+    'offset=' => 'mixed',
+    -2 => 'none',
   ),
   'oci_lob_seek' => 
   array (
     0 => 'bool',
-    'lob' => 'int',
+    'lob_descriptor' => 'int',
     'offset' => 'int',
+    'whence=' => 'mixed',
+    -2 => 'none',
   ),
   'oci_lob_size' => 
   array (
     0 => 'int',
+    'lob_descriptor' => 'mixed',
+    -2 => 'none',
   ),
   'oci_lob_tell' => 
   array (
     0 => 'int',
+    'lob_descriptor' => 'mixed',
+    -2 => 'none',
   ),
   'oci_lob_truncate' => 
   array (
     0 => 'bool',
-    'lob' => 'int',
+    'lob_descriptor' => 'int',
+    'length=' => 'mixed',
+    -2 => 'none',
   ),
   'oci_lob_write' => 
   array (
     0 => 'int',
-    'lob' => 'string',
-    'data' => 'int',
+    'lob_descriptor' => 'string',
+    'string' => 'int',
+    'length=' => 'mixed',
+    -2 => 'none',
   ),
   'oci_lob_write_temporary' => 
   array (
@@ -61559,9 +62032,10 @@ return array (
   'oci_new_collection' => 
   array (
     0 => 'OCICollection|false',
-    'connection' => 'resource',
+    'connection_resource' => 'resource',
     'type_name' => 'string',
-    'schema=' => 'string',
+    'schema_name=' => 'string',
+    -2 => 'none',
   ),
   'oci_new_connect' => 
   array (
@@ -61569,43 +62043,50 @@ return array (
     'username' => 'string',
     'password' => 'string',
     'connection_string=' => 'string',
-    'encoding=' => 'string',
+    'character_set=' => 'string',
     'session_mode=' => 'int',
+    -2 => 'none',
   ),
   'oci_new_cursor' => 
   array (
     0 => 'false|resource',
-    'connection' => 'resource',
+    'connection_resource' => 'resource',
+    -2 => 'none',
   ),
   'oci_new_descriptor' => 
   array (
     0 => 'OCILob|false',
-    'connection' => 'resource',
+    'connection_resource' => 'resource',
     'type=' => 'int',
+    -2 => 'none',
   ),
   'oci_num_fields' => 
   array (
     0 => 'false|int',
-    'statement' => 'resource',
+    'statement_resource' => 'resource',
+    -2 => 'none',
   ),
   'oci_num_rows' => 
   array (
     0 => 'false|int',
-    'statement' => 'resource',
+    'statement_resource' => 'resource',
+    -2 => 'none',
   ),
   'oci_parse' => 
   array (
     0 => 'false|resource',
-    'connection' => 'resource',
-    'sql' => 'string',
+    'connection_resource' => 'resource',
+    'sql_text' => 'string',
+    -2 => 'none',
   ),
   'oci_password_change' => 
   array (
     0 => 'bool',
-    'connection' => 'resource',
+    'connection_resource_or_connection_string' => 'resource',
     'username' => 'string',
     'old_password' => 'string',
     'new_password' => 'string',
+    -2 => 'none',
   ),
   'oci_pconnect' => 
   array (
@@ -61613,87 +62094,133 @@ return array (
     'username' => 'string',
     'password' => 'string',
     'connection_string=' => 'string',
-    'encoding=' => 'string',
+    'character_set=' => 'string',
     'session_mode=' => 'int',
+    -2 => 'none',
   ),
   'oci_register_taf_callback' => 
   array (
     0 => 'bool',
-    'connection' => 'resource',
-    'callback=' => 'callable[impure]',
+    'connection_resource' => 'resource',
+    'function_name=' => 'callable[impure]',
+    -2 => 'none',
   ),
   'oci_result' => 
   array (
     0 => 'false|mixed',
-    'statement' => 'resource',
-    'column' => 'mixed',
+    'statement_resource' => 'resource',
+    'column_number_or_name' => 'mixed',
+    -2 => 'none',
   ),
   'oci_rollback' => 
   array (
     0 => 'bool',
-    'connection' => 'resource',
+    'connection_resource' => 'resource',
+    -2 => 'none',
   ),
   'oci_server_version' => 
   array (
     0 => 'false|string',
-    'connection' => 'resource',
+    'connection_resource' => 'resource',
+    -2 => 'none',
   ),
   'oci_set_action' => 
   array (
     0 => 'bool',
-    'connection' => 'resource',
+    'connection_resource' => 'resource',
     'action' => 'string',
+    -2 => 'none',
   ),
   'oci_set_call_timeout' => 
   array (
     0 => 'bool',
-    'connection' => 'resource',
-    'timeout' => 'int',
+    'connection_resource' => 'resource',
+    'call_timeout' => 'int',
+    -2 => 'none',
   ),
   'oci_set_client_identifier' => 
   array (
     0 => 'bool',
-    'connection' => 'resource',
-    'client_id' => 'string',
+    'connection_resource' => 'resource',
+    'client_identifier' => 'string',
+    -2 => 'none',
   ),
   'oci_set_client_info' => 
   array (
     0 => 'bool',
-    'connection' => 'resource',
-    'client_info' => 'string',
+    'connection_resource' => 'resource',
+    'client_information' => 'string',
+    -2 => 'none',
   ),
   'oci_set_db_operation' => 
   array (
     0 => 'bool',
-    'connection' => 'resource',
+    'connection_resource' => 'resource',
     'action' => 'string',
+    -2 => 'none',
   ),
   'oci_set_edition' => 
   array (
     0 => 'bool',
-    'edition' => 'string',
+    'edition_name' => 'string',
+    -2 => 'none',
   ),
   'oci_set_module_name' => 
   array (
     0 => 'bool',
-    'connection' => 'resource',
-    'name' => 'string',
+    'connection_resource' => 'resource',
+    'module_name' => 'string',
+    -2 => 'none',
   ),
   'oci_set_prefetch' => 
   array (
     0 => 'bool',
-    'statement' => 'resource',
-    'rows' => 'int',
+    'statement_resource' => 'resource',
+    'number_of_rows' => 'int',
+    -2 => 'none',
   ),
   'oci_statement_type' => 
   array (
     0 => 'false|string',
-    'statement' => 'resource',
+    'statement_resource' => 'resource',
+    -2 => 'none',
   ),
   'oci_unregister_taf_callback' => 
   array (
     0 => 'bool',
-    'connection' => 'resource',
+    'connection_resource' => 'resource',
+    -2 => 'none',
+  ),
+  'ocibindbyname' => 
+  array (
+    0 => 'mixed',
+    'statement_resource' => 'mixed',
+    'column_name' => 'mixed',
+    '&variable' => 'mixed',
+    'maximum_length=' => 'mixed',
+    'type=' => 'mixed',
+    -2 => 'none',
+  ),
+  'ocicancel' => 
+  array (
+    0 => 'mixed',
+    'statement_resource' => 'mixed',
+    -2 => 'none',
+  ),
+  'ocicollappend' => 
+  array (
+    0 => 'mixed',
+    'collection' => 'mixed',
+    'value' => 'mixed',
+    -2 => 'none',
+  ),
+  'ocicollassignelem' => 
+  array (
+    0 => 'mixed',
+    'collection' => 'mixed',
+    'index' => 'mixed',
+    'value' => 'mixed',
+    -2 => 'none',
   ),
   'ocicollection::append' => 
   array (
@@ -61733,16 +62260,174 @@ return array (
     0 => 'bool',
     'num' => 'int',
   ),
+  'ocicollgetelem' => 
+  array (
+    0 => 'mixed',
+    'collection' => 'mixed',
+    'index' => 'mixed',
+    -2 => 'none',
+  ),
+  'ocicollmax' => 
+  array (
+    0 => 'mixed',
+    'collection' => 'mixed',
+    -2 => 'none',
+  ),
+  'ocicollsize' => 
+  array (
+    0 => 'mixed',
+    'collection' => 'mixed',
+    -2 => 'none',
+  ),
+  'ocicolltrim' => 
+  array (
+    0 => 'mixed',
+    'collection' => 'mixed',
+    'number' => 'mixed',
+    -2 => 'none',
+  ),
+  'ocicolumnisnull' => 
+  array (
+    0 => 'mixed',
+    'statement_resource' => 'mixed',
+    'column_number_or_name' => 'mixed',
+    -2 => 'none',
+  ),
+  'ocicolumnname' => 
+  array (
+    0 => 'mixed',
+    'statement_resource' => 'mixed',
+    'column_number_or_name' => 'mixed',
+    -2 => 'none',
+  ),
+  'ocicolumnprecision' => 
+  array (
+    0 => 'mixed',
+    'statement_resource' => 'mixed',
+    'column_number_or_name' => 'mixed',
+    -2 => 'none',
+  ),
+  'ocicolumnscale' => 
+  array (
+    0 => 'mixed',
+    'statement_resource' => 'mixed',
+    'column_number_or_name' => 'mixed',
+    -2 => 'none',
+  ),
+  'ocicolumnsize' => 
+  array (
+    0 => 'mixed',
+    'statement_resource' => 'mixed',
+    'column_number_or_name' => 'mixed',
+    -2 => 'none',
+  ),
+  'ocicolumntype' => 
+  array (
+    0 => 'mixed',
+    'statement_resource' => 'mixed',
+    'column_number_or_name' => 'mixed',
+    -2 => 'none',
+  ),
+  'ocicolumntyperaw' => 
+  array (
+    0 => 'mixed',
+    'statement_resource' => 'mixed',
+    'column_number_or_name' => 'mixed',
+    -2 => 'none',
+  ),
+  'ocicommit' => 
+  array (
+    0 => 'mixed',
+    'connection_resource' => 'mixed',
+    -2 => 'none',
+  ),
+  'ocidefinebyname' => 
+  array (
+    0 => 'mixed',
+    'statement_resource' => 'mixed',
+    'column_name' => 'mixed',
+    '&variable' => 'mixed',
+    'type=' => 'mixed',
+    -2 => 'none',
+  ),
+  'ocierror' => 
+  array (
+    0 => 'mixed',
+    'connection_or_statement_resource=' => 'mixed',
+    -2 => 'none',
+  ),
+  'ociexecute' => 
+  array (
+    0 => 'mixed',
+    'statement_resource' => 'mixed',
+    'mode=' => 'mixed',
+    -2 => 'none',
+  ),
+  'ocifetch' => 
+  array (
+    0 => 'mixed',
+    'statement_resource' => 'mixed',
+    -2 => 'none',
+  ),
   'ocifetchinto' => 
   array (
     0 => 'bool|int',
-    'statement' => 'resource',
+    'statement_resource' => 'resource',
     '&w result' => 'array<array-key, mixed>',
     'mode=' => 'int',
+    -2 => 'none',
+  ),
+  'ocifetchstatement' => 
+  array (
+    0 => 'mixed',
+    'statement_resource' => 'mixed',
+    '&output' => 'mixed',
+    'skip=' => 'mixed',
+    'maximum_rows=' => 'mixed',
+    'flags=' => 'mixed',
+    -2 => 'none',
+  ),
+  'ocifreecollection' => 
+  array (
+    0 => 'mixed',
+    'collection' => 'mixed',
+    -2 => 'none',
+  ),
+  'ocifreecursor' => 
+  array (
+    0 => 'mixed',
+    'statement_resource' => 'mixed',
+    -2 => 'none',
+  ),
+  'ocifreedesc' => 
+  array (
+    0 => 'mixed',
+    'lob_descriptor' => 'mixed',
+    -2 => 'none',
+  ),
+  'ocifreestatement' => 
+  array (
+    0 => 'mixed',
+    'statement_resource' => 'mixed',
+    -2 => 'none',
   ),
   'ocigetbufferinglob' => 
   array (
     0 => 'bool',
+    'lob_descriptor' => 'mixed',
+    -2 => 'none',
+  ),
+  'ociinternaldebug' => 
+  array (
+    0 => 'mixed',
+    'mode' => 'mixed',
+    -2 => 'none',
+  ),
+  'ociloadlob' => 
+  array (
+    0 => 'mixed',
+    'lob_descriptor' => 'mixed',
+    -2 => 'none',
   ),
   'ocilob::append' => 
   array (
@@ -61855,10 +62540,153 @@ return array (
     'start' => 'mixed',
     'length' => 'mixed',
   ),
+  'ocilogoff' => 
+  array (
+    0 => 'mixed',
+    'connection_resource' => 'mixed',
+    -2 => 'none',
+  ),
+  'ocilogon' => 
+  array (
+    0 => 'mixed',
+    'username' => 'mixed',
+    'password' => 'mixed',
+    'connection_string=' => 'mixed',
+    'character_set=' => 'mixed',
+    'session_mode=' => 'mixed',
+    -2 => 'none',
+  ),
+  'ocinewcollection' => 
+  array (
+    0 => 'mixed',
+    'connection_resource' => 'mixed',
+    'type_name' => 'mixed',
+    'schema_name=' => 'mixed',
+    -2 => 'none',
+  ),
+  'ocinewcursor' => 
+  array (
+    0 => 'mixed',
+    'connection_resource' => 'mixed',
+    -2 => 'none',
+  ),
+  'ocinewdescriptor' => 
+  array (
+    0 => 'mixed',
+    'connection_resource' => 'mixed',
+    'type=' => 'mixed',
+    -2 => 'none',
+  ),
+  'ocinlogon' => 
+  array (
+    0 => 'mixed',
+    'username' => 'mixed',
+    'password' => 'mixed',
+    'connection_string=' => 'mixed',
+    'character_set=' => 'mixed',
+    'session_mode=' => 'mixed',
+    -2 => 'none',
+  ),
+  'ocinumcols' => 
+  array (
+    0 => 'mixed',
+    'statement_resource' => 'mixed',
+    -2 => 'none',
+  ),
+  'ociparse' => 
+  array (
+    0 => 'mixed',
+    'connection_resource' => 'mixed',
+    'sql_text' => 'mixed',
+    -2 => 'none',
+  ),
+  'ocipasswordchange' => 
+  array (
+    0 => 'mixed',
+    'connection_resource_or_connection_string' => 'mixed',
+    'username' => 'mixed',
+    'old_password' => 'mixed',
+    'new_password' => 'mixed',
+    -2 => 'none',
+  ),
+  'ociplogon' => 
+  array (
+    0 => 'mixed',
+    'username' => 'mixed',
+    'password' => 'mixed',
+    'connection_string=' => 'mixed',
+    'character_set=' => 'mixed',
+    'session_mode=' => 'mixed',
+    -2 => 'none',
+  ),
+  'ociresult' => 
+  array (
+    0 => 'mixed',
+    'statement_resource' => 'mixed',
+    'column_number_or_name' => 'mixed',
+    -2 => 'none',
+  ),
+  'ocirollback' => 
+  array (
+    0 => 'mixed',
+    'connection_resource' => 'mixed',
+    -2 => 'none',
+  ),
+  'ocirowcount' => 
+  array (
+    0 => 'mixed',
+    'statement_resource' => 'mixed',
+    -2 => 'none',
+  ),
+  'ocisavelob' => 
+  array (
+    0 => 'mixed',
+    'lob_descriptor' => 'mixed',
+    'data' => 'mixed',
+    'offset=' => 'mixed',
+    -2 => 'none',
+  ),
+  'ocisavelobfile' => 
+  array (
+    0 => 'mixed',
+    'lob_descriptor' => 'mixed',
+    'filename' => 'mixed',
+    -2 => 'none',
+  ),
+  'ociserverversion' => 
+  array (
+    0 => 'mixed',
+    'connection_resource' => 'mixed',
+    -2 => 'none',
+  ),
   'ocisetbufferinglob' => 
   array (
     0 => 'bool',
-    'lob' => 'bool',
+    'lob_descriptor' => 'bool',
+    'mode' => 'mixed',
+    -2 => 'none',
+  ),
+  'ocisetprefetch' => 
+  array (
+    0 => 'mixed',
+    'statement_resource' => 'mixed',
+    'number_of_rows' => 'mixed',
+    -2 => 'none',
+  ),
+  'ocistatementtype' => 
+  array (
+    0 => 'mixed',
+    'statement_resource' => 'mixed',
+    -2 => 'none',
+  ),
+  'ociwritelobtofile' => 
+  array (
+    0 => 'mixed',
+    'lob_descriptor' => 'mixed',
+    'filename' => 'mixed',
+    'start=' => 'mixed',
+    'length=' => 'mixed',
+    -2 => 'none',
   ),
   'octdec' => 
   array (
@@ -61869,46 +62697,53 @@ return array (
   'odbc_autocommit' => 
   array (
     0 => 'bool|int',
-    'odbc' => 'resource',
-    'enable=' => 'bool',
+    'connection_id' => 'resource',
+    'onoff=' => 'bool',
+    -2 => 'none',
   ),
   'odbc_binmode' => 
   array (
     0 => 'bool',
-    'statement' => 'resource',
+    'result_id' => 'resource',
     'mode' => 'int',
+    -2 => 'none',
   ),
   'odbc_close' => 
   array (
     0 => 'void',
-    'odbc' => 'resource',
+    'connection_id' => 'resource',
+    -2 => 'none',
   ),
   'odbc_close_all' => 
   array (
     0 => 'void',
+    -2 => 'none',
   ),
   'odbc_columnprivileges' => 
   array (
     0 => 'false|resource',
-    'odbc' => 'resource',
+    'connection_id' => 'resource',
     'catalog' => 'null|string',
     'schema' => 'string',
     'table' => 'string',
     'column' => 'string',
+    -2 => 'none',
   ),
   'odbc_columns' => 
   array (
     0 => 'false|resource',
-    'odbc' => 'resource',
-    'catalog=' => 'null|string',
-    'schema=' => 'null|string',
-    'table=' => 'null|string',
-    'column=' => 'null|string',
+    'connection_id' => 'resource',
+    'qualifier=' => 'null|string',
+    'owner=' => 'null|string',
+    'table_name=' => 'null|string',
+    'column_name=' => 'null|string',
+    -2 => 'none',
   ),
   'odbc_commit' => 
   array (
     0 => 'bool',
-    'odbc' => 'resource',
+    'connection_id' => 'resource',
+    -2 => 'none',
   ),
   'odbc_connect' => 
   array (
@@ -61917,151 +62752,176 @@ return array (
     'user' => 'string',
     'password' => 'string',
     'cursor_option=' => 'int',
+    -2 => 'none',
   ),
   'odbc_cursor' => 
   array (
     0 => 'string',
-    'statement' => 'resource',
+    'result_id' => 'resource',
+    -2 => 'none',
   ),
   'odbc_data_source' => 
   array (
     0 => 'array<array-key, mixed>|false',
-    'odbc' => 'resource',
+    'connection_id' => 'resource',
     'fetch_type' => 'int',
+    -2 => 'none',
   ),
   'odbc_do' => 
   array (
     0 => 'resource',
-    'odbc' => 'resource',
+    'connection_id' => 'resource',
     'query' => 'string',
     'flags=' => 'int',
+    -2 => 'none',
   ),
   'odbc_error' => 
   array (
     0 => 'string',
-    'odbc=' => 'resource',
+    'connection_id=' => 'resource',
+    -2 => 'none',
   ),
   'odbc_errormsg' => 
   array (
     0 => 'string',
-    'odbc=' => 'resource',
+    'connection_id=' => 'resource',
+    -2 => 'none',
   ),
   'odbc_exec' => 
   array (
     0 => 'resource',
-    'odbc' => 'resource',
+    'connection_id' => 'resource',
     'query' => 'string',
     'flags=' => 'int',
+    -2 => 'none',
   ),
   'odbc_execute' => 
   array (
     0 => 'bool',
-    'statement' => 'resource',
-    'params=' => 'array<array-key, mixed>',
+    'result_id' => 'resource',
+    'parameters_array=' => 'array<array-key, mixed>',
+    -2 => 'none',
   ),
   'odbc_fetch_array' => 
   array (
     0 => 'array<array-key, mixed>|false',
-    'statement' => 'resource',
-    'row=' => 'int',
+    'result' => 'resource',
+    'rownumber=' => 'int',
+    -2 => 'none',
   ),
   'odbc_fetch_into' => 
   array (
     0 => 'int',
-    'statement' => 'resource',
-    '&w array' => 'array<array-key, mixed>',
-    'row=' => 'int',
+    'result_id' => 'resource',
+    '&w result_array' => 'array<array-key, mixed>',
+    'rownumber=' => 'int',
+    -2 => 'none',
   ),
   'odbc_fetch_object' => 
   array (
     0 => 'false|stdClass',
-    'statement' => 'resource',
-    'row=' => 'int',
+    'result' => 'resource',
+    'rownumber=' => 'int',
+    -2 => 'none',
   ),
   'odbc_fetch_row' => 
   array (
     0 => 'bool',
-    'statement' => 'resource',
-    'row=' => 'int',
+    'result_id' => 'resource',
+    'row_number=' => 'int',
+    -2 => 'none',
   ),
   'odbc_field_len' => 
   array (
     0 => 'false|int',
-    'statement' => 'resource',
-    'field' => 'int',
+    'result_id' => 'resource',
+    'field_number' => 'int',
+    -2 => 'none',
   ),
   'odbc_field_name' => 
   array (
     0 => 'false|string',
-    'statement' => 'resource',
-    'field' => 'int',
+    'result_id' => 'resource',
+    'field_number' => 'int',
+    -2 => 'none',
   ),
   'odbc_field_num' => 
   array (
     0 => 'false|int',
-    'statement' => 'resource',
-    'field' => 'string',
+    'result_id' => 'resource',
+    'field_name' => 'string',
+    -2 => 'none',
   ),
   'odbc_field_precision' => 
   array (
     0 => 'int',
-    'statement' => 'resource',
-    'field' => 'int',
+    'result_id' => 'resource',
+    'field_number' => 'int',
+    -2 => 'none',
   ),
   'odbc_field_scale' => 
   array (
     0 => 'false|int',
-    'statement' => 'resource',
-    'field' => 'int',
+    'result_id' => 'resource',
+    'field_number' => 'int',
+    -2 => 'none',
   ),
   'odbc_field_type' => 
   array (
     0 => 'false|string',
-    'statement' => 'resource',
-    'field' => 'int',
+    'result_id' => 'resource',
+    'field_number' => 'int',
+    -2 => 'none',
   ),
   'odbc_foreignkeys' => 
   array (
     0 => 'false|resource',
-    'odbc' => 'resource',
-    'pk_catalog' => 'null|string',
-    'pk_schema' => 'string',
+    'connection_id' => 'resource',
+    'pk_qualifier' => 'null|string',
+    'pk_owner' => 'string',
     'pk_table' => 'string',
-    'fk_catalog' => 'string',
-    'fk_schema' => 'string',
+    'fk_qualifier' => 'string',
+    'fk_owner' => 'string',
     'fk_table' => 'string',
+    -2 => 'none',
   ),
   'odbc_free_result' => 
   array (
     0 => 'bool',
-    'statement' => 'resource',
+    'result_id' => 'resource',
+    -2 => 'none',
   ),
   'odbc_gettypeinfo' => 
   array (
     0 => 'resource',
-    'odbc' => 'resource',
+    'connection_id' => 'resource',
     'data_type=' => 'int',
+    -2 => 'none',
   ),
   'odbc_longreadlen' => 
   array (
     0 => 'bool',
-    'statement' => 'resource',
+    'result_id' => 'resource',
     'length' => 'int',
+    -2 => 'none',
   ),
   'odbc_next_result' => 
   array (
     0 => 'bool',
-    'statement' => 'resource',
+    'result_id' => 'resource',
+    -2 => 'none',
   ),
   'odbc_num_fields' => 
   array (
     0 => 'int',
-    'statement' => 'resource',
+    'result_id' => 'resource',
+    -2 => 'none',
   ),
   'odbc_num_rows' => 
   array (
     0 => 'int',
-    'statement' => 'resource',
+    'result_id' => 'resource',
+    -2 => 'none',
   ),
   'odbc_pconnect' => 
   array (
@@ -62070,100 +62930,113 @@ return array (
     'user' => 'string',
     'password' => 'string',
     'cursor_option=' => 'int',
+    -2 => 'none',
   ),
   'odbc_prepare' => 
   array (
     0 => 'false|resource',
-    'odbc' => 'resource',
+    'connection_id' => 'resource',
     'query' => 'string',
+    -2 => 'none',
   ),
   'odbc_primarykeys' => 
   array (
     0 => 'false|resource',
-    'odbc' => 'resource',
-    'catalog' => 'null|string',
-    'schema' => 'string',
+    'connection_id' => 'resource',
+    'qualifier' => 'null|string',
+    'owner' => 'string',
     'table' => 'string',
+    -2 => 'none',
   ),
   'odbc_procedurecolumns' => 
   array (
     0 => 'false|resource',
-    'odbc' => 'resource',
-    'catalog=' => 'null|string',
-    'schema=' => 'null|string',
-    'procedure=' => 'null|string',
+    'connection_id' => 'resource',
+    'qualifier=' => 'null|string',
+    'owner=' => 'null|string',
+    'proc=' => 'null|string',
     'column=' => 'null|string',
+    -2 => 'none',
   ),
   'odbc_procedures' => 
   array (
     0 => 'false|resource',
-    'odbc' => 'resource',
-    'catalog=' => 'null|string',
-    'schema=' => 'null|string',
-    'procedure=' => 'null|string',
+    'connection_id' => 'resource',
+    'qualifier=' => 'null|string',
+    'owner=' => 'null|string',
+    'name=' => 'null|string',
+    -2 => 'none',
   ),
   'odbc_result' => 
   array (
     0 => 'bool|null|string',
-    'statement' => 'resource',
+    'result_id' => 'resource',
     'field' => 'int|string',
+    -2 => 'none',
   ),
   'odbc_result_all' => 
   array (
     0 => 'false|int',
-    'statement' => 'resource',
+    'result_id' => 'resource',
     'format=' => 'string',
+    -2 => 'none',
   ),
   'odbc_rollback' => 
   array (
     0 => 'bool',
-    'odbc' => 'resource',
+    'connection_id' => 'resource',
+    -2 => 'none',
   ),
   'odbc_setoption' => 
   array (
     0 => 'bool',
-    'odbc' => 'resource',
+    'conn_id' => 'resource',
     'which' => 'int',
     'option' => 'int',
     'value' => 'int',
+    -2 => 'none',
   ),
   'odbc_specialcolumns' => 
   array (
     0 => 'false|resource',
-    'odbc' => 'resource',
+    'connection_id' => 'resource',
     'type' => 'int',
-    'catalog' => 'null|string',
-    'schema' => 'string',
+    'qualifier' => 'null|string',
+    'owner' => 'string',
     'table' => 'string',
     'scope' => 'int',
     'nullable' => 'int',
+    -2 => 'none',
   ),
   'odbc_statistics' => 
   array (
     0 => 'false|resource',
-    'odbc' => 'resource',
-    'catalog' => 'null|string',
-    'schema' => 'string',
-    'table' => 'string',
+    'connection_id' => 'resource',
+    'qualifier' => 'null|string',
+    'owner' => 'string',
+    'name' => 'string',
     'unique' => 'int',
     'accuracy' => 'int',
+    -2 => 'none',
   ),
   'odbc_tableprivileges' => 
   array (
     0 => 'false|resource',
-    'odbc' => 'resource',
-    'catalog' => 'null|string',
-    'schema' => 'string',
-    'table' => 'string',
+    'connection_id' => 'resource',
+    'qualifier' => 'null|string',
+    'owner' => 'string',
+    'name' => 'string',
+    -2 => 'none',
   ),
   'odbc_tables' => 
   array (
     0 => 'false|resource',
-    'odbc' => 'resource',
-    'catalog=' => 'null|string',
-    'schema=' => 'string',
-    'table=' => 'string',
-    'types=' => 'string',
+    'connection_id' => 'resource',
+    'qualifier=' => 'null|string',
+    'owner=' => 'string',
+    'name=' => 'string',
+    'table_types=' => 'string',
+    -2 => 'none',
   ),
   'opcache_compile_file' => 
   array (
@@ -70247,25 +71120,29 @@ return array (
   'pspell_add_to_personal' => 
   array (
     0 => 'bool',
-    'dictionary' => 'int',
+    'pspell' => 'int',
     'word' => 'string',
+    -2 => 'none',
   ),
   'pspell_add_to_session' => 
   array (
     0 => 'bool',
-    'dictionary' => 'int',
+    'pspell' => 'int',
     'word' => 'string',
+    -2 => 'none',
   ),
   'pspell_check' => 
   array (
     0 => 'bool',
-    'dictionary' => 'int',
+    'pspell' => 'int',
     'word' => 'string',
+    -2 => 'none',
   ),
   'pspell_clear_session' => 
   array (
     0 => 'bool',
-    'dictionary' => 'int',
+    'pspell' => 'int',
+    -2 => 'none',
   ),
   'pspell_config_create' => 
   array (
@@ -70274,54 +71151,63 @@ return array (
     'spelling=' => 'string',
     'jargon=' => 'string',
     'encoding=' => 'string',
+    -2 => 'none',
   ),
   'pspell_config_data_dir' => 
   array (
     0 => 'bool',
-    'config' => 'int',
+    'conf' => 'int',
     'directory' => 'string',
+    -2 => 'none',
   ),
   'pspell_config_dict_dir' => 
   array (
     0 => 'bool',
-    'config' => 'int',
+    'conf' => 'int',
     'directory' => 'string',
+    -2 => 'none',
   ),
   'pspell_config_ignore' => 
   array (
     0 => 'bool',
-    'config' => 'int',
-    'min_length' => 'int',
+    'conf' => 'int',
+    'ignore' => 'int',
+    -2 => 'none',
   ),
   'pspell_config_mode' => 
   array (
     0 => 'bool',
-    'config' => 'int',
+    'conf' => 'int',
     'mode' => 'int',
+    -2 => 'none',
   ),
   'pspell_config_personal' => 
   array (
     0 => 'bool',
-    'config' => 'int',
-    'filename' => 'string',
+    'conf' => 'int',
+    'personal' => 'string',
+    -2 => 'none',
   ),
   'pspell_config_repl' => 
   array (
     0 => 'bool',
-    'config' => 'int',
-    'filename' => 'string',
+    'conf' => 'int',
+    'repl' => 'string',
+    -2 => 'none',
   ),
   'pspell_config_runtogether' => 
   array (
     0 => 'bool',
-    'config' => 'int',
-    'allow' => 'bool',
+    'conf' => 'int',
+    'runtogether' => 'bool',
+    -2 => 'none',
   ),
   'pspell_config_save_repl' => 
   array (
     0 => 'bool',
-    'config' => 'int',
+    'conf' => 'int',
     'save' => 'bool',
+    -2 => 'none',
   ),
   'pspell_new' => 
   array (
@@ -70331,39 +71217,45 @@ return array (
     'jargon=' => 'string',
     'encoding=' => 'string',
     'mode=' => 'int',
+    -2 => 'none',
   ),
   'pspell_new_config' => 
   array (
     0 => 'false|int',
     'config' => 'int',
+    -2 => 'none',
   ),
   'pspell_new_personal' => 
   array (
     0 => 'false|int',
-    'filename' => 'string',
+    'personal' => 'string',
     'language' => 'string',
     'spelling=' => 'string',
     'jargon=' => 'string',
     'encoding=' => 'string',
     'mode=' => 'int',
+    -2 => 'none',
   ),
   'pspell_save_wordlist' => 
   array (
     0 => 'bool',
-    'dictionary' => 'int',
+    'pspell' => 'int',
+    -2 => 'none',
   ),
   'pspell_store_replacement' => 
   array (
     0 => 'bool',
-    'dictionary' => 'int',
-    'misspelled' => 'string',
+    'pspell' => 'int',
+    'misspell' => 'string',
     'correct' => 'string',
+    -2 => 'none',
   ),
   'pspell_suggest' => 
   array (
     0 => 'array<array-key, mixed>',
-    'dictionary' => 'int',
+    'pspell' => 'int',
     'word' => 'string',
+    -2 => 'none',
   ),
   'putenv' => 
   array (
@@ -71284,6 +72176,7 @@ return array (
     'sections_needed=' => 'string',
     'sub_arrays=' => 'bool',
     'read_thumbnail=' => 'bool',
+    -2 => 'none',
   ),
   'readdir' => 
   array (
@@ -72462,7 +73355,7 @@ return array (
   'redis::auth' => 
   array (
     0 => 'bool',
-    'credentials' => 'string',
+    'credentials' => 'array{0?: string, 1?: string, pass?: string, user?: string}|string',
     -2 => 'none',
   ),
   'redis::bgrewriteaof' => 
@@ -74577,7 +75470,7 @@ return array (
     'timeout=' => 'float',
     'read_timeout=' => 'float',
     'persistent=' => 'bool',
-    'auth=' => 'null|string',
+    'auth=' => 'array{0?: string, 1?: string, pass?: string, user?: string}|null|string',
     'context=' => 'mixed',
     -2 => 'none',
   ),
@@ -80196,26 +81089,30 @@ return array (
   'sem_acquire' => 
   array (
     0 => 'bool',
-    'semaphore' => 'resource',
-    'non_blocking=' => 'bool',
+    'sem_identifier' => 'resource',
+    'nowait=' => 'bool',
+    -2 => 'none',
   ),
   'sem_get' => 
   array (
     0 => 'false|resource',
     'key' => 'int',
     'max_acquire=' => 'int',
-    'permissions=' => 'int',
+    'perm=' => 'int',
     'auto_release=' => 'bool',
+    -2 => 'none',
   ),
   'sem_release' => 
   array (
     0 => 'bool',
-    'semaphore' => 'resource',
+    'sem_identifier' => 'resource',
+    -2 => 'none',
   ),
   'sem_remove' => 
   array (
     0 => 'bool',
-    'semaphore' => 'resource',
+    'sem_identifier' => 'resource',
+    -2 => 'none',
   ),
   'serializable::__construct' => 
   array (
@@ -80989,80 +81886,93 @@ return array (
   array (
     0 => 'false|resource',
     'key' => 'int',
-    'size=' => 'int',
-    'permissions=' => 'int',
+    'memsize=' => 'int',
+    'perm=' => 'int',
+    -2 => 'none',
   ),
   'shm_detach' => 
   array (
     0 => 'bool',
-    'shm' => 'resource',
+    'shm_identifier' => 'resource',
+    -2 => 'none',
   ),
   'shm_get_var' => 
   array (
     0 => 'mixed',
-    'shm' => 'resource',
-    'key' => 'int',
+    'id' => 'resource',
+    'variable_key' => 'int',
+    -2 => 'none',
   ),
   'shm_has_var' => 
   array (
     0 => 'bool',
-    'shm' => 'resource',
-    'key' => 'int',
+    'id' => 'resource',
+    'variable_key' => 'int',
+    -2 => 'none',
   ),
   'shm_put_var' => 
   array (
     0 => 'bool',
-    'shm' => 'resource',
-    'key' => 'int',
-    'value' => 'mixed',
+    'shm_identifier' => 'resource',
+    'variable_key' => 'int',
+    'variable' => 'mixed',
+    -2 => 'none',
   ),
   'shm_remove' => 
   array (
     0 => 'bool',
-    'shm' => 'resource',
+    'shm_identifier' => 'resource',
+    -2 => 'none',
   ),
   'shm_remove_var' => 
   array (
     0 => 'bool',
-    'shm' => 'resource',
-    'key' => 'int',
+    'id' => 'resource',
+    'variable_key' => 'int',
+    -2 => 'none',
   ),
   'shmop_close' => 
   array (
     0 => 'void',
-    'shmop' => 'resource',
+    'shmid' => 'resource',
+    -2 => 'none',
   ),
   'shmop_delete' => 
   array (
     0 => 'bool',
-    'shmop' => 'resource',
+    'shmid' => 'resource',
+    -2 => 'none',
   ),
   'shmop_open' => 
   array (
     0 => 'false|resource',
     'key' => 'int',
-    'mode' => 'string',
-    'permissions' => 'int',
+    'flags' => 'string',
+    'mode' => 'int',
     'size' => 'int',
+    -2 => 'none',
   ),
   'shmop_read' => 
   array (
     0 => 'false|string',
-    'shmop' => 'resource',
-    'offset' => 'int',
-    'size' => 'int',
+    'shmid' => 'resource',
+    'start' => 'int',
+    'count' => 'int',
+    -2 => 'none',
   ),
   'shmop_size' => 
   array (
     0 => 'int',
-    'shmop' => 'resource',
+    'shmid' => 'resource',
+    -2 => 'none',
   ),
   'shmop_write' => 
   array (
     0 => 'false|int',
-    'shmop' => 'resource',
+    'shmid' => 'resource',
     'data' => 'string',
     'offset' => 'int',
+    -2 => 'none',
   ),
   'show_source' => 
   array (
@@ -82007,21 +82917,25 @@ return array (
   array (
     0 => 'false|resource',
     'socket' => 'resource',
+    -2 => 'none',
   ),
   'socket_addrinfo_bind' => 
   array (
     0 => 'null|resource',
-    'addrinfo' => 'resource',
+    'addr' => 'resource',
+    -2 => 'none',
   ),
   'socket_addrinfo_connect' => 
   array (
     0 => 'resource',
-    'addrinfo' => 'resource',
+    'addr' => 'resource',
+    -2 => 'none',
   ),
   'socket_addrinfo_explain' => 
   array (
     0 => 'array<array-key, mixed>',
-    'addrinfo' => 'resource',
+    'addr' => 'resource',
+    -2 => 'none',
   ),
   'socket_addrinfo_lookup' => 
   array (
@@ -82029,37 +82943,42 @@ return array (
     'host' => 'string',
     'service=' => 'string',
     'hints=' => 'array<array-key, mixed>',
+    -2 => 'none',
   ),
   'socket_bind' => 
   array (
     0 => 'bool',
     'socket' => 'resource',
-    'address' => 'string',
+    'addr' => 'string',
     'port=' => 'int',
+    -2 => 'none',
   ),
   'socket_clear_error' => 
   array (
     0 => 'void',
     'socket=' => 'resource',
+    -2 => 'none',
   ),
   'socket_close' => 
   array (
     0 => 'void',
     'socket' => 'resource',
+    -2 => 'none',
   ),
   'socket_cmsg_space' => 
   array (
     0 => 'int|null',
     'level' => 'int',
     'type' => 'int',
-    'num=' => 'int',
+    -2 => 'none',
   ),
   'socket_connect' => 
   array (
     0 => 'bool',
     'socket' => 'resource',
-    'address' => 'string',
+    'addr' => 'string',
     'port=' => 'int',
+    -2 => 'none',
   ),
   'socket_create' => 
   array (
@@ -82067,12 +82986,14 @@ return array (
     'domain' => 'int',
     'type' => 'int',
     'protocol' => 'int',
+    -2 => 'none',
   ),
   'socket_create_listen' => 
   array (
     0 => 'false|resource',
     'port' => 'int',
     'backlog=' => 'int',
+    -2 => 'none',
   ),
   'socket_create_pair' => 
   array (
@@ -82080,19 +83001,22 @@ return array (
     'domain' => 'int',
     'type' => 'int',
     'protocol' => 'int',
-    '&w pair' => 'array<array-key, resource>',
+    '&w fd' => 'array<array-key, resource>',
+    -2 => 'none',
   ),
   'socket_export_stream' => 
   array (
     0 => 'false|resource',
     'socket' => 'resource',
+    -2 => 'none',
   ),
   'socket_get_option' => 
   array (
     0 => 'array<array-key, mixed>|false|int',
     'socket' => 'resource',
     'level' => 'int',
-    'option' => 'int',
+    'optname' => 'int',
+    -2 => 'none',
   ),
   'socket_get_status' => 
   array (
@@ -82105,108 +83029,123 @@ return array (
     0 => 'array<array-key, mixed>|false|int',
     'socket' => 'resource',
     'level' => 'int',
-    'option' => 'int',
+    'optname' => 'int',
+    -2 => 'none',
   ),
   'socket_getpeername' => 
   array (
     0 => 'bool',
     'socket' => 'resource',
-    '&w address' => 'string',
+    '&w addr' => 'string',
     '&w port=' => 'int',
+    -2 => 'none',
   ),
   'socket_getsockname' => 
   array (
     0 => 'bool',
     'socket' => 'resource',
-    '&w address' => 'string',
+    '&w addr' => 'string',
     '&w port=' => 'int',
+    -2 => 'none',
   ),
   'socket_import_stream' => 
   array (
     0 => 'false|resource',
     'stream' => 'resource',
+    -2 => 'none',
   ),
   'socket_last_error' => 
   array (
     0 => 'int',
     'socket=' => 'resource',
+    -2 => 'none',
   ),
   'socket_listen' => 
   array (
     0 => 'bool',
     'socket' => 'resource',
     'backlog=' => 'int',
+    -2 => 'none',
   ),
   'socket_read' => 
   array (
     0 => 'false|string',
     'socket' => 'resource',
     'length' => 'int',
-    'mode=' => 'int',
+    'type=' => 'int',
+    -2 => 'none',
   ),
   'socket_recv' => 
   array (
     0 => 'false|int',
     'socket' => 'resource',
-    '&w data' => 'string',
-    'length' => 'int',
+    '&w buf' => 'string',
+    'len' => 'int',
     'flags' => 'int',
+    -2 => 'none',
   ),
   'socket_recvfrom' => 
   array (
     0 => 'false|int',
     'socket' => 'resource',
-    '&w data' => 'string',
-    'length' => 'int',
+    '&w buf' => 'string',
+    'len' => 'int',
     'flags' => 'int',
-    '&w address' => 'string',
+    '&w name' => 'string',
     '&w port=' => 'int',
+    -2 => 'none',
   ),
   'socket_recvmsg' => 
   array (
     0 => 'false|int',
     'socket' => 'resource',
-    '&w message' => 'array<array-key, mixed>',
-    'flags=' => 'int',
+    '&w msghdr' => 'array<array-key, mixed>',
+    'flags' => 'int',
+    -2 => 'none',
   ),
   'socket_select' => 
   array (
     0 => 'false|int',
-    '&rw read' => 'array<array-key, resource>|null',
-    '&rw write' => 'array<array-key, resource>|null',
-    '&rw except' => 'array<array-key, resource>|null',
-    'seconds' => 'int|null',
-    'microseconds=' => 'int',
+    '&read_fds' => 'array<array-key, resource>|null',
+    '&write_fds' => 'array<array-key, resource>|null',
+    '&except_fds' => 'array<array-key, resource>|null',
+    'tv_sec' => 'int|null',
+    'tv_usec=' => 'int',
+    -2 => 'none',
   ),
   'socket_send' => 
   array (
     0 => 'false|int',
     'socket' => 'resource',
-    'data' => 'string',
-    'length' => 'int',
+    'buf' => 'string',
+    'len' => 'int',
     'flags' => 'int',
+    -2 => 'none',
   ),
   'socket_sendmsg' => 
   array (
     0 => 'false|int',
     'socket' => 'resource',
-    'message' => 'array<array-key, mixed>',
-    'flags=' => 'int',
+    'msghdr' => 'array<array-key, mixed>',
+    'flags' => 'int',
+    -2 => 'none',
   ),
   'socket_sendto' => 
   array (
     0 => 'false|int',
     'socket' => 'resource',
-    'data' => 'string',
-    'length' => 'int',
+    'buf' => 'string',
+    'len' => 'int',
     'flags' => 'int',
-    'address' => 'string',
+    'addr' => 'string',
     'port=' => 'int',
+    -2 => 'none',
   ),
   'socket_set_block' => 
   array (
     0 => 'bool',
     'socket' => 'resource',
+    -2 => 'none',
   ),
   'socket_set_blocking' => 
   array (
@@ -82219,14 +83158,16 @@ return array (
   array (
     0 => 'bool',
     'socket' => 'resource',
+    -2 => 'none',
   ),
   'socket_set_option' => 
   array (
     0 => 'bool',
     'socket' => 'resource',
     'level' => 'int',
-    'option' => 'int',
-    'value' => 'array<array-key, mixed>|int|string',
+    'optname' => 'int',
+    'optval' => 'array<array-key, mixed>|int|string',
+    -2 => 'none',
   ),
   'socket_set_timeout' => 
   array (
@@ -82241,26 +83182,30 @@ return array (
     0 => 'bool',
     'socket' => 'resource',
     'level' => 'int',
-    'option' => 'int',
-    'value' => 'array<array-key, mixed>|int|string',
+    'optname' => 'int',
+    'optval' => 'array<array-key, mixed>|int|string',
+    -2 => 'none',
   ),
   'socket_shutdown' => 
   array (
     0 => 'bool',
     'socket' => 'resource',
-    'mode=' => 'int',
+    'how=' => 'int',
+    -2 => 'none',
   ),
   'socket_strerror' => 
   array (
     0 => 'string',
-    'error_code' => 'int',
+    'errno' => 'int',
+    -2 => 'none',
   ),
   'socket_write' => 
   array (
     0 => 'false|int',
     'socket' => 'resource',
-    'data' => 'string',
+    'buf' => 'string',
     'length=' => 'int',
+    -2 => 'none',
   ),
   'socket_wsaprotocol_info_export' => 
   array (
@@ -82698,14 +83643,16 @@ return array (
   array (
     0 => 'array<array-key, mixed>|false',
     '&r state' => 'string',
-    'string=' => 'string',
+    'string' => 'string',
+    'string_3=' => 'mixed',
     -2 => 'none',
   ),
   'sodium_crypto_secretstream_xchacha20poly1305_push' => 
   array (
     0 => 'string',
     '&w state' => 'string',
-    'string=' => 'string',
+    'string' => 'string',
+    'string_3=' => 'string',
     'long=' => 'string',
     -2 => 'none',
   ),
@@ -93036,6 +93983,11 @@ return array (
     0 => 'array<array-key, mixed>',
     -2 => 'none',
   ),
+  'swoole\\client::getsocket' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+  ),
   'swoole\\client::getsockname' => 
   array (
     0 => 'array<array-key, mixed>',
@@ -99657,6 +100609,12 @@ return array (
     0 => 'mixed',
     -2 => 'none',
   ),
+  'swoole\\http\\server::getsocket' => 
+  array (
+    0 => 'mixed',
+    'port=' => 'mixed',
+    -2 => 'none',
+  ),
   'swoole\\http\\server::getworkerid' => 
   array (
     0 => 'mixed',
@@ -100884,6 +101842,12 @@ return array (
     0 => 'mixed',
     -2 => 'none',
   ),
+  'swoole\\redis\\server::getsocket' => 
+  array (
+    0 => 'mixed',
+    'port=' => 'mixed',
+    -2 => 'none',
+  ),
   'swoole\\redis\\server::getworkerid' => 
   array (
     0 => 'mixed',
@@ -101225,6 +102189,12 @@ return array (
   'swoole\\server::getmasterpid' => 
   array (
     0 => 'mixed',
+    -2 => 'none',
+  ),
+  'swoole\\server::getsocket' => 
+  array (
+    0 => 'mixed',
+    'port=' => 'mixed',
     -2 => 'none',
   ),
   'swoole\\server::getworkerid' => 
@@ -101680,6 +102650,11 @@ return array (
   array (
     0 => 'mixed',
     'event_name' => 'mixed',
+    -2 => 'none',
+  ),
+  'swoole\\server\\port::getsocket' => 
+  array (
+    0 => 'mixed',
     -2 => 'none',
   ),
   'swoole\\server\\port::on' => 
@@ -102349,6 +103324,12 @@ return array (
     0 => 'mixed',
     -2 => 'none',
   ),
+  'swoole\\websocket\\server::getsocket' => 
+  array (
+    0 => 'mixed',
+    'port=' => 'mixed',
+    -2 => 'none',
+  ),
   'swoole\\websocket\\server::getworkerid' => 
   array (
     0 => 'mixed',
@@ -102744,6 +103725,11 @@ return array (
     -2 => 'none',
   ),
   'swoole_client::getpeername' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+  ),
+  'swoole_client::getsocket' => 
   array (
     0 => 'mixed',
     -2 => 'none',
@@ -103631,6 +104617,12 @@ return array (
     0 => 'mixed',
     -2 => 'none',
   ),
+  'swoole_http_server::getsocket' => 
+  array (
+    0 => 'mixed',
+    'port=' => 'mixed',
+    -2 => 'none',
+  ),
   'swoole_http_server::getworkerid' => 
   array (
     0 => 'mixed',
@@ -104316,6 +105308,12 @@ return array (
     0 => 'mixed',
     -2 => 'none',
   ),
+  'swoole_redis_server::getsocket' => 
+  array (
+    0 => 'mixed',
+    'port=' => 'mixed',
+    -2 => 'none',
+  ),
   'swoole_redis_server::getworkerid' => 
   array (
     0 => 'mixed',
@@ -104668,6 +105666,12 @@ return array (
     0 => 'mixed',
     -2 => 'none',
   ),
+  'swoole_server::getsocket' => 
+  array (
+    0 => 'mixed',
+    'port=' => 'mixed',
+    -2 => 'none',
+  ),
   'swoole_server::getworkerid' => 
   array (
     0 => 'mixed',
@@ -104848,6 +105852,11 @@ return array (
   array (
     0 => 'mixed',
     'event_name' => 'mixed',
+    -2 => 'none',
+  ),
+  'swoole_server_port::getsocket' => 
+  array (
+    0 => 'mixed',
     -2 => 'none',
   ),
   'swoole_server_port::on' => 
@@ -105664,6 +106673,12 @@ return array (
     0 => 'mixed',
     -2 => 'none',
   ),
+  'swoole_websocket_server::getsocket' => 
+  array (
+    0 => 'mixed',
+    'port=' => 'mixed',
+    -2 => 'none',
+  ),
   'swoole_websocket_server::getworkerid' => 
   array (
     0 => 'mixed',
@@ -106073,6 +107088,7 @@ return array (
   array (
     0 => 'string',
     'domain' => 'null|string',
+    -2 => 'none',
   ),
   'thread::__construct' => 
   array (
@@ -109690,6 +110706,7 @@ return array (
   array (
     0 => 'false|int',
     'timestamp=' => 'int',
+    -2 => 'none',
   ),
   'unlink' => 
   array (
@@ -112549,8 +113566,9 @@ return array (
   'xmlrpc_decode' => 
   array (
     0 => 'mixed',
-    'xml' => 'string',
+    'value' => 'string',
     'encoding=' => 'string',
+    -2 => 'none',
   ),
   'xmlrpc_decode_request' => 
   array (
@@ -112558,11 +113576,13 @@ return array (
     'xml' => 'string',
     '&w method' => 'string',
     'encoding=' => 'string',
+    -2 => 'none',
   ),
   'xmlrpc_encode' => 
   array (
     0 => 'string',
     'value' => 'mixed',
+    -2 => 'none',
   ),
   'xmlrpc_encode_request' => 
   array (
@@ -112570,27 +113590,32 @@ return array (
     'method' => 'string',
     'params' => 'mixed',
     'output_options=' => 'array<array-key, mixed>',
+    -2 => 'none',
   ),
   'xmlrpc_get_type' => 
   array (
     0 => 'string',
     'value' => 'mixed',
+    -2 => 'none',
   ),
   'xmlrpc_is_fault' => 
   array (
     0 => 'bool',
     'arg' => 'array<array-key, mixed>',
+    -2 => 'none',
   ),
   'xmlrpc_parse_method_descriptions' => 
   array (
     0 => 'array<array-key, mixed>',
     'xml' => 'string',
+    -2 => 'none',
   ),
   'xmlrpc_server_add_introspection_data' => 
   array (
     0 => 'int',
     'server' => 'resource',
     'desc' => 'array<array-key, mixed>',
+    -2 => 'none',
   ),
   'xmlrpc_server_call_method' => 
   array (
@@ -112599,21 +113624,25 @@ return array (
     'xml' => 'string',
     'user_data' => 'mixed',
     'output_options=' => 'array<array-key, mixed>',
+    -2 => 'none',
   ),
   'xmlrpc_server_create' => 
   array (
     0 => 'resource',
+    -2 => 'none',
   ),
   'xmlrpc_server_destroy' => 
   array (
     0 => 'int',
     'server' => 'resource',
+    -2 => 'none',
   ),
   'xmlrpc_server_register_introspection_callback' => 
   array (
     0 => 'bool',
     'server' => 'resource',
     'function' => 'string',
+    -2 => 'none',
   ),
   'xmlrpc_server_register_method' => 
   array (
@@ -112621,12 +113650,14 @@ return array (
     'server' => 'resource',
     'method_name' => 'string',
     'function' => 'string',
+    -2 => 'none',
   ),
   'xmlrpc_set_type' => 
   array (
     0 => 'bool',
-    '&rw value' => 'DateTime|string',
+    '&value' => 'DateTime|string',
     'type' => 'string',
+    -2 => 'none',
   ),
   'xmlwriter::endattribute' => 
   array (

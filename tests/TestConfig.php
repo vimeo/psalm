@@ -72,8 +72,21 @@ final class TestConfig extends Config
         $this->project_files = self::$cached_project_files;
         $this->setIncludeCollector(new IncludeCollector());
 
+        // the analysed snippets depend on no package, not even the ones Psalm requires
+        $this->setProjectPackages([]);
+
         $this->collectPredefinedConstants();
         $this->collectPredefinedFunctions();
+    }
+
+    /**
+     * For a test of the default mode, where the callmap stands in for the stub of an extension
+     *
+     * @psalm-capabilities read-props|write-this-props
+     */
+    public function disableExtension(string $extension): void
+    {
+        $this->php_extensions[$extension] = false;
     }
 
     /**

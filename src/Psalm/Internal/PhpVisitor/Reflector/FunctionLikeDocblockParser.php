@@ -19,6 +19,7 @@ use Psalm\Issue\CodeIssue;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Storage\Capabilities;
 use Psalm\Storage\CapabilitiesParseException;
+use Psalm\Storage\TemplateVariance;
 use RuntimeException;
 
 use function array_keys;
@@ -35,7 +36,6 @@ use function preg_split;
 use function reset;
 use function str_contains;
 use function str_ends_with;
-use function str_replace;
 use function str_starts_with;
 use function stripos;
 use function strlen;
@@ -182,47 +182,33 @@ final class FunctionLikeDocblockParser
 
         if (isset($parsed_docblock->tags['global'])) {
             foreach ($parsed_docblock->tags['global'] as $offset => $global) {
-                $line_parts = CommentAnalyzer::splitDocLine($global);
+                $parsed = CommentAnalyzer::parseVariableDocLine($global, false);
 
-                if (count($line_parts) === 1 && isset($line_parts[0][0]) && $line_parts[0][0] === '$') {
+                if ($parsed === false) {
+                    $info->docblock_issues[] = new InvalidDocblock(
+                        'Badly-formatted @global in docblock for ' . $cased_function_id,
+                        $code_location,
+                    );
+
                     continue;
                 }
 
-                if (count($line_parts) > 1) {
-                    if (preg_match('/^(\.\.\.)?&?\$[A-Za-z0-9_\x80-\xff]+[,;]?$/', $line_parts[1])
-                        && $line_parts[0][0] !== '{'
-                    ) {
-                        if ($line_parts[1][0] === '&') {
-                            $line_parts[1] = substr($line_parts[1], 1);
-                        }
-
-                        if ($line_parts[0][0] === '$'
-                            && !preg_match('/^\$this *(\||$)/', CommentAnalyzer::sanitizeDocblockType($line_parts[0]))
-                        ) {
-                            throw new IncorrectDocblockException('Misplaced variable');
-                        }
-
-                        $line_parts[1] = (string) preg_replace('/[,;]$/', '', $line_parts[1], 1);
-
-                        $info->globals[] = [
-                            'name' => $line_parts[1],
-                            'type' => CommentAnalyzer::sanitizeDocblockType($line_parts[0]),
-                            'line_number' => $comment->getStartLine() + substr_count(
-                                $comment_text,
-                                "\n",
-                                0,
-                                $offset - $comment->getStartFilePos(),
-                            ),
-                            'start' => $offset,
-                            'end' => $offset + strlen($line_parts[0]),
-                        ];
-                    }
-                } else {
-                    $info->docblock_issues[] = new InvalidDocblock(
-                        'Badly-formatted @param in docblock for ' . $cased_function_id,
-                        $code_location,
-                    );
+                if ($parsed === null) {
+                    continue;
                 }
+
+                $info->globals[] = [
+                    'name' => $parsed['name'],
+                    'type' => $parsed['type'],
+                    'line_number' => $comment->getStartLine() + substr_count(
+                        $comment_text,
+                        "\n",
+                        0,
+                        $offset - $comment->getStartFilePos(),
+                    ),
+                    'start' => $offset,
+                    'end' => $offset + $parsed['type_length'],
+                ];
             }
         }
 
@@ -313,7 +299,7 @@ final class FunctionLikeDocblockParser
                     }
 
                     $templates[$purity_template['name']]['psalm']
-                        = [$purity_template['name'], 'of', $purity_template['bound'], false, 0];
+                        = [$purity_template['name'], 'of', $purity_template['bound'], TemplateVariance::Invariant, 0];
                     $info->purity_templates[] = $purity_template['name'];
                 }
             }
@@ -322,7 +308,7 @@ final class FunctionLikeDocblockParser
         [$templates, $info->template_defaults] = TemplateTagParser::parseTags(
             $parsed_docblock,
             $comment,
-            ['template' => false],
+            ['template' => TemplateVariance::Invariant],
             $templates,
         );
 
@@ -651,68 +637,51 @@ final class FunctionLikeDocblockParser
         $comment_text = $comment->getText();
 
         foreach ($params as $offset => $param) {
-            $line_parts = CommentAnalyzer::splitDocLine($param);
+            $parsed = CommentAnalyzer::parseVariableDocLine($param, true);
 
-            if (count($line_parts) === 1 && isset($line_parts[0][0]) && $line_parts[0][0] === '$') {
-                continue;
-            }
-
-            if (count($line_parts) > 1) {
-                if (preg_match('/^&?(\.\.\.)?&?\$[A-Za-z0-9_\x80-\xff]+[,;]?$/', $line_parts[1])
-                    && ($line_parts[0] === '' || $line_parts[0][0] !== '{')
-                ) {
-                    $line_parts[1] = str_replace('&', '', $line_parts[1]);
-
-                    $line_parts[1] = (string) preg_replace('/[,;]$/', '', $line_parts[1], 1);
-
-                    $end = $offset + strlen($line_parts[0]);
-
-                    $line_parts[0] = CommentAnalyzer::sanitizeDocblockType($line_parts[0]);
-
-                    if ($line_parts[0] === ''
-                        || ($line_parts[0][0] === '$'
-                            && !preg_match('/^\$this *(\||$)/', $line_parts[0]))
-                    ) {
-                        throw new IncorrectDocblockException('Misplaced variable');
-                    }
-
-                    $info_param = [
-                        'name' => trim($line_parts[1]),
-                        'type' => $line_parts[0],
-                        'line_number' => $comment->getStartLine() + substr_count(
-                            $comment_text,
-                            "\n",
-                            0,
-                            $offset - $comment->getStartFilePos(),
-                        ),
-                        'start' => $offset,
-                        'end' => $end,
-                    ];
-
-                    if (isset($line_parts[1]) && isset($line_parts[2])) {
-                        // the description follows the name as written: `& $x`, or on the next line
-                        $description = (string) preg_replace(
-                            '/^[\s*]*&?[\s*]*\S+/',
-                            '',
-                            substr($param, $end - $offset),
-                        );
-                        $info_param['description'] = trim($description);
-                        // Handle multiline description.
-                        $info_param['description'] = (string) preg_replace(
-                            '/\\n \\*\\s+/um',
-                            ' ',
-                            $info_param['description'],
-                        );
-                    }
-
-                    $info->params[] = $info_param;
-                }
-            } else {
+            if ($parsed === false) {
                 $info->docblock_issues[] = new InvalidDocblock(
                     'Badly-formatted @param in docblock for ' . $cased_function_id,
                     $code_location,
                 );
+
+                continue;
             }
+
+            if ($parsed === null) {
+                continue;
+            }
+
+            $info_param = [
+                'name' => $parsed['name'],
+                'type' => $parsed['type'],
+                'line_number' => $comment->getStartLine() + substr_count(
+                    $comment_text,
+                    "\n",
+                    0,
+                    $offset - $comment->getStartFilePos(),
+                ),
+                'start' => $offset,
+                'end' => $offset + $parsed['type_length'],
+            ];
+
+            if ($parsed['has_description']) {
+                // the description follows the name as written: `& $x`, or on the next line
+                $description = (string) preg_replace(
+                    '/^[\s*]*&?[\s*]*\S+/',
+                    '',
+                    substr($param, $parsed['type_length']),
+                );
+                $info_param['description'] = trim($description);
+                // Handle multiline description.
+                $info_param['description'] = (string) preg_replace(
+                    '/\\n \\*\\s+/um',
+                    ' ',
+                    $info_param['description'],
+                );
+            }
+
+            $info->params[] = $info_param;
         }
     }
 
@@ -965,13 +934,9 @@ final class FunctionLikeDocblockParser
         CodeLocation $code_location,
         FunctionDocblockComment $info,
     ): ?array {
-        $line_parts = CommentAnalyzer::splitDocLine($param);
+        $parsed = CommentAnalyzer::parseVariableDocLine($param, true);
 
-        if (count($line_parts) === 1 && isset($line_parts[0][0]) && $line_parts[0][0] === '$') {
-            return null;
-        }
-
-        if (count($line_parts) <= 1) {
+        if ($parsed === false) {
             $info->docblock_issues[] = new InvalidDocblock(
                 'Badly-formatted @' . $tag . ' in docblock for ' . $cased_function_id,
                 $code_location,
@@ -980,35 +945,14 @@ final class FunctionLikeDocblockParser
             return null;
         }
 
-        if (!preg_match('/^(\.\.\.)?&?\$[A-Za-z0-9_\x80-\xff]+[,;]?$/', $line_parts[1])
-            || $line_parts[0][0] === '{'
-        ) {
+        if ($parsed === null) {
             return null;
         }
 
-        // the name is matched against the parameter's own name later, which carries neither
-        // marker; `...` comes first so that `...&$name` also loses its `&`
-        if (str_starts_with($line_parts[1], '...')) {
-            $line_parts[1] = substr($line_parts[1], 3);
-        }
-
-        if ($line_parts[1][0] === '&') {
-            $line_parts[1] = substr($line_parts[1], 1);
-        }
-
-        $line_parts[0] = CommentAnalyzer::sanitizeDocblockType($line_parts[0]);
-
-        if ($line_parts[0] === ''
-            || ($line_parts[0][0] === '$' && !preg_match('/^\$this *(\||$)/', $line_parts[0]))
-        ) {
-            throw new IncorrectDocblockException('Misplaced variable');
-        }
-
-        $line_parts[1] = (string) preg_replace('/[,;]$/', '', $line_parts[1], 1);
-
+        // the name is matched against the parameter's own name later, which carries no `...`
         return [
-            'name' => trim($line_parts[1]),
-            'type' => str_replace("\n", '', $line_parts[0]),
+            'name' => str_starts_with($parsed['name'], '...') ? substr($parsed['name'], 3) : $parsed['name'],
+            'type' => $parsed['type'],
             'line_number' => $comment->getStartLine() + substr_count(
                 $comment_text,
                 "\n",

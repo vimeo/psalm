@@ -23,20 +23,23 @@ use Psalm\Exception\UnresolvableConstantException;
 use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\FunctionLike\ReturnTypeAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLike\ReturnTypeCollector;
+use Psalm\Internal\Analyzer\Statements\DeclareAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\CallPurityResolver;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\FunctionCallReturnTypeFetcher;
 use Psalm\Internal\Analyzer\Statements\Expression\DestructorAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Codebase\CliOutput;
 use Psalm\Internal\Codebase\CodeUseGraph;
+use Psalm\Internal\Codebase\PhpDeprecations;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\TaintStore;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\FileManipulation\FunctionDocblockManipulator;
 use Psalm\Internal\MethodIdentifier;
-use Psalm\Internal\PhpVisitor\NodeCounterVisitor;
+use Psalm\Internal\Perf;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
@@ -48,6 +51,7 @@ use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\TypeVisitor\TypeChecker;
+use Psalm\Issue\DeprecatedSyntax;
 use Psalm\Issue\ImpureFunctionCall;
 use Psalm\Issue\InvalidDocblockParamName;
 use Psalm\Issue\InvalidOverride;
@@ -80,6 +84,7 @@ use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\FunctionStorage;
 use Psalm\Storage\MethodStorage;
+use Psalm\Storage\TemplateVariance;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
@@ -110,7 +115,6 @@ use function in_array;
 use function is_string;
 use function krsort;
 use function mb_strpos;
-use function microtime;
 use function preg_match;
 use function reset;
 use function sort;
@@ -312,6 +316,9 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         array &$byref_vars = [],
     ): ?bool {
         $storage = $this->storage;
+
+        // the code runs under the strict_types of its own file, which for a trait is not the file of the class
+        $context->strict_types = DeclareAnalyzer::declaresStrictTypes($this->codebase, $this->getFilePath());
 
         $function_stmts = $this->function->getStmts() ?: [];
 
@@ -560,6 +567,8 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             }
         }
 
+        $this->checkDeprecatedSignature();
+
         $check_stmts = $this->processParams(
             $statements_analyzer,
             $storage,
@@ -680,16 +689,17 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 $this->getFilePath(),
                 $start,
                 $end,
-                (string) $storage->signature_return_type,
+                $storage->signature_return_type->getId(false),
             );
         }
 
         if ($storage instanceof MethodStorage && $storage->location && !$storage->allowsNamedArguments()) {
             foreach ($overridden_method_ids as $overridden_method_id) {
                 $overridden_storage = $codebase->methods->getStorage($overridden_method_id);
-                if ($overridden_storage->allowsNamedArguments()) {
+                // a method without parameters can't be passed named arguments
+                if ($overridden_storage->params && $overridden_storage->allowsNamedArguments()) {
                     IssueBuffer::maybeAdd(new MethodSignatureMismatch(
-                        'Method ' . (string) $method_id . ' should accept named arguments '
+                        'Method ' . (string) $method_id . ' should accept named arguments'
                             . ' as ' . (string) $overridden_method_id . ' does',
                         $storage->location,
                     ));
@@ -733,6 +743,30 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             );
         }
 
+        // what an assertion narrows a value to is handed out, as a return type is (a negated one hands nothing out)
+        if ($storage->location !== null) {
+            $asserted_types = [];
+            $possibilities_list = [
+                ...$storage->assertions,
+                ...$storage->if_true_assertions,
+                ...$storage->if_false_assertions,
+            ];
+
+            foreach ($possibilities_list as $possibilities) {
+                foreach ($possibilities->rule as $assertion) {
+                    if (!$assertion->isNegation() && ($asserted_type = $assertion->getAtomicType()) !== null) {
+                        $asserted_types[] = $asserted_type;
+                    }
+                }
+            }
+
+            if ($asserted_types
+                && !$this->checkOutputTypeTemplates(new Union($asserted_types), $storage->location, $storage, $context)
+            ) {
+                $check_stmts = false;
+            }
+        }
+
         // a signature that fails the check skips the body, but what the body initialises still counts:
         // its regular analysis reports the signature
         if (!$check_stmts && !$context->collect_initializations) {
@@ -767,7 +801,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             ]);
         }
 
-        $time = microtime(true);
+        $perf_start = Perf\Collector::$enabled ? Perf\Collector::functionStart() : null;
 
         $project_analyzer = $statements_analyzer->getProjectAnalyzer();
 
@@ -949,20 +983,18 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             }
         }
 
-        if (!$context->collect_initializations
-            && $project_analyzer->debug_performance
-            && $cased_method_id
-        ) {
-            $traverser = new PhpParser\NodeTraverser;
-
-            $node_counter = new NodeCounterVisitor();
-            $traverser->addVisitor($node_counter);
-            $traverser->traverse($function_stmts);
-
-            if ($node_counter->count > 5) {
-                $time_taken = microtime(true) - $time;
-                $codebase->analyzer->addFunctionTiming($cased_method_id, $time_taken / $node_counter->count);
-            }
+        if ($perf_start !== null) {
+            // the id of a method of an anonymous class names the file, and so does the path of the record
+            Perf\Collector::functionEnd(
+                $this->getFilePath(),
+                $this->getFileName(),
+                $this->function->getLine(),
+                $appearing_class_storage?->anonymous === true
+                    ? '{anonymous-class}::' . ($storage->cased_name ?? '')
+                    : $cased_method_id ?? '{closure}',
+                $context->collect_initializations,
+                $perf_start,
+            );
         }
 
         $final_actions = ScopeAnalyzer::getControlActions(
@@ -1011,10 +1043,16 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         if ($this->function instanceof Closure
             || $this->function instanceof ArrowFunction
         ) {
+            $closure_declared_return_type = ClassAnalyzer::localizeClosureReturnType(
+                $codebase,
+                $storage->return_type,
+                $context,
+            );
+
             $this->verifyReturnType(
                 $function_stmts,
                 $statements_analyzer,
-                $storage->return_type,
+                $closure_declared_return_type,
                 $this->source->getFQCLN(),
                 $storage->return_type_location,
                 $context->has_returned,
@@ -1040,6 +1078,14 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     $context->has_returned,
                 );
             }
+
+            $closure_return_types = ReturnTypeAnalyzer::addImplicitVoidReturn(
+                $closure_return_types,
+                $closure_yield_types !== [],
+                $function_stmts,
+                $type_provider,
+                $context->has_returned,
+            );
 
             $closure_return_type = $closure_return_types
                 ? Type::combineUnionTypeArray(
@@ -1075,6 +1121,14 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                             $storage->return_type,
                         ))
                 ) {
+                    $new_closure_return_type = $closure_return_type;
+                } elseif ($storage->return_type
+                    && !$storage->return_type_location
+                    && $closure_return_type->isNullable()
+                    && !UnionTypeComparator::isContainedBy($codebase, Type::getNull(), $storage->return_type)
+                ) {
+                    // a return type taken from the callable the closure is returned as lets it return null like a
+                    // declared one, but the callable does not: keep what the closure returns, to be checked there
                     $new_closure_return_type = $closure_return_type;
                 }
 
@@ -1707,6 +1761,23 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
     }
 
     /**
+     * A template without a bound may be given null as a parameter's default value (#2431), although null is not
+     * contained by it elsewhere: the caller may pick a type without null
+     *
+     * @psalm-pure
+     */
+    private static function hasTemplateWithoutBound(Union $param_type): bool
+    {
+        foreach ($param_type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TTemplateParam && $atomic_type->as->isMixed()) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * @param list<FunctionLikeParameter> $params
      * @param list<Param> $param_stmts
      */
@@ -1817,7 +1888,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 new VirtualPropertyFetch(
                     new VirtualVariable('this', $attributes),
                     new VirtualIdentifier($name, $attributes),
-                    $attributes,
+                    ['promoted_parameter' => true] + $attributes,
                 ),
                 $name,
                 new VirtualVariable($name, $var->getAttributes()),
@@ -1825,6 +1896,217 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 $context,
             );
         }
+    }
+
+    /**
+     * Checks a type a method hands out other than as its return type (`@param-out`, a by-ref parameter, what an
+     * assertion narrows to) for the contravariant templates of its class. Covariant ones were never checked there.
+     *
+     * @return bool whether the type has no errors, as for check()
+     * @psalm-capabilities read-props
+     */
+    private function checkOutputTypeTemplates(
+        Union $type,
+        CodeLocation $location,
+        FunctionLikeStorage $storage,
+        Context $context,
+    ): bool {
+        if (!$storage instanceof MethodStorage
+            || $storage->defining_fqcln === null
+            || !$this->function instanceof ClassMethod
+            || strtolower($this->function->name->name) === '__construct'
+            || $this->codebase->classlike_storage_provider->get($storage->defining_fqcln)->template_contravariants
+                === null
+        ) {
+            return true;
+        }
+
+        return (new TypeChecker(
+            $this,
+            $location,
+            $storage->suppressed_issues,
+            [],
+            false,
+            false,
+            TemplateVariance::Covariant,
+            $context,
+            true,
+        ))->check($type);
+    }
+
+    /**
+     * A trait method is analyzed as a method of the class using the trait, where the templates of the trait
+     * are the types given to `@use`: an argument of such a template type fits the parameter of a call the
+     * concrete type fits.
+     */
+    public static function bindTraitTemplatesToUse(
+        Codebase $codebase,
+        FunctionLikeStorage $storage,
+        Context $context,
+        Union $type,
+    ): Union {
+        if (!$storage instanceof MethodStorage
+            || $storage->defining_fqcln === null
+            || $storage->cased_name === null
+            || $context->self === null
+            || strtolower($storage->defining_fqcln) === strtolower($context->self)
+        ) {
+            return $type;
+        }
+
+        $declaring_storage = $codebase->classlike_storage_provider->get($storage->defining_fqcln);
+
+        if (!$declaring_storage->is_trait || $declaring_storage->template_types === null) {
+            return $type;
+        }
+
+        $class_template_params = ClassTemplateParamCollector::collect(
+            $codebase,
+            $declaring_storage,
+            $codebase->classlike_storage_provider->get($context->self),
+            strtolower($storage->cased_name),
+        );
+
+        if ($class_template_params === null) {
+            return $type;
+        }
+
+        // a template narrowed by a check (`T as string` after `is_string($x)`) is not the type it is bound to
+        $bound_atomic_types = [];
+        $narrowed_atomic_types = [];
+
+        foreach ($type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TTemplateParam
+                && isset($declaring_storage->template_types[$atomic_type->param_name][$atomic_type->defining_class])
+                && !$atomic_type->as->equals(
+                    $declaring_storage->template_types[$atomic_type->param_name][$atomic_type->defining_class],
+                )
+            ) {
+                $narrowed_atomic_types[] = $atomic_type;
+            } else {
+                $bound_atomic_types[] = $atomic_type;
+            }
+        }
+
+        if ($bound_atomic_types === []) {
+            return $type;
+        }
+
+        $bound_type = TemplateStandinTypeReplacer::replace(
+            $narrowed_atomic_types === [] ? $type : $type->getBuilder()->setTypes($bound_atomic_types)->freeze(),
+            new TemplateResult($class_template_params, []),
+            $codebase,
+            null,
+            null,
+            null,
+            $context->self,
+        );
+
+        return $narrowed_atomic_types === []
+            ? $bound_type
+            : Type::combineUnionTypes($bound_type, new Union($narrowed_atomic_types), $codebase);
+    }
+
+    /**
+     * Reports the parameters and the by-reference void returns PHP deprecates, whatever PHP version is analysed
+     */
+    private function checkDeprecatedSignature(): void
+    {
+        $function = $this->function;
+
+        if ($function->byRef
+            && $function->returnType instanceof PhpParser\Node\Identifier
+            && $function->returnType->toLowerString() === 'void'
+        ) {
+            $this->reportDeprecatedSyntax(
+                PhpDeprecations::getDeprecatedSinceMessage(
+                    'Returning by reference from a void function',
+                    8_01_00,
+                    null,
+                ),
+                $function->returnType,
+            );
+        }
+
+        $last_required_param = null;
+
+        foreach ($function->params as $param) {
+            if ($param->default === null && !$param->variadic) {
+                $last_required_param = $param;
+            }
+        }
+
+        $before_required = $last_required_param !== null;
+
+        foreach ($function->params as $param) {
+            if ($param === $last_required_param) {
+                $before_required = false;
+            }
+
+            if ($param->default === null || !$param->var instanceof PhpParser\Node\Expr\Variable) {
+                continue;
+            }
+
+            $name = '$' . (is_string($param->var->name) ? $param->var->name : '');
+            $null_default = $param->default instanceof PhpParser\Node\Expr\ConstFetch
+                && $param->default->name->toLowerString() === 'null';
+
+            // a promoted parameter can't be implicitly nullable at all
+            if ($null_default && $param->type !== null && $param->flags === 0 && !self::typeAllowsNull($param->type)) {
+                $this->reportDeprecatedSyntax(
+                    PhpDeprecations::getDeprecatedSinceMessage(
+                        'Making the type of ' . $name . ' nullable with its null default',
+                        8_04_00,
+                        null,
+                    ) . ', declare the type nullable',
+                    $param->type,
+                );
+            }
+
+            if ($before_required
+                && $last_required_param !== null
+                && $last_required_param->var instanceof PhpParser\Node\Expr\Variable
+            ) {
+                $this->reportDeprecatedSyntax(
+                    PhpDeprecations::getDeprecatedSinceMessage(
+                        'Declaring the optional parameter ' . $name . ' before the required parameter $'
+                            . (is_string($last_required_param->var->name) ? $last_required_param->var->name : ''),
+                        // PHP 8.0 to 8.3 accepted a typed parameter whose default is null
+                        $null_default && $param->type !== null ? 8_04_00 : 8_00_00,
+                        null,
+                    ) . ', remove its default',
+                    $param,
+                );
+            }
+        }
+    }
+
+    private static function typeAllowsNull(
+        PhpParser\Node\ComplexType|PhpParser\Node\Identifier|PhpParser\Node\Name $type,
+    ): bool {
+        if ($type instanceof PhpParser\Node\NullableType) {
+            return true;
+        }
+
+        $types = $type instanceof PhpParser\Node\UnionType ? $type->types : [$type];
+
+        foreach ($types as $atomic_type) {
+            if ($atomic_type instanceof PhpParser\Node\Identifier
+                && in_array($atomic_type->toLowerString(), ['null', 'mixed'], true)
+            ) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function reportDeprecatedSyntax(string $message, PhpParser\Node $node): void
+    {
+        IssueBuffer::maybeAdd(
+            new DeprecatedSyntax($message, new CodeLocation($this, $node)),
+            $this->getSuppressedIssues(),
+        );
     }
 
     /**
@@ -1856,6 +2138,12 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 && ($codebase->classlike_storage_provider->get($storage->defining_fqcln)
                     ->properties[$function_param->name]->inherited_type ?? false);
 
+            // a docblock type inherited from an overridden method keeps the native types the override adds, which
+            // are checked where the override declares them
+            $inherits_docblock_type = $function_param->has_docblock_type
+                && isset($storage->params[$offset])
+                && !$storage->params[$offset]->has_docblock_type;
+
             if ($signature_type && $signature_type_location && $signature_type->hasObjectType()) {
                 $referenced_type = $signature_type;
                 if ($referenced_type->isNullable()) {
@@ -1868,7 +2156,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     $this->getFilePath(),
                     $start,
                     $end,
-                    (string) $referenced_type,
+                    $referenced_type->getId(false),
                 );
             }
 
@@ -1952,16 +2240,23 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     );
                 }
 
+                // `static` is what `$this` is, with the templates of the class, and the class itself in a final one
+                $this_type = $context->vars_in_scope['$this'] ?? null;
+                $this_object = $this_type !== null && $this_type->isSingle() ? $this_type->getSingleAtomic() : null;
+
                 try {
                     $param_type = TypeExpander::expandUnion(
                         $codebase,
                         $param_type,
                         $context->self,
-                        $context->self,
+                        $this_object instanceof TNamedObject ? $this_object : $context->self,
                         $this->getParentFQCLN(),
                         true,
                         $param_type->hasConditional(),
-                        false,
+                        ($this_object instanceof TNamedObject && !$this_object->is_static)
+                            || ($context->self !== null
+                                && $codebase->classlike_storage_provider->has($context->self)
+                                && $codebase->classlike_storage_provider->get($context->self)->final),
                         true,
                         false,
                         true,
@@ -1979,18 +2274,55 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     }
                 }
 
+                $checked_type = $param_type;
+
+                if ($inherits_docblock_type && $signature_type) {
+                    $checked_types = array_diff_key($param_type->getAtomicTypes(), $signature_type->getAtomicTypes());
+                    $checked_type = $checked_types ? new Union($checked_types) : null;
+                }
+
                 if ($function_param->type_location && !$inherited_type) {
-                    if ($param_type->check(
-                        $this,
-                        $function_param->type_location,
-                        $storage->suppressed_issues,
-                        [],
-                        false,
-                        false,
-                        $this->function instanceof ClassMethod
-                            && strtolower($this->function->name->name) !== '__construct',
-                        $context,
-                    ) === false) {
+                    $own_param = $storage->params[$offset] ?? null;
+
+                    // a type the parameter takes from the overridden method is checked there, for its templates
+                    if ($checked_type
+                        && !$checked_type->checked
+                        && !(new TypeChecker(
+                            $this,
+                            $function_param->type_location,
+                            $storage->suppressed_issues,
+                            [],
+                            false,
+                            false,
+                            $this->function instanceof ClassMethod
+                                && strtolower($this->function->name->name) !== '__construct'
+                                && $function_param === $own_param
+                                    ? TemplateVariance::Contravariant
+                                    : null,
+                            $context,
+                            false,
+                            $function_param !== $own_param,
+                        ))->check($checked_type)
+                    ) {
+                        $check_stmts = false;
+                    }
+
+                    // the method's own `@param-out` is checked here even if the type it takes is the overridden
+                    // method's, which checks only what it declares
+                    $output_type = $function_param->out_type
+                        ?? ($function_param->by_ref && $function_param === $own_param ? $param_type : null);
+
+                    if ($output_type !== null
+                        && $own_param !== null
+                        && !$this->checkOutputTypeTemplates(
+                            $output_type,
+                            $function_param === $own_param
+                                ? $function_param->type_location
+                                : $own_param->location ?? $function_param->type_location,
+                            $storage,
+                            $context,
+                        )
+                    ) {
                         $check_stmts = false;
                     }
                 }
@@ -2001,6 +2333,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     'by_ref' => $function_param->by_ref,
                     'parent_nodes' => $parent_nodes,
                 ]);
+                $checked_type = $param_type;
             }
 
             $var_type = $param_type;
@@ -2101,6 +2434,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
                 if ($default_type
                     && !$default_type->hasMixed()
+                    && !($default_type->isNull() && self::hasTemplateWithoutBound($param_type))
                     && !UnionTypeComparator::isContainedBy(
                         $codebase,
                         $default_type,
@@ -2140,7 +2474,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             }
 
             if ($has_template_types && !$inherited_type) {
-                if ($param_type->check(
+                if ($checked_type?->check(
                     $this->source,
                     $function_param->type_location,
                     $this->suppressed_issues,
@@ -2170,7 +2504,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     );
                 }
 
-                if ($param_type->check(
+                if ($checked_type?->check(
                     $this->source,
                     $function_param->type_location,
                     $this->suppressed_issues,
@@ -2182,6 +2516,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             }
 
             if (($inherited_type
+                    || $inherits_docblock_type
                     || ($function_param->type_location !== $function_param->signature_type_location
                         && $function_param->type?->getId() !== $function_param->signature_type?->getId()))
                 && $function_param->signature_type_location
@@ -2700,6 +3035,17 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
     }
 
     /**
+     * The node of the function-like being analysed
+     *
+     * @return TFunction
+     * @psalm-mutation-free
+     */
+    public function getFunctionLikeNode(): Closure|Function_|ClassMethod|ArrowFunction
+    {
+        return $this->function;
+    }
+
+    /**
      * A purity made of capabilities and purity templates, where no capabilities (`pure`) are left
      * out of a union with templates: `P|pure` is just `P`.
      *
@@ -3200,6 +3546,13 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             }
 
             MethodAnalyzer::checkMethodSignatureMustOmitReturnType($storage, $codeLocation);
+            MethodAnalyzer::checkDeprecatedMagicMethodSignature($storage, $codeLocation, $this->getSuppressedIssues());
+            MethodAnalyzer::checkSoftDeprecatedMagicMethod(
+                $storage,
+                $appearing_class_storage,
+                $codeLocation,
+                $this->getSuppressedIssues(),
+            );
 
             if ($appearing_class_storage->is_enum) {
                 MethodAnalyzer::checkForbiddenEnumMethod(
@@ -3214,6 +3567,15 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             }
         } elseif ($this instanceof FunctionAnalyzer) {
             $function_name = $this->function->name->name;
+
+            $name_message = PhpDeprecations::getFunctionNameMessage($function_name);
+
+            if ($name_message !== null) {
+                IssueBuffer::maybeAdd(
+                    new ReservedWord($name_message, new CodeLocation($this, $this->function->name), $function_name),
+                    $this->getSuppressedIssues(),
+                );
+            }
             $namespace_prefix = $this->getNamespace();
             $cased_method_id = ($namespace_prefix !== null ? $namespace_prefix . '\\' : '') . $function_name;
             $context->calling_function_id = strtolower($cased_method_id);
@@ -3256,6 +3618,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 callable_id: $this->getClosureId(),
                 byref_use_scopes: ClosureAnalyzer::getByRefUseScopes($this->source, $byref_uses),
             );
+            $this->closure_type = $closure_type;
 
             $type_provider->setType(
                 $this->function,

@@ -84,6 +84,42 @@ final class ForeachTest extends TestCase
         );
     }
 
+    public function testInvalidIteratorNamesTheScalarTypeWithoutItsValue(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @param non-empty-string $s */
+                function f(string $s): void {
+                    foreach (5 as $_) {}
+                    foreach (1.5 as $_) {}
+                    foreach ("abc" as $_) {}
+                    foreach (true as $_) {}
+                    foreach ($s as $_) {}
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        self::assertSame(
+            [
+                'Cannot iterate over int',
+                'Cannot iterate over float',
+                'Cannot iterate over string',
+                'Cannot iterate over true',
+                'Cannot iterate over string',
+            ],
+            array_map(
+                static fn(IssueData $issue): string => $issue->message,
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
+        );
+    }
+
     public function testAnItemAssignedToAVariableOfAPreviousIterationCreatesTheArray(): void
     {
         $this->project_analyzer->getConfig()->throw_exception = false;
@@ -210,6 +246,195 @@ final class ForeachTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'propertyNarrowedBeforeTheLoopIsKeptAfterABreakNotReassigningItsObject' => [
+                'code' => '<?php
+                    final class D {
+                        public function imm(): string {
+                            return "";
+                        }
+                    }
+
+                    final class O {
+                        public ?D $p = null;
+                    }
+
+                    /** @param list<int> $l */
+                    function keep(O $o, array $l): string {
+                        if ($o->p === null) {
+                            return "";
+                        }
+
+                        foreach ($l as $_) {
+                            if (rand(0, 1)) {
+                                break;
+                            }
+                        }
+
+                        return $o->p->imm();
+                    }',
+            ],
+            'varUnsetAndRedefinedBeforeAJumpStaysDefined' => [
+                'code' => '<?php
+                    /** @param list<int> $items */
+                    function f(array $items): int {
+                        $x = 0;
+                        foreach ($items as $i) {
+                            if ($i > 1) {
+                                unset($x);
+                                $x = 4;
+                                break;
+                            }
+                            if ($i) {
+                                unset($x);
+                                $x = 2;
+                                continue;
+                            }
+                        }
+                        return $x;
+                    }',
+            ],
+            'varUnsetBeforeAContinueThroughFinallyAssigningItStaysDefined' => [
+                'code' => '<?php
+                    /** @param list<int> $items */
+                    function f(array $items): int {
+                        $x = 0;
+                        foreach ($items as $_) {
+                            try {
+                                unset($x);
+                                continue;
+                            } finally {
+                                $x = 3;
+                            }
+                        }
+                        return $x;
+                    }',
+            ],
+            'foreachValueKeyIsNotWhatTheLastIterationWrote' => [
+                'code' => '<?php
+                    final class Id {}
+                    final class Photo {}
+
+                    function takesId(Id $_id): void {}
+
+                    /** @param non-empty-list<array{photo: Id}> $links */
+                    function f(array $links): void {
+                        foreach ($links as $link) {
+                            takesId($link["photo"]);
+                        }
+
+                        foreach ($links as $link) {
+                            takesId($link["photo"]);
+                            $link["photo"] = new Photo();
+                        }
+                    }',
+            ],
+            'whileConditionValueKeyIsNotWhatTheLastIterationWrote' => [
+                'code' => '<?php
+                    final class Id {}
+                    final class Photo {}
+
+                    function takesId(Id $_id): void {}
+
+                    /** @return array{photo: Id}|null */
+                    function nextLink(): ?array {
+                        return rand(0, 1) ? ["photo" => new Id()] : null;
+                    }
+
+                    function f(): void {
+                        $link = nextLink();
+                        if ($link === null) {
+                            return;
+                        }
+                        takesId($link["photo"]);
+
+                        while ($link = nextLink()) {
+                            takesId($link["photo"]);
+                            $link["photo"] = new Photo();
+                        }
+                    }',
+            ],
+            'foreachOverAnIteratorAggregateGivenByACoalesceAssignment' => [
+                'code' => '<?php
+                    /** @implements IteratorAggregate<int, string> */
+                    final class Items implements IteratorAggregate {
+                        #[Override]
+                        public function getIterator(): Iterator {
+                            return new ArrayIterator(["a"]);
+                        }
+                    }
+
+                    final class Holder {
+                        private ?Items $items = null;
+
+                        public function names(): void {
+                            foreach (($this->items ??= new Items()) as $name) {
+                                echo $name;
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'yieldFromAnIteratorAggregateGivenByACoalesceAssignment' => [
+                'code' => '<?php
+                    /** @implements IteratorAggregate<int, string> */
+                    final class Items implements IteratorAggregate {
+                        #[Override]
+                        public function getIterator(): Iterator {
+                            return new ArrayIterator(["a"]);
+                        }
+                    }
+
+                    final class Holder {
+                        private ?Items $items = null;
+
+                        /** @return Generator<int, string, mixed, void> */
+                        public function names(): Generator {
+                            yield from ($this->items ??= new Items());
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'foreachAndYieldFromAnAggregateOfARawIteratorGivenByACoalesceAssignment' => [
+                'code' => '<?php
+                    final class RawIt implements Iterator {
+                        #[Override]
+                        public function current(): string { return "a"; }
+                        #[Override]
+                        public function key(): int { return 0; }
+                        #[Override]
+                        public function next(): void {}
+                        #[Override]
+                        public function rewind(): void {}
+                        #[Override]
+                        public function valid(): bool { return false; }
+                    }
+
+                    final class AggRaw implements IteratorAggregate {
+                        #[Override]
+                        public function getIterator(): RawIt { return new RawIt(); }
+                    }
+
+                    final class H {
+                        private ?AggRaw $aggRaw = null;
+
+                        public function a(): void {
+                            foreach (($this->aggRaw ??= new AggRaw()) as $v) {
+                                echo $v;
+                            }
+                        }
+
+                        public function b(): Generator {
+                            yield from ($this->aggRaw ??= new AggRaw());
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingTemplateParam'],
+                'php_version' => '8.3',
+            ],
             'methodCallOnArrayElementSetInLoop' => [
                 'code' => '<?php
                     final class Box {
@@ -1050,6 +1275,36 @@ final class ForeachTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'foreachOverAClassStringMapReturnedByAStaticMethodWithATemplateOfTheSameName' => [
+                'code' => <<<'PHP'
+                    <?php
+                    interface MappingAttribute {}
+
+                    /** @template T of MappingAttribute */
+                    final class RepeatableAttributeCollection {}
+
+                    final class AttributeReader {
+                        /**
+                         * @return class-string-map<T, T|RepeatableAttributeCollection<T>>
+                         *
+                         * @template T of MappingAttribute
+                         */
+                        public static function read(): array {
+                            return [];
+                        }
+                    }
+
+                    function iterate(): void {
+                        foreach (AttributeReader::read() as $class => $attribute) {
+                            /** @psalm-check-type-exact $class = class-string<MappingAttribute> */
+                            /** @psalm-check-type-exact $attribute = MappingAttribute|RepeatableAttributeCollection<MappingAttribute> */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'foreachSourceIsEvaluatedBeforeTheValueIsAssigned' => [
                 'code' => <<<'PHP'
                     <?php
@@ -1810,7 +2065,7 @@ final class ForeachTest extends TestCase
                       continue;
                     }',
                 'assertions' => [
-                    '$a' => 'bool',
+                    '$a' => 'true',
                 ],
             ],
             'falseToBoolInBreak' => [
@@ -3174,6 +3429,93 @@ final class ForeachTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => ['PossiblyNullIterator'],
             ],
+            'foreachOverANonEmptyArrayWithAContinueRunsAtLeastOnce' => [
+                'code' => '<?php
+                    final class Flag {
+                        public function equals(Flag $other): bool {
+                            return $this === $other;
+                        }
+                    }
+
+                    /** @param non-empty-array<Flag> $items */
+                    function withContinue(array $items): Flag {
+                        $last = null;
+                        foreach ($items as $item) {
+                            if ($last === null) {
+                                $last = $item;
+                                continue;
+                            }
+                            if (!$last->equals($item)) {
+                                return new Flag();
+                            }
+                        }
+                        return $last;
+                    }
+
+                    /** @param array<Flag> $items */
+                    function maybeEmpty(array $items): ?Flag {
+                        $last = null;
+                        foreach ($items as $item) {
+                            if ($last === null) {
+                                $last = $item;
+                                continue;
+                            }
+                        }
+                        /** @psalm-check-type-exact $last = Flag|null */;
+                        return $last;
+                    }
+
+                    /** @param non-empty-list<int> $items */
+                    function unchangedOnSomePaths(array $items): bool {
+                        $seen = false;
+                        foreach ($items as $item) {
+                            if ($item > 3) {
+                                $seen = true;
+                                continue;
+                            }
+                        }
+                        /** @psalm-check-type-exact $seen = bool */;
+                        return $seen;
+                    }',
+            ],
+            'itemKeyedByTheValueIsForgottenOnEachIteration' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @param array<string, int|string> $r
+                     * @param list<string> $keys
+                     */
+                    function f(array $r, array $keys): void {
+                        $k = 'z';
+                        $r[$k] = 1;
+                        foreach ($keys as $k) {
+                            $y = $r[$k];
+                            /** @psalm-check-type-exact $y = int|string */;
+                            $r[$k] = 1;
+                        }
+                    }
+                PHP,
+            ],
+            'itemKeyedByTheValueIsForgottenOnEachIterationUnderANarrowedKey' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @param array<string, int|string> $r
+                     * @param list<string> $keys
+                     */
+                    function f(array $r, array $keys): void {
+                        $k = 'z';
+                        $r[$k] = 1;
+                        foreach ($keys as $k) {
+                            if ($k === 'a') {
+                                $y = $r[$k];
+                                /** @psalm-check-type-exact $y = int|string */;
+                            }
+                            $r[$k] = 1;
+                        }
+                    }
+                PHP,
+            ],
         ];
     }
 
@@ -3184,6 +3526,209 @@ final class ForeachTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'invalidGeneratorIteratorShowsTheRefinedSendType' => [
+                'code' => '<?php
+                    /** @return Generator<int, int, non-empty-string, void> */
+                    function g(): Generator {
+                        $x = yield 1;
+                        echo $x;
+                    }
+
+                    foreach (g() as $_) {}',
+                'error_message' => 'non-null send() type Generator<int, int, non-empty-string',
+            ],
+            'possiblyInvalidGeneratorIteratorShowsTheSendType' => [
+                'code' => '<?php
+                    /** @param list<int>|Generator<int, int, string, void> $a */
+                    function f($a): void {
+                        foreach ($a as $_) {}
+                    }',
+                'error_message' => 'Cannot iterate over generator with non-null send() type Generator<int, int, string',
+            ],
+            'nullableIteratorShowsTheRefinedType' => [
+                'code' => '<?php
+                    /** @param list{5, non-empty-string}|null $a */
+                    function f(?array $a): void {
+                        foreach ($a as $_) {}
+                    }',
+                'error_message' => 'PossiblyNullIterator - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:34 - Cannot iterate over nullable var list{5, non-empty-string}|null',
+            ],
+            'propertyNarrowedBeforeTheLoopIsForgottenAfterABreakReassigningItsObject' => [
+                'code' => '<?php
+                    final class D {
+                        public function imm(): string {
+                            return "";
+                        }
+                    }
+
+                    final class O {
+                        public ?D $p = null;
+                    }
+
+                    /** @param list<int> $l */
+                    function reassign(O $o, array $l): string {
+                        if ($o->p === null) {
+                            return "";
+                        }
+
+                        foreach ($l as $_) {
+                            $o = new O();
+                            break;
+                        }
+
+                        return $o->p->imm();
+                    }',
+                'error_message' => 'PossiblyNullReference',
+            ],
+            'propertyNarrowedBeforeNestedLoopsIsForgottenAfterABreak2ReassigningItsObject' => [
+                'code' => '<?php
+                    final class D {
+                        public function imm(): string {
+                            return "";
+                        }
+                    }
+
+                    final class O {
+                        public ?D $p = null;
+                    }
+
+                    /** @param list<int> $l */
+                    function reassign(O $o, array $l): string {
+                        if ($o->p === null) {
+                            return "";
+                        }
+
+                        foreach ($l as $_) {
+                            while (true) {
+                                $o = new O();
+                                break 2;
+                            }
+                        }
+
+                        return $o->p->imm();
+                    }',
+                'error_message' => 'PossiblyNullReference',
+            ],
+            'offsetNarrowedBeforeTheLoopIsForgottenAfterABreakReassigningItsArray' => [
+                'code' => '<?php
+                    /** @param array{k: int|null} $a */
+                    function reassign(array $a): int {
+                        if ($a["k"] === null) {
+                            return 0;
+                        }
+
+                        foreach ([1] as $_) {
+                            $a = ["k" => null];
+                            break;
+                        }
+
+                        return $a["k"] + 1;
+                    }',
+                'error_message' => 'PossiblyNullOperand',
+            ],
+            'varUnsetBeforeContinueIsPossiblyUndefinedAfterTheLoop' => [
+                'code' => '<?php
+                    /** @param non-empty-list<int> $items */
+                    function f(array $items): void {
+                        $x = 0;
+                        foreach ($items as $i) {
+                            if ($i) {
+                                unset($x);
+                                continue;
+                            }
+                            $x = 5;
+                        }
+                        echo $x;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'varConditionallyUnsetInTheBodyIsPossiblyUndefinedAfterTheLoop' => [
+                'code' => '<?php
+                    /** @param list<int> $items */
+                    function f(array $items): void {
+                        $x = 0;
+                        foreach ($items as $i) {
+                            if ($i) {
+                                unset($x);
+                            }
+                            echo $i;
+                        }
+                        echo $x;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'varUnsetBeforeBreakIsPossiblyUndefinedAfterTheLoop' => [
+                'code' => '<?php
+                    /** @param list<int> $items */
+                    function f(array $items): void {
+                        $x = 0;
+                        foreach ($items as $i) {
+                            if ($i) {
+                                unset($x);
+                                break;
+                            }
+                        }
+                        echo $x;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'varUnsetBeforeOneOfSeveralBreaksIsPossiblyUndefinedAfterTheLoop' => [
+                'code' => '<?php
+                    /** @param list<int> $items */
+                    function f(array $items, bool $other): void {
+                        $x = 0;
+                        foreach ($items as $i) {
+                            if ($i) {
+                                unset($x);
+                                break;
+                            }
+                            if ($other) {
+                                break;
+                            }
+                        }
+                        echo $x;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'varUnsetBeforeOneOfSeveralContinuesIsPossiblyUndefinedAfterTheLoop' => [
+                'code' => '<?php
+                    /** @param list<int> $items */
+                    function f(array $items, bool $other): void {
+                        $x = 0;
+                        foreach ($items as $i) {
+                            if ($i) {
+                                unset($x);
+                                continue;
+                            }
+                            if ($other) {
+                                continue;
+                            }
+                        }
+                        echo $x;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'varUnsetBeforeContinueOfTheOuterLoopIsPossiblyUndefinedAfterIt' => [
+                'code' => '<?php
+                    /**
+                     * @param list<int> $a
+                     * @param list<int> $b
+                     */
+                    function f(array $a, array $b): void {
+                        $x = 0;
+                        foreach ($a as $v) {
+                            foreach ($b as $w) {
+                                if ($w) {
+                                    unset($x);
+                                    continue 2;
+                                }
+                            }
+                            $x = 1;
+                        }
+                        echo $x;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
             'foreachIteratedExpressionAssertedTwiceInTheLoop' => [
                 'code' => '<?php
                     class Entity {

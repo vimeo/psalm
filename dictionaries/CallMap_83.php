@@ -3,7 +3,7 @@
 return array (
   '_' => 
   array (
-    0 => 'string',
+    -1 => 'string',
     'message' => 'string',
   ),
   '__halt_compiler' => 
@@ -3052,6 +3052,7 @@ return array (
   'bind_textdomain_codeset' => 
   array (
     0 => 'string',
+    -1 => 'false|string',
     'domain' => 'string',
     'codeset' => 'null|string',
   ),
@@ -3063,6 +3064,7 @@ return array (
   'bindtextdomain' => 
   array (
     0 => 'string',
+    -1 => 'false|string',
     'domain' => 'string',
     'directory' => 'null|string',
   ),
@@ -3155,40 +3157,40 @@ return array (
   ),
   'bzclose' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'bz' => 'resource',
   ),
   'bzcompress' => 
   array (
-    0 => 'int|string',
+    -1 => 'int|string',
     'data' => 'string',
     'block_size=' => 'int',
     'work_factor=' => 'int',
   ),
   'bzdecompress' => 
   array (
-    0 => 'false|int|string',
+    -1 => 'false|int|string',
     'data' => 'string',
     'use_less_memory=' => 'bool',
   ),
   'bzerrno' => 
   array (
-    0 => 'int',
+    -1 => 'int',
     'bz' => 'resource',
   ),
   'bzerror' => 
   array (
-    0 => 'array<array-key, mixed>',
+    -1 => 'array<array-key, mixed>',
     'bz' => 'resource',
   ),
   'bzerrstr' => 
   array (
-    0 => 'string',
+    -1 => 'string',
     'bz' => 'resource',
   ),
   'bzflush' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'bz' => 'resource',
   ),
   'bzopen' => 
@@ -3196,16 +3198,17 @@ return array (
     0 => 'false|resource',
     'file' => 'resource|string',
     'mode' => 'string',
+    -2 => 'none',
   ),
   'bzread' => 
   array (
-    0 => 'false|string',
+    -1 => 'false|string',
     'bz' => 'resource',
     'length=' => 'int',
   ),
   'bzwrite' => 
   array (
-    0 => 'false|int',
+    -1 => 'false|int',
     'bz' => 'resource',
     'data' => 'string',
     'length=' => 'int|null',
@@ -3305,7 +3308,7 @@ return array (
   ),
   'cal_days_in_month' => 
   array (
-    0 => 'int',
+    -1 => 'int',
     'calendar' => 'int',
     'month' => 'int',
     'year' => 'int',
@@ -3313,17 +3316,18 @@ return array (
   'cal_from_jd' => 
   array (
     0 => 'array{abbrevdayname: string, abbrevmonth: string, date: string, day: int, dayname: string, dow: int, month: int, monthname: string, year: int}',
+    -1 => 'array<array-key, mixed>',
     'julian_day' => 'int',
     'calendar' => 'int',
   ),
   'cal_info' => 
   array (
-    0 => 'array<array-key, mixed>',
+    -1 => 'array<array-key, mixed>',
     'calendar=' => 'int',
   ),
   'cal_to_jd' => 
   array (
-    0 => 'int',
+    -1 => 'int',
     'calendar' => 'int',
     'month' => 'int',
     'day' => 'int',
@@ -15120,63 +15124,65 @@ return array (
   ),
   'dba_close' => 
   array (
-    0 => 'void',
+    -1 => 'void',
     'dba' => 'resource',
   ),
   'dba_delete' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'key' => 'array<array-key, mixed>|string',
     'dba' => 'resource',
   ),
   'dba_exists' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'key' => 'array<array-key, mixed>|string',
     'dba' => 'resource',
   ),
   'dba_fetch' => 
   array (
-    0 => 'false|string',
+    -1 => 'false|string',
     'key' => 'array<array-key, mixed>|string',
-    'skip' => 'int',
     'dba' => 'resource',
+    'skip=' => 'int',
   ),
   'dba_fetch\'1' => 
   array (
-    0 => 'false|string',
+    -1 => 'false|string',
     'key' => 'array<array-key, mixed>|string',
     'skip' => 'resource',
   ),
   'dba_firstkey' => 
   array (
     0 => 'string',
+    -1 => 'false|string',
     'dba' => 'resource',
   ),
   'dba_handlers' => 
   array (
-    0 => 'array<array-key, mixed>',
+    -1 => 'array<array-key, mixed>',
     'full_info=' => 'bool',
   ),
   'dba_insert' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'key' => 'array<array-key, mixed>|string',
     'value' => 'string',
     'dba' => 'resource',
   ),
   'dba_key_split' => 
   array (
-    0 => 'array<array-key, mixed>|false',
+    -1 => 'array<array-key, mixed>|false',
     'key' => 'false|null|string',
   ),
   'dba_list' => 
   array (
-    0 => 'array<array-key, mixed>',
+    -1 => 'array<array-key, mixed>',
   ),
   'dba_nextkey' => 
   array (
     0 => 'string',
+    -1 => 'false|string',
     'dba' => 'resource',
   ),
   'dba_open' => 
@@ -15188,10 +15194,11 @@ return array (
     'permission=' => 'int',
     'map_size=' => 'int',
     'flags=' => 'int|null',
+    -2 => 'none',
   ),
   'dba_optimize' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'dba' => 'resource',
   ),
   'dba_popen' => 
@@ -15203,17 +15210,18 @@ return array (
     'permission=' => 'int',
     'map_size=' => 'int',
     'flags=' => 'int|null',
+    -2 => 'none',
   ),
   'dba_replace' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'key' => 'array<array-key, mixed>|string',
     'value' => 'string',
     'dba' => 'resource',
   ),
   'dba_sync' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'dba' => 'resource',
   ),
   'dbase_add_record' => 
@@ -15610,14 +15618,14 @@ return array (
   ),
   'dcgettext' => 
   array (
-    0 => 'string',
+    -1 => 'string',
     'domain' => 'string',
     'message' => 'string',
     'category' => 'int',
   ),
   'dcngettext' => 
   array (
-    0 => 'string',
+    -1 => 'string',
     'domain' => 'string',
     'singular' => 'string',
     'plural' => 'string',
@@ -15725,7 +15733,7 @@ return array (
   ),
   'dgettext' => 
   array (
-    0 => 'string',
+    -1 => 'string',
     'domain' => 'string',
     'message' => 'string',
   ),
@@ -16096,7 +16104,7 @@ return array (
   ),
   'dngettext' => 
   array (
-    0 => 'string',
+    -1 => 'string',
     'domain' => 'string',
     'singular' => 'string',
     'plural' => 'string',
@@ -19112,7 +19120,7 @@ return array (
   'ds\\hashable::equals' => 
   array (
     0 => 'bool',
-    'object' => 'mixed',
+    'obj' => 'mixed',
   ),
   'ds\\hashable::hash' => 
   array (
@@ -20043,13 +20051,13 @@ return array (
   ),
   'easter_date' => 
   array (
-    0 => 'int',
+    -1 => 'int',
     'year=' => 'int|null',
     'mode=' => 'int',
   ),
   'easter_days' => 
   array (
-    0 => 'int',
+    -1 => 'int',
     'year=' => 'int|null',
     'mode=' => 'int',
   ),
@@ -20534,122 +20542,137 @@ return array (
   ),
   'enchant_broker_describe' => 
   array (
-    0 => 'array<array-key, mixed>',
+    -1 => 'array<array-key, mixed>',
     'broker' => 'EnchantBroker',
   ),
   'enchant_broker_dict_exists' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'broker' => 'EnchantBroker',
     'tag' => 'string',
   ),
   'enchant_broker_free' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'broker' => 'EnchantBroker',
   ),
   'enchant_broker_free_dict' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'dictionary' => 'EnchantBroker',
   ),
   'enchant_broker_get_dict_path' => 
   array (
     0 => 'string',
+    -1 => 'false|string',
     'broker' => 'EnchantBroker',
     'type' => 'int',
   ),
   'enchant_broker_get_error' => 
   array (
-    0 => 'false|string',
+    -1 => 'false|string',
     'broker' => 'EnchantBroker',
   ),
   'enchant_broker_init' => 
   array (
-    0 => 'EnchantBroker|false',
+    -1 => 'EnchantBroker|false',
   ),
   'enchant_broker_list_dicts' => 
   array (
     0 => 'array<int, array{lang_tag: string, provider_desc: string, provider_file: string, provider_name: string}>',
+    -1 => 'array<array-key, mixed>',
     'broker' => 'EnchantBroker',
   ),
   'enchant_broker_request_dict' => 
   array (
-    0 => 'EnchantDictionary|false',
+    -1 => 'EnchantDictionary|false',
     'broker' => 'EnchantBroker',
     'tag' => 'string',
   ),
   'enchant_broker_request_pwl_dict' => 
   array (
-    0 => 'EnchantDictionary|false',
+    -1 => 'EnchantDictionary|false',
     'broker' => 'EnchantBroker',
     'filename' => 'string',
   ),
   'enchant_broker_set_dict_path' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'broker' => 'EnchantBroker',
     'type' => 'int',
     'path' => 'string',
   ),
   'enchant_broker_set_ordering' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'broker' => 'EnchantBroker',
     'tag' => 'string',
     'ordering' => 'string',
   ),
+  'enchant_dict_add' => 
+  array (
+    -1 => 'void',
+    'dictionary' => 'EnchantDictionary',
+    'word' => 'string',
+  ),
   'enchant_dict_add_to_personal' => 
   array (
-    0 => 'void',
+    -1 => 'void',
     'dictionary' => 'EnchantDictionary',
     'word' => 'string',
   ),
   'enchant_dict_add_to_session' => 
   array (
-    0 => 'void',
+    -1 => 'void',
     'dictionary' => 'EnchantDictionary',
     'word' => 'string',
   ),
   'enchant_dict_check' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'dictionary' => 'EnchantDictionary',
     'word' => 'string',
   ),
   'enchant_dict_describe' => 
   array (
-    0 => 'array<array-key, mixed>',
+    -1 => 'array<array-key, mixed>',
     'dictionary' => 'EnchantDictionary',
   ),
   'enchant_dict_get_error' => 
   array (
     0 => 'string',
+    -1 => 'false|string',
     'dictionary' => 'EnchantDictionary',
+  ),
+  'enchant_dict_is_added' => 
+  array (
+    -1 => 'bool',
+    'dictionary' => 'EnchantDictionary',
+    'word' => 'string',
   ),
   'enchant_dict_is_in_session' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'dictionary' => 'EnchantDictionary',
     'word' => 'string',
   ),
   'enchant_dict_quick_check' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'dictionary' => 'EnchantDictionary',
     'word' => 'string',
     '&w suggestions=' => 'array<int, string>',
   ),
   'enchant_dict_store_replacement' => 
   array (
-    0 => 'void',
+    -1 => 'void',
     'dictionary' => 'EnchantDictionary',
     'misspelled' => 'string',
     'correct' => 'string',
   ),
   'enchant_dict_suggest' => 
   array (
-    0 => 'array<array-key, mixed>',
+    -1 => 'array<array-key, mixed>',
     'dictionary' => 'EnchantDictionary',
     'word' => 'string',
   ),
@@ -22138,6 +22161,11 @@ return array (
     0 => 'void',
     -2 => 'none',
   ),
+  'eventutil::createsocket' => 
+  array (
+    -1 => 'Socket|false',
+    'fd' => 'int',
+  ),
   'eventutil::getlastsocketerrno' => 
   array (
     0 => 'int',
@@ -22904,12 +22932,12 @@ return array (
   ),
   'exif_imagetype' => 
   array (
-    0 => 'false|int',
+    -1 => 'false|int',
     'filename' => 'string',
   ),
   'exif_read_data' => 
   array (
-    0 => 'array<array-key, mixed>|false',
+    -1 => 'array<array-key, mixed>|false',
     'file' => 'resource|string',
     'required_sections=' => 'null|string',
     'as_arrays=' => 'bool',
@@ -22917,12 +22945,12 @@ return array (
   ),
   'exif_tagname' => 
   array (
-    0 => 'false|string',
+    -1 => 'false|string',
     'index' => 'int',
   ),
   'exif_thumbnail' => 
   array (
-    0 => 'false|string',
+    -1 => 'false|string',
     'file' => 'string',
     '&w width=' => 'int',
     '&w height=' => 'int',
@@ -25609,7 +25637,7 @@ return array (
   ),
   'frenchtojd' => 
   array (
-    0 => 'int',
+    -1 => 'int',
     'month' => 'int',
     'day' => 'int',
     'year' => 'int',
@@ -27928,7 +27956,7 @@ return array (
   ),
   'gettext' => 
   array (
-    0 => 'string',
+    -1 => 'string',
     'message' => 'string',
   ),
   'gettimeofday' => 
@@ -29764,7 +29792,7 @@ return array (
   ),
   'gregoriantojd' => 
   array (
-    0 => 'int',
+    -1 => 'int',
     'month' => 'int',
     'day' => 'int',
     'year' => 'int',
@@ -40809,16 +40837,16 @@ return array (
   ),
   'imap_8bit' => 
   array (
-    0 => 'false|string',
+    -1 => 'false|string',
     'string' => 'string',
   ),
   'imap_alerts' => 
   array (
-    0 => 'array<array-key, mixed>|false',
+    -1 => 'array<array-key, mixed>|false',
   ),
   'imap_append' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'imap' => 'IMAP\\Connection',
     'folder' => 'string',
     'message' => 'string',
@@ -40827,36 +40855,36 @@ return array (
   ),
   'imap_base64' => 
   array (
-    0 => 'false|string',
+    -1 => 'false|string',
     'string' => 'string',
   ),
   'imap_binary' => 
   array (
-    0 => 'false|string',
+    -1 => 'false|string',
     'string' => 'string',
   ),
   'imap_body' => 
   array (
-    0 => 'false|string',
+    -1 => 'false|string',
     'imap' => 'IMAP\\Connection',
     'message_num' => 'int',
     'flags=' => 'int',
   ),
   'imap_bodystruct' => 
   array (
-    0 => 'false|stdClass',
+    -1 => 'false|stdClass',
     'imap' => 'IMAP\\Connection',
     'message_num' => 'int',
     'section' => 'string',
   ),
   'imap_check' => 
   array (
-    0 => 'false|stdClass',
+    -1 => 'false|stdClass',
     'imap' => 'IMAP\\Connection',
   ),
   'imap_clearflag_full' => 
   array (
-    0 => 'true',
+    -1 => 'true',
     'imap' => 'IMAP\\Connection',
     'sequence' => 'string',
     'flag' => 'string',
@@ -40864,54 +40892,54 @@ return array (
   ),
   'imap_close' => 
   array (
-    0 => 'true',
+    -1 => 'true',
     'imap' => 'IMAP\\Connection',
     'flags=' => 'int',
   ),
   'imap_create' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'imap' => 'IMAP\\Connection',
     'mailbox' => 'string',
   ),
   'imap_createmailbox' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'imap' => 'IMAP\\Connection',
     'mailbox' => 'string',
   ),
   'imap_delete' => 
   array (
-    0 => 'true',
+    -1 => 'true',
     'imap' => 'IMAP\\Connection',
     'message_nums' => 'string',
     'flags=' => 'int',
   ),
   'imap_deletemailbox' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'imap' => 'IMAP\\Connection',
     'mailbox' => 'string',
   ),
   'imap_errors' => 
   array (
-    0 => 'array<array-key, mixed>|false',
+    -1 => 'array<array-key, mixed>|false',
   ),
   'imap_expunge' => 
   array (
-    0 => 'true',
+    -1 => 'true',
     'imap' => 'IMAP\\Connection',
   ),
   'imap_fetch_overview' => 
   array (
-    0 => 'array<array-key, mixed>|false',
+    -1 => 'array<array-key, mixed>|false',
     'imap' => 'IMAP\\Connection',
     'sequence' => 'string',
     'flags=' => 'int',
   ),
   'imap_fetchbody' => 
   array (
-    0 => 'false|string',
+    -1 => 'false|string',
     'imap' => 'IMAP\\Connection',
     'message_num' => 'int',
     'section' => 'string',
@@ -40919,14 +40947,14 @@ return array (
   ),
   'imap_fetchheader' => 
   array (
-    0 => 'false|string',
+    -1 => 'false|string',
     'imap' => 'IMAP\\Connection',
     'message_num' => 'int',
     'flags=' => 'int',
   ),
   'imap_fetchmime' => 
   array (
-    0 => 'false|string',
+    -1 => 'false|string',
     'imap' => 'IMAP\\Connection',
     'message_num' => 'int',
     'section' => 'string',
@@ -40934,52 +40962,52 @@ return array (
   ),
   'imap_fetchstructure' => 
   array (
-    0 => 'false|stdClass',
+    -1 => 'false|stdClass',
     'imap' => 'IMAP\\Connection',
     'message_num' => 'int',
     'flags=' => 'int',
   ),
   'imap_fetchtext' => 
   array (
-    0 => 'false|string',
+    -1 => 'false|string',
     'imap' => 'IMAP\\Connection',
     'message_num' => 'int',
     'flags=' => 'int',
   ),
   'imap_gc' => 
   array (
-    0 => 'true',
+    -1 => 'true',
     'imap' => 'IMAP\\Connection',
     'flags' => 'int',
   ),
   'imap_get_quota' => 
   array (
-    0 => 'array<array-key, mixed>|false',
+    -1 => 'array<array-key, mixed>|false',
     'imap' => 'IMAP\\Connection',
     'quota_root' => 'string',
   ),
   'imap_get_quotaroot' => 
   array (
-    0 => 'array<array-key, mixed>|false',
+    -1 => 'array<array-key, mixed>|false',
     'imap' => 'IMAP\\Connection',
     'mailbox' => 'string',
   ),
   'imap_getacl' => 
   array (
-    0 => 'array<array-key, mixed>|false',
+    -1 => 'array<array-key, mixed>|false',
     'imap' => 'IMAP\\Connection',
     'mailbox' => 'string',
   ),
   'imap_getmailboxes' => 
   array (
-    0 => 'array<array-key, mixed>|false',
+    -1 => 'array<array-key, mixed>|false',
     'imap' => 'IMAP\\Connection',
     'reference' => 'string',
     'pattern' => 'string',
   ),
   'imap_getsubscribed' => 
   array (
-    0 => 'array<array-key, mixed>|false',
+    -1 => 'array<array-key, mixed>|false',
     'imap' => 'IMAP\\Connection',
     'reference' => 'string',
     'pattern' => 'string',
@@ -40995,7 +41023,7 @@ return array (
   ),
   'imap_headerinfo' => 
   array (
-    0 => 'false|stdClass',
+    -1 => 'false|stdClass',
     'imap' => 'IMAP\\Connection',
     'message_num' => 'int',
     'from_length=' => 'int',
@@ -41003,35 +41031,35 @@ return array (
   ),
   'imap_headers' => 
   array (
-    0 => 'array<array-key, mixed>|false',
+    -1 => 'array<array-key, mixed>|false',
     'imap' => 'IMAP\\Connection',
   ),
   'imap_is_open' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'imap' => 'IMAP\\Connection',
   ),
   'imap_last_error' => 
   array (
-    0 => 'false|string',
+    -1 => 'false|string',
   ),
   'imap_list' => 
   array (
-    0 => 'array<array-key, mixed>|false',
+    -1 => 'array<array-key, mixed>|false',
     'imap' => 'IMAP\\Connection',
     'reference' => 'string',
     'pattern' => 'string',
   ),
   'imap_listmailbox' => 
   array (
-    0 => 'array<array-key, mixed>|false',
+    -1 => 'array<array-key, mixed>|false',
     'imap' => 'IMAP\\Connection',
     'reference' => 'string',
     'pattern' => 'string',
   ),
   'imap_listscan' => 
   array (
-    0 => 'array<array-key, mixed>|false',
+    -1 => 'array<array-key, mixed>|false',
     'imap' => 'IMAP\\Connection',
     'reference' => 'string',
     'pattern' => 'string',
@@ -41039,21 +41067,21 @@ return array (
   ),
   'imap_listsubscribed' => 
   array (
-    0 => 'array<array-key, mixed>|false',
+    -1 => 'array<array-key, mixed>|false',
     'imap' => 'IMAP\\Connection',
     'reference' => 'string',
     'pattern' => 'string',
   ),
   'imap_lsub' => 
   array (
-    0 => 'array<array-key, mixed>|false',
+    -1 => 'array<array-key, mixed>|false',
     'imap' => 'IMAP\\Connection',
     'reference' => 'string',
     'pattern' => 'string',
   ),
   'imap_mail' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'to' => 'string',
     'subject' => 'string',
     'message' => 'string',
@@ -41064,13 +41092,13 @@ return array (
   ),
   'imap_mail_compose' => 
   array (
-    0 => 'false|string',
+    -1 => 'false|string',
     'envelope' => 'array<array-key, mixed>',
     'bodies' => 'array<array-key, mixed>',
   ),
   'imap_mail_copy' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'imap' => 'IMAP\\Connection',
     'message_nums' => 'string',
     'mailbox' => 'string',
@@ -41078,7 +41106,7 @@ return array (
   ),
   'imap_mail_move' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'imap' => 'IMAP\\Connection',
     'message_nums' => 'string',
     'mailbox' => 'string',
@@ -41086,38 +41114,38 @@ return array (
   ),
   'imap_mailboxmsginfo' => 
   array (
-    0 => 'stdClass',
+    -1 => 'stdClass',
     'imap' => 'IMAP\\Connection',
   ),
   'imap_mime_header_decode' => 
   array (
-    0 => 'array<array-key, mixed>|false',
+    -1 => 'array<array-key, mixed>|false',
     'string' => 'string',
   ),
   'imap_msgno' => 
   array (
-    0 => 'int',
+    -1 => 'int',
     'imap' => 'IMAP\\Connection',
     'message_uid' => 'int',
   ),
   'imap_mutf7_to_utf8' => 
   array (
-    0 => 'false|string',
+    -1 => 'false|string',
     'string' => 'string',
   ),
   'imap_num_msg' => 
   array (
-    0 => 'false|int',
+    -1 => 'false|int',
     'imap' => 'IMAP\\Connection',
   ),
   'imap_num_recent' => 
   array (
-    0 => 'int',
+    -1 => 'int',
     'imap' => 'IMAP\\Connection',
   ),
   'imap_open' => 
   array (
-    0 => 'IMAP\\Connection|false',
+    -1 => 'IMAP\\Connection|false',
     'mailbox' => 'string',
     'user' => 'string',
     'password' => 'string',
@@ -41127,31 +41155,31 @@ return array (
   ),
   'imap_ping' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'imap' => 'IMAP\\Connection',
   ),
   'imap_qprint' => 
   array (
-    0 => 'false|string',
+    -1 => 'false|string',
     'string' => 'string',
   ),
   'imap_rename' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'imap' => 'IMAP\\Connection',
     'from' => 'string',
     'to' => 'string',
   ),
   'imap_renamemailbox' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'imap' => 'IMAP\\Connection',
     'from' => 'string',
     'to' => 'string',
   ),
   'imap_reopen' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'imap' => 'IMAP\\Connection',
     'mailbox' => 'string',
     'flags=' => 'int',
@@ -41159,26 +41187,26 @@ return array (
   ),
   'imap_rfc822_parse_adrlist' => 
   array (
-    0 => 'array<array-key, mixed>',
+    -1 => 'array<array-key, mixed>',
     'string' => 'string',
     'default_hostname' => 'string',
   ),
   'imap_rfc822_parse_headers' => 
   array (
-    0 => 'stdClass',
+    -1 => 'stdClass',
     'headers' => 'string',
     'default_hostname=' => 'string',
   ),
   'imap_rfc822_write_address' => 
   array (
-    0 => 'false|string',
+    -1 => 'false|string',
     'mailbox' => 'string',
     'hostname' => 'string',
     'personal' => 'string',
   ),
   'imap_savebody' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'imap' => 'IMAP\\Connection',
     'file' => 'resource|string',
     'message_num' => 'int',
@@ -41187,7 +41215,7 @@ return array (
   ),
   'imap_scan' => 
   array (
-    0 => 'array<array-key, mixed>|false',
+    -1 => 'array<array-key, mixed>|false',
     'imap' => 'IMAP\\Connection',
     'reference' => 'string',
     'pattern' => 'string',
@@ -41195,7 +41223,7 @@ return array (
   ),
   'imap_scanmailbox' => 
   array (
-    0 => 'array<array-key, mixed>|false',
+    -1 => 'array<array-key, mixed>|false',
     'imap' => 'IMAP\\Connection',
     'reference' => 'string',
     'pattern' => 'string',
@@ -41203,7 +41231,7 @@ return array (
   ),
   'imap_search' => 
   array (
-    0 => 'array<array-key, mixed>|false',
+    -1 => 'array<array-key, mixed>|false',
     'imap' => 'IMAP\\Connection',
     'criteria' => 'string',
     'flags=' => 'int',
@@ -41211,14 +41239,14 @@ return array (
   ),
   'imap_set_quota' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'imap' => 'IMAP\\Connection',
     'quota_root' => 'string',
     'mailbox_size' => 'int',
   ),
   'imap_setacl' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'imap' => 'IMAP\\Connection',
     'mailbox' => 'string',
     'user_id' => 'string',
@@ -41226,7 +41254,7 @@ return array (
   ),
   'imap_setflag_full' => 
   array (
-    0 => 'true',
+    -1 => 'true',
     'imap' => 'IMAP\\Connection',
     'sequence' => 'string',
     'flag' => 'string',
@@ -41234,7 +41262,7 @@ return array (
   ),
   'imap_sort' => 
   array (
-    0 => 'array<array-key, mixed>|false',
+    -1 => 'array<array-key, mixed>|false',
     'imap' => 'IMAP\\Connection',
     'criteria' => 'int',
     'reverse' => 'bool',
@@ -41244,66 +41272,66 @@ return array (
   ),
   'imap_status' => 
   array (
-    0 => 'false|stdClass',
+    -1 => 'false|stdClass',
     'imap' => 'IMAP\\Connection',
     'mailbox' => 'string',
     'flags' => 'int',
   ),
   'imap_subscribe' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'imap' => 'IMAP\\Connection',
     'mailbox' => 'string',
   ),
   'imap_thread' => 
   array (
-    0 => 'array<array-key, mixed>|false',
+    -1 => 'array<array-key, mixed>|false',
     'imap' => 'IMAP\\Connection',
     'flags=' => 'int',
   ),
   'imap_timeout' => 
   array (
-    0 => 'bool|int',
+    -1 => 'bool|int',
     'timeout_type' => 'int',
     'timeout=' => 'int',
   ),
   'imap_uid' => 
   array (
-    0 => 'false|int',
+    -1 => 'false|int',
     'imap' => 'IMAP\\Connection',
     'message_num' => 'int',
   ),
   'imap_undelete' => 
   array (
-    0 => 'true',
+    -1 => 'true',
     'imap' => 'IMAP\\Connection',
     'message_nums' => 'string',
     'flags=' => 'int',
   ),
   'imap_unsubscribe' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'imap' => 'IMAP\\Connection',
     'mailbox' => 'string',
   ),
   'imap_utf7_decode' => 
   array (
-    0 => 'false|string',
+    -1 => 'false|string',
     'string' => 'string',
   ),
   'imap_utf7_encode' => 
   array (
-    0 => 'string',
+    -1 => 'string',
     'string' => 'string',
   ),
   'imap_utf8' => 
   array (
-    0 => 'string',
+    -1 => 'string',
     'mime_encoded_text' => 'string',
   ),
   'imap_utf8_to_mutf7' => 
   array (
-    0 => 'false|string',
+    -1 => 'false|string',
     'string' => 'string',
   ),
   'implode' => 
@@ -44365,46 +44393,46 @@ return array (
   ),
   'jddayofweek' => 
   array (
-    0 => 'int|string',
+    -1 => 'int|string',
     'julian_day' => 'int',
     'mode=' => 'int',
   ),
   'jdmonthname' => 
   array (
-    0 => 'string',
+    -1 => 'string',
     'julian_day' => 'int',
     'mode' => 'int',
   ),
   'jdtofrench' => 
   array (
-    0 => 'string',
+    -1 => 'string',
     'julian_day' => 'int',
   ),
   'jdtogregorian' => 
   array (
-    0 => 'string',
+    -1 => 'string',
     'julian_day' => 'int',
   ),
   'jdtojewish' => 
   array (
-    0 => 'string',
+    -1 => 'string',
     'julian_day' => 'int',
     'hebrew=' => 'bool',
     'flags=' => 'int',
   ),
   'jdtojulian' => 
   array (
-    0 => 'string',
+    -1 => 'string',
     'julian_day' => 'int',
   ),
   'jdtounix' => 
   array (
-    0 => 'int',
+    -1 => 'int',
     'julian_day' => 'int',
   ),
   'jewishtojd' => 
   array (
-    0 => 'int',
+    -1 => 'int',
     'month' => 'int',
     'day' => 'int',
     'year' => 'int',
@@ -44644,7 +44672,7 @@ return array (
   ),
   'juliantojd' => 
   array (
-    0 => 'int',
+    -1 => 'int',
     'month' => 'int',
     'day' => 'int',
     'year' => 'int',
@@ -45265,7 +45293,7 @@ return array (
   ),
   'ldap_add' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'ldap' => 'LDAP\\Connection',
     'dn' => 'string',
     'entry' => 'array<array-key, mixed>',
@@ -45273,7 +45301,7 @@ return array (
   ),
   'ldap_add_ext' => 
   array (
-    0 => 'LDAP\\Result|false',
+    -1 => 'LDAP\\Result|false',
     'ldap' => 'LDAP\\Connection',
     'dn' => 'string',
     'entry' => 'array<array-key, mixed>',
@@ -45281,14 +45309,14 @@ return array (
   ),
   'ldap_bind' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'ldap' => 'LDAP\\Connection',
     'dn=' => 'null|string',
     'password=' => 'null|string',
   ),
   'ldap_bind_ext' => 
   array (
-    0 => 'LDAP\\Result|false',
+    -1 => 'LDAP\\Result|false',
     'ldap' => 'LDAP\\Connection',
     'dn=' => 'null|string',
     'password=' => 'null|string',
@@ -45296,12 +45324,12 @@ return array (
   ),
   'ldap_close' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'ldap' => 'LDAP\\Connection',
   ),
   'ldap_compare' => 
   array (
-    0 => 'bool|int',
+    -1 => 'bool|int',
     'ldap' => 'LDAP\\Connection',
     'dn' => 'string',
     'attribute' => 'string',
@@ -45310,63 +45338,66 @@ return array (
   ),
   'ldap_connect' => 
   array (
-    0 => 'LDAP\\Connection|false',
+    -1 => 'LDAP\\Connection|false',
     'uri=' => 'null|string',
     'port=' => 'int',
-    'wallet=' => 'string',
-    'password=' => 'string',
-    'auth_mode=' => 'int',
   ),
   'ldap_count_entries' => 
   array (
-    0 => 'int',
+    -1 => 'int',
+    'ldap' => 'LDAP\\Connection',
+    'result' => 'LDAP\\Result',
+  ),
+  'ldap_count_references' => 
+  array (
+    -1 => 'int',
     'ldap' => 'LDAP\\Connection',
     'result' => 'LDAP\\Result',
   ),
   'ldap_delete' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'ldap' => 'LDAP\\Connection',
     'dn' => 'string',
     'controls=' => 'array<array-key, mixed>|null',
   ),
   'ldap_delete_ext' => 
   array (
-    0 => 'LDAP\\Result|false',
+    -1 => 'LDAP\\Result|false',
     'ldap' => 'LDAP\\Connection',
     'dn' => 'string',
     'controls=' => 'array<array-key, mixed>|null',
   ),
   'ldap_dn2ufn' => 
   array (
-    0 => 'false|string',
+    -1 => 'false|string',
     'dn' => 'string',
   ),
   'ldap_err2str' => 
   array (
-    0 => 'string',
+    -1 => 'string',
     'errno' => 'int',
   ),
   'ldap_errno' => 
   array (
-    0 => 'int',
+    -1 => 'int',
     'ldap' => 'LDAP\\Connection',
   ),
   'ldap_error' => 
   array (
-    0 => 'string',
+    -1 => 'string',
     'ldap' => 'LDAP\\Connection',
   ),
   'ldap_escape' => 
   array (
-    0 => 'string',
+    -1 => 'string',
     'value' => 'string',
     'ignore=' => 'string',
     'flags=' => 'int',
   ),
   'ldap_exop' => 
   array (
-    0 => 'LDAP\\Result|bool',
+    -1 => 'LDAP\\Result|bool',
     'ldap' => 'LDAP\\Connection',
     'request_oid' => 'string',
     'request_data=' => 'null|string',
@@ -45376,7 +45407,7 @@ return array (
   ),
   'ldap_exop_passwd' => 
   array (
-    0 => 'bool|string',
+    -1 => 'bool|string',
     'ldap' => 'LDAP\\Connection',
     'user=' => 'string',
     'old_password=' => 'string',
@@ -45385,80 +45416,90 @@ return array (
   ),
   'ldap_exop_refresh' => 
   array (
-    0 => 'false|int',
+    -1 => 'false|int',
     'ldap' => 'LDAP\\Connection',
     'dn' => 'string',
     'ttl' => 'int',
   ),
+  'ldap_exop_sync' => 
+  array (
+    -1 => 'LDAP\\Result|bool',
+    'ldap' => 'LDAP\\Connection',
+    'request_oid' => 'string',
+    'request_data=' => 'null|string',
+    'controls=' => 'array<array-key, mixed>|null',
+    '&response_data=' => 'mixed',
+    '&response_oid=' => 'mixed',
+  ),
   'ldap_exop_whoami' => 
   array (
-    0 => 'false|string',
+    -1 => 'false|string',
     'ldap' => 'LDAP\\Connection',
   ),
   'ldap_explode_dn' => 
   array (
-    0 => 'array<array-key, mixed>|false',
+    -1 => 'array<array-key, mixed>|false',
     'dn' => 'string',
     'with_attrib' => 'int',
   ),
   'ldap_first_attribute' => 
   array (
-    0 => 'false|string',
+    -1 => 'false|string',
     'ldap' => 'LDAP\\Connection',
     'entry' => 'LDAP\\ResultEntry',
   ),
   'ldap_first_entry' => 
   array (
-    0 => 'LDAP\\ResultEntry|false',
+    -1 => 'LDAP\\ResultEntry|false',
     'ldap' => 'LDAP\\Connection',
     'result' => 'LDAP\\Result',
   ),
   'ldap_first_reference' => 
   array (
-    0 => 'LDAP\\ResultEntry|false',
+    -1 => 'LDAP\\ResultEntry|false',
     'ldap' => 'LDAP\\Connection',
     'result' => 'LDAP\\Result',
   ),
   'ldap_free_result' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'result' => 'LDAP\\Result',
   ),
   'ldap_get_attributes' => 
   array (
-    0 => 'array<array-key, mixed>',
+    -1 => 'array<array-key, mixed>',
     'ldap' => 'LDAP\\Connection',
     'entry' => 'LDAP\\ResultEntry',
   ),
   'ldap_get_dn' => 
   array (
-    0 => 'false|string',
+    -1 => 'false|string',
     'ldap' => 'LDAP\\Connection',
     'entry' => 'LDAP\\ResultEntry',
   ),
   'ldap_get_entries' => 
   array (
-    0 => 'array<array-key, mixed>|false',
+    -1 => 'array<array-key, mixed>|false',
     'ldap' => 'LDAP\\Connection',
     'result' => 'LDAP\\Result',
   ),
   'ldap_get_option' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'ldap' => 'LDAP\\Connection',
     'option' => 'int',
     '&w value=' => 'array<array-key, mixed>|int|string',
   ),
   'ldap_get_values' => 
   array (
-    0 => 'array<array-key, mixed>|false',
+    -1 => 'array<array-key, mixed>|false',
     'ldap' => 'LDAP\\Connection',
     'entry' => 'LDAP\\ResultEntry',
     'attribute' => 'string',
   ),
   'ldap_get_values_len' => 
   array (
-    0 => 'array<array-key, mixed>|false',
+    -1 => 'array<array-key, mixed>|false',
     'ldap' => 'LDAP\\Connection',
     'entry' => 'LDAP\\ResultEntry',
     'attribute' => 'string',
@@ -45466,6 +45507,7 @@ return array (
   'ldap_list' => 
   array (
     0 => 'LDAP\\Result|array<array-key, LDAP\\Result>|false',
+    -1 => 'LDAP\\Result|array<array-key, mixed>|false',
     'ldap' => 'LDAP\\Connection|array<array-key, LDAP\\Connection>',
     'base' => 'array<array-key, mixed>|string',
     'filter' => 'array<array-key, mixed>|string',
@@ -45478,7 +45520,7 @@ return array (
   ),
   'ldap_mod_add' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'ldap' => 'LDAP\\Connection',
     'dn' => 'string',
     'entry' => 'array<array-key, mixed>',
@@ -45486,7 +45528,7 @@ return array (
   ),
   'ldap_mod_add_ext' => 
   array (
-    0 => 'LDAP\\Result|false',
+    -1 => 'LDAP\\Result|false',
     'ldap' => 'LDAP\\Connection',
     'dn' => 'string',
     'entry' => 'array<array-key, mixed>',
@@ -45494,7 +45536,7 @@ return array (
   ),
   'ldap_mod_del' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'ldap' => 'LDAP\\Connection',
     'dn' => 'string',
     'entry' => 'array<array-key, mixed>',
@@ -45502,7 +45544,7 @@ return array (
   ),
   'ldap_mod_del_ext' => 
   array (
-    0 => 'LDAP\\Result|false',
+    -1 => 'LDAP\\Result|false',
     'ldap' => 'LDAP\\Connection',
     'dn' => 'string',
     'entry' => 'array<array-key, mixed>',
@@ -45510,7 +45552,7 @@ return array (
   ),
   'ldap_mod_replace' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'ldap' => 'LDAP\\Connection',
     'dn' => 'string',
     'entry' => 'array<array-key, mixed>',
@@ -45518,7 +45560,7 @@ return array (
   ),
   'ldap_mod_replace_ext' => 
   array (
-    0 => 'LDAP\\Result|false',
+    -1 => 'LDAP\\Result|false',
     'ldap' => 'LDAP\\Connection',
     'dn' => 'string',
     'entry' => 'array<array-key, mixed>',
@@ -45526,7 +45568,7 @@ return array (
   ),
   'ldap_modify' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'ldap' => 'LDAP\\Connection',
     'dn' => 'string',
     'entry' => 'array<array-key, mixed>',
@@ -45534,7 +45576,7 @@ return array (
   ),
   'ldap_modify_batch' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'ldap' => 'LDAP\\Connection',
     'dn' => 'string',
     'modifications_info' => 'array<array-key, mixed>',
@@ -45542,25 +45584,25 @@ return array (
   ),
   'ldap_next_attribute' => 
   array (
-    0 => 'false|string',
+    -1 => 'false|string',
     'ldap' => 'LDAP\\Connection',
     'entry' => 'LDAP\\ResultEntry',
   ),
   'ldap_next_entry' => 
   array (
-    0 => 'LDAP\\ResultEntry|false',
+    -1 => 'LDAP\\ResultEntry|false',
     'ldap' => 'LDAP\\Connection',
     'entry' => 'LDAP\\ResultEntry',
   ),
   'ldap_next_reference' => 
   array (
-    0 => 'LDAP\\ResultEntry|false',
+    -1 => 'LDAP\\ResultEntry|false',
     'ldap' => 'LDAP\\Connection',
     'entry' => 'LDAP\\ResultEntry',
   ),
   'ldap_parse_exop' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'ldap' => 'LDAP\\Connection',
     'result' => 'LDAP\\Result',
     '&w response_data=' => 'string',
@@ -45568,14 +45610,14 @@ return array (
   ),
   'ldap_parse_reference' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'ldap' => 'LDAP\\Connection',
     'entry' => 'LDAP\\ResultEntry',
     '&w referrals' => 'array<array-key, mixed>',
   ),
   'ldap_parse_result' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'ldap' => 'LDAP\\Connection',
     'result' => 'LDAP\\Result',
     '&w error_code' => 'int',
@@ -45587,6 +45629,7 @@ return array (
   'ldap_read' => 
   array (
     0 => 'LDAP\\Result|array<array-key, LDAP\\Result>|false',
+    -1 => 'LDAP\\Result|array<array-key, mixed>|false',
     'ldap' => 'LDAP\\Connection|array<array-key, LDAP\\Connection>',
     'base' => 'array<array-key, mixed>|string',
     'filter' => 'array<array-key, mixed>|string',
@@ -45599,7 +45642,7 @@ return array (
   ),
   'ldap_rename' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'ldap' => 'LDAP\\Connection',
     'dn' => 'string',
     'new_rdn' => 'string',
@@ -45609,7 +45652,7 @@ return array (
   ),
   'ldap_rename_ext' => 
   array (
-    0 => 'LDAP\\Result|false',
+    -1 => 'LDAP\\Result|false',
     'ldap' => 'LDAP\\Connection',
     'dn' => 'string',
     'new_rdn' => 'string',
@@ -45632,6 +45675,7 @@ return array (
   'ldap_search' => 
   array (
     0 => 'LDAP\\Result|array<array-key, LDAP\\Result>|false',
+    -1 => 'LDAP\\Result|array<array-key, mixed>|false',
     'ldap' => 'LDAP\\Connection|array<array-key, LDAP\\Connection>',
     'base' => 'array<array-key, mixed>|string',
     'filter' => 'array<array-key, mixed>|string',
@@ -45644,20 +45688,20 @@ return array (
   ),
   'ldap_set_option' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'ldap' => 'LDAP\\Connection|null',
     'option' => 'int',
     'value' => 'mixed',
   ),
   'ldap_set_rebind_proc' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'ldap' => 'LDAP\\Connection',
     'callback' => 'callable[impure]|null',
   ),
   'ldap_start_tls' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'ldap' => 'LDAP\\Connection',
   ),
   'ldap_t61_to_8859' => 
@@ -45667,7 +45711,7 @@ return array (
   ),
   'ldap_unbind' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'ldap' => 'LDAP\\Connection',
   ),
   'leak' => 
@@ -53222,18 +53266,18 @@ return array (
   ),
   'msg_get_queue' => 
   array (
-    0 => 'SysvMessageQueue|false',
+    -1 => 'SysvMessageQueue|false',
     'key' => 'int',
     'permissions=' => 'int',
   ),
   'msg_queue_exists' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'key' => 'int',
   ),
   'msg_receive' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'queue' => 'SysvMessageQueue',
     'desired_message_type' => 'int',
     '&w received_message_type' => 'int',
@@ -53245,12 +53289,12 @@ return array (
   ),
   'msg_remove_queue' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'queue' => 'SysvMessageQueue',
   ),
   'msg_send' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'queue' => 'SysvMessageQueue',
     'message_type' => 'int',
     'message' => 'mixed',
@@ -53260,13 +53304,14 @@ return array (
   ),
   'msg_set_queue' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'queue' => 'SysvMessageQueue',
     'data' => 'array<array-key, mixed>',
   ),
   'msg_stat_queue' => 
   array (
     0 => 'array<array-key, mixed>',
+    -1 => 'array<array-key, mixed>|false',
     'queue' => 'SysvMessageQueue',
   ),
   'msgfmt_create' => 
@@ -56325,7 +56370,7 @@ return array (
   ),
   'ngettext' => 
   array (
-    0 => 'string',
+    -1 => 'string',
     'singular' => 'string',
     'plural' => 'string',
     'count' => 'int',
@@ -57071,74 +57116,84 @@ return array (
   ),
   'oci_bind_array_by_name' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'statement' => 'resource',
     'param' => 'string',
-    '&rw var' => 'array<array-key, mixed>',
+    '&var' => 'array<array-key, mixed>',
     'max_array_length' => 'int',
     'max_item_length=' => 'int',
     'type=' => 'int',
   ),
   'oci_bind_by_name' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'statement' => 'resource',
     'param' => 'string',
-    '&rw var' => 'mixed',
+    '&var' => 'mixed',
     'max_length=' => 'int',
     'type=' => 'int',
   ),
   'oci_cancel' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'statement' => 'resource',
   ),
   'oci_client_version' => 
   array (
-    0 => 'string',
+    -1 => 'string',
   ),
   'oci_close' => 
   array (
-    0 => 'bool',
+    -1 => 'bool|null',
     'connection' => 'resource',
   ),
   'oci_collection_append' => 
   array (
-    0 => 'bool',
-    'collection' => 'string',
+    -1 => 'bool',
+    'collection' => 'OCICollection',
+    'value' => 'string',
   ),
   'oci_collection_assign' => 
   array (
-    0 => 'bool',
-    'to' => 'object',
+    -1 => 'bool',
+    'to' => 'OCICollection',
+    'from' => 'OCICollection',
   ),
   'oci_collection_element_assign' => 
   array (
-    0 => 'bool',
-    'collection' => 'int',
-    'index' => 'string',
+    -1 => 'bool',
+    'collection' => 'OCICollection',
+    'index' => 'int',
+    'value' => 'string',
   ),
   'oci_collection_element_get' => 
   array (
-    0 => 'string',
-    'collection' => 'int',
+    0 => 'null|string',
+    -1 => 'false|float|null|string',
+    'collection' => 'OCICollection',
+    'index' => 'int',
   ),
   'oci_collection_max' => 
   array (
     0 => 'int',
+    -1 => 'false|int',
+    'collection' => 'OCICollection',
   ),
   'oci_collection_size' => 
   array (
     0 => 'int',
+    -1 => 'false|int',
+    'collection' => 'OCICollection',
   ),
   'oci_collection_trim' => 
   array (
-    0 => 'bool',
-    'collection' => 'int',
+    -1 => 'bool',
+    'collection' => 'OCICollection',
+    'num' => 'int',
   ),
   'oci_commit' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'connection' => 'resource',
   ),
   'oci_connect' => 
@@ -57146,13 +57201,14 @@ return array (
     0 => 'false|resource',
     'username' => 'string',
     'password' => 'string',
-    'connection_string=' => 'string',
+    'connection_string=' => 'null|string',
     'encoding=' => 'string',
     'session_mode=' => 'int',
+    -2 => 'none',
   ),
   'oci_define_by_name' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'statement' => 'resource',
     'column' => 'string',
     '&w var' => 'mixed',
@@ -57160,23 +57216,23 @@ return array (
   ),
   'oci_error' => 
   array (
-    0 => 'array<array-key, mixed>|false',
+    -1 => 'array<array-key, mixed>|false',
     'connection_or_statement=' => 'resource',
   ),
   'oci_execute' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'statement' => 'resource',
     'mode=' => 'int',
   ),
   'oci_fetch' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'statement' => 'resource',
   ),
   'oci_fetch_all' => 
   array (
-    0 => 'false|int',
+    -1 => 'int',
     'statement' => 'resource',
     '&w output' => 'array<array-key, mixed>',
     'offset=' => 'int',
@@ -57185,83 +57241,86 @@ return array (
   ),
   'oci_fetch_array' => 
   array (
-    0 => 'array<array-key, mixed>|false',
+    -1 => 'array<array-key, mixed>|false',
     'statement' => 'resource',
     'mode=' => 'int',
   ),
   'oci_fetch_assoc' => 
   array (
-    0 => 'array<array-key, mixed>|false',
+    -1 => 'array<array-key, mixed>|false',
     'statement' => 'resource',
   ),
   'oci_fetch_object' => 
   array (
-    0 => 'false|object',
+    -1 => 'false|stdClass',
     'statement' => 'resource',
+    'mode=' => 'int',
   ),
   'oci_fetch_row' => 
   array (
-    0 => 'array<array-key, mixed>|false',
+    -1 => 'array<array-key, mixed>|false',
     'statement' => 'resource',
   ),
   'oci_field_is_null' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'statement' => 'resource',
-    'column' => 'mixed',
+    'column' => 'int|string',
   ),
   'oci_field_name' => 
   array (
-    0 => 'false|string',
+    -1 => 'false|string',
     'statement' => 'resource',
-    'column' => 'mixed',
+    'column' => 'int|string',
   ),
   'oci_field_precision' => 
   array (
-    0 => 'false|int',
+    -1 => 'false|int',
     'statement' => 'resource',
-    'column' => 'mixed',
+    'column' => 'int|string',
   ),
   'oci_field_scale' => 
   array (
-    0 => 'false|int',
+    -1 => 'false|int',
     'statement' => 'resource',
-    'column' => 'mixed',
+    'column' => 'int|string',
   ),
   'oci_field_size' => 
   array (
-    0 => 'false|int',
+    -1 => 'false|int',
     'statement' => 'resource',
-    'column' => 'mixed',
+    'column' => 'int|string',
   ),
   'oci_field_type' => 
   array (
-    0 => 'false|mixed',
+    -1 => 'false|int|string',
     'statement' => 'resource',
-    'column' => 'mixed',
+    'column' => 'int|string',
   ),
   'oci_field_type_raw' => 
   array (
-    0 => 'false|int',
+    -1 => 'false|int',
     'statement' => 'resource',
-    'column' => 'mixed',
+    'column' => 'int|string',
   ),
   'oci_free_collection' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
+    'collection' => 'OCICollection',
   ),
   'oci_free_cursor' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'statement' => 'resource',
   ),
   'oci_free_descriptor' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
+    'lob' => 'OCILob',
   ),
   'oci_free_statement' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'statement' => 'resource',
   ),
   'oci_get_implicit' => 
@@ -57273,6 +57332,7 @@ return array (
   array (
     0 => 'false|resource',
     'statement' => 'resource',
+    -2 => 'none',
   ),
   'oci_internal_debug' => 
   array (
@@ -57281,8 +57341,9 @@ return array (
   ),
   'oci_lob_append' => 
   array (
-    0 => 'bool',
-    'to' => 'object',
+    -1 => 'bool',
+    'to' => 'OCILob',
+    'from' => 'OCILob',
   ),
   'oci_lob_close' => 
   array (
@@ -57290,87 +57351,107 @@ return array (
   ),
   'oci_lob_copy' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'to' => 'OCILob',
     'from' => 'OCILob',
-    'length=' => 'int',
+    'length=' => 'int|null',
   ),
   'oci_lob_eof' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
+    'lob' => 'OCILob',
   ),
   'oci_lob_erase' => 
   array (
     0 => 'int',
-    'lob' => 'int',
-    'offset' => 'int',
+    -1 => 'false|int',
+    'lob' => 'OCILob',
+    'offset=' => 'int|null',
+    'length=' => 'int|null',
   ),
   'oci_lob_export' => 
   array (
-    0 => 'bool',
-    'lob' => 'string',
-    'filename' => 'int',
-    'offset' => 'int',
+    -1 => 'bool',
+    'lob' => 'OCILob',
+    'filename' => 'string',
+    'offset=' => 'int|null',
+    'length=' => 'int|null',
   ),
   'oci_lob_flush' => 
   array (
-    0 => 'bool',
-    'lob' => 'int',
+    -1 => 'bool',
+    'lob' => 'OCILob',
+    'flag=' => 'int',
   ),
   'oci_lob_import' => 
   array (
-    0 => 'bool',
-    'lob' => 'string',
+    -1 => 'bool',
+    'lob' => 'OCILob',
+    'filename' => 'string',
   ),
   'oci_lob_is_equal' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'lob1' => 'OCILob',
     'lob2' => 'OCILob',
   ),
   'oci_lob_load' => 
   array (
     0 => 'string',
+    -1 => 'false|string',
+    'lob' => 'OCILob',
   ),
   'oci_lob_read' => 
   array (
     0 => 'string',
-    'lob' => 'int',
+    -1 => 'false|string',
+    'lob' => 'OCILob',
+    'length' => 'int',
   ),
   'oci_lob_rewind' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
+    'lob' => 'OCILob',
   ),
   'oci_lob_save' => 
   array (
-    0 => 'bool',
-    'lob' => 'string',
-    'data' => 'int',
+    -1 => 'bool',
+    'lob' => 'OCILob',
+    'data' => 'string',
+    'offset=' => 'int',
   ),
   'oci_lob_seek' => 
   array (
-    0 => 'bool',
-    'lob' => 'int',
+    -1 => 'bool',
+    'lob' => 'OCILob',
     'offset' => 'int',
+    'whence=' => 'int',
   ),
   'oci_lob_size' => 
   array (
     0 => 'int',
+    -1 => 'false|int',
+    'lob' => 'OCILob',
   ),
   'oci_lob_tell' => 
   array (
     0 => 'int',
+    -1 => 'false|int',
+    'lob' => 'OCILob',
   ),
   'oci_lob_truncate' => 
   array (
-    0 => 'bool',
-    'lob' => 'int',
+    -1 => 'bool',
+    'lob' => 'OCILob',
+    'length=' => 'int',
   ),
   'oci_lob_write' => 
   array (
     0 => 'int',
-    'lob' => 'string',
-    'data' => 'int',
+    -1 => 'false|int',
+    'lob' => 'OCILob',
+    'data' => 'string',
+    'length=' => 'int|null',
   ),
   'oci_lob_write_temporary' => 
   array (
@@ -57380,39 +57461,41 @@ return array (
   ),
   'oci_new_collection' => 
   array (
-    0 => 'OCICollection|false',
+    -1 => 'OCICollection|false',
     'connection' => 'resource',
     'type_name' => 'string',
-    'schema=' => 'string',
+    'schema=' => 'null|string',
   ),
   'oci_new_connect' => 
   array (
     0 => 'false|resource',
     'username' => 'string',
     'password' => 'string',
-    'connection_string=' => 'string',
+    'connection_string=' => 'null|string',
     'encoding=' => 'string',
     'session_mode=' => 'int',
+    -2 => 'none',
   ),
   'oci_new_cursor' => 
   array (
     0 => 'false|resource',
     'connection' => 'resource',
+    -2 => 'none',
   ),
   'oci_new_descriptor' => 
   array (
-    0 => 'OCILob|false',
+    -1 => 'OCILob|null',
     'connection' => 'resource',
     'type=' => 'int',
   ),
   'oci_num_fields' => 
   array (
-    0 => 'false|int',
+    -1 => 'int',
     'statement' => 'resource',
   ),
   'oci_num_rows' => 
   array (
-    0 => 'false|int',
+    -1 => 'false|int',
     'statement' => 'resource',
   ),
   'oci_parse' => 
@@ -57420,6 +57503,7 @@ return array (
     0 => 'false|resource',
     'connection' => 'resource',
     'sql' => 'string',
+    -2 => 'none',
   ),
   'oci_password_change' => 
   array (
@@ -57428,259 +57512,582 @@ return array (
     'username' => 'string',
     'old_password' => 'string',
     'new_password' => 'string',
+    -2 => 'none',
   ),
   'oci_pconnect' => 
   array (
     0 => 'false|resource',
     'username' => 'string',
     'password' => 'string',
-    'connection_string=' => 'string',
+    'connection_string=' => 'null|string',
     'encoding=' => 'string',
     'session_mode=' => 'int',
+    -2 => 'none',
   ),
   'oci_register_taf_callback' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'connection' => 'resource',
-    'callback=' => 'callable[impure]',
+    'callback' => 'callable[impure]|null',
   ),
   'oci_result' => 
   array (
     0 => 'false|mixed',
+    -1 => 'mixed',
     'statement' => 'resource',
-    'column' => 'mixed',
+    'column' => 'int|string',
   ),
   'oci_rollback' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'connection' => 'resource',
   ),
   'oci_server_version' => 
   array (
-    0 => 'false|string',
+    -1 => 'false|string',
     'connection' => 'resource',
   ),
   'oci_set_action' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'connection' => 'resource',
     'action' => 'string',
   ),
   'oci_set_call_timeout' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'connection' => 'resource',
     'timeout' => 'int',
   ),
   'oci_set_client_identifier' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'connection' => 'resource',
     'client_id' => 'string',
   ),
   'oci_set_client_info' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'connection' => 'resource',
     'client_info' => 'string',
   ),
   'oci_set_db_operation' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'connection' => 'resource',
     'action' => 'string',
   ),
   'oci_set_edition' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'edition' => 'string',
   ),
   'oci_set_module_name' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'connection' => 'resource',
     'name' => 'string',
   ),
   'oci_set_prefetch' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'statement' => 'resource',
     'rows' => 'int',
   ),
+  'oci_set_prefetch_lob' => 
+  array (
+    -1 => 'bool',
+    'statement' => 'mixed',
+    'prefetch_lob_size' => 'int',
+  ),
   'oci_statement_type' => 
   array (
-    0 => 'false|string',
+    -1 => 'false|string',
     'statement' => 'resource',
   ),
   'oci_unregister_taf_callback' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'connection' => 'resource',
+  ),
+  'ocibindbyname' => 
+  array (
+    -1 => 'bool',
+    'statement' => 'mixed',
+    'param' => 'string',
+    '&var' => 'mixed',
+    'max_length=' => 'int',
+    'type=' => 'int',
+  ),
+  'ocicancel' => 
+  array (
+    -1 => 'bool',
+    'statement' => 'mixed',
+  ),
+  'ocicollappend' => 
+  array (
+    -1 => 'bool',
+    'collection' => 'OCICollection',
+    'value' => 'string',
+  ),
+  'ocicollassignelem' => 
+  array (
+    -1 => 'bool',
+    'collection' => 'OCICollection',
+    'index' => 'int',
+    'value' => 'string',
   ),
   'ocicollection::append' => 
   array (
-    0 => 'bool',
-    'value' => 'mixed',
+    -1 => 'bool',
+    'value' => 'string',
+    -2 => 'tentative',
   ),
   'ocicollection::assign' => 
   array (
-    0 => 'bool',
-    'from' => 'OCI_Collection',
+    -1 => 'bool',
+    'from' => 'OCICollection',
+    -2 => 'tentative',
   ),
   'ocicollection::assignelem' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'index' => 'int',
-    'value' => 'mixed',
+    'value' => 'string',
+    -2 => 'tentative',
   ),
   'ocicollection::free' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
+    -2 => 'tentative',
   ),
   'ocicollection::getelem' => 
   array (
-    0 => 'mixed',
+    -1 => 'false|float|null|string',
     'index' => 'int',
+    -2 => 'tentative',
   ),
   'ocicollection::max' => 
   array (
-    0 => 'false|int',
+    -1 => 'false|int',
+    -2 => 'tentative',
   ),
   'ocicollection::size' => 
   array (
-    0 => 'false|int',
+    -1 => 'false|int',
+    -2 => 'tentative',
   ),
   'ocicollection::trim' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'num' => 'int',
+    -2 => 'tentative',
+  ),
+  'ocicollgetelem' => 
+  array (
+    -1 => 'false|float|null|string',
+    'collection' => 'OCICollection',
+    'index' => 'int',
+  ),
+  'ocicollmax' => 
+  array (
+    -1 => 'false|int',
+    'collection' => 'OCICollection',
+  ),
+  'ocicollsize' => 
+  array (
+    -1 => 'false|int',
+    'collection' => 'OCICollection',
+  ),
+  'ocicolltrim' => 
+  array (
+    -1 => 'bool',
+    'collection' => 'OCICollection',
+    'num' => 'int',
+  ),
+  'ocicolumnisnull' => 
+  array (
+    -1 => 'bool',
+    'statement' => 'mixed',
+    'column' => 'int|string',
+  ),
+  'ocicolumnname' => 
+  array (
+    -1 => 'false|string',
+    'statement' => 'mixed',
+    'column' => 'int|string',
+  ),
+  'ocicolumnprecision' => 
+  array (
+    -1 => 'false|int',
+    'statement' => 'mixed',
+    'column' => 'int|string',
+  ),
+  'ocicolumnscale' => 
+  array (
+    -1 => 'false|int',
+    'statement' => 'mixed',
+    'column' => 'int|string',
+  ),
+  'ocicolumnsize' => 
+  array (
+    -1 => 'false|int',
+    'statement' => 'mixed',
+    'column' => 'int|string',
+  ),
+  'ocicolumntype' => 
+  array (
+    -1 => 'false|int|string',
+    'statement' => 'mixed',
+    'column' => 'int|string',
+  ),
+  'ocicolumntyperaw' => 
+  array (
+    -1 => 'false|int',
+    'statement' => 'mixed',
+    'column' => 'int|string',
+  ),
+  'ocicommit' => 
+  array (
+    -1 => 'bool',
+    'connection' => 'mixed',
+  ),
+  'ocidefinebyname' => 
+  array (
+    -1 => 'bool',
+    'statement' => 'mixed',
+    'column' => 'string',
+    '&var' => 'mixed',
+    'type=' => 'int',
+  ),
+  'ocierror' => 
+  array (
+    -1 => 'array<array-key, mixed>|false',
+    'connection_or_statement=' => 'mixed',
+  ),
+  'ociexecute' => 
+  array (
+    -1 => 'bool',
+    'statement' => 'mixed',
+    'mode=' => 'int',
+  ),
+  'ocifetch' => 
+  array (
+    -1 => 'bool',
+    'statement' => 'mixed',
   ),
   'ocifetchinto' => 
   array (
-    0 => 'bool|int',
+    -1 => 'false|int',
     'statement' => 'resource',
     '&w result' => 'array<array-key, mixed>',
     'mode=' => 'int',
   ),
+  'ocifetchstatement' => 
+  array (
+    -1 => 'int',
+    'statement' => 'mixed',
+    '&output' => 'mixed',
+    'offset=' => 'int',
+    'limit=' => 'int',
+    'flags=' => 'int',
+  ),
+  'ocifreecollection' => 
+  array (
+    -1 => 'bool',
+    'collection' => 'OCICollection',
+  ),
+  'ocifreecursor' => 
+  array (
+    -1 => 'bool',
+    'statement' => 'mixed',
+  ),
+  'ocifreedesc' => 
+  array (
+    -1 => 'bool',
+    'lob' => 'OCILob',
+  ),
+  'ocifreestatement' => 
+  array (
+    -1 => 'bool',
+    'statement' => 'mixed',
+  ),
   'ocigetbufferinglob' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
+    'lob' => 'OCILob',
+  ),
+  'ociloadlob' => 
+  array (
+    -1 => 'false|string',
+    'lob' => 'OCILob',
   ),
   'ocilob::append' => 
   array (
-    0 => 'bool',
-    'lob_from' => 'OCILob',
+    -1 => 'bool',
+    'from' => 'OCILob',
+    -2 => 'tentative',
   ),
   'ocilob::close' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
+    -2 => 'tentative',
   ),
   'ocilob::eof' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
+    -2 => 'tentative',
   ),
   'ocilob::erase' => 
   array (
-    0 => 'false|int',
-    'offset=' => 'int',
-    'length=' => 'int',
+    -1 => 'false|int',
+    'offset=' => 'int|null',
+    'length=' => 'int|null',
+    -2 => 'tentative',
   ),
   'ocilob::export' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'filename' => 'string',
-    'start=' => 'int',
-    'length=' => 'int',
+    'offset=' => 'int|null',
+    'length=' => 'int|null',
+    -2 => 'tentative',
   ),
   'ocilob::flush' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'flag=' => 'int',
+    -2 => 'tentative',
   ),
   'ocilob::free' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
+    -2 => 'tentative',
   ),
   'ocilob::getbuffering' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
+    -2 => 'tentative',
   ),
   'ocilob::import' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'filename' => 'string',
+    -2 => 'tentative',
   ),
   'ocilob::load' => 
   array (
-    0 => 'false|string',
+    -1 => 'false|string',
+    -2 => 'tentative',
   ),
   'ocilob::read' => 
   array (
-    0 => 'false|string',
+    -1 => 'false|string',
     'length' => 'int',
+    -2 => 'tentative',
   ),
   'ocilob::rewind' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
+    -2 => 'tentative',
   ),
   'ocilob::save' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'data' => 'string',
     'offset=' => 'int',
+    -2 => 'tentative',
   ),
   'ocilob::savefile' => 
   array (
-    0 => 'bool',
-    'filename' => 'mixed',
+    -1 => 'bool',
+    'filename' => 'string',
+    -2 => 'tentative',
   ),
   'ocilob::seek' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'offset' => 'int',
     'whence=' => 'int',
+    -2 => 'tentative',
   ),
   'ocilob::setbuffering' => 
   array (
-    0 => 'bool',
-    'on_off' => 'bool',
+    -1 => 'bool',
+    'mode' => 'bool',
+    -2 => 'tentative',
   ),
   'ocilob::size' => 
   array (
-    0 => 'false|int',
+    -1 => 'false|int',
+    -2 => 'tentative',
   ),
   'ocilob::tell' => 
   array (
-    0 => 'false|int',
+    -1 => 'false|int',
+    -2 => 'tentative',
   ),
   'ocilob::truncate' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'length=' => 'int',
+    -2 => 'tentative',
   ),
   'ocilob::write' => 
   array (
-    0 => 'false|int',
+    -1 => 'false|int',
     'data' => 'string',
-    'length=' => 'int',
+    'length=' => 'int|null',
+    -2 => 'tentative',
   ),
   'ocilob::writetemporary' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'data' => 'string',
-    'lob_type=' => 'int',
+    'type=' => 'int',
+    -2 => 'tentative',
   ),
   'ocilob::writetofile' => 
   array (
-    0 => 'bool',
-    'filename' => 'mixed',
-    'start' => 'mixed',
-    'length' => 'mixed',
+    -1 => 'bool',
+    'filename' => 'string',
+    'offset=' => 'int|null',
+    'length=' => 'int|null',
+    -2 => 'tentative',
+  ),
+  'ocilogoff' => 
+  array (
+    -1 => 'bool|null',
+    'connection' => 'mixed',
+  ),
+  'ocilogon' => 
+  array (
+    0 => 'mixed',
+    'username' => 'string',
+    'password' => 'string',
+    'connection_string=' => 'null|string',
+    'encoding=' => 'string',
+    'session_mode=' => 'int',
+    -2 => 'none',
+  ),
+  'ocinewcollection' => 
+  array (
+    -1 => 'OCICollection|false',
+    'connection' => 'mixed',
+    'type_name' => 'string',
+    'schema=' => 'null|string',
+  ),
+  'ocinewcursor' => 
+  array (
+    0 => 'mixed',
+    'connection' => 'mixed',
+    -2 => 'none',
+  ),
+  'ocinewdescriptor' => 
+  array (
+    -1 => 'OCILob|null',
+    'connection' => 'mixed',
+    'type=' => 'int',
+  ),
+  'ocinlogon' => 
+  array (
+    0 => 'mixed',
+    'username' => 'string',
+    'password' => 'string',
+    'connection_string=' => 'null|string',
+    'encoding=' => 'string',
+    'session_mode=' => 'int',
+    -2 => 'none',
+  ),
+  'ocinumcols' => 
+  array (
+    -1 => 'int',
+    'statement' => 'mixed',
+  ),
+  'ociparse' => 
+  array (
+    0 => 'mixed',
+    'connection' => 'mixed',
+    'sql' => 'string',
+    -2 => 'none',
+  ),
+  'ocipasswordchange' => 
+  array (
+    0 => 'mixed',
+    'connection' => 'mixed',
+    'username' => 'string',
+    'old_password' => 'string',
+    'new_password' => 'string',
+    -2 => 'none',
+  ),
+  'ociplogon' => 
+  array (
+    0 => 'mixed',
+    'username' => 'string',
+    'password' => 'string',
+    'connection_string=' => 'null|string',
+    'encoding=' => 'string',
+    'session_mode=' => 'int',
+    -2 => 'none',
+  ),
+  'ociresult' => 
+  array (
+    -1 => 'mixed',
+    'statement' => 'mixed',
+    'column' => 'int|string',
+  ),
+  'ocirollback' => 
+  array (
+    -1 => 'bool',
+    'connection' => 'mixed',
+  ),
+  'ocirowcount' => 
+  array (
+    -1 => 'false|int',
+    'statement' => 'mixed',
+  ),
+  'ocisavelob' => 
+  array (
+    -1 => 'bool',
+    'lob' => 'OCILob',
+    'data' => 'string',
+    'offset=' => 'int',
+  ),
+  'ocisavelobfile' => 
+  array (
+    -1 => 'bool',
+    'lob' => 'OCILob',
+    'filename' => 'string',
+  ),
+  'ociserverversion' => 
+  array (
+    -1 => 'false|string',
+    'connection' => 'mixed',
   ),
   'ocisetbufferinglob' => 
   array (
-    0 => 'bool',
-    'lob' => 'bool',
+    -1 => 'bool',
+    'lob' => 'OCILob',
+    'mode' => 'bool',
+  ),
+  'ocisetprefetch' => 
+  array (
+    -1 => 'bool',
+    'statement' => 'mixed',
+    'rows' => 'int',
+  ),
+  'ocistatementtype' => 
+  array (
+    -1 => 'false|string',
+    'statement' => 'mixed',
+  ),
+  'ociwritelobtofile' => 
+  array (
+    -1 => 'bool',
+    'lob' => 'OCILob',
+    'filename' => 'string',
+    'offset=' => 'int|null',
+    'length=' => 'int|null',
   ),
   'octdec' => 
   array (
@@ -57689,24 +58096,24 @@ return array (
   ),
   'odbc_autocommit' => 
   array (
-    0 => 'bool|int',
+    -1 => 'bool|int',
     'odbc' => 'resource',
-    'enable=' => 'bool',
+    'enable=' => 'bool|null',
   ),
   'odbc_binmode' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'statement' => 'resource',
     'mode' => 'int',
   ),
   'odbc_close' => 
   array (
-    0 => 'void',
+    -1 => 'void',
     'odbc' => 'resource',
   ),
   'odbc_close_all' => 
   array (
-    0 => 'void',
+    -1 => 'void',
   ),
   'odbc_columnprivileges' => 
   array (
@@ -57716,6 +58123,7 @@ return array (
     'schema' => 'string',
     'table' => 'string',
     'column' => 'string',
+    -2 => 'none',
   ),
   'odbc_columns' => 
   array (
@@ -57725,10 +58133,11 @@ return array (
     'schema=' => 'null|string',
     'table=' => 'null|string',
     'column=' => 'null|string',
+    -2 => 'none',
   ),
   'odbc_commit' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'odbc' => 'resource',
   ),
   'odbc_connect' => 
@@ -57738,15 +58147,32 @@ return array (
     'user' => 'string',
     'password' => 'string',
     'cursor_option=' => 'int',
+    -2 => 'none',
+  ),
+  'odbc_connection_string_is_quoted' => 
+  array (
+    -1 => 'bool',
+    'str' => 'string',
+  ),
+  'odbc_connection_string_quote' => 
+  array (
+    -1 => 'string',
+    'str' => 'string',
+  ),
+  'odbc_connection_string_should_quote' => 
+  array (
+    -1 => 'bool',
+    'str' => 'string',
   ),
   'odbc_cursor' => 
   array (
     0 => 'string',
+    -1 => 'false|string',
     'statement' => 'resource',
   ),
   'odbc_data_source' => 
   array (
-    0 => 'array<array-key, mixed>|false',
+    -1 => 'array<array-key, mixed>|false|null',
     'odbc' => 'resource',
     'fetch_type' => 'int',
   ),
@@ -57755,15 +58181,16 @@ return array (
     0 => 'resource',
     'odbc' => 'resource',
     'query' => 'string',
+    -2 => 'none',
   ),
   'odbc_error' => 
   array (
-    0 => 'string',
+    -1 => 'string',
     'odbc=' => 'resource',
   ),
   'odbc_errormsg' => 
   array (
-    0 => 'string',
+    -1 => 'string',
     'odbc=' => 'resource',
   ),
   'odbc_exec' => 
@@ -57771,71 +58198,74 @@ return array (
     0 => 'resource',
     'odbc' => 'resource',
     'query' => 'string',
+    -2 => 'none',
   ),
   'odbc_execute' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'statement' => 'resource',
     'params=' => 'array<array-key, mixed>',
   ),
   'odbc_fetch_array' => 
   array (
-    0 => 'array<array-key, mixed>|false',
+    -1 => 'array<array-key, mixed>|false',
     'statement' => 'resource',
     'row=' => 'int',
   ),
   'odbc_fetch_into' => 
   array (
     0 => 'int',
+    -1 => 'false|int',
     'statement' => 'resource',
     '&w array' => 'array<array-key, mixed>',
     'row=' => 'int',
   ),
   'odbc_fetch_object' => 
   array (
-    0 => 'false|stdClass',
+    -1 => 'false|stdClass',
     'statement' => 'resource',
     'row=' => 'int',
   ),
   'odbc_fetch_row' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'statement' => 'resource',
     'row=' => 'int|null',
   ),
   'odbc_field_len' => 
   array (
-    0 => 'false|int',
+    -1 => 'false|int',
     'statement' => 'resource',
     'field' => 'int',
   ),
   'odbc_field_name' => 
   array (
-    0 => 'false|string',
+    -1 => 'false|string',
     'statement' => 'resource',
     'field' => 'int',
   ),
   'odbc_field_num' => 
   array (
-    0 => 'false|int',
+    -1 => 'false|int',
     'statement' => 'resource',
     'field' => 'string',
   ),
   'odbc_field_precision' => 
   array (
     0 => 'int',
+    -1 => 'false|int',
     'statement' => 'resource',
     'field' => 'int',
   ),
   'odbc_field_scale' => 
   array (
-    0 => 'false|int',
+    -1 => 'false|int',
     'statement' => 'resource',
     'field' => 'int',
   ),
   'odbc_field_type' => 
   array (
-    0 => 'false|string',
+    -1 => 'false|string',
     'statement' => 'resource',
     'field' => 'int',
   ),
@@ -57849,10 +58279,11 @@ return array (
     'fk_catalog' => 'string',
     'fk_schema' => 'string',
     'fk_table' => 'string',
+    -2 => 'none',
   ),
   'odbc_free_result' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'statement' => 'resource',
   ),
   'odbc_gettypeinfo' => 
@@ -57860,26 +58291,27 @@ return array (
     0 => 'resource',
     'odbc' => 'resource',
     'data_type=' => 'int',
+    -2 => 'none',
   ),
   'odbc_longreadlen' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'statement' => 'resource',
     'length' => 'int',
   ),
   'odbc_next_result' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'statement' => 'resource',
   ),
   'odbc_num_fields' => 
   array (
-    0 => 'int',
+    -1 => 'int',
     'statement' => 'resource',
   ),
   'odbc_num_rows' => 
   array (
-    0 => 'int',
+    -1 => 'int',
     'statement' => 'resource',
   ),
   'odbc_pconnect' => 
@@ -57889,12 +58321,14 @@ return array (
     'user' => 'string',
     'password' => 'string',
     'cursor_option=' => 'int',
+    -2 => 'none',
   ),
   'odbc_prepare' => 
   array (
     0 => 'false|resource',
     'odbc' => 'resource',
     'query' => 'string',
+    -2 => 'none',
   ),
   'odbc_primarykeys' => 
   array (
@@ -57903,6 +58337,7 @@ return array (
     'catalog' => 'null|string',
     'schema' => 'string',
     'table' => 'string',
+    -2 => 'none',
   ),
   'odbc_procedurecolumns' => 
   array (
@@ -57912,6 +58347,7 @@ return array (
     'schema=' => 'null|string',
     'procedure=' => 'null|string',
     'column=' => 'null|string',
+    -2 => 'none',
   ),
   'odbc_procedures' => 
   array (
@@ -57920,27 +58356,28 @@ return array (
     'catalog=' => 'null|string',
     'schema=' => 'null|string',
     'procedure=' => 'null|string',
+    -2 => 'none',
   ),
   'odbc_result' => 
   array (
-    0 => 'bool|null|string',
+    -1 => 'bool|null|string',
     'statement' => 'resource',
     'field' => 'int|string',
   ),
   'odbc_result_all' => 
   array (
-    0 => 'false|int',
+    -1 => 'false|int',
     'statement' => 'resource',
     'format=' => 'string',
   ),
   'odbc_rollback' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'odbc' => 'resource',
   ),
   'odbc_setoption' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'odbc' => 'resource',
     'which' => 'int',
     'option' => 'int',
@@ -57956,6 +58393,7 @@ return array (
     'table' => 'string',
     'scope' => 'int',
     'nullable' => 'int',
+    -2 => 'none',
   ),
   'odbc_statistics' => 
   array (
@@ -57966,6 +58404,7 @@ return array (
     'table' => 'string',
     'unique' => 'int',
     'accuracy' => 'int',
+    -2 => 'none',
   ),
   'odbc_tableprivileges' => 
   array (
@@ -57974,6 +58413,7 @@ return array (
     'catalog' => 'null|string',
     'schema' => 'string',
     'table' => 'string',
+    -2 => 'none',
   ),
   'odbc_tables' => 
   array (
@@ -57983,6 +58423,7 @@ return array (
     'schema=' => 'null|string',
     'table=' => 'null|string',
     'types=' => 'null|string',
+    -2 => 'none',
   ),
   'opcache_compile_file' => 
   array (
@@ -65812,30 +66253,30 @@ return array (
   ),
   'pspell_add_to_personal' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'dictionary' => 'PSpell\\Dictionary',
     'word' => 'string',
   ),
   'pspell_add_to_session' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'dictionary' => 'PSpell\\Dictionary',
     'word' => 'string',
   ),
   'pspell_check' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'dictionary' => 'PSpell\\Dictionary',
     'word' => 'string',
   ),
   'pspell_clear_session' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'dictionary' => 'PSpell\\Dictionary',
   ),
   'pspell_config_create' => 
   array (
-    0 => 'PSpell\\Config',
+    -1 => 'PSpell\\Config',
     'language' => 'string',
     'spelling=' => 'string',
     'jargon=' => 'string',
@@ -65843,55 +66284,55 @@ return array (
   ),
   'pspell_config_data_dir' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'config' => 'PSpell\\Config',
     'directory' => 'string',
   ),
   'pspell_config_dict_dir' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'config' => 'PSpell\\Config',
     'directory' => 'string',
   ),
   'pspell_config_ignore' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'config' => 'PSpell\\Config',
     'min_length' => 'int',
   ),
   'pspell_config_mode' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'config' => 'PSpell\\Config',
     'mode' => 'int',
   ),
   'pspell_config_personal' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'config' => 'PSpell\\Config',
     'filename' => 'string',
   ),
   'pspell_config_repl' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'config' => 'PSpell\\Config',
     'filename' => 'string',
   ),
   'pspell_config_runtogether' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'config' => 'PSpell\\Config',
     'allow' => 'bool',
   ),
   'pspell_config_save_repl' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'config' => 'PSpell\\Config',
     'save' => 'bool',
   ),
   'pspell_new' => 
   array (
-    0 => 'PSpell\\Dictionary|false',
+    -1 => 'PSpell\\Dictionary|false',
     'language' => 'string',
     'spelling=' => 'string',
     'jargon=' => 'string',
@@ -65900,12 +66341,12 @@ return array (
   ),
   'pspell_new_config' => 
   array (
-    0 => 'PSpell\\Dictionary|false',
+    -1 => 'PSpell\\Dictionary|false',
     'config' => 'PSpell\\Config',
   ),
   'pspell_new_personal' => 
   array (
-    0 => 'PSpell\\Dictionary|false',
+    -1 => 'PSpell\\Dictionary|false',
     'filename' => 'string',
     'language' => 'string',
     'spelling=' => 'string',
@@ -65915,12 +66356,12 @@ return array (
   ),
   'pspell_save_wordlist' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'dictionary' => 'PSpell\\Dictionary',
   ),
   'pspell_store_replacement' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'dictionary' => 'PSpell\\Dictionary',
     'misspelled' => 'string',
     'correct' => 'string',
@@ -65928,6 +66369,7 @@ return array (
   'pspell_suggest' => 
   array (
     0 => 'array<array-key, mixed>',
+    -1 => 'array<array-key, mixed>|false',
     'dictionary' => 'PSpell\\Dictionary',
     'word' => 'string',
   ),
@@ -68313,7 +68755,7 @@ return array (
   array (
     0 => 'bool',
     -1 => 'Redis|bool',
-    'credentials' => 'string',
+    'credentials' => 'array{0?: string, 1?: string, pass?: string, user?: string}|string',
   ),
   'redis::bgrewriteaof' => 
   array (
@@ -70605,7 +71047,7 @@ return array (
     'timeout=' => 'float',
     'read_timeout=' => 'float',
     'persistent=' => 'bool',
-    'auth=' => 'null|string',
+    'auth=' => 'array{0?: string, 1?: string, pass?: string, user?: string}|null|string',
     'context=' => 'array<array-key, mixed>|null',
     -2 => 'none',
   ),
@@ -76987,13 +77429,13 @@ return array (
   ),
   'sem_acquire' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'semaphore' => 'SysvSemaphore',
     'non_blocking=' => 'bool',
   ),
   'sem_get' => 
   array (
-    0 => 'SysvSemaphore|false',
+    -1 => 'SysvSemaphore|false',
     'key' => 'int',
     'max_acquire=' => 'int',
     'permissions=' => 'int',
@@ -77001,12 +77443,12 @@ return array (
   ),
   'sem_release' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'semaphore' => 'SysvSemaphore',
   ),
   'sem_remove' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'semaphore' => 'SysvSemaphore',
   ),
   'sensitiveparameter::__construct' => 
@@ -77761,59 +78203,59 @@ return array (
   ),
   'shm_attach' => 
   array (
-    0 => 'SysvSharedMemory|false',
+    -1 => 'SysvSharedMemory|false',
     'key' => 'int',
     'size=' => 'int|null',
     'permissions=' => 'int',
   ),
   'shm_detach' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'shm' => 'SysvSharedMemory',
   ),
   'shm_get_var' => 
   array (
-    0 => 'mixed',
+    -1 => 'mixed',
     'shm' => 'SysvSharedMemory',
     'key' => 'int',
   ),
   'shm_has_var' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'shm' => 'SysvSharedMemory',
     'key' => 'int',
   ),
   'shm_put_var' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'shm' => 'SysvSharedMemory',
     'key' => 'int',
     'value' => 'mixed',
   ),
   'shm_remove' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'shm' => 'SysvSharedMemory',
   ),
   'shm_remove_var' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'shm' => 'SysvSharedMemory',
     'key' => 'int',
   ),
   'shmop_close' => 
   array (
-    0 => 'void',
+    -1 => 'void',
     'shmop' => 'Shmop',
   ),
   'shmop_delete' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'shmop' => 'Shmop',
   ),
   'shmop_open' => 
   array (
-    0 => 'Shmop|false',
+    -1 => 'Shmop|false',
     'key' => 'int',
     'mode' => 'string',
     'permissions' => 'int',
@@ -77821,19 +78263,19 @@ return array (
   ),
   'shmop_read' => 
   array (
-    0 => 'string',
+    -1 => 'string',
     'shmop' => 'Shmop',
     'offset' => 'int',
     'size' => 'int',
   ),
   'shmop_size' => 
   array (
-    0 => 'int',
+    -1 => 'int',
     'shmop' => 'Shmop',
   ),
   'shmop_write' => 
   array (
-    0 => 'int',
+    -1 => 'int',
     'shmop' => 'Shmop',
     'data' => 'string',
     'offset' => 'int',
@@ -78767,78 +79209,84 @@ return array (
   ),
   'socket_accept' => 
   array (
-    0 => 'Socket|false',
+    -1 => 'Socket|false',
     'socket' => 'Socket',
   ),
   'socket_addrinfo_bind' => 
   array (
-    0 => 'Socket|false',
+    -1 => 'Socket|false',
     'address' => 'AddressInfo',
   ),
   'socket_addrinfo_connect' => 
   array (
-    0 => 'Socket|false',
+    -1 => 'Socket|false',
     'address' => 'AddressInfo',
   ),
   'socket_addrinfo_explain' => 
   array (
-    0 => 'array<array-key, mixed>',
+    -1 => 'array<array-key, mixed>',
     'address' => 'AddressInfo',
   ),
   'socket_addrinfo_lookup' => 
   array (
     0 => 'array<array-key, AddressInfo>|false',
+    -1 => 'array<array-key, mixed>|false',
     'host' => 'string',
     'service=' => 'null|string',
     'hints=' => 'array<array-key, mixed>',
   ),
+  'socket_atmark' => 
+  array (
+    -1 => 'bool',
+    'socket' => 'Socket',
+  ),
   'socket_bind' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'socket' => 'Socket',
     'address' => 'string',
     'port=' => 'int',
   ),
   'socket_clear_error' => 
   array (
-    0 => 'void',
+    -1 => 'void',
     'socket=' => 'Socket|null',
   ),
   'socket_close' => 
   array (
-    0 => 'void',
+    -1 => 'void',
     'socket' => 'Socket',
   ),
   'socket_cmsg_space' => 
   array (
-    0 => 'int|null',
+    -1 => 'int|null',
     'level' => 'int',
     'type' => 'int',
     'num=' => 'int',
   ),
   'socket_connect' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'socket' => 'Socket',
     'address' => 'string',
     'port=' => 'int|null',
   ),
   'socket_create' => 
   array (
-    0 => 'Socket|false',
+    -1 => 'Socket|false',
     'domain' => 'int',
     'type' => 'int',
     'protocol' => 'int',
   ),
   'socket_create_listen' => 
   array (
-    0 => 'Socket|false',
+    -1 => 'Socket|false',
     'port' => 'int',
     'backlog=' => 'int',
   ),
   'socket_create_pair' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'domain' => 'int',
     'type' => 'int',
     'protocol' => 'int',
@@ -78848,10 +79296,11 @@ return array (
   array (
     0 => 'false|resource',
     'socket' => 'Socket',
+    -2 => 'none',
   ),
   'socket_get_option' => 
   array (
-    0 => 'array<array-key, mixed>|false|int',
+    -1 => 'array<array-key, mixed>|false|int',
     'socket' => 'Socket',
     'level' => 'int',
     'option' => 'int',
@@ -78863,51 +79312,51 @@ return array (
   ),
   'socket_getopt' => 
   array (
-    0 => 'array<array-key, mixed>|false|int',
+    -1 => 'array<array-key, mixed>|false|int',
     'socket' => 'Socket',
     'level' => 'int',
     'option' => 'int',
   ),
   'socket_getpeername' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'socket' => 'Socket',
     '&w address' => 'string',
     '&w port=' => 'int',
   ),
   'socket_getsockname' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'socket' => 'Socket',
     '&w address' => 'string',
     '&w port=' => 'int',
   ),
   'socket_import_stream' => 
   array (
-    0 => 'Socket|false',
+    -1 => 'Socket|false',
     'stream' => 'resource',
   ),
   'socket_last_error' => 
   array (
-    0 => 'int',
+    -1 => 'int',
     'socket=' => 'Socket|null',
   ),
   'socket_listen' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'socket' => 'Socket',
     'backlog=' => 'int',
   ),
   'socket_read' => 
   array (
-    0 => 'false|string',
+    -1 => 'false|string',
     'socket' => 'Socket',
     'length' => 'int',
     'mode=' => 'int',
   ),
   'socket_recv' => 
   array (
-    0 => 'false|int',
+    -1 => 'false|int',
     'socket' => 'Socket',
     '&w data' => 'string',
     'length' => 'int',
@@ -78915,7 +79364,7 @@ return array (
   ),
   'socket_recvfrom' => 
   array (
-    0 => 'false|int',
+    -1 => 'false|int',
     'socket' => 'Socket',
     '&w data' => 'string',
     'length' => 'int',
@@ -78925,23 +79374,23 @@ return array (
   ),
   'socket_recvmsg' => 
   array (
-    0 => 'false|int',
+    -1 => 'false|int',
     'socket' => 'Socket',
     '&w message' => 'array<array-key, mixed>',
     'flags=' => 'int',
   ),
   'socket_select' => 
   array (
-    0 => 'false|int',
-    '&rw read' => 'array<array-key, Socket>|null',
-    '&rw write' => 'array<array-key, Socket>|null',
-    '&rw except' => 'array<array-key, Socket>|null',
+    -1 => 'false|int',
+    '&read' => 'array<array-key, Socket>|null',
+    '&write' => 'array<array-key, Socket>|null',
+    '&except' => 'array<array-key, Socket>|null',
     'seconds' => 'int|null',
     'microseconds=' => 'int',
   ),
   'socket_send' => 
   array (
-    0 => 'false|int',
+    -1 => 'false|int',
     'socket' => 'Socket',
     'data' => 'string',
     'length' => 'int',
@@ -78949,14 +79398,14 @@ return array (
   ),
   'socket_sendmsg' => 
   array (
-    0 => 'false|int',
+    -1 => 'false|int',
     'socket' => 'Socket',
     'message' => 'array<array-key, mixed>',
     'flags=' => 'int',
   ),
   'socket_sendto' => 
   array (
-    0 => 'false|int',
+    -1 => 'false|int',
     'socket' => 'Socket',
     'data' => 'string',
     'length' => 'int',
@@ -78966,7 +79415,7 @@ return array (
   ),
   'socket_set_block' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'socket' => 'Socket',
   ),
   'socket_set_blocking' => 
@@ -78977,12 +79426,12 @@ return array (
   ),
   'socket_set_nonblock' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'socket' => 'Socket',
   ),
   'socket_set_option' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'socket' => 'Socket',
     'level' => 'int',
     'option' => 'int',
@@ -78997,7 +79446,7 @@ return array (
   ),
   'socket_setopt' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'socket' => 'Socket',
     'level' => 'int',
     'option' => 'int',
@@ -79005,18 +79454,18 @@ return array (
   ),
   'socket_shutdown' => 
   array (
-    0 => 'bool',
+    -1 => 'bool',
     'socket' => 'Socket',
     'mode=' => 'int',
   ),
   'socket_strerror' => 
   array (
-    0 => 'string',
+    -1 => 'string',
     'error_code' => 'int',
   ),
   'socket_write' => 
   array (
-    0 => 'false|int',
+    -1 => 'false|int',
     'socket' => 'Socket',
     'data' => 'string',
     'length=' => 'int|null',
@@ -99908,7 +100357,7 @@ return array (
   ),
   'textdomain' => 
   array (
-    0 => 'string',
+    -1 => 'string',
     'domain' => 'null|string',
   ),
   'thread::__construct' => 
@@ -103500,7 +103949,7 @@ return array (
   ),
   'unixtojd' => 
   array (
-    0 => 'false|int',
+    -1 => 'false|int',
     'timestamp=' => 'int|null',
   ),
   'unlink' => 

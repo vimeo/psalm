@@ -102,13 +102,9 @@ final class TObjectWithProperties extends TObject
     }
 
     #[Override]
-    public function getId(bool $exact = true, bool $nested = false): string
+    public function getId(bool $exact = true): string
     {
-        $extra_types = '';
-
-        if ($this->extra_types) {
-            $extra_types = '&' . implode('&', $this->extra_types);
-        }
+        $extra_types = $this->getIntersectionTypesId($exact);
 
         $properties_string = implode(
             ', ',

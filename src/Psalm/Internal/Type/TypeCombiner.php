@@ -20,6 +20,7 @@ use Psalm\Type\Atomic\TCapabilities;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClassStringMap;
 use Psalm\Type\Atomic\TDecimalIntString;
+use Psalm\Type\Atomic\TDependentGetClass;
 use Psalm\Type\Atomic\TEmptyMixed;
 use Psalm\Type\Atomic\TEnumCase;
 use Psalm\Type\Atomic\TFalse;
@@ -86,6 +87,26 @@ use const ARRAY_FILTER_USE_BOTH;
  */
 final class TypeCombiner
 {
+    /**
+     * Combines the parts of a declared type. A type variable that stands for `never` until bound adds no value to a
+     * union, but what is passed for a param of that type (`T|null`) still binds it.
+     *
+     * @psalm-external-mutation-free
+     * @param non-empty-list<Atomic> $types
+     */
+    public static function combineKeepingNeverBoundVariables(array $types, ?Codebase $codebase = null): Union
+    {
+        $combined = self::combine($types, $codebase);
+
+        foreach ($types as $type) {
+            if ($type instanceof TTypeVariable && $type->isNeverBound() && !$combined->hasType($type->getKey())) {
+                $combined = $combined->getBuilder()->addType($type)->freeze();
+            }
+        }
+
+        return $combined;
+    }
+
     /**
      * Combines types together
      *  - so `int + string = int|string`
@@ -185,6 +206,8 @@ final class TypeCombiner
                     && $combination->named_object_types['Traversable']->from_docblock)
             )
             && !$combination->extra_types
+            // a non-empty array is not any iterable: the union keeps it apart from the Traversable
+            && !$combination->array_always_filled
         ) {
             $array_param_types = $combination->array_type_params;
             $traversable_param_types = $combination->builtin_type_params['Traversable']
@@ -258,14 +281,14 @@ final class TypeCombiner
                 $new_types[] = new TIterable($generic_type_params, [], $from_docblock);
             } else {
                 /** @psalm-suppress ArgumentTypeCoercion Caused by the PropertyTypeCoercion above */
-                $generic_object = new TGenericObject(
+                $generic_object = (new TGenericObject(
                     $generic_type,
                     $generic_type_params,
                     false,
                     false,
                     $combination->extra_types,
                     $from_docblock,
-                );
+                ))->setProjections($combination->getProjections($generic_type));
                 $new_types[] = $generic_object;
 
                 if ($combination->named_object_types) {
@@ -275,6 +298,7 @@ final class TypeCombiner
         }
 
         foreach ($combination->object_type_params as $generic_type => $generic_type_params) {
+            $projections = $combination->getProjections($generic_type);
             $generic_type = substr($generic_type, 0, strcspn($generic_type, '<['));
 
             /** @psalm-suppress ArgumentTypeCoercion Caused by the PropertyTypeCoercion above */
@@ -288,7 +312,7 @@ final class TypeCombiner
             ))->setIsStatic(
                 $combination->object_static[$generic_type] ?? false,
                 $combination->object_static_resolved[$generic_type] ?? false,
-            );
+            )->setProjections($projections);
         }
 
         if ($combination->class_string_types) {
@@ -755,6 +779,22 @@ final class TypeCombiner
             return null;
         }
 
+        if ($type instanceof TGenericObject) {
+            $combination->object_member_counts[$type_key] = ($combination->object_member_counts[$type_key] ?? 0) + 1;
+
+            foreach ($type->getProjections() as $i => $projection) {
+                if ($projection === TypeArgumentProjection::Omitted) {
+                    $combination->object_omitted_counts[$type_key][$i]
+                        = ($combination->object_omitted_counts[$type_key][$i] ?? 0) + 1;
+                }
+
+                // the union holds what any of its types holds: a `*` holds more than a left out argument
+                if (($combination->object_projections[$type_key][$i] ?? null) !== TypeArgumentProjection::Star) {
+                    $combination->object_projections[$type_key][$i] = $projection;
+                }
+            }
+        }
+
         if (($type instanceof TGenericObject && ($type->value === 'Traversable' || $type->value === 'Generator'))
             || ($type instanceof TIterable && $type->has_docblock_params)
             || ($type instanceof TArray && $type_key === 'iterable')
@@ -1178,6 +1218,27 @@ final class TypeCombiner
         return null;
     }
 
+    /**
+     * The string type too many literals are combined into: as specific as all of them are
+     *
+     * @param array<TLiteralString> $literals
+     * @psalm-pure
+     */
+    private static function getStringOfLiterals(array $literals): TString
+    {
+        $non_falsy = true;
+
+        foreach ($literals as $literal) {
+            if ($literal->value === '') {
+                return new TString();
+            }
+
+            $non_falsy = $non_falsy && $literal->value !== '0';
+        }
+
+        return $non_falsy ? new TNonFalsyString() : new TNonEmptyString();
+    }
+
     private static function scrapeStringProperties(
         string $type_key,
         Atomic $type,
@@ -1185,6 +1246,28 @@ final class TypeCombiner
         ?Codebase $codebase,
         int $literal_limit,
     ): void {
+        // beside other strings, the class name `get_class()` gives is a non-falsy string
+        $existing_string = $combination->value_types['string'] ?? null;
+        $is_class_string = $type instanceof TClassString || $type instanceof TLiteralClassString;
+
+        if ($existing_string instanceof TDependentGetClass
+            && !$type instanceof TDependentGetClass
+            && !$is_class_string
+        ) {
+            $combination->value_types['string'] = new TNonFalsyString();
+        }
+
+        if ($type instanceof TDependentGetClass
+            && (($existing_string !== null && !$existing_string instanceof TDependentGetClass)
+                || array_any(
+                    $combination->strings ?? [],
+                    static fn(TLiteralString $string): bool => !$string instanceof TLiteralClassString,
+                ))
+        ) {
+            $type = new TNonFalsyString();
+            $type_key = 'string';
+        }
+
         if ($type instanceof TCallableString && isset($combination->value_types['callable[impure]'])) {
             return;
         }
@@ -1237,6 +1320,7 @@ final class TypeCombiner
             } else {
                 $shared_classlikes = $codebase ? self::getSharedTypes($combination, $codebase) : [];
 
+                $literals = $combination->strings ?? [];
                 $had_literals = $combination->strings !== null;
                 $combination->strings = null;
 
@@ -1310,6 +1394,8 @@ final class TypeCombiner
                     && $type->value !== ''
                 ) {
                     // do nothing
+                } elseif ($had_literals && !isset($combination->value_types['string'])) {
+                    $combination->value_types['string'] = self::getStringOfLiterals([...$literals, $type]);
                 } else {
                     $combination->value_types['string'] = new TString();
                 }
@@ -1462,16 +1548,21 @@ final class TypeCombiner
                         && $combination->value_types['string']::class === TNonEmptyString::class
                     ) {
                         // do nothing
-                    } elseif (($type::class === TNonEmptyString::class
-                            || $type::class === TNumericString::class)
+                    } elseif ($type::class === TNonEmptyString::class
                         && $combination->value_types['string']::class === TNonFalsyString::class
                     ) {
                         $combination->value_types['string'] = $type;
                     } elseif ($type::class === TNonFalsyString::class
-                        && ($combination->value_types['string']::class === TNonEmptyString::class
-                            || $combination->value_types['string']::class === TNumericString::class)
+                        && $combination->value_types['string']::class === TNonEmptyString::class
                     ) {
                         // do nothing
+                    } elseif ((($type::class === TNumericString::class
+                                && $combination->value_types['string']::class === TNonFalsyString::class)
+                            || ($type::class === TNonFalsyString::class
+                                && $combination->value_types['string']::class === TNumericString::class))
+                    ) {
+                        // 'abc' isn't numeric, and '0' is numeric but falsy
+                        $combination->value_types['string'] = new TNonEmptyString();
                     } elseif (($type::class === TNonEmptyString::class
                             || $type::class === TNonFalsyString::class)
                         && $combination->value_types['string']::class === TNonEmptyLowercaseString::class
@@ -1936,6 +2027,7 @@ final class TypeCombiner
             $objectlike_generic_type = null;
 
             $objectlike_keys = [];
+            $class_string_keys = array_filter($combination->objectlike_class_string_keys);
 
             foreach ($combination->objectlike_entries as $property_name => $property_type) {
                 $objectlike_generic_type = Type::combineUnionTypes(
@@ -1950,7 +2042,7 @@ final class TypeCombiner
 
                 if (is_int($property_name)) {
                     $objectlike_keys[$property_name] = new TLiteralInt($property_name, $from_docblock);
-                } elseif ($type instanceof TKeyedArray && isset($type->class_strings[$property_name])) {
+                } elseif (isset($class_string_keys[$property_name])) {
                     $objectlike_keys[$property_name] = new TLiteralClassString($property_name, $from_docblock);
                 } else {
                     $objectlike_keys[$property_name] = Type::getAtomicStringFromLiteral($property_name, $from_docblock);

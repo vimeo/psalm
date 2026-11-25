@@ -90,6 +90,21 @@ final class DateTimeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'getTimezoneOfAnImmutableDateTimeMayBeFalse' => [
+                'code' => '<?php
+                    $mutable = new DateTime("now");
+                    $immutable = new DateTimeImmutable("now");
+                    $interface = rand(0, 1) ? $mutable : $immutable;
+
+                    $a = $mutable->getTimezone();
+                    $b = $immutable->getTimezone();
+                    $c = $interface->getTimezone();',
+                'assertions' => [
+                    '$a===' => 'DateTimeZone|false',
+                    '$b===' => 'DateTimeZone|false',
+                    '$c===' => 'DateTimeZone|false',
+                ],
+            ],
             'modify' => [
                 'code' => '<?php
                     /**

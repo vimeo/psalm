@@ -16,9 +16,11 @@ use Psalm\Internal\Analyzer\AttributesAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeNameOptions;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
+use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
+use Psalm\Internal\Codebase\PhpDeprecations;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TypeExpander;
@@ -33,13 +35,16 @@ use Psalm\Issue\InvalidConstantAssignmentValue;
 use Psalm\Issue\InvalidOverride;
 use Psalm\Issue\InvalidStringClass;
 use Psalm\Issue\LessSpecificClassConstantType;
+use Psalm\Issue\MissingOverrideAttribute;
 use Psalm\Issue\NonStaticSelfCall;
 use Psalm\Issue\OverriddenFinalConstant;
 use Psalm\Issue\OverriddenInterfaceConstant;
 use Psalm\Issue\ParentNotFound;
 use Psalm\Issue\ParseError;
+use Psalm\Issue\UndefinedClass;
 use Psalm\Issue\UndefinedConstant;
 use Psalm\IssueBuffer;
+use Psalm\Storage\AttributeStorage;
 use Psalm\Storage\ClassConstantStorage;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Type;
@@ -49,6 +54,7 @@ use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
@@ -56,7 +62,9 @@ use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Union;
 use ReflectionProperty;
 
+use function array_values;
 use function assert;
+use function count;
 use function explode;
 use function in_array;
 use function ltrim;
@@ -159,23 +167,27 @@ final class ClassConstAnalyzer
                     $statements_analyzer->getAliases(),
                 );
 
-                if ($stmt->name instanceof PhpParser\Node\Identifier) {
-                    if ((!$context->inside_class_exists || $stmt->name->name !== 'class')
-                        && !isset($context->phantom_classes[strtolower($fq_class_name)])
-                        // PHP allows the name of a class that is missing, such as in the message about it
-                        && ($stmt->name->name !== 'class'
-                            || !isset($context->negated_phantom_classes[strtolower($fq_class_name)]))
-                    ) {
-                        if (ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
-                            $statements_analyzer,
-                            $fq_class_name,
-                            new CodeLocation($statements_analyzer->getSource(), $stmt->class),
-                            $context,
-                            $statements_analyzer->getSuppressedIssues(),
-                            new ClassLikeNameOptions(false, true, context: $context),
-                        ) === false) {
-                            return true;
-                        }
+                $is_class_name = $stmt->name instanceof PhpParser\Node\Identifier && $stmt->name->name === 'class';
+
+                if ((!$context->inside_class_exists || !$is_class_name)
+                    && !isset($context->phantom_classes[strtolower($fq_class_name)])
+                    // PHP allows the name of a class that is missing, such as in the message about it
+                    && (!$is_class_name || !isset($context->negated_phantom_classes[strtolower($fq_class_name)]))
+                ) {
+                    if (ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
+                        $statements_analyzer,
+                        $fq_class_name,
+                        new CodeLocation($statements_analyzer->getSource(), $stmt->class),
+                        $context,
+                        $statements_analyzer->getSuppressedIssues(),
+                        new ClassLikeNameOptions(
+                            false,
+                            true,
+                            context: $context,
+                            required_at_runtime: !$is_class_name,
+                        ),
+                    ) === false) {
+                        return true;
                     }
                 }
             }
@@ -267,7 +279,16 @@ final class ClassConstAnalyzer
 
                 $context->inside_general_use = $was_inside_general_use;
 
-                return $ret;
+                return $ret && self::analyzeLiteralNamedFetch(
+                    $statements_analyzer,
+                    $stmt,
+                    $stmt->name,
+                    $context,
+                    $fq_class_name,
+                    $moved_class,
+                    $first_part_lc === 'static',
+                    $first_part_lc === 'static',
+                );
             }
 
             return self::analyzeIdentifiedFetch(
@@ -378,29 +399,19 @@ final class ClassConstAnalyzer
             }
         }
 
-        if ($stmt->class instanceof PhpParser\Node\Expr\Variable) {
-            $fq_class_name = null;
-            $lhs_type_definite_class = null;
-            if ($lhs_type->isSingle()) {
-                $atomic_type = $lhs_type->getSingleAtomic();
-                if ($atomic_type instanceof TNamedObject || $atomic_type instanceof TLiteralClassString) {
-                    $fq_class_name = $atomic_type->value;
-                    $lhs_type_definite_class = $atomic_type->definite_class;
-                } elseif ($atomic_type::class === TLiteralString::class
-                    && $codebase->config->allow_string_standin_for_class
-                ) {
-                    $class_name = ltrim($atomic_type->value, '\\');
-                    if ($codebase->classlike_storage_provider->has($class_name)) {
-                        $fq_class_name = $class_name;
-                        $lhs_type_definite_class = true;
-                    }
-                }
-            }
+        if (!$stmt->class instanceof PhpParser\Node\Expr\Variable) {
+            return true;
+        }
 
-            if ($fq_class_name === null || $lhs_type_definite_class === null) {
-                return true;
-            }
+        $lhs_classes = self::getClassesOfAVariable($statements_analyzer, $codebase, $stmt->class, $lhs_type);
 
+        if ($lhs_classes === null) {
+            return true;
+        }
+
+        $stmt_types = [];
+
+        foreach ($lhs_classes as [$fq_class_name, $lhs_type_definite_class, $lhs_is_static]) {
             $fq_class_name = $codebase->classlikes->getUnAliasedName($fq_class_name);
 
             $moved_class = false;
@@ -415,8 +426,10 @@ final class ClassConstAnalyzer
                 );
             }
 
-            // if we're ignoring that the class doesn't exist, exit anyway
+            // if we're ignoring that the class doesn't exist, exit anyway, and without the type of the classes before
             if (!$codebase->classlikes->classOrInterfaceOrEnumExists($fq_class_name, null, $context)) {
+                $statements_analyzer->node_data->setType($stmt, Type::getMixed());
+
                 return true;
             }
 
@@ -430,20 +443,128 @@ final class ClassConstAnalyzer
                 );
             }
 
+            // a class whose constant is not typed leaves the fetch mixed
+            $statements_analyzer->node_data->setType($stmt, Type::getMixed());
+
             if (!$stmt->name instanceof PhpParser\Node\Identifier) {
+                $analyzed = self::analyzeLiteralNamedFetch(
+                    $statements_analyzer,
+                    $stmt,
+                    $stmt->name,
+                    $context,
+                    $fq_class_name,
+                    $moved_class,
+                    !$lhs_type_definite_class,
+                    $lhs_is_static,
+                );
+            } else {
+                $analyzed = self::analyzeIdentifiedFetch(
+                    $statements_analyzer,
+                    $stmt,
+                    $stmt->name,
+                    $context,
+                    $fq_class_name,
+                    $moved_class,
+                    !$lhs_type_definite_class,
+                );
+            }
+
+            if ($analyzed === false) {
+                return false;
+            }
+
+            $stmt_types[] = $statements_analyzer->node_data->getType($stmt) ?? Type::getMixed();
+        }
+
+        // the constant of each class the expression may be, mixed as soon as one of them is not typed
+        if (count($stmt_types) > 1) {
+            $statements_analyzer->node_data->setType($stmt, Type::combineUnionTypeArray($stmt_types, $codebase));
+        }
+
+        return true;
+    }
+
+    /**
+     * Analyses `Foo::{$name}` (PHP 8.3) like `Foo::NAME` when `$name` holds literal names
+     *
+     * @param bool $may_be_a_subclass whether the constant read may be the one of a subclass of $fq_class_name
+     * @param bool $is_static whether the class is `static`, as in `static::{$name}` or `$this::{$name}`
+     */
+    private static function analyzeLiteralNamedFetch(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\ClassConstFetch $stmt,
+        PhpParser\Node\Expr $name,
+        Context $context,
+        string $fq_class_name,
+        bool $moved_class,
+        bool $may_be_a_subclass,
+        bool $is_static,
+    ): bool {
+        $name_type = $statements_analyzer->node_data->getType($name);
+
+        if ($name_type === null || !$name_type->allStringLiterals()) {
+            return true;
+        }
+
+        $const_types = [];
+
+        foreach ($name_type->getAtomicTypes() as $atomic) {
+            if (!$atomic instanceof TLiteralString) {
                 return true;
             }
 
-            return self::analyzeIdentifiedFetch(
+            // `Foo::{'class'}` is `Foo::class`
+            if (strtolower($atomic->value) === 'class') {
+                $const_types[] = new Union([
+                    $may_be_a_subclass
+                        ? new TClassString($fq_class_name, new TNamedObject($fq_class_name, $is_static))
+                        : new TLiteralClassString($fq_class_name, true),
+                ]);
+
+                continue;
+            }
+
+            if ($atomic->value === '') {
+                IssueBuffer::maybeAdd(
+                    new UndefinedConstant(
+                        'Constant ' . $fq_class_name . ':: is not defined',
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
+
+                return true;
+            }
+
+            // a fetch of its own for each name, so that an undefined one leaves its fetch without a type
+            $identifier = new PhpParser\Node\Identifier($atomic->value, $name->getAttributes());
+            $fetch = new PhpParser\Node\Expr\ClassConstFetch($stmt->class, $identifier, $stmt->getAttributes());
+
+            if (!self::analyzeIdentifiedFetch(
                 $statements_analyzer,
-                $stmt,
-                $stmt->name,
+                $fetch,
+                $identifier,
                 $context,
                 $fq_class_name,
                 $moved_class,
-                !$lhs_type_definite_class,
-            );
+                $may_be_a_subclass,
+            )) {
+                return false;
+            }
+
+            $const_type = $statements_analyzer->node_data->getType($fetch);
+
+            if ($const_type === null) {
+                return true;
+            }
+
+            $const_types[] = $const_type;
         }
+
+        $statements_analyzer->node_data->setType(
+            $stmt,
+            Type::combineUnionTypeArray($const_types, $statements_analyzer->getCodebase()),
+        );
 
         return true;
     }
@@ -643,6 +764,25 @@ final class ClassConstAnalyzer
                 ),
                 $statements_analyzer->getSuppressedIssues(),
             );
+        } elseif (!$const_class_storage->user_defined) {
+            $builtin_message = PhpDeprecations::getClassConstantMessage(
+                [
+                    $const_class_storage->name,
+                    ...array_values($const_class_storage->parent_classes),
+                    ...array_values($const_class_storage->class_implements),
+                ],
+                $const_name,
+            );
+
+            if ($builtin_message !== null) {
+                IssueBuffer::maybeAdd(
+                    new DeprecatedConstant(
+                        $builtin_message,
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
+            }
         }
 
         $class_keyword = $stmt->class instanceof PhpParser\Node\Name
@@ -769,6 +909,7 @@ final class ClassConstAnalyzer
     ): void {
         if ($codebase->analysis_php_version_id >= 8_06_00) {
             self::checkOverrideAttributes($class_storage, $codebase);
+            self::checkMissingOverrideAttributes($class_storage, $codebase);
         }
 
         foreach ($class_storage->constants as $const_name => $const_storage) {
@@ -787,18 +928,25 @@ final class ClassConstAnalyzer
             if ($parent_const_storage !== null) {
                 assert($parent_classlike_storage !== null);
 
+                // without a docblock type, the type the parent constant declares natively is what overrides must keep
+                $parent_type = $parent_const_storage->type_location === null && $parent_const_storage->signature_type
+                    ? $parent_const_storage->signature_type
+                    : $parent_const_storage->type;
+
+                $reported_type = false;
+
                 // Check covariance
                 if ($const_storage->type !== null
-                    && $parent_const_storage->type !== null
+                    && $parent_type !== null
                     && !UnionTypeComparator::isContainedBy(
                         $codebase,
                         $const_storage->type,
-                        $parent_const_storage->type,
+                        $parent_type,
                     )
                 ) {
                     if (UnionTypeComparator::isContainedBy(
                         $codebase,
-                        $parent_const_storage->type,
+                        $parent_type,
                         $const_storage->type,
                     )) {
                         // Contravariant
@@ -806,7 +954,7 @@ final class ClassConstAnalyzer
                             new LessSpecificClassConstantType(
                                 "The type \"{$const_storage->type->getId()}\" for {$class_storage->name}::"
                                     . "{$const_name} is more general than the type "
-                                    . "\"{$parent_const_storage->type->getId()}\" inherited from "
+                                    . "\"{$parent_type->getId()}\" inherited from "
                                     . "{$parent_classlike_storage->name}::{$const_name}",
                                 $type_location,
                                 "{$class_storage->name}::{$const_name}",
@@ -819,7 +967,7 @@ final class ClassConstAnalyzer
                             new InvalidClassConstantType(
                                 "The type \"{$const_storage->type->getId()}\" for {$class_storage->name}::"
                                     . "{$const_name} does not satisfy the type "
-                                    . "\"{$parent_const_storage->type->getId()}\" inherited from "
+                                    . "\"{$parent_type->getId()}\" inherited from "
                                     . "{$parent_classlike_storage->name}::{$const_name}",
                                 $type_location,
                                 "{$class_storage->name}::{$const_name}",
@@ -827,6 +975,35 @@ final class ClassConstAnalyzer
                             $const_storage->suppressed_issues,
                         );
                     }
+
+                    $reported_type = true;
+                }
+
+                // PHP requires an override of a natively typed constant to declare a native type the parent's contains
+                $parent_signature_type = $parent_const_storage->signature_type;
+                if (!$reported_type
+                    && $parent_signature_type !== null
+                    && $parent_const_storage !== $const_storage
+                    && ($const_storage->signature_type === null
+                        || !UnionTypeComparator::isContainedBy(
+                            $codebase,
+                            $const_storage->signature_type,
+                            $parent_signature_type,
+                        ))
+                ) {
+                    IssueBuffer::maybeAdd(
+                        new InvalidClassConstantType(
+                            ($const_storage->signature_type === null
+                                ? "{$class_storage->name}::{$const_name} must declare a native type contained in"
+                                : "The native type \"{$const_storage->signature_type->getId()}\" of "
+                                    . "{$class_storage->name}::{$const_name} is not contained in")
+                                . " the native type \"{$parent_signature_type->getId()}\" of "
+                                . "{$parent_classlike_storage->name}::{$const_name}",
+                            $type_location,
+                            "{$class_storage->name}::{$const_name}",
+                        ),
+                        $const_storage->suppressed_issues,
+                    );
                 }
 
                 // Check overridden final
@@ -896,6 +1073,140 @@ final class ClassConstAnalyzer
                 );
             }
         }
+    }
+
+    /**
+     * PHP 8.6: a constant or enum case that overrides a public or protected constant of a parent class or an
+     * interface needs #[\Override], as a method does. A constant inherited as is and one a trait gave the class are
+     * not declared by it.
+     */
+    private static function checkMissingOverrideAttributes(ClassLikeStorage $class_storage, Codebase $codebase): void
+    {
+        if (!$codebase->config->ensure_override_attribute) {
+            return;
+        }
+
+        foreach ($class_storage->constants as $const_name => $const_storage) {
+            if ($const_storage->location === null
+                || self::hasOverrideAttribute($const_storage->attributes)
+                || !self::redeclaresConstant($class_storage, $const_name, $const_storage, $codebase)
+            ) {
+                continue;
+            }
+
+            foreach ($class_storage->used_traits as $used_trait) {
+                $trait_const_location = $codebase->classlikes->getStorageFor($used_trait)
+                    ?->constants[$const_name]->location ?? null;
+
+                if ($trait_const_location !== null
+                    && $trait_const_location->getHash() === $const_storage->location->getHash()
+                ) {
+                    continue 2;
+                }
+            }
+
+            self::reportMissingOverrideAttribute(
+                'Class constant ' . $class_storage->name . '::' . $const_name,
+                $const_storage->location,
+                // the location of a constant is its item, not the statement the attribute goes before
+                null,
+                $const_storage->suppressed_issues,
+                $codebase,
+            );
+        }
+
+        foreach ($class_storage->enum_cases as $case_name => $case_storage) {
+            if (!self::hasOverrideAttribute($case_storage->attributes)
+                && self::redeclaresConstant($class_storage, $case_name, null, $codebase)
+            ) {
+                self::reportMissingOverrideAttribute(
+                    'Enum case ' . $class_storage->name . '::' . $case_name,
+                    $case_storage->stmt_location,
+                    $case_storage->stmt_location,
+                    $class_storage->suppressed_issues,
+                    $codebase,
+                );
+            }
+        }
+    }
+
+    /**
+     * @param list<AttributeStorage> $attributes
+     * @psalm-pure
+     */
+    private static function hasOverrideAttribute(array $attributes): bool
+    {
+        foreach ($attributes as $attribute) {
+            if ($attribute->fq_class_name === 'Override') {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @param array<string> $suppressed_issues
+     */
+    private static function reportMissingOverrideAttribute(
+        string $member,
+        CodeLocation $location,
+        ?CodeLocation $stmt_location,
+        array $suppressed_issues,
+        Codebase $codebase,
+    ): void {
+        IssueBuffer::maybeAdd(
+            new MissingOverrideAttribute($member . ' should have the "Override" attribute', $location),
+            $suppressed_issues,
+            true,
+        );
+
+        if ($codebase->alter_code
+            && $stmt_location !== null
+            && isset(ProjectAnalyzer::getInstance()->getIssuesToFix()['MissingOverrideAttribute'])
+        ) {
+            $idx = $stmt_location->getSelectionBounds()[0];
+            FileManipulationBuffer::add($stmt_location->file_path, [
+                new FileManipulation($idx, $idx, "#[\\Override]\n", true),
+            ]);
+        }
+    }
+
+    /**
+     * Whether a public or protected constant of the same name, other than this one, is in a parent class or an
+     * interface
+     *
+     * @psalm-capabilities read-props
+     */
+    private static function redeclaresConstant(
+        ClassLikeStorage $class_storage,
+        string $const_name,
+        ?ClassConstantStorage $const_storage,
+        Codebase $codebase,
+    ): bool {
+        $overrides = false;
+
+        foreach ([
+            ...$class_storage->parent_classes,
+            ...$class_storage->class_implements,
+            ...$class_storage->parent_interfaces,
+        ] as $ancestor) {
+            $inherited = $codebase->classlikes->getStorageFor($ancestor)?->constants[$const_name] ?? null;
+
+            if ($inherited === null) {
+                continue;
+            }
+
+            if ($inherited === $const_storage) {
+                return false;
+            }
+
+            if ($inherited->visibility !== ClassLikeAnalyzer::VISIBILITY_PRIVATE) {
+                $overrides = true;
+            }
+        }
+
+        return $overrides;
     }
 
     /**
@@ -981,7 +1292,9 @@ final class ClassConstAnalyzer
             if ($parent_class_storage !== null && $parent_const_storage !== null) {
                 if ($const_storage->location !== null && $interface_const_storage !== null) {
                     assert($parent_classlike_storage !== null);
-                    if (!isset($parent_class_storage->class_implements[strtolower($parent_classlike_storage->name)])) {
+                    if (!isset($parent_class_storage->class_implements[strtolower($parent_classlike_storage->name)])
+                        && $interface_const_storage !== $parent_const_storage
+                    ) {
                         IssueBuffer::maybeAdd(
                             new AmbiguousConstantInheritance(
                                 "Ambiguous inheritance of {$class_storage->name}::{$const_name} from "
@@ -1024,5 +1337,51 @@ final class ClassConstAnalyzer
             return [$parent_classlike_storage, $parent_const_storage];
         }
         return null;
+    }
+
+    /**
+     * Each class the variable may be an object or a name of, or null when one of its types is none of them. PHP fails
+     * on a constant fetched on null, as on a static call: the null of a union with classes is reported, and the other
+     * classes are checked
+     *
+     * @return list<array{string, bool, bool}>|null
+     */
+    private static function getClassesOfAVariable(
+        StatementsAnalyzer $statements_analyzer,
+        Codebase $codebase,
+        PhpParser\Node\Expr $class,
+        Union $lhs_type,
+    ): ?array {
+        $lhs_classes = [];
+
+        foreach ($lhs_type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TNamedObject || $atomic_type instanceof TLiteralClassString) {
+                $lhs_classes[] = [
+                    $atomic_type->value,
+                    $atomic_type->definite_class,
+                    $atomic_type instanceof TNamedObject && $atomic_type->is_static,
+                ];
+            } elseif ($atomic_type::class === TLiteralString::class
+                && $codebase->config->allow_string_standin_for_class
+                && $codebase->classlike_storage_provider->has(ltrim($atomic_type->value, '\\'))
+            ) {
+                $lhs_classes[] = [ltrim($atomic_type->value, '\\'), true, false];
+            } elseif (!$atomic_type instanceof TNull || $lhs_type->isNull()) {
+                return null;
+            }
+        }
+
+        if ($lhs_type->isNullable() && !$lhs_type->ignore_nullable_issues) {
+            IssueBuffer::maybeAdd(
+                new UndefinedClass(
+                    'Type null cannot be used as a class',
+                    new CodeLocation($statements_analyzer->getSource(), $class),
+                    'null',
+                ),
+                $statements_analyzer->getSuppressedIssues(),
+            );
+        }
+
+        return $lhs_classes;
     }
 }

@@ -73,6 +73,45 @@ final class ReturnTypeTest extends TestCase
         );
     }
 
+    public function testStringableReturnedForANativeStringUnderStrictTypes(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                declare(strict_types=1);
+
+                final class S {
+                    public function __toString(): string {
+                        return "s";
+                    }
+                }
+
+                function f(S $s): string {
+                    return $s;
+                }
+
+                final class A {
+                    public function __toString(): string {
+                        return new S();
+                    }
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        $types = array_column(IssueBuffer::getIssuesDataForFile($file_path), 'type');
+        sort($types);
+
+        self::assertSame(
+            ['InvalidReturnStatement', 'InvalidReturnStatement', 'InvalidReturnType', 'InvalidToString'],
+            $types,
+        );
+    }
+
     public function testUnicodeEscapeOfADocblockStringLiteralIsNotTheInternalEncoding(): void
     {
         $encoding = mb_internal_encoding();
@@ -97,6 +136,157 @@ final class ReturnTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'returnTypeIsInheritedWhenTheImplementationDocumentsOnlyItsParams' => [
+                'code' => '<?php
+                    interface Node {}
+                    final class Leaf implements Node {}
+                    final class Message {}
+
+                    /** @template T of Node */
+                    interface Handler {
+                        /**
+                         * @param T $node
+                         * @return list<Message>
+                         */
+                        public function handle(Node $node): array;
+                    }
+
+                    /** @implements Handler<Leaf> */
+                    final class LeafHandler implements Handler {
+                        /** @param Leaf $node */
+                        #[Override]
+                        public function handle(Node $node): array {
+                            return [new Message()];
+                        }
+                    }
+
+                    $messages = (new LeafHandler())->handle(new Leaf());',
+                'assertions' => [
+                    '$messages===' => 'list<Message>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'returnTypeWithATemplateOfTheOverriddenMethodIsNotInheritedByAMethodDocumentingItsParams' => [
+                'code' => '<?php
+                    class P {
+                        /**
+                         * @template T
+                         * @param T $x
+                         * @return list<T>
+                         */
+                        public function f($x): array {
+                            return [$x];
+                        }
+                    }
+
+                    final class C extends P {
+                        /** @param int $x */
+                        #[Override]
+                        public function f($x): array {
+                            return [$x];
+                        }
+                    }
+
+                    $d = (new C())->f(3);',
+                'assertions' => [
+                    '$d===' => 'array<array-key, mixed>',
+                ],
+                'ignored_issues' => ['LessSpecificImplementedReturnType', 'MoreSpecificImplementedParamType'],
+                'php_version' => '8.3',
+            ],
+            'returnTypeWithATemplateOfTheOverriddenMethodMeetsTheTemplateOfTheOverridingMethod' => [
+                'code' => '<?php
+                    class P {
+                        /**
+                         * @template T
+                         * @param T $x
+                         * @return list<T>
+                         */
+                        public function f($x): array {
+                            return [$x];
+                        }
+                    }
+
+                    final class C extends P {
+                        /**
+                         * @template U of int
+                         * @param U $x
+                         */
+                        #[Override]
+                        public function f($x): array {
+                            return [$x];
+                        }
+                    }
+
+                    $d = (new C())->f(3);',
+                'assertions' => [
+                    '$d===' => 'array<array-key, mixed>',
+                ],
+                'ignored_issues' => ['LessSpecificImplementedReturnType', 'MoreSpecificImplementedParamType'],
+                'php_version' => '8.3',
+            ],
+            'nativeReturnTypeOfTheMethodIsKeptWhenTheOverriddenOneDocumentsOnlyItsParams' => [
+                'code' => '<?php
+                    interface Console {
+                        /** @param positive-int $n */
+                        public function times(int $n): self;
+                        /** @param positive-int $n */
+                        public function twice(int $n): self;
+                    }
+
+                    trait HasTimes {
+                        /** @param positive-int $n */
+                        public function times(int $n): static {
+                            return $this;
+                        }
+
+                        /** @param positive-int $n */
+                        public function twice(int $n): static {
+                            return $this->times($n);
+                        }
+                    }
+
+                    final class GenericConsole implements Console {
+                        use HasTimes;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingOverrideAttribute'],
+                'php_version' => '8.3',
+            ],
+            'nativeReturnTypeOfTheMethodIsKeptWhenTheOverriddenClassMethodDocumentsOnlyItsParams' => [
+                'code' => '<?php
+                    class Console {
+                        /** @param positive-int $n */
+                        public function times(int $n): self {
+                            return $this;
+                        }
+
+                        /** @param positive-int $n */
+                        public function twice(int $n): self {
+                            return $this;
+                        }
+                    }
+
+                    trait HasTimes {
+                        /** @param positive-int $n */
+                        public function times(int $n): static {
+                            return $this;
+                        }
+
+                        /** @param positive-int $n */
+                        public function twice(int $n): static {
+                            return $this->times($n);
+                        }
+                    }
+
+                    final class GenericConsole extends Console {
+                        use HasTimes;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingOverrideAttribute'],
+                'php_version' => '8.3',
+            ],
             'returnTypeIsInheritedFromTwoInterfacesThatDocumentTheSameOne' => [
                 'code' => '<?php
                     interface InstanceHandler {
@@ -119,6 +309,55 @@ final class ReturnTypeTest extends TestCase
                     $class = (new Handler())->getClass();',
                 'assertions' => [
                     '$class===' => 'class-string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'returnTypeIsInheritedFromTwoGenericInterfacesResolvingToTheSameOne' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface First {
+                        /** @return T */
+                        public function get(): mixed;
+                    }
+
+                    /** @template T */
+                    interface Second {
+                        /** @return T */
+                        public function get(): mixed;
+                    }
+
+                    /**
+                     * @implements First<int>
+                     * @implements Second<int>
+                     */
+                    final class IntHolder implements First, Second {
+                        #[Override]
+                        public function get(): mixed {
+                            return 1;
+                        }
+                    }
+
+                    /**
+                     * @template U
+                     * @implements First<U>
+                     * @implements Second<U>
+                     */
+                    final class Holder implements First, Second {
+                        /** @param U $value */
+                        public function __construct(private mixed $value) {}
+
+                        #[Override]
+                        public function get(): mixed {
+                            return $this->value;
+                        }
+                    }
+
+                    $int = (new IntHolder())->get();
+                    $string = (new Holder("a"))->get();',
+                'assertions' => [
+                    '$int===' => 'int',
+                    '$string===' => '\'a\'',
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.3',
@@ -197,6 +436,30 @@ final class ReturnTypeTest extends TestCase
                     /** @return \'\\\\\\\\\' */
                     function twoBackslashesSingleQuoted(): string {
                         return \'\\\\\\\\\';
+                    }',
+            ],
+            'thisOfAFinalClassIsAnInterfaceItImplementsIntersectedWithStatic' => [
+                'code' => '<?php
+                    interface I {}
+
+                    final class A implements I {
+                        /** @return I&static */
+                        public function get(): I {
+                            return $this;
+                        }
+                    }',
+            ],
+            'thisOfAFinalClassIsAGenericInterfaceItImplementsIntersectedWithStatic' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface I {}
+
+                    /** @implements I<int> */
+                    final class A implements I {
+                        /** @return I<int>&static */
+                        public function get(): I {
+                            return $this;
+                        }
                     }',
             ],
             'docblockStringLiteralWithAUnicodeEscapeWithLeadingZeros' => [
@@ -905,6 +1168,8 @@ final class ReturnTypeTest extends TestCase
                             return $a1;
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedSyntax'],
             ],
             'returnTypeAfterIfElseIfWithThrow' => [
                 'code' => '<?php
@@ -926,6 +1191,8 @@ final class ReturnTypeTest extends TestCase
                             return $a1;
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedSyntax'],
             ],
             'tryCatchReturnType' => [
                 'code' => '<?php
@@ -2744,6 +3011,29 @@ final class ReturnTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'returnTypeDocumentedByTheImplementationIsStillCheckedAgainstTheParent' => [
+                'code' => '<?php
+                    final class Message {}
+
+                    interface Handler {
+                        /** @return list<Message> */
+                        public function handle(string $node): array;
+                    }
+
+                    final class LeafHandler implements Handler {
+                        /**
+                         * @param string $node
+                         * @return array<int, Message>
+                         */
+                        #[Override]
+                        public function handle(string $node): array {
+                            return [];
+                        }
+                    }',
+                'error_message' => 'LessSpecificImplementedReturnType',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
             'returnTypeOfTwoInterfacesThatDocumentDifferentOnesIsNotInherited' => [
                 'code' => '<?php
                     interface First {
@@ -2760,6 +3050,34 @@ final class ReturnTypeTest extends TestCase
                         #[Override]
                         public function getClass(): string {
                             return First::class;
+                        }
+                    }',
+                'error_message' => 'LessSpecificImplementedReturnType',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
+            'returnTypeOfTwoGenericInterfacesResolvingToDifferentOnesIsNotInherited' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface First {
+                        /** @return T */
+                        public function get(): mixed;
+                    }
+
+                    /** @template T */
+                    interface Second {
+                        /** @return T */
+                        public function get(): mixed;
+                    }
+
+                    /**
+                     * @implements First<int>
+                     * @implements Second<string>
+                     */
+                    final class Holder implements First, Second {
+                        #[Override]
+                        public function get(): mixed {
+                            return 1;
                         }
                     }',
                 'error_message' => 'LessSpecificImplementedReturnType',
@@ -2832,6 +3150,32 @@ final class ReturnTypeTest extends TestCase
                         end:
                     }',
                 'error_message' => 'Not all code paths of f end in a return statement',
+            ],
+            'thisOfAFinalClassIsNotAnInterfaceItDoesNotImplementIntersectedWithStatic' => [
+                'code' => '<?php
+                    interface I {}
+
+                    final class A {
+                        /** @return I&static */
+                        public function get(): object {
+                            return $this;
+                        }
+                    }',
+                'error_message' => 'LessSpecificReturnStatement',
+            ],
+            'thisOfAFinalClassIsNotAGenericInterfaceWithOtherTypeArguments' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface I {}
+
+                    /** @implements I<int> */
+                    final class A implements I {
+                        /** @return I<string>&static */
+                        public function get(): I {
+                            return $this;
+                        }
+                    }',
+                'error_message' => 'InvalidReturnStatement',
             ],
             'doWhileLeftByGoto' => [
                 'code' => '<?php
@@ -3000,6 +3344,20 @@ final class ReturnTypeTest extends TestCase
                     /** @return "\t" */
                     function tab(): string {
                         return "\\\\t";
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
+            'sealedShapeMissingARequiredKeyReturned' => [
+                'code' => '<?php
+                    class Base {}
+                    final class Child extends Base {}
+
+                    /**
+                     * @param array{a: Base} $a
+                     * @return array{a: Child, b: int}
+                     */
+                    function f(array $a): array {
+                        return $a;
                     }',
                 'error_message' => 'InvalidReturnStatement',
             ],
@@ -3750,6 +4108,7 @@ final class ReturnTypeTest extends TestCase
                     }
                     PHP,
                 'error_message' => 'InvalidReturnStatement',
+                'error_levels' => ['DeprecatedSyntax'],
             ],
             'finalMethodThatAlwaysThrowsAfterAnotherStatementIsNever' => [
                 'code' => '<?php
@@ -3980,7 +4339,7 @@ final class ReturnTypeTest extends TestCase
                         }
                     }',
                 'error_message' => 'InvalidReturnType',
-                'error_levels' => ['UnusedVariable'],
+                'error_levels' => ['UnusedVariable', 'InvalidArrayOffset'],
             ],
             'codeAfterExhaustiveTypeChecksIsAnalyzed' => [
                 'code' => '<?php
@@ -4020,6 +4379,91 @@ final class ReturnTypeTest extends TestCase
                         }
                     }',
                 'error_message' => 'LessSpecificReturnStatement',
+            ],
+            'possiblyFalseReturnTypeForTrueOrInt' => [
+                'code' => '<?php
+                    /** @psalm-suppress FalsableReturnStatement */
+                    function f(int|false $i): true|int {
+                        return $i;
+                    }',
+                'error_message' => 'InvalidFalsableReturnType',
+                'error_levels' => [],
+                'php_version' => '8.2',
+            ],
+            'possiblyFalseReturnedForTrueOrInt' => [
+                'code' => '<?php
+                    function f(int|false $i): true|int {
+                        return $i;
+                    }',
+                'error_message' => 'FalsableReturnStatement',
+                'error_levels' => [],
+                'php_version' => '8.2',
+            ],
+            'stringableReturnTypeForANonEmptyStringUnderStrictTypes' => [
+                'code' => '<?php
+                    declare(strict_types=1);
+
+                    final class S {
+                        public function __toString(): string {
+                            return "s";
+                        }
+                    }
+
+                    /**
+                     * @return non-empty-string
+                     * @psalm-suppress InvalidReturnStatement
+                     */
+                    function f(S $s): string {
+                        return $s;
+                    }',
+                'error_message' => 'InvalidReturnType',
+            ],
+            'stringableReturnedForANonEmptyStringUnderStrictTypes' => [
+                'code' => '<?php
+                    declare(strict_types=1);
+
+                    final class S {
+                        public function __toString(): string {
+                            return "s";
+                        }
+                    }
+
+                    /** @return non-empty-string */
+                    function f(S $s): string {
+                        return $s;
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
+            'falseReturnedThroughAnIgnoredFalsableReturnType' => [
+                'code' => '<?php
+                    /**
+                     * @return false
+                     * @psalm-ignore-falsable-return
+                     */
+                    function no(): bool {
+                        return false;
+                    }
+
+                    function f(): int {
+                        return no();
+                    }',
+                'error_message' => 'FalsableReturnStatement',
+            ],
+            'stringableReturnedForADocblockStringUnderStrictTypes' => [
+                'code' => '<?php
+                    declare(strict_types=1);
+
+                    final class S {
+                        public function __toString(): string {
+                            return "s";
+                        }
+                    }
+
+                    /** @return string */
+                    function f(S $s) {
+                        return $s;
+                    }',
+                'error_message' => 'ImplicitToStringCast',
             ],
         ];
     }

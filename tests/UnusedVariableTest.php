@@ -58,6 +58,27 @@ final class UnusedVariableTest extends TestCase
     public static function providerValidCodeParse(): array
     {
         return [
+            'variableIncrementedInTheConditionOfAnIfInALoopIsUsed' => [
+                'code' => '<?php
+                    /**
+                     * @param array<string, int> $items
+                     */
+                    function increment(int $remainder, array $items): array {
+                        if ($remainder > 0) {
+                            $i = 0;
+
+                            foreach ($items as &$item) {
+                                if ($i++ >= $remainder) {
+                                    break;
+                                }
+
+                                $item++;
+                            }
+                        }
+
+                        return $items;
+                    }',
+            ],
             'variableUsedInArgumentOfStaticCallOnUndefinedClass' => [
                 'code' => '<?php
                     $foo = "foo";
@@ -77,6 +98,20 @@ final class UnusedVariableTest extends TestCase
                     echo f("x");',
                 'assertions' => [],
                 'ignored_issues' => ['UndefinedClass', 'MixedReturnStatement', 'MixedInferredReturnType'],
+            ],
+            'paramWrittenToAnArrayInAnImpossibleBranchIsUsed' => [
+                'code' => '<?php
+                    function f(int $v): void {
+                        $a = ["test" => null];
+
+                        if ($a["test"] !== null) {
+                            $a["x"] = $v;
+                        }
+
+                        echo $a["test"];
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['TypeDoesNotContainType'],
             ],
             'assignmentBeforeABreakInTheElseIsReadAfterTheIf' => [
                 'code' => '<?php
@@ -759,6 +794,8 @@ final class UnusedVariableTest extends TestCase
                     }
 
                     bar();',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedSyntax'],
             ],
             'foreachReassigned' => [
                 'code' => '<?php
@@ -1722,6 +1759,8 @@ final class UnusedVariableTest extends TestCase
                         $m = new \ReflectionProperty($mock, "bar");
                         $m->setValue([get_class($mock) => "hello"]);
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedMethod'],
             ],
             'defineBeforeAssignmentInConditional' => [
                 'code' => '<?php
@@ -2674,6 +2713,8 @@ final class UnusedVariableTest extends TestCase
 
                         return $arr;
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedFunction'],
             ],
             'memoryFree' => [
                 'code' => '<?php
@@ -3050,13 +3091,37 @@ final class UnusedVariableTest extends TestCase
                         public function offsetUnset(mixed $offset): void { echo "unset"; }
                     }
 
-                    function push(Bag $bag): void { $bag[] = "a"; }                    function set(Bag $bag): void { $bag[1] = "a"; }
+                    function push(Bag $bag): void { $bag[] = "a"; }
+                    function set(Bag $bag): void { $bag[1] = "a"; }
                     function setArrayObject(ArrayObject $object): void { $object["k"] = "a"; }
                     function setLocal(): void { $bag = new Bag(); $bag[] = "a"; }
                     function unsetOffset(Bag $bag): void { unset($bag[1]); }
                     function coalesce(Bag $bag): void { $bag[1] ??= "a"; }
                     function concat(Bag $bag): void { $bag[1] .= "a"; }
                     function byReference(Bag &$bag): void { $bag[] = "a"; }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'arrayAccessItemOfAnArrayWrittenThroughAnOffset' => [
+                'code' => '<?php
+                    /** @implements ArrayAccess<int, string> */
+                    final class Bag implements ArrayAccess {
+                        public function offsetExists(mixed $offset): bool { return false; }
+                        public function offsetGet(mixed $offset): string { return ""; }
+                        public function offsetSet(mixed $offset, mixed $value): void { echo "set"; }
+                        public function offsetUnset(mixed $offset): void { echo "unset"; }
+                    }
+
+                    /** @param array<string, Bag> $bags */
+                    function pushToItem(array $bags): void { $bags["k"][] = "a"; }
+                    /** @param array{k: Bag} $bags */
+                    function pushToShapeItem(array $bags): void { $bags["k"][] = "a"; }
+                    /** @param list<Bag> $bags */
+                    function pushToListItem(array $bags): void { $bags[0][] = "a"; }
+                    /** @param array<string, Bag|list<string>> $items */
+                    function pushToItemMaybeAnObject(array $items): void { $items["k"][] = "a"; }
+                    function pushToLocalItem(): void { $bags = ["k" => new Bag()]; $bags["k"][] = "a"; }',
                 'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.0',
