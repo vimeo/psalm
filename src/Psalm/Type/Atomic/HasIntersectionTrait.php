@@ -8,6 +8,7 @@ use Psalm\Codebase;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
+use Psalm\Internal\Type\TypeTokenizer;
 use Psalm\Type\Atomic;
 
 use function array_map;
@@ -60,21 +61,23 @@ trait HasIntersectionTrait
             return '';
         }
 
-        return '&' . implode(
-            '&',
-            array_map(
-                /**
-                 * @param TNamedObject|TTemplateParam|TIterable|TObjectWithProperties|TCallableObject $extra_type
-                 */
-                static fn(Atomic $extra_type): string => $extra_type->toNamespacedString(
-                    $namespace,
-                    $aliased_classes,
-                    $this_class,
-                    $use_phpdoc_format,
-                ),
-                $this->extra_types,
-            ),
-        );
+        $type_strings = [];
+
+        foreach ($this->extra_types as $extra_type) {
+            $type_string = $extra_type->toNamespacedString(
+                $namespace,
+                $aliased_classes,
+                $this_class,
+                $use_phpdoc_format,
+            );
+
+            // in phpdoc format, a template param is written as its bound, which can be a union
+            $type_strings[] = TypeTokenizer::hasTopLevelOperator($type_string, '|')
+                ? '(' . $type_string . ')'
+                : $type_string;
+        }
+
+        return '&' . implode('&', $type_strings);
     }
 
     /**
