@@ -2259,10 +2259,6 @@
     <InvalidArgument>
       <code><![CDATA[$class_strings]]></code>
       <code><![CDATA[$class_strings]]></code>
-      <code><![CDATA[$extra_params ?? ($sealed
-                    ? null
-                    : [$is_list ? Type::getListKey() : Type::getArrayKey(), Type::getMixed()]
-                )]]></code>
     </InvalidArgument>
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[$const_name]]></code>
