@@ -21,6 +21,22 @@ final class ConditionalReturnTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'unionOfConditionalsOnTheSameTemplateKeepsBoth' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T $value
+                     * @return (T is int ? string : bool)|(T is string ? int : float)
+                     */
+                    function f($value) {
+                        throw new Exception();
+                    }
+
+                    $a = f("a");',
+                'assertions' => [
+                    '$a===' => 'bool|int',
+                ],
+            ],
             'conditionalReturnOnAnArgumentWithoutTypeTakesBothBranches' => [
                 'code' => '<?php
                     /** @return ($value is object ? true : false) */
