@@ -83,7 +83,7 @@ final class StubsGeneratorTest extends TestCase
         self::assertInstanceOf(UnionType::class, $type);
         self::assertSame(
             ['Foo', 'int', 'string'],
-            array_map(static fn(Identifier|Name|IntersectionType $part): string => $part instanceof Identifier ? $part->name : $part->toString(), $type->types),
+            array_map(static fn(Identifier|Name|IntersectionType $part): string => $part instanceof IntersectionType ? '' : $part->toString(), $type->types),
         );
     }
 
