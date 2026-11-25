@@ -1026,7 +1026,7 @@ final class TaintTest extends TestCase
 
             class_alias(Real::class, Aliased::class);
         ');
-        // the methods of a class declared in a condition in a namespace aren't analyzed
+        // a class declared in a condition, which may not be the one that runs
         $global_file_path = self::$src_dir_path . 'global.php';
         $this->addFile($global_file_path, '<?php
             if (\getenv("LEGACY") === false) {
