@@ -18,12 +18,21 @@ class TNonEmptyString extends TString
      * @psalm-pure
      */
     #[Override]
-    public function getId(bool $exact = true, bool $nested = false): string
+    public function getId(bool $exact = true): string
     {
         if (!$exact) {
             return 'string';
         }
 
         return 'non-empty-string';
+    }
+
+    /**
+     * @psalm-pure
+     */
+    #[Override]
+    public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
+    {
+        return false;
     }
 }

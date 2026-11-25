@@ -1,0 +1,54 @@
+<?php
+
+// The taints symfony/http-client-contracts 3 passes along: the URL a request is sent to is an SSRF sink, and what the
+// server sends back, the headers, the body, the info the transport gathers from the response and the chunks streamed,
+// an input source. Loaded when the analysed code uses the package, refining its interfaces (see
+// Config::visitStubFiles()).
+
+namespace Symfony\Contracts\HttpClient;
+
+interface HttpClientInterface
+{
+    /**
+     * @psalm-taint-sink ssrf $url
+     */
+    public function request(string $method, string $url, array $options = []): ResponseInterface;
+}
+
+interface ResponseInterface
+{
+    /**
+     * @return array<string, list<string>>
+     *
+     * @psalm-taint-source input
+     */
+    public function getHeaders(bool $throw = true): array;
+
+    /**
+     * @psalm-taint-source input
+     */
+    public function getContent(bool $throw = true): string;
+
+    /**
+     * @psalm-taint-source input
+     */
+    public function toArray(bool $throw = true): array;
+
+    /**
+     * @psalm-taint-source input
+     */
+    public function getInfo(?string $type = null): mixed;
+}
+
+interface ChunkInterface
+{
+    /**
+     * @psalm-taint-source input
+     */
+    public function getInformationalStatus(): ?array;
+
+    /**
+     * @psalm-taint-source input
+     */
+    public function getContent(): string;
+}

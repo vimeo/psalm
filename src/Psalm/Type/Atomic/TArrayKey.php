@@ -24,6 +24,15 @@ class TArrayKey extends Scalar
     }
 
     /**
+     * @psalm-mutation-free
+     */
+    #[Override]
+    public function getId(bool $exact = true): string
+    {
+        return 'array-key';
+    }
+
+    /**
      * @param array<lowercase-string, string> $aliased_classes
      * @psalm-pure
      */

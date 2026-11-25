@@ -25,6 +25,15 @@ class TScalar extends Scalar
     }
 
     /**
+     * @psalm-mutation-free
+     */
+    #[Override]
+    public function getId(bool $exact = true): string
+    {
+        return 'scalar';
+    }
+
+    /**
      * @param array<lowercase-string, string> $aliased_classes
      * @psalm-pure
      */

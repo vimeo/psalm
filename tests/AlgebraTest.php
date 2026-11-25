@@ -18,7 +18,9 @@ use Psalm\Storage\Assertion;
 use Psalm\Storage\Assertion\Falsy;
 use Psalm\Storage\Assertion\IsIdentical;
 use Psalm\Storage\Assertion\IsIsset;
+use Psalm\Storage\Assertion\IsLooselyEqual;
 use Psalm\Storage\Assertion\IsNotIdentical;
+use Psalm\Storage\Assertion\IsNotLooselyEqual;
 use Psalm\Storage\Assertion\IsNotType;
 use Psalm\Storage\Assertion\IsType;
 use Psalm\Storage\Assertion\NestedAssertions;
@@ -26,9 +28,11 @@ use Psalm\Storage\Assertion\NotNestedAssertions;
 use Psalm\Storage\Assertion\Truthy;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
+use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TString;
 
 use function array_map;
@@ -37,6 +41,7 @@ use function json_encode;
 use function preg_match;
 use function range;
 use function spl_object_id;
+use function str_repeat;
 
 use const JSON_THROW_ON_ERROR;
 
@@ -83,7 +88,7 @@ final class AlgebraTest extends TestCase
         $assertions = ['$s' => [[new IsIdentical(TLiteralString::make("é/\"\\\n"))]]];
         $assertion = $negated ? new NotNestedAssertions($assertions) : new NestedAssertions($assertions);
         self::assertSame(
-            ($negated ? '!@' : '@') . json_encode(['$s' => [["=string(é/\"\\\n)"]]], JSON_THROW_ON_ERROR),
+            ($negated ? '!@' : '@') . json_encode(['$s' => [["=\"é/\\\"\\\\\\n\""]]], JSON_THROW_ON_ERROR),
             (string) $assertion,
         );
     }
@@ -98,6 +103,25 @@ final class AlgebraTest extends TestCase
             (string) ($negated ? new NotNestedAssertions($is_int) : new NestedAssertions($is_int)),
             (string) ($negated ? new NotNestedAssertions($is_not_int) : new NestedAssertions($is_not_int)),
         );
+    }
+
+    public function testEqualityAssertionsOfTypesWithTheSameAssertionStringDiffer(): void
+    {
+        $class_string_a = new TClassString('A', new TNamedObject('A'));
+        $class_string_b = new TClassString('B', new TNamedObject('B'));
+        $long_a = TLiteralString::make(str_repeat('x', 100) . 'a');
+        $long_b = TLiteralString::make(str_repeat('x', 100) . 'b');
+
+        foreach ([IsIdentical::class, IsNotIdentical::class, IsLooselyEqual::class, IsNotLooselyEqual::class] as $class) {
+            foreach ([[$class_string_a, $class_string_b], [$long_a, $long_b]] as [$type_a, $type_b]) {
+                $assertion_a = new $class($type_a);
+                $assertion_b = new $class($type_b);
+
+                self::assertNotSame((string) $assertion_a, (string) $assertion_b);
+                self::assertTrue($assertion_a->getNegation()->isNegationOf($assertion_a));
+                self::assertFalse($assertion_b->getNegation()->isNegationOf($assertion_a));
+            }
+        }
     }
 
     /**

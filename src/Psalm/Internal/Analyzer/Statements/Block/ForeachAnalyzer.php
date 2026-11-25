@@ -42,6 +42,7 @@ use Psalm\Internal\Type\PurityWildcardPaths;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Internal\TypeVisitor\ClassStringMapBoundReplacer;
 use Psalm\Internal\TypeVisitor\TypeVariableResolver;
 use Psalm\Issue\ImpureMethodCall;
 use Psalm\Issue\InvalidDocblock;
@@ -65,7 +66,6 @@ use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallableObject;
 use Psalm\Type\Atomic\TCapabilities;
-use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClassStringMap;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TGenericObject;
@@ -101,7 +101,6 @@ use function in_array;
 use function is_string;
 use function reset;
 use function str_contains;
-use function stripos;
 use function strtolower;
 use function substr;
 
@@ -1377,7 +1376,7 @@ final class ForeachAnalyzer
         // the loop body only runs for the iterable part: null and false are skipped below
 
         $has_valid_iterator = false;
-        $invalid_iterator_types = [];
+        $invalid_iterator_messages = [];
         $raw_object_types = [];
 
         $remaining_atomic_types = array_values($iterator_type->getAtomicTypes());
@@ -1451,25 +1450,19 @@ final class ForeachAnalyzer
 
             if ($iterator_atomic_type instanceof TClassStringMap) {
                 // the key is a class of the bound, and what is stored under it an object of that class
-                $bound = new Union([$iterator_atomic_type->as_type ?? new TObject()]);
-
                 $key_type = Type::combineUnionTypes(
                     $key_type,
-                    new Union([new TClassString($bound->getId(), $iterator_atomic_type->as_type)]),
+                    ClassStringMapBoundReplacer::getKeyType($iterator_atomic_type),
                 );
 
                 $value_type = Type::combineUnionTypes(
                     $value_type,
-                    TemplateInferredTypeReplacer::replace(
-                        $iterator_atomic_type->value_param,
-                        new TemplateResult([], [$iterator_atomic_type->param_name => ['class-string-map' => $bound]]),
-                        $codebase,
-                    ),
+                    ClassStringMapBoundReplacer::getValueType($iterator_atomic_type),
                 );
 
                 $has_valid_iterator = true;
             } elseif ($iterator_atomic_type instanceof Scalar || $iterator_atomic_type instanceof TVoid) {
-                $invalid_iterator_types[] = $iterator_atomic_type->getKey();
+                $invalid_iterator_messages[] = 'Cannot iterate over ' . $iterator_atomic_type->getId(false);
 
                 // what the other types of the iterated value hold is still iterated
                 $value_type = Type::getMixed()->setParentNodes($value_type?->parent_nodes ?? []);
@@ -1613,7 +1606,7 @@ final class ForeachAnalyzer
                         $key_type,
                         $value_type,
                         $has_valid_iterator,
-                        $invalid_iterator_types,
+                        $invalid_iterator_messages,
                         $forwards_send,
                     );
                 } else {
@@ -1672,13 +1665,13 @@ final class ForeachAnalyzer
             }
         }
 
-        if ($invalid_iterator_types) {
+        if ($invalid_iterator_messages) {
+            $message = $invalid_iterator_messages[0];
+
             if ($has_valid_iterator) {
                 IssueBuffer::maybeAdd(
                     new PossiblyInvalidIterator(
-                        stripos($invalid_iterator_types[0], 'generator<') === 0
-                            ? 'Cannot iterate over generator with non-null send() type ' . $invalid_iterator_types[0]
-                            : 'Cannot iterate over ' . $invalid_iterator_types[0],
+                        $message,
                         new CodeLocation($statements_analyzer->getSource(), $expr),
                     ),
                     $statements_analyzer->getSuppressedIssues(),
@@ -1686,9 +1679,7 @@ final class ForeachAnalyzer
             } else {
                 IssueBuffer::maybeAdd(
                     new InvalidIterator(
-                        stripos($invalid_iterator_types[0], 'generator<') === 0
-                            ? 'Cannot iterate over generator with non-null send() type ' . $invalid_iterator_types[0]
-                            : 'Cannot iterate over ' . $invalid_iterator_types[0],
+                        $message,
                         new CodeLocation($statements_analyzer->getSource(), $expr),
                     ),
                     $statements_analyzer->getSuppressedIssues(),
@@ -1696,10 +1687,13 @@ final class ForeachAnalyzer
             }
         }
 
+        $key_type = $key_type ? TypeVariableResolver::resolveTopLevel($key_type, $codebase) : null;
+        $value_type = $value_type ? TypeVariableResolver::resolveTopLevel($value_type, $codebase) : null;
+
         return null;
     }
 
-    /** @param list<string> $invalid_iterator_types */
+    /** @param list<string> $invalid_iterator_messages */
     public static function handleIterable(
         StatementsAnalyzer $statements_analyzer,
         TNamedObject $iterator_atomic_type,
@@ -1709,7 +1703,7 @@ final class ForeachAnalyzer
         ?Union &$key_type,
         ?Union &$value_type,
         bool &$has_valid_iterator,
-        array &$invalid_iterator_types = [],
+        array &$invalid_iterator_messages = [],
         bool $forwards_send = false,
     ): void {
         if ($iterator_atomic_type->extra_types) {
@@ -1819,7 +1813,7 @@ final class ForeachAnalyzer
                                             $key_type,
                                             $value_type,
                                             $has_valid_iterator,
-                                            $invalid_iterator_types,
+                                            $invalid_iterator_messages,
                                             $forwards_send,
                                         );
 
@@ -1869,7 +1863,8 @@ final class ForeachAnalyzer
                         && !$type_params[2]->isVoid()
                         && !$type_params[2]->isMixed()
                     ) {
-                        $invalid_iterator_types[] = $iterator_atomic_type->getKey();
+                        $invalid_iterator_messages[] = 'Cannot iterate over generator with non-null send() type '
+                            . $iterator_atomic_type->getId();
                     } else {
                         $has_valid_iterator = true;
                     }

@@ -100,6 +100,9 @@ final class FileScannerTest extends TestCase
         $file_storage->referenced_classlikes = [
             'globalclass' => 'GlobalClass',
         ];
+        $file_storage->global_variables = [
+            'global' => true,
+        ];
         yield 'referenceConfiguredGlobalClass' => [
             $config,
             <<<'PHP'
