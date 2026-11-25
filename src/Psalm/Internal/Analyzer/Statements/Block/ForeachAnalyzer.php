@@ -42,6 +42,7 @@ use Psalm\Internal\Type\PurityWildcardPaths;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Internal\TypeVisitor\ClassStringMapBoundReplacer;
 use Psalm\Internal\TypeVisitor\TypeVariableResolver;
 use Psalm\Issue\ImpureMethodCall;
 use Psalm\Issue\InvalidDocblock;
@@ -65,7 +66,6 @@ use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallableObject;
 use Psalm\Type\Atomic\TCapabilities;
-use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClassStringMap;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TGenericObject;
@@ -1450,20 +1450,14 @@ final class ForeachAnalyzer
 
             if ($iterator_atomic_type instanceof TClassStringMap) {
                 // the key is a class of the bound, and what is stored under it an object of that class
-                $bound = new Union([$iterator_atomic_type->as_type ?? new TObject()]);
-
                 $key_type = Type::combineUnionTypes(
                     $key_type,
-                    new Union([new TClassString($bound->getId(), $iterator_atomic_type->as_type)]),
+                    ClassStringMapBoundReplacer::getKeyType($iterator_atomic_type),
                 );
 
                 $value_type = Type::combineUnionTypes(
                     $value_type,
-                    TemplateInferredTypeReplacer::replace(
-                        $iterator_atomic_type->value_param,
-                        new TemplateResult([], [$iterator_atomic_type->param_name => ['class-string-map' => $bound]]),
-                        $codebase,
-                    ),
+                    ClassStringMapBoundReplacer::getValueType($iterator_atomic_type),
                 );
 
                 $has_valid_iterator = true;
