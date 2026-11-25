@@ -14,6 +14,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\PropertyAccessAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\PropertyTaintSources;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\ImpureStaticProperty;
@@ -220,6 +221,8 @@ final class StaticPropertyFetchAnalyzer
                 0,
                 0,
             );
+
+            PropertyTaintSources::addSource($statements_analyzer, $stmt, $stmt_type, $property_id, 0);
 
             $context->vars_in_scope[$var_id] = $stmt_type;
             $statements_analyzer->node_data->setType($stmt, $stmt_type);
@@ -432,6 +435,8 @@ final class StaticPropertyFetchAnalyzer
                 0,
                 0,
             );
+
+            PropertyTaintSources::addSource($statements_analyzer, $stmt, $stmt_type, $property_id, 0);
 
             $context->vars_in_scope[$var_id] = $stmt_type;
             $statements_analyzer->node_data->setType($stmt, $stmt_type);

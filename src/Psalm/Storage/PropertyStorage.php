@@ -89,6 +89,12 @@ final class PropertyStorage implements HasAttributesInterface
     public bool $readonly = false;
 
     /**
+     * The taints `@psalm-taint-source` gives what is read from the property, wherever it is read: what a library
+     * stores from outside the program, such as what a server answered
+     */
+    public int $taint_sources = 0;
+
+    /**
      * Declared readonly, or in a readonly class
      *
      * @internal

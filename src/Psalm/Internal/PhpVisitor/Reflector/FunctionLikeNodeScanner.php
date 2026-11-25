@@ -652,6 +652,7 @@ final class FunctionLikeNodeScanner
                 $var_comment_type = null;
                 $var_comment_readonly = false;
                 $var_comment_allow_private_mutation = false;
+                $var_comment_taint_sources = 0;
                 $var_comment_suppressed_issues = [];
                 $var_comment_deprecated = false;
                 if ($doc_comment) {
@@ -675,6 +676,7 @@ final class FunctionLikeNodeScanner
                             $var_comment_type = $var_comment->type;
                             $var_comment_readonly = $var_comment->readonly;
                             $var_comment_allow_private_mutation = $var_comment->allow_private_mutation;
+                            $var_comment_taint_sources = $var_comment->taint_sources;
                             $var_comment_suppressed_issues = $var_comment->suppressed_issues;
                             $var_comment_deprecated = $var_comment->deprecated;
                         }
@@ -725,6 +727,7 @@ final class FunctionLikeNodeScanner
                     || $classlike_storage->readonly;
                 $property_storage->readonly = $property_storage->native_readonly || $var_comment_readonly;
                 $property_storage->allow_private_mutation = $var_comment_allow_private_mutation;
+                $property_storage->taint_sources = $var_comment_taint_sources;
                 $property_storage->suppressed_issues = $var_comment_suppressed_issues;
                 $property_storage->deprecated = $var_comment_deprecated;
                 $property_storage->attributes = $param_storage->attributes;

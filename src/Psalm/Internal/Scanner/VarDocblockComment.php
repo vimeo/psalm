@@ -55,6 +55,9 @@ final class VarDocblockComment
 
     public int $removed_taints = 0;
 
+    /** The taints `@psalm-taint-source` gives what is read from the property the comment annotates */
+    public int $taint_sources = 0;
+
     /**
      * @var array<int, string>
      */

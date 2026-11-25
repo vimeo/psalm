@@ -46,6 +46,55 @@ function show(QueryInput $input): void {
 }
 ```
 
+### Properties
+
+A property holding what came from outside the program, such as what a server answered, can be a source too: every
+read of it is then input, wherever it is read. This is how a library whose code Psalm doesn't analyze (it is in
+`vendor/`) declares what its objects hold. Annotate the property, or the promoted constructor parameter declaring it:
+
+```php
+<?php
+final class Transcript {
+    /** @psalm-taint-source input */
+    public string $text = '';
+
+    public function __construct(
+        /** @psalm-taint-source input */
+        public readonly string $language,
+        public readonly string $videoId,
+    ) {}
+}
+
+function show(Transcript $transcript): void {
+    echo $transcript->text;     // TaintedHtml
+    echo $transcript->language; // TaintedHtml
+    echo $transcript->videoId;  // no issue
+}
+```
+
+A magic property (`@property`, `@property-read`) is declared on the class, followed by its name:
+
+```php
+<?php
+/**
+ * @property-read string $title
+ * @psalm-taint-source input $title
+ */
+final class Video {
+    public function __get(string $name): string { return ''; }
+}
+
+function show(Video $video): void {
+    echo $video->title; // TaintedHtml
+}
+```
+
+A read gets the sources declared for the property by the class it is read from and by the classes, interfaces and
+traits it extends, implements or uses; static properties work the same way. What is assigned to the property still
+flows to its reads as before, and the sources apply to every object, including the objects of a class with
+[`@psalm-taint-specialize`](index.md#specializing-classes): an object built from safe values still holds input in
+such a property.
+
 ## Custom taints declared in the configuration
 
 Custom taints can be declared in `psalm.xml`, so that the annotations can name them without a plugin registering

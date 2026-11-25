@@ -76,6 +76,7 @@ use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
+use RuntimeException;
 use UnexpectedValueException;
 
 use function array_column;
@@ -1119,6 +1120,21 @@ final class ClassLikeNodeScanner
                 }
             }
             $storage->taint_property_bag = $docblock_info->taint_property_bag;
+
+            foreach ($docblock_info->property_taint_sources as $property_name => $kinds) {
+                foreach ($kinds as $kind) {
+                    try {
+                        $storage->property_taint_sources[$property_name]
+                            = ($storage->property_taint_sources[$property_name] ?? 0)
+                            | $this->codebase->getOrRegisterTaint($kind);
+                    } catch (RuntimeException $e) {
+                        $storage->docblock_issues[] = new InvalidDocblock(
+                            $e->getMessage() . ' in docblock for ' . $fq_classlike_name,
+                            $name_location ?? $class_location,
+                        );
+                    }
+                }
+            }
             $storage->specialize_instance = $docblock_info->taint_specialize
                 || ($docblock_info->has_mutations_annotation
                     && $deferred_capabilities === []
@@ -2147,6 +2163,7 @@ final class ClassLikeNodeScanner
                 && !$stmt->isStatic()
                 && $property->default !== null;
             $property_storage->allow_private_mutation = $var_comment ? $var_comment->allow_private_mutation : false;
+            $property_storage->taint_sources = $var_comment ? $var_comment->taint_sources : 0;
             $property_storage->description = $var_comment ? $var_comment->description : null;
 
             if (!$signature_type && $storage->readonly) {
