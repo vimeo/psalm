@@ -11367,6 +11367,28 @@ final class TaintTest extends TestCase
                 'error_message' => 'TaintedHtml',
                 'php_version' => '8.2',
             ],
+            'taintSpecializedPropertyOnFactoryResult' => [
+                'code' => '<?php // --taint-analysis
+                    /** @psalm-taint-specialize */
+                    final class Cfg {
+                        public function __construct(public string $name) {}
+                    }
+
+                    function make(): Cfg { return new Cfg((string) $_GET["name"]); }
+
+                    echo make()->name;',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintSpecializedPropertyOnNewExpression' => [
+                'code' => '<?php // --taint-analysis
+                    /** @psalm-taint-specialize */
+                    final class Cfg {
+                        public function __construct(public string $name) {}
+                    }
+
+                    echo (new Cfg((string) $_GET["x"]))->name;',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintAPrivatelyMutablePropertyAcrossInstances' => [
                 'code' => '<?php // --taint-analysis
                     final class Counter {
