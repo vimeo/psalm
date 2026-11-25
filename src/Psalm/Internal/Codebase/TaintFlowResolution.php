@@ -3050,8 +3050,10 @@ final class TaintFlowResolution
 
         $innermost = $array_assignments[$array_left - 1];
 
-        return isset($this->overwrite_path_types[$innermost])
-            || $this->path_types[$innermost] === DataFlowGraph::SERIALIZATION_PATH_TYPE;
+        // one of the call they put back (see applyPathType()) is one of an array they made
+        return $innermost >= 0
+            && (isset($this->overwrite_path_types[$innermost])
+                || $this->path_types[$innermost] === DataFlowGraph::SERIALIZATION_PATH_TYPE);
     }
 
     /**
