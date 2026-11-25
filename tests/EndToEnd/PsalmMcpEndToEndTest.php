@@ -29,7 +29,6 @@ use function touch;
 use function unlink;
 use function var_export;
 
-use const DIRECTORY_SEPARATOR;
 use const JSON_THROW_ON_ERROR;
 use const PHP_BINARY;
 
@@ -125,7 +124,7 @@ final class PsalmMcpEndToEndTest extends PsalmEndToEndTestCase
         $this->startServer();
 
         $output = $this->callTool('psalm_check', ['paths' => ['src/FileWithErrors.php']]);
-        $this->assertStringContainsString(self::native('InvalidReturnType - src/FileWithErrors.php:5:'), $output);
+        $this->assertStringContainsString('InvalidReturnType - src/FileWithErrors.php:5:', $output);
         $this->assertStringContainsString('InvalidReturnStatement', $output);
 
         $file = self::$tmpDir . '/src/FileWithErrors.php';
@@ -141,7 +140,7 @@ final class PsalmMcpEndToEndTest extends PsalmEndToEndTestCase
         touch($file, $mtime);
 
         $output = $this->callTool('psalm_check', ['paths' => ['src/FileWithErrors.php']]);
-        $this->assertStringContainsString(self::native('InvalidReturnType - src/FileWithErrors.php:5:'), $output);
+        $this->assertStringContainsString('InvalidReturnType - src/FileWithErrors.php:5:', $output);
     }
 
     public function testAFileAddedAfterTheStartIsChecked(): void
@@ -154,8 +153,8 @@ final class PsalmMcpEndToEndTest extends PsalmEndToEndTestCase
         file_put_contents(self::$tmpDir . '/src/Greeter.php', self::GREETER);
 
         $output = $this->callTool('psalm_check', ['paths' => ['src']]);
-        $this->assertStringContainsString(self::native('PossiblyNullReference - src/Greeter.php:8:23'), $output);
-        $this->assertStringContainsString(self::native('InvalidReturnType - src/FileWithErrors.php'), $output);
+        $this->assertStringContainsString('PossiblyNullReference - src/Greeter.php:8:23', $output);
+        $this->assertStringContainsString('InvalidReturnType - src/FileWithErrors.php', $output);
     }
 
     public function testTheTypeAndTheSymbolAtAPositionAreShown(): void
@@ -167,7 +166,7 @@ final class PsalmMcpEndToEndTest extends PsalmEndToEndTestCase
         $output = $this->callTool('psalm_inspect', ['file' => 'src/Greeter.php', 'line' => 8, 'text' => 'getName']);
         $this->assertStringContainsString('`getName()` at 8:23' . "\n" . '  type: string', $output);
         $this->assertStringContainsString(
-            self::native('symbol: Acme\SampleProject\User::getName, declared at src/Greeter.php:14:21'),
+            'symbol: Acme\SampleProject\User::getName, declared at src/Greeter.php:14:21',
             $output,
         );
 
@@ -177,7 +176,7 @@ final class PsalmMcpEndToEndTest extends PsalmEndToEndTestCase
         // a declaration
         $output = $this->callTool('psalm_inspect', ['file' => 'src/Greeter.php', 'line' => 14, 'text' => 'getName']);
         $this->assertStringContainsString(
-            self::native("`getName` at 14:21\n  symbol: Acme\\SampleProject\\User::getName, declared at src/Greeter.php:14:21"),
+            "`getName` at 14:21\n  symbol: Acme\\SampleProject\\User::getName, declared at src/Greeter.php:14:21",
             $output,
         );
     }
@@ -190,7 +189,7 @@ final class PsalmMcpEndToEndTest extends PsalmEndToEndTestCase
 
         $output = $this->callTool('psalm_references', ['symbol' => 'Acme\SampleProject\User::getName']);
         $this->assertStringContainsString('1 reference to Acme\SampleProject\User::getName:', $output);
-        $this->assertStringContainsString(self::native('src/Greeter.php:8:23 return $user->getName();'), $output);
+        $this->assertStringContainsString('src/Greeter.php:8:23 return $user->getName();', $output);
 
         file_put_contents(
             self::$tmpDir . '/src/Greeter.php',
@@ -260,7 +259,7 @@ final class PsalmMcpEndToEndTest extends PsalmEndToEndTestCase
             $this->startServer([__DIR__ . '/../../skills/psalm/scripts/server.php', 'mcp', self::$tmpDir . '/src']);
 
             $output = $this->callTool('psalm_check', ['paths' => ['src/FileWithErrors.php']]);
-            $this->assertStringContainsString(self::native('InvalidReturnType - src/FileWithErrors.php:5:'), $output);
+            $this->assertStringContainsString('InvalidReturnType - src/FileWithErrors.php:5:', $output);
         } finally {
             $this->removePsalmPackage();
             @rmdir(self::$tmpDir . '/.git');
@@ -359,7 +358,8 @@ final class PsalmMcpEndToEndTest extends PsalmEndToEndTestCase
         $text = self::string($result, 'content', 0, 'text');
         $this->assertFalse(self::at($result, 'isError'), $text);
 
-        return $text;
+        // the separator in paths depends on how Psalm found the file, not only on the system
+        return str_replace(['src\\', 'vendor\\'], ['src/', 'vendor/'], $text);
     }
 
     /**
@@ -441,16 +441,6 @@ final class PsalmMcpEndToEndTest extends PsalmEndToEndTestCase
         }
 
         return $value;
-    }
-
-    /**
-     * The text with the separators of the paths Psalm prints on this system
-     *
-     * @psalm-pure
-     */
-    private static function native(string $text): string
-    {
-        return str_replace(['src/', 'vendor/'], ['src' . DIRECTORY_SEPARATOR, 'vendor' . DIRECTORY_SEPARATOR], $text);
     }
 
     private static function string(mixed $value, string|int ...$keys): string

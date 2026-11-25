@@ -18,13 +18,12 @@
 
 declare(strict_types=1);
 
-const BRANCH = 'agent-plugins';
-const DESCRIPTION = 'Psalm static analysis for PHP: MCP tools to check code, inspect inferred types, find references'
+$branch = 'agent-plugins';
+$description = 'Psalm static analysis for PHP: MCP tools to check code, inspect inferred types, find references'
     . ' and explain issues, language server diagnostics after each edit, and the Psalm skill.';
 
 /** @param list<string> $command */
-function run(array $command, ?string $cwd = null): string
-{
+$run = static function (array $command, ?string $cwd = null): string {
     $process = proc_open($command, [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes, $cwd);
     if (!is_resource($process)) {
         throw new RuntimeException('Cannot run ' . implode(' ', $command));
@@ -36,10 +35,9 @@ function run(array $command, ?string $cwd = null): string
     }
 
     return $output;
-}
+};
 
-function copyDirectory(string $from, string $to): void
-{
+$copyDirectory = static function (string $from, string $to) use (&$copyDirectory): void {
     mkdir($to, 0777, true);
     foreach (new DirectoryIterator($from) as $file) {
         if ($file->isDot()) {
@@ -47,33 +45,29 @@ function copyDirectory(string $from, string $to): void
         }
         $target = $to . '/' . $file->getFilename();
         if ($file->isDir()) {
-            copyDirectory($file->getPathname(), $target);
+            $copyDirectory($file->getPathname(), $target);
         } else {
             copy($file->getPathname(), $target);
         }
     }
-}
+};
 
 /** @param array<string, mixed> $data */
-function writeJson(string $file, array $data): void
-{
+$writeJson = static function (string $file, array $data): void {
     file_put_contents($file, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n");
-}
+};
 
-/**
- * Writes the files of the branch for a version to $dir, which must not exist
- */
-function build(string $version, string $dir): void
-{
+// writes the files of the branch for a version to $dir, which must not exist
+$build = static function (string $version, string $dir) use ($copyDirectory, $writeJson, $description): void {
     $skill = dirname(__DIR__, 2) . '/skills/psalm';
-    copyDirectory($skill, $dir . '/psalm');
+    $copyDirectory($skill, $dir . '/psalm');
 
     $manifest_file = $dir . '/psalm/.claude-plugin/plugin.json';
     $manifest = json_decode((string) file_get_contents($manifest_file), true, 512, JSON_THROW_ON_ERROR);
-    writeJson($manifest_file, ['name' => $manifest['name'], 'version' => $version] + $manifest);
+    $writeJson($manifest_file, ['name' => $manifest['name'], 'version' => $version] + $manifest);
 
     mkdir($dir . '/.claude-plugin');
-    writeJson($dir . '/.claude-plugin/marketplace.json', [
+    $writeJson($dir . '/.claude-plugin/marketplace.json', [
         'name' => 'psalm',
         'owner' => ['name' => 'Psalm', 'url' => 'https://psalm.dev'],
         'metadata' => ['description' => 'The Psalm plugin: static analysis for PHP in Claude Code.'],
@@ -81,14 +75,15 @@ function build(string $version, string $dir): void
             'name' => 'psalm',
             'source' => './psalm',
             'version' => $version,
-            'description' => DESCRIPTION,
+            'description' => $description,
         ]],
     ]);
 
     // the package is the whole skill, which the plugin reads the skill and the launcher from
-    $package = json_decode((string) file_get_contents($skill . '/opencode/package.json'), true, 512, JSON_THROW_ON_ERROR);
+    $package_json = (string) file_get_contents($skill . '/opencode/package.json');
+    $package = json_decode($package_json, true, 512, JSON_THROW_ON_ERROR);
     unset($package['private']);
-    writeJson($dir . '/psalm/package.json', [
+    $writeJson($dir . '/psalm/package.json', [
         'name' => $package['name'],
         'version' => $version,
         'main' => 'opencode/index.js',
@@ -102,7 +97,7 @@ function build(string $version, string $dir): void
     Don't edit this branch. See [Using Psalm with AI agents](https://psalm.dev/docs/running_psalm/ai_agents/).
 
     MD);
-}
+};
 
 /** @var list<string> $argv */
 $args = array_slice($argv, 1);
@@ -118,48 +113,48 @@ if (preg_match('/^\d+\.\d+\.\d+(?:-(?:alpha|beta|rc)\.?\d+)?$/', $version) !== 1
 }
 
 if ($build_only) {
-    build($version, $args[2]);
+    $build($version, $args[2]);
     exit(0);
 }
 
 $work = sys_get_temp_dir() . '/psalm-agent-plugins-' . getmypid();
-build($version, $work . '/tree');
+$build($version, $work . '/tree');
 
 // a worktree of this checkout, which has its credentials
 $clone = $work . '/branch';
 try {
-    run(['git', 'fetch', '--quiet', 'origin', BRANCH]);
+    $run(['git', 'fetch', '--quiet', 'origin', $branch]);
     $has_branch = true;
 } catch (RuntimeException) {
     $has_branch = false;
 }
 
 if ($has_branch) {
-    $published = json_decode(run(['git', 'show', 'FETCH_HEAD:.claude-plugin/marketplace.json']), true);
+    $published = json_decode($run(['git', 'show', 'FETCH_HEAD:.claude-plugin/marketplace.json']), true);
     $published_version = is_array($published) ? (string) ($published['plugins'][0]['version'] ?? '0') : '0';
     if (version_compare($version, $published_version, '<=')) {
         echo "The branch has Psalm $published_version already, skipping $version" . PHP_EOL;
         exit(0);
     }
-    run(['git', 'worktree', 'add', '--quiet', '--detach', $clone, 'FETCH_HEAD']);
+    $run(['git', 'worktree', 'add', '--quiet', '--detach', $clone, 'FETCH_HEAD']);
 } else {
-    run(['git', 'worktree', 'add', '--quiet', '--detach', $clone]);
-    run(['git', 'checkout', '--quiet', '--orphan', BRANCH . '-' . getmypid()], $clone);
+    $run(['git', 'worktree', 'add', '--quiet', '--detach', $clone]);
+    $run(['git', 'checkout', '--quiet', '--orphan', $branch . '-' . getmypid()], $clone);
 }
 
 foreach (new DirectoryIterator($clone) as $file) {
     if (!$file->isDot() && $file->getFilename() !== '.git') { // a file in a worktree
-        run(['rm', '-rf', $file->getPathname()]);
+        $run(['rm', '-rf', $file->getPathname()]);
     }
 }
 foreach (new DirectoryIterator($work . '/tree') as $file) {
     if (!$file->isDot()) {
-        run(['mv', $file->getPathname(), $clone . '/' . $file->getFilename()]);
+        $run(['mv', $file->getPathname(), $clone . '/' . $file->getFilename()]);
     }
 }
 
-run(['git', 'add', '--all'], $clone);
-run([
+$run(['git', 'add', '--all'], $clone);
+$run([
     'git',
     '-c', 'user.name=github-actions[bot]',
     '-c', 'user.email=41898282+github-actions[bot]@users.noreply.github.com',
@@ -167,11 +162,11 @@ run([
 ], $clone);
 
 if ($dry_run) {
-    echo run(['git', 'show', '--stat', '--format=%s', 'HEAD'], $clone);
-    echo "Would push this to " . BRANCH . PHP_EOL;
+    echo $run(['git', 'show', '--stat', '--format=%s', 'HEAD'], $clone);
+    echo "Would push this to " . $branch . PHP_EOL;
 } else {
-    run(['git', 'push', '--quiet', 'origin', 'HEAD:refs/heads/' . BRANCH], $clone);
-    echo "Published Psalm $version on " . BRANCH . PHP_EOL;
+    $run(['git', 'push', '--quiet', 'origin', 'HEAD:refs/heads/' . $branch], $clone);
+    echo "Published Psalm $version on " . $branch . PHP_EOL;
 }
 
-run(['git', 'worktree', 'remove', '--force', $clone]);
+$run(['git', 'worktree', 'remove', '--force', $clone]);

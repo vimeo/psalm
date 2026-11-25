@@ -32,6 +32,7 @@
         <directory name="examples"/>
         <file name="psalm"/>
         <file name="psalm-language-server"/>
+        <file name="psalm-mcp"/>
         <file name="psalm-plugin"/>
         <file name="psalm-refactor"/>
         <file name="psalm-review"/>
