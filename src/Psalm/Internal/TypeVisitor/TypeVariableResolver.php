@@ -189,9 +189,7 @@ final class TypeVariableResolver extends MutableTypeVisitor
     #[Override]
     public function traverse(TypeNode &$node): bool
     {
-        $outer_unrolling = $this->unrolling;
         $result = parent::traverse($node);
-        $this->unrolling = $outer_unrolling;
 
         // a list whose element variable resolved to `never` is the empty
         // array, the same shape template replacement gives `list<never>`
@@ -219,32 +217,55 @@ final class TypeVariableResolver extends MutableTypeVisitor
             return null;
         }
 
-        $unrolling = $this->unrolling;
+        // the members are traversed here: only what a variable resolves to is traversed with that variable kept,
+        // so `T|array<int, T>` still resolves the `T` of its array
+        $atomic_types = [];
+        $changed = false;
 
         foreach ($type->getAtomicTypes() as $atomic_type) {
-            if ($atomic_type instanceof TTypeVariable) {
-                $this->unrolling[$atomic_type->name] = true;
+            $resolved_atomics = $atomic_type instanceof TTypeVariable
+                ? self::resolveAtomics(
+                    [$atomic_type],
+                    $this->codebase,
+                    $this->only_never_bound,
+                    $this->keep_never_bound,
+                    $this->construction_site_only,
+                    $this->unrolling,
+                )
+                : null;
+
+            if ($resolved_atomics === null) {
+                $original_atomic_type = $atomic_type;
+                $this->traverse($atomic_type);
+                $changed = $changed || $atomic_type !== $original_atomic_type;
+                $atomic_types[] = $atomic_type;
+
+                continue;
             }
+
+            /** @var TTypeVariable $atomic_type */
+            $this->resolved_a_variable = true;
+            $changed = true;
+
+            $outer_unrolling = $this->unrolling;
+            $this->unrolling[$atomic_type->name] = true;
+
+            foreach ($resolved_atomics as $resolved_atomic) {
+                $this->traverse($resolved_atomic);
+                $atomic_types[] = $resolved_atomic;
+            }
+
+            $this->unrolling = $outer_unrolling;
         }
 
-        $resolved_types = self::resolveAtomics(
-            $type->getAtomicTypes(),
-            $this->codebase,
-            $this->only_never_bound,
-            $this->keep_never_bound,
-            $this->construction_site_only,
-            $unrolling,
-        );
-
-        if ($resolved_types !== null) {
-            $this->resolved_a_variable = true;
+        if ($changed) {
             // rebuild through the builder so the union's own properties survive:
             // a `list<T>` is a keyed array whose first entry is a *possibly
             // undefined* `T`, and constructing a bare `new Union` here would drop
             // that flag and silently turn the list into a non-empty-list
-            $type = $type->getBuilder()->setTypes(self::keyAtomics($resolved_types, $this->codebase))->freeze();
+            $type = $type->getBuilder()->setTypes(self::keyAtomics($atomic_types, $this->codebase))->freeze();
         }
 
-        return null;
+        return self::DONT_TRAVERSE_CHILDREN;
     }
 }
