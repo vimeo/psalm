@@ -436,6 +436,28 @@ final class MethodCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'soapClientSetLocationReturnsNullWhenNoLocationWasSet' => [
+                'code' => '<?php
+                    function f(SoapClient $client): string {
+                        $old = $client->__setLocation("http://example.org");
+
+                        if ($old === null) {
+                            return "none";
+                        }
+
+                        return $old;
+                    }
+
+                    final class Soap extends SoapClient {
+                        #[Override]
+                        public function __setLocation(?string $location = null): ?string {
+                            return null;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'psalmOverloadOfAStaticMethodIsNotChosenForAFirstClassCallable' => [
                 'code' => '<?php
                     final class Picker {
