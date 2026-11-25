@@ -153,6 +153,240 @@ final class SwitchTypeTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '7.4',
             ],
+            'propertyACaseForgetsByNarrowingItsObjectIsNotPossiblyUndefinedAfterTheSwitch' => [
+                'code' => '<?php
+                    interface I {}
+
+                    abstract class A {
+                        public function __construct(public string $s) {}
+                    }
+
+                    function takesString(string $s): void {}
+
+                    function f(A $a): void {
+                        echo $a->s;
+
+                        $x = $y = 0;
+                        while (rand(0, 1)) {
+                            $x = $y;
+                            $y = 1;
+
+                            takesString($a->s);
+
+                            switch (rand(0, 1)) {
+                                case 1:
+                                    if (!$a instanceof I) {
+                                        break;
+                                    }
+                                    break;
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'caseNarrowingTheObjectOfANarrowedPropertyKeepsItWithDefault' => [
+                'code' => '<?php
+                    class B { public ?string $p = null; }
+                    final class C extends B {}
+                    interface I {}
+
+                    function takesString(string $s): void {}
+
+                    function f(B $b): void {
+                        if ($b->p !== null) {
+                            switch (true) {
+                                case $b instanceof C:
+                                    echo 1;
+                                    break;
+                                default:
+                                    break;
+                            }
+
+                            takesString($b->p);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'caseNarrowingTheObjectWithAnInterfaceKeepsTheNarrowedProperty' => [
+                'code' => '<?php
+                    class B { public ?string $p = null; }
+                    final class C extends B {}
+                    interface I {}
+
+                    function takesString(string $s): void {}
+
+                    function f(B $b): void {
+                        if ($b->p !== null) {
+                            switch (true) {
+                                case $b instanceof I:
+                                    echo 1;
+                                    break;
+                                default:
+                                    break;
+                            }
+
+                            takesString($b->p);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'caseNarrowingTheObjectWithoutDefaultKeepsTheNarrowedProperty' => [
+                'code' => '<?php
+                    class B { public ?string $p = null; }
+                    final class C extends B {}
+                    interface I {}
+
+                    function takesString(string $s): void {}
+
+                    function f(B $b): void {
+                        if ($b->p !== null) {
+                            switch (true) {
+                                case $b instanceof C:
+                                    echo 1;
+                                    break;
+                            }
+
+                            takesString($b->p);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'caseBreakingOutOfANegatedInstanceofKeepsTheNarrowedProperty' => [
+                'code' => '<?php
+                    class B { public ?string $p = null; }
+                    final class C extends B {}
+                    interface I {}
+
+                    function takesString(string $s): void {}
+
+                    function f(B $b, int $x): void {
+                        if ($b->p !== null) {
+                            switch ($x) {
+                                case 1:
+                                    if (!$b instanceof C) {
+                                        break;
+                                    }
+
+                                    break;
+                            }
+
+                            takesString($b->p);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'forgottenOffsetBoundByReferenceLeavesNoDanglingReference' => [
+                'code' => '<?php
+                    /** @param array<string, mixed> $a */
+                    function offsetIsTheReference(array $a, string $k, int $c): void {
+                        if (is_int($a[$k])) {
+                            $r = &$a[$k];
+                            switch ($c) {
+                                case 1:
+                                    $k = "zz";
+                                    break;
+                                default:
+                                    break;
+                            }
+                            if ($c === 2) {
+                                echo $r;
+                            }
+                        }
+                    }
+
+                    /** @param array<string, mixed> $a */
+                    function offsetIsReferenced(array $a, string $k, int $c): void {
+                        $x = 1;
+                        $a[$k] = &$x;
+                        $y = &$a[$k];
+                        switch ($c) {
+                            case 1:
+                                $k = "zz";
+                                break;
+                            default:
+                                break;
+                        }
+                        if ($c === 2) {
+                            echo $x, $y;
+                        }
+                    }',
+            ],
+            'caseNotChangingTheKeyOfANarrowedOffsetKeepsTheNarrowing' => [
+                'code' => '<?php
+                    /** @param array<string, mixed> $a */
+                    function caseThatReturns(array $a, string $k, int $c): void {
+                        if (is_int($a[$k])) {
+                            switch ($c) {
+                                case 1:
+                                    $k = "zz";
+                                    return;
+                                default:
+                                    break;
+                            }
+                            /** @psalm-check-type-exact $a[$k] = int */;
+                        }
+                    }
+
+                    /** @param array<string, mixed> $a */
+                    function caseThatLeavesTheLoop(array $a, string $k): void {
+                        if (is_int($a[$k])) {
+                            foreach ([1, 2] as $c) {
+                                switch ($c) {
+                                    case 1:
+                                        $k = "zz";
+                                        break 2;
+                                    default:
+                                        break;
+                                }
+                                /** @psalm-check-type-exact $a[$k] = int */;
+                                return;
+                            }
+                        }
+                    }
+
+                    /** @param array<string, mixed> $a */
+                    function caseThatContinuesTheLoop(array $a, string $k): void {
+                        foreach ([1, 2] as $c) {
+                            if (!is_int($a[$k])) {
+                                continue;
+                            }
+                            switch ($c) {
+                                case 1:
+                                    $k = "zz";
+                                    continue 2;
+                                default:
+                                    break;
+                            }
+                            /** @psalm-check-type-exact $a[$k] = int */;
+                        }
+                    }
+
+                    /** @param array<string, mixed> $a */
+                    function caseOnlyComparingTheKey(array $a, string $k, int $c): void {
+                        if (is_int($a[$k])) {
+                            switch ($c) {
+                                case 1:
+                                    if ($k === "x") {
+                                        echo 1;
+                                    }
+                                    break;
+                                default:
+                                    break;
+                            }
+                            /** @psalm-check-type-exact $a[$k] = int */;
+                        }
+                    }',
+            ],
             'switchWithoutDefaultNarrowsTheSubjectWhenEveryCaseReturns' => [
                 'code' => '<?php
                     /** @param "a"|"b"|"c" $letter */
@@ -2095,6 +2329,85 @@ final class SwitchTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'lastCaseFallingOffTheEndAssigningTheKeyOfANarrowedOffsetForgetsTheNarrowing' => [
+                'code' => '<?php
+                    function takesInt(int $i): void {}
+
+                    /** @param array<string, mixed> $a */
+                    function f(array $a, string $k, int $c): void {
+                        if (is_int($a[$k])) {
+                            switch ($c) {
+                                case 1:
+                                    break;
+                                case 2:
+                                    $k = "zz";
+                            }
+
+                            takesInt($a[$k]);
+                        }
+                    }',
+                'error_message' => 'MixedArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'caseAssigningTheKeyOfANarrowedOffsetForgetsTheNarrowing' => [
+                'code' => '<?php
+                    function takesInt(int $i): void {}
+
+                    /** @param array<string, mixed> $a */
+                    function f(array $a, string $k, int $c): void {
+                        if (is_int($a[$k])) {
+                            switch ($c) {
+                                case 1:
+                                    $k = "zz";
+                                    break;
+                                default:
+                                    break;
+                            }
+                            takesInt($a[$k]);
+                        }
+                    }',
+                'error_message' => 'MixedArgument',
+            ],
+            'caseAssigningTheKeyOfANarrowedOffsetBeforeANestedBreakForgetsTheNarrowing' => [
+                'code' => '<?php
+                    function takesInt(int $i): void {}
+
+                    /** @param array<string, mixed> $a */
+                    function f(array $a, string $k, int $c, bool $b): void {
+                        if (is_int($a[$k])) {
+                            switch ($c) {
+                                case 1:
+                                    $k = "zz";
+                                    if ($b) {
+                                        break;
+                                    }
+                                    return;
+                                default:
+                                    break;
+                            }
+                            takesInt($a[$k]);
+                        }
+                    }',
+                'error_message' => 'MixedArgument',
+            ],
+            'caseOfASwitchWithoutDefaultAssigningTheKeyOfANarrowedOffsetForgetsTheNarrowing' => [
+                'code' => '<?php
+                    function takesInt(int $i): void {}
+
+                    /** @param array<string, mixed> $a */
+                    function f(array $a, string $k, int $c): void {
+                        if (is_int($a[$k])) {
+                            switch ($c) {
+                                case 1:
+                                    $k = "zz";
+                                    break;
+                            }
+                            takesInt($a[$k]);
+                        }
+                    }',
+                'error_message' => 'MixedArgument',
+            ],
             'getTypeVarReassignedInOneBranch' => [
                 'code' => '<?php
                     function takesString(string $s): void {}
