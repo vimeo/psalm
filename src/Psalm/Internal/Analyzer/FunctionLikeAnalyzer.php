@@ -1950,6 +1950,24 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     ? (array_slice($storage->params, $position) ?: [$real_param])
                     : [$real_param];
 
+                if ($param->is_optional || $param->is_variadic) {
+                    foreach ($covered_params as $covered_param) {
+                        if (!$covered_param->is_optional && !$covered_param->is_variadic) {
+                            IssueBuffer::maybeAdd(
+                                new InvalidDocblock(
+                                    'Parameter $' . $param->name . ' of an @psalm-overload of ' . $function_name
+                                        . ' is optional, but $' . $covered_param->name
+                                        . ' is required in its signature',
+                                    $location,
+                                ),
+                                $this->getSuppressedIssues(),
+                            );
+
+                            break;
+                        }
+                    }
+                }
+
                 foreach ($covered_params as $covered_param) {
                     if (self::isOverloadTypeOutsideOfTheSignature($codebase, $param->type, $covered_param->type)) {
                         IssueBuffer::maybeAdd(
@@ -1958,6 +1976,25 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                                     . ' of an @psalm-overload of ' . $function_name
                                     . ' is not accepted by its signature, which declares '
                                     . $covered_param->type?->getId(),
+                                $location,
+                            ),
+                            $this->getSuppressedIssues(),
+                        );
+
+                        break;
+                    }
+                }
+            }
+
+            $last_overload_param = $overload->params === [] ? null : $overload->params[count($overload->params) - 1];
+
+            if ($last_overload_param === null || !$last_overload_param->is_variadic) {
+                foreach (array_slice($storage->params, count($overload->params)) as $omitted_param) {
+                    if (!$omitted_param->is_optional && !$omitted_param->is_variadic) {
+                        IssueBuffer::maybeAdd(
+                            new InvalidDocblock(
+                                'An @psalm-overload of ' . $function_name . ' leaves out $' . $omitted_param->name
+                                    . ', which is required in its signature',
                                 $location,
                             ),
                             $this->getSuppressedIssues(),

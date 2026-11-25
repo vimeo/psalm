@@ -5038,6 +5038,42 @@ final class FunctionCallTest extends TestCase
                 'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:21 - '
                     . 'Parameter $extra of an @psalm-overload of pick is not a parameter of its signature',
             ],
+            'psalmOverloadMakingARequiredParameterOptional' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-overload (int $a = 0): int
+                     * @psalm-overload (string $a): string
+                     */
+                    function f(int|string $a): int|string {
+                        return $a;
+                    }',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:21 - '
+                    . 'Parameter $a of an @psalm-overload of f is optional, but $a is required in its signature',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'psalmOverloadMakingRequiredParametersVariadic' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-overload (int ...$values): int
+                     */
+                    function g(int $a, int $b = 0): int {
+                        return $a + $b;
+                    }',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:21 - '
+                    . 'Parameter $values of an @psalm-overload of g is optional, but $a is required in its signature',
+            ],
+            'psalmOverloadLeavingOutARequiredParameter' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-overload (string $x): int
+                     */
+                    function pick(string $x, int $y): int {
+                        return $y;
+                    }',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:21 - '
+                    . 'An @psalm-overload of pick leaves out $y, which is required in its signature',
+            ],
             'psalmOverloadWithAReturnTypeTheSignatureDoesNotDeclare' => [
                 'code' => '<?php
                     /**
