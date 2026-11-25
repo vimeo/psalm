@@ -585,12 +585,9 @@ class Reconciler
             }
 
             // nor what can change it: a readonly property stays unchanged by calls, unless it may be uninitialized
-            if ($before_adjustment
-                && !$before_adjustment->has_mutations
-                && !$has_inverted_isset
-                && !$has_empty
-            ) {
-                $result_type = $result_type->setProperties(['has_mutations' => false]);
+            // (a type narrowed by empty() is built from the old one and would inherit the flag)
+            if ($before_adjustment && !$before_adjustment->has_mutations) {
+                $result_type = $result_type->setProperties(['has_mutations' => $has_inverted_isset || $has_empty]);
             }
 
             $type_changed = !$before_adjustment

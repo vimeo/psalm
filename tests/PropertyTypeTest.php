@@ -282,6 +282,7 @@ final class PropertyTypeTest extends TestCase
         Config::getInstance()->setCustomErrorLevel('RedundantPropertyInitializationCheck', Config::REPORT_SUPPRESS);
         Config::getInstance()->setCustomErrorLevel('InaccessibleProperty', Config::REPORT_SUPPRESS);
         Config::getInstance()->setCustomErrorLevel('MissingConstructor', Config::REPORT_SUPPRESS);
+        Config::getInstance()->setCustomErrorLevel('RiskyTruthyFalsyComparison', Config::REPORT_SUPPRESS);
         $this->project_analyzer->setPhpVersion('8.1', 'tests');
 
         $this->addFile(
@@ -314,6 +315,27 @@ final class PropertyTypeTest extends TestCase
                             return $l->x;
                         }
                         return $l->x;
+                    }
+
+                    public function emptyCheck(): string {
+                        if (empty($this->s)) {
+                            $this->init();
+                            if ($this->s === "a") {
+                                return "initialized";
+                            }
+                        }
+                        return "";
+                    }
+
+                    public function notEmptyElse(): string {
+                        if (!empty($this->s)) {
+                            return $this->s;
+                        }
+                        $this->init();
+                        if ($this->s === "a") {
+                            return "initialized";
+                        }
+                        return "";
                     }
 
                     private function init(): void {
