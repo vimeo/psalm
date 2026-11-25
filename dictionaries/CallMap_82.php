@@ -84793,7 +84793,6 @@ return array (
   ),
   'sqlite3result::columnname' => 
   array (
-    0 => 'string',
     -1 => 'false|string',
     'column' => 'int',
     -2 => 'tentative',
