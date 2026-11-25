@@ -63,6 +63,7 @@ use function ksort;
 use function min;
 use function pack;
 use function spl_object_id;
+use function str_starts_with;
 use function strcmp;
 use function strlen;
 use function strpos;
@@ -1298,15 +1299,9 @@ final class TaintFlowGraph extends DataFlowGraph
         // The nodes the search can go on from towards a generator return node: those the return nodes reach going
         // forwards, plus, as linkGeneratorSend() can link any send node to what is sent to any generator, all of what
         // is sent as soon as a send node is among them. The search does not push the others: they lead it nowhere,
-        // whichever calls it entered them through.
-        $forward = [];
-
-        foreach ($reverse as $to_id => $from_ids) {
-            foreach ($from_ids as $from_id => $_) {
-                $forward[$from_id][] = $to_id;
-            }
-        }
-
+        // whichever calls it entered them through. Going forwards from a node is following its edges, and the
+        // specialization links of getReverseEdges(): a specialized node reaches the one it specializes, which reaches
+        // its specializations, the ones among its origins in $reverse.
         $useful = [];
         $useful_queue = [];
 
@@ -1320,10 +1315,30 @@ final class TaintFlowGraph extends DataFlowGraph
         while ($useful_queue) {
             $id = array_pop($useful_queue);
 
-            foreach ($forward[$id] ?? [] as $to_id) {
+            foreach ($this->forward_edges[$id] ?? [] as $to_id => $_) {
                 if (!isset($useful[$to_id])) {
                     $useful[$to_id] = true;
                     $useful_queue[] = $to_id;
+                }
+            }
+
+            $separator_pos = strpos($id, self::SPECIALIZATION_SEPARATOR);
+
+            if ($separator_pos !== false) {
+                $to_id = substr($id, 0, $separator_pos);
+
+                if (!isset($useful[$to_id])) {
+                    $useful[$to_id] = true;
+                    $useful_queue[] = $to_id;
+                }
+            } else {
+                $specialized_prefix = $id . self::SPECIALIZATION_SEPARATOR;
+
+                foreach ($reverse[$id] ?? [] as $to_id => $_) {
+                    if (!isset($useful[$to_id]) && str_starts_with($to_id, $specialized_prefix)) {
+                        $useful[$to_id] = true;
+                        $useful_queue[] = $to_id;
+                    }
                 }
             }
 
@@ -1339,7 +1354,7 @@ final class TaintFlowGraph extends DataFlowGraph
             }
         }
 
-        unset($forward, $useful_queue);
+        unset($useful_queue);
 
         // The call stacks are interned as a trie, so that pushing and popping one is an array access, and a search
         // state is a stack id and a node id.
