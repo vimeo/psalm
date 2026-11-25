@@ -92,8 +92,10 @@ use function min;
 use function preg_match;
 use function reset;
 use function str_contains;
+use function str_ends_with;
 use function strtolower;
 use function strtoupper;
+use function substr;
 
 /**
  * @internal
@@ -2173,8 +2175,20 @@ final class ArgumentsAnalyzer
             ) {
                 $by_ref_flow_inputs = self::getByRefFlowInputs($method_id, $function_param, $function_params);
                 foreach ($by_ref_flow_inputs as $input_name => $path_type) {
-                    $input_arg = self::getArgForParam($args, $function_params, $input_name);
+                    // what the callables given to the parameter leave in their by-reference parameters
+                    $from_callable_refs = str_ends_with($input_name, '(&)');
+                    $input_arg = self::getArgForParam(
+                        $args,
+                        $function_params,
+                        $from_callable_refs ? substr($input_name, 0, -3) : $input_name,
+                    );
                     $input_type = $input_arg ? $statements_analyzer->node_data->getType($input_arg->value) : null;
+
+                    if ($from_callable_refs && $input_type) {
+                        $input_type = Type::getMixed()->setParentNodes(
+                            FunctionCallReturnTypeFetcher::getCallableByRefOutNodes($statements_analyzer, $input_type),
+                        );
+                    }
 
                     if (!$input_type || !$input_type->parent_nodes) {
                         continue;
@@ -2267,9 +2281,15 @@ final class ArgumentsAnalyzer
         $analysed_inputs = [];
         foreach ($inputs as $input_key => $input_value) {
             [$input_name, $path_type] = is_int($input_key) ? [$input_value, null] : [$input_key, $input_value];
-            $input_name = InternalCallMapHandler::getAnalysedParamName($function_id, $input_name, $function_params);
+            // `callback(&)`: what the callables given to the parameter leave in their by-reference parameters
+            $suffix = str_ends_with($input_name, '(&)') ? '(&)' : '';
+            $input_name = InternalCallMapHandler::getAnalysedParamName(
+                $function_id,
+                $suffix === '' ? $input_name : substr($input_name, 0, -3),
+                $function_params,
+            );
             if ($input_name !== null) {
-                $analysed_inputs[$input_name] = $path_type;
+                $analysed_inputs[$input_name . $suffix] = $path_type;
             }
         }
 

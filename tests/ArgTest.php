@@ -845,6 +845,18 @@ final class ArgTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'undefinedVariableStaysUndefinedAfterACall' => [
+                'code' => '<?php
+                    function takesInt(int $_i): void {}
+
+                    function f(): void {
+                        /** @psalm-suppress UndefinedVariable */
+                        takesInt($a);
+                        takesInt($a);
+                    }',
+                'error_message' => 'UndefinedVariable',
+                'error_levels' => ['MixedArgument'],
+            ],
             'falseOfAValueDoesNotMakeItPossiblyValidForAScalarParameter' => [
                 'code' => '<?php
                     final class Foo {}

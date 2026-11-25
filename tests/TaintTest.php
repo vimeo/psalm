@@ -2316,6 +2316,115 @@ final class TaintTest extends TestCase
     }
 
     /**
+     * Cases resolving without PHP errors, which provider cases don't report
+     *
+     * @param list<string> $expected_issues
+     */
+    #[DataProvider('providerResolvesWithoutErrors')]
+    public function testResolvesWithoutErrors(string $code, array $expected_issues, bool $track_unused_variables): void
+    {
+        if ($track_unused_variables) {
+            $this->trackUnusedVariables();
+        }
+
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile($file_path, $code);
+        $this->project_analyzer->setPhpVersion('8.0', 'tests');
+        $this->project_analyzer->trackTaintedInputs();
+
+        $this->withErrorsThrown(fn() => $this->analyzeFile($file_path, new Context(), false));
+
+
+        $taint_issues = array_values(array_filter(
+            array_map(
+                static fn(IssueData $issue): string => $issue->type . ' on line ' . $issue->line_from,
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
+            static fn(string $issue): bool => str_starts_with($issue, 'Tainted'),
+        ));
+        sort($taint_issues);
+
+        self::assertSame($expected_issues, $taint_issues);
+    }
+
+    /**
+     * @return array<string, array{string, list<string>, bool}>
+     * @psalm-pure
+     */
+    public static function providerResolvesWithoutErrors(): array
+    {
+        $join_values = '<?php
+            function join_values(mixed $a): string {
+                if (!is_array($a)) {
+                    return (string) $a;
+                }
+                return implode("", $a);
+            }
+        ';
+
+        // the foreach loops put the values of the argument back under their keys
+        $cases = [
+            'castOfArrayParamWithValuesOfTheArgumentPutBack' => [
+                $join_values . '
+                    /** @param array<string> $args */
+                    function escape_all(array $args): string {
+                        $escaped = [];
+                        foreach ($args as $key => $arg) {
+                            $escaped[$key] = escapeshellarg($arg);
+                        }
+                        return join_values($escaped);
+                    }
+
+                    shell_exec(escape_all([(string) getenv("A")]));',
+                [],
+            ],
+            // the values implode() fetches keep what escapeshellarg() doesn't remove
+            'castOfArrayParamWithValuesOfTheArgumentPutBackEscapedForShellOnly' => [
+                $join_values . '
+                    /** @param array<string> $args */
+                    function escape_all(array $args): string {
+                        $escaped = [];
+                        foreach ($args as $key => $arg) {
+                            $escaped[$key] = escapeshellarg($arg);
+                        }
+                        return join_values($escaped);
+                    }
+
+                    echo escape_all([(string) $_GET["a"]]);',
+                ['TaintedHtml on line 18', 'TaintedTextWithQuotes on line 18'],
+            ],
+            // the cast of the array takes none of them
+            'castOfArrayParamWithValuesOfTheArgumentPutBackOnly' => [
+                '<?php
+                    function cast(mixed $a): string {
+                        return (string) $a;
+                    }
+
+                    /** @param array<string> $args */
+                    function escape_all(array $args): string {
+                        $escaped = [];
+                        foreach ($args as $key => $arg) {
+                            $escaped[$key] = escapeshellarg($arg);
+                        }
+                        return cast($escaped);
+                    }
+
+                    echo escape_all([(string) $_GET["a"]]);',
+                [],
+            ],
+        ];
+
+        $result = [];
+        foreach ($cases as $name => [$code, $expected_issues]) {
+            $result[$name] = [$code, $expected_issues, false];
+            $result[$name . 'TrackingUnusedVariables'] = [$code, $expected_issues, true];
+        }
+
+        return $result;
+    }
+
+    /**
      * The sinks of the curl options and of the `Location` header with several, which a test expecting an issue can't
      * check: it only sees the first one reported.
      *
@@ -2512,6 +2621,14 @@ final class TaintTest extends TestCase
     public static function providerValidCodeParse(): array
     {
         return [
+            'arrayWalkCallbackWritingSafeValuesByReference' => [
+                'code' => '<?php
+                    $items = ["a"];
+                    array_walk($items, static function (string &$item): void {
+                        $item = "safe";
+                    });
+                    echo implode("", $items);',
+            ],
             'offsetOverwrittenInTheBranchWhereItIsSetIsUntaintedAfterTheIf' => [
                 'code' => '<?php
                     function f(array $a): void {
@@ -8499,6 +8616,48 @@ final class TaintTest extends TestCase
     public static function providerInvalidCodeParse(): array
     {
         return [
+            'arrayWalkCallbackWritingTaintedValuesByReference' => [
+                'code' => '<?php
+                    $items = ["a"];
+                    array_walk($items, static function (string &$item): void {
+                        $item = (string) $_GET["a"];
+                    });
+                    echo implode("", $items);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'arrayWalkRecursiveCallbackWritingTaintedValuesByReference' => [
+                'code' => '<?php
+                    $items = [["a"]];
+                    array_walk_recursive($items, static function (string &$item): void {
+                        $item = (string) $_GET["a"];
+                    });
+                    echo implode("", $items[0]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'arrayWalkNamedFunctionWritingTaintedValuesByReference' => [
+                'code' => '<?php
+                    function fill(string &$item): void {
+                        $item = (string) $_GET["a"];
+                    }
+
+                    $items = ["a"];
+                    array_walk($items, "fill");
+                    echo implode("", $items);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'arrayWalkStaticMethodWritingTaintedValuesByReference' => [
+                'code' => '<?php
+                    final class Filler {
+                        public static function fill(string &$item): void {
+                            $item = (string) $_GET["a"];
+                        }
+                    }
+
+                    $items = ["a"];
+                    array_walk($items, [Filler::class, "fill"]);
+                    echo implode("", $items);',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintSinkOfAFunctionWithOverloadsIsStillChecked' => [
                 'code' => '<?php
                     /**

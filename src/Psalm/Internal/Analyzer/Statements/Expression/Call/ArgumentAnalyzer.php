@@ -1941,8 +1941,11 @@ final class ArgumentAnalyzer
             $statements_analyzer->getFQCLN(),
             $statements_analyzer,
         );
-        
-        if (!$var_id) {
+
+        // the call doesn't define an undefined variable
+        if (!$var_id
+            || ($input_expr instanceof PhpParser\Node\Expr\Variable && !isset($context->vars_in_scope[$var_id]))
+        ) {
             return;
         }
 

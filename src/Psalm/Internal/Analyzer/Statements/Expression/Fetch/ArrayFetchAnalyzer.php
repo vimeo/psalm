@@ -1147,9 +1147,15 @@ final class ArrayFetchAnalyzer
                 continue;
             }
 
-            if ($type instanceof TNamedObject && self::isIndexableObject($codebase, $type)) {
+            if ($type instanceof TNamedObject
+                && self::isIndexableObject($codebase, $type, !$in_assignment && !$context->inside_unset)
+            ) {
                 if ($offset_call_receiver_type === false) {
-                    $offset_call_receiver_type = self::getOffsetCallReceiverType($codebase, $array_type);
+                    $offset_call_receiver_type = self::getOffsetCallReceiverType(
+                        $codebase,
+                        $array_type,
+                        !$in_assignment && !$context->inside_unset,
+                    );
                 }
 
                 self::handleArrayAccessOnNamedObject(
@@ -2609,7 +2615,7 @@ final class ArrayFetchAnalyzer
      * The type to call the offset methods on: without the objects that can't be indexed, which are
      * reported as non-array types instead. Null when there are none.
      */
-    private static function getOffsetCallReceiverType(Codebase $codebase, Union $array_type): ?Union
+    private static function getOffsetCallReceiverType(Codebase $codebase, Union $array_type, bool $is_read): ?Union
     {
         $receiver_types = $array_type->getAtomicTypes();
 
@@ -2618,7 +2624,7 @@ final class ArrayFetchAnalyzer
                 $type = $type->as->getSingleAtomic();
             }
 
-            if ($type instanceof TNamedObject && !self::isIndexableObject($codebase, $type)) {
+            if ($type instanceof TNamedObject && !self::isIndexableObject($codebase, $type, $is_read)) {
                 unset($receiver_types[$key]);
             }
         }
@@ -2631,14 +2637,16 @@ final class ArrayFetchAnalyzer
     }
 
     /**
-     * Unknown classlikes (traits included) are left to the method calls, which report them
+     * Unknown classlikes (traits included) are left to the method calls, which report them. The DOM collections are
+     * indexable for reads only: PHP throws for a write or an unset of an offset.
      */
-    private static function isIndexableObject(Codebase $codebase, TNamedObject $type): bool
+    private static function isIndexableObject(Codebase $codebase, TNamedObject $type, bool $is_read): bool
     {
         foreach ([$type, ...$type->extra_types] as $part) {
             if (!$part instanceof TNamedObject
                 || !$codebase->classOrInterfaceOrEnumExists($part->value)
-                || in_array(strtolower($part->value), ['arrayaccess', 'simplexmlelement', 'domnodelist'], true)
+                || in_array(strtolower($part->value), ['arrayaccess', 'simplexmlelement'], true)
+                || ($is_read && self::getDomCollectionOffsetMethod(strtolower($part->value), null) !== null)
                 || $codebase->classExtendsOrImplements($part->value, 'ArrayAccess')
                 || $codebase->classExtendsOrImplements($part->value, 'SimpleXMLElement')
                 || $codebase->interfaceExtends($part->value, 'ArrayAccess')
@@ -2669,6 +2677,25 @@ final class ArrayFetchAnalyzer
         return false;
     }
 
+    /**
+     * The method that reads an offset of a DOM collection: these classes don't implement ArrayAccess, but PHP reads
+     * their offsets, by position or, for a map, by name
+     *
+     * @param lowercase-string $class_name_lc
+     * @psalm-pure
+     */
+    private static function getDomCollectionOffsetMethod(string $class_name_lc, ?Union $offset_type): ?string
+    {
+        $by_name = $offset_type !== null && $offset_type->isString();
+
+        return match ($class_name_lc) {
+            'domnodelist', 'dom\\nodelist' => 'item',
+            'domnamednodemap', 'dom\\namednodemap', 'dom\\dtdnamednodemap' => $by_name ? 'getNamedItem' : 'item',
+            'dom\\htmlcollection' => $by_name ? 'namedItem' : 'item',
+            default => null,
+        };
+    }
+
     private static function handleArrayAccessOnNamedObject(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\ArrayDimFetch $stmt,
@@ -2688,14 +2715,19 @@ final class ArrayFetchAnalyzer
                 && $codebase->classExtendsOrImplements($type->value, 'SimpleXMLElement'))
         ) {
             $call_array_access_type = new Union([new TNull(), new TNamedObject('SimpleXMLElement')]);
-        } elseif (strtolower($type->value) === 'domnodelist' && $stmt->dim) {
+        } elseif ($stmt->dim
+            && ($offset_method = self::getDomCollectionOffsetMethod(
+                strtolower($type->value),
+                $statements_analyzer->node_data->getType($stmt->dim),
+            )) !== null
+        ) {
             $old_data_provider = $statements_analyzer->node_data;
 
             $statements_analyzer->node_data = clone $statements_analyzer->node_data;
 
             $fake_method_call = new VirtualMethodCall(
                 $stmt->var,
-                new VirtualIdentifier('item', $stmt->var->getAttributes()),
+                new VirtualIdentifier($offset_method, $stmt->var->getAttributes()),
                 [
                     new VirtualArg($stmt->dim),
                 ],
@@ -2711,6 +2743,14 @@ final class ArrayFetchAnalyzer
                 $statements_analyzer->addSuppressedIssues(['MixedMethodCall']);
             }
 
+            // an `int|string` offset is read by position or by name, whichever it is, with the same result
+            $dim_type = $statements_analyzer->node_data->getType($stmt->dim);
+            $has_either_offset = $dim_type !== null && !$dim_type->isInt() && !$dim_type->isString();
+
+            if ($has_either_offset && !isset($suppressed_issues['InvalidScalarArgument'])) {
+                $statements_analyzer->addSuppressedIssues(['InvalidScalarArgument']);
+            }
+
             MethodCallAnalyzer::analyze(
                 $statements_analyzer,
                 $fake_method_call,
@@ -2724,6 +2764,10 @@ final class ArrayFetchAnalyzer
 
             if (!isset($suppressed_issues['MixedMethodCall'])) {
                 $statements_analyzer->removeSuppressedIssues(['MixedMethodCall']);
+            }
+
+            if ($has_either_offset && !isset($suppressed_issues['InvalidScalarArgument'])) {
+                $statements_analyzer->removeSuppressedIssues(['InvalidScalarArgument']);
             }
 
             $call_array_access_type = $statements_analyzer->node_data->getType($fake_method_call) ?? Type::getMixed();
