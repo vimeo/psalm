@@ -850,8 +850,8 @@ final class AssertionFinder
             return;
         }
 
-        // an undefined variable read in isset mode (`$a?->b ?? 1`) is null
-        if (($var_type->possibly_undefined || $var_type->possibly_undefined_from_try) && $value_type->isNull()) {
+        // a possibly undefined variable read in isset mode (`$a?->b ?? 1`) is null, as the reconciler takes it
+        if ($var_type->possibly_undefined && !$var_type->possibly_undefined_from_try && $value_type->isNull()) {
             return;
         }
 
