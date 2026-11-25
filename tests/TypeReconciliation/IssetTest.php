@@ -209,6 +209,35 @@ final class IssetTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'nullsafeOnTheLeftOfCoalesceOnAPossiblyUndefinedObject' => [
+                'code' => '<?php
+                    final class R {
+                        public ?array $p = null;
+
+                        public function info(): ?array {
+                            return null;
+                        }
+                    }
+
+                    function call(): array {
+                        if (rand(0, 1)) {
+                            $r = new R();
+                        }
+
+                        return $r?->info() ?? [];
+                    }
+
+                    function fetch(): array {
+                        if (rand(0, 1)) {
+                            $r = new R();
+                        }
+
+                        return $r?->p ?? [];
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'nullsafeFetchOnTheLeftOfCoalesceStaysInIssetMode' => [
                 'code' => '<?php
                     final class Ext {
@@ -2809,6 +2838,44 @@ final class IssetTest extends TestCase
                         }
 
                         return $r?->{$n}()["k"] ?? [];
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'coalesceOnANullsafeCallOnAVariableVariableReadsTheName' => [
+                'code' => '<?php
+                    final class R {
+                        public function info(): ?array {
+                            return null;
+                        }
+                    }
+
+                    function f(): mixed {
+                        if (rand(0, 1)) {
+                            $n = "r";
+                        }
+
+                        return $$n?->info() ?? [];
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'coalesceOnAFetchFromAStaticCallKeepsDynamicNameIssues' => [
+                'code' => '<?php
+                    final class R {
+                        public static function info(): ?array {
+                            return null;
+                        }
+                    }
+
+                    function f(): mixed {
+                        if (rand(0, 1)) {
+                            $n = "info";
+                        }
+
+                        return R::{$n}()["k"] ?? [];
                     }',
                 'error_message' => 'PossiblyUndefinedVariable',
                 'error_levels' => [],

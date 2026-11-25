@@ -20,6 +20,7 @@ use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
 
+use function is_string;
 use function preg_replace;
 use function str_starts_with;
 use function strlen;
@@ -133,7 +134,8 @@ final class CoalesceAnalyzer
             $context->inside_isset = $was_inside_isset
                 || $has_fetch_chain
                 || ($fetch_root instanceof PhpParser\Node\Expr\NullsafeMethodCall
-                    && $fetch_root->var instanceof PhpParser\Node\Expr\Variable);
+                    && $fetch_root->var instanceof PhpParser\Node\Expr\Variable
+                    && is_string($fetch_root->var->name));
             // the value of the left operand decides which side is taken
             $context->inside_general_use = true;
 
