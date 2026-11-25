@@ -27,16 +27,23 @@ use Psalm\Tests\TestCase;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TClassConstant;
+use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralString;
+use Psalm\Type\Atomic\TLowercaseString;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNonEmptyNonspecificLiteralString;
+use Psalm\Type\Atomic\TNonEmptyString;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TNumeric;
+use Psalm\Type\Atomic\TNumericString;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTrue;
@@ -177,6 +184,31 @@ final class ReconcilerTest extends TestCase
             'stringToNumericStringWithFloat' => ['numeric-string', new IsLooselyEqual(new TFloat()), 'string'],
             'numericLooselyEqualToAStringStaysNumeric' => ['numeric', new IsLooselyEqual(new TString()), 'numeric'],
             'scalarsLooselyEqualToAStringStayScalars' => ['bool|float|int|null', new IsLooselyEqual(new TString()), 'bool|float|int|null'],
+            'numericLooselyEqualToAnIntStaysNumeric' => ['numeric', new IsLooselyEqual(new TInt()), 'numeric'],
+            'arrayKeyLooselyEqualToAnIntStaysArrayKey' => ['array-key', new IsLooselyEqual(new TInt()), 'array-key'],
+            'scalarLooselyEqualToAnIntStaysScalar' => ['scalar', new IsLooselyEqual(new TInt()), 'scalar'],
+            'literalStringsLooselyEqualToAnIntAreTheNumericOnes' => ["'1'", new IsLooselyEqual(new TInt()), "'1'|'a'"],
+            'classStringIsNotLooselyEqualToAnInt' => ['never', new IsLooselyEqual(new TInt()), 'class-string'],
+            'intLooselyEqualToTrueIsTruthy' => ['int', new IsLooselyEqual(new TTrue()), 'int'],
+            'nullableIntLooselyEqualToFalseIsFalsy' => ['0|null', new IsLooselyEqual(new TFalse()), 'int|null'],
+            'numericLooselyEqualToAFloatStaysNumeric' => ['numeric', new IsLooselyEqual(new TFloat()), 'numeric'],
+            'scalarsLooselyEqualToAFloatStayScalars' => ['bool|int|null', new IsLooselyEqual(new TFloat()), 'bool|int|null'],
+            'literalStringsLooselyEqualToAFloatAreTheNumericOnes' => ["'1'", new IsLooselyEqual(new TFloat()), "'1'|'a'"],
+            'anyTypeLooselyEqualToABoolIsKept' => ['array<array-key, mixed>|float|int|null|string', new IsLooselyEqual(new TBool()), 'array|float|int|null|string'],
+            'mixedLooselyEqualToABoolStaysMixed' => ['mixed', new IsLooselyEqual(new TBool()), 'mixed'],
+            'floatLooselyEqualToANonEmptyStringStaysFloat' => ['float', new IsLooselyEqual(new TNonEmptyString()), 'float'],
+            'floatLooselyEqualToALowercaseStringStaysFloat' => ['float', new IsLooselyEqual(new TLowercaseString()), 'float'],
+            'floatLooselyEqualToANumericStringStaysFloat' => ['float', new IsLooselyEqual(new TNumericString()), 'float'],
+            'nullIsNotLooselyEqualToANonEmptyString' => ['int', new IsLooselyEqual(new TNonEmptyString()), 'int|null'],
+            'nullIsNotLooselyEqualToANonEmptyLiteralString' => ['int', new IsLooselyEqual(new TNonEmptyNonspecificLiteralString()), 'int|null'],
+            'nullIsLooselyEqualToAnEmptyLowercaseString' => ['int|null', new IsLooselyEqual(new TLowercaseString()), 'int|null'],
+            'intIsNotLooselyEqualToAClassString' => ['never', new IsLooselyEqual(new TClassString()), 'int|null'],
+            'stringLooselyEqualToANonEmptyStringIsNarrowed' => ['int|non-empty-string', new IsLooselyEqual(new TNonEmptyString()), 'int|string'],
+            'floatLooselyEqualToAPositiveIntStaysFloat' => ['float', new IsLooselyEqual(new TIntRange(1, null)), 'float'],
+            'stringLooselyEqualToAPositiveIntIsNumeric' => ['numeric-string', new IsLooselyEqual(new TIntRange(1, null)), 'string'],
+            'nullIsNotLooselyEqualToAPositiveInt' => ['bool', new IsLooselyEqual(new TIntRange(1, null)), 'bool|null'],
+            'nullIsLooselyEqualToANonNegativeInt' => ['bool|null', new IsLooselyEqual(new TIntRange(0, null)), 'bool|null'],
+            'intLooselyEqualToAPositiveIntIsNarrowed' => ['float|int<1, max>', new IsLooselyEqual(new TIntRange(1, null)), 'float|int'],
             'filterKeyedArrayWithIterable' => ['array{some: string}',new IsType(new TIterable([Type::getMixed(), Type::getString()])), 'array{some: mixed}'],
             'SimpleXMLElementNotAlwaysTruthy' => ['SimpleXMLElement', new Truthy(), 'SimpleXMLElement'],
             'SimpleXMLElementNotAlwaysTruthy2' => ['SimpleXMLElement', new Falsy(), 'SimpleXMLElement'],

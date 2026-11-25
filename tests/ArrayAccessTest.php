@@ -1728,6 +1728,33 @@ final class ArrayAccessTest extends TestCase
                         return isset($array[$offset]);
                     }',
             ],
+            'issetOfAStringOffsetOfIntKeysLooksForANumericString' => [
+                'code' => '<?php
+                    function label(string $id): string {
+                        $labels = ["1" => "foo", "2" => "bar"];
+
+                        if (isset($labels[$id])) {
+                            return $labels[$id];
+                        }
+
+                        return "";
+                    }
+
+                    function labelOrEmpty(string $id): string {
+                        $labels = ["1" => "foo", "2" => "bar"];
+
+                        return $labels[$id] ?? "";
+                    }
+
+                    /** @param array<int, string> $names */
+                    function name(array $names, string $id): string {
+                        if (isset($names[$id])) {
+                            return $names[$id];
+                        }
+
+                        return "";
+                    }',
+            ],
             'appendToATypedArrayObjectOrArrayIterator' => [
                 'code' => '<?php
                     final class Bag {
@@ -4365,6 +4392,19 @@ final class ArrayAccessTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],
+            'issetOfANonDecimalIntStringOffsetOfIntKeys' => [
+                'code' => '<?php
+                    /**
+                     * @param array<int, string> $names
+                     * @param non-decimal-int-string $id
+                     */
+                    function has(array $names, string $id): bool {
+                        return isset($names[$id]);
+                    }',
+                'error_message' => 'InvalidArrayOffset',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'issetOfASealedArrayWithATemplateOffsetBoundedByATypeOfNoKey' => [
                 'code' => '<?php
                     /**
@@ -4376,6 +4416,18 @@ final class ArrayAccessTest extends TestCase
                         return isset($array[$offset]);
                     }',
                 'error_message' => 'InvalidArrayOffset',
+            ],
+            'issetOfAMixedOrStringOffsetIsStillACoercion' => [
+                'code' => '<?php
+                    /** @param array<array-key, string> $names */
+                    function has(array $names, mixed $id, string $default, bool $useId): bool {
+                        $key = $useId ? $id : $default;
+
+                        return isset($names[$key]);
+                    }',
+                'error_message' => 'MixedArrayTypeCoercion',
+                'error_levels' => ['MixedAssignment'],
+                'php_version' => '8.0',
             ],
             'plainWriteOfAWrongValueIntoAnArrayAccessItemIsStillChecked' => [
                 'code' => '<?php

@@ -1704,6 +1704,7 @@ final class Context
                     && $atomic_type->getVarId() === $remove_var_id
                 ) {
                     $builder ??= $type->getBuilder();
+                    $builder->removeType($atomic_type->getKey());
                     $builder->addType($atomic_type->getReplacement());
                 }
             }

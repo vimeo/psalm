@@ -20,6 +20,23 @@ final class IntersectionTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'iterableIntersectionAcceptsObjectsOfEachType' => [
+                'code' => '<?php
+                    /** @param iterable<int, string>&Countable $x */
+                    function takesCountable($x): void {}
+
+                    /**
+                     * @param ArrayObject<int, string> $a
+                     * @param Iterator<int, string>&Countable $i
+                     */
+                    function f(ArrayObject $a, Iterator&Countable $i): void {
+                        takesCountable($a);
+                        takesCountable($i);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'propertyOfAnObjectIntersectedWithAShapeHasTheTypeOfBoth' => [
                 'code' => '<?php
                     final class V {
@@ -603,6 +620,75 @@ final class IntersectionTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'iterableIntersectionDoesNotAcceptTraversable' => [
+                'code' => '<?php
+                    /** @param iterable&Countable $x */
+                    function takesCountable($x): void {}
+
+                    function f(Traversable $t): void {
+                        takesCountable($t);
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'iterableIntersectionDoesNotAcceptGenerator' => [
+                'code' => '<?php
+                    /** @param iterable&Countable $x */
+                    function takesCountable($x): void {}
+
+                    function f(Generator $g): void {
+                        takesCountable($g);
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'objectIntersectedWithTemplateShowsTemplateInParentheses' => [
+                'code' => '<?php
+                    interface I {}
+
+                    /**
+                     * @template T of object
+                     * @param I&T $x
+                     */
+                    function f(object $x): int {
+                        return strlen($x);
+                    }',
+                'error_message' => 'but I&(T:fn-f as object) provided',
+            ],
+            'genericObjectIntersectedWithTemplateShowsTemplateInParentheses' => [
+                'code' => '<?php
+                    /** @template V */
+                    interface I {}
+
+                    /**
+                     * @template T of object
+                     * @param I<int>&T $x
+                     */
+                    function f(object $x): int {
+                        return strlen($x);
+                    }',
+                'error_message' => 'but I<int>&(T:fn-f as object) provided',
+            ],
+            'iterableIntersectedWithTemplateShowsTemplateInParentheses' => [
+                'code' => '<?php
+                    /**
+                     * @template T of object
+                     * @param iterable<int>&T $x
+                     */
+                    function f(object $x): int {
+                        return strlen($x);
+                    }',
+                'error_message' => 'but iterable<mixed, int>&(T:fn-f as object) provided',
+            ],
+            'shapeIntersectedWithTemplateShowsTemplateInParentheses' => [
+                'code' => '<?php
+                    /**
+                     * @template T of object
+                     * @param object{a: int}&T $x
+                     */
+                    function f(object $x): int {
+                        return strlen($x);
+                    }',
+                'error_message' => 'but object{a:int}&(T:fn-f as object) provided',
+            ],
             'missingPropertyOfAnIntersectionWithAnInterface' => [
                 'code' => '<?php
                     interface I {}

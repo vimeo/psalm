@@ -21,6 +21,22 @@ final class ConditionalReturnTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'unionOfConditionalsOnTheSameTemplateKeepsBoth' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T $value
+                     * @return (T is int ? string : bool)|(T is string ? int : float)
+                     */
+                    function f($value) {
+                        throw new Exception();
+                    }
+
+                    $a = f("a");',
+                'assertions' => [
+                    '$a===' => 'bool|int',
+                ],
+            ],
             'conditionalReturnOnAnArgumentWithoutTypeTakesBothBranches' => [
                 'code' => '<?php
                     /** @return ($value is object ? true : false) */
@@ -3013,6 +3029,22 @@ final class ConditionalReturnTypeTest extends TestCase
                 'assertions' => ['$value===' => "list<int|mixed>|null"],
                 'ignored_issues' => [],
                 'php_version' => '8.2',
+            ],
+            'templateElseBranchExcludesTheConditionFromItsBound' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @template T of string|null
+                     * @param T $s
+                     * @return (T is null ? never : T)
+                     */
+                    function example(?string $s): string {
+                        if ($s === null) {
+                            throw new Exception();
+                        }
+                        return $s;
+                    }
+                    PHP,
             ],
             'unknownTraversableConditionalKeepsBothBranches' => [
                 'code' => <<<'PHP'

@@ -204,6 +204,14 @@ final class TaintFlowGraph extends DataFlowGraph
     private array $taint_validations_of_calls = [];
 
     /**
+     * The ids of the nodes holding a canonical path, which realpath() returned (see CanonicalPaths). Only used while
+     * analysing the function-like they are in, so never merged by addGraph().
+     *
+     * @var array<string, true>
+     */
+    private array $canonical_paths = [];
+
+    /**
      * The ids of the nodes of variables assigned an empty array, whose items the next item assigned starts the start
      * of (see TaintStore::recordItemAssignment()), and only used while analysing the function-like they are in
      *
@@ -741,6 +749,31 @@ final class TaintFlowGraph extends DataFlowGraph
         }
 
         return $validations ?? [];
+    }
+
+    /**
+     * @psalm-capabilities read-props|write-this-props
+     */
+    public function addCanonicalPath(DataFlowNode $node): void
+    {
+        $this->canonical_paths[$node->id] = true;
+    }
+
+    /**
+     * Whether all the nodes hold a canonical path
+     *
+     * @param array<string, DataFlowNode> $nodes
+     * @psalm-mutation-free
+     */
+    public function areCanonicalPaths(array $nodes): bool
+    {
+        foreach ($nodes as $node) {
+            if (!isset($this->canonical_paths[$node->id])) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**
@@ -1548,7 +1581,8 @@ final class TaintFlowGraph extends DataFlowGraph
         $max = $codebase->taint_count;
         for ($x = 0; $x < $max; $x++) {
             $t = 1 << $x;
-            if (!($taints & $t)) {
+            // both are reported as a tainted XPath query
+            if (!($taints & $t) || ($t === TaintKind::INPUT_XPATH_LITERAL && ($taints & TaintKind::INPUT_XPATH))) {
                 continue;
             }
             $issue = match ($t) {
@@ -1684,7 +1718,7 @@ final class TaintFlowGraph extends DataFlowGraph
                     $issue_trace,
                     $path,
                 ),
-                TaintKind::INPUT_XPATH => new TaintedXpath(
+                TaintKind::INPUT_XPATH, TaintKind::INPUT_XPATH_LITERAL => new TaintedXpath(
                     'Detected tainted xpath query',
                     $issue_location,
                     $issue_trace,

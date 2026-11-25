@@ -62,7 +62,7 @@ final class TTypeVariable extends Atomic
      *      their current state
      */
     #[Override]
-    public function getId(bool $exact = true, bool $nested = false): string
+    public function getId(bool $exact = true): string
     {
         // Bounds are rendered through the types they hold, which may (directly
         // or through another variable) mention this variable again. A variable
@@ -240,5 +240,20 @@ final class TTypeVariable extends Atomic
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
         return false;
+    }
+
+    /**
+     * A type variable has no docblock syntax: it is written with its name
+     *
+     * @param array<lowercase-string, string> $aliased_classes
+     */
+    #[Override]
+    public function toNamespacedString(
+        ?string $namespace,
+        array $aliased_classes,
+        ?string $this_class,
+        bool $use_phpdoc_format,
+    ): string {
+        return $this->name;
     }
 }
