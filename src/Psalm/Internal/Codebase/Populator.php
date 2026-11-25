@@ -82,6 +82,14 @@ final class Populator
     private array $invalid_class_storages = [];
 
     /**
+     * The class-likes populated without an interface or a trait, or without what a class-like they inherit from
+     * lacks, by the lowercase name of what they lack: populated again once it is (see repopulateStaleClassLikes())
+     *
+     * @var array<lowercase-string, array<lowercase-string, ClassLikeStorage>>
+     */
+    private array $stale_class_storages = [];
+
+    /**
      * @psalm-mutation-free
      */
     public function __construct(
@@ -104,6 +112,8 @@ final class Populator
         foreach ($this->classlike_storage_provider->getNew() as $class_storage) {
             $this->populateClassLikeStorage($class_storage);
         }
+
+        $this->repopulateStaleClassLikes();
 
         $this->registerMixinDependencies();
 
@@ -751,6 +761,10 @@ final class Populator
 
         $storage->populated = true;
 
+        foreach ($storage->invalid_dependencies as $invalid_dependency => $_) {
+            $this->stale_class_storages[strtolower($invalid_dependency)][$fq_classlike_name_lc] = $storage;
+        }
+
         if (isset($this->invalid_class_storages[$fq_classlike_name_lc])) {
             foreach ($this->invalid_class_storages[$fq_classlike_name_lc] as $dependency) {
                 // Dependencies may not be fully set yet, so we have to loop through dependencies of dependencies
@@ -852,6 +866,33 @@ final class Populator
         }
 
         return $type->getId();
+    }
+
+    /**
+     * Populates again the class-likes populated before what they lack was scanned, as the class-likes implementing an
+     * interface or using a trait of a stub (the stubs are scanned after the project): those populated again can make
+     * others whole in turn
+     */
+    private function repopulateStaleClassLikes(): void
+    {
+        do {
+            $repopulated = false;
+
+            foreach ($this->stale_class_storages as $dependency => $storages) {
+                if (!$this->classlike_storage_provider->has($dependency)) {
+                    continue;
+                }
+
+                unset($this->stale_class_storages[$dependency]);
+
+                foreach ($storages as $storage) {
+                    unset($storage->invalid_dependencies[$dependency]);
+                    $storage->populated = false;
+                    $this->populateClassLikeStorage($storage);
+                    $repopulated = true;
+                }
+            }
+        } while ($repopulated);
     }
 
     private function populateOverriddenMethods(
@@ -1072,6 +1113,10 @@ final class Populator
             );
             $trait_storage = $storage_provider->get($used_trait_lc);
         } catch (InvalidArgumentException) {
+            $this->progress->debug('Populator could not find dependency (' . __LINE__ . ")\n");
+
+            $this->stale_class_storages[strtolower($used_trait_lc)][strtolower($storage->name)] = $storage;
+
             return null;
         }
 

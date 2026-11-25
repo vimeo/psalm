@@ -1,0 +1,13 @@
+<?php
+
+interface StubRunner
+{
+    /** @psalm-taint-sink shell $command */
+    public function run(string $command): void;
+}
+
+trait StubRunsCommands
+{
+    /** @psalm-taint-sink shell $command */
+    public function exec(string $command): void {}
+}
