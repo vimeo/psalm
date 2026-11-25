@@ -963,6 +963,16 @@ final class ArgumentsAnalyzer
                                     // provisional, not definitive: keep the declared type
                                     continue;
                                 }
+                            } elseif ($param_storage->signature_type
+                                && !UnionTypeComparator::isContainedBy(
+                                    $codebase,
+                                    $replaced_param_type,
+                                    $param_storage->signature_type,
+                                )
+                            ) {
+                                // a type inferred for another receiver of the call (a member of an intersection) is
+                                // not replaced by one the parameter's declared type doesn't accept
+                                continue;
                             }
 
                             $newly_inferred_type = Type::combineUnionTypes(

@@ -64,6 +64,7 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
 {
     /**
      * @param  TNamedObject|TTemplateParam|null $static_type
+     * @param  list<Atomic> $intersection_siblings the other members of the intersection the receiver is a member of
      * @psalm-suppress ComplexMethod it's really complex, but unavoidably so
      */
     public static function analyze(
@@ -78,6 +79,7 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
         ?string $lhs_var_id,
         AtomicMethodCallAnalysisResult $result,
         ?TemplateResult $inferred_template_result = null,
+        array $intersection_siblings = [],
     ): void {
         if ($lhs_type_part instanceof TTemplateParam
             && !$lhs_type_part->as->isMixed()
@@ -441,6 +443,7 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                     $lhs_var_id,
                     $result,
                     $intersection_types,
+                    $intersection_siblings,
                 );
         }
 
@@ -596,6 +599,11 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
             $result,
             $inferred_template_result,
             $method_id === $mixin_method_id ? $mixin_user_class : null,
+            self::getIntersectionMethodIds(
+                $codebase,
+                $method_id,
+                [...$intersection_siblings, ...array_values($intersection_types)],
+            ),
         );
 
         $statements_analyzer->node_data = $old_node_data;
@@ -629,6 +637,7 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
     /**
      * @param  TNamedObject|TTemplateParam $lhs_type_part
      * @param   array<string, Atomic> $intersection_types
+     * @param   list<Atomic> $intersection_siblings
      * @return  array{?Union, array<string, bool>}
      */
     private static function getIntersectionReturnType(
@@ -641,11 +650,15 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
         ?string $lhs_var_id,
         AtomicMethodCallAnalysisResult $result,
         array $intersection_types,
+        array $intersection_siblings,
     ): array {
         $all_intersection_return_type = null;
         $all_intersection_existent_method_ids = [];
 
-        foreach ($intersection_types as $intersection_type) {
+        foreach ($intersection_types as $key => $intersection_type) {
+            $siblings = $intersection_types;
+            unset($siblings[$key]);
+
             $intersection_result = clone $result;
 
             /** @var ?Union $intersection_result->return_type */
@@ -663,6 +676,12 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                 true,
                 $lhs_var_id,
                 $intersection_result,
+                null,
+                [
+                    $lhs_type_part->setIntersectionTypes([]),
+                    ...array_values($siblings),
+                    ...$intersection_siblings,
+                ],
             );
 
             $result->returns_by_ref = $intersection_result->returns_by_ref;
@@ -692,6 +711,44 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
         }
 
         return [$all_intersection_return_type, $all_intersection_existent_method_ids];
+    }
+
+    /**
+     * The declarations of the method by the other members of an intersection receiver, other than the one called
+     *
+     * @param  list<Atomic> $intersection_siblings
+     * @return list<MethodIdentifier>
+     * @psalm-capabilities read-props
+     */
+    private static function getIntersectionMethodIds(
+        Codebase $codebase,
+        MethodIdentifier $method_id,
+        array $intersection_siblings,
+    ): array {
+        $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id) ?? $method_id;
+
+        $method_ids = [];
+
+        foreach ($intersection_siblings as $sibling) {
+            if (!$sibling instanceof TNamedObject
+                || !$codebase->classlike_storage_provider->has(strtolower($sibling->value))
+            ) {
+                continue;
+            }
+
+            $sibling_method_id = $codebase->methods->getDeclaringMethodId(
+                new MethodIdentifier($sibling->value, $method_id->method_name),
+            );
+
+            if ($sibling_method_id !== null
+                && (string) $sibling_method_id !== (string) $declaring_method_id
+                && $codebase->methods->hasStorage($sibling_method_id)
+            ) {
+                $method_ids[(string) $sibling_method_id] = $sibling_method_id;
+            }
+        }
+
+        return array_values($method_ids);
     }
 
     private static function updateResultReturnType(
