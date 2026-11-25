@@ -73,6 +73,7 @@ use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function array_any;
+use function array_count_values;
 use function array_filter;
 use function array_keys;
 use function array_map;
@@ -548,28 +549,36 @@ abstract class CallAnalyzer
             ];
         }
 
+        $param_offsets = [];
+
         foreach ($args as $argument_offset => $arg) {
             if ($arg->unpack) {
                 continue;
             }
 
-            $i = $argument_offset;
+            $param_offsets[$argument_offset] = $argument_offset;
 
             if ($arg->name !== null) {
-                $i = null;
+                unset($param_offsets[$argument_offset]);
 
                 foreach ($method_params as $offset => $method_param) {
                     if ($method_param->name === $arg->name->name) {
-                        $i = $offset;
+                        $param_offsets[$argument_offset] = $offset;
                         break;
                     }
                 }
             }
+        }
 
-            $param = $i === null ? null : $method_params[$i] ?? null;
+        // a parameter several arguments go to (a named argument repeating a positional one) keeps its declared type
+        $argument_counts = array_count_values($param_offsets);
+
+        foreach ($param_offsets as $argument_offset => $i) {
+            $arg = $args[$argument_offset];
+            $param = $method_params[$i] ?? null;
             $arg_type = $statements_analyzer->node_data->getType($arg->value);
 
-            if ($i === null
+            if ($argument_counts[$i] > 1
                 || $param === null
                 || $param->type === null
                 || $param->by_ref
@@ -587,6 +596,18 @@ abstract class CallAnalyzer
 
             foreach ($declared_params as [$other_class_storage, $other_params]) {
                 $other_param = $other_params[$i] ?? null;
+
+                // the other declaration may name its parameters in another order
+                if ($arg->name !== null) {
+                    $other_param = null;
+
+                    foreach ($other_params as $candidate_param) {
+                        if ($candidate_param->name === $arg->name->name) {
+                            $other_param = $candidate_param;
+                            break;
+                        }
+                    }
+                }
 
                 if ($other_param === null
                     || $other_param->by_ref

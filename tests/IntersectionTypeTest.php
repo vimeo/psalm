@@ -8,6 +8,8 @@ use Override;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
+use const DIRECTORY_SEPARATOR;
+
 final class IntersectionTypeTest extends TestCase
 {
     use ValidCodeAnalysisTestTrait;
@@ -724,6 +726,26 @@ final class IntersectionTypeTest extends TestCase
                         $x->call(function (string $v): void {});
                     }',
             ],
+            'namedArgumentOfAMethodDeclaredByEveryIntersectionMemberMatchesByName' => [
+                'code' => '<?php
+                    interface A {
+                        public function m(int $a = 0, string $b = ""): void;
+                    }
+                    interface B {
+                        public function m(string $b = "", int $a = 0): void;
+                    }
+
+                    /** @param A&B $x */
+                    function f($x): void {
+                        $x->m(b: "s");
+                        $x->m(a: 1);
+                        $x->m(1, 2);
+                        $x->m("s");
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'selfParamOfAMethodDeclaredByEveryIntersectionMemberIsTheirOwnClass' => [
                 'code' => '<?php
                     interface First {
@@ -1213,6 +1235,57 @@ final class IntersectionTypeTest extends TestCase
                         $x->run(function (array $v): void {});
                     }',
                 'error_message' => 'Argument 1 of IntKeys::run expects Closure[impure](string):void',
+            ],
+            'namedArgumentFittingNoDeclarationOfAnIntersectionMethodIsReported' => [
+                'code' => '<?php
+                    interface A {
+                        public function m(int $a = 0, string $b = ""): void;
+                    }
+                    interface B {
+                        public function m(string $b = "", int $a = 0): void;
+                    }
+
+                    /** @param A&B $x */
+                    function f($x): void {
+                        $x->m(b: 1);
+                    }',
+                'error_message' => 'Argument 1 of B::m expects string, but 1 provided',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'otherNamedArgumentFittingNoDeclarationOfAnIntersectionMethodIsReported' => [
+                'code' => '<?php
+                    interface A {
+                        public function m(int $a = 0, string $b = ""): void;
+                    }
+                    interface B {
+                        public function m(string $b = "", int $a = 0): void;
+                    }
+
+                    /** @param A&B $x */
+                    function f($x): void {
+                        $x->m(a: "s");
+                    }',
+                'error_message' => 'Argument 2 of B::m expects int, but \'s\' provided',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'namedArgumentRepeatingAPositionalOneOfAnIntersectionMethodKeepsTheDeclaredType' => [
+                'code' => '<?php
+                    interface A {
+                        public function m(int $a = 0, string $b = ""): void;
+                    }
+                    interface B {
+                        public function m(string $b = "", int $a = 0): void;
+                    }
+
+                    /** @param A&B $x */
+                    function f($x): void {
+                        $x->m(1, b: "s");
+                    }',
+                'error_message' => 'InvalidScalarArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:31 - Argument 1 of B::m expects string, but 1 provided',
+                'error_levels' => ['InvalidNamedArgument'],
+                'php_version' => '8.0',
             ],
             'argumentOfAMethodDeclaredByOneIntersectionMemberIsCheckedAgainstIt' => [
                 'code' => '<?php
