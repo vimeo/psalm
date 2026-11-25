@@ -492,6 +492,105 @@ final class AssertAnnotationTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'assertShapeOnANonEmptyArrayFiltersEachItemByTheValueType' => [
+                'code' => '<?php
+                    /**
+                     * @param mixed $v
+                     * @psalm-assert-if-true array{a: int|bool, b: string} $v
+                     */
+                    function isAB($v): bool {
+                        return true;
+                    }
+
+                    /** @var non-empty-array<string, int|string|null> */
+                    $a = [];
+
+                    if (!isAB($a)) {
+                        throw new RuntimeException();
+                    }',
+                'assertions' => [
+                    '$a===' => 'array{a: int, b: string}',
+                ],
+            ],
+            'assertListOnANonEmptyArrayNarrowsItsValues' => [
+                'code' => '<?php
+                    /**
+                     * @param mixed $v
+                     * @psalm-assert-if-true list<int> $v
+                     */
+                    function isIntList($v): bool {
+                        return true;
+                    }
+
+                    /** @var non-empty-array<int, int|string> */
+                    $a = [];
+
+                    if (!isIntList($a)) {
+                        throw new RuntimeException();
+                    }',
+                'assertions' => [
+                    '$a===' => 'non-empty-list<int>',
+                ],
+            ],
+            'assertListOnAStringKeyedArrayThatMayBeEmptyIsPossible' => [
+                'code' => '<?php
+                    /**
+                     * @param mixed $v
+                     * @psalm-assert-if-true list<int> $v
+                     */
+                    function isIntList($v): bool {
+                        return true;
+                    }
+
+                    /** @param array<string, mixed> $a */
+                    function f(array $a): void {
+                        if (isIntList($a)) {
+                            echo count($a);
+                        }
+                    }',
+            ],
+            'assertShapeWhoseRestFitsNoValueOfTheArrayDropsTheRest' => [
+                'code' => '<?php
+                    /**
+                     * @param mixed $v
+                     * @psalm-assert-if-true array{a: int, ...<string, bool>} $v
+                     */
+                    function isABoolRest($v): bool {
+                        return true;
+                    }
+
+                    /** @param non-empty-array<string, int|string> $a */
+                    function h(array $a): array {
+                        if (isABoolRest($a)) {
+                            /** @psalm-check-type-exact $a = array{a: int} */;
+                        }
+
+                        return $a;
+                    }',
+            ],
+            'assertListOfANonEmptyArrayKeepsItNonEmpty' => [
+                'code' => '<?php
+                    /**
+                     * @param mixed $value
+                     * @psalm-assert-if-true list<int> $value
+                     */
+                    function isIntList($value): bool {
+                        return is_array($value) && array_is_list($value);
+                    }
+
+                    /** @param mixed[] $ids */
+                    function first(array $ids): int {
+                        if (count($ids) === 2 && isIntList($ids)) {
+                            /** @psalm-check-type-exact $ids = non-empty-list<int> */;
+                            return $ids[0];
+                        }
+
+                        return 0;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'assertionOnAPropertyIsForgottenAfterAMethodWritingIt' => [
                 'code' => '<?php
                     /**
@@ -6173,6 +6272,22 @@ final class AssertAnnotationTest extends TestCase
                 'error_message' => 'RedundantCondition',
                 'error_levels' => [],
                 'php_version' => '8.1',
+            ],
+            'assertListOnANonEmptyStringKeyedArrayIsImpossible' => [
+                'code' => '<?php
+                    /**
+                     * @param mixed $v
+                     * @psalm-assert-if-true list<int> $v
+                     */
+                    function isIntList($v): bool {
+                        return true;
+                    }
+
+                    /** @param non-empty-array<string, mixed> $a */
+                    function f(array $a): void {
+                        if (isIntList($a)) {}
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
             ],
             'assertIfFalseOfANullsafeMethodCallDoesNotHoldWhereItIsFalsy' => [
                 'code' => '<?php
