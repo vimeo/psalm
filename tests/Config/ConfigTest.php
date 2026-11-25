@@ -2581,7 +2581,7 @@ final class ConfigTest extends DeferredAnalyzerTestCase
     }
 
     /**
-     * @return array<string, array{string, string, string}>
+     * @return array<string, array{0: string, 1: string, 2: string, 3?: string}>
      * @psalm-pure
      */
     public static function providerSinksOfExtensionsWithoutTheirStubs(): array
@@ -2596,6 +2596,12 @@ final class ConfigTest extends DeferredAnalyzerTestCase
             'DOMXPath::query' => ['DOMXPath', 'query', 'TaintedXpath'],
             'DOMXPath::evaluate' => ['DOMXPath', 'evaluate', 'TaintedXpath'],
             'SimpleXMLElement::xpath' => ['SimpleXMLElement', 'xpath', 'TaintedXpath'],
+            // a value in a string literal of the query keeps the taint of what can end it
+            'DOMXPath::query in a string literal' => ['DOMXPath', 'query', 'TaintedXpath', '"//u[@id=\'" . $input . "\']"'],
+            'DOMXPath::evaluate in a string literal'
+                => ['DOMXPath', 'evaluate', 'TaintedXpath', '"//u[@id=\'" . $input . "\']"'],
+            'SimpleXMLElement::xpath in a string literal'
+                => ['SimpleXMLElement', 'xpath', 'TaintedXpath', '"//u[@id=\'" . $input . "\']"'],
             'SoapClient::__setLocation' => ['SoapClient', '__setLocation', 'TaintedSSRF'],
         ];
     }
@@ -2605,8 +2611,12 @@ final class ConfigTest extends DeferredAnalyzerTestCase
      * out for the bundled ones: the sinks of their functions still apply
      */
     #[DataProvider('providerSinksOfExtensionsWithoutTheirStubs')]
-    public function testSinksOfExtensionsWithoutTheirStubs(string $class, string $method, string $error): void
-    {
+    public function testSinksOfExtensionsWithoutTheirStubs(
+        string $class,
+        string $method,
+        string $error,
+        string $argument = '$input',
+    ): void {
         if (!class_exists($class)) {
             // without its stub, Psalm only knows the class of an extension that PHP loads
             $this->markTestSkipped('The extension of ' . $class . ' is not loaded');
@@ -2643,7 +2653,7 @@ final class ConfigTest extends DeferredAnalyzerTestCase
                     if (!is_string($input)) {
                         return;
                     }
-                    $object->' . $method . '($input);
+                    $object->' . $method . '(' . $argument . ');
                 }',
         );
 

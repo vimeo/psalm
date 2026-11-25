@@ -2,8 +2,10 @@
 
 // The taints smi2/phpclickhouse passes along: the queries and the table and column names a client sends are SQL
 // sinks, the files it reads or writes file sinks, and its formatters escape the values they quote. The values
-// bound into `{name}` placeholders are inserted as they are, and are not followed. Loaded when the analysed
-// code uses the package, refining its classes (see Config::visitStubFiles()).
+// bound into `{name}` placeholders are inserted as they are, and are not followed as SQL sinks. What the queries
+// store and read is described by the database annotations (see DatabaseTaints): the selects are sent with
+// ClickHouse's `readonly` setting, so they store nothing. Loaded when the analysed code uses the package, refining
+// its classes (see Config::visitStubFiles()).
 
 namespace ClickHouseDB {
 use ClickHouseDB\Exception\QueryException;
@@ -21,6 +23,7 @@ class Client
 {
     /**
      * @psalm-taint-sink sql $sql
+     * @psalm-database-query $sql $bindings none
      */
     public function write(string $sql, array $bindings = [], bool $exception = true, array $querySettings = []): Statement
     {
@@ -28,6 +31,7 @@ class Client
 
     /**
      * @psalm-taint-sink sql $sql
+     * @psalm-database-query $sql $bindings result readonly
      */
     public function select(
         string $sql,
@@ -41,6 +45,7 @@ class Client
 
     /**
      * @psalm-taint-sink sql $sql
+     * @psalm-database-query $sql $bindings result readonly
      */
     public function selectAsync(
         string $sql,
@@ -58,6 +63,7 @@ class Client
      * @param array $querySettings Per-query settings override
      *
      * @psalm-taint-sink sql $sql
+     * @psalm-database-query $sql $params result readonly
      */
     public function selectWithParams(string $sql, array $params, array $querySettings = []): Statement
     {
@@ -70,6 +76,7 @@ class Client
      * @param array $querySettings Per-query settings override
      *
      * @psalm-taint-sink sql $sql
+     * @psalm-database-query $sql $params none
      */
     public function writeWithParams(string $sql, array $params, bool $exception = true, array $querySettings = []): Statement
     {
@@ -92,6 +99,7 @@ class Client
      * @return \Generator yields associative arrays, one per row
      *
      * @psalm-taint-sink sql $sql
+     * @psalm-database-query $sql $bindings rows readonly
      */
     public function selectGenerator(string $sql, array $bindings = [], array $querySettings = []): \Generator
     {
@@ -111,6 +119,7 @@ class Client
      *
      * @psalm-taint-sink sql $table
      * @psalm-taint-sink sql $columns
+     * @psalm-database-insert $table $values
      */
     public function insert(string $table, array $values, array $columns = []): Statement
     {
@@ -121,6 +130,7 @@ class Client
      * @param mixed[] $values - array column_name => value (if we insert one row) or array list column_name => value if we insert many lines
      *
      * @psalm-taint-sink sql $tableName
+     * @psalm-database-insert $tableName $values
      */
     public function insertAssocBulk(string $tableName, array $values): Statement
     {
@@ -211,6 +221,80 @@ class Client
      * @psalm-taint-sink sql $tableName
      */
     public function truncateTable(string $tableName): array
+    {
+    }
+}
+
+/**
+ * The rows a query selected (see Client::select())
+ */
+class Statement implements \Iterator
+{
+    /**
+     * @psalm-database-fetch rows
+     */
+    public function rows(): array
+    {
+    }
+
+    /**
+     * @psalm-database-fetch rows
+     */
+    public function rowsGenerator(): \Generator
+    {
+    }
+
+    /**
+     * @param string|array|null $path
+     * @psalm-database-fetch rows
+     */
+    public function rowsAsTree($path): array
+    {
+    }
+
+    /**
+     * @psalm-database-fetch rows
+     */
+    public function jsonRows(): string|false
+    {
+    }
+
+    /**
+     * The row, or its column named by $key: any column of the row
+     *
+     * @psalm-database-fetch any_value
+     */
+    public function fetchRow(mixed $key = null): mixed
+    {
+    }
+
+    /**
+     * The row, or its column named by $key: any column of the row
+     *
+     * @psalm-database-fetch any_value
+     */
+    public function fetchOne(mixed $key = null): mixed
+    {
+    }
+
+    /**
+     * @psalm-database-fetch
+     */
+    public function totals(): ?array
+    {
+    }
+
+    /**
+     * @psalm-database-fetch
+     */
+    public function extremes(): ?array
+    {
+    }
+
+    /**
+     * @psalm-database-fetch
+     */
+    public function current(): mixed
     {
     }
 }

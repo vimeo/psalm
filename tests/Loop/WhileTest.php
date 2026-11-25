@@ -217,6 +217,16 @@ final class WhileTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'variableAssignedInALoopOverARangeStartBelowTheEndIsDefined' => [
+                'code' => '<?php
+                    $try = rand(0, 5);
+                    while (++$try < 10) {
+                        $name = "thing";
+                    }',
+                'assertions' => [
+                    '$name===' => '\'thing\'',
+                ],
+            ],
             'varAssignedRightOfLogicalAndInTheConditionIsDefinedInTheBody' => [
                 'code' => '<?php
                     /** @return int|false */
@@ -3078,7 +3088,7 @@ final class WhileTest extends TestCase
             ],
             'variableAssignedInALoopOverARangeStartIsPossiblyUndefined' => [
                 'code' => '<?php
-                    $try = rand(0, 5);
+                    $try = rand(0, 15);
                     while (++$try < 10) {
                         $name = "thing";
                     }

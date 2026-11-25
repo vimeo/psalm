@@ -265,7 +265,7 @@ final class ClassTemplateContravarianceTest extends TestCase
                         takesIntSink(sinkFor($coll));
                         $coll->add("a");
                         foreach ($coll->all() as $item) {
-                            /** @psalm-check-type-exact $item = int|string */
+                            /** @psalm-check-type-exact $item = \'a\'|int */
                         }
                     }',
                 'assertions' => [],

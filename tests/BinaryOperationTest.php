@@ -2840,7 +2840,7 @@ final class BinaryOperationTest extends TestCase
                     $a = -(1 << 63);
                     PHP,
                 'assertions' => [
-                    '$a===' => 'float(9.2233720368548E+18)',
+                    '$a===' => 'float(9.223372036854776E+18)',
                 ],
             ],
             'bitwiseOperationsOfIntRanges' => [
@@ -2866,6 +2866,61 @@ final class BinaryOperationTest extends TestCase
                     '$negativeOr===' => 'int',
                     '$negativeShift===' => 'int',
                     '$negativeShiftBy===' => 'int',
+                ],
+            ],
+            'bitwiseAndWithANonNegativeOperandIsBoundedByIt' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function getInt(): int {
+                        return 1;
+                    }
+                    $i = getInt();
+                    $low = $i & 0x0F;
+                    $lowLeft = 0x0F & $i;
+                    $zero = $i & 0;
+                    $negativeRange = rand(-5, 3) & 6;
+                    /** @var int<0, max> $u */
+                    $u = 5;
+                    $unbounded = $i & $u;
+                    $negative = $i & -1;
+                    $mixedSigns = $i & rand(-5, 3);
+                    $byRange = $i & rand(0, 7);
+                    PHP,
+                'assertions' => [
+                    '$low===' => 'int<0, 15>',
+                    '$lowLeft===' => 'int<0, 15>',
+                    '$zero===' => '0',
+                    '$negativeRange===' => 'int<0, 6>',
+                    '$unbounded===' => 'int<0, max>',
+                    '$negative===' => 'int',
+                    '$mixedSigns===' => 'int',
+                    '$byRange===' => 'int<0, 7>',
+                ],
+            ],
+            'bitwiseAndMaskedOperandsMultiplicationOverflow' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function getInt(): int {
+                        return 1;
+                    }
+                    $i = getInt();
+                    $j = getInt();
+                    $r = ($i & 0xFFFFFFFF) * ($j & 0xFFFFFFFF);
+                    $byLiteral = ($i & 0xFFFFFFFFFFFF) * 1000000;
+                    $fits = ($i & 0xFF) * ($j & 0xFF);
+                    /** @var int<-4294967295, 4294967295> $s */
+                    $s = 1;
+                    $bothSigns = $s * ($j & 0xFFFFFFFF);
+                    /** @var int<-4294967295, 1> $n */
+                    $n = 1;
+                    $onlyMinOverflows = $n * ($j & 0xFFFFFFFF);
+                    PHP,
+                'assertions' => [
+                    '$r===' => 'int<0, max>',
+                    '$byLiteral===' => 'int<0, max>',
+                    '$fits===' => 'int<0, 65025>',
+                    '$bothSigns===' => 'int',
+                    '$onlyMinOverflows===' => 'int<min, 4294967295>',
                 ],
             ],
             'bitwiseOperationsOfUnboundedIntRanges' => [
@@ -3257,6 +3312,14 @@ final class BinaryOperationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'possiblyNullOperandShowsTheRefinedType' => [
+                'code' => '<?php
+                    /** @param non-empty-string|null $p */
+                    function f(?string $p): string {
+                        return $p . "x";
+                    }',
+                'error_message' => 'PossiblyNullOperand - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:32 - Cannot concatenate with a possibly null non-empty-string|null',
+            ],
             'unionOfATemplateKeyedArrayAndAShapeMayHaveTheKey' => [
                 'code' => '<?php
                     function takesInt(int $i): void {}
