@@ -47,6 +47,7 @@ use Psalm\Type\Atomic\TTraitString;
 use Psalm\Type\Atomic\TTrue;
 
 use function is_numeric;
+use function strlen;
 use function strtolower;
 
 /**
@@ -78,6 +79,22 @@ final class ScalarTypeComparator
             && $input_type_part instanceof TFloat
         ) {
             return true;
+        }
+
+        if ($container_type_part instanceof TSingleLetter && $input_type_part instanceof TString) {
+            if ($input_type_part instanceof TSingleLetter) {
+                return true;
+            }
+
+            if ($input_type_part instanceof TLiteralString) {
+                return strlen($input_type_part->value) === 1;
+            }
+
+            if ($atomic_comparison_result) {
+                $atomic_comparison_result->type_coerced = true;
+            }
+
+            return false;
         }
 
         if ($input_type_part instanceof TString
@@ -166,9 +183,7 @@ final class ScalarTypeComparator
                 return true;
             }
 
-            if ($container_type_part::class === TLowercaseString::class
-                || $container_type_part::class === TSingleLetter::class
-            ) {
+            if ($container_type_part::class === TLowercaseString::class) {
                 if ($atomic_comparison_result) {
                     $atomic_comparison_result->type_coerced = true;
                 }
@@ -267,8 +282,9 @@ final class ScalarTypeComparator
             }
         }
 
+        // gettype() and get_debug_type() never return an empty or falsy string
         if ($input_type_part instanceof TDependentGetType) {
-            $input_type_part = new TString();
+            $input_type_part = new TNonFalsyString();
 
             if ($container_type_part instanceof TLiteralString) {
                 return isset(ClassLikeAnalyzer::GETTYPE_TYPES[$container_type_part->value]);
@@ -280,7 +296,7 @@ final class ScalarTypeComparator
         }
 
         if ($input_type_part instanceof TDependentGetDebugType) {
-            $input_type_part = new TString();
+            $input_type_part = new TNonFalsyString();
         }
 
         if ($container_type_part instanceof TDependentGetType) {
@@ -380,6 +396,7 @@ final class ScalarTypeComparator
 
         if ($container_type_part instanceof TNonFalsyString
             && $input_type_part instanceof TNonFalsyString
+            && (!$container_type_part instanceof TCallableString || $input_type_part instanceof TCallableString)
         ) {
             return true;
         }
@@ -411,8 +428,7 @@ final class ScalarTypeComparator
         }
 
         if (($container_type_part::class === TNonEmptyString::class
-                || $container_type_part::class === TNonFalsyString::class
-                || $container_type_part::class === TSingleLetter::class)
+                || $container_type_part::class === TNonFalsyString::class)
             && $input_type_part instanceof TLiteralString
         ) {
             return true;
@@ -549,8 +565,7 @@ final class ScalarTypeComparator
 
         if (($input_type_part instanceof TClassString
             || $input_type_part instanceof TLiteralClassString)
-            && ($container_type_part::class === TSingleLetter::class
-                || $container_type_part::class === TNonEmptyString::class
+            && ($container_type_part::class === TNonEmptyString::class
                 || $container_type_part::class === TNonFalsyString::class)
         ) {
             return true;
@@ -615,12 +630,16 @@ final class ScalarTypeComparator
             return true;
         }
 
-        if ($input_type_part instanceof TLowercaseString
-            && $container_type_part::class === TNonEmptyString::class) {
-            return false;
+        if ($container_type_part::class === TNonEmptyString::class
+            && $input_type_part instanceof TNonEmptyNonspecificLiteralString
+        ) {
+            return true;
         }
 
-        if ($input_type_part->getKey() === $container_type_part->getKey()) {
+        // types that share a Union slot key are not always related: a subclass refines its parent, not the reverse
+        if ($input_type_part instanceof $container_type_part
+            && $input_type_part->getKey() === $container_type_part->getKey()
+        ) {
             return true;
         }
 

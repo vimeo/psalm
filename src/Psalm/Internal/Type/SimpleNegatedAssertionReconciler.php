@@ -1095,7 +1095,8 @@ final class SimpleNegatedAssertionReconciler extends Reconciler
         $old_var_type_string = $existing_var_type->getId();
         $compared_with_one_value = self::isComparedWithOneValue($assertion);
         $non_object_types = [];
-        $redundant = true;
+        // `true == $object`
+        $redundant = !($assertion instanceof IsNotLooselyEqual && $existing_var_type->hasBool());
 
         foreach ($existing_var_type->getAtomicTypes() as $type) {
             if ($type instanceof TTemplateParam) {
@@ -1471,7 +1472,10 @@ final class SimpleNegatedAssertionReconciler extends Reconciler
         $old_var_type_string = $existing_var_type->getId();
         $compared_with_one_value = self::isComparedWithOneValue($assertion);
         $non_array_types = [];
-        $redundant = !$existing_var_type->hasScalar();
+        // `false == []` and `null == []`
+        $redundant = !$existing_var_type->hasScalar()
+            && !($assertion instanceof IsNotLooselyEqual
+                && ($existing_var_type->hasBool() || $existing_var_type->isNullable()));
 
         foreach ($existing_var_type->getAtomicTypes() as $type) {
             if ($type instanceof TTemplateParam) {

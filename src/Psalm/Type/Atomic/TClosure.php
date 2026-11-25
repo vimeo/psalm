@@ -10,6 +10,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Storage\Capabilities;
 use Psalm\Storage\FunctionLikeParameter;
+use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 
@@ -90,6 +91,25 @@ final class TClosure extends TNamedObject
             && parent::equals($other_type, $ensure_source_equality);
     }
 
+    /**
+     * @param  array<lowercase-string, string> $aliased_classes
+     */
+    #[Override]
+    public function toPhpString(
+        ?string $namespace,
+        array $aliased_classes,
+        ?string $this_class,
+        int $analysis_php_version_id,
+    ): string {
+        return $this->addNativeIntersectionTypes(
+            Type::getStringFromFQCLN($this->value, $namespace, $aliased_classes, $this_class, true),
+            $namespace,
+            $aliased_classes,
+            $this_class,
+            $analysis_php_version_id,
+        );
+    }
+
     #[Override]
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
@@ -97,7 +117,8 @@ final class TClosure extends TNamedObject
         return $this->params === null
             && $this->return_type === null
             && $this->hasFixedPurity()
-            && $this->getCapabilities() === Capabilities::ALL;
+            && $this->getCapabilities() === Capabilities::ALL
+            && $this->canExpressIntersectionTypesInPhp($analysis_php_version_id);
     }
 
     /**

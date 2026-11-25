@@ -150,3 +150,5 @@ class TaintBadDataPlugin implements AddTaintsInterface
     }
 }
 ```
+
+The taints a handler adds make the expression a source of its own.

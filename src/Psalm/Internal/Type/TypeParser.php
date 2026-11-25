@@ -112,7 +112,6 @@ use function explode;
 use function hexdec;
 use function in_array;
 use function is_int;
-use function is_numeric;
 use function ltrim;
 use function octdec;
 use function preg_match;
@@ -123,6 +122,8 @@ use function str_ends_with;
 use function str_starts_with;
 use function strlen;
 use function strpos;
+use function strrev;
+use function strspn;
 use function strtolower;
 use function strtr;
 use function substr;
@@ -157,14 +158,7 @@ final class TypeParser
             $only_token = $type_tokens[0];
 
             // Note: valid identifiers can include class names or $this
-            if (!preg_match('@^(\$this|\\\\?[a-zA-Z_\x7f-\xff][\\\\\-0-9a-zA-Z_\x7f-\xff]*)$@', $only_token[0])) {
-                if (!is_numeric($only_token[0])
-                    && str_contains($only_token[0], '\'')
-                    && str_contains($only_token[0], '"')
-                ) {
-                    throw new TypeParseTreeException("Invalid type '$only_token[0]'");
-                }
-            } else {
+            if (preg_match('@^(\$this|\\\\?[a-zA-Z_\x7f-\xff][\\\\\-0-9a-zA-Z_\x7f-\xff]*)$@', $only_token[0])) {
                 $only_token[0] = TypeTokenizer::fixScalarTerms($only_token[0], $analysis_php_version_id);
 
                 $atomic = Atomic::create(
@@ -563,10 +557,7 @@ final class TypeParser
         }
 
         if ($parse_tree->value[0] === '"' || $parse_tree->value[0] === '\'') {
-            return Type::getAtomicStringFromLiteral(
-                self::unescapeStringLiteral(substr($parse_tree->value, 1, -1), $parse_tree->value[0]),
-                $from_docblock,
-            );
+            return Type::getAtomicStringFromLiteral(self::getStringLiteralValue($parse_tree->value), $from_docblock);
         }
 
         if (strpos($parse_tree->value, '::')) {
@@ -1027,7 +1018,7 @@ final class TypeParser
                     continue;
                 }
 
-                throw new TypeParseTreeException('Invalid array key type ' . $atomic_type->getKey());
+                throw new TypeParseTreeException('Invalid array key type ' . $atomic_type->getId());
             }
 
             return $generic_type_value === 'array'
@@ -1172,17 +1163,12 @@ final class TypeParser
                 throw new TypeParseTreeException($generic_type_value . ' requires exactly one parameter.');
             }
 
-            $param_name = (string) $generic_params[0];
+            $template_param = $generic_params[0]->isSingle() ? $generic_params[0]->getSingleAtomic() : null;
 
-            if (isset($template_type_map[$param_name])
+            if ($template_param instanceof TTemplateParam
+                && isset($template_type_map[$param_name = $template_param->param_name])
                 && ($defining_class = array_key_first($template_type_map[$param_name])) !== null
             ) {
-                $template_param = $generic_params[0]->getSingleAtomic();
-                if (!$template_param instanceof TTemplateParam) {
-                    throw new TypeParseTreeException(
-                        $generic_type_value . '<' . $param_name . '> must be a TTemplateParam.',
-                    );
-                }
                 if ($template_param->getIntersectionTypes()) {
                     throw new TypeParseTreeException(
                         $generic_type_value . '<' . $param_name . '> must be a TTemplateParam'
@@ -2585,7 +2571,7 @@ final class TypeParser
 
                 // a quoted key is the string PHP reads from the literal (`"a\nb"` holds a line break)
                 if ($property_key[0] === '\'' || $property_key[0] === '"') {
-                    $property_key = self::unescapeStringLiteral(substr($property_key, 1, -1), $property_key[0]);
+                    $property_key = self::getStringLiteralValue($property_key);
                 }
             } else {
                 throw new TypeParseTreeException(
@@ -2898,6 +2884,26 @@ final class TypeParser
             false,
             $from_docblock,
         );
+    }
+
+    /**
+     * The value of a quoted string literal token, as PHP reads it
+     *
+     * @psalm-pure
+     */
+    private static function getStringLiteralValue(string $token): string
+    {
+        $quote = $token[0];
+        $closing_quote = strlen($token) - 1;
+
+        if ($closing_quote === 0
+            || $token[$closing_quote] !== $quote
+            || strspn(strrev(substr($token, 1, -1)), '\\') % 2 === 1
+        ) {
+            throw new TypeParseTreeException('Unterminated string literal ' . $token);
+        }
+
+        return self::unescapeStringLiteral(substr($token, 1, -1), $quote);
     }
 
     /**
