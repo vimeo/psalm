@@ -22,16 +22,16 @@ Code using a function or class of an extension `composer.json` doesn't declare i
 `MissingExtensionRequirement`. Add the extension to `require` (`"ext-mbstring": "*"`), or to `suggest` when the
 code checks `extension_loaded()` first.
 
-Psalm loads the precise stubs of an extension (`pdo`, `redis`, `mongodb`, `imagick`, …) only when
-`composer.json` requires it or `psalm.xml` enables it; without them its methods may return `mixed`:
+Psalm loads the precise stubs of an extension (`pdo`, `redis`, `mongodb`, `imagick`, …) when the code uses one
+of its classes, functions or constants, whether or not `composer.json` requires it. `<enableExtensions>` declares
+an extension `composer.json` doesn't, but `ext-*` in `composer.json` is the better fix: it is true for the project
+anyway.
 
 ```xml
 <enableExtensions>
     <extension name="redis"/>
 </enableExtensions>
 ```
-
-`ext-*` in `composer.json` is the better fix: it is true for the project anyway.
 
 ## Stubs and plugins
 

@@ -2603,17 +2603,51 @@ final class ConfigTest extends DeferredAnalyzerTestCase
         return $project_analyzer;
     }
 
-    public function testStubOfEveryExtensionIsLoaded(): void
+    /**
+     * @return array<string, array{string, list<string>, list<string>}>
+     * @psalm-pure
+     */
+    public static function providerStubsOfTheExtensionsTheCodeUses(): array
+    {
+        return [
+            'class' => ['function f(Redis $r): void {}', ['redis'], ['mongodb']],
+            'class of a docblock' => ['/** @param Redis $r */ function f($r): void {}', ['redis'], []],
+            'function' => ['xdebug_get_code_coverage();', ['xdebug'], ['redis']],
+            'function from a namespace' => ['namespace A; xdebug_get_code_coverage();', ['xdebug'], []],
+            'constant' => ['echo ZSTD_COMPRESS_LEVEL_DEFAULT;', ['zstd'], ['redis']],
+            'imported constant' => [
+                'namespace A; use const ZSTD_COMPRESS_LEVEL_DEFAULT as LEVEL; echo LEVEL;',
+                ['zstd'],
+                [],
+            ],
+            'constant of a define()' => ['echo PGSQL_CONNECT_FORCE_NEW;', ['pgsql'], []],
+            'class a builtin function returns' => ['$db = mysqli_connect("localhost");', ['mysqli'], []],
+            'nothing' => ['echo 1;', [], ['redis', 'mongodb', 'xdebug', 'zstd', 'mysqli', 'pgsql']],
+        ];
+    }
+
+    /**
+     * @param list<string> $loaded
+     * @param list<string> $not_loaded
+     */
+    #[DataProvider('providerStubsOfTheExtensionsTheCodeUses')]
+    public function testStubsOfTheExtensionsTheCodeUses(string $code, array $loaded, array $not_loaded): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithAConfigOfThisRepository('8.4');
         $config = $this->project_analyzer->getConfig();
-        $config->visitStubFiles($this->project_analyzer->getCodebase());
+        $codebase = $this->project_analyzer->getCodebase();
 
-        $stubs = glob(dirname(__DIR__, 2) . '/stubs/extensions/*.phpstub');
-        $this->assertIsArray($stubs);
-        $this->assertNotEmpty($stubs);
-        foreach ($stubs as $stub) {
-            $this->assertContains((string) realpath($stub), $config->internal_stubs);
+        $file_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'somefile.php';
+        $this->addFile($file_path, '<?php ' . $code);
+        $codebase->addFilesToAnalyze([$file_path => $file_path]);
+        $codebase->scanFiles();
+        $config->visitStubFiles($codebase);
+
+        foreach ($loaded as $extension) {
+            $this->assertContains(self::getExtensionStubPath($extension), $config->internal_stubs);
+        }
+        foreach ($not_loaded as $extension) {
+            $this->assertNotContains(self::getExtensionStubPath($extension), $config->internal_stubs);
         }
     }
 
@@ -2634,10 +2668,25 @@ final class ConfigTest extends DeferredAnalyzerTestCase
             ),
         );
         $config = $this->project_analyzer->getConfig();
-        $config->visitStubFiles($this->project_analyzer->getCodebase());
+        $codebase = $this->project_analyzer->getCodebase();
 
-        $this->assertNotContains((string) realpath('stubs/extensions/redis.phpstub'), $config->internal_stubs);
-        $this->assertContains((string) realpath('stubs/extensions/mongodb.phpstub'), $config->internal_stubs);
+        $file_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'somefile.php';
+        $this->addFile($file_path, '<?php function f(Redis $r, Decimal\\Decimal $d): void {}');
+        $codebase->addFilesToAnalyze([$file_path => $file_path]);
+        $codebase->scanFiles();
+        $config->visitStubFiles($codebase);
+
+        $this->assertNotContains(self::getExtensionStubPath('redis'), $config->internal_stubs);
+        $this->assertContains(self::getExtensionStubPath('decimal'), $config->internal_stubs);
+    }
+
+    /**
+     * @psalm-pure
+     */
+    private static function getExtensionStubPath(string $extension): string
+    {
+        return dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'extensions'
+            . DIRECTORY_SEPARATOR . $extension . '.phpstub';
     }
 
     /**
@@ -2704,7 +2753,7 @@ final class ConfigTest extends DeferredAnalyzerTestCase
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithAConfigOfThisRepository('8.4');
 
-        $file_path = (string) getcwd() . '/src/somefile.php';
+        $file_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'somefile.php';
         $this->addFile(
             $file_path,
             '<?php
@@ -2726,7 +2775,7 @@ final class ConfigTest extends DeferredAnalyzerTestCase
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithAConfigOfThisRepository('8.1');
 
-        $file_path = (string) getcwd() . '/src/somefile.php';
+        $file_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'somefile.php';
         $this->addFile(
             $file_path,
             '<?php
@@ -2749,7 +2798,7 @@ final class ConfigTest extends DeferredAnalyzerTestCase
         $this->project_analyzer = $this->getProjectAnalyzerWithAConfigOfThisRepository('8.4');
         $this->project_analyzer->getConfig()->declared_extensions = null;
 
-        $file_path = (string) getcwd() . '/src/somefile.php';
+        $file_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'somefile.php';
         $this->addFile(
             $file_path,
             '<?php

@@ -840,7 +840,7 @@ Optional. Extensions the project uses besides those `composer.json` declares, so
 ```
 
 #### &lt;disableExtensions&gt;
-Optional. Extensions whose stub Psalm doesn't load. Psalm loads the stub of every extension it has one for (`stubs/extensions`), whether or not `composer.json` requires the extension.
+Optional. Extensions whose stub Psalm doesn't load. Psalm loads the stub of an extension it has one for (`stubs/extensions`) when the code uses one of its classes, functions or constants, whether or not `composer.json` requires the extension.
 ```xml
 <disableExtensions>
   <extension name="gmp"/>
@@ -910,7 +910,7 @@ plugins add, so that an annotation a stub gets wrong isn't silently dropped.
 
 Psalm also ships stubs for some libraries, loaded when your code uses them (see [loadLibraryStubs](#loadlibrarystubs)).
 
-Psalm also ships stubs for some extensions, which it always loads (see [disableExtensions](#disableextensions)).
+Psalm also ships stubs for some extensions, loaded when your code uses them (see [disableExtensions](#disableextensions)).
 
 #### &lt;ignoreExceptions&gt;
 Optional. A list of exceptions to not report for `checkForThrowsDocblock` or `checkForThrowsInGlobalScope`. The `class` tag will make Psalm ignore only instances of the specified class, while `classAndDescendants` will make Psalm also ignore subclasses. If an exception has `onlyGlobalScope` set to `true`, only `checkForThrowsInGlobalScope` is ignored for that exception, e.g.

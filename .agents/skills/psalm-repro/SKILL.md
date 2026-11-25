@@ -18,8 +18,8 @@ metadata:
    </psalm>
    ```
 
-   - Extension stubs (mongodb, …) always load. Without `composer.json` declaring the
-     extension, using it reports `MissingExtensionRequirement`.
+   - Extension stubs (mongodb, …) load when the code uses the extension. Without
+     `composer.json` declaring it, that use reports `MissingExtensionRequirement`.
    - A stubbed library goes in `vendor/` + `<extraFiles>`, never in `<projectFiles>`:
      stubs don't override project-dir classes.
    - For taint modes see skill `taint-analysis`.
