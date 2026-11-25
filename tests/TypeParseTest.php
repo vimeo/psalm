@@ -2322,6 +2322,68 @@ final class TypeParseTest extends TestCase
         self::assertSame('array{a: Foo, ...<string, Bar>}', $type->toNamespacedString('Ns', [], null, false));
     }
 
+    /**
+     * @return iterable<string, array{string, int, ?string, bool}>
+     * @psalm-pure
+     */
+    public static function nativeIntersectionProvider(): iterable
+    {
+        yield 'classes before PHP 8.1' => ['Ns\Foo&Other\Bar', 8_00_00, '\Other\Bar', false];
+        yield 'classes' => ['Ns\Foo&Other\Bar', 8_01_00, 'Foo&\Other\Bar', true];
+        yield 'Closure before PHP 8.1' => ['Closure&Ns\Foo', 7_04_00, 'Foo', false];
+        yield 'Closure' => ['Closure&Ns\Foo', 8_01_00, '\Closure&Foo', true];
+        yield 'generic class' => ['Ns\Foo<int>&Countable', 8_01_00, 'Foo&\Countable', false];
+        yield 'callable' => ['Ns\Foo&callable(int):void', 8_01_00, 'Foo', false];
+        yield 'object shape' => ['Ns\Foo&object{a: int}', 8_01_00, 'Foo', false];
+        yield 'iterable member' => ['Ns\Foo&iterable', 8_01_00, 'Foo', false];
+        yield 'iterable' => ['iterable&Ns\Foo', 8_01_00, 'iterable', false];
+        yield 'nullable before PHP 8.2' => ['(Ns\Foo&Countable)|null', 8_01_00, null, false];
+        yield 'nullable' => ['(Ns\Foo&Countable)|null', 8_02_00, '(Foo&\Countable)|null', true];
+        yield 'union' => ['(Ns\Foo&Countable)|Other\Bar', 8_02_00, '(Foo&\Countable)|\Other\Bar', true];
+    }
+
+    #[DataProvider('nativeIntersectionProvider')]
+    public function testNativeIntersection(
+        string $string,
+        int $php_version_id,
+        ?string $php_type,
+        bool $fully_expressed,
+    ): void {
+        $type = Type::parseString($string);
+
+        self::assertSame($php_type, $type->toPhpString('Ns', [], null, $php_version_id));
+        self::assertSame($fully_expressed, $type->canBeFullyExpressedInPhp($php_version_id));
+    }
+
+    public function testUnionDeclaresNoRedundantIntersection(): void
+    {
+        $countable = ['Countable' => new TNamedObject('Countable')];
+        $same_native_intersection = new Union([
+            new TGenericObject('Ns\Foo', [Type::getInt()], false, false, $countable),
+            new TGenericObject('Ns\Foo', [Type::getString()], false, false, $countable),
+        ]);
+        $class_and_its_intersection = new Union([
+            new TNamedObject('Ns\Foo', false, false, $countable),
+            new TNamedObject('Ns\Foo'),
+        ]);
+        $same_classes = new Union([
+            new TNamedObject('Ns\Foo', false, false, $countable),
+            new TNamedObject('Countable', false, false, ['Ns\Foo' => new TNamedObject('Ns\Foo')]),
+        ]);
+
+        self::assertSame('Foo&\Countable', $same_native_intersection->toPhpString('Ns', [], null, 8_02_00));
+        self::assertSame('Foo', $class_and_its_intersection->toPhpString('Ns', [], null, 8_02_00));
+        self::assertSame('Foo&\Countable', $same_classes->toPhpString('Ns', [], null, 8_02_00));
+    }
+
+    public function testStaticGenericObjectIsDeclaredSelfBeforePhp8(): void
+    {
+        $type = new Union([new TGenericObject('Ns\Foo', [Type::getInt()], false, true)]);
+
+        self::assertSame('self', $type->toPhpString('Ns', [], 'Ns\Foo', 7_04_00));
+        self::assertSame('static', $type->toPhpString('Ns', [], 'Ns\Foo', 8_00_00));
+    }
+
     public function testConditionalKeepsItsTypesInNamespacedString(): void
     {
         $conditional = new TConditional(
