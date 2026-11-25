@@ -736,6 +736,91 @@ final class SwitchTypeTest extends TestCase
                             break;
                     }',
             ],
+            'getTypeVarReassigned' => [
+                'code' => '<?php
+                    function takesInt(int $i): void {}
+
+                    function foo(int|string $x): void {
+                        $t = gettype($x);
+                        $x = 5;
+
+                        switch ($t) {
+                            case "string":
+                                takesInt($x);
+                                break;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'getTypeVarUnsetAndReassigned' => [
+                'code' => '<?php
+                    function takesInt(int $i): void {}
+
+                    function foo(int|string $x): void {
+                        $t = gettype($x);
+                        unset($x);
+                        $x = 5;
+
+                        switch ($t) {
+                            case "string":
+                                takesInt($x);
+                                break;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'getTypeCopiedVarReassigned' => [
+                'code' => '<?php
+                    function takesInt(int $i): void {}
+
+                    function foo(int|string $x): void {
+                        $t = gettype($x);
+                        $x = 5;
+                        $u = $t;
+
+                        switch ($u) {
+                            case "string":
+                                takesInt($x);
+                                break;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'getTypeResultAfterReassignment' => [
+                'code' => '<?php
+                    $x = rand(0, 1) ? 1 : "a";
+                    $t = gettype($x);
+                    $x = 5;',
+                'assertions' => [
+                    '$t===' => 'string',
+                ],
+            ],
+            'getDebugTypeResultAfterReassignment' => [
+                'code' => '<?php
+                    $x = rand(0, 1) ? 1 : "a";
+                    $t = get_debug_type($x);
+                    $x = 5;',
+                'assertions' => [
+                    '$t===' => 'string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'getClassResultAfterReassignment' => [
+                'code' => '<?php
+                    $x = new ArrayObject();
+                    $t = get_class($x);
+                    $x = new stdClass();',
+                'assertions' => [
+                    '$t===' => 'class-string',
+                ],
+            ],
             'switchTruthy' => [
                 'code' => '<?php
                     class A {
