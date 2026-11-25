@@ -1,0 +1,22 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/jdx/jactionlint/main/schema/jactionlint-config.json
+profile: default
+
+rules:
+  # Analysis and test jobs have no fixed upper bound worth enforcing.
+  missing-timeout: off
+  # Unfiltered "push" is deliberate: it runs CI on contributors' fork branches before a PR exists.
+  duplicate-triggers: off
+  superfluous-actions: off
+
+ignores:
+  - rule: concurrency-limits
+    file: .github/workflows/build-phar.yml
+    reason: >-
+      pre_job (skip-duplicate-actions, concurrent_skipping always, cancel_others) handles concurrent runs;
+      a native concurrency group keeps successors pending, and the action then skips both runs
+  - rule: dangerous-triggers
+    file: .github/workflows/perf-comment.yml
+    reason: never checks out or runs PR code; the artifact is validated as untrusted input
+  - rule: excessive-permissions
+    file: .github/workflows/perf-comment.yml
+    reason: needs pull-requests write to post the sticky perf comment
