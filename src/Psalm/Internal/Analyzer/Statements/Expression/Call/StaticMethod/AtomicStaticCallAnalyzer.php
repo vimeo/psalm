@@ -244,10 +244,14 @@ final class AtomicStaticCallAnalyzer
             if ($stmt->name instanceof PhpParser\Node\Expr) {
                 $was_inside_general_use = $context->inside_general_use;
                 $context->inside_general_use = true;
+                // the name is read even in isset mode
+                $was_inside_isset = $context->inside_isset;
+                $context->inside_isset = false;
 
                 ExpressionAnalyzer::analyze($statements_analyzer, $stmt->name, $context);
 
                 $context->inside_general_use = $was_inside_general_use;
+                $context->inside_isset = $was_inside_isset;
             }
 
             if (!$context->ignore_variable_method) {

@@ -2354,6 +2354,59 @@ final class PropertyTypeTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'promotedPropertyReadInTheBodyOfAParentConstructor' => [
+                'code' => '<?php
+                    class A
+                    {
+                        public string $copy;
+
+                        public function __construct(public string $title)
+                        {
+                            $this->copy = $this->title;
+                        }
+                    }
+
+                    final class B extends A
+                    {
+                        public function __construct()
+                        {
+                            parent::__construct("b");
+                        }
+                    }
+
+                    final class C extends A
+                    {
+                        public function __construct()
+                        {
+                            A::__construct("c");
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'promotedPropertyOfAncestorConstructorCalledByItsName' => [
+                'code' => '<?php
+                    class A
+                    {
+                        public function __construct(
+                            public string $name,
+                        ) {}
+                    }
+
+                    class B extends A {}
+
+                    final class C extends B
+                    {
+                        public function __construct()
+                        {
+                            A::__construct("c");
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'propertyWithoutTypeSuppressingIssueAndAssertingNull' => [
                 'code' => '<?php
                     class A {
@@ -2556,6 +2609,27 @@ final class PropertyTypeTest extends TestCase
                 'assertions' => [
                     '$document===' => 'object',
                     '$labels===' => 'array<array-key, mixed>|null',
+                ],
+            ],
+            'propertyMapTypesCamelCaseProperties' => [
+                'code' => '<?php
+                    namespace MongoDB\Driver;
+
+                    final class WriteConcernError {}
+
+                    final class WriteResult {
+                        /** @var mixed */
+                        public $insertedCount = null;
+                        /** @var mixed */
+                        public $writeConcernError = null;
+                    }
+
+                    $r = new WriteResult();
+                    $inserted = $r->insertedCount;
+                    $error = $r->writeConcernError;',
+                'assertions' => [
+                    '$inserted===' => 'int|null',
+                    '$error===' => 'MongoDB\Driver\WriteConcernError|null',
                 ],
             ],
             'goodArrayProperties' => [
@@ -4343,6 +4417,90 @@ final class PropertyTypeTest extends TestCase
                         $class::$p = 2;
                     }',
             ],
+            'staticPropertyFetchViaThis' => [
+                'code' => '<?php
+                    trait T {
+                        public function fromTrait(): int {
+                            return $this::$declared_in_user;
+                        }
+                    }
+
+                    class Base {
+                        public static int $public_prop = 1;
+                        private static int $private_prop = 2;
+                        protected static int $protected_prop = 3;
+
+                        public function fromBase(): int {
+                            return $this::$private_prop + $this::$protected_prop;
+                        }
+                    }
+
+                    final class Child extends Base {
+                        use T;
+
+                        public static int $declared_in_user = 4;
+
+                        public function fromChild(): int {
+                            return $this::$public_prop + $this::$protected_prop;
+                        }
+                    }',
+            ],
+            'staticPropertyFetchViaObjectOfUnknownClass' => [
+                'code' => '<?php
+                    function f(object $o): void {
+                        /** @psalm-suppress MixedAssignment */
+                        $x = $o::$p;
+                        echo gettype($x);
+                    }',
+            ],
+            'staticPropertyFetchViaIntersectionOfObjects' => [
+                'code' => '<?php
+                    class A {
+                        public static int $p = 1;
+                    }
+
+                    function narrowed(Countable $o): int {
+                        if ($o instanceof A) {
+                            return $o::$p;
+                        }
+
+                        return 0;
+                    }
+
+                    /** @param Countable&A $o */
+                    function fromDocblock($o): int {
+                        return $o::$p;
+                    }',
+            ],
+            'staticPropertyAssignmentViaIntersectionOfObjects' => [
+                'code' => '<?php
+                    class A {
+                        public static int $p = 1;
+                    }
+
+                    /** @param Countable&A $o */
+                    function f($o): void {
+                        $o::$p = 2;
+                    }',
+            ],
+            'staticPropertyFetchViaStaticObject' => [
+                'code' => '<?php
+                    class A {
+                        public static int $p = 1;
+
+                        /** @psalm-suppress UnsafeInstantiation */
+                        public function f(): int {
+                            $a = new static();
+                            return $a::$p;
+                        }
+                    }
+
+                    final class B extends A {}
+
+                    function g(B $b): int {
+                        return $b::$p;
+                    }',
+            ],
             'promotedPublicPropertyWithDefault' => [
                 'code' => '<?php
                     class A {
@@ -6002,6 +6160,76 @@ final class PropertyTypeTest extends TestCase
                     }',
                 'error_message' => 'InvalidStringClass',
             ],
+            'undefinedStaticPropertyFetchViaStdClassObject' => [
+                'code' => '<?php
+                    function f(stdClass $o): void {
+                        echo (string) $o::$p;
+                    }',
+                'error_message' => 'UndefinedPropertyFetch - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:39 - Static property stdClass::$p is not defined',
+            ],
+            'undefinedStaticPropertyFetchViaObjectWithMagicGetter' => [
+                'code' => '<?php
+                    final class A {
+                        public function __get(string $name): int {
+                            return 1;
+                        }
+                    }
+
+                    function f(A $a): int {
+                        return $a::$p;
+                    }',
+                'error_message' => 'UndefinedPropertyFetch - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:32 - Static property A::$p is not defined',
+            ],
+            'instancePropertyFetchedStaticallyViaObject' => [
+                'code' => '<?php
+                    final class A {
+                        public int $p = 1;
+                    }
+
+                    function f(A $a): int {
+                        return $a::$p;
+                    }',
+                'error_message' => 'UndefinedPropertyFetch - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:32 - Static property A::$p is not defined',
+            ],
+            'instancePropertyAssignedStaticallyViaObject' => [
+                'code' => '<?php
+                    final class A {
+                        public int $p = 1;
+                    }
+
+                    function f(A $a): void {
+                        $a::$p = 2;
+                    }',
+                'error_message' => 'UndefinedPropertyAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:25 - Static property A::$p is not defined',
+            ],
+            'undefinedStaticPropertyFetchViaUnionOfObjects' => [
+                'code' => '<?php
+                    final class A {
+                        public static int $p = 1;
+                    }
+
+                    final class B {
+                        public int $p = 1;
+                    }
+
+                    function f(A|B $o): int {
+                        return $o::$p;
+                    }',
+                'error_message' => 'UndefinedPropertyFetch - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:32 - Static property B::$p is not defined',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'privateStaticPropertyFetchViaObjectFromOutside' => [
+                'code' => '<?php
+                    final class A {
+                        private static int $p = 1;
+                    }
+
+                    function f(A $a): int {
+                        return $a::$p;
+                    }',
+                'error_message' => 'InaccessibleProperty - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:32 - Cannot access private property A::$p',
+            ],
             'nullsafePropertyFetchLooselyEqualDoesNotAssertNotNull' => [
                 'code' => '<?php
                     class Foo {
@@ -6025,6 +6253,27 @@ final class PropertyTypeTest extends TestCase
                     }
 
                     echo (new A)->foo;',
+                'error_message' => 'UndefinedPropertyFetch',
+            ],
+            'propertyMapDoesNotAddLowercaseTwinOfCamelCaseProperty' => [
+                'code' => '<?php
+                    namespace MongoDB\Driver;
+
+                    final class WriteResult {
+                        /** @var mixed */
+                        public $insertedCount;
+                    }
+
+                    function foo(WriteResult $r): void {
+                        echo $r->insertedcount;
+                    }',
+                'error_message' => 'UndefinedPropertyFetch',
+            ],
+            'propertyMapDoesNotAddLowercaseTwinOfStubbedDomProperty' => [
+                'code' => '<?php
+                    function foo(DOMDocumentType $d): string {
+                        return $d->publicid;
+                    }',
                 'error_message' => 'UndefinedPropertyFetch',
             ],
             'undefinedThisPropertyAssignment' => [
@@ -6371,6 +6620,89 @@ final class PropertyTypeTest extends TestCase
                     }
 
                     class B extends A {}',
+                'error_message' => 'MissingConstructor',
+            ],
+            'firstClassCallableOfParentConstructorDoesNotInitializePromotedProperty' => [
+                'code' => '<?php
+                    class A
+                    {
+                        public function __construct(public string $name) {}
+                    }
+
+                    final class B extends A
+                    {
+                        public function __construct()
+                        {
+                            $f = parent::__construct(...);
+                        }
+                    }',
+                'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:33 - Property B::$name',
+                'error_levels' => ['UnusedVariable'],
+                'php_version' => '8.1',
+            ],
+            'firstClassCallableOfAncestorConstructorDoesNotInitializePromotedProperty' => [
+                'code' => '<?php
+                    class A
+                    {
+                        public function __construct(public string $name) {}
+                    }
+
+                    final class B extends A
+                    {
+                        public function __construct()
+                        {
+                            $f = A::__construct(...);
+                        }
+                    }',
+                'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:33 - Property B::$name',
+                'error_levels' => ['UnusedVariable'],
+                'php_version' => '8.1',
+            ],
+            'parentConstructorDoesNotInitializePropertyShadowingAPrivatePromotedOne' => [
+                'code' => '<?php
+                    class A
+                    {
+                        public function __construct(private string $name) {}
+                    }
+
+                    final class B extends A
+                    {
+                        private string $name;
+
+                        public function __construct()
+                        {
+                            parent::__construct("a");
+                        }
+                    }',
+                'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:40 - Property B::$name',
+                'error_levels' => ['UnusedProperty'],
+                'php_version' => '8.0',
+            ],
+            'ancestorConstructorDoesNotInitializePropertyShadowingAPrivatePromotedOne' => [
+                'code' => '<?php
+                    class A
+                    {
+                        public function __construct(private string $name) {}
+                    }
+
+                    final class B extends A
+                    {
+                        private string $name;
+
+                        public function __construct()
+                        {
+                            A::__construct("a");
+                        }
+                    }',
+                'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:40 - Property B::$name',
+                'error_levels' => ['UnusedProperty'],
+                'php_version' => '8.0',
+            ],
+            'inheritedConstructorOfAStubbedBuiltinClass' => [
+                'code' => '<?php
+                    final class E extends Exception {
+                        public string $foo;
+                    }',
                 'error_message' => 'MissingConstructor',
             ],
             'abstractClassInheritsPrivateConstructor' => [
