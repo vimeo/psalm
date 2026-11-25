@@ -148,13 +148,15 @@ final class AtomicIdTest extends TestCase
 
     public function testIdMustBeWrittenByADirectSubclass(): void
     {
-        $atomic = new class extends Atomic {
+        $atomic = new /** @psalm-immutable */ class extends Atomic {
+            /** @psalm-pure */
             #[Override]
             public function getKey(bool $include_extra = true): string
             {
-                return foo;
+                return 'foo';
             }
 
+            /** @psalm-pure */
             #[Override]
             public function toPhpString(
                 ?string $namespace,
@@ -165,6 +167,7 @@ final class AtomicIdTest extends TestCase
                 return null;
             }
 
+            /** @psalm-pure */
             #[Override]
             public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
             {
