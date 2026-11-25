@@ -196,6 +196,404 @@ final class ConditionalTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'strictFalseComparisonOfACoalesceWithNullIsReachableAfterATruthyCoalesce' => [
+                'code' => '<?php
+                    /** @param array<string, mixed> $context */
+                    function g(array $context): void {
+                        if ($context["k"] ?? false) {
+                            echo 0;
+                        } elseif (false !== ($context["k"] ?? null)) {
+                            echo 1;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'truthyCoalesceWithFalseEstablishesTheKey' => [
+                'code' => '<?php
+                    /** @param array{k?: string} $a */
+                    function both(array $a): string {
+                        if (($a["k"] ?? false) && strlen($a["k"]) > 1) {
+                            return $a["k"];
+                        }
+
+                        return "";
+                    }
+
+                    /** @param array{k?: string|null} $a */
+                    function withNull(array $a): string {
+                        if (!($a["k"] ?? null)) {
+                            return "";
+                        }
+
+                        return $a["k"];
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
+            ],
+            'truthyCoalesceWithAnotherFalsyDefaultEstablishesTheKey' => [
+                'code' => '<?php
+                    /** @param array{k?: string} $a */
+                    function emptyString(array $a): string {
+                        if (($a["k"] ?? "") && strlen($a["k"]) > 1) {
+                            return $a["k"];
+                        }
+
+                        return "";
+                    }
+
+                    /** @param array{k?: string} $a */
+                    function zeroString(array $a): string {
+                        if (($a["k"] ?? "0") && strlen($a["k"]) > 1) {
+                            return $a["k"];
+                        }
+
+                        return "";
+                    }
+
+                    /** @param array{k?: int} $a */
+                    function zero(array $a): int {
+                        if (($a["k"] ?? 0) && $a["k"] > 1) {
+                            return $a["k"];
+                        }
+
+                        return 0;
+                    }
+
+                    /** @param array{k?: float} $a */
+                    function zeroFloat(array $a): float {
+                        if (($a["k"] ?? 0.0) && $a["k"] > 1) {
+                            return $a["k"];
+                        }
+
+                        return 0.0;
+                    }
+
+                    /** @param array{k?: list<int>} $a */
+                    function emptyArray(array $a): int {
+                        if (($a["k"] ?? []) && count($a["k"]) > 1) {
+                            return count($a["k"]);
+                        }
+
+                        return 0;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
+            ],
+            'countComparedToAClassConstantNarrowsTheArray' => [
+                'code' => '<?php
+                    final class Terms {
+                        private const LIMIT = 4;
+                        private const ONE = 1;
+                        private const ZERO = 0;
+
+                        /** @param non-empty-list<int> $terms */
+                        private static function widen(array $terms): int {
+                            return 0;
+                        }
+
+                        /** @param list<int> $terms */
+                        public static function greater(array $terms): int {
+                            return count($terms) > self::LIMIT ? self::widen($terms) : 0;
+                        }
+
+                        /** @param list<int> $terms */
+                        public static function greaterOrEqual(array $terms): int {
+                            return count($terms) >= self::ONE ? self::widen($terms) : 0;
+                        }
+
+                        /** @param list<int> $terms */
+                        public static function constantOnTheLeft(array $terms): int {
+                            return self::ZERO < count($terms) ? self::widen($terms) : 0;
+                        }
+
+                        /** @param list<int> $terms */
+                        public static function equal(array $terms): int {
+                            return count($terms) === self::ONE ? self::widen($terms) : 0;
+                        }
+
+                        /** @param list<int> $terms */
+                        public static function smaller(array $terms): int {
+                            if (count($terms) < self::ONE) {
+                                return 0;
+                            }
+
+                            return self::widen($terms);
+                        }
+
+                        /** @param list<int> $terms */
+                        public static function smallerOrEqual(array $terms): int {
+                            if (count($terms) <= self::ZERO) {
+                                return 0;
+                            }
+
+                            return self::widen($terms);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'negativeCountComparisonsDoNotNarrowTheArray' => [
+                'code' => '<?php
+                    final class Counts {
+                        private const NEG = -1;
+
+                        /** @param list<int> $a */
+                        public static function equalToMinusOne(array $a): int {
+                            if (count($a) === -1) {
+                                return 0;
+                            }
+
+                            /** @psalm-check-type-exact $a = list<int> */
+                            return 0;
+                        }
+
+                        /** @param list<int> $a */
+                        public static function looselyEqualToMinusOne(array $a): int {
+                            if (count($a) == -1) {
+                                return 0;
+                            }
+
+                            /** @psalm-check-type-exact $a = list<int> */
+                            return 0;
+                        }
+
+                        /** @param list<int> $a */
+                        public static function equalToANegativeConstant(array $a): int {
+                            if (count($a) === self::NEG) {
+                                return 0;
+                            }
+
+                            /** @psalm-check-type-exact $a = list<int> */
+                            return 0;
+                        }
+
+                        /** @param list<int> $a */
+                        public static function minusOneOnTheLeft(array $a): int {
+                            if (-1 === count($a)) {
+                                return 0;
+                            }
+
+                            /** @psalm-check-type-exact $a = list<int> */
+                            return 0;
+                        }
+
+                        /** @param list<int> $a */
+                        public static function smallerThanMinusOne(array $a): int {
+                            if (count($a) < -1) {
+                                return 0;
+                            }
+
+                            /** @psalm-check-type-exact $a = list<int> */
+                            return 0;
+                        }
+
+                        /** @param list<int> $a */
+                        public static function smallerThanANegativeConstant(array $a): int {
+                            if (count($a) < self::NEG) {
+                                return 0;
+                            }
+
+                            /** @psalm-check-type-exact $a = list<int> */
+                            return 0;
+                        }
+
+                        /** @param list<int> $a */
+                        public static function smallerThanZero(array $a): int {
+                            if (count($a) < 0) {
+                                return 0;
+                            }
+
+                            /** @psalm-check-type-exact $a = list<int> */
+                            return 0;
+                        }
+
+                        /** @param list<int> $a */
+                        public static function smallerOrEqualToANegativeConstant(array $a): int {
+                            if (count($a) <= self::NEG) {
+                                return 0;
+                            }
+
+                            /** @psalm-check-type-exact $a = list<int> */
+                            return 0;
+                        }
+
+                        /** @param list<int> $a */
+                        public static function greaterThanZeroOnTheLeft(array $a): int {
+                            if (0 > count($a)) {
+                                return 0;
+                            }
+
+                            /** @psalm-check-type-exact $a = list<int> */
+                            return 0;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['TypeDoesNotContainType', 'RedundantCondition'],
+                'php_version' => '8.3',
+            ],
+            'strlenComparedToAClassConstant' => [
+                'code' => '<?php
+                    final class Lengths {
+                        private const ZERO = 0;
+                        private const NEG = -1;
+
+                        public static function greater(string $s): void {
+                            if (strlen($s) > self::ZERO) {
+                                /** @psalm-check-type-exact $s = non-empty-string */
+                            }
+                        }
+
+                        public static function equalToZero(string $s): void {
+                            if (strlen($s) === self::ZERO) {
+                                return;
+                            }
+
+                            /** @psalm-check-type-exact $s = non-empty-string */
+                        }
+
+                        public static function zeroOnTheLeft(string $s): void {
+                            if (self::ZERO < strlen($s)) {
+                                /** @psalm-check-type-exact $s = non-empty-string */
+                            }
+                        }
+
+                        public static function greaterThanANegativeConstant(string $s): void {
+                            if (strlen($s) > self::NEG) {
+                                /** @psalm-check-type-exact $s = string */
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'instanceofParentNarrowsToTheParentClass' => [
+                'code' => '<?php
+                    interface Shape {}
+
+                    class Box implements Shape {
+                        public function getSize(): int {
+                            return 1;
+                        }
+                    }
+
+                    final class TaggedBox extends Box {
+                        public function narrowed(Shape $shape): int {
+                            if ($shape instanceof parent) {
+                                /** @psalm-check-type-exact $shape = Box */
+                                return $shape->getSize();
+                            }
+
+                            return 0;
+                        }
+
+                        public function negated(Shape $shape): int {
+                            if (!$shape instanceof parent) {
+                                return 0;
+                            }
+
+                            return $shape->getSize();
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+            ],
+            'parentOfTheClassUsingATraitNarrowsInTheTraitCode' => [
+                'code' => '<?php
+                    interface Shape {}
+
+                    class Box implements Shape {
+                        public function getSize(): int {
+                            return 1;
+                        }
+                    }
+
+                    trait T {
+                        public function viaInstanceof(Shape $shape): int {
+                            if ($shape instanceof parent) {
+                                return $shape->getSize();
+                            }
+
+                            return 0;
+                        }
+                    }
+
+                    final class UsesTrait extends Box {
+                        use T;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+            ],
+            'isAParentClassNarrowsToTheParentClass' => [
+                'code' => '<?php
+                    interface Shape {}
+
+                    class Box implements Shape {
+                        public function getSize(): int {
+                            return 1;
+                        }
+                    }
+
+                    final class TaggedBox extends Box {
+                        public function narrowed(Shape $shape): int {
+                            if (is_a($shape, parent::class)) {
+                                /** @psalm-check-type-exact $shape = Box */
+                                return $shape->getSize();
+                            }
+
+                            return 0;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+            ],
+            'getClassIdenticalToParentClassNarrowsToTheParentClass' => [
+                'code' => '<?php
+                    interface Shape {}
+
+                    class Box implements Shape {
+                        public function getSize(): int {
+                            return 1;
+                        }
+                    }
+
+                    final class TaggedBox extends Box {
+                        public function narrowed(Shape $shape): int {
+                            if (get_class($shape) === parent::class) {
+                                return $shape->getSize();
+                            }
+
+                            return 0;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+            ],
+            'classConstantIdenticalToParentClassNarrowsToTheParentClass' => [
+                'code' => '<?php
+                    interface Shape {}
+
+                    class Box implements Shape {
+                        public function getSize(): int {
+                            return 1;
+                        }
+                    }
+
+                    final class TaggedBox extends Box {
+                        public function narrowed(Shape $shape): int {
+                            if ($shape::class === parent::class) {
+                                return $shape->getSize();
+                            }
+
+                            return 0;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+            ],
             'negatedIsFloatCombinesTheRemainingTypes' => [
                 'code' => '<?php
                     /** @var numeric|"a" $x */
@@ -218,6 +616,19 @@ final class ConditionalTest extends TestCase
                             echo $x;
                         }
                     }',
+            ],
+            'varAssignedInTheRightOperandOfAnOrIsDefinedUnderTheSameOr' => [
+                'code' => '<?php
+                    final class Progress {
+                        public function advance(): void {
+                            echo ".";
+                        }
+                    }
+
+                    $a = rand(0, 1) === 1;
+
+                    $a || $p = new Progress;
+                    $a || $p->advance();',
             ],
             'varAssignedUnderNotNullIsDefinedUnderTheSameCheck' => [
                 'code' => '<?php
@@ -574,7 +985,7 @@ final class ConditionalTest extends TestCase
                         }
 
                         $width = $streams[0]["width"];
-                        /** @psalm-check-type-exact $width = mixed */
+                        /** @psalm-check-type-exact $width = non-empty-mixed */
                     }
 
                     /** @param list<mixed> $l */
@@ -849,7 +1260,7 @@ final class ConditionalTest extends TestCase
                         /** @psalm-check-type-exact $definition = stdClass */
                     }
 
-                    function g(?stdClass $definition): void {
+                    function g(?object $definition): void {
                         if ($isSimple = $isRoot = null === $definition) {
                             echo "root";
                         } elseif ($definition instanceof stdClass) {
@@ -6505,6 +6916,35 @@ final class ConditionalTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'classNotEqualToAFinalClassExcludesIt' => [
+                'code' => '<?php
+                    final class A {}
+                    class B {}
+
+                    /** @var A|stdClass $final */;
+                    if ($final::class === A::class) {
+                        $final_if = $final;
+                    } else {
+                        $final_else = $final;
+                    }
+
+                    /** @var A|stdClass $by_get_class */;
+                    if (get_class($by_get_class) !== A::class) {
+                        $get_class_if = $by_get_class;
+                    }
+
+                    /** @var B|stdClass $not_final */;
+                    if ($not_final::class === B::class) {
+                        $not_final_if = $not_final;
+                    } else {
+                        $not_final_else = $not_final;
+                    }',
+                'assertions' => [
+                    '$final_else===' => 'stdClass',
+                    '$get_class_if===' => 'stdClass',
+                    '$not_final_else===' => 'B|stdClass',
+                ],
+            ],
             'classEqualToTheClassOfAnotherClassStillNarrows' => [
                 'code' => '<?php
                     class Bar {}
@@ -7151,6 +7591,377 @@ final class ConditionalTest extends TestCase
                         }
                     }',
             ],
+            'looseEqualityWithAStringKeepsTheOtherScalars' => [
+                'code' => '<?php
+                    /** @param numeric $n */
+                    function f($n, string $s): void {
+                        if ($n == $s) {
+                            /** @psalm-check-type-exact $n = numeric */;
+                        }
+                    }
+
+                    function g(int|float|bool|null $x, string $s): void {
+                        if ($x == $s) {
+                            /** @psalm-check-type-exact $x = bool|float|int|null */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'looseEqualityWithAnIntFloatOrBoolKeepsTheOtherScalars' => [
+                'code' => '<?php
+                    /** @param numeric $n */
+                    function numericVsInt($n, int $i): void {
+                        if ($n == $i) {
+                            /** @psalm-check-type-exact $n = numeric */;
+                        }
+                    }
+
+                    /** @param numeric $n */
+                    function numericVsFloat($n, float $f): void {
+                        if ($n == $f) {
+                            /** @psalm-check-type-exact $n = numeric */;
+                        }
+                    }
+
+                    function intVsFloat(int $i, float $f): void {
+                        if ($i == $f) {
+                            /** @psalm-check-type-exact $i = int */;
+                        }
+                    }
+
+                    function nullableBoolVsFloat(?bool $b, float $f): void {
+                        if ($b == $f) {
+                            /** @psalm-check-type-exact $b = bool|null */;
+                        }
+                    }
+
+                    function calculatedIntVsFloat(int $i, float $f): void {
+                        $x = $i * 2;
+                        if ($x == $f) {
+                            /** @psalm-check-type-exact $x = int */;
+                        }
+                    }
+
+                    function scalarsVsBool(int|float|string|null $x, bool $b): void {
+                        if ($x == $b) {
+                            /** @psalm-check-type-exact $x = float|int|null|string */;
+                        }
+                    }
+
+                    /** @param positive-int $p */
+                    function scalarsVsPositiveInt(float|string|bool|null $x, int $p): void {
+                        if ($x == $p) {
+                            /** @psalm-check-type-exact $x = bool|float|numeric-string */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'looseEqualityWithAStringSubtypeKeepsTheOtherScalars' => [
+                'code' => '<?php
+                    /** @param non-empty-string $s */
+                    function floatVsNonEmptyString(float $f, string $s): void {
+                        if ($f == $s) {
+                            /** @psalm-check-type-exact $f = float */;
+                        }
+                    }
+
+                    /** @param lowercase-string $s */
+                    function floatVsLowercaseString(float $f, string $s): void {
+                        if ($f == $s) {
+                            /** @psalm-check-type-exact $f = float */;
+                        }
+                    }
+
+                    /** @param numeric-string $s */
+                    function floatVsNumericString(float $f, string $s): void {
+                        if ($f == $s) {
+                            /** @psalm-check-type-exact $f = float */;
+                        }
+                    }
+
+                    /**
+                     * @param numeric $n
+                     * @param non-empty-string $s
+                     */
+                    function numericVsNonEmptyString($n, string $s): void {
+                        if ($n == $s) {
+                            /** @psalm-check-type-exact $n = numeric */;
+                        }
+                    }
+
+                    /** @param non-empty-string $s */
+                    function nullableIntOrStringVsNonEmptyString(int|string|null $x, string $s): void {
+                        if ($x == $s) {
+                            /** @psalm-check-type-exact $x = int|non-empty-string */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'looseEqualityKeepsTheTemplatesWhoseBoundCanBeEqual' => [
+                'code' => '<?php
+                    /**
+                     * @template T of float|null
+                     * @param T $x
+                     */
+                    function floatTemplateVsString($x, string $s): void {
+                        if ($x == $s) {
+                            /** @psalm-check-type-exact $x = T */;
+                        }
+                    }
+
+                    /**
+                     * @template T of float
+                     * @param T $x
+                     */
+                    function floatTemplateVsInt($x, int $i): void {
+                        if ($x == $i) {
+                            /** @psalm-check-type-exact $x = T */;
+                        }
+                    }
+
+                    /**
+                     * @template T of int|null
+                     * @param T $x
+                     */
+                    function intTemplateVsFloat($x, float $f): void {
+                        if ($x == $f) {
+                            /** @psalm-check-type-exact $x = T */;
+                        }
+                    }
+
+                    /**
+                     * @template T of float
+                     * @param T $x
+                     * @param non-empty-string $s
+                     */
+                    function floatTemplateVsNonEmptyString($x, string $s): void {
+                        if ($x == $s) {
+                            /** @psalm-check-type-exact $x = T */;
+                        }
+                    }
+
+                    /**
+                     * @template T of int|bool
+                     * @param T $x
+                     */
+                    function templateVsBool($x, bool $b): void {
+                        if ($x == $b) {
+                            /** @psalm-check-type-exact $x = T */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'looseEqualityWithTrueOrFalseIsTruthiness' => [
+                'code' => '<?php
+                    function intVsTrue(int $x, bool $flag): void {
+                        if ($flag && $x == $flag) {
+                            /** @psalm-check-type-exact $x = int */;
+                        }
+                    }
+
+                    function scalarsVsFalse(string|int|null $x, bool $flag): void {
+                        if (!$flag && $x == $flag) {
+                            /** @psalm-check-type-exact $x = ""|"0"|0|null */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'looseEqualityWithANonScalarKeepsBool' => [
+                'code' => '<?php
+                    function boolVsArray(bool $b, array $a): void {
+                        if ($b == $a) {
+                            /** @psalm-check-type-exact $b = bool */;
+                        }
+                    }
+
+                    function boolVsObject(bool $b, object $o): void {
+                        if ($b == $o) {
+                            /** @psalm-check-type-exact $b = bool */;
+                        }
+                    }
+
+                    function boolVsCallable(bool $b, callable $c): void {
+                        if ($b == $c) {
+                            /** @psalm-check-type-exact $b = bool */;
+                        }
+                    }
+
+                    function boolVsIterable(bool $b, iterable $i): void {
+                        if ($b == $i) {
+                            /** @psalm-check-type-exact $b = bool */;
+                        }
+                    }
+
+                    function boolOrIntVsArray(bool|int $b, array $a): void {
+                        if ($b == $a) {
+                            /** @psalm-check-type-exact $b = bool */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'looseEqualityWithAStringKeepsStringableObjects' => [
+                'code' => '<?php
+                    function stringableVsString(Stringable $o, string $s): void {
+                        if ($o == $s) {
+                            /** @psalm-check-type-exact $o = Stringable */;
+                        }
+                    }
+
+                    function stringableOrScalarVsString(Stringable|int|array $o, string $s): void {
+                        if ($o == $s) {
+                            /** @psalm-check-type-exact $o = Stringable|int */;
+                        }
+                    }
+
+                    function nullableStringableVsLiteral(?Stringable $o): void {
+                        if ($o == "abc") {
+                            /** @psalm-check-type-exact $o = Stringable */;
+                        }
+                    }
+
+                    /** @param Countable&Stringable $o */
+                    function stringableIntersectionVsString(object $o, string $s): void {
+                        if ($o == $s) {
+                            /** @psalm-check-type-exact $o = Countable&Stringable */;
+                        }
+                    }
+
+                    function objectVsString(object $o, string $s): void {
+                        if ($o == $s) {
+                            /** @psalm-check-type-exact $o = object */;
+                        }
+                    }
+
+                    /**
+                     * @template T of Stringable
+                     * @param T $o
+                     */
+                    function stringableTemplateVsString($o, string $s): void {
+                        if ($o == $s) {
+                            /** @psalm-check-type-exact $o = T */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'looseInequalityWithAnArrayOrObjectIsNotRedundantForBoolOrNull' => [
+                'code' => '<?php
+                    function boolVsArray(bool $b, array $a): void {
+                        if ($b != $a) {}
+                    }
+
+                    function nullableIntVsArray(?int $i, array $a): void {
+                        if ($i != $a) {}
+                    }
+
+                    function boolVsObject(bool $b, object $o): void {
+                        if ($b != $o) {}
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'looseEqualityWithAnObjectKeepsBool' => [
+                'code' => '<?php
+                    function boolVsObject(bool $b, stdClass $o): void {
+                        if ($b == $o) {
+                            /** @psalm-check-type-exact $b = bool */;
+                        }
+                    }
+
+                    function nullableBoolVsObject(?bool $b, stdClass $o): void {
+                        if ($b == $o) {
+                            /** @psalm-check-type-exact $b = bool */;
+                        }
+                    }
+
+                    /** @param non-empty-string $s */
+                    function floatOrArrayVsNonEmptyString(float|array $x, string $s): void {
+                        if ($x == $s) {
+                            /** @psalm-check-type-exact $x = float */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'issetOfAnOffsetStoredInAVariableSetsAPossiblyUndefinedMixedVariable' => [
+                'code' => '<?php
+                    /** @return mixed */
+                    function dec(string $s) { return json_decode($s, true); }
+
+                    function f(string $s): void {
+                        if (rand(0, 1)) {
+                            $data = dec($s);
+                        }
+                        $has = isset($data["a"]);
+                        if ($has) {
+                            echo $data["a"];
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment', 'MixedArgument', 'MixedArrayAccess'],
+            ],
+            'emptyOfAnOffsetStoredInAVariableSetsAPossiblyUndefinedMixedVariableWhereFalsy' => [
+                'code' => '<?php
+                    /** @return mixed */
+                    function dec(string $s) { return json_decode($s, true); }
+
+                    function f(string $s): void {
+                        if (rand(0, 1)) {
+                            $data = dec($s);
+                        }
+                        $empty = empty($data["a"]);
+                        if (!$empty) {
+                            echo $data["a"];
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment', 'MixedArgument', 'MixedArrayAccess'],
+            ],
+            'issetOfAnOffsetStoredInAVariableNarrowsAnArray' => [
+                'code' => '<?php
+                    /** @param array{a?: int} $p */
+                    function f(array $p): void {
+                        $has = isset($p["a"]);
+                        if ($has) {
+                            /** @psalm-check-type-exact $p = array{a: int} */;
+                        }
+                    }',
+            ],
+            'issetOfAnOffsetStoredInAVariableNarrowsAMixedVariableCheckedAsArray' => [
+                'code' => '<?php
+                    /** @param mixed $p */
+                    function f($p): void {
+                        $has = is_array($p) && isset($p["a"]);
+                        if ($has) {
+                            /** @psalm-check-type-exact $p = array{a: mixed, ...<array-key, mixed>} */;
+                        }
+                    }',
+            ],
+            'issetOfAnOffsetStoredInAVariableNarrowsAMixedVariableCheckedAsArrayAfterwards' => [
+                'code' => '<?php
+                    /** @param mixed $p */
+                    function f($p): void {
+                        $has = isset($p["a"]) && is_array($p);
+                        if ($has) {
+                            /** @psalm-check-type-exact $p = array{a: mixed, ...<array-key, mixed>} */;
+                        }
+                    }',
+            ],
         ];
     }
 
@@ -7161,6 +7972,19 @@ final class ConditionalTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'coalesceWithFalseInADisjunctionDoesNotEstablishTheKey' => [
+                'code' => '<?php
+                    /** @param array{k?: string} $a */
+                    function f(array $a, bool $other): string {
+                        if (($a["k"] ?? false) || $other) {
+                            return $a["k"];
+                        }
+
+                        return "";
+                    }',
+                'error_message' => 'PossiblyUndefinedArrayOffset',
+                'error_levels' => ['RiskyTruthyFalsyComparison'],
+            ],
             'typeLeftByNegatedTypeChecksStaysFromDocblock' => [
                 'code' => '<?php
                     /** @param string|float|int|bool|null $x */
@@ -7346,6 +8170,63 @@ final class ConditionalTest extends TestCase
                     }',
                 'error_message' => 'MixedArrayAccess',
             ],
+            'mixedOffsetReadWhereNotEmptyOfAnOffsetStoredInAVariableIsTrue' => [
+                'code' => '<?php
+                    /** @param mixed $x */
+                    function g($x): void {}
+
+                    /** @param mixed $p */
+                    function f($p): void {
+                        $has = !empty($p["a"]);
+                        if ($has) {
+                            g($p["b"]);
+                        }
+                    }',
+                'error_message' => 'MixedArrayAccess',
+            ],
+            'mixedOffsetReadWhereIssetOfAnOffsetStoredInAVariableIsTrue' => [
+                'code' => '<?php
+                    /** @param mixed $x */
+                    function g($x): void {}
+
+                    /** @param mixed $p */
+                    function f($p): void {
+                        $has = isset($p["a"]);
+                        if ($has) {
+                            g($p["b"]);
+                        }
+                    }',
+                'error_message' => 'MixedArrayAccess',
+            ],
+            'mixedOffsetReadWhereEmptyOfAnOffsetStoredInAVariableIsFalse' => [
+                'code' => '<?php
+                    /** @param mixed $x */
+                    function g($x): void {}
+
+                    /** @param mixed $p */
+                    function f($p): void {
+                        $empty = empty($p["a"]);
+                        if (!$empty) {
+                            g($p["b"]);
+                        }
+                    }',
+                'error_message' => 'MixedArrayAccess',
+            ],
+            'mixedOffsetReadWhereIssetOfAnOffsetStoredInAVariableIsFalse' => [
+                'code' => '<?php
+                    /** @param mixed $x */
+                    function g($x): void {}
+
+                    /** @param mixed $p */
+                    function f($p, bool $b): void {
+                        $missing = !isset($p["a"]) || $b;
+                        if ($missing) {
+                            return;
+                        }
+                        g($p["b"]);
+                    }',
+                'error_message' => 'MixedArrayAccess',
+            ],
             'mixedVarWrittenByReferenceInTheConditionOfANestedIfStaysUnioned' => [
                 'code' => '<?php
                     /** @param-out string|false $s */
@@ -7510,6 +8391,39 @@ final class ConditionalTest extends TestCase
                         if ($s == null) {}
                     }',
                 'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29',
+            ],
+            'looseEqualityOfNegativeIntOrNullWithPositiveIntIsImpossible' => [
+                'code' => '<?php
+                    /**
+                     * @param int<min, -1>|null $x
+                     * @param positive-int $p
+                     */
+                    function f(?int $x, int $p): void {
+                        if ($x == $p) {}
+                    }',
+                'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:29',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'looseEqualityOfNonNumericStringsWithAFloatIsImpossible' => [
+                'code' => '<?php
+                    /** @param "a"|"b" $s */
+                    function f(string $s, float $f): void {
+                        if ($s == $f) {}
+                    }',
+                'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'looseEqualityOfNonNumericStringsWithAnIntIsImpossible' => [
+                'code' => '<?php
+                    /** @param "a"|"b" $s */
+                    function f(string $s, int $i): void {
+                        if ($s == $i) {}
+                    }',
+                'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'looseNullInequalityOfZeroOrOneIsRedundant' => [
                 'code' => '<?php
@@ -8286,7 +9200,8 @@ final class ConditionalTest extends TestCase
                     function getData(): ?array { return null; }
                     function check(): bool { return true; }
                     $r = (check() && ($data = getData()) !== null) ? 1 : $data;',
-                'error_message' => 'UndefinedGlobalVariable',
+                // assigned only when check() is true, so possibly undefined
+                'error_message' => 'PossiblyUndefinedGlobalVariable',
             ],
             'orWhoseLeftSideIsAConjunctionAndRightSideReassignsAVariableKeepsTheLeftNullable' => [
                 'code' => '<?php

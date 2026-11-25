@@ -30,6 +30,17 @@ final class DoTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'doWhileBarePostDecrementConditionIsMinusOneAfterTheLoop' => [
+                'code' => '<?php
+                    $c = 3;
+                    do {
+                        $c = 0;
+                    } while ($c--);
+                    $afterLoop = $c;',
+                'assertions' => [
+                    '$afterLoop===' => '-1',
+                ],
+            ],
             'doCounterIncrementedThroughAReferenceIsWidened' => [
                 'code' => <<<'PHP'
                     <?php
@@ -1400,6 +1411,33 @@ final class DoTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'varAssignedRightOfLogicalAndInTheConditionIsPossiblyUndefinedAfterTheLoop' => [
+                'code' => '<?php
+                    /** @return int|false */
+                    function h() {
+                        return rand(0, 1) ? 3 : false;
+                    }
+                    do {
+                        $b = (bool) rand(0, 1);
+                    } while ($b and false !== ($j = h()));
+                    echo $j;',
+                'error_message' => 'PossiblyUndefinedGlobalVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:26',
+            ],
+            'varUnsetBeforeContinueIsPossiblyUndefinedAfterTheLoop' => [
+                'code' => '<?php
+                    function f(): void {
+                        $x = 0;
+                        do {
+                            if (rand(0, 1)) {
+                                unset($x);
+                                continue;
+                            }
+                            $x = 1;
+                        } while (rand(0, 1));
+                        echo $x;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
             'doWhilePropertyFetchOnAVariableNullOnlyInTheFirstIteration' => [
                 'code' => <<<'PHP'
                     <?php

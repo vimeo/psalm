@@ -27,6 +27,7 @@ use Psalm\Internal\Type\TypeParser;
 use Psalm\Internal\Type\TypeTokenizer;
 use Psalm\Storage\Capabilities;
 use Psalm\Storage\CapabilitiesParseException;
+use Psalm\Storage\TemplateVariance;
 use Psalm\Type\Atomic\TCapabilities;
 use Psalm\Type\Union;
 
@@ -77,7 +78,7 @@ final class ClassLikeDocblockParser
                         $purity_template['name'],
                         'of',
                         $purity_template['bound'],
-                        true,
+                        TemplateVariance::Covariant,
                         $offset - $comment->getStartFilePos(),
                     ];
                     $info->purity_templates[] = $purity_template['name'];
@@ -96,7 +97,11 @@ final class ClassLikeDocblockParser
         [$info->templates, $info->template_defaults] = TemplateTagParser::parseTags(
             $parsed_docblock,
             $comment,
-            ['template' => false, 'template-covariant' => true],
+            [
+                'template' => TemplateVariance::Invariant,
+                'template-covariant' => TemplateVariance::Covariant,
+                'template-contravariant' => TemplateVariance::Contravariant,
+            ],
             $templates,
         );
 
@@ -211,8 +216,8 @@ final class ClassLikeDocblockParser
             }
         }
 
-        if (isset($parsed_docblock->tags['psalm-inheritors'])) {
-            foreach ($parsed_docblock->tags['psalm-inheritors'] as $template_line) {
+        if (isset($parsed_docblock->combined_tags['psalm-inheritors'])) {
+            foreach ($parsed_docblock->combined_tags['psalm-inheritors'] as $template_line) {
                 $doc_line_parts = CommentAnalyzer::splitDocLine($template_line);
                 $doc_line_parts[0] = CommentAnalyzer::sanitizeDocblockType($doc_line_parts[0]);
                 $info->inheritors = $doc_line_parts[0];
@@ -320,6 +325,8 @@ final class ClassLikeDocblockParser
 
             // the class's other templates, for its parameter types
             $param_template_map = $purity_template_map + array_fill_keys(array_column($info->templates, 0), true);
+
+            $comment_lines = explode("\n", $comment->getText());
 
             foreach ($parsed_docblock->combined_tags['method'] as $offset => $method_entry) {
                 $method_entry = (string) preg_replace('/[ \t]+/', ' ', trim($method_entry));
@@ -562,7 +569,7 @@ final class ClassLikeDocblockParser
                 /** @var Doc */
                 $node_doc_comment = $node->getDocComment();
 
-                $method_offset = self::getMethodOffset($comment, $method_entry);
+                $method_offset = self::getMethodOffset($comment_lines, $method_entry);
 
                 $statements[0]->stmts[0]->setAttribute('startLine', $node_doc_comment->getStartLine() + $method_offset);
                 $statements[0]->stmts[0]->setAttribute('startFilePos', $node_doc_comment->getStartFilePos());
@@ -671,63 +678,42 @@ final class ClassLikeDocblockParser
         $magic_property_comments = $specials[$property_tag] ?? [];
 
         foreach ($magic_property_comments as $offset => $property) {
-            $line_parts = CommentAnalyzer::splitDocLine($property);
+            $parsed = CommentAnalyzer::parseVariableDocLine($property, false);
 
-            if (count($line_parts) === 1 && isset($line_parts[0][0]) && $line_parts[0][0] === '$') {
+            if ($parsed === false) {
+                throw new DocblockParseException('Badly-formatted @property');
+            }
+
+            if ($parsed === null) {
                 continue;
             }
 
-            if (count($line_parts) > 1) {
-                if (preg_match('/^&?\$[A-Za-z0-9_\x80-\xff]+[,;]?$/', $line_parts[1])
-                    && $line_parts[0][0] !== '{'
-                ) {
-                    $line_parts[1] = str_replace('&', '', $line_parts[1]);
-
-                    $line_parts[1] = (string) preg_replace('/[,;]$/', '', $line_parts[1], 1);
-
-                    $end = $offset + strlen($line_parts[0]);
-
-                    $line_parts[0] = CommentAnalyzer::sanitizeDocblockType($line_parts[0]);
-
-                    if ($line_parts[0] === ''
-                        || ($line_parts[0][0] === '$'
-                            && !preg_match('/^\$this *(\||$)/', $line_parts[0]))
-                    ) {
-                        throw new IncorrectDocblockException('Misplaced variable');
-                    }
-
-                    $name = trim($line_parts[1]);
-
-                    if (!preg_match('/^\$([a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*)$/', $name)) {
-                        throw new DocblockParseException('Badly-formatted @property name');
-                    }
-
-                    $info->properties[] = [
-                        'name' => $name,
-                        'type' => $line_parts[0],
-                        'line_number' => $comment->getStartLine() + substr_count(
-                            $comment->getText(),
-                            "\n",
-                            0,
-                            $offset - $comment->getStartFilePos(),
-                        ),
-                        'tag' => $property_tag,
-                        'start' => $offset,
-                        'end' => $end,
-                    ];
-                }
-            } else {
-                throw new DocblockParseException('Badly-formatted @property');
+            if (!preg_match('/^\$([a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*)$/', $parsed['name'])) {
+                throw new DocblockParseException('Badly-formatted @property name');
             }
+
+            $info->properties[] = [
+                'name' => $parsed['name'],
+                'type' => $parsed['type'],
+                'line_number' => $comment->getStartLine() + substr_count(
+                    $comment->getText(),
+                    "\n",
+                    0,
+                    $offset - $comment->getStartFilePos(),
+                ),
+                'tag' => $property_tag,
+                'start' => $offset,
+                'end' => $offset + $parsed['type_length'],
+            ];
         }
     }
 
     /**
+     * @param list<string> $lines
      * @psalm-pure
      */
-    private static function getMethodOffset(Doc $comment, string $method_entry): int
+    private static function getMethodOffset(array $lines, string $method_entry): int
     {
-        $lines = explode("\n", $comment->getText());
         $method_offset = 0;
 
         foreach ($lines as $i => $line) {

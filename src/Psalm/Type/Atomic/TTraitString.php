@@ -35,7 +35,7 @@ final class TTraitString extends TString
     }
 
     #[Override]
-    public function getId(bool $exact = true, bool $nested = false): string
+    public function getId(bool $exact = true): string
     {
         return ($this->is_loaded ? 'loaded-' : '') . 'trait-string';
     }

@@ -764,27 +764,43 @@ final class SimpleNegatedAssertionReconciler extends Reconciler
             unset($types[$literal_key]);
         }
 
-        foreach ($types as &$type) {
+        foreach ($types as $k => $type) {
             if ($type instanceof TTemplateParam) {
-                $new = $type->replaceAs(self::reconcileBoolLiteral(
-                    $value,
+                $type = self::reconcileTemplateBound(
+                    $type,
+                    static fn(
+                        Assertion $assertion,
+                        Union $as,
+                        ?string $key,
+                        bool $negated,
+                        ?CodeLocation $code_location,
+                        array $suppressed_issues,
+                        int &$failed_reconciliation,
+                        bool $is_equality,
+                    ): Union => self::reconcileBoolLiteral(
+                        $value,
+                        $assertion,
+                        $as,
+                        $key,
+                        $negated,
+                        $code_location,
+                        $suppressed_issues,
+                        $failed_reconciliation,
+                        $is_equality,
+                    ),
                     $assertion,
-                    $type->as,
-                    null,
-                    false,
-                    null,
                     $suppressed_issues,
-                    $failed_reconciliation,
                     $is_equality,
-                ));
+                    $redundant,
+                );
 
-                if ($new !== $type) {
-                    $redundant = false;
+                if ($type === null) {
+                    unset($types[$k]);
+                } else {
+                    $types[$k] = $type;
                 }
-                $type = $new;
             }
         }
-        unset($type);
 
         return self::finishReconciliation(
             $types ? $existing_var_type->setTypes($types) : null,
@@ -1079,7 +1095,8 @@ final class SimpleNegatedAssertionReconciler extends Reconciler
         $old_var_type_string = $existing_var_type->getId();
         $compared_with_one_value = self::isComparedWithOneValue($assertion);
         $non_object_types = [];
-        $redundant = true;
+        // `true == $object`
+        $redundant = !($assertion instanceof IsNotLooselyEqual && $existing_var_type->hasBool());
 
         foreach ($existing_var_type->getAtomicTypes() as $type) {
             if ($type instanceof TTemplateParam) {
@@ -1455,7 +1472,10 @@ final class SimpleNegatedAssertionReconciler extends Reconciler
         $old_var_type_string = $existing_var_type->getId();
         $compared_with_one_value = self::isComparedWithOneValue($assertion);
         $non_array_types = [];
-        $redundant = !$existing_var_type->hasScalar();
+        // `false == []` and `null == []`
+        $redundant = !$existing_var_type->hasScalar()
+            && !($assertion instanceof IsNotLooselyEqual
+                && ($existing_var_type->hasBool() || $existing_var_type->isNullable()));
 
         foreach ($existing_var_type->getAtomicTypes() as $type) {
             if ($type instanceof TTemplateParam) {

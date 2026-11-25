@@ -62,6 +62,14 @@ final class KeyedArrayComparator
             if (!isset($input_properties[$key])) {
                 if (!$container_property_type->possibly_undefined) {
                     $all_types_contain = false;
+
+                    // a sealed array never has a key it doesn't declare, so no value of the input fits
+                    if ($atomic_comparison_result
+                        && $input_type_part instanceof TKeyedArray
+                        && $input_type_part->fallback_params === null
+                    ) {
+                        $atomic_comparison_result->mergeFailedPart(new TypeComparisonResult());
+                    }
                 }
 
                 continue;
@@ -78,75 +86,15 @@ final class KeyedArrayComparator
             $input_property_type = $input_properties[$key];
             unset($input_properties[$key]);
 
-            $property_type_comparison = new TypeComparisonResult();
-
-            if (!$input_property_type->isNever()) {
-                $is_input_containedby_container = UnionTypeComparator::isContainedBy(
-                    $codebase,
-                    $input_property_type,
-                    $container_property_type,
-                    $input_property_type->ignore_nullable_issues,
-                    $input_property_type->ignore_falsable_issues,
-                    $property_type_comparison,
-                    $allow_interface_equality,
-                );
-                if (!$is_input_containedby_container) {
-                    if ($atomic_comparison_result) {
-                        $atomic_comparison_result->type_coerced
-                            = $property_type_comparison->type_coerced === true
-                            && $atomic_comparison_result->type_coerced !== false;
-
-                        if (!$property_type_comparison->type_coerced_from_scalar
-                            && !$atomic_comparison_result->type_coerced) {
-                            //if we didn't detect a coercion, we try to compare the other way around
-                            $inverse_property_type_comparison = new TypeComparisonResult();
-                            if (UnionTypeComparator::isContainedBy(
-                                $codebase,
-                                $container_property_type,
-                                $input_property_type,
-                                false,
-                                false,
-                                $inverse_property_type_comparison,
-                                $allow_interface_equality,
-                            )
-                                || $inverse_property_type_comparison->type_coerced_from_scalar
-                            ) {
-                                $atomic_comparison_result->type_coerced = true;
-                            }
-                        }
-
-                        $atomic_comparison_result->type_coerced_from_mixed
-                            = $property_type_comparison->type_coerced_from_mixed === true
-                            && $atomic_comparison_result->type_coerced_from_mixed !== false;
-
-                        $atomic_comparison_result->type_coerced_from_as_mixed
-                            = $property_type_comparison->type_coerced_from_as_mixed === true
-                            && $atomic_comparison_result->type_coerced_from_as_mixed !== false;
-
-                        $atomic_comparison_result->type_coerced_from_scalar
-                            = $property_type_comparison->type_coerced_from_scalar === true
-                            && $atomic_comparison_result->type_coerced_from_scalar !== false;
-
-                        $atomic_comparison_result->scalar_type_match_found
-                            = $property_type_comparison->scalar_type_match_found === true
-                            && $atomic_comparison_result->scalar_type_match_found !== false;
-
-                        if ($property_type_comparison->missing_shape_fields) {
-                            $atomic_comparison_result->missing_shape_fields
-                                = $property_type_comparison->missing_shape_fields;
-                        }
-                    }
-
-                    $all_types_contain = false;
-                } else {
-                    if ($atomic_comparison_result) {
-                        $atomic_comparison_result->to_string_cast
-                            = $atomic_comparison_result->to_string_cast === true
-                            || $property_type_comparison->to_string_cast === true;
-                    }
-                }
-
-                $atomic_comparison_result?->addTypeVariableBounds($property_type_comparison);
+            if (!self::isPartContainedBy(
+                $codebase,
+                $input_property_type,
+                $container_property_type,
+                $allow_interface_equality,
+                $atomic_comparison_result,
+                true,
+            )) {
+                $all_types_contain = false;
             }
         }
         if ($container_sealed && $input_properties) {
@@ -167,75 +115,25 @@ final class KeyedArrayComparator
             $value_type = $value_type->setPossiblyUndefined(true);
 
             foreach ($input_properties as $key => $input_property_type) {
-                $key_type_comparison = new TypeComparisonResult();
-                if (!UnionTypeComparator::isContainedBy(
+                if (!self::isPartContainedBy(
                     $codebase,
                     is_string($key) ? Type::getString($key) : Type::getInt(false, $key),
                     $key_type,
-                    false,
-                    false,
-                    $key_type_comparison,
                     $allow_interface_equality,
+                    $atomic_comparison_result,
                 )) {
-                    if ($atomic_comparison_result) {
-                        $atomic_comparison_result->type_coerced
-                            = $key_type_comparison->type_coerced === true
-                            && $atomic_comparison_result->type_coerced !== false;
-
-                        $atomic_comparison_result->type_coerced_from_mixed
-                            = $key_type_comparison->type_coerced_from_mixed === true
-                            && $atomic_comparison_result->type_coerced_from_mixed !== false;
-
-                        $atomic_comparison_result->type_coerced_from_as_mixed
-                            = $key_type_comparison->type_coerced_from_as_mixed === true
-                            && $atomic_comparison_result->type_coerced_from_as_mixed !== false;
-
-                        $atomic_comparison_result->type_coerced_from_scalar
-                            = $key_type_comparison->type_coerced_from_scalar === true
-                            && $atomic_comparison_result->type_coerced_from_scalar !== false;
-
-                        $atomic_comparison_result->scalar_type_match_found
-                            = $key_type_comparison->scalar_type_match_found === true
-                            && $atomic_comparison_result->scalar_type_match_found !== false;
-                    }
                     $all_types_contain = false;
                 }
 
-                $property_type_comparison = new TypeComparisonResult();
-                if (!UnionTypeComparator::isContainedBy(
+                if (!self::isPartContainedBy(
                     $codebase,
                     $input_property_type,
                     $value_type,
-                    false,
-                    false,
-                    $property_type_comparison,
                     $allow_interface_equality,
+                    $atomic_comparison_result,
                 )) {
-                    if ($atomic_comparison_result) {
-                        $atomic_comparison_result->type_coerced
-                            = $property_type_comparison->type_coerced === true
-                            && $atomic_comparison_result->type_coerced !== false;
-
-                        $atomic_comparison_result->type_coerced_from_mixed
-                            = $property_type_comparison->type_coerced_from_mixed === true
-                            && $atomic_comparison_result->type_coerced_from_mixed !== false;
-
-                        $atomic_comparison_result->type_coerced_from_as_mixed
-                            = $property_type_comparison->type_coerced_from_as_mixed === true
-                            && $atomic_comparison_result->type_coerced_from_as_mixed !== false;
-
-                        $atomic_comparison_result->type_coerced_from_scalar
-                            = $property_type_comparison->type_coerced_from_scalar === true
-                            && $atomic_comparison_result->type_coerced_from_scalar !== false;
-
-                        $atomic_comparison_result->scalar_type_match_found
-                            = $property_type_comparison->scalar_type_match_found === true
-                            && $atomic_comparison_result->scalar_type_match_found !== false;
-                    }
                     $all_types_contain = false;
                 }
-
-                $atomic_comparison_result?->addTypeVariableBounds($property_type_comparison);
             }
         }
 
@@ -246,46 +144,88 @@ final class KeyedArrayComparator
             && $container_type_part->fallback_params !== null
         ) {
             foreach ($input_type_part->fallback_params as $i => $input_param) {
-                $container_param = $container_type_part->fallback_params[$i];
-                $param_comparison = new TypeComparisonResult();
-                if (!UnionTypeComparator::isContainedBy(
+                if (!self::isPartContainedBy(
                     $codebase,
                     $input_param,
-                    $container_param,
-                    false,
-                    false,
-                    $param_comparison,
+                    $container_type_part->fallback_params[$i],
                     $allow_interface_equality,
+                    $atomic_comparison_result,
                 )) {
-                    if ($atomic_comparison_result) {
-                        $atomic_comparison_result->type_coerced
-                            = $param_comparison->type_coerced === true
-                            && $atomic_comparison_result->type_coerced !== false;
-
-                        $atomic_comparison_result->type_coerced_from_mixed
-                            = $param_comparison->type_coerced_from_mixed === true
-                            && $atomic_comparison_result->type_coerced_from_mixed !== false;
-
-                        $atomic_comparison_result->type_coerced_from_as_mixed
-                            = $param_comparison->type_coerced_from_as_mixed === true
-                            && $atomic_comparison_result->type_coerced_from_as_mixed !== false;
-
-                        $atomic_comparison_result->type_coerced_from_scalar
-                            = $param_comparison->type_coerced_from_scalar === true
-                            && $atomic_comparison_result->type_coerced_from_scalar !== false;
-
-                        $atomic_comparison_result->scalar_type_match_found
-                            = $param_comparison->scalar_type_match_found === true
-                            && $atomic_comparison_result->scalar_type_match_found !== false;
-                    }
                     $all_types_contain = false;
                 }
-
-                $atomic_comparison_result?->addTypeVariableBounds($param_comparison);
             }
         }
 
         return $all_types_contain;
+    }
+
+    /**
+     * Compares a key or a value of the input array with the container's, and records the outcome in
+     * $atomic_comparison_result.
+     *
+     * @param bool $check_parent_type whether a parent type given for the part is a coercion, as for a declared entry;
+     *                                an extra entry or a fallback is compared as the value of an `array<K, V>`
+     */
+    private static function isPartContainedBy(
+        Codebase $codebase,
+        Union $input_part,
+        Union $container_part,
+        bool $allow_interface_equality,
+        ?TypeComparisonResult $atomic_comparison_result,
+        bool $check_parent_type = false,
+    ): bool {
+        $part_comparison = new TypeComparisonResult();
+
+        $is_contained = UnionTypeComparator::isContainedBy(
+            $codebase,
+            $input_part,
+            $container_part,
+            $input_part->ignore_nullable_issues,
+            $input_part->ignore_falsable_issues,
+            $part_comparison,
+            $allow_interface_equality,
+        );
+
+        if (!$atomic_comparison_result) {
+            return $is_contained;
+        }
+
+        if ($is_contained) {
+            $atomic_comparison_result->to_string_cast = $atomic_comparison_result->to_string_cast === true
+                || $part_comparison->to_string_cast === true;
+        } else {
+            if ($check_parent_type
+                && !$part_comparison->type_coerced_from_scalar
+                && !$part_comparison->type_coerced
+            ) {
+                // a parent type of the container's was given
+                $inverse_part_comparison = new TypeComparisonResult();
+
+                if (UnionTypeComparator::isContainedBy(
+                    $codebase,
+                    $container_part,
+                    $input_part,
+                    false,
+                    false,
+                    $inverse_part_comparison,
+                    $allow_interface_equality,
+                )
+                    || $inverse_part_comparison->type_coerced_from_scalar
+                ) {
+                    $part_comparison->type_coerced = true;
+                }
+            }
+
+            $atomic_comparison_result->mergeFailedPart($part_comparison);
+
+            if ($part_comparison->missing_shape_fields) {
+                $atomic_comparison_result->missing_shape_fields = $part_comparison->missing_shape_fields;
+            }
+        }
+
+        $atomic_comparison_result->addTypeVariableBounds($part_comparison);
+
+        return $is_contained;
     }
 
     public static function isContainedByObjectWithProperties(

@@ -12,6 +12,7 @@ use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\AssertionFinder;
 use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\ArithmeticOpAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
+use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ArrayFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\IncludeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
@@ -144,6 +145,65 @@ final class NamedFunctionCallHandler
 
     /** the functions reading CSV, by the position of their escape parameter */
     private const CSV_ESCAPE_POSITIONS = ['fgetcsv' => 4, 'fputcsv' => 4, 'str_getcsv' => 3];
+
+    /**
+     * the functions deprecated when called with more than ('>') or exactly ('===') this number of arguments,
+     * by what is deprecated, since when, its replacement and what to append to the message
+     *
+     * @var array<lowercase-string, array{'>'|'===', int, string, int, ?string, string}>
+     */
+    private const DEPRECATED_CALL_SHAPES = [
+        'mb_check_encoding' => ['===', 0, 'Calling mb_check_encoding() without arguments', 8_01_00, null, ''],
+        'mysqli_get_client_info' => [
+            '>', 0, 'Passing a connection to mysqli_get_client_info()', 8_01_00, null, ', leave it out',
+        ],
+        'imagepolygon' => ['>', 3, 'The num_points argument of imagepolygon()', 8_01_00, null, ', leave it out'],
+        'imageopenpolygon' => [
+            '>', 3, 'The num_points argument of imageopenpolygon()', 8_01_00, null, ', leave it out',
+        ],
+        'imagefilledpolygon' => [
+            '>', 3, 'The num_points argument of imagefilledpolygon()', 8_01_00, null, ', leave it out',
+        ],
+        'get_class' => [
+            '===', 0, 'Calling get_class() without arguments', 8_03_00, 'self::class or static::class', '',
+        ],
+        'get_parent_class' => [
+            '===', 0, 'Calling get_parent_class() without arguments', 8_03_00, 'get_parent_class($this)', '',
+        ],
+        'ldap_connect' => [
+            '>', 1, 'Calling ldap_connect() with more than one argument', 8_03_00, null, ', pass an LDAP URI',
+        ],
+        'pg_fetch_result' => [
+            '===', 2, 'Calling pg_fetch_result() with two arguments', 8_04_00, null, ', pass null as the row',
+        ],
+        'pg_field_prtlen' => [
+            '===', 2, 'Calling pg_field_prtlen() with two arguments', 8_04_00, null, ', pass null as the row',
+        ],
+        'pg_field_is_null' => [
+            '===', 2, 'Calling pg_field_is_null() with two arguments', 8_04_00, null, ', pass null as the row',
+        ],
+        'intlcal_set' => [
+            '>', 3, 'Calling intlcal_set() with more than three arguments', 8_04_00,
+            'IntlCalendar::setDate() or IntlCalendar::setDateTime()', '',
+        ],
+        'intlgregcal_create_instance' => [
+            '>', 2, 'Calling intlgregcal_create_instance() with more than two arguments', 8_04_00,
+            'IntlGregorianCalendar::createFromDate() or IntlGregorianCalendar::createFromDateTime()', '',
+        ],
+        'ldap_exop' => ['>', 4, 'Calling ldap_exop() with more than four arguments', 8_04_00, 'ldap_exop_sync()', ''],
+        'mysqli_store_result' => [
+            '>', 1, 'The mode argument of mysqli_store_result()', 8_04_00, null, ', leave it out',
+        ],
+        'stream_context_set_option' => [
+            '===', 2, 'Calling stream_context_set_option() with an array of options', 8_04_00,
+            'stream_context_set_options()', '',
+        ],
+        'openssl_pkey_derive' => [
+            '>', 2, 'The key_length argument of openssl_pkey_derive()', 8_05_00, null, ', leave it out',
+        ],
+        'finfo_buffer' => ['>', 3, 'The context argument of finfo_buffer()', 8_05_00, null, ', leave it out'],
+        'define' => ['>', 2, 'The case_insensitive argument of define()', 8_06_00, null, ', leave it out'],
+    ];
 
     /**
      * @param lowercase-string $function_id
@@ -674,33 +734,74 @@ final class NamedFunctionCallHandler
         }
     }
 
+    /**
+     * The flag given to extract() when it is EXTR_OVERWRITE or EXTR_SKIP, false otherwise.
+     *
+     * @param array<int, PhpParser\Node\Arg> $args
+     * @psalm-capabilities read-props
+     */
+    private static function getExtractFlag(StatementsAnalyzer $statements_analyzer, array $args): int|false
+    {
+        if (!isset($args[1])) {
+            return EXTR_OVERWRITE;
+        }
+
+        $flags_type = $statements_analyzer->node_data->getType($args[1]->value);
+
+        if (!$flags_type || !$flags_type->isSingleIntLiteral()) {
+            return false;
+        }
+
+        // @todo add support for other flags
+        return match ($flags_type->getSingleIntLiteral()->value) {
+            EXTR_SKIP => EXTR_SKIP,
+            EXTR_OVERWRITE => EXTR_OVERWRITE,
+            default => false,
+        };
+    }
+
+    /**
+     * The sealed array given to extract() when the analysis knows the variable extract() assigns for each of its
+     * keys, null otherwise.
+     *
+     * @param array<int, PhpParser\Node\Arg> $args
+     * @psalm-capabilities read-props
+     */
+    public static function getExtractedArray(StatementsAnalyzer $statements_analyzer, array $args): ?TKeyedArray
+    {
+        if (!isset($args[0])
+            || $args[0]->unpack
+            || ($args[0]->name !== null && $args[0]->name->name !== 'array')
+            || (isset($args[1]) && $args[1]->name !== null && $args[1]->name->name !== 'flags')
+            || self::getExtractFlag($statements_analyzer, $args) === false
+            || !($array_type = $statements_analyzer->node_data->getType($args[0]->value))
+            || !$array_type->isSingle()
+        ) {
+            return null;
+        }
+
+        $array_atomic = $array_type->getSingleAtomic();
+
+        return $array_atomic instanceof TKeyedArray && $array_atomic->fallback_params === null
+            ? $array_atomic
+            : null;
+    }
+
     private static function handleExtract(
         StatementsAnalyzer $statements_analyzer,
         Codebase $codebase,
         PhpParser\Node\Expr\FuncCall $stmt,
         Context $context,
     ): void {
-        $flag_value = false;
-        if (!isset($stmt->args[1])) {
-            $flag_value = EXTR_OVERWRITE;
-        } elseif (isset($stmt->args[1]->value)
-            && $stmt->args[1]->value instanceof PhpParser\Node\Expr
-            && ($flags_type = $statements_analyzer->node_data->getType($stmt->args[1]->value))
-            && $flags_type->hasLiteralInt() && count($flags_type->getAtomicTypes()) === 1) {
-            $flag_type_value = $flags_type->getSingleIntLiteral()->value;
-            if ($flag_type_value === EXTR_SKIP) {
-                $flag_value = EXTR_SKIP;
-            } elseif ($flag_type_value === EXTR_OVERWRITE) {
-                $flag_value = EXTR_OVERWRITE;
-            }
-            // @todo add support for other flags
-        }
+        $args = $stmt->getArgs();
+        $flag_value = self::getExtractFlag($statements_analyzer, $args);
 
         $is_unsealed = true;
         $validated_var_ids = [];
-        if ($flag_value !== false && isset($stmt->args[0]->value)
-            && $stmt->args[0]->value instanceof PhpParser\Node\Expr
-            && ($array_type_union = $statements_analyzer->node_data->getType($stmt->args[0]->value))
+        if ($flag_value !== false
+            && isset($args[0])
+            && !$args[0]->unpack
+            && ($array_type_union = $statements_analyzer->node_data->getType($args[0]->value))
             && $array_type_union->isSingle()
         ) {
             foreach ($array_type_union->getAtomicTypes() as $array_type) {
@@ -713,6 +814,18 @@ final class NamedFunctionCallHandler
 
                         $var_id = '$' . $key;
                         $validated_var_ids[] = $var_id;
+
+                        // the variable gets what the array holds under its key
+                        $key_type = Type::getString($key);
+                        ArrayFetchAnalyzer::taintArrayFetch(
+                            $statements_analyzer,
+                            $args[0]->value,
+                            $var_id,
+                            $type,
+                            $key_type,
+                            null,
+                            $array_type_union,
+                        );
 
                         if (isset($context->vars_in_scope[$var_id]) && $flag_value === EXTR_SKIP) {
                             $existing_type = $context->vars_in_scope[$var_id];
@@ -729,9 +842,7 @@ final class NamedFunctionCallHandler
                             );
                         } elseif (!isset($context->vars_in_scope[$var_id]) && $type->possibly_undefined === true) {
                             $context->possibly_assigned_var_ids[$var_id] = true;
-                        } elseif (isset($context->vars_in_scope[$var_id])
-                            && $type->possibly_undefined === true
-                            && $flag_value === EXTR_OVERWRITE) {
+                        } elseif (isset($context->vars_in_scope[$var_id]) && $type->possibly_undefined === true) {
                             $type = Type::combineUnionTypes(
                                 $context->vars_in_scope[$var_id],
                                 $type,
@@ -1051,65 +1162,17 @@ final class NamedFunctionCallHandler
         string $function_id,
         array $types,
     ): ?string {
+        if (isset(self::DEPRECATED_CALL_SHAPES[$function_id])) {
+            [$operator, $count, $subject, $since, $replacement, $suffix] = self::DEPRECATED_CALL_SHAPES[$function_id];
+
+            if ($operator === '>' ? count($types) > $count : count($types) === $count) {
+                return PhpDeprecations::getDeprecatedSinceMessage($subject, $since, $replacement) . $suffix;
+            }
+
+            return null;
+        }
+
         switch ($function_id) {
-            case 'mb_check_encoding':
-                if ($types === []) {
-                    return PhpDeprecations::getDeprecatedSinceMessage(
-                        'Calling mb_check_encoding() without arguments',
-                        8_01_00,
-                        null,
-                    );
-                }
-
-                return null;
-
-            case 'mysqli_get_client_info':
-                if ($types !== []) {
-                    return PhpDeprecations::getDeprecatedSinceMessage(
-                        'Passing a connection to mysqli_get_client_info()',
-                        8_01_00,
-                        null,
-                    ) . ', leave it out';
-                }
-
-                return null;
-
-            case 'imagepolygon':
-            case 'imageopenpolygon':
-            case 'imagefilledpolygon':
-                if (count($types) > 3) {
-                    return PhpDeprecations::getDeprecatedSinceMessage(
-                        'The num_points argument of ' . $function_id . '()',
-                        8_01_00,
-                        null,
-                    ) . ', leave it out';
-                }
-
-                return null;
-
-            case 'get_class':
-            case 'get_parent_class':
-                if ($types === []) {
-                    return PhpDeprecations::getDeprecatedSinceMessage(
-                        'Calling ' . $function_id . '() without arguments',
-                        8_03_00,
-                        $function_id === 'get_class' ? 'self::class or static::class' : 'get_parent_class($this)',
-                    );
-                }
-
-                return null;
-
-            case 'ldap_connect':
-                if (count($types) > 1) {
-                    return PhpDeprecations::getDeprecatedSinceMessage(
-                        'Calling ldap_connect() with more than one argument',
-                        8_03_00,
-                        null,
-                    ) . ', pass an LDAP URI';
-                }
-
-                return null;
-
             case 'dba_fetch':
                 if (count($types) === 3 && ($types[1] ?? null)?->isInt()) {
                     return PhpDeprecations::getDeprecatedSinceMessage(
@@ -1117,96 +1180,6 @@ final class NamedFunctionCallHandler
                         8_03_00,
                         null,
                     ) . ', pass it second and skip third';
-                }
-
-                return null;
-
-            case 'pg_fetch_result':
-            case 'pg_field_prtlen':
-            case 'pg_field_is_null':
-                if (count($types) === 2) {
-                    return PhpDeprecations::getDeprecatedSinceMessage(
-                        'Calling ' . $function_id . '() with two arguments',
-                        8_04_00,
-                        null,
-                    ) . ', pass null as the row';
-                }
-
-                return null;
-
-            case 'intlcal_set':
-                if (count($types) > 3) {
-                    return PhpDeprecations::getDeprecatedSinceMessage(
-                        'Calling intlcal_set() with more than three arguments',
-                        8_04_00,
-                        'IntlCalendar::setDate() or IntlCalendar::setDateTime()',
-                    );
-                }
-
-                return null;
-
-            case 'intlgregcal_create_instance':
-                if (count($types) > 2) {
-                    return PhpDeprecations::getDeprecatedSinceMessage(
-                        'Calling intlgregcal_create_instance() with more than two arguments',
-                        8_04_00,
-                        'IntlGregorianCalendar::createFromDate() or IntlGregorianCalendar::createFromDateTime()',
-                    );
-                }
-
-                return null;
-
-            case 'ldap_exop':
-                if (count($types) > 4) {
-                    return PhpDeprecations::getDeprecatedSinceMessage(
-                        'Calling ldap_exop() with more than four arguments',
-                        8_04_00,
-                        'ldap_exop_sync()',
-                    );
-                }
-
-                return null;
-
-            case 'mysqli_store_result':
-                if (count($types) > 1) {
-                    return PhpDeprecations::getDeprecatedSinceMessage(
-                        'The mode argument of mysqli_store_result()',
-                        8_04_00,
-                        null,
-                    ) . ', leave it out';
-                }
-
-                return null;
-
-            case 'stream_context_set_option':
-                if (count($types) === 2) {
-                    return PhpDeprecations::getDeprecatedSinceMessage(
-                        'Calling stream_context_set_option() with an array of options',
-                        8_04_00,
-                        'stream_context_set_options()',
-                    );
-                }
-
-                return null;
-
-            case 'openssl_pkey_derive':
-                if (count($types) > 2) {
-                    return PhpDeprecations::getDeprecatedSinceMessage(
-                        'The key_length argument of openssl_pkey_derive()',
-                        8_05_00,
-                        null,
-                    ) . ', leave it out';
-                }
-
-                return null;
-
-            case 'finfo_buffer':
-                if (count($types) > 3) {
-                    return PhpDeprecations::getDeprecatedSinceMessage(
-                        'The context argument of finfo_buffer()',
-                        8_05_00,
-                        null,
-                    ) . ', leave it out';
                 }
 
                 return null;
@@ -1220,17 +1193,6 @@ final class NamedFunctionCallHandler
                         8_05_00,
                         null,
                     ) . ', pass the handle opendir() returned';
-                }
-
-                return null;
-
-            case 'define':
-                if (count($types) > 2) {
-                    return PhpDeprecations::getDeprecatedSinceMessage(
-                        'The case_insensitive argument of define()',
-                        8_06_00,
-                        null,
-                    ) . ', leave it out';
                 }
 
                 return null;

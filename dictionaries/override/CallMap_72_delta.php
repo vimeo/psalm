@@ -77,40 +77,33 @@ return array (
     'ldap_exop' => 
     array (
       0 => 'bool|resource',
-      'ldap' => 'resource',
-      'request_oid' => 'string',
-      'request_data=' => 'null|string',
-      'controls=' => 'array<array-key, mixed>|null',
-      '&w response_data=' => 'string',
-      '&w response_oid=' => 'string',
+      'link' => 'resource',
+      'reqoid' => 'string',
+      'reqdata=' => 'null|string',
+      'servercontrols=' => 'array<array-key, mixed>|null',
+      '&w retdata=' => 'string',
+      '&w retoid=' => 'string',
     ),
     'ldap_exop_passwd' => 
     array (
       0 => 'bool|string',
-      'ldap' => 'resource',
-      'user=' => 'string',
-      'old_password=' => 'string',
-      'new_password=' => 'string',
-    ),
-    'ldap_exop_refresh' => 
-    array (
-      0 => 'false|int',
-      'ldap' => 'resource',
-      'dn' => 'string',
-      'ttl' => 'int',
+      'link' => 'resource',
+      'user' => 'string',
+      'oldpw' => 'string',
+      'newpw' => 'string',
     ),
     'ldap_exop_whoami' => 
     array (
       0 => 'false|string',
-      'ldap' => 'resource',
+      'link' => 'resource',
     ),
     'ldap_parse_exop' => 
     array (
       0 => 'bool',
-      'ldap' => 'resource',
+      'link' => 'resource',
       'result' => 'resource',
-      '&w response_data=' => 'string',
-      '&w response_oid=' => 'string',
+      '&w retdata' => 'string',
+      '&w retoid' => 'string',
     ),
     'mb_chr' => 
     array (
@@ -185,13 +178,13 @@ return array (
     'oci_register_taf_callback' => 
     array (
       0 => 'bool',
-      'connection' => 'resource',
-      'callback=' => 'callable[impure]',
+      'connection_resource' => 'resource',
+      'function_name=' => 'callable[impure]',
     ),
     'oci_unregister_taf_callback' => 
     array (
       0 => 'bool',
-      'connection' => 'resource',
+      'connection_resource' => 'resource',
     ),
     'opcache_compile_file' => 
     array (
@@ -245,17 +238,17 @@ return array (
     'socket_addrinfo_bind' => 
     array (
       0 => 'null|resource',
-      'addrinfo' => 'resource',
+      'addr' => 'resource',
     ),
     'socket_addrinfo_connect' => 
     array (
       0 => 'resource',
-      'addrinfo' => 'resource',
+      'addr' => 'resource',
     ),
     'socket_addrinfo_explain' => 
     array (
       0 => 'array<array-key, mixed>',
-      'addrinfo' => 'resource',
+      'addr' => 'resource',
     ),
     'socket_addrinfo_lookup' => 
     array (
@@ -605,13 +598,15 @@ return array (
     array (
       0 => 'array<array-key, mixed>|false',
       '&r state' => 'string',
-      'string=' => 'string',
+      'string' => 'string',
+      'string_3=' => 'mixed',
     ),
     'sodium_crypto_secretstream_xchacha20poly1305_push' => 
     array (
       0 => 'string',
       '&w state' => 'string',
-      'string=' => 'string',
+      'string' => 'string',
+      'string_3=' => 'string',
       'long=' => 'string',
     ),
     'sodium_crypto_secretstream_xchacha20poly1305_rekey' => 
@@ -1327,6 +1322,36 @@ return array (
         0 => 'string',
       ),
     ),
+    'oci_set_call_timeout' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'connection' => 'resource',
+        'timeout' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'connection_resource' => 'resource',
+        'call_timeout' => 'int',
+      ),
+    ),
+    'oci_set_db_operation' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'connection' => 'resource',
+        'action' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'connection_resource' => 'resource',
+        'action' => 'string',
+      ),
+    ),
     'openssl_pkcs7_verify' => 
     array (
       'old' => 
@@ -1387,12 +1412,12 @@ return array (
       'old' => 
       array (
         0 => 'bool',
-        'auth' => 'string',
+        'auth' => 'array{0?: string, 1?: string, pass?: string, user?: string}|string',
       ),
       'new' => 
       array (
         0 => 'bool',
-        'credentials' => 'string',
+        'credentials' => 'array{0?: string, 1?: string, pass?: string, user?: string}|string',
       ),
     ),
     'redis::bitcount' => 
@@ -3252,7 +3277,7 @@ return array (
         'timeout=' => 'float',
         'read_timeout=' => 'float',
         'persistent=' => 'bool',
-        'auth=' => 'null|string',
+        'auth=' => 'array{0?: string, 1?: string, pass?: string, user?: string}|null|string',
       ),
       'new' => 
       array (
@@ -3262,7 +3287,7 @@ return array (
         'timeout=' => 'float',
         'read_timeout=' => 'float',
         'persistent=' => 'bool',
-        'auth=' => 'null|string',
+        'auth=' => 'array{0?: string, 1?: string, pass?: string, user?: string}|null|string',
         'context=' => 'mixed',
       ),
     ),

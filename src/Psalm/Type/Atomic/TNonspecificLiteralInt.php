@@ -19,7 +19,7 @@ final class TNonspecificLiteralInt extends TInt
      * @psalm-pure
      */
     #[Override]
-    public function getId(bool $exact = true, bool $nested = true): string
+    public function getId(bool $exact = true): string
     {
         return 'literal-int';
     }

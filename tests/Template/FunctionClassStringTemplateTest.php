@@ -330,6 +330,28 @@ final class FunctionClassStringTemplateTest extends TestCase
                     '$y' => 'A&B',
                 ],
             ],
+            'intersectionWithTemplateKeptAfterAMixedClassString' => [
+                'code' => '<?php
+                    interface Stub {}
+                    interface A {}
+
+                    /**
+                     * @template T of object
+                     * @param class-string<T> $className
+                     * @return T&Stub
+                     */
+                    function createStub(string $className): Stub {
+                        throw new RuntimeException();
+                    }
+
+                    /** @psalm-suppress MixedArgument */
+                    $x = createStub($GLOBALS["className"]);
+                    $y = createStub(A::class);',
+                'assertions' => [
+                    '$x' => 'Stub',
+                    '$y' => 'A&Stub',
+                ],
+            ],
             'unionTOrClassStringTPassedClassString' => [
                 'code' => '<?php
                     /**
@@ -557,6 +579,27 @@ final class FunctionClassStringTemplateTest extends TestCase
                 'code' => '<?php
                     /**
                      * @template T
+                     * @param T::class $s
+                     * @return T::class
+                     */
+                    function foo(string $s) : string {
+                        return $s;
+                    }
+
+                    /**
+                     * @param  A::class $s
+                     */
+                    function bar(string $s) : void {
+                    }
+
+                    class A {}
+
+                    bar(foo(A::class));',
+            ],
+            'returnClassStringFromUnionTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template T as array|object
                      * @param T::class $s
                      * @return T::class
                      */

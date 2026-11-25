@@ -10,6 +10,7 @@ use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 use Psalm\Type;
 use Psalm\Type\Atomic;
+use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
 
 use function array_reverse;
@@ -42,6 +43,20 @@ final class TypeCombinationTest extends TestCase
             $expected,
             TypeCombiner::combine(array_reverse($converted_types))->getId(),
         );
+    }
+
+    public function testTooManyLiteralStringsAreCombinedIntoTheStringTypeTheyAllAre(): void
+    {
+        $words = [];
+        for ($i = 0; $i < 600; $i++) {
+            $words[] = new TLiteralString('w' . $i);
+        }
+
+        $this->assertSame('non-falsy-string', TypeCombiner::combine($words)->getId());
+        $this->assertSame('non-empty-string', TypeCombiner::combine([new TLiteralString('0'), ...$words])->getId());
+        $this->assertSame('non-empty-string', TypeCombiner::combine([...$words, new TLiteralString('0')])->getId());
+        $this->assertSame('string', TypeCombiner::combine([new TLiteralString(''), ...$words])->getId());
+        $this->assertSame('string', TypeCombiner::combine([...$words, new TLiteralString('')])->getId());
     }
 
     public function testStaticIsKeptOnlyWhenEveryCombinedObjectIsStatic(): void
@@ -591,6 +606,13 @@ final class TypeCombinationTest extends TestCase
                     'array<string>',
                 ],
             ],
+            'nonEmptyArrayTraversableStaysApart' => [
+                'Traversable<int, int>|non-empty-array<int, int>',
+                [
+                    'non-empty-array<int, int>',
+                    'Traversable<int, int>',
+                ],
+            ],
             'arrayTraversableToIterable' => [
                 'iterable<array-key|mixed, mixed>',
                 [
@@ -918,6 +940,20 @@ final class TypeCombinationTest extends TestCase
                 [
                     'non-falsy-string',
                     'lowercase-string&non-falsy-string',
+                ],
+            ],
+            'combineNonFalsyStringWithNumericString' => [
+                'non-empty-string',
+                [
+                    'non-falsy-string',
+                    'numeric-string',
+                ],
+            ],
+            'combineNumericStringWithNonFalsyString' => [
+                'non-empty-string',
+                [
+                    'numeric-string',
+                    'non-falsy-string',
                 ],
             ],
             'combineNonFalsyNumericStringWithZero' => [

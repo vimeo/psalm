@@ -51,6 +51,7 @@ use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\LanguageServer\PHPMarkdownContent;
 use Psalm\Internal\LanguageServer\Reference;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Perf;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\FileProvider;
 use Psalm\Internal\Provider\FileReferenceProvider;
@@ -75,11 +76,13 @@ use Psalm\Storage\MethodStorage;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TClassConstant;
+use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 use ReflectionProperty;
@@ -1050,8 +1053,11 @@ final class Codebase
 
     /**
      * Scans all files their related files
+     *
+     * @param string $step what the round scans, for the performance summary: `scan.project`, `scan.stubs` or
+     *        `scan.extra`
      */
-    public function scanFiles(int $threads = 1): void
+    public function scanFiles(int $threads = 1, string $step = 'scan.extra'): void
     {
         // the classes of the global variables of the config are named nowhere else
         foreach ($this->config->globals as $global_type) {
@@ -1060,6 +1066,8 @@ final class Codebase
             );
         }
 
+        $previous_stage = Perf\Collector::stage('scan.files');
+        Perf\Collector::step($step);
         $has_changes = $this->scanner->scanFiles($this->classlikes, $threads);
 
         // a taint analysis analyzes the bodies of inherited methods again, for the classes inheriting them (see
@@ -1070,6 +1078,8 @@ final class Codebase
             }
         }
 
+        Perf\Collector::stage('scan.populate');
+
         if ($has_changes) {
             // the classes scanned again may make other `new`
             $this->constructor_argument_starts = null;
@@ -1077,6 +1087,8 @@ final class Codebase
             // the files scanned again may declare other constants
             $this->global_constant_types_by_wildcard = [];
         }
+
+        Perf\Collector::stage($previous_stage);
     }
 
     /**
@@ -1176,6 +1188,8 @@ final class Codebase
             throw new UnexpectedValueException('Should not be checking references');
         }
 
+        $symbol = ltrim($symbol, '\\');
+
         if (str_contains($symbol, '::$')) {
             return $this->findReferencesToProperty($symbol);
         }
@@ -1185,7 +1199,8 @@ final class Codebase
                 + $this->findReferencesToClassConstant($symbol);
         }
 
-        return $this->findReferencesToClassLike($symbol);
+        // a name without `::` is a class-like's or a function's
+        return $this->findReferencesToClassLike($symbol) + $this->findReferencesToMethod($symbol);
     }
 
     /**
@@ -2798,7 +2813,9 @@ final class Codebase
         $completion_items = [];
         foreach ($type->getAtomicTypes() as $atomic_type) {
             if ($atomic_type instanceof TBool) {
-                $bools = (string) $atomic_type === 'bool' ? ['true', 'false'] : [(string) $atomic_type];
+                $bools = $atomic_type instanceof TTrue || $atomic_type instanceof TFalse
+                    ? [(string) $atomic_type]
+                    : ['true', 'false'];
                 foreach ($bools as $property_name) {
                     $completion_items[] = new CompletionItem(
                         $property_name,

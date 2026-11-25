@@ -24,6 +24,184 @@ final class FunctionCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'urlencodeOfANonEmptyStringIsNonEmpty' => [
+                'code' => '<?php
+                    /** @param non-empty-string $input */
+                    function encode(string $input, string $any): void {
+                        /** @psalm-check-type-exact $encoded = non-empty-string */
+                        $encoded = urlencode($input);
+                        /** @psalm-check-type-exact $rawEncoded = non-empty-string */
+                        $rawEncoded = rawurlencode($input);
+                        /** @psalm-check-type-exact $maybeEmpty = string */
+                        $maybeEmpty = urlencode($any);
+                        /** @psalm-check-type-exact $decoded = non-empty-string */
+                        $decoded = urldecode($input);
+                        /** @psalm-check-type-exact $rawDecoded = non-empty-string */
+                        $rawDecoded = rawurldecode($input);
+                        /** @psalm-check-type-exact $maybeEmptyDecoded = string */
+                        $maybeEmptyDecoded = urldecode($any);
+                        /** @psalm-check-type-exact $maybeEmptyRawDecoded = string */
+                        $maybeEmptyRawDecoded = rawurldecode($any);
+                    }',
+            ],
+            'filterVarThrowOnFailureHasNoFailureValue' => [
+                'code' => '<?php
+                    $input = (string) rand();
+
+                    $int = filter_var($input, FILTER_VALIDATE_INT, FILTER_THROW_ON_FAILURE);
+                    $bool = filter_var($input, FILTER_VALIDATE_BOOLEAN, FILTER_THROW_ON_FAILURE);
+                    $ignoredDefault = filter_var(
+                        $input,
+                        FILTER_VALIDATE_INT,
+                        ["flags" => FILTER_THROW_ON_FAILURE, "options" => ["default" => "x"]],
+                    );
+                    $failureValue = filter_var($input, FILTER_VALIDATE_INT);
+                    $fromInput = filter_input(INPUT_GET, "x", FILTER_VALIDATE_INT, FILTER_THROW_ON_FAILURE);',
+                'assertions' => [
+                    '$fromInput===' => 'int',
+                    '$int===' => 'int',
+                    '$bool===' => 'bool',
+                    '$ignoredDefault===' => 'int',
+                    '$failureValue===' => 'false|int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'filterVarGlobalRangeBeforePhp85KeepsTheFailureValue' => [
+                'code' => '<?php
+                    /** @var string */
+                    $input = $_GET["ip"];
+                    $ip = filter_var($input, FILTER_VALIDATE_IP, FILTER_FLAG_GLOBAL_RANGE);
+                    $fromInput = filter_input(INPUT_GET, "x", FILTER_VALIDATE_IP, FILTER_FLAG_GLOBAL_RANGE);',
+                'assertions' => [
+                    '$ip===' => 'false|non-falsy-string',
+                    '$fromInput===' => 'false|non-falsy-string|null',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'filterVarGlobalRangeFromPhp85KeepsTheFailureValue' => [
+                'code' => '<?php
+                    /** @var string */
+                    $input = $_GET["ip"];
+                    $ip = filter_var($input, FILTER_VALIDATE_IP, FILTER_FLAG_GLOBAL_RANGE);
+                    $fromInput = filter_input(INPUT_GET, "x", FILTER_VALIDATE_IP, FILTER_FLAG_GLOBAL_RANGE);
+
+                    function ip(string $s): string {
+                        $ip = filter_var($s, FILTER_VALIDATE_IP, FILTER_FLAG_GLOBAL_RANGE);
+
+                        if ($ip === false) {
+                            return "not global";
+                        }
+
+                        return $ip;
+                    }',
+                'assertions' => [
+                    '$ip===' => 'false|non-falsy-string',
+                    '$fromInput===' => 'false|non-falsy-string|null',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'ignoredNullableReturnInAnExtraEntryOfAnUnsealedShape' => [
+                'code' => '<?php
+                    /** @psalm-ignore-nullable-return */
+                    function maybeName(): ?string {
+                        return rand(0, 1) ? "a" : null;
+                    }
+
+                    /** @param array{id: int, ...<string, string>} $a */
+                    function takesShape(array $a): void {}
+
+                    takesShape(["id" => 1, "name" => maybeName()]);
+                ',
+            ],
+            'ignoredFalsableReturnInAnExtraEntryOfAnUnsealedShape' => [
+                'code' => '<?php
+                    /** @psalm-ignore-falsable-return */
+                    function maybeName(): string|false {
+                        return rand(0, 1) ? "a" : false;
+                    }
+
+                    /** @param array{id: int, ...<string, string>} $a */
+                    function takesShape(array $a): void {}
+
+                    takesShape(["id" => 1, "name" => maybeName()]);
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'containedEntriesOfAnUnsealedShape' => [
+                'code' => '<?php
+                    /** @param array{id: int, ...<string, int>} $a */
+                    function takesShape(array $a): void {}
+
+                    /** @param array{id: positive-int, ...<non-empty-string, positive-int>} $b */
+                    function passesShape(array $b): void {
+                        takesShape($b);
+                        takesShape(["id" => 1, "a" => 2, "b" => 3]);
+                    }
+                ',
+            ],
+            'strtolowerOfStringLiteralsIsTheLoweredLiterals' => [
+                'code' => '<?php
+                    /** @return \'Interface\'|\'Trait\'|\'Enum\'|\'Class\' */
+                    function kind(): string {
+                        return \'Class\';
+                    }
+
+                    /** @param \'interface\'|\'trait\'|\'enum\'|\'class\' $kind */
+                    function check(string $kind): void {}
+
+                    check(strtolower(kind()));
+                    check(mb_strtolower(kind()));
+
+                    $literal = strtolower("ABC");
+                    $multibyte = mb_strtolower("ÄBC");
+                    $other = strtolower(rand() ? "ABC" : (string) rand());
+                    $encoding = mb_strtolower("ABC", "UTF-8");',
+                'assertions' => [
+                    '$literal===' => '\'abc\'',
+                    '$multibyte===' => '\'äbc\'',
+                    '$other===' => 'non-empty-lowercase-string',
+                    '$encoding===' => 'non-empty-string',
+                ],
+            ],
+            'pathinfoWithAllElementsReturnsTheArray' => [
+                'code' => '<?php
+                    /** @param non-empty-string $path */
+                    function f(string $path, int $flags): void {
+                        $all = pathinfo($path, PATHINFO_ALL);
+                        $default = pathinfo($path);
+                        $mask = pathinfo($path, 15);
+                        $extension = pathinfo($path, PATHINFO_EXTENSION);
+                        $unknown = pathinfo($path, $flags);
+
+                        /** @psalm-check-type-exact $all = array{dirname: string, basename: string, extension?: string, filename: string} */
+                        /** @psalm-check-type-exact $default = array{dirname: string, basename: string, extension?: string, filename: string} */
+                        /** @psalm-check-type-exact $mask = array{dirname: string, basename: string, extension?: string, filename: string} */
+                        /** @psalm-check-type-exact $extension = string */
+                        /** @psalm-check-type-exact $unknown = array{dirname: string, basename: string, extension?: string, filename: string}|string */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'aStubWithoutAReturnTypeKeepsTheCallMapOne' => [
+                'code' => '<?php
+                    function postgres(): PgSql\\Connection {
+                        throw new RuntimeException();
+                    }
+                    $mysql = mysqli_real_escape_string(new mysqli(), "a\'b");
+                    $postgres = pg_escape_literal(postgres(), "a\'b");',
+                'assertions' => [
+                    '$mysql===' => 'string',
+                    '$postgres===' => 'false|string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'functionImportedWithAnAliasIsCalledWithoutAWrongCaseIssue' => [
                 'code' => '<?php
                     namespace App;
@@ -330,6 +508,62 @@ final class FunctionCallTest extends TestCase
                     /** @psalm-check-type-exact $hostname = false */
                     /** @psalm-check-type-exact $regexp = ''|false */
                     PHP,
+            ],
+            'filterVarValidatesABoolAsAString' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(bool $b): void {
+                        $true_domain = filter_var(true, FILTER_VALIDATE_DOMAIN);
+                        $false_hostname = filter_var(false, FILTER_VALIDATE_DOMAIN, FILTER_FLAG_HOSTNAME);
+                        $domain = filter_var($b, FILTER_VALIDATE_DOMAIN);
+                        $hostname = filter_var($b, FILTER_VALIDATE_DOMAIN, FILTER_FLAG_HOSTNAME);
+                        $regexp = filter_var($b, FILTER_VALIDATE_REGEXP, ['options' => ['regexp' => '/^1?$/']]);
+
+                        /** @psalm-check-type-exact $true_domain = '1' */
+                        /** @psalm-check-type-exact $false_hostname = false */
+                        /** @psalm-check-type-exact $domain = ''|'1' */
+                        /** @psalm-check-type-exact $hostname = '1'|false */
+                        /** @psalm-check-type-exact $regexp = ''|'1'|false */
+                    }
+                    PHP,
+            ],
+            'filterVarSanitizesAnEmptyLiteralToTheEmptyString' => [
+                'code' => <<<'PHP'
+                    <?php
+                    $special = filter_var('', FILTER_SANITIZE_SPECIAL_CHARS);
+                    $full = filter_var('', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+                    $encoded = filter_var('', FILTER_SANITIZE_ENCODED);
+                    $slashes = filter_var('', FILTER_SANITIZE_ADD_SLASHES);
+                    $email = filter_var('', FILTER_SANITIZE_EMAIL);
+                    $url = filter_var('', FILTER_SANITIZE_URL);
+                    $stripped = filter_var('', FILTER_DEFAULT, FILTER_FLAG_STRIP_LOW);
+
+                    /** @psalm-check-type-exact $special = '' */
+                    /** @psalm-check-type-exact $full = '' */
+                    /** @psalm-check-type-exact $encoded = '' */
+                    /** @psalm-check-type-exact $slashes = '' */
+                    /** @psalm-check-type-exact $email = '' */
+                    /** @psalm-check-type-exact $url = '' */
+                    /** @psalm-check-type-exact $stripped = '' */
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'filterVarSanitizeStringWithEmptyStringNull' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(string $s): void {
+                        $empty = filter_var('', FILTER_SANITIZE_STRING, FILTER_FLAG_EMPTY_STRING_NULL);
+                        $string = filter_var($s, FILTER_SANITIZE_STRING, FILTER_FLAG_EMPTY_STRING_NULL);
+
+                        /** @psalm-check-type-exact $empty = null */
+                        /** @psalm-check-type-exact $string = null|string */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedConstant'],
+                'php_version' => '8.0',
             ],
             'classExistsComparedWithTrueGuardsTheRightOperandOfAnd' => [
                 'code' => '<?php
@@ -1121,6 +1355,20 @@ final class FunctionCallTest extends TestCase
                      return preg_grep("/search/", $strings, PREG_GREP_INVERT);
                   }
                 ',
+            ],
+            'pregGrepCanReturnFalse' => [
+                'code' => '<?php
+                    $rc = preg_grep("/^foo/i", ["foobar", "toobar"]);
+
+                    if ($rc === false) {
+                        $r = null;
+                    } else {
+                        $r = $rc;
+                    }',
+                'assertions' => [
+                    '$rc===' => 'array<int<0, 1>, string>|false',
+                    '$r===' => 'array<int<0, 1>, string>|null',
+                ],
             ],
             'typedArrayWithDefault' => [
                 'code' => '<?php
@@ -2268,6 +2516,19 @@ final class FunctionCallTest extends TestCase
                             return "foo";
                     }',
             ],
+            'getTypeSwitchFallingThroughAnImpossibleCase' => [
+                'code' => '<?php
+                    function f(int $data): string {
+                        switch (gettype($data)) {
+                            case "string":
+                                echo "string";
+                            case "unknown type":
+                                return "s";
+                        }
+
+                        return "";
+                    }',
+            ],
             'functionResolutionInNamespace' => [
                 'code' => '<?php
                     namespace Foo;
@@ -3142,6 +3403,32 @@ final class FunctionCallTest extends TestCase
                 'ignored_issues' => ['DeprecatedSyntax'],
                 'php_version' => '8.0',
             ],
+            'getTypeAndGetDebugTypeAreNonFalsy' => [
+                'code' => '<?php
+                    /** @return non-empty-string */
+                    function a(mixed $x): string {
+                        $t = gettype($x);
+                        return $t;
+                    }
+                    /** @return non-falsy-string */
+                    function b(mixed $x): string {
+                        $t = gettype($x);
+                        return $t;
+                    }
+                    /** @return non-empty-string */
+                    function c(mixed $x): string {
+                        $t = get_debug_type($x);
+                        return $t;
+                    }
+                    /** @return non-falsy-string */
+                    function d(mixed $x): string {
+                        $t = get_debug_type($x);
+                        return $t;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'getTypeDoubleThenInt' => [
                 'code' => '<?php
                     function safe_float(mixed $val): bool {
@@ -3605,10 +3892,10 @@ final class FunctionCallTest extends TestCase
                     '$b===' => 'non-empty-lowercase-string',
                     '$c===' => 'lowercase-string',
                     '$d===' => 'lowercase-string',
-                    '$e===' => 'non-empty-lowercase-string',
-                    '$f===' => 'non-empty-lowercase-string',
-                    '$g===' => 'lowercase-string',
-                    '$h===' => 'lowercase-string',
+                    '$e===' => '\'aaa\'',
+                    '$f===' => '\'aaa\'',
+                    '$g===' => "''",
+                    '$h===' => "''",
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.1',
@@ -4234,6 +4521,17 @@ final class FunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.5',
             ],
+            'nativeConditionalUsesStringableArgument' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function test(Throwable $error): void {
+                        $result = mb_convert_encoding($error, 'UTF-8');
+                        /** @psalm-check-type-exact $result = false|string */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['ImplicitToStringCast'],
+            ],
         ];
     }
 
@@ -4244,6 +4542,63 @@ final class FunctionCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'getTypeSwitchFallingThroughAnImpossibleCaseOfTheSameVariable' => [
+                'code' => '<?php
+                    function f(int $data): string {
+                        switch (gettype($data)) {
+                            case "string":
+                            case "integer":
+                                return "s";
+                        }
+
+                        return "";
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+            ],
+            'strtolowerOfDocblockLiteralsKeepsFromDocblock' => [
+                'code' => '<?php
+                    /** @param \'A\'|\'B\' $k */
+                    function f(string $k): void {
+                        $l = strtolower($k);
+                        if ($l === \'c\') {}
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+            ],
+            'mbStrtolowerOfDocblockLiteralsKeepsFromDocblock' => [
+                'code' => '<?php
+                    /** @param \'A\'|\'B\' $k */
+                    function f(string $k): void {
+                        $l = mb_strtolower($k);
+                        if ($l === \'c\') {}
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+            ],
+            'strtolowerOfNativeLiteralsIsStillATypeContradiction' => [
+                'code' => '<?php
+                    function f(): void {
+                        $l = strtolower(rand() ? \'A\' : \'B\');
+                        if ($l === \'c\') {}
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+            ],
+            'callUserFuncWithADifferentCase' => [
+                'code' => '<?php
+                    function takesInt(int $i): string {
+                        return (string) $i;
+                    }
+
+                    echo CALL_USER_FUNC(\'takesInt\', \'x\');',
+                'error_message' => 'InvalidScalarArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:53',
+            ],
+            'callUserFuncArrayWithADifferentCase' => [
+                'code' => '<?php
+                    function takesInt(int $i): string {
+                        return (string) $i;
+                    }
+
+                    echo Call_User_Func_Array(\'takesInt\', [\'x\']);',
+                'error_message' => 'InvalidScalarArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:59',
+            ],
             'aliasOfAUserFunctionImportedWithAnotherCasingIsReported' => [
                 'code' => '<?php
                     namespace Lib {
@@ -4331,6 +4686,28 @@ final class FunctionCallTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.1',
             ],
+            'filterVarNullOnFailureWithThrowOnFailureIsAValueError' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function filter(string $s): void {
+                        filter_var($s, FILTER_VALIDATE_INT, FILTER_NULL_ON_FAILURE | FILTER_THROW_ON_FAILURE);
+                    }
+                    PHP,
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:5 - FILTER_NULL_ON_FAILURE cannot be combined with FILTER_THROW_ON_FAILURE, it is a ValueError',
+                'error_levels' => [],
+                'php_version' => '8.5',
+            ],
+            'filterVarGlobalRangeBeforePhp85IsNotAFlagOfEveryFilter' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function filter(string $s): void {
+                        filter_var($s, FILTER_VALIDATE_INT, 268435456); // FILTER_FLAG_GLOBAL_RANGE up to PHP 8.4
+                    }
+                    PHP,
+                'error_message' => 'RedundantFlag - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:5 - Not all flags used are supported by the filter used',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
             'classExistsIdenticalToFalseDoesNotGuardTheRightOperandOfAnd' => [
                 'code' => '<?php
                     function check(): bool {
@@ -4373,7 +4750,7 @@ final class FunctionCallTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.5',
             ],
-            'callableAndScalarUnionIsInvalidForInt' => [
+            'callableAndScalarUnionIsPossiblyInvalidForInt' => [
                 'code' => '<?php
                     /** @param int $i */
                     function takesInt($i): void {}
@@ -4382,9 +4759,9 @@ final class FunctionCallTest extends TestCase
                     function f($x): void {
                         takesInt($x);
                     }',
-                'error_message' => 'InvalidArgument',
+                'error_message' => 'PossiblyInvalidArgument',
             ],
-            'scalarAndCallableUnionIsInvalidForInt' => [
+            'scalarAndCallableUnionIsPossiblyInvalidForInt' => [
                 'code' => '<?php
                     /** @param int $i */
                     function takesInt($i): void {}
@@ -4393,7 +4770,7 @@ final class FunctionCallTest extends TestCase
                     function f($x): void {
                         takesInt($x);
                     }',
-                'error_message' => 'InvalidArgument',
+                'error_message' => 'PossiblyInvalidArgument',
             ],
             'arrayAndScalarUnionIsAPlainMismatchForString' => [
                 'code' => '<?php
@@ -4403,7 +4780,7 @@ final class FunctionCallTest extends TestCase
                     function f($x): void {
                         takesString($x);
                     }',
-                'error_message' => 'InvalidArgument',
+                'error_message' => 'PossiblyInvalidArgument',
             ],
             'stringableAndArrayAndScalarUnionIsPossiblyInvalidForStringable' => [
                 'code' => '<?php
@@ -5719,6 +6096,273 @@ final class FunctionCallTest extends TestCase
                     takesArrayShapeWithZeroOrPositiveInt(["bar" => $mayBeInt]);
                 ',
                 'error_message' => 'ArgumentTypeCoercion',
+            ],
+            'implicitToStringCastOfAnExtraEntryOfAnUnsealedShape' => [
+                'code' => '<?php
+                    final class S {
+                        public function __toString(): string {
+                            return "s";
+                        }
+                    }
+
+                    /** @param array{id: int, ...<string, string>} $a */
+                    function takesShape(array $a): void {}
+
+                    takesShape(["id" => 1, "name" => new S()]);
+                ',
+                'error_message' => 'ImplicitToStringCast',
+            ],
+            'implicitToStringCastOfTheFallbackOfAnUnsealedShape' => [
+                'code' => '<?php
+                    final class S {
+                        public function __toString(): string {
+                            return "s";
+                        }
+                    }
+
+                    /** @param array{id: int, ...<string, string>} $a */
+                    function takesShape(array $a): void {}
+
+                    /** @param array{id: int, ...<string, S>} $b */
+                    function passesShape(array $b): void {
+                        takesShape($b);
+                    }
+                ',
+                'error_message' => 'ImplicitToStringCast',
+            ],
+            'implicitToStringCastOfAnExtraEntryOfAnUnsealedList' => [
+                'code' => '<?php
+                    final class S {
+                        public function __toString(): string {
+                            return "s";
+                        }
+                    }
+
+                    /** @param list{int, ...<string>} $a */
+                    function takesList(array $a): void {}
+
+                    takesList([1, new S()]);
+                ',
+                'error_message' => 'ImplicitToStringCast',
+            ],
+            'additionalFieldsOfANestedShapeInAnExtraEntry' => [
+                'code' => '<?php
+                    /** @param array{id: int, ...<string, array{name: string}>} $a */
+                    function takesShape(array $a): void {}
+
+                    takesShape(["id" => 1, "child" => ["name" => 1, "age" => 2]]);
+                ',
+                'error_message' => 'with additional array shape fields (age) was provided',
+            ],
+            'parentTypeOfAnEntryDoesNotHideAnInvalidEntry' => [
+                'code' => '<?php
+                    class P {}
+                    final class C extends P {}
+
+                    /** @param array{a: int, b: C} $a */
+                    function takesShape(array $a): void {}
+
+                    function passesParent(P $p): void {
+                        takesShape(["a" => "str", "b" => $p]);
+                    }
+                ',
+                'error_message' => 'InvalidArgument',
+            ],
+            'parentTypeOfAnExtraEntryDoesNotHideAnInvalidEntry' => [
+                'code' => '<?php
+                    class P {}
+                    final class C extends P {}
+
+                    /** @param array{a: int, ...<string, C>} $a */
+                    function takesShape(array $a): void {}
+
+                    function passesParent(P $p): void {
+                        takesShape(["a" => "str", "x" => $p]);
+                    }
+                ',
+                'error_message' => 'InvalidArgument',
+            ],
+            'parentTypeAndInvalidTypeArgument' => [
+                'code' => '<?php
+                    final class Foo {}
+                    function takesFoo(Foo $_f): void {}
+
+                    function passes(object|int $o): void {
+                        takesFoo($o);
+                    }
+                ',
+                'error_message' => 'PossiblyInvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'invalidTypeAndParentTypeArgument' => [
+                'code' => '<?php
+                    final class Foo {}
+                    function takesFoo(Foo $_f): void {}
+
+                    function passes(int|object $o): void {
+                        takesFoo($o);
+                    }
+                ',
+                'error_message' => 'PossiblyInvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'parentScalarTypeAndInvalidTypeArgument' => [
+                'code' => '<?php
+                    /** @param non-empty-string $_s */
+                    function takesNonEmptyString(string $_s): void {}
+
+                    function passes(string|int $s): void {
+                        takesNonEmptyString($s);
+                    }
+                ',
+                'error_message' => 'PossiblyInvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'curlHandleArgumentGivenObjectOrResource' => [
+                'code' => '<?php
+                    /** @param object|resource $h */
+                    function g($h): void {
+                        curl_getinfo($h, CURLINFO_HTTP_CODE);
+                    }
+                ',
+                'error_message' => 'PossiblyInvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:38'
+                    . ' - Argument 1 of curl_getinfo expects CurlHandle, but possibly different type'
+                    . ' object|resource provided',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'sealedShapeWithAMixedValueMissingARequiredKeyArgument' => [
+                'code' => '<?php
+                    /** @param array{a: int, b: int} $_a */
+                    function takesShape(array $_a): void {}
+
+                    /** @param array{a: mixed} $a */
+                    function passes(array $a): void {
+                        takesShape($a);
+                    }
+                ',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'sealedShapeMissingARequiredKeyArgument' => [
+                'code' => '<?php
+                    /** @param array{a: non-empty-string, b: int} $_a */
+                    function takesShape(array $_a): void {}
+
+                    /** @param array{a: string} $a */
+                    function passes(array $a): void {
+                        takesShape($a);
+                    }
+                ',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'sealedShapeWithAPossiblyUndefinedRequiredKeyArgument' => [
+                'code' => '<?php
+                    /** @param array{a: non-empty-string, b: int} $_a */
+                    function takesShape(array $_a): void {}
+
+                    /** @param array{a: string, b?: int} $a */
+                    function passes(array $a): void {
+                        takesShape($a);
+                    }
+                ',
+                'error_message' => 'ArgumentTypeCoercion',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'shapeMissingARequiredKeyAndInvalidTypeArgument' => [
+                'code' => '<?php
+                    /** @param array{a: non-empty-string, b: int} $_a */
+                    function takesShape(array $_a): void {}
+
+                    /** @param array{a: string}|int $a */
+                    function passes(array|int $a): void {
+                        takesShape($a);
+                    }
+                ',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'noMemberFitsArgument' => [
+                'code' => '<?php
+                    final class Foo {}
+                    final class Bar {}
+                    function takesFoo(Foo $_f): void {}
+
+                    function passes(Bar|int $o): void {
+                        takesFoo($o);
+                    }
+                ',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'implementedInterfaceAndInvalidTypeArgument' => [
+                'code' => '<?php
+                    interface I {}
+                    final class Foo implements I {}
+                    function takesFoo(Foo $_f): void {}
+
+                    function passes(I|int $o): void {
+                        takesFoo($o);
+                    }
+                ',
+                'error_message' => 'PossiblyInvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'unimplementedInterfaceAndInvalidTypeArgument' => [
+                'code' => '<?php
+                    interface I {}
+                    final class Foo {}
+                    function takesFoo(Foo $_f): void {}
+
+                    function passes(I|int $o): void {
+                        takesFoo($o);
+                    }
+                ',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'possiblyInvalidEntryOfAList' => [
+                'code' => '<?php
+                    /** @param scalar|list<scalar> $value */
+                    function takesValue(string|int|float|bool|array $value): void {}
+
+                    /** @param list{0: list{0: string, ...<string>}|string, 1?: string, ...<string>}|string $v */
+                    function passesValue(array|string $v): void {
+                        takesValue($v);
+                    }
+                ',
+                'error_message' => 'PossiblyInvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'extraKeyOutsideTheFallbackKeyType' => [
+                'code' => '<?php
+                    /** @param array{a: int, ...<non-empty-string, int>} $a */
+                    function takesShape(array $a): void {}
+
+                    takesShape(["a" => 1, "" => 2]);
+                ',
+                'error_message' => 'InvalidArgument',
+            ],
+            'extraEntryOfASealedShape' => [
+                'code' => '<?php
+                    /** @param array{id: int} $a */
+                    function takesShape(array $a): void {}
+
+                    takesShape(["id" => 1, "name" => "a"]);
+                ',
+                'error_message' => 'InvalidArgument',
             ],
             'strtolowerOfALowercaseString' => [
                 'code' => '<?php

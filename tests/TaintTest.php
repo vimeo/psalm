@@ -1388,7 +1388,7 @@ final class TaintTest extends TestCase
             . "\$values->send((string) \$_GET['value']);\n";
 
         // without the cap on the call stacks per node, the search takes gigabytes
-        $memory_limit = (string) ini_get('memory_limit');
+        $memory_limit = ini_get('memory_limit');
         ini_set('memory_limit', (string) (memory_get_usage() + 256 * 1024 * 1024));
 
         try {
@@ -1726,6 +1726,28 @@ final class TaintTest extends TestCase
                     'TaintedSleep on line 7',
                 ],
             ],
+            // the option of an array literal unpacked into the arguments is read like a positional one
+            'unpackedArguments' => [
+                '<?php
+                    $t = (string) $_GET["x"];
+                    curl_setopt(...[curl_init(), CURLOPT_PRIVATE, $t]);
+                    curl_setopt(...[curl_init(), CURLOPT_WRITEFUNCTION, $t]);
+                    curl_setopt_array(...[curl_init(), [CURLOPT_PRIVATE => $t]]);
+                    curl_setopt_array(...[curl_init(), [CURLOPT_COOKIEFILE => $t]]);
+
+                    // the option of another unpacked array may be any
+                    $args = [curl_init(), CURLOPT_PRIVATE, $t];
+                    curl_setopt(...$args);',
+                [
+                    'TaintedCallable on line 10',
+                    'TaintedCallable on line 4',
+                    'TaintedFile on line 10',
+                    'TaintedFile on line 6',
+                    'TaintedHeader on line 10',
+                    'TaintedSSRF on line 10',
+                    'TaintedSleep on line 10',
+                ],
+            ],
         ];
 
         $data = [];
@@ -1745,6 +1767,56 @@ final class TaintTest extends TestCase
     public static function providerValidCodeParse(): array
     {
         return [
+            'offsetOverwrittenInTheBranchWhereItIsSetIsUntaintedAfterTheIf' => [
+                'code' => '<?php
+                    function f(array $a): void {
+                        if (isset($a["x"])) {
+                            $a["x"] = "safe";
+                        }
+                        echo (string) ($a["x"] ?? "");
+                    }
+                    f($_GET);',
+            ],
+            'extractSealedArrayOfInput' => [
+                'code' => '<?php
+                    extract(["name" => $_GET["name"]]);',
+            ],
+            'extractSealedShapeParamTaintsOnlyTheVariableOfItsKey' => [
+                'code' => '<?php
+                    /** @param array{name: string, greeting: string} $data */
+                    function show(array $data): void {
+                        extract($data);
+                        echo $greeting;
+                    }
+                    show(["name" => (string) $_GET["name"], "greeting" => "hello"]);',
+            ],
+            'otherItemsDestructuredFromAMixedValueAreNotTainted' => [
+                'code' => '<?php
+                    function get(): mixed {
+                        return ["safe", "k" => "safe", 2 => $_GET["x"]];
+                    }
+
+                    function show(): void {
+                        [$first] = get();
+                        echo (string) $first;
+                        ["k" => $keyed] = get();
+                        echo (string) $keyed;
+                        foreach ([get()] as [$item]) {
+                            echo (string) $item;
+                        }
+                    }',
+            ],
+            'deprecatedPromotedPropertyIsNotUsedByItsOwnDeclaration' => [
+                'code' => '<?php
+                    final class A {
+                        public function __construct(
+                            /** @deprecated */
+                            public string $foo,
+                        ) {}
+                    }
+
+                    new A("x");',
+            ],
             'annotatedStatementExecutedIntoAResultGivesOnlyTheColumnsStored' => [
                 'code' => '<?php
                     final class Result {
@@ -1855,6 +1927,18 @@ final class TaintTest extends TestCase
                             return;
                         }
                         fsockopen($url, 80);
+                    }',
+            ],
+            'matchingAnotherListOfHostsIsADifferentCondition' => [
+                'code' => '<?php
+                    function fetch(): void {
+                        $url = trim((string) $_GET["next"]);
+                        $host = (string) parse_url($url, PHP_URL_HOST);
+                        if (preg_match("#^(api\.example\.com|cdn\.example\.com)$#", $host)) {
+                            fsockopen($url, 80);
+                        } elseif (preg_match("#^(img\.example\.com|static\.example\.com)$#", $host)) {
+                            fsockopen($url, 443);
+                        }
                     }',
             ],
             'noTaintFromASpecializedPregReplaceCallbackCallbackInItsOtherCalls' => [
@@ -3248,6 +3332,27 @@ final class TaintTest extends TestCase
                     echo toString(["key" => $_GET["a"]]);
                     echo prefix(["key" => $_GET["b"]]);',
             ],
+            'foreachOverAnIteratorAggregateSpecializedByObjectKeepsTheOthersApart' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-taint-specialize
+                     * @implements IteratorAggregate<int, string>
+                     */
+                    final class Items implements IteratorAggregate {
+                        /** @param list<string> $items */
+                        public function __construct(private array $items) {}
+
+                        /** @return ArrayIterator<int, string> */
+                        public function getIterator(): ArrayIterator {
+                            return new ArrayIterator($this->items);
+                        }
+                    }
+
+                    $tainted = new Items([(string) $_GET["value"]]);
+                    foreach (new Items(["literal"]) as $value) {
+                        echo $value;
+                    }',
+            ],
             'dontTaintTheYieldResultOfALiteralSentToAGenerator' => [
                 'code' => '<?php // --taint-analysis
                     function values(): Generator {
@@ -3491,6 +3596,21 @@ final class TaintTest extends TestCase
                     printf("%d", (string) $_GET["x"]);
                     vprintf("%d items", [(string) $_GET["x"]]);
                     printf("%2\$s %1\$05.2f", (string) $_GET["x"], "a");',
+            ],
+            'dontTaintTheVprintfOutputOfWhatANamedFormatFormatsAsANumber' => [
+                'code' => '<?php // --taint-analysis
+                    vprintf(values: [(string) $_GET["x"]], format: "%d items");',
+            ],
+            'dontTaintTheVsprintfResultOfWhatANamedFormatFormatsAsANumber' => [
+                'code' => '<?php // --taint-analysis
+                    $t = (string) $_GET["x"];
+                    echo vsprintf(values: [$t], format: "%d items");',
+            ],
+            'dontTaintTheVfprintfOutputOfWhatANamedFormatFormatsAsANumber' => [
+                'code' => '<?php // --taint-analysis
+                    $t = (string) $_GET["x"];
+                    vfprintf(fopen("php://output", "w"), values: [$t], format: "%d items");
+                    vfprintf(values: [$t], format: "%d items", stream: fopen("php://output", "w"));',
             ],
             'dontTaintWhatVsprintfFormatsAsANumber' => [
                 'code' => '<?php // --taint-analysis
@@ -7376,6 +7496,99 @@ final class TaintTest extends TestCase
     public static function providerInvalidCodeParse(): array
     {
         return [
+            'offsetOnlyNarrowedInTheBranchWhereItIsSetStaysTaintedAfterTheIf' => [
+                'code' => '<?php
+                    function f(array $a): void {
+                        if (isset($a["x"])) {
+                            if (is_string($a["x"])) {}
+                        }
+                        echo (string) ($a["x"] ?? "");
+                    }
+                    f($_GET);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'mixedAssignedInTheElseOfAnIfReassigningTheSameTypeIsTainted' => [
+                'code' => '<?php
+                    /** @return mixed */
+                    function input() {
+                        return $_GET["x"];
+                    }
+
+                    function f(int $a): void {
+                        $saved = $a;
+                        if ($a > 0) {
+                            $a = $saved;
+                        } else {
+                            $a = input();
+                        }
+                        echo $a;
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'urldecodeKeepsTheTaintOfItsArgument' => [
+                'code' => '<?php
+                    echo urldecode($_GET["x"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'rawurldecodeKeepsTheTaintOfItsArgument' => [
+                'code' => '<?php
+                    echo rawurldecode($_GET["x"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'itemDestructuredFromAMixedValueIsTainted' => [
+                'code' => '<?php
+                    function get(): mixed {
+                        return ["safe", $_GET["x"]];
+                    }
+
+                    [$first, $second] = get();
+                    echo (string) $second;',
+                'error_message' => 'TaintedHtml',
+            ],
+            'itemDestructuredByKeyFromAMixedValueIsTainted' => [
+                'code' => '<?php
+                    function get(): mixed {
+                        return ["k" => $_GET["x"]];
+                    }
+
+                    ["k" => $keyed] = get();
+                    echo (string) $keyed;',
+                'error_message' => 'TaintedHtml',
+            ],
+            'itemDestructuredFromAMixedParameterIsTainted' => [
+                'code' => '<?php
+                    function show(mixed $value): void {
+                        [$first] = $value;
+                        echo (string) $first;
+                    }
+
+                    show($_GET["x"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'itemDestructuredFromAMixedValueInAForeachIsTainted' => [
+                'code' => '<?php
+                    function get(): mixed {
+                        return ["safe", $_GET["x"]];
+                    }
+
+                    foreach ([get()] as [$first, $second]) {
+                        echo (string) $second;
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'itemDestructuredFromAnArrayAccessObjectIsTainted' => [
+                'code' => '<?php
+                    $values = new ArrayObject($_GET);
+                    [$first] = $values;
+                    echo (string) $first;',
+                'error_message' => 'TaintedHtml',
+            ],
+            'superglobalIsStillTaintedAfterEval' => [
+                'code' => '<?php // --taint-analysis
+                    eval("return 1;");
+                    echo $_GET["a"];',
+                'error_message' => 'TaintedHtml',
+            ],
             'foreachOverANullableArrayKeepsTheTaintOfItsValues' => [
                 'code' => '<?php
                     $a = rand(0, 1) ? null : [(string) $_GET["x"]];
@@ -7383,6 +7596,67 @@ final class TaintTest extends TestCase
                     /** @psalm-suppress PossiblyNullIterator */
                     foreach ($a as $v) {
                         echo $v;
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'foreachOverAnIteratorAggregateGivesWhatGetIteratorReturns' => [
+                'code' => '<?php
+                    /** @implements IteratorAggregate<string, string> */
+                    final class Query implements IteratorAggregate {
+                        /**
+                         * @psalm-taint-source input
+                         * @return ArrayIterator<string, string>
+                         */
+                        public function getIterator(): ArrayIterator {
+                            return new ArrayIterator([]);
+                        }
+                    }
+
+                    foreach (new Query() as $value) {
+                        echo $value;
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'foreachOverAnIteratorAggregateGivesTheKeysOfWhatGetIteratorReturns' => [
+                'code' => '<?php
+                    /** @implements IteratorAggregate<string, string> */
+                    final class Items implements IteratorAggregate {
+                        /** @param array<string, string> $items */
+                        public function __construct(private array $items) {}
+
+                        /** @return ArrayIterator<string, string> */
+                        public function getIterator(): ArrayIterator {
+                            return new ArrayIterator($this->items);
+                        }
+                    }
+
+                    foreach (new Items([(string) $_GET["key"] => "value"]) as $key => $_) {
+                        echo $key;
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'foreachOverAnIteratorAggregateReturningAnotherOneGivesWhatItsGetIteratorReturns' => [
+                'code' => '<?php
+                    /** @implements IteratorAggregate<int, string> */
+                    final class Inner implements IteratorAggregate {
+                        /**
+                         * @psalm-taint-source input
+                         * @return ArrayIterator<int, string>
+                         */
+                        public function getIterator(): ArrayIterator {
+                            return new ArrayIterator([]);
+                        }
+                    }
+
+                    /** @implements IteratorAggregate<int, string> */
+                    final class Outer implements IteratorAggregate {
+                        public function getIterator(): Inner {
+                            return new Inner();
+                        }
+                    }
+
+                    foreach (new Outer() as $value) {
+                        echo $value;
                     }',
                 'error_message' => 'TaintedHtml',
             ],
@@ -12883,6 +13157,21 @@ final class TaintTest extends TestCase
                     echo vsprintf("%s", [(string) $_GET["x"]]);',
                 'error_message' => 'TaintedHtml',
             ],
+            'taintHtmlFormattedByVsprintfWithANamedFormatAsAString' => [
+                'code' => '<?php // --taint-analysis
+                    echo vsprintf(values: [(string) $_GET["x"]], format: "%s");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintHtmlInANamedFormatOfVsprintfPassedAfterItsValues' => [
+                'code' => '<?php // --taint-analysis
+                    echo vsprintf(values: [1], format: (string) $_GET["x"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintHtmlFormattedByVfprintfWithANamedFormatAsAString' => [
+                'code' => '<?php // --taint-analysis
+                    vfprintf(values: [(string) $_GET["x"]], format: "%s", stream: fopen("php://output", "w"));',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintHtmlInTheValuesOfVsprintfWithAStringConversion' => [
                 'code' => '<?php // --taint-analysis
                     echo vsprintf("%d %s", [(string) $_GET["x"], "a"]);',
@@ -13883,6 +14172,25 @@ final class TaintTest extends TestCase
                     preg_match("/id=(\\w+)/", (string) $_GET["value"], $matches);
                     echo $matches[1];',
                 'error_message' => 'TaintedHtml',
+            ],
+            'taintParseStrResultBeforeThePhpVersionNamingItsInput' => [
+                'code' => '<?php // --taint-analysis
+                    parse_str((string) $_GET["value"], $result);
+                    echo (string) $result["key"];',
+                'error_message' => 'TaintedHtml',
+                'php_version' => '7.4',
+            ],
+            'taintFlowsThroughAParameterPhp8Renamed' => [
+                'code' => '<?php // --taint-analysis
+                    echo count_chars((string) $_GET["value"], 3);',
+                'error_message' => 'TaintedHtml',
+                'php_version' => '7.4',
+            ],
+            'taintFlowsThroughAParameterOfAnExtensionPhp8Renamed' => [
+                'code' => '<?php // --taint-analysis
+                    echo (string) imap_base64((string) $_GET["value"]);',
+                'error_message' => 'TaintedHtml',
+                'php_version' => '7.4',
             ],
             'taintParseStrResult' => [
                 'code' => '<?php // --taint-analysis
@@ -17017,6 +17325,19 @@ final class TaintTest extends TestCase
                 'error_message' => 'TaintedShell',
                 'php_version' => '8.1',
             ],
+            'taintReturnedByAFirstClassCallableOfAStaticMethod' => [
+                'code' => '<?php // --taint-analysis
+                    final class K {
+                        public static function id(string $s): string {
+                            return $s;
+                        }
+                    }
+
+                    $f = K::id(...);
+                    echo $f((string) $_GET["a"]);',
+                'error_message' => 'TaintedHtml',
+                'php_version' => '8.1',
+            ],
             'taintPassedToTheSinkOfACalledInstanceMethodClosure' => [
                 'code' => '<?php
                     final class Shell {
@@ -19564,6 +19885,37 @@ final class TaintTest extends TestCase
                 'code' => '<?php
                     extract($_POST);',
                 'error_message' => 'TaintedExtract',
+            ],
+            'extractArrayWithAnInputKey' => [
+                'code' => '<?php
+                    extract([$_GET["name"] => "value"]);',
+                'error_message' => 'TaintedExtract',
+            ],
+            'extractUnsealedShape' => [
+                'code' => '<?php
+                    extract(["name" => "value"] + $_GET);',
+                'error_message' => 'TaintedExtract',
+            ],
+            'extractUnpackedArgument' => [
+                'code' => '<?php
+                    $a = [$_GET];
+                    extract(...$a);',
+                'error_message' => 'TaintedExtract',
+            ],
+            'extractSealedArrayWithAFlagNotTracked' => [
+                'code' => '<?php
+                    extract(["name" => (string) $_GET["name"]], EXTR_PREFIX_ALL, "p");',
+                'error_message' => 'TaintedExtract',
+            ],
+            'extractSealedShapeParamTaintsTheVariableOfItsKey' => [
+                'code' => '<?php
+                    /** @param array{name: string} $data */
+                    function show(array $data): void {
+                        extract($data);
+                        echo $name;
+                    }
+                    show(["name" => (string) $_GET["name"]]);',
+                'error_message' => 'TaintedHtml',
             ],
             'TaintForIntTypeCastUsingAnnotatedSink' => [
                 'code' => '<?php // --taint-analysis

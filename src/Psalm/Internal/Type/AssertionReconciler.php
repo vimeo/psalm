@@ -35,11 +35,13 @@ use Psalm\Storage\Assertion\NestedAssertions;
 use Psalm\Storage\Assertion\NonEmpty;
 use Psalm\Storage\Assertion\NonEmptyCountable;
 use Psalm\Storage\Assertion\Truthy;
+use Psalm\Storage\Capabilities;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
+use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TCallableString;
 use Psalm\Type\Atomic\TClassConstant;
@@ -47,6 +49,7 @@ use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TDecimalIntString;
 use Psalm\Type\Atomic\TEmptyNumeric;
 use Psalm\Type\Atomic\TEnumCase;
+use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TInt;
@@ -75,12 +78,14 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Atomic\TTemplateValueOf;
 use Psalm\Type\Atomic\TTraitString;
+use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Atomic\TValueOf;
 use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
 
 use function array_diff_key;
+use function array_filter;
 use function array_intersect_key;
 use function array_keys;
 use function array_merge;
@@ -90,6 +95,8 @@ use function count;
 use function is_nan;
 use function is_numeric;
 use function is_string;
+use function reset;
+use function rtrim;
 use function strtolower;
 
 /**
@@ -236,9 +243,11 @@ final class AssertionReconciler extends Reconciler
         }
 
         if (($assertion instanceof IsLooselyEqual || $assertion instanceof IsNotLooselyEqual)
-            && $assertion->type instanceof TNull
+            && ($assertion->type instanceof TNull
+                || $assertion->type instanceof TTrue
+                || $assertion->type instanceof TFalse)
         ) {
-            return self::reconcileLooseNullComparison(
+            return self::reconcileLooseNullOrBoolComparison(
                 $assertion,
                 $existing_var_type,
                 $key,
@@ -341,7 +350,7 @@ final class AssertionReconciler extends Reconciler
             return new Union([$new_type_part]);
         }
 
-        $refined_type = self::refine(
+        $refined_type = self::refineWithJuggling(
             $statements_analyzer,
             $assertion,
             $new_type_part,
@@ -364,6 +373,56 @@ final class AssertionReconciler extends Reconciler
             false,
             true,
         );
+    }
+
+    /**
+     * The types a part of the bound of a key-of<T> or value-of<T> stands for: the key-of<T> or value-of<T> itself when
+     * the part is the whole bound, otherwise T with its bound narrowed to the part
+     *
+     * @param non-empty-list<Atomic> $narrowed_atomics the atomics of the bound the type is narrowed to
+     * @return non-empty-list<Atomic>
+     */
+    private static function getTemplateKeyOrValueOfAtomics(
+        Codebase $codebase,
+        TTemplateKeyOf|TTemplateValueOf $template_of,
+        Union $bound,
+        array $narrowed_atomics,
+    ): array {
+        $narrowed_bound = new Union($narrowed_atomics);
+
+        if ($narrowed_bound->getId() === $bound->getId()) {
+            return [$template_of];
+        }
+
+        $template = $template_of->as->isSingle() ? $template_of->as->getSingleAtomic() : null;
+        $key_type = TKeyOf::getArrayKeyType($template_of->as);
+        $value_type = TValueOf::getValueType($template_of->as, $codebase);
+
+        if (!$template instanceof TTemplateParam || $key_type === null || $value_type === null) {
+            return $narrowed_atomics;
+        }
+
+        $narrowed_template = new Union([$template->replaceAs(new Union([new TArray(
+            $template_of instanceof TTemplateKeyOf
+                ? [$narrowed_bound, $value_type]
+                : [$key_type, $narrowed_bound],
+        )]))]);
+
+        return [
+            $template_of instanceof TTemplateKeyOf
+                ? new TTemplateKeyOf(
+                    $template_of->param_name,
+                    $template_of->defining_class,
+                    $narrowed_template,
+                    $template_of->from_docblock,
+                )
+                : new TTemplateValueOf(
+                    $template_of->param_name,
+                    $template_of->defining_class,
+                    $narrowed_template,
+                    $template_of->from_docblock,
+                ),
+        ];
     }
 
     /**
@@ -434,59 +493,30 @@ final class AssertionReconciler extends Reconciler
                 continue;
             }
 
-            $narrowed_bound = new Union($narrowed_atomics);
-
-            if ($narrowed_bound->getId() === $bound->getId()) {
-                $new_type->addType($template_of);
-                continue;
-            }
-
-            $template = $template_of->as->isSingle() ? $template_of->as->getSingleAtomic() : null;
-            $key_type = TKeyOf::getArrayKeyType($template_of->as);
-            $value_type = TValueOf::getValueType($template_of->as, $codebase);
-
-            if (!$template instanceof TTemplateParam || $key_type === null || $value_type === null) {
-                foreach ($narrowed_atomics as $narrowed_atomic) {
-                    $new_type->addType($narrowed_atomic);
-                }
-
-                continue;
-            }
-
-            $narrowed_template = new Union([$template->replaceAs(new Union([new TArray(
-                $template_of instanceof TTemplateKeyOf
-                    ? [$narrowed_bound, $value_type]
-                    : [$key_type, $narrowed_bound],
-            )]))]);
-
-            $new_type->addType(
-                $template_of instanceof TTemplateKeyOf
-                    ? new TTemplateKeyOf(
-                        $template_of->param_name,
-                        $template_of->defining_class,
-                        $narrowed_template,
-                        $template_of->from_docblock,
-                    )
-                    : new TTemplateValueOf(
-                        $template_of->param_name,
-                        $template_of->defining_class,
-                        $narrowed_template,
-                        $template_of->from_docblock,
-                    ),
+            $template_atomics = self::getTemplateKeyOrValueOfAtomics(
+                $codebase,
+                $template_of,
+                $bound,
+                $narrowed_atomics,
             );
+
+            foreach ($template_atomics as $atomic) {
+                $new_type->addType($atomic);
+            }
         }
 
         return $new_type->freeze();
     }
 
     /**
-     * `$x == null` is `!$x`, except that null is compared to a string as '': the falsy '0' is still != null
+     * `$x == true` is `(bool) $x`, `$x == false` and `$x == null` are `!$x`, except that null is compared to a string
+     * as '': the falsy '0' is still != null
      *
      * @param   string[]            $suppressed_issues
      * @param   array<string, array<string, Union>> $template_type_map
      * @param-out Reconciler::RECONCILIATION_* $failed_reconciliation
      */
-    private static function reconcileLooseNullComparison(
+    private static function reconcileLooseNullOrBoolComparison(
         IsLooselyEqual|IsNotLooselyEqual $assertion,
         Union $existing_var_type,
         ?string $key,
@@ -498,6 +528,23 @@ final class AssertionReconciler extends Reconciler
         ?int &$failed_reconciliation,
         bool $negated,
     ): Union {
+        if (!$assertion->type instanceof TNull) {
+            return self::reconcile(
+                ($assertion instanceof IsLooselyEqual) === ($assertion->type instanceof TTrue)
+                    ? new Truthy()
+                    : new Falsy(),
+                $existing_var_type,
+                $key,
+                $statements_analyzer,
+                $inside_loop,
+                $template_type_map,
+                $code_location,
+                $suppressed_issues,
+                $failed_reconciliation,
+                $negated,
+            );
+        }
+
         $codebase = $statements_analyzer->getCodebase();
         $zero = TLiteralString::make('0');
         $zero_types = self::getZeroStringTypes($codebase, $existing_var_type, $zero);
@@ -649,6 +696,10 @@ final class AssertionReconciler extends Reconciler
      * @param Reconciler::RECONCILIATION_* $failed_reconciliation
      * @param   string[]    $suppressed_issues
      * @param-out Reconciler::RECONCILIATION_* $failed_reconciliation
+     * @param-out bool $impossible whether no value of the type can match. It is set with or without a location, while
+     *                             $failed_reconciliation is only RECONCILIATION_EMPTY with one: callers without a
+     *                             location rely on getting the asserted type with RECONCILIATION_OK (e.g. `$this`
+     *                             narrowed again by instanceof keeps its property types)
      */
     private static function refine(
         StatementsAnalyzer $statements_analyzer,
@@ -660,7 +711,10 @@ final class AssertionReconciler extends Reconciler
         ?CodeLocation $code_location,
         array $suppressed_issues,
         int &$failed_reconciliation,
+        bool &$impossible = false,
     ): Union {
+        $impossible = false;
+
         $codebase = $statements_analyzer->getCodebase();
 
         $old_var_type_string = $existing_var_type->getId();
@@ -698,26 +752,38 @@ final class AssertionReconciler extends Reconciler
             $new_as_atomic = $new_type_part->as->getSingleAtomic();
 
             $acceptable_atomic_types = [];
+            $narrowed = false;
 
             foreach ($existing_var_type->getAtomicTypes() as $existing_var_type_part) {
                 if ($existing_var_type_part instanceof TNamedObject
                     || $existing_var_type_part instanceof TTemplateParam
                 ) {
                     $acceptable_atomic_types[] = $existing_var_type_part;
-                } else {
-                    if (AtomicTypeComparator::isContainedBy(
-                        $codebase,
-                        $existing_var_type_part,
-                        $new_as_atomic,
-                    )) {
-                        $acceptable_atomic_types[] = $existing_var_type_part;
+                } elseif (AtomicTypeComparator::isContainedBy(
+                    $codebase,
+                    $existing_var_type_part,
+                    $new_as_atomic,
+                )) {
+                    $acceptable_atomic_types[] = $existing_var_type_part;
+                } elseif (($overlap = Type::intersectUnionTypes(
+                    new Union([$existing_var_type_part]),
+                    new Union([$new_as_atomic]),
+                    $codebase,
+                )) !== null
+                    && !$overlap->isNever()
+                ) {
+                    // a string can be the value of a template of `numeric`: a numeric string
+                    $narrowed = true;
+
+                    foreach ($overlap->getAtomicTypes() as $overlap_atomic_type) {
+                        $acceptable_atomic_types[] = $overlap_atomic_type;
                     }
                 }
             }
 
             if ($acceptable_atomic_types) {
                 $acceptable_atomic_types =
-                    count($acceptable_atomic_types) === count($existing_var_type->getAtomicTypes())
+                    !$narrowed && count($acceptable_atomic_types) === count($existing_var_type->getAtomicTypes())
                         ? $existing_var_type
                         : new Union($acceptable_atomic_types);
                 return new Union([$new_type_part->replaceAs($acceptable_atomic_types)]);
@@ -846,10 +912,28 @@ final class AssertionReconciler extends Reconciler
                 $any_scalar_type_match_found,
             );
 
-            if ($code_location
-                && !$intersection_type
-                && (!$assertion instanceof IsLooselyEqual || !$any_scalar_type_match_found)
+            // a key or a value of the bound of T can be one of key-of<T> or value-of<T>
+            if (!$intersection_type
+                && ($new_type_part instanceof TTemplateKeyOf || $new_type_part instanceof TTemplateValueOf)
+                && ($bound = $new_type_part instanceof TTemplateKeyOf
+                    ? TKeyOf::getArrayKeyType($new_type_part->as)
+                    : TValueOf::getValueType($new_type_part->as, $codebase)) !== null
+                && ($overlap = Type::intersectUnionTypes($existing_var_type, $bound, $codebase)) !== null
+                && !$overlap->isNever()
             ) {
+                // the narrowed variable keeps its link to T
+                $intersection_type = new Union(self::getTemplateKeyOrValueOfAtomics(
+                    $codebase,
+                    $new_type_part,
+                    $bound,
+                    array_values($overlap->getAtomicTypes()),
+                ));
+            }
+
+            $impossible = !$intersection_type
+                && (!$assertion instanceof IsLooselyEqual || !$any_scalar_type_match_found);
+
+            if ($code_location && $impossible) {
                 if ($new_type_part instanceof TNull) {
                     if ($existing_var_type->from_docblock) {
                         IssueBuffer::maybeAdd(
@@ -921,6 +1005,147 @@ final class AssertionReconciler extends Reconciler
         }
 
         return $new_type ?: new Union([$new_type_part]);
+    }
+
+    /**
+     * Refines the type, keeping for a loose comparison the parts that PHP juggles into an equal value
+     *
+     * @param   string[]    $suppressed_issues
+     * @param Reconciler::RECONCILIATION_* $failed_reconciliation
+     * @param-out Reconciler::RECONCILIATION_* $failed_reconciliation
+     */
+    private static function refineWithJuggling(
+        StatementsAnalyzer $statements_analyzer,
+        Assertion $assertion,
+        Atomic $new_type_part,
+        Union $existing_var_type,
+        ?string $key,
+        bool $negated,
+        ?CodeLocation $code_location,
+        array $suppressed_issues,
+        int &$failed_reconciliation,
+    ): Union {
+        $juggled_type = $assertion instanceof IsLooselyEqual
+            ? self::refineLooseEquality($statements_analyzer, $assertion, $new_type_part, $existing_var_type, $negated)
+            : null;
+
+        if ($juggled_type === null) {
+            return self::refine(
+                $statements_analyzer,
+                $assertion,
+                $new_type_part,
+                $existing_var_type,
+                $key,
+                $negated,
+                $code_location,
+                $suppressed_issues,
+                $failed_reconciliation,
+            );
+        }
+
+        if ($juggled_type->isNever()) {
+            if ($key !== null && $code_location !== null) {
+                self::triggerIssueForImpossible(
+                    $existing_var_type,
+                    $existing_var_type->getId(),
+                    $key,
+                    $assertion,
+                    false,
+                    $negated,
+                    $code_location,
+                    $suppressed_issues,
+                );
+            }
+
+            $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
+        }
+
+        return $juggled_type;
+    }
+
+    /**
+     * A loose comparison keeps the parts of the type of another kind that PHP juggles into an equal value (`1.0 == 1`,
+     * `"1" == 1.0`, `true == "a"`, `false == []`), and refines the others as usual.
+     * Returns null when no part of the type is juggled, and never when no part can be equal.
+     */
+    private static function refineLooseEquality(
+        StatementsAnalyzer $statements_analyzer,
+        IsLooselyEqual $assertion,
+        Atomic $new_type_part,
+        Union $existing_var_type,
+        bool $negated,
+    ): ?Union {
+        $kept_types = [];
+        $refined_types = [];
+        $juggled = false;
+
+        foreach ($existing_var_type->getAtomicTypes() as $existing_type_part) {
+            if ($existing_type_part instanceof TTemplateParam) {
+                $as = self::refineLooseEquality(
+                    $statements_analyzer,
+                    $assertion,
+                    $new_type_part,
+                    $existing_type_part->as,
+                    $negated,
+                );
+
+                if ($as === null) {
+                    $refined_types[] = $existing_type_part;
+                } else {
+                    $juggled = true;
+
+                    if (!$as->isNever()) {
+                        $kept_types[] = $existing_type_part->replaceAs($as);
+                    }
+                }
+
+                continue;
+            }
+
+            $loosely_equal_type_part = SimpleAssertionReconciler::getLooselyEqualJuggledAtomic(
+                $existing_type_part,
+                $new_type_part,
+            );
+
+            if ($loosely_equal_type_part === null) {
+                $refined_types[] = $existing_type_part;
+            } else {
+                $juggled = true;
+
+                if ($loosely_equal_type_part !== false) {
+                    $kept_types[] = $loosely_equal_type_part;
+                }
+            }
+        }
+
+        if (!$juggled) {
+            return null;
+        }
+
+        if ($refined_types) {
+            $refined_type = new Union($refined_types);
+            $failed_reconciliation = Reconciler::RECONCILIATION_OK;
+            $impossible = false;
+
+            $refined_type = self::refine(
+                $statements_analyzer,
+                $assertion,
+                $new_type_part,
+                $refined_type,
+                null,
+                $negated,
+                null,
+                [],
+                $failed_reconciliation,
+                $impossible,
+            );
+
+            if (!$impossible && !$refined_type->isNever()) {
+                $kept_types = [...$kept_types, ...$refined_type->getAtomicTypes()];
+            }
+        }
+
+        return $kept_types ? new Union($kept_types) : Type::getNever();
     }
 
     /**
@@ -1027,14 +1252,14 @@ final class AssertionReconciler extends Reconciler
     /**
      * Narrowing a `Parent<A, B>` to a child class whose templates are passed straight to Parent's
      * (`@extends Parent<T, U>`, `@implements Iterator[P]<K, V>`) gives the child those arguments:
-     * `Iterator[pure]<int, string>` narrowed to `Child` is a `Child[pure]<int, string>`.
-     *
-     * @psalm-capabilities read-props
+     * `Iterator[pure]<int, string>` narrowed to `Child` is a `Child[pure]<int, string>`. With
+     * $unknown_as_star, the other type templates are `*` rather than leaving the child without arguments.
      */
     private static function inferTemplateParamsFromParent(
         Codebase $codebase,
         TNamedObject $child,
         TGenericObject $parent,
+        bool $unknown_as_star = false,
     ): TNamedObject {
         if (!$codebase->classlike_storage_provider->has($child->value)
             || !$codebase->classlike_storage_provider->has($parent->value)
@@ -1058,8 +1283,9 @@ final class AssertionReconciler extends Reconciler
 
         $parent_template_names = array_keys($parent_storage->template_types);
         $type_params = [];
+        $projections = [];
 
-        foreach (array_keys($child_storage->template_types) as $template_name) {
+        foreach ($child_storage->template_types as $template_name => $type_map) {
             $inferred = null;
 
             foreach ($extended_params as $parent_template_name => $extended_type) {
@@ -1076,26 +1302,46 @@ final class AssertionReconciler extends Reconciler
                     && $extended_atomic->defining_class === $child_storage->name
                 ) {
                     $inferred = $parent->type_params[$offset];
+
+                    if ($parent->getProjection($offset) === TypeArgumentProjection::Star) {
+                        $projections[count($type_params)] = TypeArgumentProjection::Star;
+                    }
+
                     break;
                 }
             }
 
             if ($inferred === null) {
-                // a template not passed straight to the parent: nothing is known about it
-                return $child;
+                if (!$unknown_as_star) {
+                    // a template not passed straight to the parent: nothing is known about it
+                    return $child;
+                }
+
+                // a purity template is left to its bound, which a `*` cannot stand for
+                $bound = reset($type_map);
+
+                if (Capabilities::isPurityType($bound)) {
+                    $inferred = PurityArguments::getOmittedArgument($bound);
+                } else {
+                    $inferred = Type::getMixed();
+                    $projections[count($type_params)] = TypeArgumentProjection::Star;
+                }
             }
 
             $type_params[] = $inferred;
         }
 
-        return new TGenericObject(
+        $narrowed = (new TGenericObject(
             $child->value,
             $type_params,
             false,
             $child->is_static,
             $child->extra_types,
             $child->from_docblock,
-        );
+        ))->setProjections($projections);
+
+        // a `*` passed down holds the bound of the child's template, with the child's other arguments applied
+        return StarProjection::resolve($narrowed, $codebase, array_keys($projections));
     }
 
     /**
@@ -1161,6 +1407,51 @@ final class AssertionReconciler extends Reconciler
         }
 
         return [$type_1_atomic, $type_2_atomic];
+    }
+
+    /**
+     * The intersection of objects neither of which contains the other: an interface and a class that can implement
+     * it, or a subclass, which narrows the class part of an intersection and keeps the interfaces already known
+     */
+    private static function intersectNamedObjects(
+        Atomic $type_1_atomic,
+        Atomic $type_2_atomic,
+        Codebase $codebase,
+    ): ?TNamedObject {
+        if (!$type_1_atomic instanceof TNamedObject || !$type_2_atomic instanceof TNamedObject) {
+            return null;
+        }
+
+        if (($codebase->interfaceExists($type_1_atomic->value)
+                || $codebase->interfaceExists($type_2_atomic->value))
+            && self::canBeIntersected($codebase, $type_1_atomic, $type_2_atomic)
+        ) {
+            if ($type_1_atomic instanceof TGenericObject && !$type_2_atomic instanceof TGenericObject) {
+                $type_2_atomic = self::inferTemplateParamsFromParent($codebase, $type_2_atomic, $type_1_atomic);
+            }
+
+            return $type_2_atomic->addIntersectionType($type_1_atomic);
+        }
+
+        if ($type_1_atomic::class !== TNamedObject::class
+            || $type_2_atomic::class !== TNamedObject::class
+            || !$type_1_atomic->extra_types
+            || $type_2_atomic->extra_types
+            || !$codebase->classExists($type_1_atomic->value)
+            || !$codebase->classExists($type_2_atomic->value)
+            || $codebase->classlike_storage_provider->get($type_2_atomic->value)->final
+            || !$codebase->classlikes->classExtends($type_2_atomic->value, $type_1_atomic->value)
+        ) {
+            return null;
+        }
+
+        foreach ($type_1_atomic->extra_types as $constraint) {
+            if ($constraint::class !== TNamedObject::class || !$codebase->interfaceExists($constraint->value)) {
+                return null;
+            }
+        }
+
+        return $type_2_atomic->setIntersectionTypes($type_1_atomic->extra_types);
     }
 
     private static function filterAtomicWithAnother(
@@ -1239,20 +1530,12 @@ final class AssertionReconciler extends Reconciler
             );
         }
 
-        $matching_atomic_type = null;
-
-        if ($type_1_atomic instanceof TNamedObject
-            && $type_2_atomic instanceof TNamedObject
-            && ($codebase->interfaceExists($type_1_atomic->value)
-                || $codebase->interfaceExists($type_2_atomic->value))
-            && self::canBeIntersected($codebase, $type_1_atomic, $type_2_atomic)
-        ) {
-            if ($type_1_atomic instanceof TGenericObject && !$type_2_atomic instanceof TGenericObject) {
-                $type_2_atomic = self::inferTemplateParamsFromParent($codebase, $type_2_atomic, $type_1_atomic);
-            }
-
-            return $type_2_atomic->addIntersectionType($type_1_atomic);
+        $object_intersection = self::intersectNamedObjects($type_1_atomic, $type_2_atomic, $codebase);
+        if ($object_intersection !== null) {
+            return $object_intersection;
         }
+
+        $matching_atomic_type = null;
 
         /*if ($type_2_atomic instanceof TKeyedArray
         ) {
@@ -1537,6 +1820,18 @@ final class AssertionReconciler extends Reconciler
         Codebase $codebase,
         bool $type_coerced,
     ): ?Atomic {
+        if ($type_2_atomic::class === TNamedObject::class
+            && $type_1_atomic instanceof TGenericObject
+            && $type_1_atomic->hasStarProjection()
+        ) {
+            // what a `*` leaves unknown stays unknown: `Pair<int, *>` narrowed to `Pair` is still a `Pair<int, *>`
+            // (with the intersection asserted next to it), and narrowed to a `Child` that `@extends Pair<int, T>` is a
+            // `Child<*>`, not one of the template's bound
+            return strtolower($type_2_atomic->value) === strtolower($type_1_atomic->value)
+                ? $type_1_atomic->setIntersectionTypes([...$type_1_atomic->extra_types, ...$type_2_atomic->extra_types])
+                : self::inferTemplateParamsFromParent($codebase, $type_2_atomic, $type_1_atomic, true);
+        }
+
         if ($type_coerced
             && $type_2_atomic::class === TNamedObject::class
             && $type_1_atomic instanceof TGenericObject
@@ -1618,6 +1913,49 @@ final class AssertionReconciler extends Reconciler
                     $code_location,
                     $suppressed_issues,
                 );
+            }
+        }
+
+        if ($assertion instanceof IsLooselyEqual && !$assertion_type instanceof TEnumCase) {
+            $bools_and_null = array_filter(
+                $existing_var_atomic_types,
+                static fn(Atomic $atomic_type): bool => $atomic_type instanceof TBool
+                    || $atomic_type instanceof TNull,
+            );
+            $loosely_equal_bools_and_null = self::getLooselyEqualBoolsAndNull($assertion_type, $bools_and_null);
+
+            if ($loosely_equal_bools_and_null !== []) {
+                $other_atomic_types = array_diff_key($existing_var_atomic_types, $bools_and_null);
+                $other_types = $other_atomic_types === [] ? null : new Union(array_values($other_atomic_types), [
+                    'from_docblock' => $existing_var_type->from_docblock,
+                ]);
+
+                // the other types are reconciled without reporting: the comparison may be true for a bool or null
+                $other_type = $other_types === null
+                    ? Type::getNever()
+                    : self::handleLiteralEquality(
+                        $statements_analyzer,
+                        $assertion,
+                        $assertion_type,
+                        $other_types,
+                        $old_var_type_string,
+                        null,
+                        $negated,
+                        null,
+                        $suppressed_issues,
+                    );
+
+                // nothing narrowed: the same type tells the caller that the comparison didn't reconcile it
+                if (($other_types === null || $other_type === $other_types)
+                    && $loosely_equal_bools_and_null === array_values($bools_and_null)
+                ) {
+                    return $existing_var_type;
+                }
+
+                return new Union([
+                    ...$other_type->isNever() ? [] : array_values($other_type->getAtomicTypes()),
+                    ...$loosely_equal_bools_and_null,
+                ], ['from_docblock' => $existing_var_type->from_docblock]);
             }
         }
 
@@ -1720,6 +2058,38 @@ final class AssertionReconciler extends Reconciler
         }
 
         return $existing_var_type;
+    }
+
+    /**
+     * The bools and null loosely equal to the scalar: a bool is compared to the scalar cast to bool (`false == 0`),
+     * null to a string as "" (`null == ""`) and to anything else as false (`null == 0`)
+     *
+     * @param array<string, TBool|TNull> $bools_and_null
+     * @return list<TBool|TNull>
+     * @psalm-pure
+     */
+    private static function getLooselyEqualBoolsAndNull(
+        TLiteralInt|TLiteralString|TLiteralFloat $scalar,
+        array $bools_and_null,
+    ): array {
+        $scalar_is_truthy = (bool) $scalar->value;
+        $loosely_equal = [];
+
+        foreach ($bools_and_null as $atomic_type) {
+            if ($atomic_type instanceof TNull) {
+                if ($scalar instanceof TLiteralString ? $scalar->value === '' : !$scalar_is_truthy) {
+                    $loosely_equal[] = $atomic_type;
+                }
+            } elseif ($atomic_type instanceof TTrue || $atomic_type instanceof TFalse) {
+                if ($atomic_type instanceof TTrue === $scalar_is_truthy) {
+                    $loosely_equal[] = $atomic_type;
+                }
+            } else {
+                $loosely_equal[] = $scalar_is_truthy ? new TTrue() : new TFalse();
+            }
+        }
+
+        return $loosely_equal;
     }
 
     /**
@@ -1891,7 +2261,7 @@ final class AssertionReconciler extends Reconciler
 
             if ($assertion instanceof IsLooselyEqual
                 && $existing_var_atomic_type instanceof TLiteralString
-                && (int)$existing_var_atomic_type->value === $value
+                && LiteralCast::toInt($existing_var_atomic_type->value) === $value
             ) {
                 return new Union([$existing_var_atomic_type]);
             }
@@ -1933,6 +2303,17 @@ final class AssertionReconciler extends Reconciler
     }
 
     /**
+     * What `is_numeric()` tells for the PHP version analysed: a trailing whitespace is allowed as of PHP 8
+     *
+     * @psalm-pure
+     */
+    public static function isNumericString(string $value, int $analysis_php_version_id): bool
+    {
+        return is_numeric($value)
+            && ($analysis_php_version_id >= 8_00_00 || rtrim($value, " \t\n\r\v\f") === $value);
+    }
+
+    /**
      * An object with a `__toString()` can be loosely equal to a string: it stays in the type next to the literal
      *
      * @param array<string, Atomic> $existing_var_atomic_types
@@ -1951,11 +2332,7 @@ final class AssertionReconciler extends Reconciler
         $atomic_types = $literal_type->getAtomicTypes();
 
         foreach ($existing_var_atomic_types as $atomic_type) {
-            // an `object` may be one with a __toString too
-            if ($atomic_type::class === TObject::class
-                || ($atomic_type instanceof TNamedObject
-                    && $codebase->methodExists(new MethodIdentifier($atomic_type->value, '__tostring')))
-            ) {
+            if (SimpleAssertionReconciler::canBeStringableObject($codebase, $atomic_type)) {
                 $atomic_types[$atomic_type->getKey()] = $atomic_type;
             }
         }
@@ -1981,8 +2358,28 @@ final class AssertionReconciler extends Reconciler
     ): Union {
         $value = $assertion_type->value;
 
+        // PHP compares two numeric strings by their numbers: `"1" == "01"`
+        $loosely_equal_literals = [];
+
+        if ($assertion instanceof IsLooselyEqual
+            && self::isNumericString($value, $statements_analyzer->getCodebase()->analysis_php_version_id)
+        ) {
+            foreach ($existing_var_atomic_types as $key => $existing_var_atomic_type) {
+                if ($existing_var_atomic_type instanceof TLiteralString
+                    && $existing_var_atomic_type->value !== $value
+                    && self::isNumericString(
+                        $existing_var_atomic_type->value,
+                        $statements_analyzer->getCodebase()->analysis_php_version_id,
+                    )
+                    && $existing_var_atomic_type->value == $value
+                ) {
+                    $loosely_equal_literals[$key] = $existing_var_atomic_type;
+                }
+            }
+        }
+
         // we create the literal that is being asserted. We'll return this when we're sure this is the resulting type
-        $literal_asserted_type_string = new Union([$assertion_type], [
+        $literal_asserted_type_string = new Union([$assertion_type, ...array_values($loosely_equal_literals)], [
             'from_docblock' => $existing_var_type->from_docblock,
         ]);
 
@@ -2068,6 +2465,23 @@ final class AssertionReconciler extends Reconciler
                     return $existing_var_type;
                 }
             }
+        }
+
+        if ($assertion instanceof IsLooselyEqual) {
+            foreach ($existing_var_atomic_types as $key => $existing_var_atomic_type) {
+                if (SimpleAssertionReconciler::canBeStringableObject(
+                    $statements_analyzer->getCodebase(),
+                    $existing_var_atomic_type,
+                )) {
+                    $loosely_equal_literals[$key] = $existing_var_atomic_type;
+                }
+            }
+        }
+
+        if ($loosely_equal_literals !== []) {
+            return new Union(array_values($loosely_equal_literals), [
+                'from_docblock' => $existing_var_type->from_docblock,
+            ]);
         }
 
         //if we're here, no type was eligible for the given literal. We'll emit an impossible error for this assertion
@@ -2529,6 +2943,16 @@ final class AssertionReconciler extends Reconciler
     }
 
     /**
+     * @psalm-capabilities read-props|write-props
+     */
+    private static function isOnlyImplementedByEnums(Codebase $codebase, string $interface_name): bool
+    {
+        return strtolower($interface_name) === 'unitenum'
+            || ($codebase->interfaceExists($interface_name)
+                && $codebase->interfaceExtends($interface_name, 'UnitEnum'));
+    }
+
+    /**
      * No object is an instance of two classes that don't extend one another, or of a final class and an interface
      * it doesn't implement
      *
@@ -2559,6 +2983,17 @@ final class AssertionReconciler extends Reconciler
 
             $existing_is_class = !$existing_storage->is_interface && !$existing_storage->is_trait;
             $new_is_class = !$new_storage->is_interface && !$new_storage->is_trait;
+
+            // only an enum implements UnitEnum, and an enum extends no class
+            if (($existing_is_class
+                    && !$existing_storage->is_enum
+                    && self::isOnlyImplementedByEnums($codebase, $new_type_part->value))
+                || ($new_is_class
+                    && !$new_storage->is_enum
+                    && self::isOnlyImplementedByEnums($codebase, $existing_name))
+            ) {
+                return false;
+            }
 
             if ($existing_is_class && $new_is_class) {
                 if (!$codebase->classExtends($existing_name, $new_type_part->value)
