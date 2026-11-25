@@ -243,7 +243,17 @@ final class SqlStatement
         $writes = [];
         $word = $this->peekWord();
 
-        if ($word === 'values' || $word === 'value') {
+        if (($word === 'values' || $word === 'value') && ($this->tokens[$this->position + 1][0] ?? '') === 'hole') {
+            // the rows in a part the analysis doesn't know the text of (`VALUES ` . implode(',', $rows)): each of its
+            // parts can be in any of the columns, up to ON DUPLICATE KEY UPDATE / ON CONFLICT and RETURNING
+            $this->position++;
+            $value = $this->getValue($this->takeUntilWord(['on', 'returning'], 0), []);
+            $value['columns'] = [];
+
+            foreach ($columns ?? [null] as $column) {
+                $writes[] = ['table' => $table_name, 'column' => $column, 'value' => $value];
+            }
+        } elseif ($word === 'values' || $word === 'value') {
             $this->position++;
 
             while ($this->peek() === '(') {

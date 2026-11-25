@@ -97,6 +97,14 @@ final class SqlStatementTest extends TestCase
             'INSERT INTO t (a, b) VALUES (?, ?) ON DUPLICATE KEY UPDATE b = VALUES(b)',
             'W t.a <- h[] p[0] c[]; W t.b <- h[] p[1] c[]; W t.b <- h[] p[] c[t.b]',
         ];
+        yield 'the rows in a part the analysis doesn\'t know the text of ending the statement, which can go on with it' => [
+            'INSERT INTO t (a, b) VALUES %0%',
+            'null',
+        ];
+        yield 'the rows in a part the analysis doesn\'t know the text of, then ON DUPLICATE KEY UPDATE' => [
+            'INSERT INTO t (a) VALUES %0% ON DUPLICATE KEY UPDATE b = %1%, c = 1',
+            'W t.a <- h[0] p[] c[]; W t.b <- h[1] p[] c[]; W t.c <- h[] p[] c[]',
+        ];
         yield 'no columns named' => [
             'INSERT INTO users VALUES (?, ?)',
             'W users.* <- h[] p[0] c[]; W users.* <- h[] p[1] c[]',
