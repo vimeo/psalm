@@ -8496,6 +8496,20 @@ final class TaintTest extends TestCase
     public static function providerInvalidCodeParse(): array
     {
         return [
+            'taintSinkOfAFunctionWithOverloadsIsStillChecked' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-taint-sink html $x
+                     * @psalm-overload (int $x): string
+                     * @psalm-overload (string $x): string
+                     */
+                    function show(int|string $x): string {
+                        return "static";
+                    }
+
+                    show($_GET["a"]);',
+                'error_message' => 'TaintedHtml',
+            ],
             'offsetOnlyNarrowedInTheBranchWhereItIsSetStaysTaintedAfterTheIf' => [
                 'code' => '<?php
                     function f(array $a): void {
