@@ -342,11 +342,7 @@ final class ExpressionScanner
             }
 
             if ($codebase->fileExists($path_to_file)) {
-                if ($scan_deep) {
-                    $codebase->scanner->addFileToDeepScan($path_to_file);
-                } else {
-                    $codebase->scanner->addFileToShallowScan($path_to_file);
-                }
+                $codebase->scanner->addIncludedFileToScan($path_to_file, $scan_deep);
 
                 $file_storage->required_file_paths[strtolower($path_to_file)] = $path_to_file;
 
