@@ -947,9 +947,6 @@ abstract class Type
     }
 
     /**
-     * e.g. array and iterable<int, Foo> are array<int, Foo>
-     */
-    /**
      * e.g. iterable<string, int> and iterable[pure]<mixed, mixed> are iterable[pure]<string, int>
      */
     private static function intersectIterables(
@@ -967,30 +964,34 @@ abstract class Type
             return null;
         }
 
-        $type_params = [];
+        $key_type = self::intersectUnionTypes(
+            $type_1_atomic->type_params[0],
+            $type_2_atomic->type_params[0],
+            $codebase,
+            $allow_interface_equality,
+            $allow_float_int_equality,
+        );
+        $value_type = self::intersectUnionTypes(
+            $type_1_atomic->type_params[1],
+            $type_2_atomic->type_params[1],
+            $codebase,
+            $allow_interface_equality,
+            $allow_float_int_equality,
+        );
 
-        foreach ($type_1_atomic->type_params as $i => $type_param) {
-            $type_param_intersection = self::intersectUnionTypes(
-                $type_param,
-                $type_2_atomic->type_params[$i],
-                $codebase,
-                $allow_interface_equality,
-                $allow_float_int_equality,
-            );
-
-            if ($type_param_intersection === null || $type_param_intersection->isNever()) {
-                return null;
-            }
-
-            $type_params[] = $type_param_intersection;
+        if ($key_type === null || $value_type === null || $key_type->isNever() || $value_type->isNever()) {
+            return null;
         }
 
         return $type_1_atomic
-            ->setTypeParams($type_params)
+            ->setTypeParams([$key_type, $value_type])
             ->setPurity($purity)
             ->setIntersectionTypes(array_merge($type_1_atomic->extra_types, $type_2_atomic->extra_types));
     }
 
+    /**
+     * e.g. array and iterable<int, Foo> are array<int, Foo>
+     */
     private static function intersectArrayWithIterable(
         Codebase $codebase,
         Atomic $type_1_atomic,
