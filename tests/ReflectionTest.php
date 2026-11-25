@@ -74,7 +74,14 @@ final class ReflectionTest extends TestCase
                 <?php
                 $a = (new ReflectionClass(stdClass::class))->newInstanceArgs();
                 PHP,
-            'assertions' => ['$a===' => 'null|stdClass'],
+            'assertions' => ['$a===' => 'stdClass'],
+        ];
+        yield 'PHP80-ReflectionClass::newInstanceArgs without arguments' => [
+            'code' => <<<'PHP'
+                <?php
+                $a = (new ReflectionClass(stdClass::class))->newInstanceArgs();
+                PHP,
+            'assertions' => ['$a===' => 'stdClass'],
         ];
         yield 'ReflectionClass::newInstanceWithoutConstructor' => [
             'code' => <<<'PHP'
@@ -153,6 +160,49 @@ final class ReflectionTest extends TestCase
                 PHP,
             'assertions' => ['$name===' => 'class-string<stdClass>'],
         ];
+        yield 'ReflectionObject name property is class-string' => [
+            'code' => <<<'PHP'
+                <?php
+                $r = new ReflectionObject(new stdClass());
+                $name = $r->name;
+                PHP,
+            'assertions' => ['$name===' => 'class-string<stdClass>'],
+        ];
+        yield 'ReflectionObject of an object' => [
+            'code' => <<<'PHP'
+                <?php
+                function makeObject(): object {
+                    return new stdClass();
+                }
+                $r = new ReflectionObject(makeObject());
+                PHP,
+            'assertions' => ['$r===' => 'ReflectionObject<object>'],
+        ];
+        yield 'ReflectionObject keeps a template type' => [
+            'code' => <<<'PHP'
+                <?php
+                /**
+                 * @template T of object
+                 * @param T $o
+                 * @return T
+                 */
+                function cloneEmpty(object $o): object {
+                    return (new ReflectionObject($o))->newInstanceWithoutConstructor();
+                }
+                $a = cloneEmpty(new stdClass());
+                PHP,
+            'assertions' => ['$a===' => 'stdClass'],
+        ];
+        yield 'ReflectionObject::newLazyGhost' => [
+            'code' => <<<'PHP'
+                <?php
+                final class Foo {}
+                $a = (new ReflectionObject(new Foo()))->newLazyGhost(function (Foo $foo): void {});
+                PHP,
+            'assertions' => ['$a===' => 'Foo'],
+            'ignored_issues' => [],
+            'php_version' => '8.4',
+        ];
         yield 'ReflectionObject extends ReflectionClass' => [
             'code' => <<<'PHP'
                 <?php
@@ -208,7 +258,7 @@ final class ReflectionTest extends TestCase
                 $a = new Foo();
                 $b = (new ReflectionObject($a))->newInstanceArgs([]);
                 PHP,
-            'assertions' => ['$b===' => 'Foo|null'],
+            'assertions' => ['$b===' => 'Foo'],
         ];
         yield 'ReflectionObject::newInstanceWithoutConstructor' => [
             'code' => <<<'PHP'

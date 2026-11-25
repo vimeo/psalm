@@ -199,9 +199,9 @@ class ReflectionClass implements Reflector {
     /**
      * @param list<mixed> $args
      *
-     * @return T|null
+     * @return T
      */
-    public function newInstanceArgs(array $args = []): ?object {}
+    public function newInstanceArgs(array $args = []): object {}
 
     /**
      * @return T
@@ -289,9 +289,7 @@ class ReflectionClass implements Reflector {
 /**
  * @template-covariant T as object
  *
- * @extends \ReflectionClass<T>
- *
- * @property-read class-string<T> $name
+ * @extends ReflectionClass<T>
  */
 class ReflectionObject extends ReflectionClass
 {
