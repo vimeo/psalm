@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Type\Atomic;
 
+use Override;
 use Psalm\Type\Union;
 
 /**
@@ -42,5 +43,14 @@ final class TNonEmptyArray extends TArray
         $cloned = clone $this;
         $cloned->count = $count;
         return $cloned;
+    }
+
+    /**
+     * @psalm-pure
+     */
+    #[Override]
+    public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
+    {
+        return false;
     }
 }

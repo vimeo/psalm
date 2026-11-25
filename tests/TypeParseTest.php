@@ -2401,4 +2401,33 @@ final class TypeParseTest extends TestCase
             $type->toNamespacedString('Ns', [], null, false),
         );
     }
+
+    /**
+     * @return iterable<string, array{string, int, ?string, bool}>
+     * @psalm-pure
+     */
+    public static function nativeTypeProvider(): iterable
+    {
+        yield 'mixed|null' => ['mixed|null', 8_00_00, 'mixed', true];
+        yield 'mixed|false' => ['mixed|false', 8_00_00, 'mixed', true];
+        yield 'mixed|null before PHP 8' => ['mixed|null', 7_04_00, null, false];
+        yield 'non-empty-mixed' => ['non-empty-mixed', 8_00_00, 'mixed', false];
+        yield 'non-empty-mixed|null' => ['non-empty-mixed|null', 8_00_00, 'mixed', false];
+        yield 'non-empty-string' => ['non-empty-string', 8_00_00, 'string', false];
+        yield 'non-falsy-string' => ['non-falsy-string', 8_00_00, 'string', false];
+        yield 'non-empty-array' => ['non-empty-array', 8_00_00, 'array', false];
+        yield 'array' => ['array', 8_00_00, 'array', true];
+        yield 'pure-callable' => ['pure-callable', 8_00_00, 'callable', false];
+        yield 'callable' => ['callable', 8_00_00, 'callable', true];
+        yield 'properties-of' => ['properties-of<stdClass>', 8_00_00, 'array', false];
+    }
+
+    #[DataProvider('nativeTypeProvider')]
+    public function testNativeType(string $string, int $php_version_id, ?string $php_type, bool $fully_expressed): void
+    {
+        $type = Type::parseString($string);
+
+        self::assertSame($php_type, $type->toPhpString(null, [], null, $php_version_id));
+        self::assertSame($fully_expressed, $type->canBeFullyExpressedInPhp($php_version_id));
+    }
 }

@@ -23,4 +23,13 @@ final class TNonEmptyMixed extends TMixed
     {
         return 'non-empty-mixed';
     }
+
+    /**
+     * @psalm-pure
+     */
+    #[Override]
+    public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
+    {
+        return false;
+    }
 }
