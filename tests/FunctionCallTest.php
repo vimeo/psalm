@@ -24,6 +24,18 @@ final class FunctionCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'negatedArrayIsListKeepsAnArrayThatMayBeAList' => [
+                'code' => '<?php
+                    /** @param array<int, int> $a */
+                    function f(array $a): void {
+                        if (!array_is_list($a)) {
+                            /** @psalm-check-type-exact $a = array<int, int> */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'urlencodeOfANonEmptyStringIsNonEmpty' => [
                 'code' => '<?php
                     /** @param non-empty-string $input */
@@ -4556,6 +4568,42 @@ final class FunctionCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'negatedArrayIsListOfAList' => [
+                'code' => '<?php
+                    function f(): void {
+                        $ids = [1, 2];
+                        if (!array_is_list($ids)) {
+                            echo "never";
+                        }
+                    }',
+                'error_message' => 'is always list<mixed>, so its negation can never be true',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'negatedDocblockShapeAssertionOfAShapeIsImpossible' => [
+                'code' => '<?php
+                    /** @psalm-assert-if-true array{a: int} $x */
+                    function isA(array $x): bool { return isset($x["a"]); }
+
+                    /** @param array{a: int} $x */
+                    function f(array $x): void {
+                        if (!isA($x)) {}
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'negatedDocblockArrayAssertionOfAnArrayIsImpossible' => [
+                'code' => '<?php
+                    /** @psalm-assert !array<string, int> $x */
+                    function notMap(mixed $x): void {}
+
+                    /** @param array<string, int> $x */
+                    function g(array $x): void { notMap($x); }',
+                'error_message' => 'TypeDoesNotContainType',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'getTypeSwitchFallingThroughAnImpossibleCaseOfTheSameVariable' => [
                 'code' => '<?php
                     function f(int $data): string {

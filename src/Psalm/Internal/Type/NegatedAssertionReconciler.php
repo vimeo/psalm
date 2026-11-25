@@ -240,10 +240,17 @@ final class NegatedAssertionReconciler extends Reconciler
         ) {
             // do nothing
         } elseif ($existing_var_type->isArray()
-            && ($assertion->getAtomicType() instanceof TArray
-                || $assertion->getAtomicType() instanceof TKeyedArray)
+            && ($assertion_type instanceof TArray || $assertion_type instanceof TKeyedArray)
         ) {
-            // an array that isn't of the asserted array type is of the existing one
+            // an array that isn't of the asserted array type is of the existing one, but not of a part the asserted
+            // type holds whole (`!array_is_list()` of a list)
+            if (!$is_equality) {
+                foreach ($existing_var_type->getAtomicTypes() as $part_key => $existing_array_part) {
+                    if (AtomicTypeComparator::isContainedBy($codebase, $existing_array_part, $assertion_type)) {
+                        $existing_var_type->removeType($part_key);
+                    }
+                }
+            }
         } elseif (!$is_equality) {
             $assertion_type = $assertion->getAtomicType();
 
