@@ -1659,6 +1659,35 @@ final class ForeachTest extends TestCase
                         return array_keys($GLOBALS);
                     }',
             ],
+            'unknownVariableAfterExtractNarrowedByACallInALoop' => [
+                'code' => '<?php
+                    function takesInt(int $_i): void {}
+
+                    /**
+                     * @param list<string> $rows
+                     * @param array<string, mixed> $vars
+                     */
+                    function render(array $rows, array $vars): void {
+                        extract($vars);
+                        foreach ($rows as $_row) {
+                            takesInt($campaignid);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedArgument'],
+            ],
+            'variableDefinedByAByRefClosureUseInALoop' => [
+                'code' => '<?php
+                    /** @param list<int> $c */
+                    function f(array $c): void {
+                        foreach ($c as $_) {
+                            $f = function () use (&$cu): void {
+                                $cu = 1;
+                            };
+                            $f();
+                        }
+                    }',
+            ],
             'switchVariableWithContinue' => [
                 'code' => '<?php
                     foreach (["a", "b", "c"] as $letter) {
@@ -3633,6 +3662,75 @@ final class ForeachTest extends TestCase
                         }
                     }',
                 'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'undefinedVariableReadInALoopIsMixedOnEveryIteration' => [
+                'code' => '<?php
+                    function takesInt(int $_i): void {}
+
+                    /** @param list<string> $rows */
+                    function render(array $rows): void {
+                        foreach ($rows as $_row) {
+                            takesInt($campaignid);
+                        }
+                    }',
+                'error_message' => 'MixedArgument',
+                'error_levels' => ['UndefinedVariable'],
+            ],
+            'undefinedVariableAssignedOnAnotherPathIsMixedOnEveryIterationOfALoop' => [
+                'code' => '<?php
+                    function takesInt(int $_i): void {}
+
+                    /** @param list<string> $rows */
+                    function render(array $rows): void {
+                        if (rand(0, 1)) {
+                            $campaignid = 5;
+                            return;
+                        }
+                        foreach ($rows as $_row) {
+                            takesInt($campaignid);
+                        }
+                    }',
+                'error_message' => 'MixedArgument',
+                'error_levels' => ['UndefinedVariable'],
+            ],
+            'variableReadWhereUndefinedOnOnePathBeforeALoopKeepsWhatTheLoopAssigns' => [
+                'code' => '<?php
+                    function takesInt(int $_i): void {}
+
+                    /** @param list<string> $rows */
+                    function f(array $rows): void {
+                        if (rand(0, 1)) {
+                            $x = 1;
+                        } else {
+                            /** @psalm-suppress UndefinedVariable, MixedArgument */
+                            takesInt($x);
+                        }
+                        foreach ($rows as $row) {
+                            if (isset($x)) {
+                                takesInt($x);
+                            }
+                            $x = $row;
+                        }
+                    }',
+                'error_message' => 'InvalidScalarArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:14:42 - Argument 1 of takesInt expects int, but 1|string provided',
+            ],
+            'byRefOutParamAfterAnUndefinedReadInALoopKeepsItsType' => [
+                'code' => '<?php
+                    function takesString(string $_s): void {}
+
+                    /** @param list<string> $rows */
+                    function f(array $rows): void {
+                        foreach ($rows as $row) {
+                            /** @psalm-suppress UndefinedVariable, MixedArgument */
+                            if (is_string($matches)) {
+                                takesString($matches);
+                            }
+                            if (preg_match("/a/", $row, $matches)) {
+                                takesString($matches[0]);
+                            }
+                        }
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
             ],
             'invalidGeneratorIteratorShowsTheRefinedSendType' => [
                 'code' => '<?php
