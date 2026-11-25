@@ -46,6 +46,7 @@ use Psalm\Type\Union;
 use ReflectionClass;
 
 use function basename;
+use function class_exists;
 use function glob;
 
 final class AtomicIdTest extends TestCase
@@ -59,6 +60,7 @@ final class AtomicIdTest extends TestCase
 
     /**
      * @return iterable<string, array{Atomic, string, string}>
+     * @psalm-pure
      */
     public static function providerIds(): iterable
     {
@@ -142,22 +144,28 @@ final class AtomicIdTest extends TestCase
         yield 'void' => [new TVoid(), 'void', 'void'];
     }
 
-    public function testEveryAtomicWritesItsOwnId(): void
+    public function testIdIsDeclaredWithTheKey(): void
     {
         $files = glob(__DIR__ . '/../../src/Psalm/Type/Atomic/*.php');
         $this->assertNotEmpty($files);
 
         foreach ($files as $file) {
-            $class = new ReflectionClass('Psalm\\Type\\Atomic\\' . basename($file, '.php'));
+            $name = 'Psalm\\Type\\Atomic\\' . basename($file, '.php');
+            if (!class_exists($name)) {
+                continue;
+            }
 
+            $class = new ReflectionClass($name);
             if ($class->isAbstract() || !$class->isSubclassOf(Atomic::class)) {
                 continue;
             }
 
-            $this->assertNotSame(
-                Atomic::class,
-                $class->getMethod('getId')->getDeclaringClass()->getName(),
-                $class->getName() . ' uses the default getId() of Atomic',
+            $id_class = $class->getMethod('getId')->getDeclaringClass();
+            $key_class = $class->getMethod('getKey')->getDeclaringClass()->getName();
+
+            $this->assertTrue(
+                $id_class->getName() === $key_class || $id_class->isSubclassOf($key_class),
+                $class->getName() . ' takes its id from ' . $id_class->getName() . ' but its key from ' . $key_class,
             );
         }
     }

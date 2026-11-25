@@ -38,7 +38,7 @@ class TString extends Scalar
     }
 
     /**
-     * @psalm-pure
+     * @psalm-mutation-free
      */
     #[Override]
     public function getId(bool $exact = true): string

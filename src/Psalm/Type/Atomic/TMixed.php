@@ -32,7 +32,7 @@ class TMixed extends Atomic
     }
 
     /**
-     * @psalm-pure
+     * @psalm-mutation-free
      */
     #[Override]
     public function getId(bool $exact = true): string

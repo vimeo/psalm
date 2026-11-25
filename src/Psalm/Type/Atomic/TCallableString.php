@@ -37,6 +37,9 @@ final class TCallableString extends TNonFalsyString
         return 'callable-string';
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function getId(bool $exact = true): string
     {

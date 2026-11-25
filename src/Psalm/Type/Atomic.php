@@ -793,7 +793,8 @@ abstract class Atomic implements TypeNode, Stringable
      *     'a'               string
      *     non-empty-string  string
      *
-     * Each of Psalm's types writes its own id. For a type defined outside Psalm, it defaults to getKey().
+     * Defaults to getKey() for a type that extends Atomic directly. A type that extends one of Psalm's types inherits
+     * that type's id: override getId() along with getKey().
      *
      * @psalm-mutation-free
      */
