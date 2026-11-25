@@ -44,7 +44,7 @@ final class TTemplatePropertiesOf extends Atomic
     public function getId(bool $exact = true): string
     {
         if (!$exact) {
-            return $this->getKey();
+            return TPropertiesOf::tokenNameForFilter($this->visibility_filter) . '<' . $this->param_name . '>';
         }
 
         return TPropertiesOf::tokenNameForFilter($this->visibility_filter) . '<' . $this->as->getId($exact) . '>';
@@ -52,6 +52,7 @@ final class TTemplatePropertiesOf extends Atomic
 
     /**
      * @param  array<lowercase-string, string> $aliased_classes
+     * @psalm-pure
      */
     #[Override]
     public function toPhpString(
@@ -60,7 +61,7 @@ final class TTemplatePropertiesOf extends Atomic
         ?string $this_class,
         int $analysis_php_version_id,
     ): string {
-        return $this->getKey();
+        return 'array';
     }
 
     /**

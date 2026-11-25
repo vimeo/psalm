@@ -1277,6 +1277,44 @@ final class CapabilitiesTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'dateTimeConstructorsOnlyNeedTime' => [
+                'code' => '<?php
+                    /** @psalm-capabilities time */
+                    function tomorrow(): DateTimeImmutable {
+                        return new DateTimeImmutable("tomorrow");
+                    }
+
+                    /** @psalm-capabilities time */
+                    function mutableNow(): DateTime {
+                        return new DateTime();
+                    }
+
+                    final class MyDate extends DateTimeImmutable {}
+
+                    /** @psalm-capabilities time */
+                    function inherited(): MyDate {
+                        return new MyDate();
+                    }
+
+                    final class MyDate2 extends DateTimeImmutable {
+                        /** @psalm-capabilities time */
+                        public function __construct() {
+                            parent::__construct("now");
+                        }
+                    }
+
+                    /** @psalm-capabilities time */
+                    function nextDay(): DateTimeImmutable {
+                        return (new DateTimeImmutable())->add(new DateInterval("P1D"));
+                    }',
+            ],
+            'dateIntervalConstructorIsPure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function interval(): DateInterval {
+                        return new DateInterval("P1D");
+                    }',
+            ],
             'datesOfAGivenTimestampArePure' => [
                 'code' => '<?php
                     /** @psalm-pure */
@@ -6185,6 +6223,34 @@ final class CapabilitiesTest extends TestCase
                     }',
                 'error_message' => 'ImpureMethodCall',
             ],
+            'impureToStringOfATemplateIntersectedWithStringableInACast' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T&Stringable $n
+                     * @psalm-pure
+                     */
+                    function cast($n): string {
+                        return (string) $n;
+                    }',
+                'error_message' => 'possibly-mutating method Stringable::__toString',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'impureToStringOfATemplateIntersectedWithStringableInALooseComparison' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T&Stringable $n
+                     * @psalm-pure
+                     */
+                    function compare($n): bool {
+                        return $n == "x";
+                    }',
+                'error_message' => 'possibly-mutating method Stringable::__toString',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'impureToStringInStrval' => [
                 'code' => '<?php
                     final class Name {
@@ -8766,13 +8832,21 @@ final class CapabilitiesTest extends TestCase
                     }',
                 'error_message' => 'constructor Linked::__construct requires',
             ],
-            'unannotatedStubbedConstructorWithAnEmptyBodyIsNotTrivial' => [
+            'dateTimeImmutableConstructorRequiresTime' => [
                 'code' => '<?php
                     /** @psalm-pure */
                     function make(): DateTimeImmutable {
                         return new DateTimeImmutable();
                     }',
-                'error_message' => 'ImpureMethodCall',
+                'error_message' => 'constructor DateTimeImmutable::__construct requires time',
+            ],
+            'dateTimeConstructorRequiresTime' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function make(): DateTime {
+                        return new DateTime("2020-01-01");
+                    }',
+                'error_message' => 'constructor DateTime::__construct requires time',
             ],
             'inheritedTrivialConstructorRunsTheSetHookOfARedeclaredProperty' => [
                 'code' => '<?php

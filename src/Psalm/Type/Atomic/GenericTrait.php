@@ -14,6 +14,7 @@ use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeArgumentProjection;
+use Psalm\Internal\Type\TypeTokenizer;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
@@ -22,7 +23,6 @@ use function array_map;
 use function array_values;
 use function count;
 use function implode;
-use function str_contains;
 use function strpos;
 use function substr;
 
@@ -147,7 +147,7 @@ trait GenericTrait
             $value_type_string = $value_type->toNamespacedString($namespace, $aliased_classes, $this_class, true);
 
             // `[]` binds tighter than `|` and `&`: `(A&B)[]`, not `A&B[]`
-            if (!$value_type->isSingle() || str_contains($value_type_string, '&')) {
+            if (TypeTokenizer::hasTopLevelOperator($value_type_string, '|&')) {
                 return '(' . $value_type_string . ')[]';
             }
 

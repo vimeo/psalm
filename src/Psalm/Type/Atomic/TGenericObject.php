@@ -22,7 +22,6 @@ use function count;
 use function implode;
 use function in_array;
 use function sort;
-use function strrpos;
 use function substr;
 
 /**
@@ -234,24 +233,6 @@ final class TGenericObject extends TNamedObject
         return false;
     }
 
-    /**
-     * @param  array<lowercase-string, string> $aliased_classes
-     */
-    #[Override]
-    public function toPhpString(
-        ?string $namespace,
-        array $aliased_classes,
-        ?string $this_class,
-        int $analysis_php_version_id,
-    ): ?string {
-        $result = $this->toNamespacedString($namespace, $aliased_classes, $this_class, true);
-        $intersection = strrpos($result, '&');
-        if ($intersection === false || $analysis_php_version_id >= 8_01_00) {
-            return $result;
-        }
-        return substr($result, $intersection+1);
-    }
-
     #[Override]
     public function equals(Atomic $other_type, bool $ensure_source_equality): bool
     {
@@ -259,7 +240,10 @@ final class TGenericObject extends TNamedObject
             return false;
         }
 
-        if ($this->is_static !== $other_type->is_static) {
+        if ($this->value !== $other_type->value
+            || $this->is_static !== $other_type->is_static
+            || !$this->intersectionTypesEqual($other_type->extra_types, $ensure_source_equality)
+        ) {
             return false;
         }
 

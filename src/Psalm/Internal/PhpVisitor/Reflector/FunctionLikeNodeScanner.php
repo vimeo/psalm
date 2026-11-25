@@ -60,6 +60,7 @@ use Psalm\Type\Union;
 use ReflectionFunction;
 use UnexpectedValueException;
 
+use function array_fill_keys;
 use function array_keys;
 use function array_pop;
 use function array_search;
@@ -101,6 +102,68 @@ final class FunctionLikeNodeScanner
     ) {
         $this->file_path = $file_storage->file_path;
         $this->config = Config::getInstance();
+    }
+
+    /**
+     * @param list<array{entry: string, offset: int}> $overloads
+     */
+    private function addOverloads(
+        FunctionLikeStorage $storage,
+        PhpParser\Node\FunctionLike $stmt,
+        PhpParser\Comment\Doc $doc_comment,
+        array $overloads,
+        string $cased_function_id,
+    ): void {
+        // the templates of the class and of the function itself, which the overload's parameter types may use
+        $template_types = [
+            ...$this->existing_function_template_types,
+            ...($this->classlike_storage->template_types ?? []),
+            ...($storage->template_types ?? []),
+        ];
+        $template_map = array_fill_keys(array_keys($template_types), true);
+        $comment_lines = explode("\n", $doc_comment->getText());
+
+        foreach ($overloads as ['entry' => $entry, 'offset' => $offset]) {
+            try {
+                $overload_node = PseudoMethodParser::parse(
+                    $this->codebase,
+                    $this->aliases,
+                    $stmt,
+                    $doc_comment,
+                    $doc_comment,
+                    $comment_lines,
+                    'overload' . $entry,
+                    $offset,
+                    [],
+                    $template_map,
+                );
+            } catch (DocblockParseException $e) {
+                $storage->docblock_issues[] = new InvalidDocblock(
+                    '@psalm-overload ' . trim($entry) . ' is not a valid overload'
+                        . ($e->getPrevious() !== null ? ': ' . $e->getPrevious()->getMessage() : '')
+                        . ' in docblock for ' . $cased_function_id,
+                    new CodeLocation($this->file_scanner, $stmt, null, true),
+                );
+
+                continue;
+            }
+
+            $overload_scanner = new self(
+                $this->codebase,
+                $this->file_scanner,
+                $this->file_storage,
+                $this->aliases,
+                $this->type_aliases,
+                null,
+                $template_types,
+            );
+
+            /** @var MethodStorage $overload_storage */
+            $overload_storage = $overload_scanner->start($overload_node, true);
+
+            $storage->docblock_issues = [...$storage->docblock_issues, ...$overload_storage->docblock_issues];
+            $storage->overloads[] = $overload_storage;
+        }
     }
 
     /**
@@ -481,6 +544,12 @@ final class FunctionLikeNodeScanner
                     $fake_method,
                     $cased_function_id,
                 );
+
+                if ($stmt instanceof PhpParser\Node\Stmt\Function_
+                    || ($stmt instanceof PhpParser\Node\Stmt\ClassMethod && !$fake_method)
+                ) {
+                    $this->addOverloads($storage, $stmt, $doc_comment, $docblock_info->overloads, $cased_function_id);
+                }
             }
         }
 

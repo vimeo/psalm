@@ -46,11 +46,11 @@ final class HrtimeReturnTypeProvider implements FunctionReturnTypeProviderInterf
         }
 
         $first_arg_type = $event->getStatementsSource()->getNodeTypeProvider()->getType($call_args[0]->value);
-        if (!$first_arg_type || (string) $first_arg_type === 'true') {
+        if (!$first_arg_type || $first_arg_type->isTrue()) {
             return Type::getInt(true);
         }
 
-        if ((string) $first_arg_type === 'false') {
+        if ($first_arg_type->isFalse()) {
             return new Union([$keyed_array]);
         }
 

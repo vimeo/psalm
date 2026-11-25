@@ -10,6 +10,7 @@ use function array_shift;
 use function array_slice;
 use function count;
 use function ctype_digit;
+use function explode;
 use function in_array;
 use function preg_match;
 use function strlen;
@@ -21,12 +22,15 @@ use function substr;
  * What an SQL query writes into the database and reads from it, by table and column: the values an INSERT, REPLACE or
  * UPDATE stores in each column, and the columns of the rows a SELECT gives. A value is made of the parts of the query
  * the analysis doesn't know the text of (holes, numbered in the order they appear in the text, where the text has
- * HOLE_MARKER, the number and HOLE_MARKER again), of its placeholders (`?`, numbered from 0, `:name` and `$1`, named
- * without `:` and numbered from 0), and of the columns it copies.
+ * HOLE_MARKER, the number and HOLE_MARKER again), of its placeholders (`?`, numbered from 0, `:name`, `{name}` and
+ * `{name:Type}` (ClickHouse), named without `:`, `{`, the type and `}`, and `$1`, numbered from 0), and of the columns
+ * it copies.
  *
  * A table or column the query doesn't name (`INSERT INTO t VALUES (...)`, `SELECT *`, a name with a hole) is null:
  * any of them. Tables, and the columns of values, are lowercase; the column of a write and the keys of a read are
- * named as written. A query parse() doesn't model gives null.
+ * named as written. A query parse() doesn't model gives null, as does a statement ending with a hole whose text can be
+ * SQL (more assignments, ON DUPLICATE KEY UPDATE, ON CONFLICT, RETURNING, a UNION, another statement) and a comment
+ * with a hole (which can end it).
  *
  * The keys of a read are those of the rows fetched it is under: its name and its position, or any key. A read of
  * `all_columns` (`*`, `t.*`) gives each column of the tables of its value under the column's name.
@@ -60,7 +64,12 @@ final class SqlStatement
     private const FROM_ENDS = [
         'where', 'group', 'having', 'order', 'limit', 'offset', 'union', 'intersect', 'except', 'for', 'lock',
         'window', 'fetch', 'returning', 'set', 'into', 'procedure',
+        // ClickHouse
+        'prewhere', 'settings', 'format',
     ];
+
+    /** The words after a table that aren't its alias: index hints (MySQL), FINAL and SAMPLE (ClickHouse) */
+    private const TABLE_MODIFIERS = ['lateral', 'force', 'ignore', 'use', 'final', 'sample'];
 
     /** @var list<Token> */
     private array $tokens;
@@ -68,6 +77,12 @@ final class SqlStatement
     private int $position = 0;
 
     private int $placeholder_count = 0;
+
+    /** Whether the statement ends with the data of an INSERT ... FORMAT (ClickHouse), which can't hold SQL */
+    private bool $ends_with_data = false;
+
+    /** @var list<int> the holes whose text is a number, which can't hold SQL */
+    private array $number_holes = [];
 
     /**
      * @param list<Token> $tokens
@@ -80,10 +95,12 @@ final class SqlStatement
     /**
      * The writes and reads of the statements of $sql, or null if a statement isn't one parse() models
      *
+     * @param list<int> $number_holes the holes whose text is a number (of an int, a float, a bool or null), which can't
+     *                                hold SQL
      * @return array{writes: list<Write>, reads: list<Read>}|null
      * @psalm-pure
      */
-    public static function parse(string $sql): ?array
+    public static function parse(string $sql, array $number_holes = []): ?array
     {
         $tokens = self::tokenize($sql);
 
@@ -97,6 +114,7 @@ final class SqlStatement
 
         // the placeholders are numbered across the statements
         $parser = new self([]);
+        $parser->number_holes = $number_holes;
 
         foreach ([...$tokens, [';', ';', []]] as $token) {
             if ($token[0] !== ';') {
@@ -108,12 +126,17 @@ final class SqlStatement
                 continue;
             }
 
+            // what the analysis doesn't know the text of at the end of a statement can go on with it: more
+            // assignments, ON DUPLICATE KEY UPDATE, ON CONFLICT, RETURNING, a UNION or another statement
+            $last = $statement[array_key_last($statement)];
+            $ends_with_hole = $last[0] === 'hole' && !in_array((int) $last[1], $number_holes, true);
+
             $parser->tokens = $statement;
             $parser->position = 0;
             $result = $parser->parseStatement();
             $statement = [];
 
-            if ($result === null) {
+            if ($result === null || ($ends_with_hole && !$parser->ends_with_data)) {
                 return null;
             }
 
@@ -133,6 +156,7 @@ final class SqlStatement
      */
     private function parseStatement(): ?array
     {
+        $this->ends_with_data = false;
         $first = $this->peekWord();
 
         if ($first === 'select' || (($this->tokens[0][0] ?? '') === '(' && $this->containsWordAtDepth('select', 1))) {
@@ -149,11 +173,17 @@ final class SqlStatement
             return $this->parseUpdate();
         }
 
+        if ($first === 'alter') {
+            return $this->parseAlter();
+        }
+
         // what can't store values (DELETE, DDL, transactions, ...): a hole or a placeholder isn't written anywhere
         if (in_array($first, [
-            'delete', 'truncate', 'create', 'drop', 'alter', 'begin', 'start', 'commit', 'rollback', 'savepoint',
+            'delete', 'truncate', 'create', 'drop', 'begin', 'start', 'commit', 'rollback', 'savepoint',
             'release', 'set', 'lock', 'unlock', 'use', 'show', 'describe', 'desc', 'explain', 'analyze', 'vacuum',
             'pragma', 'grant', 'revoke', 'optimize', 'flush', 'kill',
+            // ClickHouse, SQLite
+            'attach', 'detach',
         ], true)) {
             // but the rows a statement gives back with RETURNING aren't modelled
             return $this->containsWordAtDepth('returning', 0) ? null : ['writes' => [], 'reads' => []];
@@ -213,7 +243,17 @@ final class SqlStatement
         $writes = [];
         $word = $this->peekWord();
 
-        if ($word === 'values' || $word === 'value') {
+        if (($word === 'values' || $word === 'value') && ($this->tokens[$this->position + 1][0] ?? '') === 'hole') {
+            // the rows in a part the analysis doesn't know the text of (`VALUES ` . implode(',', $rows)): each of its
+            // parts can be in any of the columns, up to ON DUPLICATE KEY UPDATE / ON CONFLICT and RETURNING
+            $this->position++;
+            $value = $this->getValue($this->takeUntilWord(['on', 'returning'], 0), []);
+            $value['columns'] = [];
+
+            foreach ($columns ?? [null] as $column) {
+                $writes[] = ['table' => $table_name, 'column' => $column, 'value' => $value];
+            }
+        } elseif ($word === 'values' || $word === 'value') {
             $this->position++;
 
             while ($this->peek() === '(') {
@@ -258,6 +298,18 @@ final class SqlStatement
             }
         } elseif ($word === 'default') {
             $this->position += 2;
+        } elseif ($word === 'format') {
+            // INSERT INTO t (a, b) FORMAT JSONEachRow ... (ClickHouse): the parts of the data (up to the end: nothing
+            // follows it) the analysis doesn't know can be in any of the columns, and the data names no column of a
+            // table. A name of the format the analysis doesn't know the text of can hold the data.
+            $value = $this->getValue(array_slice($this->tokens, $this->position + 1), []);
+            $value['columns'] = [];
+            $this->position = count($this->tokens);
+            $this->ends_with_data = true;
+
+            foreach ($columns ?? [null] as $column) {
+                $writes[] = ['table' => $table_name, 'column' => $column, 'value' => $value];
+            }
         } else {
             return null;
         }
@@ -370,6 +422,118 @@ final class SqlStatement
         }
 
         return ['writes' => $assignments, 'reads' => $reads];
+    }
+
+    /**
+     * `ALTER TABLE t [ON CLUSTER c] UPDATE a = ... WHERE ...` (ClickHouse) stores as an UPDATE does, in each of the
+     * commands separated by commas; the other commands and ALTERs are DDL, which stores nothing. A part the analysis
+     * doesn't know the text of, outside of the values of the UPDATEs, can hold an UPDATE: the query can't be parsed.
+     *
+     * @return array{writes: list<Write>, reads: list<Read>}|null
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    private function parseAlter(): ?array
+    {
+        $this->position++;
+
+        if ($this->peekWord() !== 'table') {
+            return $this->containsHole(array_slice($this->tokens, $this->position))
+                ? null
+                : ['writes' => [], 'reads' => []];
+        }
+
+        $this->position++;
+        $table = $this->parseTableName();
+
+        if ($table === false) {
+            return null;
+        }
+
+        [$table_name] = $table;
+
+        if ($this->peekWord() === 'on') {
+            $cluster = $this->tokens[$this->position + 2] ?? null;
+            if (($this->tokens[$this->position + 1][0] ?? '') !== 'word'
+                || strtolower($this->tokens[$this->position + 1][1]) !== 'cluster'
+                || $cluster === null
+                || !in_array($cluster[0], ['word', 'ident', 'string'], true)
+                || $cluster[2] !== []
+                || $this->isGlued($this->position + 3)
+            ) {
+                return null;
+            }
+
+            $this->position += 3;
+        }
+
+        // a name ending with a part the analysis doesn't know the text of can hold the commands
+        if ($table_name === null && !isset($this->tokens[$this->position])) {
+            return null;
+        }
+
+        $tables = $table_name === null ? [null] : [$table_name => $table_name];
+        $writes = [];
+
+        while (true) {
+            if ($this->peekWord() === 'update') {
+                $this->position++;
+                $assignments = $this->parseAssignments($tables, $table_name);
+
+                // ClickHouse requires WHERE: without it, the end of the last value holds it, and maybe more commands
+                if ($assignments === null || $this->peekWord() !== 'where') {
+                    return null;
+                }
+
+                $writes = [...$writes, ...$assignments];
+            }
+
+            // the rest of the command, up to the comma before the next one
+            $depth = 0;
+            $rest = [];
+            while (isset($this->tokens[$this->position])
+                && ($depth !== 0 || $this->tokens[$this->position][0] !== ',')
+            ) {
+                $token = $this->tokens[$this->position];
+                if ($token[0] === '(') {
+                    $depth++;
+                } elseif ($token[0] === ')') {
+                    $depth--;
+                }
+
+                $rest[] = $token;
+                $this->position++;
+            }
+
+            if ($this->containsHole($rest)) {
+                return null;
+            }
+
+            $this->countPlaceholders($rest);
+
+            if (!isset($this->tokens[$this->position])) {
+                return ['writes' => $writes, 'reads' => []];
+            }
+
+            // the comma
+            $this->position++;
+        }
+    }
+
+    /**
+     * Whether the tokens contain a part the analysis doesn't know the text of, but a number, which can hold SQL
+     *
+     * @param list<Token> $tokens
+     * @psalm-mutation-free
+     */
+    private function containsHole(array $tokens): bool
+    {
+        foreach ($tokens as $token) {
+            if ($token[0] === 'hole' && !in_array((int) $token[1], $this->number_holes, true)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -732,12 +896,30 @@ final class SqlStatement
             if (isset($tokens[$offset])
                 && ($alias = self::getIdentifier($tokens[$offset])) !== null
                 && !in_array(strtolower($tokens[$offset][1]), self::KEYWORDS, true)
-                && !in_array(strtolower($tokens[$offset][1]), ['lateral', 'force', 'ignore', 'use'], true)
+                && !in_array(strtolower($tokens[$offset][1]), self::TABLE_MODIFIERS, true)
             ) {
                 $tables[strtolower($alias)] = $table;
                 $offset++;
             } elseif ($table === null) {
                 $tables[] = null;
+            }
+
+            // FINAL, SAMPLE 1/10 OFFSET 1/2 (ClickHouse)
+            if (isset($tokens[$offset]) && $tokens[$offset][0] === 'word'
+                && strtolower($tokens[$offset][1]) === 'final'
+            ) {
+                $offset++;
+            }
+
+            if (isset($tokens[$offset]) && $tokens[$offset][0] === 'word'
+                && strtolower($tokens[$offset][1]) === 'sample'
+            ) {
+                $offset++;
+                while (isset($tokens[$offset]) && ($tokens[$offset][0] === 'number' || $tokens[$offset][0] === '/'
+                    || ($tokens[$offset][0] === 'word' && strtolower($tokens[$offset][1]) === 'offset'))
+                ) {
+                    $offset++;
+                }
             }
 
             // index hints (MySQL): USE INDEX (...), FORCE INDEX (...)
@@ -938,6 +1120,11 @@ final class SqlStatement
 
         if ($text[0] === '$') {
             return (int) substr($text, 1) - 1;
+        }
+
+        // {name:Type}
+        if ($text[0] === '{') {
+            return explode(':', substr($text, 1, -1), 2)[0];
         }
 
         return substr($text, 1);
@@ -1235,16 +1422,21 @@ final class SqlStatement
             $start = $offset;
 
             // comments
+            // a part the analysis doesn't know the text of in a comment can end it, and the query can go on with it
             if (($char === '-' && ($sql[$offset + 1] ?? '') === '-') || $char === '#') {
                 $end = strpos($sql, "\n", $offset);
-                $offset = $end === false ? $length : $end + 1;
+                $end = $end === false ? $length : $end + 1;
+                if (strpos(substr($sql, $offset, $end - $offset), self::HOLE_MARKER) !== false) {
+                    return null;
+                }
+                $offset = $end;
                 $glued = false;
                 continue;
             }
 
             if ($char === '/' && ($sql[$offset + 1] ?? '') === '*') {
                 $end = strpos($sql, '*/', $offset + 2);
-                if ($end === false) {
+                if ($end === false || strpos(substr($sql, $offset, $end - $offset), self::HOLE_MARKER) !== false) {
                     return null;
                 }
                 $offset = $end + 2;
@@ -1304,6 +1496,12 @@ final class SqlStatement
             } elseif ($char === ':' && ($sql[$offset + 1] ?? '') !== ':' && ($offset === 0 || $sql[$offset - 1] !== ':')
                 && ($text = self::matchAt('/\G:[A-Za-z_][A-Za-z0-9_]*/', $sql, $offset)) !== null
             ) {
+                $type = 'placeholder';
+                $offset += strlen($text);
+            } elseif ($char === '{'
+                && ($text = self::matchAt('/\G\{[A-Za-z_][A-Za-z0-9_]*(?::[^{}]*)?\}/', $sql, $offset)) !== null
+            ) {
+                // {name} and {name:Type} (ClickHouse)
                 $type = 'placeholder';
                 $offset += strlen($text);
             } elseif ($char === '$' && ($text = self::matchAt('/\G\$[1-9][0-9]*/', $sql, $offset)) !== null) {

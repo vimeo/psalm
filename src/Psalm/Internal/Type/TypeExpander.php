@@ -339,6 +339,8 @@ final class TypeExpander
             }
 
             if ($return_type instanceof TNamedObject) {
+                $is_receiver = false;
+
                 $return_type = self::expandNamedObject(
                     $codebase,
                     $return_type,
@@ -347,7 +349,14 @@ final class TypeExpander
                     $parent_class,
                     $final,
                     $expand_generic,
+                    $is_receiver,
                 );
+
+                // the receiver is expanded already, and expanding its type arguments with itself again never ends
+                // when one of them is bound by `static`
+                if ($is_receiver) {
+                    return [$return_type];
+                }
             }
         }
 
@@ -393,6 +402,17 @@ final class TypeExpander
 
             if ($expand_templates) {
                 return array_values($new_as_type->getAtomicTypes());
+            }
+
+            // `T as (T as X)`, from a `static` bound read on a receiver typed T, is `T as X`
+            $bound = $new_as_type->getSingleAtomic();
+            if ($new_as_type->isSingle()
+                && $bound instanceof TTemplateParam
+                && $bound->param_name === $return_type->param_name
+                && $bound->defining_class === $return_type->defining_class
+                && !$return_type->extra_types
+            ) {
+                return [$bound];
             }
 
             $return_type = $return_type->replaceAs($new_as_type);
@@ -716,7 +736,10 @@ final class TypeExpander
                 );
             }
 
-            /** @psalm-suppress InvalidArgument Psalm bug */
+            /**
+             * @psalm-suppress InvalidArgument Psalm bug
+             * @psalm-suppress ArgumentTypeCoercion Psalm bug
+             */
             $return_type = $return_type instanceof TGenericObject
                 ? $return_type->setHeldTypes($type_params)
                 : $return_type->setTypeParams($type_params);
@@ -915,6 +938,7 @@ final class TypeExpander
         ?string $parent_class,
         bool $final = false,
         bool &$expand_generic = false,
+        bool &$is_receiver = false,
     ): TNamedObject|TTemplateParam {
         // a static type is resolved to the called class below, with its own type arguments
         if ($expand_generic
@@ -1016,8 +1040,10 @@ final class TypeExpander
                         $is_static,
                         $is_static_resolved,
                     );
+                    $is_receiver = true;
                 } else {
                     $return_type = $static_class_type;
+                    $is_receiver = true;
                 }
             }
         } elseif ($return_type->is_static
@@ -1031,6 +1057,7 @@ final class TypeExpander
             $return_type = $static_class_type->setIntersectionTypes(
                 array_merge($return_type->extra_types, $static_class_type->extra_types),
             )->setIsStatic(!$final, true);
+            $is_receiver = true;
         } elseif ($return_type->is_static && !$return_type->is_static_resolved
             && ($static_class_type instanceof TNamedObject
                 || $static_class_type instanceof TTemplateParam)

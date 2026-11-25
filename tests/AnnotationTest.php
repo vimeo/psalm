@@ -2549,6 +2549,14 @@ final class AnnotationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'invalidArrayKeyTypeIsShownWhole' => [
+                'code' => '<?php
+                    /**
+                     * @param array<list<int>, string> $a
+                     */
+                    function foo(array $a): void {}',
+                'error_message' => 'Invalid array key type list<int> in docblock for foo',
+            ],
             'duplicatedCallableParamTagsAreStillReported' => [
                 'code' => '<?php
                     /**

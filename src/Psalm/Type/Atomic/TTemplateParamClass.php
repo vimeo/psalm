@@ -34,7 +34,7 @@ final class TTemplateParamClass extends TClassString
     #[Override]
     public function getKey(bool $include_extra = true): string
     {
-        return 'class-string<' . $this->param_name . '>';
+        return 'class-string<' . $this->param_name . ':' . $this->defining_class . '>';
     }
 
     #[Override]

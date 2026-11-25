@@ -13,6 +13,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Assignment\ArrayAssignmentAnal
 use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\CoalesceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallReturnTypeFetcher;
+use Psalm\Internal\Analyzer\Statements\Expression\ClassConstAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ArrayFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
@@ -615,6 +616,12 @@ class Reconciler
             // narrowing doesn't change the value: an object nothing else references stays so
             if ($before_adjustment && $before_adjustment->reference_free) {
                 $result_type = $result_type->setProperties(['reference_free' => true]);
+            }
+
+            // nor what can change it: a readonly property stays unchanged by calls, unless it may be uninitialized
+            // (a type narrowed by empty() is built from the old one and would inherit the flag)
+            if ($before_adjustment && !$before_adjustment->has_mutations) {
+                $result_type = $result_type->setProperties(['has_mutations' => $has_inverted_isset || $has_empty]);
             }
 
             $type_changed = !$before_adjustment
@@ -1523,8 +1530,10 @@ class Reconciler
     ): ?Union {
         [$fq_class_name, $const_name] = explode('::', $key);
 
+        $is_static = strtolower($fq_class_name) === 'static';
+
         // the class of `static::NAME` is the one the code is in, as for a static property
-        if (strtolower($fq_class_name) === 'static') {
+        if ($is_static) {
             $fq_class_name = $statements_analyzer?->getFQCLN() ?? $fq_class_name;
         }
 
@@ -1532,11 +1541,23 @@ class Reconciler
             return null;
         }
 
+        $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
+        $constant_storage = $class_storage->constants[$const_name] ?? null;
+
+        // a subclass may give `static::NAME` another value, of the type the constant declares
+        $late_static_binding = $is_static
+            && !$class_storage->final
+            && !$constant_storage?->final
+            && ($constant_storage?->type?->from_docblock === true
+                || ClassConstAnalyzer::hasDeclaredType($constant_storage));
+
         return $codebase->classlikes->getClassConstantType(
             $fq_class_name,
             $const_name,
             ReflectionProperty::IS_PRIVATE,
             null,
+            [],
+            $late_static_binding,
         );
     }
 
@@ -1887,6 +1908,10 @@ class Reconciler
                 if (!isset($existing_keys[$new_base_key])) {
                     $new_base_type = null;
 
+                    // a readonly property of an object that can't be replaced keeps its value after a call
+                    $keeps_value = $divider === '->'
+                        && (!$existing_keys[$base_key]->has_mutations || strpbrk($base_key, '[-:') === false);
+
                     $atomic_types = $existing_keys[$base_key]->getAtomicTypes();
 
                     while ($atomic_types) {
@@ -1896,6 +1921,8 @@ class Reconciler
                             $atomic_types = array_merge($atomic_types, $existing_key_type_part->as->getAtomicTypes());
                             continue;
                         }
+
+                        $part_keeps_value = false;
 
                         if ($existing_key_type_part instanceof TNull) {
                             $class_property_type = Type::getNull();
@@ -1963,11 +1990,19 @@ class Reconciler
                                     if (!$class_property_type) {
                                         return null;
                                     }
+
+                                    $part_keeps_value = self::isReadonlyProperty(
+                                        $codebase,
+                                        $existing_key_type_part->value,
+                                        $property_name,
+                                    );
                                 }
                             }
                         } else {
                             $class_property_type = Type::getMixed();
                         }
+
+                        $keeps_value = $keeps_value && $part_keeps_value;
 
                         $new_base_type = Type::combineUnionTypes(
                             $new_base_type,
@@ -1976,6 +2011,10 @@ class Reconciler
                         );
 
                         $existing_keys[$new_base_key] = $new_base_type;
+                    }
+
+                    if ($keeps_value && $new_base_type) {
+                        $existing_keys[$new_base_key] = $new_base_type->setProperties(['has_mutations' => false]);
                     }
                 }
 
@@ -2127,6 +2166,32 @@ class Reconciler
             $codebase,
         );
     }
+
+    /**
+     * Whether a property keeps the value it holds
+     */
+    private static function isReadonlyProperty(
+        Codebase $codebase,
+        string $fq_class_name,
+        string $property_name,
+    ): bool {
+        $declaring_property_class = $codebase->properties->getDeclaringClassForProperty(
+            $fq_class_name . '::$' . $property_name,
+            true,
+        );
+
+        if ($declaring_property_class === null) {
+            return false;
+        }
+
+        $property_storage = $codebase->classlike_storage_provider->get($declaring_property_class)
+            ->properties[$property_name] ?? null;
+
+        return $property_storage !== null
+            && $property_storage->readonly
+            && !$property_storage->allow_private_mutation;
+    }
+
     /**
      * Whether `$a->b` is read through `__get()` of each class `$a` can be
      *

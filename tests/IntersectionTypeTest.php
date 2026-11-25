@@ -20,6 +20,23 @@ final class IntersectionTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'iterableIntersectionAcceptsObjectsOfEachType' => [
+                'code' => '<?php
+                    /** @param iterable<int, string>&Countable $x */
+                    function takesCountable($x): void {}
+
+                    /**
+                     * @param ArrayObject<int, string> $a
+                     * @param Iterator<int, string>&Countable $i
+                     */
+                    function f(ArrayObject $a, Iterator&Countable $i): void {
+                        takesCountable($a);
+                        takesCountable($i);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'propertyOfAnObjectIntersectedWithAShapeHasTheTypeOfBoth' => [
                 'code' => '<?php
                     final class V {
@@ -603,6 +620,26 @@ final class IntersectionTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'iterableIntersectionDoesNotAcceptTraversable' => [
+                'code' => '<?php
+                    /** @param iterable&Countable $x */
+                    function takesCountable($x): void {}
+
+                    function f(Traversable $t): void {
+                        takesCountable($t);
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'iterableIntersectionDoesNotAcceptGenerator' => [
+                'code' => '<?php
+                    /** @param iterable&Countable $x */
+                    function takesCountable($x): void {}
+
+                    function f(Generator $g): void {
+                        takesCountable($g);
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
             'objectIntersectedWithTemplateShowsTemplateInParentheses' => [
                 'code' => '<?php
                     interface I {}
