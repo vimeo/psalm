@@ -89,6 +89,9 @@ final class TypeCombination
      */
     public bool $objectlike_same_fallback_key = true;
 
+    /**
+     * Whether a sealed keyed array was combined.
+     */
     public bool $objectlike_some_sealed = false;
 
     /**

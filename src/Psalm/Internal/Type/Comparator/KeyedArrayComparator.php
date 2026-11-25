@@ -51,6 +51,7 @@ final class KeyedArrayComparator
             && $container_type_part->is_list
             && $input_type_part instanceof TKeyedArray
             && !$input_type_part->is_list
+            && !($container_sealed && $input_type_part->fallback_params !== null)
         ) {
             if ($atomic_comparison_result) {
                 $atomic_comparison_result->type_coerced = true;
@@ -78,16 +79,21 @@ final class KeyedArrayComparator
                 continue;
             }
 
-            if ($input_properties[$key]->possibly_undefined
+            $input_property_type = $input_properties[$key];
+            unset($input_properties[$key]);
+
+            if ($input_property_type->possibly_undefined
                 && !$container_property_type->possibly_undefined
             ) {
                 $all_types_contain = false;
 
-                continue;
+                if ($atomic_comparison_result
+                    && $input_type_part instanceof TKeyedArray
+                    && $input_type_part->fallback_params === null
+                ) {
+                    $atomic_comparison_result->mergeFailedPart(new TypeComparisonResult());
+                }
             }
-
-            $input_property_type = $input_properties[$key];
-            unset($input_properties[$key]);
 
             if (!self::isPartContainedBy(
                 $codebase,
@@ -124,6 +130,8 @@ final class KeyedArrayComparator
                 $all_types_contain = false;
                 $atomic_comparison_result?->mergeFailedPart($fallback_comparison);
             }
+
+            $atomic_comparison_result?->addTypeVariableBounds($fallback_comparison);
         }
 
         // check remaining $input_properties against container's fallback_params
