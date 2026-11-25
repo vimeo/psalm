@@ -7,7 +7,7 @@ namespace Psalm\Type\Atomic;
 use Override;
 
 use function is_nan;
-use function var_export;
+use function sprintf;
 
 /**
  * Denotes a floating point value where the exact numeric value is known.
@@ -39,7 +39,8 @@ final class TLiteralFloat extends TFloat
     }
 
     /**
-     * The value in full: the text of a float is cut to the `precision` setting, which can give two floats the same
+     * The value in full, whatever the `precision` and `serialize_precision` settings: a float cut to fewer digits
+     * could read the same as another
      */
     private function getValueString(): string
     {
@@ -49,7 +50,11 @@ final class TLiteralFloat extends TFloat
 
         $value = (string) $this->value;
 
-        return (float) $value === $this->value ? $value : var_export($this->value, true);
+        for ($digits = 15; (float) $value !== $this->value && $digits <= 17; $digits++) {
+            $value = sprintf("%.{$digits}G", $this->value);
+        }
+
+        return $value;
     }
 
     /**

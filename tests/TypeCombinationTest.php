@@ -17,6 +17,8 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TTemplateParamClass;
 
 use function array_reverse;
+use function ini_get;
+use function ini_set;
 
 final class TypeCombinationTest extends TestCase
 {
@@ -79,6 +81,27 @@ final class TypeCombinationTest extends TestCase
             'float(0.3)|float(0.30000000000000004)',
             TypeCombiner::combine([new TLiteralFloat(0.3), new TLiteralFloat(0.1 + 0.2)])->getId(),
         );
+    }
+
+    public function testFloatsAreKeptApartWithALowSerializePrecision(): void
+    {
+        $precision = ini_get('precision');
+        $serialize_precision = ini_get('serialize_precision');
+        ini_set('precision', '14');
+        ini_set('serialize_precision', '3');
+
+        try {
+            $this->assertSame(
+                'float(1.234567890123456)|float(1.234567890123556)',
+                TypeCombiner::combine([
+                    new TLiteralFloat(1.234_567_890_123_456),
+                    new TLiteralFloat(1.234_567_890_123_556),
+                ])->getId(),
+            );
+        } finally {
+            ini_set('precision', (string) $precision);
+            ini_set('serialize_precision', (string) $serialize_precision);
+        }
     }
 
     public function testConditionalsOnTheSameTemplateAreKeptApart(): void
