@@ -202,6 +202,8 @@ final class Methods
                     try {
                         $inheriting_storage = $this->classlike_storage_provider->get($source_fq_class_name);
                     } catch (InvalidArgumentException) {
+                        // a deleted file broke the chain: the called method is still the declaring one
+                        $referenced_method_ids[strtolower((string) $declaring_method_id)] = true;
                         break;
                     }
                 }

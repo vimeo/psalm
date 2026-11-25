@@ -271,8 +271,10 @@ final class FileReferenceTest extends TestCase
      * @param Closure(ClassLikeStorageProvider): mixed $break_the_chain
      */
     #[DataProvider('providerBrokenInheritanceChains')]
-    public function testReferencedMethodsStopWhereTheChainIsBroken(Closure $break_the_chain): void
-    {
+    public function testReferencedMethodsStopWhereTheChainIsBroken(
+        Closure $break_the_chain,
+        ?array $declaring_method_references,
+    ): void {
         $file_path = self::$src_dir_path . 'somefile.php';
         $this->addFile($file_path, '<?php
             class A { public function m(): int { return 1; } }
@@ -289,17 +291,22 @@ final class FileReferenceTest extends TestCase
 
         $this->assertSame(['func caller::f' => true], $references['func c::m'] ?? null);
         $this->assertSame(['func caller::f' => true], $references['func b::m'] ?? null);
+        $this->assertSame($declaring_method_references, $references['func a::m'] ?? null);
     }
 
     /**
-     * @return array<string, array{Closure(ClassLikeStorageProvider): mixed}>
+     * @return array<string, array{Closure(ClassLikeStorageProvider): mixed, array<string, true>|null}>
      */
     public static function providerBrokenInheritanceChains(): array
     {
         return [
-            'storageIsGone' => [static fn(ClassLikeStorageProvider $provider) => $provider->remove('B', '')],
+            'storageIsGone' => [
+                static fn(ClassLikeStorageProvider $provider) => $provider->remove('B', ''),
+                ['func caller::f' => true],
+            ],
             'pointerCycle' => [
                 static fn(ClassLikeStorageProvider $provider) => $provider->get('B')->inherited_method_sources['m'] = 'c',
+                null,
             ],
         ];
     }
