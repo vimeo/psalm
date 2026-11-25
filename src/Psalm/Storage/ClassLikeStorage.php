@@ -289,6 +289,8 @@ final class ClassLikeStorage implements HasAttributesInterface
      */
     public bool $inherits_taint_specialize = false;
 
+    public bool $cannot_change_once_constructed = false;
+
     /**
      * The array property holding the properties of the objects of the class under their names, from
      * `@psalm-taint-property-bag` on the class or a class it extends (see PropertyBagTaints)

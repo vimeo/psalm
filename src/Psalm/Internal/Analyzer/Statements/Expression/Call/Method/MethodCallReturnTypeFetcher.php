@@ -572,6 +572,9 @@ final class MethodCallReturnTypeFetcher
                 $parent_nodes = $receiver_type->parent_nodes;
 
                 $var_node = $var_id !== null
+                    && ($method_id->method_name === "__construct"
+                        || !$codebase->classlike_storage_provider->get($method_id->fq_class_name)
+                            ->cannot_change_once_constructed)
                     ? DataFlowNode::getForAssignment($var_id, new CodeLocation($statements_analyzer, $var_expr))
                     : null;
 

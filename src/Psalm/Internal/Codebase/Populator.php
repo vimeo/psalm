@@ -772,6 +772,7 @@ final class Populator
         // construction rather than those of every object of its class
         if (!$storage->specialize_instance && $this->cannotChangeOnceConstructed($storage)) {
             $storage->specialize_instance = true;
+            $storage->cannot_change_once_constructed = true;
         }
 
         if ($storage->specialize_instance) {

@@ -1353,6 +1353,9 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             && $cased_method_id
             && $storage->specialize_call
             && $storage->location
+            && ($this->function->name->name === "__construct"
+                || $context->self === null
+                || !$codebase->classlike_storage_provider->get($context->self)->cannot_change_once_constructed)
             && isset($context->vars_in_scope['$this'])
             && $context->vars_in_scope['$this']->parent_nodes
         ) {
