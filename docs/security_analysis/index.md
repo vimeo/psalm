@@ -781,6 +781,7 @@ Psalm treats the following built-in inputs as taint sources:
 | **Client-controlled `$_SERVER` entries** | Request headers (`HTTP_*`), URI fields (`REQUEST_URI`, `QUERY_STRING`, `PATH_INFO`, `PHP_SELF`, `argv`, ...), `REQUEST_METHOD`, `CONTENT_TYPE`, HTTP auth credentials, redirected equivalents (`REDIRECT_*`), and any read using a non-literal key (`$_SERVER[$key]`) |
 | **Uploaded files** | Each file's `name`, `type`, and `full_path` in `$_FILES` |
 | **PSR-7 HTTP messages** | Return values of `Psr\Http\Message\ServerRequestInterface`, `ResponseInterface`, `UriInterface`, `StreamInterface`, `UploadedFileInterface`, and implementations (covering framework requests and HTTP client responses such as Guzzle) |
+| **Symfony HTTP client responses** | `getContent()`, `toArray()`, `getHeaders()` and `getInfo()` of `Symfony\Contracts\HttpClient\ResponseInterface`, and the content of the chunks `HttpClientInterface::stream()` yields |
 | **Input streams** | `STDIN`; `fopen()`, `file_get_contents()`, and `file()` on literal `php://input` or `php://stdin`; and stream readers (`fgets()`, `fread()`, `stream_get_contents()`, ...) reading those handles |
 | **Server responses** | `fopen()`, `file_get_contents()`, and `file()` on a URL starting with a literal `http://`, `https://`, `ftp://` or `ftps://` (as `file_get_contents('https://api.example.com/items/' . $id)`), and stream readers reading those handles |
 | **Databases** | What the program stored in a database, where it reads it back (see [Databases](taint_flow.md#databases)) |
@@ -802,8 +803,8 @@ function handle(ServerRequestInterface $request): void {
 }
 ```
 
-Psalm also ships [library stubs](../running_psalm/configuration.md#loadlibrarystubs) (Guzzle, amphp, the MongoDB
-library, ...) and auto-enables the [Symfony and Laravel plugins](../running_psalm/configuration.md#loadlibraryplugins)
+Psalm also ships [library stubs](../running_psalm/configuration.md#loadlibrarystubs) (Guzzle, amphp, Symfony HttpClient,
+the MongoDB library, ...) and auto-enables the [Symfony and Laravel plugins](../running_psalm/configuration.md#loadlibraryplugins)
 to declare their sources and sinks. To add your own, see [custom taint sources](custom_taint_sources.md).
 
 ### Where user input must not go
