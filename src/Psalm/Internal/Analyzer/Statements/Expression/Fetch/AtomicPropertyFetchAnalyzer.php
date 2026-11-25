@@ -537,6 +537,10 @@ final class AtomicPropertyFetchAnalyzer
 
         $property_storage = $declaring_class_storage->properties[$prop_name] ?? null;
 
+        $is_readonly = $property_storage !== null
+            && $property_storage->readonly
+            && !$property_storage->allow_private_mutation;
+
         if ($property_storage !== null) {
             PropertyAccessAnalyzer::checkDeprecation(
                 $statements_analyzer,
@@ -642,7 +646,12 @@ final class AtomicPropertyFetchAnalyzer
             $context,
         );
 
-        if ($class_storage->isMutationFree()) {
+        // a readonly property of an object that can't be replaced keeps its value after a call
+        if ($class_storage->isMutationFree()
+            || ($is_readonly
+                && ($stmt->var instanceof PhpParser\Node\Expr\Variable
+                    || $statements_analyzer->node_data->getType($stmt->var)?->has_mutations === false))
+        ) {
             $class_property_type = $class_property_type->setProperties([
                 'has_mutations' => false,
             ]);

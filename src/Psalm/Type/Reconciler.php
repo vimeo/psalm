@@ -586,6 +586,12 @@ class Reconciler
                 $result_type = $result_type->setProperties(['reference_free' => true]);
             }
 
+            // nor what can change it: a readonly property stays unchanged by calls, unless it may be uninitialized
+            // (a type narrowed by empty() is built from the old one and would inherit the flag)
+            if ($before_adjustment && !$before_adjustment->has_mutations) {
+                $result_type = $result_type->setProperties(['has_mutations' => $has_inverted_isset || $has_empty]);
+            }
+
             $type_changed = !$before_adjustment
                 || !$result_type->equals($before_adjustment)
                 || $result_type->different
@@ -1831,6 +1837,10 @@ class Reconciler
                 if (!isset($existing_keys[$new_base_key])) {
                     $new_base_type = null;
 
+                    // a readonly property of an object that can't be replaced keeps its value after a call
+                    $keeps_value = $divider === '->'
+                        && (!$existing_keys[$base_key]->has_mutations || strpbrk($base_key, '[-:') === false);
+
                     $atomic_types = $existing_keys[$base_key]->getAtomicTypes();
 
                     while ($atomic_types) {
@@ -1840,6 +1850,8 @@ class Reconciler
                             $atomic_types = array_merge($atomic_types, $existing_key_type_part->as->getAtomicTypes());
                             continue;
                         }
+
+                        $part_keeps_value = false;
 
                         if ($existing_key_type_part instanceof TNull) {
                             $class_property_type = Type::getNull();
@@ -1907,11 +1919,19 @@ class Reconciler
                                     if (!$class_property_type) {
                                         return null;
                                     }
+
+                                    $part_keeps_value = self::isReadonlyProperty(
+                                        $codebase,
+                                        $existing_key_type_part->value,
+                                        $property_name,
+                                    );
                                 }
                             }
                         } else {
                             $class_property_type = Type::getMixed();
                         }
+
+                        $keeps_value = $keeps_value && $part_keeps_value;
 
                         $new_base_type = Type::combineUnionTypes(
                             $new_base_type,
@@ -1920,6 +1940,10 @@ class Reconciler
                         );
 
                         $existing_keys[$new_base_key] = $new_base_type;
+                    }
+
+                    if ($keeps_value && $new_base_type) {
+                        $existing_keys[$new_base_key] = $new_base_type->setProperties(['has_mutations' => false]);
                     }
                 }
 
@@ -2025,6 +2049,32 @@ class Reconciler
             $codebase,
         );
     }
+
+    /**
+     * Whether a property keeps the value it holds
+     */
+    private static function isReadonlyProperty(
+        Codebase $codebase,
+        string $fq_class_name,
+        string $property_name,
+    ): bool {
+        $declaring_property_class = $codebase->properties->getDeclaringClassForProperty(
+            $fq_class_name . '::$' . $property_name,
+            true,
+        );
+
+        if ($declaring_property_class === null) {
+            return false;
+        }
+
+        $property_storage = $codebase->classlike_storage_provider->get($declaring_property_class)
+            ->properties[$property_name] ?? null;
+
+        return $property_storage !== null
+            && $property_storage->readonly
+            && !$property_storage->allow_private_mutation;
+    }
+
     /**
      * Whether `$a->b` is read through `__get()` of each class `$a` can be
      *
