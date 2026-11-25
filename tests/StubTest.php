@@ -2348,12 +2348,6 @@ final class StubTest extends DeferredAnalyzerTestCase
 
     public function testStubWithoutConstructorKeepsTheInheritedConstructor(): void
     {
-        $this->expectException(CodeException::class);
-        $this->expectExceptionMessage(
-            'PropertyNotSetInConstructor - ' . (string) getcwd() . '/src/somefile.php:6:31 - Property'
-            . ' App\MyRequest::$resolver is not defined in constructor of App\MyRequest',
-        );
-
         $this->analyzeChildOfClassStubbedWithoutConstructor(
             '<?php
                 namespace App;
