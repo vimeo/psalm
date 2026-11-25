@@ -2628,12 +2628,6 @@ final class TypeParser
         }
 
         if ($extra_params) {
-            if ($is_list && count($extra_params) !== 1) {
-                throw new TypeParseTreeException('Must have exactly one extra field!');
-            }
-            if (!$is_list && count($extra_params) !== 2) {
-                throw new TypeParseTreeException('Must have exactly two extra fields!');
-            }
             $final_extra_params = $is_list ? [Type::getListKey(true)] : [];
             foreach ($extra_params as $child_tree) {
                 $child_type = self::getTypeFromTree(
@@ -2648,6 +2642,11 @@ final class TypeParser
                     $child_type = new Union([$child_type]);
                 }
                 $final_extra_params []= $child_type;
+            }
+            if (count($final_extra_params) !== 2) {
+                throw new TypeParseTreeException(
+                    $is_list ? 'Must have exactly one extra field!' : 'Must have exactly two extra fields!',
+                );
             }
             $extra_params = $final_extra_params;
         }
