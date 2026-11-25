@@ -2459,6 +2459,26 @@ final class ClassTemplateExtendsTest extends TestCase
                     '$b' => 'AContainer<A>',
                 ],
             ],
+            'newStaticWithStaticOnlyAsAShapeKeyOfTheReturnType' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @psalm-consistent-constructor
+                     */
+                    class Container {
+                        /** @param T $t */
+                        public function __construct($t) {}
+
+                        /**
+                         * @param mixed $t
+                         * @return array{static: int}
+                         */
+                        public static function count($t): array {
+                            new static($t);
+                            return ["static" => 1];
+                        }
+                    }',
+            ],
             'templateExtendsSameNameWithStaticCall' => [
                 'code' => '<?php
                     /**
@@ -8240,6 +8260,48 @@ final class ClassTemplateExtendsTest extends TestCase
                         public function getValue()
                         {
                             return $this->t;
+                        }
+                    }',
+                'error_message' => 'UnsafeGenericInstantiation',
+            ],
+            'newStaticWithStaticNestedInTheReturnType' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @psalm-consistent-constructor
+                     */
+                    class Container {
+                        /** @param T $t */
+                        public function __construct($t) {}
+
+                        /**
+                         * @param mixed $t
+                         * @return list<static>
+                         */
+                        public static function many($t): array {
+                            return [new static($t)];
+                        }
+                    }',
+                'error_message' => 'UnsafeGenericInstantiation',
+            ],
+            'newStaticWithStaticInTheBoundOfAValueOfReturnType' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @psalm-consistent-constructor
+                     */
+                    class Container {
+                        /** @param T $t */
+                        public function __construct($t) {}
+
+                        /**
+                         * @template U of array<int, static>
+                         * @param U $u
+                         * @return value-of<U>
+                         */
+                        public static function first(array $u) {
+                            new static(1);
+                            return $u[0];
                         }
                     }',
                 'error_message' => 'UnsafeGenericInstantiation',

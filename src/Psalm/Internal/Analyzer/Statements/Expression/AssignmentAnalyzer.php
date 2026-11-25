@@ -3382,7 +3382,7 @@ final class AssignmentAnalyzer
                     ? $assign_value->expr
                     : $assign_value;
 
-                if ($assign_value_type->getId() === 'bool'
+                if ($assign_value_type->isBool()
                     && $assign_value !== null
                     && ($assigned_condition instanceof PhpParser\Node\Expr\BinaryOp
                         || $assigned_condition instanceof PhpParser\Node\Expr\Instanceof_

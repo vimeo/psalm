@@ -76,11 +76,13 @@ use Psalm\Storage\MethodStorage;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TClassConstant;
+use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 use ReflectionProperty;
@@ -2811,7 +2813,9 @@ final class Codebase
         $completion_items = [];
         foreach ($type->getAtomicTypes() as $atomic_type) {
             if ($atomic_type instanceof TBool) {
-                $bools = (string) $atomic_type === 'bool' ? ['true', 'false'] : [(string) $atomic_type];
+                $bools = $atomic_type instanceof TTrue || $atomic_type instanceof TFalse
+                    ? [(string) $atomic_type]
+                    : ['true', 'false'];
                 foreach ($bools as $property_name) {
                     $completion_items[] = new CompletionItem(
                         $property_name,

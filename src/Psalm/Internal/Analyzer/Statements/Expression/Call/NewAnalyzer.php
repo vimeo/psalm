@@ -36,6 +36,7 @@ use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\Type\TypeVariableBounds;
+use Psalm\Internal\TypeVisitor\ContainsStaticVisitor;
 use Psalm\Issue\AbstractInstantiation;
 use Psalm\Issue\DeprecatedClass;
 use Psalm\Issue\ImpureMethodCall;
@@ -92,7 +93,6 @@ use function in_array;
 use function is_int;
 use function is_string;
 use function ltrim;
-use function preg_match;
 use function reset;
 use function strtolower;
 
@@ -578,9 +578,13 @@ final class NewAnalyzer extends CallAnalyzer
             if ($source instanceof FunctionLikeAnalyzer) {
                 $function_storage = $source->getFunctionLikeStorage($statements_analyzer);
 
-                if ($function_storage->return_type
-                    && preg_match('/\bstatic\b/', $function_storage->return_type->getId())
-                ) {
+                $static_visitor = new ContainsStaticVisitor();
+
+                if ($function_storage->return_type) {
+                    $static_visitor->traverse($function_storage->return_type);
+                }
+
+                if ($static_visitor->matches()) {
                     IssueBuffer::maybeAdd(
                         new UnsafeGenericInstantiation(
                             'Cannot safely instantiate generic class ' . $fq_class_name
