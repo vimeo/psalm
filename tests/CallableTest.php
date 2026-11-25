@@ -4352,6 +4352,24 @@ final class CallableTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'callableObjectIsAcceptedForAnObjectAndForTheSameSignature' => [
+                'code' => '<?php
+                    /** @param object&callable(int): string $o */
+                    function takesIntToString(object $o): void {}
+
+                    /** @param callable-object $o */
+                    function takesAny(object $o): void {}
+
+                    /** @param object&callable(int): string $c */
+                    function f(object $c): void {
+                        takesIntToString($c);
+                        takesAny($c);
+                        echo get_class($c);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
         ];
     }
 
@@ -6249,6 +6267,41 @@ final class CallableTest extends TestCase
                 'error_message' => 'InvalidArgument',
                 'error_levels' => [],
                 'php_version' => '8.1',
+            ],
+            'callableObjectIsNotAnObjectShape' => [
+                'code' => '<?php
+                    /** @param object{foo: int} $o */
+                    function takesShape(object $o): void {
+                        echo $o->foo;
+                    }
+
+                    /** @param callable-object $c */
+                    function f(object $c): void {
+                        takesShape($c);
+                    }',
+                'error_message' => 'ArgumentTypeCoercion',
+            ],
+            'callableObjectWithAnotherSignatureIsNotAccepted' => [
+                'code' => '<?php
+                    /** @param object&callable(int): string $o */
+                    function takesIntToString(object $o): void {}
+
+                    /** @param object&callable(string): int $c */
+                    function f(object $c): void {
+                        takesIntToString($c);
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'callableObjectOfUnknownSignatureIsOnlyCoercedToOneWithASignature' => [
+                'code' => '<?php
+                    /** @param object&callable(int): string $o */
+                    function takesIntToString(object $o): void {}
+
+                    /** @param callable-object $c */
+                    function f(object $c): void {
+                        takesIntToString($c);
+                    }',
+                'error_message' => 'MixedArgumentTypeCoercion',
             ],
         ];
     }
