@@ -155,6 +155,221 @@ final class CallableTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'literalArraysOfAnExistingMethodAreCallableArrays' => [
+                'code' => '<?php
+                    final class Foo {
+                        public static function bar(): void {}
+                        public function inst(): void {}
+                    }
+
+                    final class Magic {
+                        public function __call(string $name, array $args): void {}
+                        public static function __callStatic(string $name, array $args): void {}
+                    }
+
+                    /** @return callable-array{string, string} */
+                    function existingStatic(): array {
+                        return ["Foo", "bar"];
+                    }
+
+                    /** @return callable-array{Foo, string} */
+                    function existingInstance(): array {
+                        return [new Foo(), "inst"];
+                    }
+
+                    /** @return callable-array{string, string} */
+                    function magic(): array {
+                        return ["Magic", "anything"];
+                    }
+
+                    /** @return callable-array{object, string} */
+                    function magicObject(): array {
+                        return [new Magic(), "anything"];
+                    }
+
+                    class Base {
+                        public function __call(string $name, array $args): void {}
+                    }
+
+                    final class Kid extends Base {}
+
+                    /** @return callable-array{object, string} */
+                    function inheritedMagicObject(): array {
+                        return [new Kid(), "anything"];
+                    }
+
+                    /** @param callable-array{object, string} $c */
+                    function takesPair(array $c): void {}
+
+                    takesPair([new Magic(), "anything"]);
+
+                    class Open {}
+
+                    // a subclass of a class that is not final can declare the method
+                    /** @return callable-array{object, string} */
+                    function subclassMayDeclareIt(Open $o): array {
+                        return [$o, "notOnOpen"];
+                    }
+
+                    // a pair that is not a literal is not proven wrong, so it is accepted
+                    /**
+                     * @param array{string, string} $pair
+                     * @return callable-array{string, string}
+                     */
+                    function dynamic(array $pair): array {
+                        return $pair;
+                    }
+
+                    /**
+                     * @method static void pseudoStatic()
+                     * @method void pseudoInst()
+                     */
+                    final class WithMethodTag {}
+
+                    /** @return callable-array{string, string} */
+                    function pseudoStaticMethod(): array {
+                        return ["WithMethodTag", "pseudoStatic"];
+                    }
+
+                    /** @return callable-array{object, string} */
+                    function pseudoInstanceMethod(): array {
+                        return [new WithMethodTag(), "pseudoInst"];
+                    }
+
+                    final class Target {
+                        public function fromMixin(): void {}
+                    }
+
+                    /** @mixin Target */
+                    final class HasMixin {}
+
+                    /** @return callable-array{object, string} */
+                    function mixinMethod(): array {
+                        return [new HasMixin(), "fromMixin"];
+                    }
+
+                    /** @mixin Target */
+                    class ParentWithMixin {}
+
+                    final class KidOfMixin extends ParentWithMixin {}
+
+                    /** @return callable-array{object, string} */
+                    function inheritedMixinMethod(): array {
+                        return [new KidOfMixin(), "fromMixin"];
+                    }
+
+                    /** @mixin Target */
+                    trait TraitWithMixin {}
+
+                    final class UsesTraitWithMixin {
+                        use TraitWithMixin;
+                    }
+
+                    /** @return callable-array{object, string} */
+                    function mixinMethodOfATrait(): array {
+                        return [new UsesTraitWithMixin(), "fromMixin"];
+                    }
+
+                    enum MagicEnum {
+                        case A;
+                        public static function __callStatic(string $n, array $a): mixed { return 1; }
+                    }
+
+                    /** @return callable-array{string, string} */
+                    function magicOfAnEnum(): array {
+                        return ["MagicEnum", "anything"];
+                    }
+
+                    interface MagicInterface {
+                        public static function __callStatic(string $n, array $a): mixed;
+                    }
+
+                    /** @return callable-array{string, string} */
+                    function magicOfAnInterface(): array {
+                        return ["MagicInterface", "anything"];
+                    }
+
+                    /** @return callable-array{string, string} */
+                    function magicOfALeadingBackslash(): array {
+                        return ["\Magic", "anything"];
+                    }
+
+                    class ParentOfPm {
+                        public function pm(): void {}
+                    }
+
+                    final class KidOfPm extends ParentOfPm {}
+
+                    /** @return callable-array{string, string} */
+                    function methodNameWithAScope(): array {
+                        return ["KidOfPm", "parent::pm"];
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'callableOfATemplatedReturnMayBeAClosure' => [
+                'code' => '<?php
+                    /**
+                     * @template TReturn
+                     * @param (callable(mixed...): TReturn) $callable
+                     */
+                    function parallel(callable $callable): bool
+                    {
+                        if ($callable instanceof \\Closure) {
+                            return true;
+                        }
+
+                        return false;
+                    }',
+            ],
+            'callableOfThisInATraitIsTheObjectTheMethodIsCalledOn' => [
+                'code' => '<?php
+                    final class Str {
+                        /** @param callable(static): void $callback */
+                        public function __construct(?callable $callback = null) {}
+
+                        /**
+                         * @template TReturn
+                         * @param callable($this): TReturn $callback
+                         * @return TReturn
+                         */
+                        public function when(callable $callback) {
+                            return $callback($this);
+                        }
+
+                        /** @param callable(static): void $callback */
+                        public static function make(callable $callback): void {
+                            $callback(new Str());
+                        }
+
+                        public function beforeLast(string $s): self {
+                            return $this;
+                        }
+                    }
+
+                    trait CompilesEchos {
+                        public function compile(): void {
+                            (new Str())->when(function ($str) {
+                                return $str->beforeLast(";");
+                            });
+
+                            Str::make(function ($str): void {
+                                $str->beforeLast(";");
+                            });
+
+                            new Str(function ($str): void {
+                                $str->beforeLast(";");
+                            });
+                        }
+                    }
+
+                    final class Compiler {
+                        use CompilesEchos;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingClosureReturnType'],
+            ],
             'callableArrayOnAnIntersectionWithATemplate' => [
                 'code' => '<?php
                     interface Foo {
@@ -255,6 +470,79 @@ final class CallableTest extends TestCase
                             return \\Array_Map([$this, "twice"], [1, 2]);
                         }
                     }',
+            ],
+            'closureWithATypedParamIsACallableOfNever' => [
+                'code' => '<?php
+                    /** @param callable(never): string $callback */
+                    function takesCallable(callable $callback): void {}
+
+                    takesCallable(function (string $value): string {
+                        return strtoupper($value);
+                    });',
+            ],
+            'typedClosureParamsOfAMatchOfAResultUnion' => [
+                'code' => '<?php
+                    /**
+                     * @template TValue
+                     * @template TError
+                     */
+                    interface Result {
+                        /**
+                         * @template TReturn
+                         * @param callable(TValue): TReturn $ok_fn
+                         * @param callable(TError): TReturn $err_fn
+                         * @return TReturn
+                         */
+                        public function match(callable $ok_fn, callable $err_fn): mixed;
+                    }
+
+                    /**
+                     * @template TValue
+                     * @implements Result<TValue, never>
+                     */
+                    final class Ok implements Result {
+                        /** @param TValue $value */
+                        public function __construct(private mixed $value) {}
+
+                        public function match(callable $ok_fn, callable $err_fn): mixed {
+                            return $ok_fn($this->value);
+                        }
+                    }
+
+                    /**
+                     * @template TError
+                     * @implements Result<never, TError>
+                     */
+                    final class Err implements Result {
+                        /** @param TError $error */
+                        public function __construct(private mixed $error) {}
+
+                        public function match(callable $ok_fn, callable $err_fn): mixed {
+                            return $err_fn($this->error);
+                        }
+                    }
+
+                    /** @return Ok<int>|Err<string> */
+                    function compute(bool $success): Ok|Err {
+                        return $success ? new Ok(1) : new Err("failure");
+                    }
+
+                    function withTypedParameters(bool $success): string {
+                        return compute($success)->match(
+                            fn (int $value): string => (string) $value,
+                            fn (string $error): string => $error,
+                        );
+                    }
+
+                    function withAnUntypedOkParameter(bool $success): string {
+                        return compute($success)->match(
+                            fn ($value): string => (string) $value,
+                            fn (string $error): string => $error,
+                        );
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'callableOfThisTakesTheTemplatesOfTheObject' => [
                 'code' => '<?php
@@ -659,7 +947,7 @@ final class CallableTest extends TestCase
                      * @param A $a
                      * @return list{A, B}
                      */
-                    function withUnbound(mixed $a): array { return [$a, null]; }
+                    function withUnbound(mixed $a): array { throw new LogicException(); }
                     $with_unbound = withUnbound(...);
                     $unbound = $with_unbound(1);',
                 'assertions' => [
@@ -4227,6 +4515,76 @@ final class CallableTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'literalArrayOfAnUnknownClassIsNotACallableArray' => [
+                'code' => '<?php
+                    /** @return callable-array{string, string} */
+                    function ret(): array {
+                        return ["a", "hello"];
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
+            'literalArrayOfAMissingMethodIsNotACallableArray' => [
+                'code' => '<?php
+                    final class Foo {
+                        public static function bar(): void {}
+                    }
+
+                    /** @return callable-array{string, string} */
+                    function ret(): array {
+                        return ["Foo", "nope"];
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
+            'literalArrayOfAnObjectOfAFinalClassWithoutTheMethodIsNotACallableArray' => [
+                'code' => '<?php
+                    final class Foo {
+                        public function bar(): void {}
+                    }
+
+                    /** @return callable-array{object, string} */
+                    function ret(): array {
+                        return [new Foo(), "nope"];
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
+            'callableOfStaticOfTheClassUsingATraitIsNotSharedWithOtherUsers' => [
+                'code' => '<?php
+                    trait Filters {
+                        public function run(): void {
+                            (new self())->where(function ($query): void {
+                                $query->extra();
+                            });
+                        }
+                    }
+
+                    final class EloquentBuilder {
+                        use Filters;
+
+                        /**
+                         * @param (Closure(static): mixed)|string $column
+                         * @return $this
+                         */
+                        public function where($column) {
+                            return $this;
+                        }
+
+                        public function extra(): void {}
+                    }
+
+                    final class QueryBuilder {
+                        use Filters;
+
+                        /**
+                         * @param Closure|string $column
+                         * @return $this
+                         */
+                        public function where($column) {
+                            return $this;
+                        }
+                    }',
+                'error_message' => 'Method QueryBuilder::extra does not exist',
+                'error_levels' => ['InvalidArgument'],
+            ],
             'nonPublicCallbackOfANativeFunctionWrittenInAnotherCaseFromAnotherClass' => [
                 'code' => '<?php
                     final class A {
@@ -5657,6 +6015,33 @@ final class CallableTest extends TestCase
 
                     c("hii");',
                 'error_message' => 'InvalidArgument',
+            ],
+            'nonFalsyStringIsNotCallableString' => [
+                'code' => '<?php
+                    /**
+                     * @param callable-string $c
+                     */
+                    function takesCallableString(string $c): void {}
+
+                    /**
+                     * @param non-falsy-string $s
+                     */
+                    function f(string $s): void {
+                        takesCallableString($s);
+                    }',
+                'error_message' => 'ArgumentTypeCoercion',
+            ],
+            'getTypeIsNotCallableString' => [
+                'code' => '<?php
+                    /**
+                     * @param callable-string $c
+                     */
+                    function takesCallableString(string $c): void {}
+
+                    function f(int $x): void {
+                        takesCallableString(gettype($x));
+                    }',
+                'error_message' => 'ArgumentTypeCoercion',
             ],
             'mismatchParamTypeFromDocblock' => [
                 'code' => '<?php

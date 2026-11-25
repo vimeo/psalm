@@ -36,6 +36,7 @@ use function php_uname;
 use function sort;
 use function sprintf;
 use function str_ends_with;
+use function strlen;
 use function usort;
 
 use const JSON_INVALID_UTF8_SUBSTITUTE;
@@ -48,7 +49,7 @@ use const PHP_VERSION;
 use const STDERR;
 
 /**
- * Prints the `--debug-performance` summary and writes its dump
+ * Prints the `--debug-performance` summary and writes its performance profile
  *
  * @internal
  * @psalm-import-type Measurements from Collector
@@ -63,8 +64,8 @@ final class DumpWriter
 {
     private const SUMMARY_ROWS = 10;
 
-    /** A static page that reads the dump in the browser and sends it nowhere */
-    private const VIEWER = 'https://psalm.dev/perf/';
+    /** A static page that reads the profile in the browser and sends it nowhere */
+    private const VIEWER = 'https://psalm.dev/profile/';
 
     /** A statement or function-like that took less of its own time is left out of the summary */
     private const MIN_ROW_US = 10_000;
@@ -110,7 +111,7 @@ final class DumpWriter
 
         if ($failure === null) {
             $project_analyzer->progress->write(
-                'Performance dump written to ' . $path . ', open it in ' . self::VIEWER . PHP_EOL,
+                'Performance profile written to ' . $path . ', open it in ' . self::VIEWER . PHP_EOL,
             );
         } else {
             // not through the progress: that one says nothing with --no-progress
@@ -139,34 +140,41 @@ final class DumpWriter
             ];
         }
 
+        // stages, each followed by its steps that took at least 1 % of the run, all in the same columns
+        $rows = [];
         foreach ($stages as $name => $stage) {
-            $share = $totals['wall_us'] > 0 ? 100.0 * (float) $stage['wall_us'] / (float) $totals['wall_us'] : 0.0;
-            $out .= sprintf(
-                "  %-18s %9s wall %9s cpu %5.1f%%\n",
-                $name,
-                self::seconds($stage['wall_us']),
-                self::seconds($stage['cpu_us']),
-                $share,
-            );
+            $rows[] = ['  ' . $name, $stage['wall_us'], $stage['cpu_us']];
 
-            // what a stage did in steps that took at least 1 % of the run
             $steps = [];
             foreach ($measurements['steps'] as $step) {
                 if ($step['stage'] === $name) {
-                    $steps[$step['name']] = ($steps[$step['name']] ?? 0) + $step['wall_us'];
+                    $steps[$step['name']] = [
+                        'wall_us' => ($steps[$step['name']]['wall_us'] ?? 0) + $step['wall_us'],
+                        'cpu_us' => ($steps[$step['name']]['cpu_us'] ?? 0) + $step['cpu_us'],
+                    ];
                 }
             }
 
-            foreach ($steps as $step_name => $wall_us) {
-                if ($totals['wall_us'] > 0 && 100 * $wall_us >= $totals['wall_us']) {
-                    $out .= sprintf(
-                        "    %-20s %9s wall %5.1f%%\n",
-                        $step_name,
-                        self::seconds($wall_us),
-                        100.0 * (float) $wall_us / (float) $totals['wall_us'],
-                    );
+            foreach ($steps as $step_name => $step) {
+                if ($totals['wall_us'] > 0 && 100 * $step['wall_us'] >= $totals['wall_us']) {
+                    $rows[] = ['    ' . $step_name, $step['wall_us'], $step['cpu_us']];
                 }
             }
+        }
+
+        $name_width = 20;
+        foreach ($rows as [$label]) {
+            $name_width = max($name_width, strlen($label) + 1);
+        }
+
+        foreach ($rows as [$label, $wall_us, $cpu_us]) {
+            $out .= sprintf(
+                "%-{$name_width}s %9s wall %9s cpu %5.1f%%\n",
+                $label,
+                self::seconds($wall_us),
+                self::seconds($cpu_us),
+                $totals['wall_us'] > 0 ? 100.0 * (float) $wall_us / (float) $totals['wall_us'] : 0.0,
+            );
         }
 
         $out .= sprintf(
@@ -308,8 +316,8 @@ final class DumpWriter
 
         if ($path === null) {
             return $out . "\n"
-                . 'Run with --debug-performance=PATH to write all of it to a JSON file, and open that in '
-                . self::VIEWER . "\n\n";
+                . 'Run with --debug-performance=PATH to write all of it to a performance profile (a JSON file), '
+                . 'and open that in ' . self::VIEWER . "\n\n";
         }
 
         return $out . "\n";
@@ -335,7 +343,7 @@ final class DumpWriter
             'opcache' => $opcache !== false,
             'jit' => $opcache !== false && ($opcache['jit']['on'] ?? false) === true,
             'zend_assertions' => (int) ini_get('zend.assertions'),
-            'memory_limit' => (string) ini_get('memory_limit'),
+            'memory_limit' => ini_get('memory_limit'),
             'extensions' => $extensions,
             'cpu_count' => max(1, (new CpuCoreCounter())->getCountWithFallback(1)),
             'ci' => CliUtils::runningInCI(),
@@ -395,7 +403,7 @@ final class DumpWriter
 
     /**
      * @param array<string, mixed> $document
-     * @return ?string why the dump could not be written
+     * @return ?string why the profile could not be written
      */
     private static function write(string $path, array $document): ?string
     {
@@ -410,7 +418,7 @@ final class DumpWriter
         if ((!is_dir($folder) && !@mkdir($folder, 0777, true) && !is_dir($folder))
             || @file_put_contents($path, $json) === false
         ) {
-            return 'Could not write the performance dump ' . $path
+            return 'Could not write the performance profile ' . $path
                 . ': ' . (error_get_last()['message'] ?? 'unknown error');
         }
 

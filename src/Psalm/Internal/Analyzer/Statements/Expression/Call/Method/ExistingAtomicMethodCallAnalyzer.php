@@ -14,6 +14,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentMapPopulator;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\CallPurityResolver;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\FunctionCallAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\OverloadSelector;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
@@ -241,12 +242,17 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
 
         // a template (or intersection) receiver keeps `static` as declared, which the return type expansion resolves;
         // so does one the method is not of (a `@mixin` user), as the arguments are checked with the method's class,
-        // and a call in a trait, whose closures every class using it shares
+        // and the class using a trait the call is in, whose closures every class using it shares
         if ($static_type instanceof TNamedObject
             && !$static_type->extra_types
             && (strtolower($static_type->value) === strtolower($method_id->fq_class_name)
                 || $codebase->classExtendsOrImplements($static_type->value, $method_id->fq_class_name))
-            && !self::isInTrait($statements_analyzer)
+            && !self::isStaticOfTraitUser(
+                $statements_analyzer,
+                $context,
+                $static_type->value,
+                $static_type->is_static,
+            )
         ) {
             $template_result->static_class_type = $static_type;
             $template_result->static_class_is_final = $codebase->classlike_storage_provider->get($static_type->value)
@@ -264,6 +270,19 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
 
         $is_first_class_callable = $stmt->isFirstClassCallable();
 
+        $overload = null;
+
+        if ($method_storage && $method_storage->overloads !== [] && !$is_first_class_callable) {
+            $overload = OverloadSelector::selectOrReal(
+                $statements_analyzer,
+                $codebase,
+                $args,
+                $context,
+                $method_storage->overloads,
+                $method_storage,
+            );
+        }
+
         if (!$is_first_class_callable && self::checkMethodArgs(
             $method_id,
             $args,
@@ -271,6 +290,8 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
             $context,
             new CodeLocation($source, $stmt_name),
             $statements_analyzer,
+            false,
+            $overload,
         ) === false) {
             return Type::getMixed();
         }
@@ -289,6 +310,7 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
             $args,
             $result,
             $template_result,
+            $overload,
         );
 
         if ($method_storage?->has_yield && !$is_first_class_callable) {
@@ -360,7 +382,7 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                 }
             }
 
-            if ($method_storage->self_out_type && $lhs_var_id) {
+            if ($method_storage->self_out_type && ($lhs_var_id !== null || $method_storage->returns_this)) {
                 $self_out_candidate = $method_storage->self_out_type;
 
                 if ($template_result->lower_bounds) {
@@ -399,7 +421,14 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                     true,
                 );
 
-                $context->vars_in_scope[$lhs_var_id] = $self_out_candidate;
+                if ($lhs_var_id !== null) {
+                    $context->vars_in_scope[$lhs_var_id] = $self_out_candidate;
+                }
+
+                // the object returned is the one the method changed
+                if ($method_storage->returns_this) {
+                    $return_type_candidate = $self_out_candidate->setParentNodes($return_type_candidate->parent_nodes);
+                }
             }
 
             if (!$context->collect_initializations) {
@@ -648,6 +677,7 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                             $pseudo_set_type,
                             true,
                             true,
+                            coerced_parts_match: true,
                         )) {
                             IssueBuffer::maybeAdd(
                                 new PossiblyInvalidPropertyAssignmentValue(

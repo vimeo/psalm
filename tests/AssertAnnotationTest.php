@@ -294,6 +294,142 @@ final class AssertAnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'assertIterableIntersectionOnAnIterable' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-assert iterable&Countable $x
+                     */
+                    function assertCountable(mixed $x): void {}
+
+                    function f(iterable $x): int {
+                        assertCountable($x);
+                        return count($x);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'assertIterableIntersectionKeepsTheIntersectedTypes' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-assert iterable&Countable $x
+                     */
+                    function assertCountable(mixed $x): void {}
+
+                    function m(): mixed { return 1; }
+                    function t(): Traversable { return new ArrayIterator([]); }
+                    function o(): object { return new ArrayObject([]); }
+
+                    $m = m();
+                    assertCountable($m);
+                    $t = t();
+                    assertCountable($t);
+                    $o = o();
+                    assertCountable($o);',
+                'assertions' => [
+                    '$m' => 'iterable<mixed, mixed>&Countable',
+                    '$t' => 'Traversable[impure]<mixed, mixed>&Countable',
+                    '$o' => 'Traversable&Countable',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+                'php_version' => '8.0',
+            ],
+            'negatedIterableIntersectionKeepsWhatMayNotBeCountable' => [
+                'code' => '<?php
+                    /** @psalm-assert-if-true iterable&Countable $x */
+                    function isCountable(mixed $x): bool {
+                        return is_iterable($x) && $x instanceof Countable;
+                    }
+
+                    function t(): Traversable { return new ArrayIterator([]); }
+                    /** @return iterable|int */
+                    function i() { return 1; }
+
+                    $t = t();
+                    if (isCountable($t)) {
+                        throw new Exception();
+                    }
+                    $i = i();
+                    if (isCountable($i)) {
+                        throw new Exception();
+                    }',
+                'assertions' => [
+                    '$t' => 'Traversable[impure]<mixed, mixed>',
+                    '$i' => 'int|iterable<mixed, mixed>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'negatedIterableIntersectionKeepsAnArray' => [
+                'code' => '<?php
+                    /** @psalm-assert-if-true iterable&Countable $x */
+                    function isCountable(mixed $x): bool {
+                        return is_iterable($x) && $x instanceof Countable;
+                    }
+
+                    /** @return array<int> */
+                    function a(): array { return []; }
+
+                    $a = a();
+                    if (isCountable($a)) {
+                        throw new Exception();
+                    }',
+                'assertions' => [
+                    '$a' => 'array<array-key, int>',
+                ],
+                'ignored_issues' => ['TypeDoesNotContainType'],
+                'php_version' => '8.0',
+            ],
+            'assertIterableIntersectionOnABoundedTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-assert iterable&Countable $x
+                     */
+                    function assertCountable(mixed $x): void {}
+
+                    /**
+                     * @template T of iterable<int, string>
+                     * @param T $x
+                     */
+                    function f($x): int {
+                        assertCountable($x);
+                        return count($x);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'assertionOnAPropertyIsForgottenAfterAMethodWritingIt' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-template ExpectedType
+                     * @psalm-param ExpectedType $expected
+                     * @psalm-assert =ExpectedType $actual
+                     */
+                    function assertSame(mixed $expected, mixed $actual): void {
+                        if ($expected !== $actual) {
+                            throw new \\Exception();
+                        }
+                    }
+
+                    final class Container {
+                        /** @var list<int> */
+                        public array $prop = [];
+
+                        public function add(int $number): void {
+                            $this->prop[] = $number;
+                        }
+                    }
+
+                    $container = new Container();
+                    $container->add(1);
+                    assertSame([1], $container->prop);
+                    $container->add(2);
+                    assertSame([1, 2], $container->prop);',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'assertIfTrueOnThisOfANullsafeMethodCallLeavesTheNullCheckOfTheReceiverUseful' => [
                 'code' => '<?php
                     interface Stamp {}
@@ -5813,6 +5949,35 @@ final class AssertAnnotationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'assertIterableIntersectionOnAnArray' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-assert iterable&Countable $x
+                     */
+                    function assertCountable(mixed $x): void {}
+
+                    /** @param array<int> $x */
+                    function f(array $x): void {
+                        assertCountable($x);
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'assertIterableIntersectionOnAnIntersection' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-assert iterable&Countable $x
+                     */
+                    function assertCountable(mixed $x): void {}
+
+                    function f(Countable&Traversable $x): void {
+                        assertCountable($x);
+                    }',
+                'error_message' => 'RedundantCondition',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'assertIfFalseOfANullsafeMethodCallDoesNotHoldWhereItIsFalsy' => [
                 'code' => '<?php
                     final class M {

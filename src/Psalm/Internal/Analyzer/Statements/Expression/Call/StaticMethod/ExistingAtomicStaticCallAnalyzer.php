@@ -19,6 +19,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallPurityAn
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallReturnTypeFetcher;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\NewAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\NoDiscardAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\OverloadSelector;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\StaticCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\GlobalStateAnalyzer;
@@ -38,6 +39,7 @@ use Psalm\Issue\UnusedMethodCall;
 use Psalm\IssueBuffer;
 use Psalm\Storage\Capabilities;
 use Psalm\Storage\ClassLikeStorage;
+use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic;
@@ -168,6 +170,21 @@ final class ExistingAtomicStaticCallAnalyzer
             $template_result->lower_bounds += $inferred_template_result->lower_bounds;
         }
 
+        $method_storage = $codebase->methods->getUserMethodStorage($method_id);
+
+        $overload = null;
+
+        if ($method_storage && $method_storage->overloads !== [] && !$stmt->isFirstClassCallable()) {
+            $overload = OverloadSelector::selectOrReal(
+                $statements_analyzer,
+                $codebase,
+                $args,
+                $context,
+                $method_storage->overloads,
+                $method_storage,
+            );
+        }
+
         // a static call naming a class does not forward the late static binding: `static` is that class
         $static_is_called_class = $stmt->class instanceof PhpParser\Node\Name
             && !in_array(strtolower($stmt->class->getFirst()), ['self', 'static', 'parent'], true)
@@ -175,9 +192,8 @@ final class ExistingAtomicStaticCallAnalyzer
                 ?->is_static;
 
         // the arguments, the hints of closure params and the conditionals of the return type are read with `static` of
-        // the call only when it is that class: forwarding calls and template classes keep `static` as declared, and so
-        // does a call in a trait, whose closures every class using it shares
-        if ($static_is_called_class && !CallAnalyzer::isInTrait($statements_analyzer)) {
+        // the call only when it is that class: forwarding calls and template classes keep `static` as declared
+        if ($static_is_called_class) {
             $template_result->static_class_type = $method_id->fq_class_name;
             $template_result->static_class_is_final = true;
         }
@@ -190,6 +206,7 @@ final class ExistingAtomicStaticCallAnalyzer
             new CodeLocation($statements_analyzer->getSource(), $stmt),
             $statements_analyzer,
             $static_is_called_class,
+            $overload,
         ) === false) {
             return;
         }
@@ -281,10 +298,9 @@ final class ExistingAtomicStaticCallAnalyzer
                 $context,
                 $fq_class_name,
                 $class_storage,
+                $overload,
             );
         }
-
-        $method_storage = $codebase->methods->getUserMethodStorage($method_id);
 
         if ($method_storage) {
             if ($method_storage->abstract
@@ -317,6 +333,7 @@ final class ExistingAtomicStaticCallAnalyzer
                 $stmt,
                 $method_id,
                 $method_storage,
+                $template_result,
             );
 
             // what the purity templates of the method are bound to here
@@ -627,6 +644,7 @@ final class ExistingAtomicStaticCallAnalyzer
         Context $context,
         string $fq_class_name,
         ClassLikeStorage $class_storage,
+        ?FunctionLikeStorage $overload = null,
     ): ?Union {
         $return_type_candidate = $codebase->methods->getMethodReturnType(
             $codebase,
@@ -635,6 +653,8 @@ final class ExistingAtomicStaticCallAnalyzer
             $statements_analyzer,
             $args,
         );
+
+        $return_type_candidate = $overload->return_type ?? $return_type_candidate;
 
         if ($return_type_candidate) {
             [$static_type, $final] = self::getStaticClassType(

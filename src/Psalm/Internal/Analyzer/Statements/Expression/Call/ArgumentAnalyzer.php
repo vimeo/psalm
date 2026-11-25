@@ -49,6 +49,7 @@ use Psalm\Issue\PositionalArgumentNotAllowed;
 use Psalm\Issue\PossiblyInvalidArgument;
 use Psalm\IssueBuffer;
 use Psalm\Node\VirtualArg;
+use Psalm\Plugin\EventHandler\Event\AddRemoveCallTaintsEvent;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\FunctionLikeStorage;
@@ -234,6 +235,21 @@ final class ArgumentAnalyzer
                         ),
                         $statements_analyzer->getSuppressedIssues(),
                     );
+                }
+
+                // what the param's templates stand for is not known either: they are bound to `mixed`, not left
+                // unbound (which would make them `never`), wherever they appear in the param (`list<T>`)
+                if ($template_result && $param_type) {
+                    foreach ($param_type->getTemplateTypes() as $template_type) {
+                        if (isset($template_result->template_types[$template_type->param_name]
+                            [$template_type->defining_class])
+                            && !isset($class_generic_params[$template_type->param_name]
+                                [$template_type->defining_class])
+                        ) {
+                            $template_result->lower_bounds[$template_type->param_name][$template_type->defining_class][]
+                                = new TemplateBound(Type::getMixed(), 1, $argument_offset);
+                        }
+                    }
                 }
             }
 
@@ -858,9 +874,19 @@ final class ArgumentAnalyzer
                 continue;
             }
 
+            // the template a conditional return type reads a parameter through stands for the argument itself:
+            // an argument that does not fit the parameter is still what the condition is about
+            $is_param_itself = str_starts_with($template_type->param_name, 'TGeneratedFromParam')
+                && $declared_param_type->isSingle()
+                && ($declared_atomic = $declared_param_type->getSingleAtomic()) instanceof TTemplateParam
+                && $declared_atomic->param_name === $template_type->param_name
+                && !$arg_type->hasMixed();
+
             $fallback_bound = new TemplateBound(
-                $template_result->upper_bounds[$template_type->param_name][$template_type->defining_class]->type
-                    ?? $template_type->as,
+                $is_param_itself
+                    ? $arg_type
+                    : $template_result->upper_bounds[$template_type->param_name][$template_type->defining_class]->type
+                        ?? $template_type->as,
             );
             $fallback_bound->from_constraint_fallback = true;
             $fallback_bound->from_template_free_argument
@@ -2035,6 +2061,48 @@ final class ArgumentAnalyzer
     }
 
     /**
+     * What the handlers add to and remove from an argument, and what it can't carry: the HTML of what code running
+     * from the command line prints, and, where taint analysis runs, what the call taint handlers remove and what its
+     * type can't hold
+     *
+     * @return array{int, int}
+     */
+    private static function getArgumentTaints(
+        StatementsAnalyzer $statements_analyzer,
+        Context $context,
+        PhpParser\Node\Expr $expr,
+        string $cased_method_id,
+        int $argument_offset,
+        Union $input_type,
+        CodeLocation $arg_location,
+    ): array {
+        $codebase = $statements_analyzer->getCodebase();
+        $dispatcher = $codebase->config->eventDispatcher;
+
+        $event = new AddRemoveTaintsEvent($expr, $context, $statements_analyzer, $codebase);
+        $added_taints = $dispatcher->dispatchAddTaints($event);
+        $removed_taints = $dispatcher->dispatchRemoveTaints($event);
+
+        // printed by code only running from the command line: to a terminal
+        if ($expr->getAttribute(CliOutput::PRINTED_ATTRIBUTE) === true) {
+            $removed_taints |= CliOutput::HTML_TAINTS;
+        }
+
+        if (!$statements_analyzer->getTaintFlowGraphWithSuppressed()) {
+            return [$added_taints, $removed_taints];
+        }
+
+        [$call_added_taints, $call_removed_taints] = $dispatcher->dispatchAddRemoveCallTaints(
+            new AddRemoveCallTaintsEvent($codebase, $cased_method_id, $argument_offset, $input_type, $arg_location),
+        );
+
+        return [
+            $added_taints | $call_added_taints,
+            $removed_taints | $call_removed_taints | $input_type->getTaintsToRemove($codebase->getInputTaints()),
+        ];
+    }
+
+    /**
      * @psalm-pure
      */
     private static function hasStringableObject(Union $type): bool
@@ -2107,17 +2175,15 @@ final class ArgumentAnalyzer
         }
         $taint_flow_graph = $statements_analyzer->getTaintFlowGraphWithSuppressed();
 
-        $removed_taints = $taint_flow_graph ? $input_type->getTaintsToRemove($codebase->getInputTaints()) : 0;
-
-        $event = new AddRemoveTaintsEvent($expr, $context, $statements_analyzer, $codebase);
-
-        $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
-        $removed_taints |= $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
-
-        // printed by code only running from the command line: to a terminal
-        if ($expr->getAttribute(CliOutput::PRINTED_ATTRIBUTE) === true) {
-            $removed_taints |= CliOutput::HTML_TAINTS;
-        }
+        [$added_taints, $removed_taints] = self::getArgumentTaints(
+            $statements_analyzer,
+            $context,
+            $expr,
+            $cased_method_id,
+            $argument_offset,
+            $input_type,
+            $arg_location,
+        );
 
         $callable_kind = $in_call_map ? 'builtin' : ($method_id ? 'magic-method' : 'callable-object');
 

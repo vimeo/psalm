@@ -276,6 +276,242 @@ final class PropertyTypeTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
+    public function testReadonlyPropertySeenAsUninitializedIsForgottenAfterCall(): void
+    {
+        Config::getInstance()->remember_property_assignments_after_call = false;
+        Config::getInstance()->setCustomErrorLevel('RedundantPropertyInitializationCheck', Config::REPORT_SUPPRESS);
+        Config::getInstance()->setCustomErrorLevel('InaccessibleProperty', Config::REPORT_SUPPRESS);
+        Config::getInstance()->setCustomErrorLevel('MissingConstructor', Config::REPORT_SUPPRESS);
+        Config::getInstance()->setCustomErrorLevel('RiskyTruthyFalsyComparison', Config::REPORT_SUPPRESS);
+        $this->project_analyzer->setPhpVersion('8.1', 'tests');
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                final class L {
+                    public readonly int $x;
+                    public readonly ?string $s;
+
+                    public function get(): int {
+                        if (!isset($this->x)) {
+                            $this->init();
+                            return $this->x;
+                        }
+                        return $this->x;
+                    }
+
+                    public function str(): string {
+                        if (!isset($this->s)) {
+                            $this->init();
+                            $s = $this->s;
+                            return $s ?? "";
+                        }
+                        return $this->s;
+                    }
+
+                    public function viaVariable(L $l): int {
+                        if (!isset($l->x)) {
+                            $l->get();
+                            return $l->x;
+                        }
+                        return $l->x;
+                    }
+
+                    public function emptyCheck(): string {
+                        if (empty($this->s)) {
+                            $this->init();
+                            if ($this->s === "a") {
+                                return "initialized";
+                            }
+                        }
+                        return "";
+                    }
+
+                    public function notEmptyElse(): string {
+                        if (!empty($this->s)) {
+                            return $this->s;
+                        }
+                        $this->init();
+                        if ($this->s === "a") {
+                            return "initialized";
+                        }
+                        return "";
+                    }
+
+                    private function init(): void {
+                        $this->x = 5;
+                        $this->s = "a";
+                    }
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testRememberReadonlyPropertiesAfterCall(): void
+    {
+        Config::getInstance()->remember_property_assignments_after_call = false;
+        $this->project_analyzer->setPhpVersion('8.1', 'tests');
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                final class Box {
+                    public int $v = 0;
+                }
+
+                function poke(Box $b): void {
+                    $b->v = 1;
+                }
+
+                final class Num {
+                    public function __construct(public readonly ?int $n) {}
+                }
+
+                final class Holder {
+                    public function __construct(public readonly ?int $own, public readonly Num $num) {}
+
+                    public function own(Box $b): int {
+                        if ($this->own === null) {
+                            return 0;
+                        }
+                        poke($b);
+                        return $this->own;
+                    }
+
+                    public function nested(Box $b): int {
+                        if ($this->num->n === null) {
+                            return 0;
+                        }
+                        poke($b);
+                        return $this->num->n;
+                    }
+                }
+
+                function param(Num $num, Box $b): int {
+                    if ($num->n === null) {
+                        return 0;
+                    }
+                    poke($b);
+                    return $num->n;
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testForgetReadonlyPropertyOfAWritablePropertyAfterCall(): void
+    {
+        Config::getInstance()->remember_property_assignments_after_call = false;
+        $this->project_analyzer->setPhpVersion('8.1', 'tests');
+
+        $this->expectExceptionMessage('NullableReturnStatement - somefile.php:22:32');
+        $this->expectException(CodeException::class);
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                final class Box {
+                    public int $v = 0;
+                }
+
+                function poke(Box $b): void {
+                    $b->v = 1;
+                }
+
+                final class Num {
+                    public function __construct(public readonly ?int $n) {}
+                }
+
+                final class Holder {
+                    public function __construct(public Num $num) {}
+
+                    public function nested(Box $b): int {
+                        if ($this->num->n === null) {
+                            return 0;
+                        }
+                        poke($b);
+                        return $this->num->n;
+                    }
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testForgetReadonlyPropertyOfAGlobalACallMayReplace(): void
+    {
+        Config::getInstance()->remember_property_assignments_after_call = false;
+        $this->project_analyzer->setPhpVersion('8.1', 'tests');
+
+        $this->expectExceptionMessage('NullableReturnStatement - somefile.php:18:32');
+        $this->expectException(CodeException::class);
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                final class Num {
+                    public function __construct(public readonly ?int $n) {}
+                }
+
+                /** @var Num $num */
+                $num = new Num(1);
+
+                function replace(): void {
+                    global $num;
+                    $num = new Num(null);
+                }
+
+                function read(): int {
+                    global $num;
+                    if ($num->n !== null) {
+                        replace();
+                        return $num->n;
+                    }
+                    return 0;
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testForgetReadonlyPropertyWithPrivateMutationAfterCall(): void
+    {
+        Config::getInstance()->remember_property_assignments_after_call = false;
+
+        $this->expectExceptionMessage('NullableReturnStatement - somefile.php:21:32');
+        $this->expectException(CodeException::class);
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                final class Box {
+                    public int $v = 0;
+                }
+
+                function poke(Box $b): void {
+                    $b->v = 1;
+                }
+
+                final class Num {
+                    /**
+                     * @psalm-readonly-allow-private-mutation
+                     */
+                    public ?int $n = null;
+
+                    public function get(Box $b): int {
+                        if ($this->n === null) {
+                            return 0;
+                        }
+                        poke($b);
+                        return $this->n;
+                    }
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
     public function testNoCrashInTryCatch(): void
     {
         Config::getInstance()->remember_property_assignments_after_call = false;
@@ -840,6 +1076,56 @@ final class PropertyTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'staticInThePropertyTypeOfAParentIsTheClassOfTheObjectRead' => [
+                'code' => '<?php
+                    class Node {
+                        /** @var ?static */
+                        public ?self $next = null;
+                        /** @var ?self */
+                        public ?self $prev = null;
+                    }
+                    final class Leaf extends Node {}
+                    $leaf = new Leaf();
+                    $next = $leaf->next;
+                    $prev = $leaf->prev;
+                    $vars = get_object_vars($leaf);
+                    $column = array_column([$leaf], "next");',
+                'assertions' => [
+                    '$next===' => 'Leaf|null',
+                    '$prev===' => 'Node|null',
+                    '$vars===' => 'array{next: Leaf|null, prev: Node|null}',
+                    '$column===' => 'list{Leaf|null}',
+                ],
+            ],
+            'assignedUnionHasItsWidenedGenericReplaced' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     */
+                    final class Box {
+                        /**
+                         * @param list<T> $v
+                         */
+                        public function __construct(public array $v) {}
+                    }
+
+                    final class H {
+                        /** @var Box<int>|null */
+                        public ?Box $b = null;
+                    }
+
+                    /** @return Box<never>|null */
+                    function emptyBox(): ?Box {
+                        return null;
+                    }
+
+                    $h = new H();
+                    $h->b = emptyBox();
+                    $b = $h->b;',
+                'assertions' => [
+                    '$b===' => 'Box<int>|null',
+                ],
+            ],
             'offsetWriteInitializesAnUninitializedArrayProperty' => [
                 'code' => '<?php
                     final class Bag
@@ -878,6 +1164,132 @@ final class PropertyTypeTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.1',
+            ],
+            'finalClassInitialisesThePropertyThroughAnAliasedTraitMethod' => [
+                'code' => '<?php
+                    interface H {}
+
+                    trait T {
+                        private H $h;
+
+                        public function setH(H $h): void {
+                            $this->h = $h;
+                        }
+
+                        public function getH(): H {
+                            return $this->h;
+                        }
+                    }
+
+                    final class C {
+                        use T { setH as public init; }
+
+                        public function __construct(H $h) {
+                            $this->init($h);
+                        }
+                    }',
+            ],
+            'finalClassInitialisesThePropertyThroughAMethodOfANestedTrait' => [
+                'code' => '<?php
+                    interface H {}
+
+                    trait T {
+                        private H $h;
+
+                        public function setH(H $h): void {
+                            $this->h = $h;
+                        }
+
+                        public function getH(): H {
+                            return $this->h;
+                        }
+                    }
+
+                    trait T2 {
+                        use T;
+                    }
+
+                    final class C {
+                        use T2;
+
+                        public function __construct(H $h) {
+                            $this->setH($h);
+                        }
+                    }',
+            ],
+            'finalClassInitialisesThePropertyThroughATraitMethodItCalls' => [
+                'code' => '<?php
+                    interface ViewHandler {}
+
+                    trait ControllerTrait {
+                        private ViewHandler $handler;
+
+                        public function setHandler(ViewHandler $handler): void {
+                            $this->handler = $handler;
+                        }
+
+                        public function getHandler(): ViewHandler {
+                            return $this->handler;
+                        }
+                    }
+
+                    final class Controller {
+                        use ControllerTrait;
+
+                        public function __construct(ViewHandler $handler) {
+                            $this->setHandler($handler);
+                        }
+                    }',
+            ],
+            'propertyInitialisedByParentConstructorInEveryNonThrowingBranch' => [
+                'code' => '<?php
+                    class X {
+                        public string $y;
+
+                        public function __construct(string $y)
+                        {
+                            $this->y = $y;
+                        }
+                    }
+
+                    final class Y extends X {
+                        public function __construct(string $y)
+                        {
+                            if ($y === \'a\' || $y === \'b\' || $y === \'c\') {
+                                parent::__construct($y);
+                            } else {
+                                throw new InvalidArgumentException();
+                            }
+                        }
+                    }
+
+                    final class Z extends X {
+                        public function __construct(string $y)
+                        {
+                            switch ($y) {
+                                case \'a\':
+                                case \'b\':
+                                case \'c\':
+                                    parent::__construct($y);
+                                    return;
+                                default:
+                                    throw new InvalidArgumentException();
+                            }
+                        }
+                    }
+
+                    final class ZZ extends X {
+                        public function __construct(string $y)
+                        {
+                            match ($y) {
+                                \'a\', \'b\', \'c\' => parent::__construct($y),
+                                default => throw new InvalidArgumentException()
+                            };
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'propertySetInConstructorStaysSetAfterAnIfNarrowingThis' => [
                 'code' => '<?php
@@ -4984,6 +5396,36 @@ final class PropertyTypeTest extends TestCase
                     }',
                 'error_message' => 'InvalidPropertyAssignmentValue',
             ],
+            'parentTypeAndInvalidTypeAssignedToProperty' => [
+                'code' => '<?php
+                    final class Foo {}
+
+                    final class A {
+                        public ?Foo $p = null;
+
+                        public function set(object|int $o): void {
+                            $this->p = $o;
+                        }
+                    }',
+                'error_message' => 'PossiblyInvalidPropertyAssignmentValue',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'parentTypeAndInvalidTypeAssignedToStaticProperty' => [
+                'code' => '<?php
+                    final class Foo {}
+
+                    final class A {
+                        public static ?Foo $p = null;
+
+                        public static function set(object|int $o): void {
+                            self::$p = $o;
+                        }
+                    }',
+                'error_message' => 'PossiblyInvalidPropertyAssignmentValue',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'templateOfBoolMakesAValuePossiblyValidForABoolProperty' => [
                 'code' => '<?php
                     final class Foo {}
@@ -5124,6 +5566,58 @@ final class PropertyTypeTest extends TestCase
                 'error_message' => 'RedundantCondition',
                 'error_levels' => [],
                 'php_version' => '8.6',
+            ],
+            'finalClassFollowsItsOwnOverrideOfTheTraitMethod' => [
+                'code' => '<?php
+                    interface H {}
+
+                    trait T {
+                        private H $h;
+
+                        public function setH(H $h): void {
+                            $this->h = $h;
+                        }
+
+                        public function getH(): H {
+                            return $this->h;
+                        }
+                    }
+
+                    final class C {
+                        use T;
+
+                        public function setH(H $h): void {}
+
+                        public function __construct(H $h) {
+                            $this->setH($h);
+                        }
+                    }',
+                'error_message' => 'PropertyNotSetInConstructor',
+            ],
+            'classThatIsNotFinalDoesNotInitialiseThePropertyThroughAnOverridableTraitMethod' => [
+                'code' => '<?php
+                    interface ViewHandler {}
+
+                    trait ControllerTrait {
+                        private ViewHandler $handler;
+
+                        public function setHandler(ViewHandler $handler): void {
+                            $this->handler = $handler;
+                        }
+
+                        public function getHandler(): ViewHandler {
+                            return $this->handler;
+                        }
+                    }
+
+                    class Controller {
+                        use ControllerTrait;
+
+                        public function __construct(ViewHandler $handler) {
+                            $this->setHandler($handler);
+                        }
+                    }',
+                'error_message' => 'PropertyNotSetInConstructor',
             ],
             'staticPropertyOfAStaticTypeInANonFinalClassIsNotTheClass' => [
                 'code' => '<?php

@@ -53,6 +53,7 @@ use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\TypeVisitor\TypeChecker;
 use Psalm\Issue\DeprecatedSyntax;
 use Psalm\Issue\ImpureFunctionCall;
+use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InvalidDocblockParamName;
 use Psalm\Issue\InvalidOverride;
 use Psalm\Issue\InvalidParamDefault;
@@ -84,6 +85,7 @@ use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\FunctionStorage;
 use Psalm\Storage\MethodStorage;
+use Psalm\Storage\TemplateVariance;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
@@ -104,6 +106,7 @@ use function array_keys;
 use function array_map;
 use function array_merge;
 use function array_search;
+use function array_slice;
 use function array_values;
 use function count;
 use function end;
@@ -362,6 +365,8 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         foreach ($storage->docblock_issues as $docblock_issue) {
             IssueBuffer::maybeAdd($docblock_issue);
         }
+
+        $this->checkOverloadsAgainstSignature($storage);
 
         TemplateDefaults::checkBounds(
             $this,
@@ -688,16 +693,17 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 $this->getFilePath(),
                 $start,
                 $end,
-                (string) $storage->signature_return_type,
+                $storage->signature_return_type->getId(false),
             );
         }
 
         if ($storage instanceof MethodStorage && $storage->location && !$storage->allowsNamedArguments()) {
             foreach ($overridden_method_ids as $overridden_method_id) {
                 $overridden_storage = $codebase->methods->getStorage($overridden_method_id);
-                if ($overridden_storage->allowsNamedArguments()) {
+                // a method without parameters can't be passed named arguments
+                if ($overridden_storage->params && $overridden_storage->allowsNamedArguments()) {
                     IssueBuffer::maybeAdd(new MethodSignatureMismatch(
-                        'Method ' . (string) $method_id . ' should accept named arguments '
+                        'Method ' . (string) $method_id . ' should accept named arguments'
                             . ' as ' . (string) $overridden_method_id . ' does',
                         $storage->location,
                     ));
@@ -739,6 +745,30 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 false,
                 $context,
             );
+        }
+
+        // what an assertion narrows a value to is handed out, as a return type is (a negated one hands nothing out)
+        if ($storage->location !== null) {
+            $asserted_types = [];
+            $possibilities_list = [
+                ...$storage->assertions,
+                ...$storage->if_true_assertions,
+                ...$storage->if_false_assertions,
+            ];
+
+            foreach ($possibilities_list as $possibilities) {
+                foreach ($possibilities->rule as $assertion) {
+                    if (!$assertion->isNegation() && ($asserted_type = $assertion->getAtomicType()) !== null) {
+                        $asserted_types[] = $asserted_type;
+                    }
+                }
+            }
+
+            if ($asserted_types
+                && !$this->checkOutputTypeTemplates(new Union($asserted_types), $storage->location, $storage, $context)
+            ) {
+                $check_stmts = false;
+            }
         }
 
         // a signature that fails the check skips the body, but what the body initialises still counts:
@@ -1053,6 +1083,14 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 );
             }
 
+            $closure_return_types = ReturnTypeAnalyzer::addImplicitVoidReturn(
+                $closure_return_types,
+                $closure_yield_types !== [],
+                $function_stmts,
+                $type_provider,
+                $context->has_returned,
+            );
+
             $closure_return_type = $closure_return_types
                 ? Type::combineUnionTypeArray(
                     $closure_return_types,
@@ -1087,6 +1125,14 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                             $storage->return_type,
                         ))
                 ) {
+                    $new_closure_return_type = $closure_return_type;
+                } elseif ($storage->return_type
+                    && !$storage->return_type_location
+                    && $closure_return_type->isNullable()
+                    && !UnionTypeComparator::isContainedBy($codebase, Type::getNull(), $storage->return_type)
+                ) {
+                    // a return type taken from the callable the closure is returned as lets it return null like a
+                    // declared one, but the callable does not: keep what the closure returns, to be checked there
                     $new_closure_return_type = $closure_return_type;
                 }
 
@@ -1719,6 +1765,23 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
     }
 
     /**
+     * A template without a bound may be given null as a parameter's default value (#2431), although null is not
+     * contained by it elsewhere: the caller may pick a type without null
+     *
+     * @psalm-pure
+     */
+    private static function hasTemplateWithoutBound(Union $param_type): bool
+    {
+        foreach ($param_type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TTemplateParam && $atomic_type->as->isMixed()) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * @param list<FunctionLikeParameter> $params
      * @param list<Param> $param_stmts
      */
@@ -1837,6 +1900,197 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 $context,
             );
         }
+    }
+
+    /**
+     * An `@psalm-overload` is a way to call the function, so what it declares has to be what the function accepts
+     * and returns: each parameter is the real one at its position (arguments reach that one at run time, by position
+     * and by name), its type fits that one and every other a variadic covers, and its return type fits the declared one
+     */
+    private function checkOverloadsAgainstSignature(FunctionLikeStorage $storage): void
+    {
+        $codebase = $this->codebase;
+        $location = new CodeLocation($this, $this->function, null, true);
+        $function_name = $storage->cased_name ?? $this->getId();
+
+        $last_real_param = $storage->params === [] ? null : $storage->params[count($storage->params) - 1];
+        $real_variadic = $last_real_param !== null && $last_real_param->is_variadic ? $last_real_param : null;
+
+        foreach ($storage->overloads as $overload) {
+            foreach ($overload->params as $position => $param) {
+                $real_param = $storage->params[$position] ?? $real_variadic;
+
+                if ($real_param === null) {
+                    IssueBuffer::maybeAdd(
+                        new InvalidDocblock(
+                            'Parameter $' . $param->name . ' of an @psalm-overload of ' . $function_name
+                                . ' is not a parameter of its signature',
+                            $location,
+                        ),
+                        $this->getSuppressedIssues(),
+                    );
+
+                    continue;
+                }
+
+                if (!$param->is_variadic && !$real_param->is_variadic && $param->name !== $real_param->name) {
+                    IssueBuffer::maybeAdd(
+                        new InvalidDocblock(
+                            'Parameter $' . $param->name . ' of an @psalm-overload of ' . $function_name
+                                . ' is at the position of $' . $real_param->name . ' in its signature',
+                            $location,
+                        ),
+                        $this->getSuppressedIssues(),
+                    );
+
+                    continue;
+                }
+
+                $covered_params = $param->is_variadic
+                    ? (array_slice($storage->params, $position) ?: [$real_param])
+                    : [$real_param];
+
+                if ($param->is_optional || $param->is_variadic) {
+                    foreach ($covered_params as $covered_param) {
+                        if (!$covered_param->is_optional && !$covered_param->is_variadic) {
+                            IssueBuffer::maybeAdd(
+                                new InvalidDocblock(
+                                    'Parameter $' . $param->name . ' of an @psalm-overload of ' . $function_name
+                                        . ' is optional, but $' . $covered_param->name
+                                        . ' is required in its signature',
+                                    $location,
+                                ),
+                                $this->getSuppressedIssues(),
+                            );
+
+                            break;
+                        }
+                    }
+                }
+
+                foreach ($covered_params as $covered_param) {
+                    if (self::isOverloadTypeOutsideOfTheSignature($codebase, $param->type, $covered_param->type)) {
+                        IssueBuffer::maybeAdd(
+                            new InvalidDocblock(
+                                'The type ' . $param->type?->getId() . ' of parameter $' . $param->name
+                                    . ' of an @psalm-overload of ' . $function_name
+                                    . ' is not accepted by its signature, which declares '
+                                    . $covered_param->type?->getId(),
+                                $location,
+                            ),
+                            $this->getSuppressedIssues(),
+                        );
+
+                        break;
+                    }
+                }
+            }
+
+            $last_overload_param = $overload->params === [] ? null : $overload->params[count($overload->params) - 1];
+
+            if ($last_overload_param === null || !$last_overload_param->is_variadic) {
+                foreach (array_slice($storage->params, count($overload->params)) as $omitted_param) {
+                    if (!$omitted_param->is_optional && !$omitted_param->is_variadic) {
+                        IssueBuffer::maybeAdd(
+                            new InvalidDocblock(
+                                'An @psalm-overload of ' . $function_name . ' leaves out $' . $omitted_param->name
+                                    . ', which is required in its signature',
+                                $location,
+                            ),
+                            $this->getSuppressedIssues(),
+                        );
+
+                        break;
+                    }
+                }
+            }
+
+            if (self::isOverloadTypeOutsideOfTheSignature($codebase, $overload->return_type, $storage->return_type)) {
+                IssueBuffer::maybeAdd(
+                    new InvalidDocblock(
+                        'The return type ' . $overload->return_type?->getId() . ' of an @psalm-overload of '
+                            . $function_name . ' is not contained by the declared one, '
+                            . $storage->return_type?->getId(),
+                        $location,
+                    ),
+                    $this->getSuppressedIssues(),
+                );
+            }
+        }
+    }
+
+    /**
+     * `self` and `static` stand for the class a call is made on, so what an overload says of them is not compared
+     *
+     * @psalm-pure
+     */
+    private static function isSelfOrStatic(Union $type): bool
+    {
+        foreach ($type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TNamedObject
+                && ($atomic_type->is_static || in_array(strtolower($atomic_type->value), ['self', 'static'], true))
+            ) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Whether the type an overload declares is not contained by the one of the signature: only decided for types
+     * without templates, which the overload may bind differently
+     */
+    private static function isOverloadTypeOutsideOfTheSignature(
+        Codebase $codebase,
+        ?Union $overload_type,
+        ?Union $signature_type,
+    ): bool {
+        return $overload_type !== null
+            && $signature_type !== null
+            && !self::isSelfOrStatic($overload_type)
+            && !self::isSelfOrStatic($signature_type)
+            && !$overload_type->hasTemplate()
+            && !$signature_type->hasTemplate()
+            && $overload_type->getTemplateTypes() === []
+            && $signature_type->getTemplateTypes() === []
+            && !UnionTypeComparator::isContainedBy($codebase, $overload_type, $signature_type);
+    }
+
+    /**
+     * Checks a type a method hands out other than as its return type (`@param-out`, a by-ref parameter, what an
+     * assertion narrows to) for the contravariant templates of its class. Covariant ones were never checked there.
+     *
+     * @return bool whether the type has no errors, as for check()
+     * @psalm-capabilities read-props
+     */
+    private function checkOutputTypeTemplates(
+        Union $type,
+        CodeLocation $location,
+        FunctionLikeStorage $storage,
+        Context $context,
+    ): bool {
+        if (!$storage instanceof MethodStorage
+            || $storage->defining_fqcln === null
+            || !$this->function instanceof ClassMethod
+            || strtolower($this->function->name->name) === '__construct'
+            || $this->codebase->classlike_storage_provider->get($storage->defining_fqcln)->template_contravariants
+                === null
+        ) {
+            return true;
+        }
+
+        return (new TypeChecker(
+            $this,
+            $location,
+            $storage->suppressed_issues,
+            [],
+            false,
+            false,
+            TemplateVariance::Covariant,
+            $context,
+            true,
+        ))->check($type);
     }
 
     /**
@@ -2043,6 +2297,12 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 && ($codebase->classlike_storage_provider->get($storage->defining_fqcln)
                     ->properties[$function_param->name]->inherited_type ?? false);
 
+            // a docblock type inherited from an overridden method keeps the native types the override adds, which
+            // are checked where the override declares them
+            $inherits_docblock_type = $function_param->has_docblock_type
+                && isset($storage->params[$offset])
+                && !$storage->params[$offset]->has_docblock_type;
+
             if ($signature_type && $signature_type_location && $signature_type->hasObjectType()) {
                 $referenced_type = $signature_type;
                 if ($referenced_type->isNullable()) {
@@ -2055,7 +2315,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     $this->getFilePath(),
                     $start,
                     $end,
-                    (string) $referenced_type,
+                    $referenced_type->getId(false),
                 );
             }
 
@@ -2173,18 +2433,55 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     }
                 }
 
+                $checked_type = $param_type;
+
+                if ($inherits_docblock_type && $signature_type) {
+                    $checked_types = array_diff_key($param_type->getAtomicTypes(), $signature_type->getAtomicTypes());
+                    $checked_type = $checked_types ? new Union($checked_types) : null;
+                }
+
                 if ($function_param->type_location && !$inherited_type) {
-                    if ($param_type->check(
-                        $this,
-                        $function_param->type_location,
-                        $storage->suppressed_issues,
-                        [],
-                        false,
-                        false,
-                        $this->function instanceof ClassMethod
-                            && strtolower($this->function->name->name) !== '__construct',
-                        $context,
-                    ) === false) {
+                    $own_param = $storage->params[$offset] ?? null;
+
+                    // a type the parameter takes from the overridden method is checked there, for its templates
+                    if ($checked_type
+                        && !$checked_type->checked
+                        && !(new TypeChecker(
+                            $this,
+                            $function_param->type_location,
+                            $storage->suppressed_issues,
+                            [],
+                            false,
+                            false,
+                            $this->function instanceof ClassMethod
+                                && strtolower($this->function->name->name) !== '__construct'
+                                && $function_param === $own_param
+                                    ? TemplateVariance::Contravariant
+                                    : null,
+                            $context,
+                            false,
+                            $function_param !== $own_param,
+                        ))->check($checked_type)
+                    ) {
+                        $check_stmts = false;
+                    }
+
+                    // the method's own `@param-out` is checked here even if the type it takes is the overridden
+                    // method's, which checks only what it declares
+                    $output_type = $function_param->out_type
+                        ?? ($function_param->by_ref && $function_param === $own_param ? $param_type : null);
+
+                    if ($output_type !== null
+                        && $own_param !== null
+                        && !$this->checkOutputTypeTemplates(
+                            $output_type,
+                            $function_param === $own_param
+                                ? $function_param->type_location
+                                : $own_param->location ?? $function_param->type_location,
+                            $storage,
+                            $context,
+                        )
+                    ) {
                         $check_stmts = false;
                     }
                 }
@@ -2195,6 +2492,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     'by_ref' => $function_param->by_ref,
                     'parent_nodes' => $parent_nodes,
                 ]);
+                $checked_type = $param_type;
             }
 
             $var_type = $param_type;
@@ -2295,6 +2593,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
                 if ($default_type
                     && !$default_type->hasMixed()
+                    && !($default_type->isNull() && self::hasTemplateWithoutBound($param_type))
                     && !UnionTypeComparator::isContainedBy(
                         $codebase,
                         $default_type,
@@ -2334,7 +2633,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             }
 
             if ($has_template_types && !$inherited_type) {
-                if ($param_type->check(
+                if ($checked_type?->check(
                     $this->source,
                     $function_param->type_location,
                     $this->suppressed_issues,
@@ -2364,7 +2663,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     );
                 }
 
-                if ($param_type->check(
+                if ($checked_type?->check(
                     $this->source,
                     $function_param->type_location,
                     $this->suppressed_issues,
@@ -2376,6 +2675,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             }
 
             if (($inherited_type
+                    || $inherits_docblock_type
                     || ($function_param->type_location !== $function_param->signature_type_location
                         && $function_param->type?->getId() !== $function_param->signature_type?->getId()))
                 && $function_param->signature_type_location
@@ -2884,6 +3184,14 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
     }
 
     /**
+     * @psalm-mutation-free
+     */
+    public function getFunctionNode(): Closure|Function_|ClassMethod|ArrowFunction
+    {
+        return $this->function;
+    }
+
+    /**
      * The storage this analyzer was created with (the one of the function-like being analysed).
      *
      * @psalm-mutation-free
@@ -2891,6 +3199,17 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
     public function getStorage(): FunctionLikeStorage
     {
         return $this->storage;
+    }
+
+    /**
+     * The node of the function-like being analysed
+     *
+     * @return TFunction
+     * @psalm-mutation-free
+     */
+    public function getFunctionLikeNode(): Closure|Function_|ClassMethod|ArrowFunction
+    {
+        return $this->function;
     }
 
     /**

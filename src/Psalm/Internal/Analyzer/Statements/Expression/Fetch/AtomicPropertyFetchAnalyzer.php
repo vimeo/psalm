@@ -537,6 +537,10 @@ final class AtomicPropertyFetchAnalyzer
 
         $property_storage = $declaring_class_storage->properties[$prop_name] ?? null;
 
+        $is_readonly = $property_storage !== null
+            && $property_storage->readonly
+            && !$property_storage->allow_private_mutation;
+
         if ($property_storage !== null) {
             PropertyAccessAnalyzer::checkDeprecation(
                 $statements_analyzer,
@@ -592,6 +596,22 @@ final class AtomicPropertyFetchAnalyzer
             $class_property_type = TypeVariableTracker::resolveTypeVariables($class_property_type, $codebase);
         }
 
+        // a shape the object also has narrows what the property holds (`V&object{x: string}`), before the flags and
+        // the taints of the fetch are set on it
+        if (!$in_assignment) {
+            foreach ($intersection_types as $intersection_type) {
+                if ($intersection_type instanceof TObjectWithProperties
+                    && isset($intersection_type->properties[$prop_name])
+                ) {
+                    $class_property_type = (Type::intersectUnionTypes(
+                        $class_property_type,
+                        $intersection_type->properties[$prop_name],
+                        $codebase,
+                    ) ?? $class_property_type)->setParentNodes($class_property_type->parent_nodes);
+                }
+            }
+        }
+
         if (!self::isFreeToAccess($statements_analyzer, $stmt, $class_storage)) {
             if (UnsetAnalyzer::writesFetchedProperty($context, $stmt, $class_property_type)) {
                 if (!$unset_charged) {
@@ -626,7 +646,12 @@ final class AtomicPropertyFetchAnalyzer
             $context,
         );
 
-        if ($class_storage->isMutationFree()) {
+        // a readonly property of an object that can't be replaced keeps its value after a call
+        if ($class_storage->isMutationFree()
+            || ($is_readonly
+                && ($stmt->var instanceof PhpParser\Node\Expr\Variable
+                    || $statements_analyzer->node_data->getType($stmt->var)?->has_mutations === false))
+        ) {
             $class_property_type = $class_property_type->setProperties([
                 'has_mutations' => false,
             ]);
@@ -716,6 +741,7 @@ final class AtomicPropertyFetchAnalyzer
                     $declaring_property_class,
                     $property_id,
                     $in_assignment,
+                    through_magic_getter: true,
                 );
 
                 $has_valid_fetch_type = true;
@@ -774,7 +800,10 @@ final class AtomicPropertyFetchAnalyzer
                 $stmt_type = $statements_analyzer->node_data->getType($stmt);
                 $statements_analyzer->node_data->setType(
                     $stmt,
-                    Type::combineUnionTypes($fake_method_call_type, $stmt_type),
+                    self::keepIssetOfMagicPropertyOpen(
+                        $context,
+                        Type::combineUnionTypes($fake_method_call_type, $stmt_type),
+                    ),
                 );
             } else {
                 $statements_analyzer->node_data->setType($stmt, Type::getMixed());
@@ -808,6 +837,18 @@ final class AtomicPropertyFetchAnalyzer
         }
 
         return true;
+    }
+
+    /**
+     * Whether a magic property is set is up to the object (__isset()), not to the type __get() returns
+     *
+     * @psalm-mutation-free
+     */
+    private static function keepIssetOfMagicPropertyOpen(Context $context, Union $type): Union
+    {
+        return $context->inside_isset && !$type->ignore_isset
+            ? $type->setProperties(['ignore_isset' => true])
+            : $type;
     }
 
     /**
@@ -1513,6 +1554,7 @@ final class AtomicPropertyFetchAnalyzer
         ?string $declaring_property_class,
         string $property_id,
         bool $in_assignment,
+        bool $through_magic_getter = false,
     ): void {
         $stmt_type = TypeExpander::expandUnion(
             $codebase,
@@ -1555,9 +1597,11 @@ final class AtomicPropertyFetchAnalyzer
             $context,
         );
 
+        $combined_type = Type::combineUnionTypes($stmt_type, $statements_analyzer->node_data->getType($stmt));
+
         $statements_analyzer->node_data->setType(
             $stmt,
-            Type::combineUnionTypes($stmt_type, $statements_analyzer->node_data->getType($stmt)),
+            $through_magic_getter ? self::keepIssetOfMagicPropertyOpen($context, $combined_type) : $combined_type,
         );
     }
 
@@ -1617,6 +1661,34 @@ final class AtomicPropertyFetchAnalyzer
         );
     }
 
+    /**
+     * Expands a property type for an object of $receiver_type: `self` of a property declared in a trait is the class
+     * using it, `static` is the class of the object
+     */
+    public static function expandSelfAndStatic(
+        Codebase $codebase,
+        Union $property_type,
+        ClassLikeStorage $declaring_class_storage,
+        string $appearing_class,
+        TNamedObject $receiver_type,
+        bool $receiver_is_final,
+    ): Union {
+        $self_class_storage = $declaring_class_storage->is_trait
+            ? $codebase->classlikes->getStorageFor($appearing_class) ?? $declaring_class_storage
+            : $declaring_class_storage;
+
+        return TypeExpander::expandUnion(
+            $codebase,
+            $property_type,
+            $self_class_storage->name,
+            $receiver_type,
+            $self_class_storage->parent_class,
+            true,
+            false,
+            $receiver_is_final,
+        );
+    }
+
     private static function getClassPropertyType(
         StatementsAnalyzer $statements_analyzer,
         Codebase $codebase,
@@ -1656,12 +1728,13 @@ final class AtomicPropertyFetchAnalyzer
 
             $class_property_type = Type::getMixed();
         } else {
-            $class_property_type = TypeExpander::expandUnion(
+            $class_property_type = self::expandSelfAndStatic(
                 $codebase,
                 $class_property_type,
-                $declaring_class_storage->name,
-                $declaring_class_storage->name,
-                $declaring_class_storage->parent_class,
+                $declaring_class_storage,
+                $codebase->properties->getAppearingClassForProperty($property_id, true) ?? $fq_class_name,
+                $lhs_type_part,
+                $class_storage->final,
             );
 
             if (count($template_types = $declaring_class_storage->getClassTemplateTypes()) !== 0) {

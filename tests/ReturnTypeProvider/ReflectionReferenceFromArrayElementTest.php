@@ -77,6 +77,18 @@ final class ReflectionReferenceFromArrayElementTest extends TestCase
             'php_version' => '8.0',
         ];
 
+        yield 'byRefElementAtFloatLikeStringKey' => [
+            'code' => '<?php
+                $a = 1;
+                $r = ReflectionReference::fromArrayElement(["1e999" => &$a], "1e999");
+            ',
+            'assertions' => [
+                '$r===' => 'ReflectionReference',
+            ],
+            'ignored_issues' => [],
+            'php_version' => '8.0',
+        ];
+
         yield 'byRefElementWithNamedArgs' => [
             'code' => '<?php
                 $a = 1;

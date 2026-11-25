@@ -303,6 +303,9 @@ final class ReturnTypeManipulationTest extends FileManipulationTestCase
                         };
                     }',
                 'output' => '<?php
+                    /**
+                     * @psalm-return non-falsy-string
+                     */
                     function foo(string $name) : string {
                         return $name . " hello";
                     }

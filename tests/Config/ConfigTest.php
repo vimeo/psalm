@@ -2581,7 +2581,7 @@ final class ConfigTest extends DeferredAnalyzerTestCase
     }
 
     /**
-     * @return array<string, array{string, string, string}>
+     * @return array<string, array{0: string, 1: string, 2: string, 3?: string}>
      * @psalm-pure
      */
     public static function providerSinksOfExtensionsWithoutTheirStubs(): array
@@ -2596,6 +2596,12 @@ final class ConfigTest extends DeferredAnalyzerTestCase
             'DOMXPath::query' => ['DOMXPath', 'query', 'TaintedXpath'],
             'DOMXPath::evaluate' => ['DOMXPath', 'evaluate', 'TaintedXpath'],
             'SimpleXMLElement::xpath' => ['SimpleXMLElement', 'xpath', 'TaintedXpath'],
+            // a value in a string literal of the query keeps the taint of what can end it
+            'DOMXPath::query in a string literal' => ['DOMXPath', 'query', 'TaintedXpath', '"//u[@id=\'" . $input . "\']"'],
+            'DOMXPath::evaluate in a string literal'
+                => ['DOMXPath', 'evaluate', 'TaintedXpath', '"//u[@id=\'" . $input . "\']"'],
+            'SimpleXMLElement::xpath in a string literal'
+                => ['SimpleXMLElement', 'xpath', 'TaintedXpath', '"//u[@id=\'" . $input . "\']"'],
             'SoapClient::__setLocation' => ['SoapClient', '__setLocation', 'TaintedSSRF'],
         ];
     }
@@ -2605,8 +2611,12 @@ final class ConfigTest extends DeferredAnalyzerTestCase
      * out for the bundled ones: the sinks of their functions still apply
      */
     #[DataProvider('providerSinksOfExtensionsWithoutTheirStubs')]
-    public function testSinksOfExtensionsWithoutTheirStubs(string $class, string $method, string $error): void
-    {
+    public function testSinksOfExtensionsWithoutTheirStubs(
+        string $class,
+        string $method,
+        string $error,
+        string $argument = '$input',
+    ): void {
         if (!class_exists($class)) {
             // without its stub, Psalm only knows the class of an extension that PHP loads
             $this->markTestSkipped('The extension of ' . $class . ' is not loaded');
@@ -2643,7 +2653,7 @@ final class ConfigTest extends DeferredAnalyzerTestCase
                     if (!is_string($input)) {
                         return;
                     }
-                    $object->' . $method . '($input);
+                    $object->' . $method . '(' . $argument . ');
                 }',
         );
 
@@ -3115,6 +3125,21 @@ final class ConfigTest extends DeferredAnalyzerTestCase
                 '<psalm></psalm>',
                 ['Psalm\SymfonyPsalmPlugin\Plugin'],
             ],
+            'requiredSymfonyComponent' => [
+                ['composer.json' => '{"require": {"symfony/console": "^7"}}'],
+                '<psalm></psalm>',
+                ['Psalm\SymfonyPsalmPlugin\Plugin'],
+            ],
+            'requiredSymfonyAi' => [
+                ['composer.json' => '{"require": {"symfony/ai-platform": "^1"}}'],
+                '<psalm></psalm>',
+                ['Psalm\SymfonyPsalmPlugin\Plugin'],
+            ],
+            'requiredSymfonyPolyfill' => [
+                ['composer.json' => '{"require": {"symfony/polyfill-mbstring": "^1"}}'],
+                '<psalm></psalm>',
+                [],
+            ],
             'requiredDoctrineOrm' => [
                 ['composer.json' => '{"require": {"doctrine/orm": "^3"}}'],
                 '<psalm></psalm>',
@@ -3176,7 +3201,7 @@ final class ConfigTest extends DeferredAnalyzerTestCase
                 [],
             ],
             'requiredOtherLibraries' => [
-                ['composer.json' => '{"require": {"symfony/console": "^7", "guzzlehttp/guzzle": "^7"}}'],
+                ['composer.json' => '{"require": {"monolog/monolog": "^3", "guzzlehttp/guzzle": "^7"}}'],
                 '<psalm></psalm>',
                 [],
             ],
@@ -4112,6 +4137,31 @@ final class ConfigTest extends DeferredAnalyzerTestCase
             $config->getReportingLevelForIssue(
                 new TestPluginIssueDefaultLevel(
                     'test message',
+                    new Raw('aaa', 'aaa.php', 'aaa.php', 1, 2),
+                ),
+            ),
+        );
+    }
+
+    public function testReportInfoFalseSuppressesAnIssueThatTakesInfoFromItsParent(): void
+    {
+        $config = Config::loadFromXML(
+            (string) getcwd(),
+            <<<XML
+            <?xml version="1.0"?>
+            <psalm reportInfo="false">
+                <issueHandlers>
+                    <NullReference errorLevel="info" />
+                </issueHandlers>
+            </psalm>
+            XML,
+        );
+
+        $this->assertSame(
+            Config::REPORT_SUPPRESS,
+            $config->getReportingLevelForIssue(
+                new PossiblyNullReference(
+                    'Cannot call method on possibly null value',
                     new Raw('aaa', 'aaa.php', 'aaa.php', 1, 2),
                 ),
             ),

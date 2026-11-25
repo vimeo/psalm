@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Type;
 
 use InvalidArgumentException;
+use LogicException;
 use Override;
 use Psalm\Codebase;
 use Psalm\Exception\TypeParseTreeException;
@@ -473,9 +474,17 @@ abstract class Atomic implements TypeNode, Stringable
     }
 
     /**
-     * This is the string that will be used to represent the type in Union::$types. This means that two types sharing
-     * the same getKey value will override themselves in a Union
+     * The key the type is stored under in Union::$types: a union holds at most one type per key, so adding a type
+     * replaces the one of the same key. Different types may share a key, where TypeCombiner merges them into one:
      *
+     *     type                        key
+     *     non-empty-string            string
+     *     Foo<5>, Foo<array{a: int}>  Foo<int>, Foo<array>
+     *     Foo&Bar<5>                  Foo&Bar<5>
+     *
+     * As it doesn't tell types apart, it is not meant to compare types or show them: use getId().
+     *
+     * @param bool $include_extra whether the key includes the intersected types (`&Bar<5>`)
      * @psalm-mutation-free
      */
     abstract public function getKey(bool $include_extra = true): string;
@@ -767,6 +776,9 @@ abstract class Atomic implements TypeNode, Stringable
         return [];
     }
 
+    /**
+     * The id of the type, see getId()
+     */
     #[Override]
     final public function __toString(): string
     {
@@ -774,17 +786,27 @@ abstract class Atomic implements TypeNode, Stringable
     }
 
     /**
-     * This is the true identifier for the type. It defaults to self::getKey() but can be overridden to be more precise
+     * The string that identifies the type: two types are the same type when they have the same id. Types are compared,
+     * cached and named in issue messages by their id. Without $exact, literals and refinements are left out:
+     *
+     *     exact             not exact
+     *     5                 int
+     *     'a'               string
+     *     non-empty-string  string
+     *
+     * A type that extends Atomic directly must override it. A type that extends one of Psalm's types inherits that
+     * type's id: override getId() along with getKey().
      *
      * @psalm-mutation-free
      */
-    public function getId(bool $exact = true, bool $nested = false): string
+    public function getId(bool $exact = true): string
     {
-        return $this->getKey();
+        throw new LogicException(static::class . ' must override getId()');
     }
+
     /**
-     * This string is used in order to transform a type into an string assertion for the assertion module
-     * Default to self::getId()
+     * How the type is written in the string form of an assertion: `int(5)` and `string(a)` for literals, the id
+     * otherwise
      *
      * @psalm-mutation-free
      */
@@ -794,8 +816,16 @@ abstract class Atomic implements TypeNode, Stringable
     }
 
     /**
-     * Returns the detailed description of the type, either in phpdoc standard format or Psalm format depending on flag
-     * Default to self::getKey()
+     * The type as Psalm writes it in the docblocks and stubs it generates (`--alter`, stub generation), with class
+     * names shortened by $namespace and $aliased_classes. With $use_phpdoc_format, for `@param` and `@return`,
+     * literals and refinements are left out; without it, for `@psalm-param` and `@psalm-return`, they are kept:
+     *
+     *     with $use_phpdoc_format  without
+     *     int                      5
+     *     string                   non-empty-string
+     *
+     * Defaults to getId(), not exact with $use_phpdoc_format. A type whose id can't be written in a docblock
+     * (`empty-mixed`, a type variable) overrides it.
      *
      * @param array<lowercase-string, string> $aliased_classes
      * @psalm-mutation-free
@@ -806,12 +836,12 @@ abstract class Atomic implements TypeNode, Stringable
         ?string $this_class,
         bool $use_phpdoc_format,
     ): string {
-        return $this->getKey();
+        return $this->getId(!$use_phpdoc_format);
     }
 
     /**
-     * Returns a string representation of the type compatible with php signature or null if the type can't be expressed
-     *  with the given php version
+     * The type as a native type declaration (`?int`, `int|string`) for the given PHP version, null when it can't be
+     * declared natively in that version
      *
      * @psalm-mutation-free
      * @param  array<lowercase-string, string> $aliased_classes

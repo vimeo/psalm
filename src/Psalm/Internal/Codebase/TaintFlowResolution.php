@@ -26,6 +26,7 @@ use function count;
 use function explode;
 use function implode;
 use function in_array;
+use function is_array;
 use function ksort;
 use function max;
 use function min;
@@ -904,13 +905,21 @@ final class TaintFlowResolution
      */
     private function prepareGraph(): void
     {
+        /** @var array<string, string|list<string>> $reverse */
         $reverse = [];
 
         foreach ($this->forward_edges as $from_id => $destinations) {
             $this->linkSpecialization($from_id);
 
             foreach ($destinations as $to_id => $_) {
-                $reverse[$to_id][$from_id] = true;
+                // A single predecessor needs no array. Promote it only when a second edge arrives.
+                if (!isset($reverse[$to_id])) {
+                    $reverse[$to_id] = $from_id;
+                } elseif (is_array($reverse[$to_id])) {
+                    $reverse[$to_id][] = $from_id;
+                } else {
+                    $reverse[$to_id] = [$reverse[$to_id], $from_id];
+                }
                 $this->linkSpecialization($to_id);
             }
         }
@@ -938,7 +947,7 @@ final class TaintFlowResolution
         while ($queue) {
             $id = array_pop($queue);
 
-            foreach ($reverse[$id] ?? [] as $from_id => $_) {
+            foreach ((array) ($reverse[$id] ?? []) as $from_id) {
                 if (!isset($this->sink_reachable[$from_id])) {
                     $this->sink_reachable[$from_id] = true;
                     $queue[] = $from_id;
@@ -968,15 +977,19 @@ final class TaintFlowResolution
                 }
             }
 
-            ksort($destinations, SORT_STRING);
+            if (count($destinations) > 1) {
+                ksort($destinations, SORT_STRING);
+            }
             $this->forward_edges[$from_id] = $destinations;
         }
 
         // The states, and so where flows converge (see enterConvergence()) and the traces of the flows
         // reported, depend on the order the call sites of a node are left through (see walk()).
         foreach ($this->specializations as $id => $specializations) {
-            ksort($specializations, SORT_STRING);
-            $this->specializations[$id] = $specializations;
+            if (count($specializations) > 1) {
+                ksort($specializations, SORT_STRING);
+                $this->specializations[$id] = $specializations;
+            }
         }
 
         $this->computeObservableDepths($reverse);
@@ -1036,7 +1049,7 @@ final class TaintFlowResolution
      *
      * The depths are capped at MAX_OPEN_ASSIGNMENT_DEPTH, which also bounds a cycle of fetches.
      *
-     * @param array<string, array<string, true>> $reverse
+     * @param array<string, string|list<string>> $reverse
      * @psalm-capabilities read-props|write-this-props|write-refs
      */
     private function computeObservableDepths(array $reverse): void
@@ -1061,7 +1074,7 @@ final class TaintFlowResolution
             $id = array_pop($queue);
             $depths = $this->observable_depths[$id];
 
-            foreach ($reverse[$id] ?? [] as $from_id => $_) {
+            foreach ((array) ($reverse[$id] ?? []) as $from_id) {
                 if (isset($this->forward_edges[$from_id][$id])) {
                     $this->raiseObservableDepths(
                         $queue,
@@ -1169,7 +1182,7 @@ final class TaintFlowResolution
     }
 
     /**
-     * @param array<string, array<string, true>> $reverse
+     * @param array<string, string|list<string>> $reverse
      * @psalm-external-mutation-free
      */
     private function computeTaintAddingReachable(array $reverse): void
@@ -1190,7 +1203,7 @@ final class TaintFlowResolution
         while ($queue) {
             $id = array_pop($queue);
 
-            foreach ($reverse[$id] ?? [] as $from_id => $_) {
+            foreach ((array) ($reverse[$id] ?? []) as $from_id) {
                 if (!isset($this->taint_adding_reachable[$from_id])) {
                     $this->taint_adding_reachable[$from_id] = true;
                     $queue[] = $from_id;
@@ -2214,15 +2227,25 @@ final class TaintFlowResolution
         $kept = $this->state_kept[$state];
         $added = $this->state_added[$state];
 
+        $input_taints = $this->codebase->getInputTaints();
+
         foreach ($this->forward_edges[$from_id] as $to_id => $path) {
             $removed_taints = $path->removed_taints;
-            $next_added = ($added | $path->added_taints) & ~$removed_taints;
+            $path_added = $path->added_taints;
+
+            // A path adds the input taints (a decoder giving back what escapes removed) to a flow of input only: a
+            // flow of secrets doesn't become user input. A source of input a plugin adds is a source of its own.
+            if ((($kept | $added) & $input_taints) === 0) {
+                $path_added &= ~$input_taints;
+            }
+
+            $next_added = ($added | $path_added) & ~$removed_taints;
 
             // What a builtin decodes from a string (json_decode(), unserialize(), parse_str(), ...) can be an array
             // or an object again, whatever the string's type took away: decoded user input can be a NoSQL query.
             // In the walk of an entry, the taints the calls keep aren't known: any of them may be user input.
             if ($path->type === DataFlowGraph::UNSERIALIZATION_PATH_TYPE
-                && (($kept | $next_added) & ~$removed_taints & $this->codebase->getInputTaints()) !== 0
+                && (($kept | $next_added) & ~$removed_taints & $input_taints) !== 0
             ) {
                 $next_added |= TaintKind::ARRAY_ONLY;
             }

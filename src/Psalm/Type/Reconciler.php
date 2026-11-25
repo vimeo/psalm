@@ -13,16 +13,22 @@ use Psalm\Internal\Analyzer\Statements\Expression\Assignment\ArrayAssignmentAnal
 use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\CoalesceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallReturnTypeFetcher;
+use Psalm\Internal\Analyzer\Statements\Expression\ClassConstAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
+use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ArrayFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Type\ArrayType;
 use Psalm\Internal\Type\AssertionReconciler;
+use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Internal\TypeVisitor\TemplateTypeCollector;
+use Psalm\Internal\TypeVisitor\TypeVariableResolver;
 use Psalm\Issue\DocblockTypeContradiction;
 use Psalm\Issue\PsalmInternalError;
 use Psalm\Issue\RedundantCondition;
@@ -59,7 +65,6 @@ use Psalm\Storage\Assertion\Truthy;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
-use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TClassStringMap;
 use Psalm\Type\Atomic\TFalse;
@@ -100,6 +105,7 @@ use function reset;
 use function sort;
 use function str_contains;
 use function str_ends_with;
+use function str_replace;
 use function str_split;
 use function str_starts_with;
 use function strlen;
@@ -195,6 +201,7 @@ class Reconciler
 
         // make sure array keys come after base keys
         ksort($new_types);
+        $new_types = self::moveOffsetsAfterTheirIndexVars($new_types);
 
         $codebase = $statements_analyzer->getCodebase();
 
@@ -307,6 +314,13 @@ class Reconciler
 
             $before_adjustment = $result_type;
 
+            // a magic property that is not set is still read through __get() (one that can return null is taken to)
+            $not_set_reads_through_magic_getter = $has_inverted_isset
+                && $result_type
+                && $result_type->ignore_isset
+                && !$result_type->isNullable()
+                && self::isReadThroughMagicGetter($codebase, $key, $existing_types);
+
             $failed_reconciliation = self::RECONCILIATION_OK;
 
             foreach (self::orderExclusionOfEmptyStringFirst($new_type_parts) as $offset => $new_type_part_parts) {
@@ -314,6 +328,7 @@ class Reconciler
                 $report_location = $code_location
                     && isset($referenced_var_ids[$key])
                     && isset($active_new_types[$key][$offset])
+                    && !Context::isSymbolCheckVarId($key)
                     ? $code_location
                     : null;
                 // of several alternatives, one that cannot be the value is only a problem when none can
@@ -369,18 +384,22 @@ class Reconciler
                         IssueBuffer::startRecording();
                     }
 
-                    $result_type_candidate = AssertionReconciler::reconcile(
-                        $new_type_part_part,
-                        $result_type,
-                        $key,
-                        $statements_analyzer,
-                        $inside_loop,
-                        $template_type_map,
-                        $report_location,
-                        $suppressed_issues,
-                        $failed_reconciliation,
-                        $negated,
-                    );
+                    $result_type_candidate = $not_set_reads_through_magic_getter
+                        && $result_type
+                        && $new_type_part_part instanceof IsNotIsset
+                        ? $result_type
+                        : AssertionReconciler::reconcile(
+                            $new_type_part_part,
+                            $result_type,
+                            $key,
+                            $statements_analyzer,
+                            $inside_loop,
+                            $template_type_map,
+                            $report_location,
+                            $suppressed_issues,
+                            $failed_reconciliation,
+                            $negated,
+                        );
 
                     if ($record_alternatives) {
                         $alternative_issues = IssueBuffer::clearRecordingLevel();
@@ -567,10 +586,18 @@ class Reconciler
                 $result_type = $result_type->setProperties(['reference_free' => true]);
             }
 
+            // nor what can change it: a readonly property stays unchanged by calls, unless it may be uninitialized
+            // (a type narrowed by empty() is built from the old one and would inherit the flag)
+            if ($before_adjustment && !$before_adjustment->has_mutations) {
+                $result_type = $result_type->setProperties(['has_mutations' => $has_inverted_isset || $has_empty]);
+            }
+
             $type_changed = !$before_adjustment
                 || !$result_type->equals($before_adjustment)
                 || $result_type->different
-                || $before_adjustment->different;
+                || $before_adjustment->different
+                // isset() decided what the type could not (a magic property), like it removes null from a nullable one
+                || $result_type->ignore_isset !== $before_adjustment->ignore_isset;
 
             $key_parts = self::breakUpPathIntoParts($key);
             if ($type_changed || $failed_reconciliation) {
@@ -598,12 +625,19 @@ class Reconciler
                     );
                 } elseif ($key !== '$this') {
                     foreach ($existing_types as $new_key => $_) {
-                        if ($new_key === $key) {
+                        if ($new_key === $key
+                            || self::narrowingKeepsProperty($codebase, $before_adjustment, $result_type, $key, $new_key)
+                        ) {
                             continue;
                         }
 
-                        if (!isset($new_types[$new_key])
-                            && preg_match('/' . preg_quote($key, '/') . '[\]\[\-]/', $new_key)
+                        if ((!isset($new_types[$new_key]) || str_contains($new_key, '[' . $key . ']'))
+                            && self::dependsOnNarrowedVar(
+                                $codebase,
+                                $new_key,
+                                $key,
+                                [$key => $result_type] + $existing_types,
+                            )
                             && $is_real
                         ) {
                             // Fix any references to the type before removing it.
@@ -1035,6 +1069,145 @@ class Reconciler
     }
 
     /**
+     * An offset asserted along with its index variable is read under the narrowed index
+     *
+     * @param array<string, array<array<int, Assertion>>> $new_types
+     * @return array<string, array<array<int, Assertion>>>
+     * @psalm-pure
+     */
+    private static function moveOffsetsAfterTheirIndexVars(array $new_types): array
+    {
+        $offsets = [];
+
+        foreach ($new_types as $key => $type) {
+            if (!str_contains($key, '[$')) {
+                continue;
+            }
+
+            foreach ($new_types as $index_var => $_) {
+                if (str_contains($key, '[' . $index_var . ']')) {
+                    $offsets[$key] = $type;
+                    unset($new_types[$key]);
+                    break;
+                }
+            }
+        }
+
+        return $new_types + $offsets;
+    }
+
+    /**
+     * Whether what is known about $var_id may be stale after $narrowed_var_id has been narrowed. It is not when
+     * $narrowed_var_id is only an index of $var_id into an array whose value type is the same for every key and whose
+     * keys include the narrowed index.
+     *
+     * @internal
+     * @param array<string, Union> $types
+     */
+    public static function dependsOnNarrowedVar(
+        Codebase $codebase,
+        string $var_id,
+        string $narrowed_var_id,
+        array $types,
+    ): bool {
+        $index = '[' . $narrowed_var_id . ']';
+
+        if (preg_match('/' . preg_quote($narrowed_var_id, '/') . '[\]\[\-]/', str_replace($index, '[]', $var_id))) {
+            return true;
+        }
+
+        $position = strpos($var_id, $index);
+
+        while ($position !== false) {
+            $array_type = $types[substr($var_id, 0, $position)] ?? null;
+
+            if ($array_type === null
+                || !self::hasSameValueTypeForEveryKey($array_type)
+                || !self::hasKeyType($codebase, $array_type, $types[$narrowed_var_id] ?? null)
+            ) {
+                return true;
+            }
+
+            $position = strpos($var_id, $index, $position + 1);
+        }
+
+        return false;
+    }
+
+    /**
+     * Whether the keys of the array include the narrowed index, which a fetch reports otherwise. The index is cast as
+     * PHP casts a key: '1' is 1. An index still mixed is no more invalid than before it was narrowed.
+     */
+    private static function hasKeyType(Codebase $codebase, Union $array_type, ?Union $index_type): bool
+    {
+        if ($index_type === null) {
+            return false;
+        }
+
+        if ($index_type->hasMixed()) {
+            return true;
+        }
+
+        $key_type = ArrayFetchAnalyzer::replaceOffsetTypeWithInts($index_type);
+
+        foreach ($array_type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TMixed) {
+                continue;
+            }
+
+            $array_key_type = match (true) {
+                $atomic_type instanceof TArray => $atomic_type->type_params[0],
+                $atomic_type instanceof TKeyedArray => $atomic_type->getGenericKeyType(),
+                default => null,
+            };
+
+            if ($array_key_type === null
+                || !UnionTypeComparator::isContainedBy($codebase, $key_type, $array_key_type)
+            ) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * @psalm-pure
+     */
+    private static function hasSameValueTypeForEveryKey(Union $type): bool
+    {
+        foreach ($type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TArray || $atomic_type instanceof TMixed) {
+                continue;
+            }
+
+            if (!$atomic_type instanceof TKeyedArray) {
+                return false;
+            }
+
+            $value_types = $atomic_type->properties;
+
+            if ($atomic_type->fallback_params !== null) {
+                $value_types[] = $atomic_type->fallback_params[1];
+            }
+
+            $value_type_id = null;
+
+            foreach ($value_types as $value_type) {
+                $id = $value_type->setPossiblyUndefined(false)->getId();
+
+                if ($value_type_id !== null && $id !== $value_type_id) {
+                    return false;
+                }
+
+                $value_type_id = $id;
+            }
+        }
+
+        return true;
+    }
+
+    /**
      * The type of a variable or of an offset of one that the known types give: mixed where nothing is known of it,
      * null for an offset of something other than an array (an ArrayAccess), whose value isn't known either
      *
@@ -1113,6 +1286,67 @@ class Reconciler
                 && !$atomic_type instanceof TNever
                 && (!$atomic_type instanceof TArray || !$atomic_type->type_params[1]->isNever())
             ) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Whether what is known of `$property_var_id` still holds after its object was narrowed: the object is the same,
+     * unless it was narrowed to one of several classes or to a class that redeclares the property
+     */
+    public static function narrowingKeepsProperty(
+        Codebase $codebase,
+        ?Union $before,
+        ?Union $after,
+        string $object_id,
+        string $property_var_id,
+    ): bool {
+        if ($before === null
+            || $after === null
+            || !str_starts_with($property_var_id, $object_id . '->')
+            || !preg_match('/\G(\w+)(?=$|->|\[)/', $property_var_id, $match, 0, strlen($object_id) + 2)
+            || !isset($match[1])
+        ) {
+            return false;
+        }
+
+        $declaring_class = null;
+
+        foreach ([...array_values($before->getAtomicTypes()), ...array_values($after->getAtomicTypes())] as $atomic) {
+            if (!$atomic instanceof TNamedObject || !$codebase->classlike_storage_provider->has($atomic->value)) {
+                return false;
+            }
+
+            $declaring = $codebase->properties->getDeclaringClassForProperty(
+                $atomic->value . '::$' . $match[1],
+                true,
+            );
+
+            if ($declaring === null || ($declaring_class !== null && $declaring !== $declaring_class)) {
+                return false;
+            }
+
+            $declaring_class = $declaring;
+        }
+
+        // narrowing a template of the class gives its property a more precise type
+        $property_type = $codebase->classlike_storage_provider->get($declaring_class)->properties[$match[1]]->type
+            ?? null;
+
+        if ($property_type !== null) {
+            $template_collector = new TemplateTypeCollector(true);
+            $template_collector->traverse($property_type);
+
+            if ($template_collector->getTemplateTypes() !== []) {
+                return false;
+            }
+        }
+
+        foreach ($before->getAtomicTypes() as $before_part) {
+            if (!UnionTypeComparator::isContainedBy($codebase, $after, new Union([$before_part]))) {
                 return false;
             }
         }
@@ -1264,8 +1498,10 @@ class Reconciler
     ): ?Union {
         [$fq_class_name, $const_name] = explode('::', $key);
 
+        $is_static = strtolower($fq_class_name) === 'static';
+
         // the class of `static::NAME` is the one the code is in, as for a static property
-        if (strtolower($fq_class_name) === 'static') {
+        if ($is_static) {
             $fq_class_name = $statements_analyzer?->getFQCLN() ?? $fq_class_name;
         }
 
@@ -1273,11 +1509,23 @@ class Reconciler
             return null;
         }
 
+        $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
+        $constant_storage = $class_storage->constants[$const_name] ?? null;
+
+        // a subclass may give `static::NAME` another value, of the type the constant declares
+        $late_static_binding = $is_static
+            && !$class_storage->final
+            && !$constant_storage?->final
+            && ($constant_storage?->type?->from_docblock === true
+                || ClassConstAnalyzer::hasDeclaredType($constant_storage));
+
         return $codebase->classlikes->getClassConstantType(
             $fq_class_name,
             $const_name,
             ReflectionProperty::IS_PRIVATE,
             null,
+            [],
+            $late_static_binding,
         );
     }
 
@@ -1454,6 +1702,9 @@ class Reconciler
                             }
                         } elseif ($existing_key_type_part instanceof TClassStringMap) {
                             return Type::getMixed();
+                        } elseif ($existing_key_type_part instanceof TNever && !$inside_loop) {
+                            // a value that cannot be has no item either
+                            return Type::getNever();
                         } elseif ($existing_key_type_part instanceof TNever
                             || ($existing_key_type_part instanceof TMixed
                                 && $existing_key_type_part->from_loop_isset)
@@ -1551,7 +1802,7 @@ class Reconciler
 
                         $new_base_type = Type::combineUnionTypes(
                             $new_base_type,
-                            $new_base_type_candidate,
+                            TypeVariableResolver::resolveTopLevel($new_base_type_candidate, $codebase),
                             $codebase,
                         );
 
@@ -1586,6 +1837,10 @@ class Reconciler
                 if (!isset($existing_keys[$new_base_key])) {
                     $new_base_type = null;
 
+                    // a readonly property of an object that can't be replaced keeps its value after a call
+                    $keeps_value = $divider === '->'
+                        && (!$existing_keys[$base_key]->has_mutations || strpbrk($base_key, '[-:') === false);
+
                     $atomic_types = $existing_keys[$base_key]->getAtomicTypes();
 
                     while ($atomic_types) {
@@ -1595,6 +1850,8 @@ class Reconciler
                             $atomic_types = array_merge($atomic_types, $existing_key_type_part->as->getAtomicTypes());
                             continue;
                         }
+
+                        $part_keeps_value = false;
 
                         if ($existing_key_type_part instanceof TNull) {
                             $class_property_type = Type::getNull();
@@ -1662,11 +1919,19 @@ class Reconciler
                                     if (!$class_property_type) {
                                         return null;
                                     }
+
+                                    $part_keeps_value = self::isReadonlyProperty(
+                                        $codebase,
+                                        $existing_key_type_part->value,
+                                        $property_name,
+                                    );
                                 }
                             }
                         } else {
                             $class_property_type = Type::getMixed();
                         }
+
+                        $keeps_value = $keeps_value && $part_keeps_value;
 
                         $new_base_type = Type::combineUnionTypes(
                             $new_base_type,
@@ -1675,6 +1940,10 @@ class Reconciler
                         );
 
                         $existing_keys[$new_base_key] = $new_base_type;
+                    }
+
+                    if ($keeps_value && $new_base_type) {
+                        $existing_keys[$new_base_key] = $new_base_type->setProperties(['has_mutations' => false]);
                     }
                 }
 
@@ -1780,6 +2049,61 @@ class Reconciler
             $codebase,
         );
     }
+
+    /**
+     * Whether a property keeps the value it holds
+     */
+    private static function isReadonlyProperty(
+        Codebase $codebase,
+        string $fq_class_name,
+        string $property_name,
+    ): bool {
+        $declaring_property_class = $codebase->properties->getDeclaringClassForProperty(
+            $fq_class_name . '::$' . $property_name,
+            true,
+        );
+
+        if ($declaring_property_class === null) {
+            return false;
+        }
+
+        $property_storage = $codebase->classlike_storage_provider->get($declaring_property_class)
+            ->properties[$property_name] ?? null;
+
+        return $property_storage !== null
+            && $property_storage->readonly
+            && !$property_storage->allow_private_mutation;
+    }
+
+    /**
+     * Whether `$a->b` is read through `__get()` of each class `$a` can be
+     *
+     * @param array<string, Union> $existing_types
+     */
+    private static function isReadThroughMagicGetter(Codebase $codebase, string $key, array $existing_types): bool
+    {
+        $key_parts = self::breakUpPathIntoParts($key);
+        $property_name = array_pop($key_parts);
+
+        if (array_pop($key_parts) !== '->'
+            || !($object_type = $existing_types[implode('', $key_parts)] ?? null)
+        ) {
+            return false;
+        }
+
+        foreach ($object_type->getAtomicTypes() as $atomic_type) {
+            if (!$atomic_type instanceof TNamedObject
+                || !$codebase->classlike_storage_provider->has($atomic_type->value)
+                || $codebase->propertyExists($atomic_type->value . '::$' . $property_name, true)
+                || !$codebase->methods->methodExists($codebase, new MethodIdentifier($atomic_type->value, '__get'))
+            ) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     private static function getPropertyType(
         Codebase $codebase,
         string $fq_class_name,
@@ -2238,6 +2562,13 @@ class Reconciler
                     ) {
                         $new_base_type = $existing_types[$base_key];
 
+                        // a key the array always has cannot be left without a value: no array of that shape can be
+                        $shape_is_impossible = $base_atomic_type instanceof TKeyedArray
+                            && count($array_key_offsets) === 1
+                            && $result_type->isNever()
+                            && isset($base_atomic_type->properties[$array_key_offset])
+                            && !$base_atomic_type->properties[$array_key_offset]->possibly_undefined;
+
                         if ($base_atomic_type instanceof TArray) {
                             $fallback_key_type = $base_atomic_type->type_params[0];
                             $fallback_value_type = $base_atomic_type->type_params[1];
@@ -2251,7 +2582,7 @@ class Reconciler
                             );
                         } elseif ($base_atomic_type instanceof TClassStringMap) {
                             // do nothing
-                        } else {
+                        } elseif (!$shape_is_impossible) {
                             $properties = $base_atomic_type->properties;
 
                             // only one of the keys the offset can be holds what the assertion says, and which one is
@@ -2310,7 +2641,17 @@ class Reconciler
                             }
                         }
 
-                        $new_base_type = $new_base_type->getBuilder()->addType($base_atomic_type)->freeze();
+                        $new_base_type_builder = $new_base_type->getBuilder();
+
+                        if ($shape_is_impossible) {
+                            $new_base_type_builder->removeType($base_atomic_type->getKey());
+                        } else {
+                            $new_base_type_builder->addType($base_atomic_type);
+                        }
+
+                        $new_base_type = $new_base_type_builder->isUnionEmpty()
+                            ? Type::getNever()
+                            : $new_base_type_builder->freeze();
 
                         $changed_var_ids[$base_key . '[' . $array_key . ']'] = true;
 
@@ -2395,36 +2736,7 @@ class Reconciler
      */
     protected static function refineArrayKey(Union $key_type): Union
     {
-        return self::refineArrayKeyInner($key_type) ?? $key_type;
-    }
-    /**
-     * @psalm-capabilities read-props
-     */
-    private static function refineArrayKeyInner(Union $key_type): ?Union
-    {
-        $refined = false;
-        $types = [];
-        foreach ($key_type->getAtomicTypes() as $cat) {
-            if ($cat instanceof TTemplateParam) {
-                $as = self::refineArrayKeyInner($cat->as);
-                if ($as) {
-                    $refined = true;
-                    $types []= $cat->replaceAs($as);
-                } else {
-                    $types []= $cat;
-                }
-            } elseif ($cat instanceof TArrayKey || $cat instanceof TString || $cat instanceof TInt) {
-                $types []= $cat;
-            } else {
-                $refined = true;
-                $types []= new TArrayKey;
-            }
-        }
-
-        if ($refined) {
-            return $key_type->getBuilder()->setTypes($types)->freeze();
-        }
-        return null;
+        return ArrayType::refineKeyType($key_type);
     }
 
     /**

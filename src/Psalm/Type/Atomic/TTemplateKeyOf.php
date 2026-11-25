@@ -37,7 +37,7 @@ final class TTemplateKeyOf extends Atomic
     }
 
     #[Override]
-    public function getId(bool $exact = true, bool $nested = false): string
+    public function getId(bool $exact = true): string
     {
         if (!$exact) {
             return 'key-of<' . $this->param_name . '>';
