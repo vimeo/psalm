@@ -3179,7 +3179,8 @@ final class TaintFlowResolution
      * no open assignment and closed $closed of theirs of each expression type: unless the innermost open
      * assignment left is one of an array they made past any of a property they made. Those of the call
      * entering their own context are all outer ones, and how the two expression types interleave there isn't
-     * known, so a conversion of an array of theirs doesn't drop them either. A value encoded in a string isn't
+     * known, so a conversion of an array of theirs doesn't drop them either. One of the call they put back under
+     * its key (see applyPathType()) is one of an array they made, though. A value encoded in a string isn't
      * in an array, and a flow anywhere in an array is all of one (see getNextOpenAssignments()).
      *
      * @param array{int, int} $closed
@@ -3197,8 +3198,9 @@ final class TaintFlowResolution
 
         $innermost = $array_assignments[$array_left - 1];
 
-        return isset($this->overwrite_path_types[$innermost])
-            || $this->path_types[$innermost] === DataFlowGraph::SERIALIZATION_PATH_TYPE;
+        return $innermost >= 0
+            && (isset($this->overwrite_path_types[$innermost])
+                || $this->path_types[$innermost] === DataFlowGraph::SERIALIZATION_PATH_TYPE);
     }
 
     /**
