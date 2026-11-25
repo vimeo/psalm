@@ -218,6 +218,17 @@ final class ArrayAssignmentTest extends TestCase
                         /** @psalm-check-type-exact $l = non-empty-array<int<0, 1>, "x"|int> */;
                     }',
             ],
+            'writeUnderAnIntRangeUpToTheLargestIntEnds' => [
+                'code' => '<?php
+                    /**
+                     * @param array{0: int, 1: int} $l
+                     * @param int<9223372036854775806, 9223372036854775807> $i
+                     */
+                    function f(array $l, int $i): array {
+                        $l[$i] = "x";
+                        return $l;
+                    }',
+            ],
             'writeUnderAnIntRangeOfOptionalItemsLeavesTheArrayNonEmpty' => [
                 'code' => '<?php
                     /**

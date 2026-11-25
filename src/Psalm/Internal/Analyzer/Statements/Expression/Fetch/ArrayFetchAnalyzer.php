@@ -2259,8 +2259,10 @@ final class ArrayFetchAnalyzer
                 && $key_atomic_type->max_bound !== null
                 && $key_atomic_type->max_bound - $key_atomic_type->min_bound < count($type->properties)
             ) {
-                for ($key = $key_atomic_type->min_bound; $key <= $key_atomic_type->max_bound; $key++) {
-                    $keys[] = $key;
+                // counted from the lower bound: the upper one may be PHP_INT_MAX, past which an int can't go
+                $count = $key_atomic_type->max_bound - $key_atomic_type->min_bound;
+                for ($offset = 0; $offset <= $count; $offset++) {
+                    $keys[] = $key_atomic_type->min_bound + $offset;
                 }
             } else {
                 return null;
