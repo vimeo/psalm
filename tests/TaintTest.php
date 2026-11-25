@@ -3525,6 +3525,78 @@ final class TaintTest extends TestCase
 
                     (new Runner())->run(...[(string) $_GET["x"], safe()]);',
             ],
+            'dontTaintAnOverrideParameterWithANamedArgumentForAnotherParameter' => [
+                'code' => '<?php // --taint-analysis
+                    class Base {
+                        /** @psalm-impure */
+                        public function go(string ...$rest): void {}
+                    }
+
+                    class Child extends Base {
+                        /** @psalm-suppress ParamNameMismatch */
+                        public function go(string $x = "", string $sink = "", string ...$more): void {
+                            system($x);
+                        }
+                    }
+
+                    function run(Base $receiver): void {
+                        $receiver->go(sink: (string) $_GET["x"]);
+                    }',
+            ],
+            'dontTaintAnOverrideParameterWithANamedArgumentThePositionalOnesFill' => [
+                'code' => '<?php // --taint-analysis
+                    class Base {
+                        /** @psalm-impure */
+                        public function go(string ...$rest): void {}
+                    }
+
+                    class Child extends Base {
+                        /** @psalm-suppress ParamNameMismatch */
+                        public function go(string $first = "", string ...$rest): void {
+                            system($first);
+                        }
+                    }
+
+                    function run(Base $receiver): void {
+                        $receiver->go("safe", first: (string) $_GET["x"]);
+                    }',
+            ],
+            'dontTaintAnOverrideParameterWithAPositionalArgumentForTheParameterOfItsName' => [
+                'code' => '<?php // --taint-analysis
+                    class Base {
+                        /** @psalm-impure */
+                        public function go(string $a = "", string $b = ""): void {}
+                    }
+
+                    class Child extends Base {
+                        /** @psalm-suppress ParamNameMismatch */
+                        public function go(string $b = "", string $a = ""): void {
+                            system($a);
+                        }
+                    }
+
+                    function run(Base $receiver): void {
+                        $receiver->go((string) $_GET["x"]);
+                    }',
+            ],
+            'dontTaintAnOverrideParameterWithAnUnpackedKeyForTheParameterOfItsName' => [
+                'code' => '<?php // --taint-analysis
+                    class Base {
+                        /** @psalm-impure */
+                        public function go(string $a = "", string $b = ""): void {}
+                    }
+
+                    class Child extends Base {
+                        /** @psalm-suppress ParamNameMismatch */
+                        public function go(string $b = "", string $a = ""): void {
+                            system($b);
+                        }
+                    }
+
+                    function run(Base $receiver): void {
+                        $receiver->go(...["a" => (string) $_GET["x"]]);
+                    }',
+            ],
             'taintSourceUnderAKeyOfTheReturnOnly' => [
                 'code' => '<?php // --taint-analysis
                     /**
@@ -11276,6 +11348,91 @@ final class TaintTest extends TestCase
                         }
 
                         $receiver->go(...$taints);
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintAnOverrideParameterWithANamedArgumentAtAnotherOffset' => [
+                'code' => '<?php // --taint-analysis
+                    class Base {
+                        /** @psalm-impure */
+                        public function go(string ...$rest): void {}
+                    }
+
+                    class Child extends Base {
+                        /** @psalm-suppress ParamNameMismatch */
+                        public function go(string $x = "", string $sink = "", string ...$rest): void {
+                            system($sink);
+                        }
+                    }
+
+                    function run(Base $receiver): void {
+                        $receiver->go(sink: (string) $_GET["x"]);
+                    }',
+                'error_message' => 'TaintedShell',
+            ],
+            'taintAnOverrideParameterWithANamedArgumentAfterAnotherNamedOne' => [
+                'code' => '<?php // --taint-analysis
+                    class Base {
+                        /** @psalm-impure */
+                        public function go(string ...$rest): void {}
+                    }
+
+                    class Child extends Base {
+                        /** @psalm-suppress ParamNameMismatch */
+                        public function go(string $first = "", string ...$rest): void {
+                            system($first);
+                        }
+                    }
+
+                    function seed(Base $r): void {
+                        $r->go("safe", first: (string) $_GET["x"]);
+                    }
+
+                    function run(Base $r): void {
+                        $r->go(other: "safe", first: (string) $_GET["x"]);
+                    }',
+                'error_message' => 'TaintedShell',
+            ],
+            'taintAnOverrideParameterWithAPositionalArgumentAtItsPosition' => [
+                'code' => '<?php // --taint-analysis
+                    class Base {
+                        /** @psalm-impure */
+                        public function go(string $a = "", string $b = ""): void {}
+                    }
+
+                    class Child extends Base {
+                        /** @psalm-suppress ParamNameMismatch */
+                        public function go(string $b = "", string $a = ""): void {
+                            system($b);
+                        }
+                    }
+
+                    function run(Base $receiver): void {
+                        $receiver->go((string) $_GET["x"]);
+                    }',
+                'error_message' => 'TaintedShell',
+            ],
+            'taintASpecializedOverrideParameterWithANamedArgumentAtAnotherPosition' => [
+                'code' => '<?php // --taint-analysis
+                    class Base {
+                        /** @psalm-impure */
+                        public function go(string $a = "", string $b = ""): string {
+                            return "";
+                        }
+                    }
+
+                    class Child extends Base {
+                        /**
+                         * @psalm-taint-specialize
+                         * @psalm-suppress ParamNameMismatch
+                         */
+                        public function go(string $b = "", string $a = ""): string {
+                            return $a;
+                        }
+                    }
+
+                    function run(Base $receiver): void {
+                        echo $receiver->go(a: (string) $_GET["x"]);
                     }',
                 'error_message' => 'TaintedHtml',
             ],
