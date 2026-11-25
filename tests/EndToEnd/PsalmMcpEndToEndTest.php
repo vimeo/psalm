@@ -25,9 +25,9 @@ use function proc_terminate;
 use function rmdir;
 use function str_replace;
 use function stream_select;
-use function symlink;
 use function touch;
 use function unlink;
+use function var_export;
 
 use const DIRECTORY_SEPARATOR;
 use const JSON_THROW_ON_ERROR;
@@ -251,11 +251,7 @@ final class PsalmMcpEndToEndTest extends PsalmEndToEndTestCase
     public function testTheLauncherOfTheSkillStartsThePsalmOfTheProject(): void
     {
         $this->initPsalm();
-        $package = self::$tmpDir . '/vendor/vimeo/psalm';
-        @mkdir(dirname($package), 0777, true);
-        if (!@symlink(dirname(__DIR__, 2), $package)) {
-            $this->markTestSkipped('No symlinks here');
-        }
+        $this->installPsalmPackage();
 
         // from a subdirectory of the repository
         @mkdir(self::$tmpDir . '/.git');
@@ -266,7 +262,7 @@ final class PsalmMcpEndToEndTest extends PsalmEndToEndTestCase
             $output = $this->callTool('psalm_check', ['paths' => ['src/FileWithErrors.php']]);
             $this->assertStringContainsString(self::native('InvalidReturnType - src/FileWithErrors.php:5:'), $output);
         } finally {
-            unlink($package);
+            $this->removePsalmPackage();
             @rmdir(self::$tmpDir . '/.git');
         }
     }
@@ -274,11 +270,7 @@ final class PsalmMcpEndToEndTest extends PsalmEndToEndTestCase
     public function testTheLauncherOfTheSkillDoesNotRunThePsalmOfADirectoryAboveTheRepository(): void
     {
         $this->initPsalm();
-        $package = self::$tmpDir . '/vendor/vimeo/psalm';
-        @mkdir(dirname($package), 0777, true);
-        if (!@symlink(dirname(__DIR__, 2), $package)) {
-            $this->markTestSkipped('No symlinks here');
-        }
+        $this->installPsalmPackage();
 
         $repository = self::$tmpDir . '/src/repository';
         @mkdir($repository . '/.git', 0777, true);
@@ -292,8 +284,33 @@ final class PsalmMcpEndToEndTest extends PsalmEndToEndTestCase
             $this->assertTrue(self::at($result, 'isError'));
             $this->assertStringContainsString('Psalm is not installed in', self::string($result, 'content', 0, 'text'));
         } finally {
-            unlink($package);
+            $this->removePsalmPackage();
         }
+    }
+
+    /**
+     * A vimeo/psalm package in the project whose psalm-mcp runs this checkout's, without a symlink: the fixture is
+     * removed recursively, which would follow one into this checkout
+     */
+    private function installPsalmPackage(): void
+    {
+        $package = self::$tmpDir . '/vendor/vimeo/psalm';
+        mkdir($package, 0777, true);
+        file_put_contents($package . '/psalm', '');
+        file_put_contents(
+            $package . '/psalm-mcp',
+            '<?php require ' . var_export(dirname(__DIR__, 2) . '/src/Psalm/Internal/Cli/Mcp.php', true) . ';'
+                . ' \\Psalm\\Internal\\Cli\\Mcp::run($argv);',
+        );
+    }
+
+    private function removePsalmPackage(): void
+    {
+        $package = self::$tmpDir . '/vendor/vimeo/psalm';
+        unlink($package . '/psalm');
+        unlink($package . '/psalm-mcp');
+        rmdir($package);
+        rmdir(dirname($package));
     }
 
     private function initPsalm(): void
