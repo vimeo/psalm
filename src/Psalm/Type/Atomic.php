@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Type;
 
 use InvalidArgumentException;
+use LogicException;
 use Override;
 use Psalm\Codebase;
 use Psalm\Exception\TypeParseTreeException;
@@ -793,13 +794,14 @@ abstract class Atomic implements TypeNode, Stringable
      *     'a'               string
      *     non-empty-string  string
      *
-     * Defaults to getKey(): a type whose key leaves something out of the type overrides it.
+     * A type that extends Atomic directly must override it. A type that extends one of Psalm's types inherits that
+     * type's id: override getId() along with getKey().
      *
      * @psalm-mutation-free
      */
     public function getId(bool $exact = true): string
     {
-        return $this->getKey();
+        throw new LogicException(static::class . ' must override getId()');
     }
 
     /**

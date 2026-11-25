@@ -2897,12 +2897,6 @@
       <code><![CDATA[#[Override]]]></code>
     </ImmutableDependency>
   </file>
-  <file src="src/Psalm/Type/Atomic/TCallableString.php">
-    <ImmutableDependency>
-      <code><![CDATA[#[Override]]]></code>
-      <code><![CDATA[#[Override]]]></code>
-    </ImmutableDependency>
-  </file>
   <file src="src/Psalm/Type/Atomic/TClassString.php">
     <ImmutableDependency>
       <code><![CDATA[#[Override]]]></code>
