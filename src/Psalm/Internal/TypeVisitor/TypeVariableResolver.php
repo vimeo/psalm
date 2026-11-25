@@ -207,9 +207,6 @@ final class TypeVariableResolver extends MutableTypeVisitor
         return $result;
     }
 
-    /**
-     * @psalm-capabilities read-props|write-this-props|write-refs
-     */
     #[Override]
     protected function enterNode(TypeNode &$type): ?int
     {
@@ -218,9 +215,12 @@ final class TypeVariableResolver extends MutableTypeVisitor
         }
 
         // the members are traversed here: only what a variable resolves to is traversed with that variable kept,
-        // so `T|array<int, T>` still resolves the `T` of its array
+        // so `T|array<int, T>` still resolves the `T` of its array. A type several variables resolve to is
+        // traversed once, or bounds shared along a chain of variables are expanded exponentially often
         $atomic_types = [];
         $changed = false;
+        /** @var array<string, array{Atomic, array<string, true>}> */
+        $replacements = [];
 
         foreach ($type->getAtomicTypes() as $atomic_type) {
             $resolved_atomics = $atomic_type instanceof TTypeVariable
@@ -247,16 +247,21 @@ final class TypeVariableResolver extends MutableTypeVisitor
             $this->resolved_a_variable = true;
             $changed = true;
 
-            $outer_unrolling = $this->unrolling;
-            $this->unrolling[$atomic_type->name] = true;
-
             foreach ($resolved_atomics as $resolved_atomic) {
-                $this->traverse($resolved_atomic);
-                $atomic_types[] = $resolved_atomic;
+                $replacements[$resolved_atomic->getId()][0] = $resolved_atomic;
+                $replacements[$resolved_atomic->getId()][1][$atomic_type->name] = true;
             }
-
-            $this->unrolling = $outer_unrolling;
         }
+
+        $outer_unrolling = $this->unrolling;
+
+        foreach ($replacements as [$resolved_atomic, $variable_names]) {
+            $this->unrolling = $outer_unrolling + $variable_names;
+            $this->traverse($resolved_atomic);
+            $atomic_types[] = $resolved_atomic;
+        }
+
+        $this->unrolling = $outer_unrolling;
 
         if ($changed) {
             // rebuild through the builder so the union's own properties survive:

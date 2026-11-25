@@ -14,6 +14,9 @@ use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Union;
 
+use function hrtime;
+use function str_repeat;
+
 final class TypeVariableResolverTest extends TestCase
 {
     public function testResolvesAVariableNextToAnotherMemberHoldingIt(): void
@@ -41,5 +44,24 @@ final class TypeVariableResolverTest extends TestCase
             ->traverse($type);
 
         $this->assertSame('Box<_0:Box<_0>|Box<int>>|Box<int>', $type->getId());
+    }
+
+    public function testResolvesABoundSharedByTwoVariablesOnce(): void
+    {
+        // two variables bound to the same type at each of 20 levels
+        $type = Type::getInt();
+        for ($level = 20; $level > 0; $level--) {
+            $bounds = new TypeVariableBounds([new TemplateBound(new Union([new TArray([Type::getInt(), $type])]))]);
+            $type = new Union([new TTypeVariable('_a' . $level, $bounds), new TTypeVariable('_b' . $level, $bounds)]);
+        }
+
+        $start = hrtime(true);
+        (new TypeVariableResolver($this->project_analyzer->getCodebase(), construction_site_only: false))
+            ->traverse($type);
+        $nanoseconds = hrtime(true) - $start;
+
+        $this->assertSame(str_repeat('array<int, ', 20) . 'int' . str_repeat('>', 20), $type->getId());
+        // expanding the bound again for each variable takes 2^20 traversals, tens of seconds
+        $this->assertLessThan(2_000_000_000, $nanoseconds);
     }
 }
