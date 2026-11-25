@@ -30,6 +30,12 @@ final class TTemplateIndexedAccess extends Atomic
         return $this->array_param_name . '[' . $this->offset_param_name . ']';
     }
 
+    #[Override]
+    public function getId(bool $exact = true): string
+    {
+        return $this->array_param_name . '[' . $this->offset_param_name . ']';
+    }
+
     /**
      * @param array<lowercase-string, string> $aliased_classes
      * @psalm-pure

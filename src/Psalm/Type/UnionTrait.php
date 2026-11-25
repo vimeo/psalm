@@ -57,16 +57,19 @@ use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Atomic\TTypeAlias;
 
+use function array_diff;
 use function array_filter;
 use function array_keys;
 use function array_unique;
 use function count;
+use function explode;
 use function implode;
 use function ksort;
 use function reset;
 use function sort;
 use function str_contains;
 use function strpos;
+use function strtolower;
 
 /**
  * @psalm-immutable
@@ -250,45 +253,18 @@ trait UnionTrait
     }
 
     /**
+     * The id of the type, see getId()
+     *
      * @psalm-mutation-free
      */
     public function __toString(): string
     {
-        $types = [];
-
-        $printed_int = false;
-        $printed_float = false;
-        $printed_string = false;
-
-        foreach ($this->types as $type) {
-            if ($type instanceof TLiteralFloat) {
-                if ($printed_float) {
-                    continue;
-                }
-
-                $printed_float = true;
-            } elseif ($type instanceof TLiteralString) {
-                if ($printed_string) {
-                    continue;
-                }
-
-                $printed_string = true;
-            } elseif ($type instanceof TLiteralInt) {
-                if ($printed_int) {
-                    continue;
-                }
-
-                $printed_int = true;
-            }
-
-            $types[] = $type->getId(false);
-        }
-
-        sort($types);
-        return implode('|', $types);
+        return $this->getId();
     }
 
     /**
+     * @deprecated A union has no key of its own: use getId() to identify a type, and Atomic::getKey() for the slot
+     *     of an atomic type in a union. Will be removed in Psalm 8.
      * @psalm-mutation-free
      */
     public function getKey(): string
@@ -331,6 +307,9 @@ trait UnionTrait
     }
 
     /**
+     * The string that identifies the type (see Atomic::getId()): the ids of its atomic types, sorted and joined by
+     * `|`, with a template in parentheses when there are several types (`(T:fn-f as int)|null`)
+     *
      * @psalm-mutation-free
      */
     public function getId(bool $exact = true): string
@@ -370,6 +349,8 @@ trait UnionTrait
     }
 
     /**
+     * The type as Psalm writes it in the docblocks and stubs it generates, see Atomic::toNamespacedString()
+     *
      * @param  array<lowercase-string, string> $aliased_classes
      * @psalm-mutation-free
      */
@@ -420,6 +401,8 @@ trait UnionTrait
     }
 
     /**
+     * The type as a native type declaration, see Atomic::toPhpString()
+     *
      * @psalm-mutation-free
      * @param  array<lowercase-string, string> $aliased_classes
      */
@@ -429,6 +412,16 @@ trait UnionTrait
         ?string $this_class,
         int     $analysis_php_version_id,
     ): ?string {
+        // mixed contains the other types, and can't be combined with them natively
+        if (isset($this->types['mixed'])) {
+            return $this->types['mixed']->toPhpString(
+                $namespace,
+                $aliased_classes,
+                $this_class,
+                $analysis_php_version_id,
+            );
+        }
+
         if (!$this->isSingleAndMaybeNullable()) {
             if ($analysis_php_version_id < 8_00_00) {
                 return null;
@@ -474,6 +467,38 @@ trait UnionTrait
             $php_types[] = $php_type;
         }
 
+        $php_types = array_unique($php_types);
+
+        // PHP rejects a member whose classes include all those of another member: `Foo|(Foo&Countable)`
+        $class_sets = [];
+        foreach ($php_types as $i => $php_type) {
+            $class_sets[$i] = explode('&', strtolower($php_type));
+        }
+        foreach ($class_sets as $i => $classes) {
+            foreach ($class_sets as $j => $other_classes) {
+                if ($j !== $i
+                    && (count($other_classes) < count($classes) || $j < $i)
+                    && !array_diff($other_classes, $classes)
+                ) {
+                    unset($php_types[$i]);
+                    break;
+                }
+            }
+        }
+
+        if (count($php_types) > 1 || $nullable || $falsable) {
+            foreach ($php_types as $i => $php_type) {
+                if (str_contains($php_type, '&')) {
+                    // an intersection in a union is a DNF type
+                    if ($analysis_php_version_id < 8_02_00) {
+                        return null;
+                    }
+
+                    $php_types[$i] = '(' . $php_type . ')';
+                }
+            }
+        }
+
         if ($falsable) {
             if ($nullable) {
                 $php_types['null'] = 'null';
@@ -497,6 +522,10 @@ trait UnionTrait
      */
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
+        if (isset($this->types['mixed'])) {
+            return $this->types['mixed']->canBeFullyExpressedInPhp($analysis_php_version_id);
+        }
+
         if (!$this->isSingleAndMaybeNullable() && $analysis_php_version_id < 8_00_00) {
             return false;
         }
@@ -513,6 +542,14 @@ trait UnionTrait
 
         foreach ($types as $t) {
             if (!$t->canBeFullyExpressedInPhp($analysis_php_version_id)) {
+                return false;
+            }
+
+            if (count($this->types) > 1
+                && $analysis_php_version_id < 8_02_00
+                && $t instanceof TNamedObject
+                && $t->extra_types
+            ) {
                 return false;
             }
         }

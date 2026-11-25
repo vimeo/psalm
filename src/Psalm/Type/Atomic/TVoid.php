@@ -27,7 +27,17 @@ final class TVoid extends Atomic
     }
 
     /**
+     * @psalm-pure
+     */
+    #[Override]
+    public function getId(bool $exact = true): string
+    {
+        return 'void';
+    }
+
+    /**
      * @param  array<lowercase-string, string> $aliased_classes
+     * @psalm-pure
      */
     #[Override]
     public function toPhpString(
@@ -36,7 +46,7 @@ final class TVoid extends Atomic
         ?string $this_class,
         int $analysis_php_version_id,
     ): ?string {
-        return $analysis_php_version_id >= 7_01_00 ? $this->getKey() : null;
+        return $analysis_php_version_id >= 7_01_00 ? 'void' : null;
     }
 
     /**

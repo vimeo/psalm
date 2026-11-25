@@ -29,6 +29,28 @@ final class TypeIntersectionTest extends TestCase
         }
     }
 
+    public function testIterablesIntersectIntoOneIterable(): void
+    {
+        $codebase = $this->project_analyzer->getCodebase();
+
+        foreach ([
+            ['iterable<string, int>', 'iterable[pure]<mixed, mixed>'],
+            ['iterable[pure]<mixed, mixed>', 'iterable<string, int>'],
+        ] as [$left, $right]) {
+            $intersection = Type::intersectUnionTypes(Type::parseString($left), Type::parseString($right), $codebase);
+            $this->assertNotNull($intersection);
+            $this->assertSame('iterable[pure]<string, int>', $intersection->getId());
+        }
+
+        $intersection = Type::intersectUnionTypes(
+            Type::parseString('iterable<string, int>&Countable'),
+            Type::parseString('iterable<array-key, int>'),
+            $codebase,
+        );
+        $this->assertNotNull($intersection);
+        $this->assertSame('iterable<string, int>&Countable', $intersection->getId());
+    }
+
     public function testArrayIntersectionPreservesNestedGenericElements(): void
     {
         $value = new Union([new TTemplateParam('T', Type::getMixed(), 'test')]);
