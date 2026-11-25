@@ -171,6 +171,7 @@ final class Psalm
         'alter',
         'review',
         'language-server',
+        'mcp',
         'refactor',
         'shepherd::',
         'no-progress',
@@ -1128,6 +1129,12 @@ final class Psalm
             exit;
         }
 
+        if (isset($options['mcp'])) {
+            require_once __DIR__ . '/Mcp.php';
+            Mcp::run($argv);
+            exit;
+        }
+
         if (isset($options['refactor'])) {
             require_once __DIR__ . '/Refactor.php';
             Refactor::run($argv);
@@ -1537,6 +1544,9 @@ final class Psalm
 
             --language-server
                 Run Psalm Language Server
+
+            --mcp
+                Run the MCP server for AI agents (see psalm-mcp --help)
 
         HELP;
         // phpcs:enable

@@ -120,6 +120,7 @@
     "bin": [
         "psalm",
         "psalm-language-server",
+        "psalm-mcp",
         "psalm-plugin",
         "psalm-refactor",
         "psalm-review",

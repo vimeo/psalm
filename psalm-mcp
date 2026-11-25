@@ -1,0 +1,9 @@
+#!/usr/bin/env php
+<?php
+
+namespace Psalm;
+
+use Psalm\Internal\Cli\Mcp;
+
+require_once __DIR__ . '/src/Psalm/Internal/Cli/Mcp.php';
+Mcp::run($argv);
