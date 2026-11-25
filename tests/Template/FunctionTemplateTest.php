@@ -111,6 +111,27 @@ final class FunctionTemplateTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'paramOutOfATemplateIsTheTypeOfTheArgumentBindingIt' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T $value
+                     * @param-out T $var
+                     */
+                    function set_value(mixed &$var, mixed $value): void {
+                        $var = $value;
+                    }
+
+                    function example(): int {
+                        set_value($a, 100);
+                        set_value($b, 123);
+
+                        return $a + $b;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'templateBoundNamingATemplateDeclaredAfterIt' => [
                 'code' => '<?php
                     /** @template-covariant TValue */

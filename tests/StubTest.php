@@ -2834,6 +2834,39 @@ final class StubTest extends DeferredAnalyzerTestCase
         );
     }
 
+    public function testDateIntervalConstructorStillDeclaresItsThrows(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                    checkForThrowsDocblock="true"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                </psalm>',
+            ),
+        );
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                function i(): DateInterval {
+                    return new DateInterval("P1D");
+                }',
+        );
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('MissingThrowsDocblock');
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
     private function analyzeWithThrowingBuiltinFunctionStubs(string $code): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
