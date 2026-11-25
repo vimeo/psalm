@@ -1295,6 +1295,52 @@ final class TaintFlowGraph extends DataFlowGraph
         // the graphs of the forked workers are merged in any order: keep the edges added the same
         ksort($this->generator_sends);
 
+        // The nodes the search can go on from towards a generator return node: those the return nodes reach going
+        // forwards, plus, as linkGeneratorSend() can link any send node to what is sent to any generator, all of what
+        // is sent as soon as a send node is among them. The search does not push the others: they lead it nowhere,
+        // whichever calls it entered them through.
+        $forward = [];
+
+        foreach ($reverse as $to_id => $from_ids) {
+            foreach ($from_ids as $from_id => $_) {
+                $forward[$from_id][] = $to_id;
+            }
+        }
+
+        $useful = [];
+        $useful_queue = [];
+
+        foreach ($this->generator_sent_nodes as $return_node_id => $_) {
+            $useful[$return_node_id] = true;
+            $useful_queue[] = $return_node_id;
+        }
+
+        $sent_reached = false;
+
+        while ($useful_queue) {
+            $id = array_pop($useful_queue);
+
+            foreach ($forward[$id] ?? [] as $to_id) {
+                if (!isset($useful[$to_id])) {
+                    $useful[$to_id] = true;
+                    $useful_queue[] = $to_id;
+                }
+            }
+
+            if (!$sent_reached && isset($this->generator_sends[$id])) {
+                $sent_reached = true;
+
+                foreach ($this->generator_sent_nodes as $sent_node) {
+                    if (!isset($useful[$sent_node->id])) {
+                        $useful[$sent_node->id] = true;
+                        $useful_queue[] = $sent_node->id;
+                    }
+                }
+            }
+        }
+
+        unset($forward, $useful_queue);
+
         foreach ($this->generator_sends as $send_id => $generator_ids) {
             ksort($generator_ids);
 
@@ -1325,9 +1371,21 @@ final class TaintFlowGraph extends DataFlowGraph
                         $specialization_key,
                     );
 
+                    if ($specialization_key !== null) {
+                        // a new specialization is as useful as what it specializes
+                        $sent_id = $this->generator_sent_nodes[$unspecialized_id]->id;
+
+                        if (isset($useful[$sent_id])) {
+                            $useful[$sent_id . self::SPECIALIZATION_SEPARATOR . $specialization_key] = true;
+                        }
+                    }
+
                     foreach ($new_predecessors as $linked_id => $from_id) {
                         // reached from $linked_id with any of its call stacks: any call matches
-                        if (isset($searched[$linked_id]) && !isset($visited[$from_id . "\0"])) {
+                        if (isset($useful[$from_id])
+                            && isset($searched[$linked_id])
+                            && !isset($visited[$from_id . "\0"])
+                        ) {
                             $visited[$from_id . "\0"] = true;
                             $stacks_per_node[$from_id] = ($stacks_per_node[$from_id] ?? 0) + 1;
                             $queue[] = [$from_id, []];
@@ -1338,6 +1396,10 @@ final class TaintFlowGraph extends DataFlowGraph
                 }
 
                 foreach ($reverse[$id] ?? [] as $from_id => $_) {
+                    if (!isset($useful[$from_id])) {
+                        continue;
+                    }
+
                     $from_calls = $calls;
 
                     if ($specialization_key !== null && $from_id === $unspecialized_id) {
