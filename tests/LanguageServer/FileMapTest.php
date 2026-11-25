@@ -17,6 +17,8 @@ use Psalm\Tests\Internal\Provider\ProjectCacheProvider;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\TestConfig;
 
+use function array_column;
+use function array_slice;
 use function count;
 
 final class FileMapTest extends TestCase
@@ -176,6 +178,84 @@ final class FileMapTest extends TestCase
         [$after] = $codebase->analyzer->getMapsForFile('somefile.php');
 
         $this->assertCount(count($before), $after);
+    }
+
+    public function testMapOfAFileWithoutMethodsIsKeptWhenAnotherFileIsAnalyzed(): void
+    {
+        $codebase = $this->codebase;
+        $codebase->diff_methods = true;
+        $config = $codebase->config;
+        $config->throw_exception = false;
+
+        $this->addFile(
+            'functions.php',
+            '<?php
+                function foo(\DateTimeImmutable $d) : string {
+                    return $d->format("Y");
+                }',
+        );
+        $this->addFile(
+            'class.php',
+            '<?php
+                class A {
+                    public function bar() : void {}
+                }',
+        );
+
+        $codebase->addFilesToAnalyze(['functions.php' => 'functions.php', 'class.php' => 'class.php']);
+        $codebase->scanFiles();
+        $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
+        [$reference_map, $type_map] = $codebase->analyzer->getMapsForFile('functions.php');
+
+        $this->assertNotEmpty($reference_map);
+        $this->assertNotEmpty($type_map);
+
+        $codebase->reloadFiles($this->project_analyzer, ['class.php']);
+        $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
+
+        $this->assertSame([$reference_map, $type_map], array_slice(
+            $codebase->analyzer->getMapsForFile('functions.php'),
+            0,
+            2,
+        ));
+    }
+
+    public function testMapOfAFileWithoutMethodsIsReplacedWhenItIsAnalyzedAgain(): void
+    {
+        $codebase = $this->codebase;
+        $codebase->diff_methods = true;
+        $config = $codebase->config;
+        $config->throw_exception = false;
+
+        $this->addFile(
+            'functions.php',
+            '<?php
+                function foo(\DateTimeImmutable $d) : string {
+                    return $d->format("Y");
+                }',
+        );
+
+        $codebase->file_provider->openFile('functions.php');
+        $codebase->addFilesToAnalyze(['functions.php' => 'functions.php']);
+        $codebase->scanFiles();
+        $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
+        [$reference_map] = $codebase->analyzer->getMapsForFile('functions.php');
+
+        $this->assertContains('DateTimeImmutable::format()', array_column($reference_map, 1));
+
+        $codebase->addTemporaryFileChanges(
+            'functions.php',
+            '<?php
+                function foo(\DateTimeImmutable $d) : string {
+                    return "Y";
+                }',
+        );
+        $codebase->reloadFiles($this->project_analyzer, ['functions.php']);
+        $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
+
+        [$reference_map] = $codebase->analyzer->getMapsForFile('functions.php');
+
+        $this->assertNotContains('DateTimeImmutable::format()', array_column($reference_map, 1));
     }
 
     public function testMapIsUpdatedAfterDeletingFirstMethod(): void
