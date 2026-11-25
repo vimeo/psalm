@@ -32,9 +32,9 @@ final class TDependentGetType extends TString implements DependentType
      * @psalm-pure
      */
     #[Override]
-    public function getReplacement(): TString
+    public function getReplacement(): TNonFalsyString
     {
-        return new TString();
+        return new TNonFalsyString();
     }
 
     /**
