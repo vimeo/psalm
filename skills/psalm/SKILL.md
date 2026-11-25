@@ -34,6 +34,11 @@ of a bamarni-bin tool), use it wherever this skill says `vendor/bin/psalm`, with
 
 ## Running
 
+With the Psalm MCP tools (from the Psalm plugin of Claude Code or OpenCode, or `vendor/bin/psalm-mcp`), use them
+for the steps below: `psalm_check` on the files you changed for the runs on single files, and without paths for a
+full run; `psalm_inspect` for an inferred type; `psalm_references` for the uses of a symbol; `psalm_explain` for an
+issue's documentation. Setup for each agent: `docs/running_psalm/ai_agents.md`.
+
 ```bash
 vendor/bin/psalm --no-progress --output-format=compact src/Foo.php src/Bar.php
 ```
@@ -58,7 +63,7 @@ vendor/bin/psalm --no-progress --output-format=compact src/Foo.php src/Bar.php
 ## Fixing issues
 
 Fix the place where the type comes from, not the line that reports it. When the cause is unclear, ask Psalm
-for the inferred type with `@psalm-check-type` before editing: [references/debugging.md](references/debugging.md).
+for the inferred type with `psalm_inspect` or `@psalm-check-type` before editing: [references/debugging.md](references/debugging.md).
 
 - **Outside data** (`json_decode`, `$_GET`, `unserialize`, DB rows, `file_get_contents`): narrow `mixed` with
   runtime checks (`is_array`, `is_string`, `isset`, `instanceof`) and throw on invalid input. Check array

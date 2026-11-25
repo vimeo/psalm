@@ -10,12 +10,14 @@ use Psalm\Internal\Cli\Psalm;
 use Psalm\Internal\Cli\Psalter;
 use ReflectionClassConstant;
 
+use function array_intersect_key;
 use function array_map;
 use function basename;
 use function dirname;
 use function file_exists;
 use function file_get_contents;
 use function glob;
+use function json_decode;
 use function preg_match;
 use function preg_match_all;
 use function preg_replace;
@@ -104,6 +106,36 @@ final class AgentSkillTest extends BaseTestCase
         $this->assertFalse(str_contains($gitattributes, '/skills '), 'skills/ must not be export-ignored');
         $composer = (string) file_get_contents(__DIR__ . '/../composer.json');
         $this->assertStringContainsString('"source": "skills"', $composer);
+    }
+
+    public function testThePluginsStartTheServersThroughTheLauncher(): void
+    {
+        $marketplace = json_decode((string) file_get_contents(__DIR__ . '/../.claude-plugin/marketplace.json'), true);
+        $this->assertIsArray($marketplace);
+        $plugins = $marketplace['plugins'] ?? null;
+        $this->assertIsArray($plugins);
+        $this->assertCount(1, $plugins);
+        $this->assertSame(['name' => 'psalm', 'source' => './skills/psalm'], array_intersect_key(
+            (array) $plugins[0],
+            ['name' => true, 'source' => true],
+        ));
+
+        $plugin = json_decode((string) file_get_contents(self::SKILL_DIR . '/.claude-plugin/plugin.json'), true);
+        $this->assertIsArray($plugin);
+        $this->assertSame(['psalm' => [
+            'command' => 'php',
+            'args' => ['${CLAUDE_PLUGIN_ROOT}/scripts/server.php', 'mcp', '${CLAUDE_PROJECT_DIR}'],
+        ]], $plugin['mcpServers'] ?? null);
+        $this->assertSame(['psalm' => [
+            'command' => 'php',
+            'args' => ['${CLAUDE_PLUGIN_ROOT}/scripts/server.php', 'lsp', '${CLAUDE_PROJECT_DIR}'],
+            'extensionToLanguage' => ['.php' => 'php'],
+            'startupTimeout' => 300_000,
+        ]], $plugin['lspServers'] ?? null);
+
+        $opencode = (string) file_get_contents(self::SKILL_DIR . '/opencode/index.js');
+        $this->assertStringContainsString('join(skillDir, "scripts", "server.php")', $opencode);
+        $this->assertFileExists(self::SKILL_DIR . '/scripts/server.php');
     }
 
     /**

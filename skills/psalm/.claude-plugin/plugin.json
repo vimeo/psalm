@@ -1,0 +1,29 @@
+{
+  "name": "psalm",
+  "displayName": "Psalm",
+  "description": "Psalm static analysis for PHP: MCP tools to check code, inspect inferred types, find references and explain issues, language server diagnostics after each edit, and the Psalm skill.",
+  "author": {
+    "name": "Psalm",
+    "url": "https://psalm.dev"
+  },
+  "homepage": "https://psalm.dev/docs/running_psalm/ai_agents/",
+  "repository": "https://github.com/vimeo/psalm",
+  "license": "MIT",
+  "keywords": ["php", "psalm", "static-analysis", "mcp", "lsp"],
+  "mcpServers": {
+    "psalm": {
+      "command": "php",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/server.php", "mcp", "${CLAUDE_PROJECT_DIR}"]
+    }
+  },
+  "lspServers": {
+    "psalm": {
+      "command": "php",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/server.php", "lsp", "${CLAUDE_PROJECT_DIR}"],
+      "extensionToLanguage": {
+        ".php": "php"
+      },
+      "startupTimeout": 300000
+    }
+  }
+}
