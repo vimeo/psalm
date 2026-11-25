@@ -28,14 +28,14 @@ return array (
         'timezone' => 'DateTimeZone|IntlTimeZone|null|string',
       ),
     ),
-    'dateinterval::createfromdatestring' =>
+    'dateinterval::createfromdatestring' => 
     array (
-      'old' =>
+      'old' => 
       array (
         0 => 'DateInterval|false',
         'datetime' => 'string',
       ),
-      'new' =>
+      'new' => 
       array (
         0 => 'DateInterval',
         'datetime' => 'string',
