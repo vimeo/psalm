@@ -72,6 +72,13 @@ use function unpack;
 use const SORT_STRING;
 
 /**
+ * @psalm-type CallSpecializedOverride = array{
+ *     cased_body_method_id: string,
+ *     body_method_id: string,
+ *     storage: MethodStorage,
+ *     offsets: list<int>,
+ *     variadic_offset: ?int,
+ * }
  * @internal
  */
 final class TaintFlowGraph extends DataFlowGraph
@@ -228,6 +235,18 @@ final class TaintFlowGraph extends DataFlowGraph
      * @var array<string, true>
      */
     private array $empty_dispatches = [];
+
+    /**
+     * The overrides specialized by call that the virtual calls of a method dispatch to through nodes of each call's
+     * own, by the id of the node the calls dispatch to the other overrides through (see
+     * MethodCallReturnTypeFetcher::getReturnDispatchNode()): the ids of the body of each (see
+     * FunctionLikeAnalyzer::getBodyMethodId()), its storage, and for an argument the offsets of the parameters taking
+     * it, with the offset of the variadic parameter of the override taking the arguments after its first. Found once,
+     * only used while analysing, so never serialized nor merged by addGraph().
+     *
+     * @var array<string, list<CallSpecializedOverride>>
+     */
+    private array $call_specialized_dispatches = [];
 
     /**
      * Call sites specialized speculatively, before knowing whether the callee is pure:
@@ -813,6 +832,30 @@ final class TaintFlowGraph extends DataFlowGraph
     }
 
     /**
+     * Records the overrides specialized by call that the virtual calls dispatching through $node go to with nodes of
+     * their own (see $call_specialized_dispatches)
+     *
+     * @param list<CallSpecializedOverride> $overrides
+     * @psalm-external-mutation-free
+     */
+    public function addCallSpecializedDispatch(DataFlowNode $node, array $overrides): void
+    {
+        $this->call_specialized_dispatches[$node->id] = $overrides;
+    }
+
+    /**
+     * The overrides specialized by call that the virtual calls dispatching through $node go to with nodes of their own,
+     * or null if they weren't looked for yet (see $call_specialized_dispatches)
+     *
+     * @return list<CallSpecializedOverride>|null
+     * @psalm-mutation-free
+     */
+    public function getCallSpecializedDispatch(DataFlowNode $node): ?array
+    {
+        return $this->call_specialized_dispatches[$node->id] ?? null;
+    }
+
+    /**
      * Forgets what the analysis recorded of the start of the string assigned to the variable whose node $node is
      *
      * @psalm-external-mutation-free
@@ -877,7 +920,14 @@ final class TaintFlowGraph extends DataFlowGraph
     public function __serialize(): array
     {
         $data = get_object_vars($this);
-        unset($data['table'], $data['nodes'], $data['sources'], $data['sinks'], $data['forward_edges']);
+        unset(
+            $data['table'],
+            $data['nodes'],
+            $data['sources'],
+            $data['sinks'],
+            $data['forward_edges'],
+            $data['call_specialized_dispatches'],
+        );
 
         $ids = [];
         $node_rows = [];

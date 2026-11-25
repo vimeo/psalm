@@ -7516,6 +7516,77 @@ final class TaintTest extends TestCase
                         echo $named->name();
                     }',
             ],
+            'dontTaintAVirtualCallWithTheObjectOfAnotherCallOfAnOverrideSpecializedByInstance' => [
+                'code' => '<?php // --taint-analysis
+                    /** @psalm-taint-specialize */
+                    final class Delta implements Stringable {
+                        public function __construct(private string $text) {}
+
+                        #[Override]
+                        public function __toString(): string {
+                            return $this->text;
+                        }
+                    }
+
+                    function convert(Stringable $value): string {
+                        return (string) $value;
+                    }
+
+                    function show(Stringable $value): void {
+                        echo (string) $value;
+                    }
+
+                    convert(new Delta((string) $_GET["text"]));
+                    show(new Delta("clean"));',
+            ],
+            'dontTaintAnInterpolationWithTheObjectOfAnotherCallOfAnOverrideSpecializedByInstance' => [
+                'code' => '<?php // --taint-analysis
+                    /** @psalm-taint-specialize */
+                    final class Delta implements Stringable {
+                        public function __construct(private string $text) {}
+
+                        #[Override]
+                        public function __toString(): string {
+                            return $this->text;
+                        }
+                    }
+
+                    function convert(Stringable $value): string {
+                        return "{$value}";
+                    }
+
+                    function show(Stringable $value): void {
+                        echo "<p>{$value}</p>";
+                    }
+
+                    convert(new Delta((string) $_GET["text"]));
+                    show(new Delta("clean"));',
+            ],
+            'dontTaintAVirtualCallWithTheArgumentOfAnotherCallOfAnOverrideSpecializedByInstance' => [
+                'code' => '<?php // --taint-analysis
+                    interface Formatter {
+                        public function format(string $value): string;
+                    }
+
+                    /** @psalm-taint-specialize */
+                    final class Identity implements Formatter {
+                        #[Override]
+                        public function format(string $value): string {
+                            return $value;
+                        }
+                    }
+
+                    function convert(Formatter $formatter): string {
+                        return $formatter->format((string) $_GET["text"]);
+                    }
+
+                    function show(Formatter $formatter): void {
+                        echo $formatter->format("clean");
+                    }
+
+                    convert(new Identity());
+                    show(new Identity());',
+            ],
             'dontTaintWhatAnInheritedBodyReturnsOfAnotherObjectThroughAnOverrideSpecializedByInstance' => [
                 'code' => '<?php // --taint-analysis
                     /** @psalm-immutable */
@@ -16861,6 +16932,128 @@ final class TaintTest extends TestCase
 
                     $child = new Child(new Inner((string) $_GET["value"]));
                     echo $child->getInner()->getValue();',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintAVirtualCallWithItsObjectOfAnOverrideSpecializedByInstance' => [
+                'code' => '<?php // --taint-analysis
+                    /** @psalm-taint-specialize */
+                    final class Delta implements Stringable {
+                        public function __construct(private string $text) {}
+
+                        #[Override]
+                        public function __toString(): string {
+                            return $this->text;
+                        }
+                    }
+
+                    function convert(Stringable $value): string {
+                        return (string) $value;
+                    }
+
+                    function show(Stringable $value): void {
+                        echo (string) $value;
+                    }
+
+                    convert(new Delta("clean"));
+                    show(new Delta((string) $_GET["text"]));',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintAnInterpolationWithItsObjectOfAnOverrideSpecializedByInstance' => [
+                'code' => '<?php // --taint-analysis
+                    /** @psalm-taint-specialize */
+                    final class Delta implements Stringable {
+                        public function __construct(private string $text) {}
+
+                        #[Override]
+                        public function __toString(): string {
+                            return $this->text;
+                        }
+                    }
+
+                    function show(Stringable $value): void {
+                        echo "<p>{$value}</p>";
+                    }
+
+                    show(new Delta((string) $_GET["text"]));',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintAVirtualCallWithItsArgumentOfAnOverrideSpecializedByInstance' => [
+                'code' => '<?php // --taint-analysis
+                    interface Formatter {
+                        public function format(string $value): string;
+                    }
+
+                    /** @psalm-taint-specialize */
+                    final class Identity implements Formatter {
+                        #[Override]
+                        public function format(string $value): string {
+                            return $value;
+                        }
+                    }
+
+                    function convert(Formatter $formatter): string {
+                        return $formatter->format("clean");
+                    }
+
+                    function show(Formatter $formatter): void {
+                        echo $formatter->format((string) $_GET["text"]);
+                    }
+
+                    convert(new Identity());
+                    show(new Identity());',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintAVirtualCallWithTheObjectOfAnotherCallOfAnOverrideNotSpecialized' => [
+                'code' => '<?php // --taint-analysis
+                    final class Delta implements Stringable {
+                        public function __construct(private string $text) {}
+
+                        #[Override]
+                        public function __toString(): string {
+                            return $this->text;
+                        }
+                    }
+
+                    function convert(Stringable $value): string {
+                        return (string) $value;
+                    }
+
+                    function show(Stringable $value): void {
+                        echo (string) $value;
+                    }
+
+                    convert(new Delta((string) $_GET["text"]));
+                    show(new Delta("clean"));',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintAVirtualCallWithTheArgumentOfAnotherCallOfAnOverrideNotSpecialized' => [
+                'code' => '<?php // --taint-analysis
+                    interface Formatter {
+                        public function format(string $value): string;
+                    }
+
+                    final class Remembering implements Formatter {
+                        private string $last = "";
+
+                        #[Override]
+                        public function format(string $value): string {
+                            $last = $this->last;
+                            $this->last = $value;
+                            return $last;
+                        }
+                    }
+
+                    function convert(Formatter $formatter): string {
+                        return $formatter->format((string) $_GET["text"]);
+                    }
+
+                    function show(Formatter $formatter): void {
+                        echo $formatter->format("clean");
+                    }
+
+                    $formatter = new Remembering();
+                    convert($formatter);
+                    show($formatter);',
                 'error_message' => 'TaintedHtml',
             ],
             'taintWhatAnOverrideSpecializedByInstanceReturnsOfTheObjectThroughAVirtualCall' => [
