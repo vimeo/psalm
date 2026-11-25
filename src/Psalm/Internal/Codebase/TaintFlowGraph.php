@@ -1342,13 +1342,12 @@ final class TaintFlowGraph extends DataFlowGraph
         unset($forward, $useful_queue);
 
         // The call stacks are interned as a trie, so that pushing and popping one is an array access, and a search
-        // state is the int (stack id << 32) | node index.
+        // state is a stack id and a node id.
         // stack id => the call entered last (its specialization key), the stack without it, the number of calls
         $stack_key = [null];
         $stack_parent = [0];
         $stack_depth = [0];
         $stack_children = [];
-        $node_index = [];
         // node id => what splitSpecializedId() returns
         $split_unspecialized = [];
         $split_key = [];
@@ -1366,8 +1365,7 @@ final class TaintFlowGraph extends DataFlowGraph
 
             foreach ($generator_ids as $generator_id => $_) {
                 $queue[] = [$generator_id, 0];
-                $node_index[$generator_id] ??= count($node_index);
-                $visited[$node_index[$generator_id]] = true;
+                $visited[0][$generator_id] = true;
             }
 
             while ($queue) {
@@ -1399,14 +1397,12 @@ final class TaintFlowGraph extends DataFlowGraph
                     }
 
                     foreach ($new_predecessors as $linked_id => $from_id) {
-                        $node_index[$from_id] ??= count($node_index);
-
                         // reached from $linked_id with any of its call stacks: any call matches
                         if (isset($useful[$from_id])
                             && isset($searched[$linked_id])
-                            && !isset($visited[$node_index[$from_id]])
+                            && !isset($visited[0][$from_id])
                         ) {
-                            $visited[$node_index[$from_id]] = true;
+                            $visited[0][$from_id] = true;
                             $stacks_per_node[$from_id] = ($stacks_per_node[$from_id] ?? 0) + 1;
                             $queue[] = [$from_id, 0];
                         }
@@ -1451,22 +1447,18 @@ final class TaintFlowGraph extends DataFlowGraph
                         }
                     }
 
-                    $node_index[$from_id] ??= count($node_index);
-                    $state_key = ($from_stack << 32) | $node_index[$from_id];
-
-                    if (!isset($visited[$state_key])
+                    if (!isset($visited[$from_stack][$from_id])
                         && ($stacks_per_node[$from_id] ?? 0) >= self::GENERATOR_SEND_STACKS
                     ) {
                         // a new call stack at a node with too many: any call matches
                         $from_stack = 0;
-                        $state_key = $node_index[$from_id];
                     }
 
-                    if (isset($visited[$state_key])) {
+                    if (isset($visited[$from_stack][$from_id])) {
                         continue;
                     }
 
-                    $visited[$state_key] = true;
+                    $visited[$from_stack][$from_id] = true;
                     $stacks_per_node[$from_id] = ($stacks_per_node[$from_id] ?? 0) + 1;
                     $queue[] = [$from_id, $from_stack];
                 }
