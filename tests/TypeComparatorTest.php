@@ -4,18 +4,30 @@ declare(strict_types=1);
 
 namespace Psalm\Tests;
 
+use Closure;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TypeTokenizer;
 use Psalm\Type;
+use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TGenericObject;
+use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIterable;
+use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
+use Psalm\Type\Atomic\TNonEmptyLowercaseString;
+use Psalm\Type\Atomic\TNonEmptyNonspecificLiteralString;
+use Psalm\Type\Atomic\TNonEmptyString;
+use Psalm\Type\Atomic\TNonFalsyString;
+use Psalm\Type\Atomic\TNumericString;
 use Psalm\Type\Atomic\TPropertiesOf;
+use Psalm\Type\Atomic\TSingleLetter;
+use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Union;
 
@@ -91,6 +103,27 @@ final class TypeComparatorTest extends TestCase
     {
         yield 'lower bounds' => [false];
         yield 'upper bounds' => [true];
+    }
+
+    public function testFallbackOfAnUnsealedShapeInASealedShapeKeepsItsBound(): void
+    {
+        $input = TKeyedArray::make(
+            ['a' => Type::getInt()],
+            null,
+            [Type::parseString("'b'"), new Union([new TTypeVariable('_test')])],
+        );
+        $result = new TypeComparisonResult();
+        $this->assertTrue(UnionTypeComparator::isContainedBy(
+            $this->project_analyzer->getCodebase(),
+            new Union([$input]),
+            Type::parseString('array{a?: int, b?: int}'),
+            false,
+            false,
+            $result,
+        ));
+        $this->assertCount(1, $result->type_variable_upper_bounds);
+        $this->assertSame('_test', $result->type_variable_upper_bounds[0][0]);
+        $this->assertSame('int', $result->type_variable_upper_bounds[0][1]->type->getId());
     }
 
     public function testSymbolicContainerKeepsIterableBound(): void
@@ -344,6 +377,10 @@ final class TypeComparatorTest extends TestCase
      */
     public static function getCoercibleComparisons(): iterable
     {
+        yield 'objectShapeIntoObjectShapeIntersection' => [
+            'object{a: int}&Countable',
+            'object{a: int}',
+        ];
         yield 'callableStringIntoLowercaseString' => [
             'lowercase-string',
             'callable-string',
@@ -377,6 +414,10 @@ final class TypeComparatorTest extends TestCase
     public static function getSuccessfulComparisons(): array
     {
         return [
+            'objectShapeIntersectionAcceptsItsIntersection' => [
+                'object{a: int}&Countable',
+                'object{a: int}&Countable',
+            ],
             'iterableUnion' => ['array<string, int>|Traversable<string, int>', 'iterable<string, int>'],
             'mixedIterableUnion' => ['array<array-key, mixed>|Traversable<mixed, mixed>', 'iterable<mixed, mixed>'],
             'unparameterizedIterableUnion' => ['array|Traversable', 'iterable'],
@@ -545,6 +586,14 @@ final class TypeComparatorTest extends TestCase
      */
     public static function getUnsuccessfulComparisons(): iterable
     {
+        yield 'iterableIntersectionDoesNotAcceptIterable' => [
+            'iterable&Countable',
+            'iterable',
+        ];
+        yield 'iterableIntersectionDoesNotAcceptArray' => [
+            'iterable<int, string>&Countable',
+            'list<string>',
+        ];
         yield 'objectOrStringDoesNotAcceptIterable' => [
             'object|string',
             'iterable<int>',
@@ -705,6 +754,68 @@ final class TypeComparatorTest extends TestCase
         yield 'numericStringAndInt' => ['1', 1];
         yield 'zeroAndEmptyStringOfOtherClasses' => [0, ''];
         yield 'stringAndInt' => ['a', 0];
+    }
+
+    #[DataProvider('getSingleLetterComparisons')]
+    public function testSingleLetterContainment(Closure $input, bool $contained, bool $coerced): void
+    {
+        $result = new TypeComparisonResult();
+
+        $this->assertSame(
+            $contained,
+            AtomicTypeComparator::isContainedBy(
+                $this->project_analyzer->getCodebase(),
+                $input(),
+                new TSingleLetter(),
+                false,
+                true,
+                $result,
+            ),
+        );
+        $this->assertSame($coerced, $result->type_coerced === true);
+    }
+
+    /**
+     * @return iterable<string, list{Closure(): Atomic, bool, bool}>
+     * @psalm-pure
+     */
+    public static function getSingleLetterComparisons(): iterable
+    {
+        yield 'singleLetter' => [static fn(): Atomic => new TSingleLetter(), true, false];
+        yield 'oneLetterLiteral' => [static fn(): Atomic => new TLiteralString('a'), true, false];
+        yield 'emptyLiteral' => [static fn(): Atomic => new TLiteralString(''), false, false];
+        yield 'longerLiteral' => [static fn(): Atomic => new TLiteralString('ab'), false, false];
+        yield 'string' => [static fn(): Atomic => new TString(), false, true];
+        yield 'nonEmptyString' => [static fn(): Atomic => new TNonEmptyString(), false, true];
+        yield 'nonFalsyString' => [static fn(): Atomic => new TNonFalsyString(), false, true];
+        yield 'nonEmptyLowercaseString' => [static fn(): Atomic => new TNonEmptyLowercaseString(), false, true];
+        yield 'nonEmptyLiteralString' => [static fn(): Atomic => new TNonEmptyNonspecificLiteralString(), false, true];
+        yield 'numericString' => [static fn(): Atomic => new TNumericString(), false, true];
+        yield 'classString' => [static fn(): Atomic => new TClassString(), false, true];
+        yield 'int' => [static fn(): Atomic => new TInt(), false, false];
+    }
+
+    #[DataProvider('getNonEmptyStringRefinements')]
+    public function testNonEmptyStringContainsItsRefinements(Atomic $input): void
+    {
+        $this->assertTrue(
+            AtomicTypeComparator::isContainedBy(
+                $this->project_analyzer->getCodebase(),
+                $input,
+                new TNonEmptyString(),
+            ),
+        );
+    }
+
+    /**
+     * @return iterable<string, list{Atomic}>
+     * @psalm-pure
+     */
+    public static function getNonEmptyStringRefinements(): iterable
+    {
+        yield 'singleLetter' => [new TSingleLetter()];
+        yield 'nonEmptyLowercaseString' => [new TNonEmptyLowercaseString()];
+        yield 'nonEmptyLiteralString' => [new TNonEmptyNonspecificLiteralString()];
     }
 
     /**

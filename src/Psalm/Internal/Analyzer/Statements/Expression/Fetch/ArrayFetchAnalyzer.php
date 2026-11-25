@@ -86,6 +86,7 @@ use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNever;
+use Psalm\Type\Atomic\TNonDecimalIntString;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObject;
@@ -98,6 +99,7 @@ use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Atomic\TTemplateValueOf;
+use Psalm\Type\Atomic\TTraitString;
 use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\MutableUnion;
@@ -896,6 +898,7 @@ final class ArrayFetchAnalyzer
         } elseif ($stmt->dim instanceof PhpParser\Node\Scalar\Int_) {
             $key_values[] = new TLiteralInt($stmt->dim->value);
         } elseif ($stmt->dim && ($stmt_dim_type = $statements_analyzer->node_data->getType($stmt->dim))) {
+            $stmt_dim_type = self::replaceTemplatesWithBounds($stmt_dim_type);
             $string_literals = $stmt_dim_type->getLiteralStrings();
             $int_literals = $stmt_dim_type->getLiteralInts();
 
@@ -1144,9 +1147,15 @@ final class ArrayFetchAnalyzer
                 continue;
             }
 
-            if ($type instanceof TNamedObject && self::isIndexableObject($codebase, $type)) {
+            if ($type instanceof TNamedObject
+                && self::isIndexableObject($codebase, $type, !$in_assignment && !$context->inside_unset)
+            ) {
                 if ($offset_call_receiver_type === false) {
-                    $offset_call_receiver_type = self::getOffsetCallReceiverType($codebase, $array_type);
+                    $offset_call_receiver_type = self::getOffsetCallReceiverType(
+                        $codebase,
+                        $array_type,
+                        !$in_assignment && !$context->inside_unset,
+                    );
                 }
 
                 self::handleArrayAccessOnNamedObject(
@@ -1883,7 +1892,10 @@ final class ArrayFetchAnalyzer
                     true,
                     $offset_type->ignore_falsable_issues,
                     $union_comparison_results,
-                );
+                )
+                    // isset() of a string that is numeric looks for the int key it reads as
+                    || ($context->inside_isset
+                        && self::mayReadAsAnIntKey($codebase, $offset_type->freeze(), $expected_offset_type));
 
                 if ($codebase->config->ensure_array_string_offsets_exist
                     && $offset_type_contained_by_expected
@@ -2105,8 +2117,40 @@ final class ArrayFetchAnalyzer
     }
 
     /**
+     * Whether isset() of the offset can find an int key: the strings it may be are numeric ones, read as ints
+     */
+    private static function mayReadAsAnIntKey(Codebase $codebase, Union $offset_type, Union $key_type): bool
+    {
+        if (!$key_type->hasInt()) {
+            return false;
+        }
+
+        $other_types = [];
+        $has_string = false;
+
+        foreach ($offset_type->getAtomicTypes() as $offset_atomic_type) {
+            // a string Psalm knows stays a string key can never be read as an int one
+            if ($offset_atomic_type instanceof TString
+                && !$offset_atomic_type instanceof TLiteralString
+                && !$offset_atomic_type instanceof TClassString
+                && !$offset_atomic_type instanceof TNonDecimalIntString
+                && !$offset_atomic_type instanceof TTraitString
+            ) {
+                $has_string = true;
+            } else {
+                $other_types[] = $offset_atomic_type;
+            }
+        }
+
+        return $has_string
+            && ($other_types === []
+                || UnionTypeComparator::isContainedBy($codebase, new Union($other_types), $key_type));
+    }
+
+    /**
      * A shape that surely has an item keeps, when written under a key whose value isn't known, the items the key can't
-     * be: they are what they were. An append writes under a key the shape doesn't have yet
+     * be: they are what they were. An append writes under a key the shape doesn't have yet. A write under keys the
+     * shape already has (`$key_exists`, or a key type all of whose values are its items) keeps its keys
      *
      * @psalm-capabilities read-props|write-this-props
      */
@@ -2115,7 +2159,46 @@ final class ArrayFetchAnalyzer
         Union $key_type,
         Union $value_type,
         bool $appends = false,
+        bool $key_exists = false,
     ): ?TKeyedArray {
+        // a shape that may be empty is no longer once written: only a shape that can't be keeps its items
+        $existing_keys = $appends || !$type->isNonEmpty() ? null : self::getItemKeysOfAWrittenKey($type, $key_type);
+
+        if ($existing_keys !== null || ($key_exists && !$appends && $type->isNonEmpty())) {
+            [$can_be_int, $can_be_string] = self::getKindsOfAWrittenKey($key_type);
+
+            $properties = $type->properties;
+
+            foreach ($properties as $key => $property) {
+                if ($existing_keys !== null
+                    ? in_array($key, $existing_keys, true)
+                    : (is_int($key) ? $can_be_int : $can_be_string)
+                ) {
+                    $properties[$key] = Type::combineUnionTypes(
+                        $property,
+                        $value_type,
+                        null,
+                        false,
+                        true,
+                        500,
+                        $property->possibly_undefined,
+                    );
+                }
+            }
+
+            $shape = TKeyedArray::make(
+                $properties,
+                $type->class_strings,
+                $type->fallback_params === null || $existing_keys !== null
+                    ? $type->fallback_params
+                    : [$type->fallback_params[0], Type::combineUnionTypes($type->fallback_params[1], $value_type)],
+                $type->is_list,
+                $type->from_docblock,
+            );
+
+            return $shape instanceof TKeyedArray ? $shape : null;
+        }
+
         if ($type->is_list || !$type->isNonEmpty()) {
             return null;
         }
@@ -2154,6 +2237,47 @@ final class ArrayFetchAnalyzer
         );
 
         return $shape instanceof TKeyedArray ? $shape : null;
+    }
+
+    /**
+     * The keys of the items of a shape a written key can be, when it can only be those (and, for a list, only items
+     * it surely has: a write past them may make it no list)
+     *
+     * @return non-empty-list<int|string>|null
+     * @psalm-pure
+     */
+    private static function getItemKeysOfAWrittenKey(TKeyedArray $type, Union $key_type): ?array
+    {
+        $keys = [];
+
+        foreach ($key_type->getAtomicTypes() as $key_atomic_type) {
+            if ($key_atomic_type instanceof TLiteralInt) {
+                $keys[] = $key_atomic_type->value;
+            } elseif ($key_atomic_type instanceof TLiteralString) {
+                $int_key = ArrayAnalyzer::getLiteralArrayKeyInt($key_atomic_type->value);
+                $keys[] = $int_key === false ? $key_atomic_type->value : $int_key;
+            } elseif ($key_atomic_type instanceof TIntRange
+                && $key_atomic_type->min_bound !== null
+                && $key_atomic_type->max_bound !== null
+                && $key_atomic_type->max_bound - $key_atomic_type->min_bound < count($type->properties)
+            ) {
+                // counted from the lower bound: the upper one may be PHP_INT_MAX, past which an int can't go
+                $count = $key_atomic_type->max_bound - $key_atomic_type->min_bound;
+                for ($offset = 0; $offset <= $count; $offset++) {
+                    $keys[] = $key_atomic_type->min_bound + $offset;
+                }
+            } else {
+                return null;
+            }
+        }
+
+        foreach ($keys as $key) {
+            if (!isset($type->properties[$key]) || ($type->is_list && $type->properties[$key]->possibly_undefined)) {
+                return null;
+            }
+        }
+
+        return $keys ?: null;
     }
 
     /**
@@ -2380,10 +2504,12 @@ final class ArrayFetchAnalyzer
                 $is_contained = UnionTypeComparator::isContainedBy(
                     $codebase,
                     $key_type,
-                    $offset_type->freeze(),
+                    self::replaceTemplatesWithBounds($offset_type->freeze()),
                     true,
                     $offset_type->ignore_falsable_issues,
-                );
+                )
+                    // a string that is numeric is the int key it reads as
+                    || self::mayReadAsAnIntKey($codebase, $offset_type->freeze(), $key_type);
             }
 
             if (($is_contained
@@ -2437,12 +2563,24 @@ final class ArrayFetchAnalyzer
                         }
                     } else {
                         $min_count = $type->getMinCount();
+                        $offset_atomic_types = $offset_type->getAtomicTypes();
+                        $offset_atomic_type = reset($offset_atomic_types);
                         $shape = self::writeUnknownKeyOfAShape(
                             $type,
                             $offset_type->hasMixed()
                                 ? Type::getArrayKey()
                                 : self::castOffsetTypeOfAWrite($offset_type->freeze()),
                             $replacement_type,
+                            false,
+                            // a key of the list from a foreach over it
+                            count($offset_atomic_types) === 1
+                                && $offset_atomic_type instanceof TIntRange
+                                && $offset_atomic_type->dependent_list_key !== null
+                                && $offset_atomic_type->dependent_list_key === ExpressionIdentifier::getExtendedVarId(
+                                    $stmt->var,
+                                    $statements_analyzer->getFQCLN(),
+                                    $statements_analyzer,
+                                ),
                         );
                         if ($shape) {
                             $type = $shape;
@@ -2486,6 +2624,28 @@ final class ArrayFetchAnalyzer
                 $array_access_type = Type::getMixed();
             }
         }
+    }
+
+    /**
+     * The type with each template param replaced by its bound, which is what a value of the type may be
+     *
+     * @psalm-pure
+     */
+    private static function replaceTemplatesWithBounds(Union $type): Union
+    {
+        $atomic_types = [];
+
+        foreach ($type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TTemplateParam) {
+                foreach (self::replaceTemplatesWithBounds($atomic_type->as)->getAtomicTypes() as $bound_type) {
+                    $atomic_types[] = $bound_type;
+                }
+            } else {
+                $atomic_types[] = $atomic_type;
+            }
+        }
+
+        return $type->setTypes($atomic_types);
     }
 
     /**
@@ -2550,7 +2710,7 @@ final class ArrayFetchAnalyzer
      * The type to call the offset methods on: without the objects that can't be indexed, which are
      * reported as non-array types instead. Null when there are none.
      */
-    private static function getOffsetCallReceiverType(Codebase $codebase, Union $array_type): ?Union
+    private static function getOffsetCallReceiverType(Codebase $codebase, Union $array_type, bool $is_read): ?Union
     {
         $receiver_types = $array_type->getAtomicTypes();
 
@@ -2559,7 +2719,7 @@ final class ArrayFetchAnalyzer
                 $type = $type->as->getSingleAtomic();
             }
 
-            if ($type instanceof TNamedObject && !self::isIndexableObject($codebase, $type)) {
+            if ($type instanceof TNamedObject && !self::isIndexableObject($codebase, $type, $is_read)) {
                 unset($receiver_types[$key]);
             }
         }
@@ -2572,14 +2732,16 @@ final class ArrayFetchAnalyzer
     }
 
     /**
-     * Unknown classlikes (traits included) are left to the method calls, which report them
+     * Unknown classlikes (traits included) are left to the method calls, which report them. The DOM collections are
+     * indexable for reads only: PHP throws for a write or an unset of an offset.
      */
-    private static function isIndexableObject(Codebase $codebase, TNamedObject $type): bool
+    private static function isIndexableObject(Codebase $codebase, TNamedObject $type, bool $is_read): bool
     {
         foreach ([$type, ...$type->extra_types] as $part) {
             if (!$part instanceof TNamedObject
                 || !$codebase->classOrInterfaceOrEnumExists($part->value)
-                || in_array(strtolower($part->value), ['arrayaccess', 'simplexmlelement', 'domnodelist'], true)
+                || in_array(strtolower($part->value), ['arrayaccess', 'simplexmlelement'], true)
+                || ($is_read && self::getDomCollectionOffsetMethod(strtolower($part->value), null) !== null)
                 || $codebase->classExtendsOrImplements($part->value, 'ArrayAccess')
                 || $codebase->classExtendsOrImplements($part->value, 'SimpleXMLElement')
                 || $codebase->interfaceExtends($part->value, 'ArrayAccess')
@@ -2610,6 +2772,25 @@ final class ArrayFetchAnalyzer
         return false;
     }
 
+    /**
+     * The method that reads an offset of a DOM collection: these classes don't implement ArrayAccess, but PHP reads
+     * their offsets, by position or, for a map, by name
+     *
+     * @param lowercase-string $class_name_lc
+     * @psalm-pure
+     */
+    private static function getDomCollectionOffsetMethod(string $class_name_lc, ?Union $offset_type): ?string
+    {
+        $by_name = $offset_type !== null && $offset_type->isString();
+
+        return match ($class_name_lc) {
+            'domnodelist', 'dom\\nodelist' => 'item',
+            'domnamednodemap', 'dom\\namednodemap', 'dom\\dtdnamednodemap' => $by_name ? 'getNamedItem' : 'item',
+            'dom\\htmlcollection' => $by_name ? 'namedItem' : 'item',
+            default => null,
+        };
+    }
+
     private static function handleArrayAccessOnNamedObject(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\ArrayDimFetch $stmt,
@@ -2629,14 +2810,19 @@ final class ArrayFetchAnalyzer
                 && $codebase->classExtendsOrImplements($type->value, 'SimpleXMLElement'))
         ) {
             $call_array_access_type = new Union([new TNull(), new TNamedObject('SimpleXMLElement')]);
-        } elseif (strtolower($type->value) === 'domnodelist' && $stmt->dim) {
+        } elseif ($stmt->dim
+            && ($offset_method = self::getDomCollectionOffsetMethod(
+                strtolower($type->value),
+                $statements_analyzer->node_data->getType($stmt->dim),
+            )) !== null
+        ) {
             $old_data_provider = $statements_analyzer->node_data;
 
             $statements_analyzer->node_data = clone $statements_analyzer->node_data;
 
             $fake_method_call = new VirtualMethodCall(
                 $stmt->var,
-                new VirtualIdentifier('item', $stmt->var->getAttributes()),
+                new VirtualIdentifier($offset_method, $stmt->var->getAttributes()),
                 [
                     new VirtualArg($stmt->dim),
                 ],
@@ -2652,6 +2838,14 @@ final class ArrayFetchAnalyzer
                 $statements_analyzer->addSuppressedIssues(['MixedMethodCall']);
             }
 
+            // an `int|string` offset is read by position or by name, whichever it is, with the same result
+            $dim_type = $statements_analyzer->node_data->getType($stmt->dim);
+            $has_either_offset = $dim_type !== null && !$dim_type->isInt() && !$dim_type->isString();
+
+            if ($has_either_offset && !isset($suppressed_issues['InvalidScalarArgument'])) {
+                $statements_analyzer->addSuppressedIssues(['InvalidScalarArgument']);
+            }
+
             MethodCallAnalyzer::analyze(
                 $statements_analyzer,
                 $fake_method_call,
@@ -2665,6 +2859,10 @@ final class ArrayFetchAnalyzer
 
             if (!isset($suppressed_issues['MixedMethodCall'])) {
                 $statements_analyzer->removeSuppressedIssues(['MixedMethodCall']);
+            }
+
+            if ($has_either_offset && !isset($suppressed_issues['InvalidScalarArgument'])) {
+                $statements_analyzer->removeSuppressedIssues(['InvalidScalarArgument']);
             }
 
             $call_array_access_type = $statements_analyzer->node_data->getType($fake_method_call) ?? Type::getMixed();

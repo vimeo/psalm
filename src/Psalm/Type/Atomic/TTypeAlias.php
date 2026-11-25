@@ -31,7 +31,7 @@ final class TTypeAlias extends Atomic
     #[Override]
     public function getId(bool $exact = true): string
     {
-        return $this->getKey();
+        return 'type-alias(' . $this->declaring_fq_classlike_name . '::' . $this->alias_name . ')';
     }
 
     /**

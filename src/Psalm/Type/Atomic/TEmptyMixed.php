@@ -23,4 +23,29 @@ final class TEmptyMixed extends TMixed
     {
         return 'empty-mixed';
     }
+
+    /**
+     * empty-mixed is no docblock type: written as mixed
+     *
+     * @param array<lowercase-string, string> $aliased_classes
+     * @psalm-pure
+     */
+    #[Override]
+    public function toNamespacedString(
+        ?string $namespace,
+        array $aliased_classes,
+        ?string $this_class,
+        bool $use_phpdoc_format,
+    ): string {
+        return 'mixed';
+    }
+
+    /**
+     * @psalm-pure
+     */
+    #[Override]
+    public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
+    {
+        return false;
+    }
 }

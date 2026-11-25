@@ -11,7 +11,7 @@ use Psalm\Internal\Analyzer\ClassAnalyzer;
 use Psalm\Internal\Analyzer\SourceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\AtomicPropertyFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Type\TypeExpander;
+use Psalm\Internal\Type\TypeVariableTracker;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
@@ -25,6 +25,7 @@ use Psalm\Type\Union;
 use UnitEnum;
 use stdClass;
 
+use function explode;
 use function reset;
 use function strtolower;
 
@@ -129,12 +130,13 @@ final class GetObjectVarsReturnTypeProvider implements FunctionReturnTypeProvide
                         if ($declaring_class_name !== null) {
                             $declaring_storage = $codebase->classlike_storage_provider->get($declaring_class_name);
 
-                            $property_type = TypeExpander::expandUnion(
+                            $property_type = AtomicPropertyFetchAnalyzer::expandSelfAndStatic(
                                 $codebase,
                                 $property_type,
-                                $declaring_storage->name,
-                                $declaring_storage->name,
-                                $declaring_storage->parent_class,
+                                $declaring_storage,
+                                explode('::$', $property_id)[0],
+                                $object_type,
+                                $class_storage->final,
                             );
                         }
 
@@ -149,7 +151,8 @@ final class GetObjectVarsReturnTypeProvider implements FunctionReturnTypeProvide
                             )
                             : $property_type
                         ;
-                        $properties[$name] = $property_type;
+                        // as reading the property does
+                        $properties[$name] = TypeVariableTracker::resolveTypeVariables($property_type, $codebase);
                     }
                 }
 

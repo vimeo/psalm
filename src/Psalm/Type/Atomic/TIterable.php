@@ -161,7 +161,10 @@ final class TIterable extends Atomic
     #[Override]
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
-        return $this->type_params[0]->isMixed() && $this->type_params[1]->isMixed() && $this->hasDefaultPurity();
+        return !$this->extra_types
+            && $this->type_params[0]->isMixed()
+            && $this->type_params[1]->isMixed()
+            && $this->hasDefaultPurity();
     }
 
     #[Override]
@@ -181,7 +184,8 @@ final class TIterable extends Atomic
             }
         }
 
-        return $this->purity->equals($other_type->purity, $ensure_source_equality, false);
+        return $this->purity->equals($other_type->purity, $ensure_source_equality, false)
+            && $this->intersectionTypesEqual($other_type->extra_types, $ensure_source_equality);
     }
 
     /**

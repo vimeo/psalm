@@ -188,7 +188,15 @@ abstract class CallAnalyzer
 
             $class_analyzer = $source->getSource();
 
-            $is_final = $method_storage->final;
+            // nothing can override a method of a final class, also one it takes from a trait (a parent's method is
+            // followed with the parent's own rules)
+            $appearing_in_self = $codebase->methods->getAppearingMethodId(
+                new MethodIdentifier($context->self, $method_name_lc),
+            );
+            $is_final = $method_storage->final
+                || ($appearing_in_self !== null
+                    && strtolower($appearing_in_self->fq_class_name) === strtolower($context->self)
+                    && $codebase->classlike_storage_provider->get($context->self)->final);
 
             $visibility = $method_storage->visibility;
 
@@ -324,6 +332,7 @@ abstract class CallAnalyzer
         CodeLocation $code_location,
         StatementsAnalyzer $statements_analyzer,
         bool $static_is_called_class = false,
+        ?FunctionLikeStorage $overload = null,
     ): bool {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -338,7 +347,7 @@ abstract class CallAnalyzer
             ) !== false;
         }
 
-        $method_params = $codebase->methods->getMethodParams(
+        $method_params = $overload !== null ? [] : $codebase->methods->getMethodParams(
             $method_id,
             $statements_analyzer,
             $args,
@@ -431,6 +440,13 @@ abstract class CallAnalyzer
                     $statements_analyzer->getCodebase(),
                 );
             }
+        }
+
+        // one storage per call, as for functions: the parameters and the return type of the overload, the sinks,
+        // `@param-out` and the rest of what the real parameters declare
+        if ($overload !== null) {
+            $method_storage = $method_storage?->withOverload($overload);
+            $method_params = $method_storage->params ?? $overload->params;
         }
 
         if (ArgumentsAnalyzer::analyze(

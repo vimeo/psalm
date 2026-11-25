@@ -488,7 +488,7 @@ final class PropertyTypeInvarianceTest extends TestCase
                 'assertions' => [
                     '$next===' => 'ParentClass|null',
                     '$constant===' => '1|2',
-                    '$all===' => 'list<ChildClass&static>',
+                    '$all===' => 'list<ChildClass>',
                     '$names===' => 'list<non-empty-string>',
                 ],
             ],

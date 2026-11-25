@@ -35,7 +35,7 @@ final class IsIdentical extends Assertion
 
     public function __toString(): string
     {
-        return '=' . $this->type->getAssertionString()
+        return '=' . IsType::getTypeKey($this->type)
             . ($this->comparand === null ? '' : '@' . $this->comparand);
     }
 
@@ -67,8 +67,7 @@ final class IsIdentical extends Assertion
     public function isNegationOf(Assertion $assertion): bool
     {
         return $assertion instanceof IsNotIdentical
-            && $this->type->getId() === $assertion->type->getId()
-            && $this->type->getAssertionString() === $assertion->type->getAssertionString()
+            && IsType::getTypeKey($this->type) === IsType::getTypeKey($assertion->type)
             && $this->comparand === $assertion->comparand;
     }
 }
