@@ -1568,7 +1568,7 @@ final class SimpleAssertionReconciler extends Reconciler
                             || $scalar_part instanceof TFloat
                             || ($scalar_part instanceof TLiteralString && is_numeric($scalar_part->value))
                         ) {
-                            $numeric_types[] = $scalar_part;
+                            $numeric_types[] = $scalar_part->setFromDocblock(false);
                         }
                     }
                 }

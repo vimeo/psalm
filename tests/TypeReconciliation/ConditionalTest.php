@@ -9403,6 +9403,46 @@ final class ConditionalTest extends TestCase
                     if (10 <= $x) {}',
                 'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:25 - Type int<0, 3> for $x is never >= 10',
             ],
+            'isStringOfADocblockScalarTwiceIsARedundantCondition' => [
+                'code' => '<?php
+                    /** @param scalar $x */
+                    function f($x): void {
+                        if (is_string($x)) {
+                            if (is_string($x)) {}
+                        }
+                    }',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:33',
+            ],
+            'isIntOfADocblockNonEmptyScalarTwiceIsARedundantCondition' => [
+                'code' => '<?php
+                    /** @param non-empty-scalar $x */
+                    function f($x): void {
+                        if (is_int($x)) {
+                            if (is_int($x)) {}
+                        }
+                    }',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:33',
+            ],
+            'isBoolOfADocblockEmptyScalarTwiceIsARedundantCondition' => [
+                'code' => '<?php
+                    /** @param empty-scalar $x */
+                    function f($x): void {
+                        if (is_bool($x)) {
+                            if (is_bool($x)) {}
+                        }
+                    }',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:33',
+            ],
+            'isBoolAfterIsNumericOfADocblockEmptyScalarDoesNotContainTheType' => [
+                'code' => '<?php
+                    /** @param empty-scalar $x */
+                    function f($x): void {
+                        if (is_numeric($x)) {
+                            if (is_bool($x)) {}
+                        }
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:33',
+            ],
         ];
     }
 }

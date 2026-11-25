@@ -144,7 +144,7 @@ final class AtomicParts
     }
 
     /**
-     * The parts of a scalar that are of one kind
+     * The parts of a scalar that are of one kind, as a runtime check proves them (not docblock-only)
      *
      * @param class-string<TInt>|class-string<TFloat>|class-string<TString>|class-string<TBool> $kind
      * @return list<Atomic>
@@ -156,7 +156,7 @@ final class AtomicParts
 
         foreach (self::getScalarParts($type) ?? [] as $part) {
             if ($part instanceof $kind) {
-                $parts[] = $part;
+                $parts[] = $part->setFromDocblock(false);
             }
         }
 
