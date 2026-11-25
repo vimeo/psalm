@@ -121,5 +121,22 @@ final class PowReturnTypeProviderTest extends TestCase
                 '$f===' => 'float(0)',
             ],
         ];
+        yield 'zeroToAZeroOrUnknownNonNegativePower' => [
+            'code' => '<?php
+                /** @return non-negative-int */
+                function getNonNegativeInt(): int { return 0; }
+
+                $a = pow(0, 0);
+                $b = pow(0, getNonNegativeInt());
+                $c = pow(0, 3);
+                $d = 0 ** 0;
+            ',
+            'assertions' => [
+                '$a===' => '1',
+                '$b===' => 'int',
+                '$c===' => '0',
+                '$d===' => '1',
+            ],
+        ];
     }
 }
