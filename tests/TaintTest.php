@@ -8825,6 +8825,14 @@ final class TaintTest extends TestCase
                     }',
                 'error_message' => 'TaintedHtml',
             ],
+            'sprintfWithAWideConversionCantBeParsed' => [
+                'code' => '<?php
+                    function run(PDO $pdo): void {
+                        $pdo->exec(sprintf("INSERT INTO users (name, bio) VALUES (%1001s, %s)", "\'admin\'", $pdo->quote($_GET["bio"])));
+                        echo (string) $pdo->query("SELECT name FROM users")->fetch()["name"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
             'sprintfOfTheNamespaceIsNotTheBuiltin' => [
                 'code' => '<?php
                     namespace App;

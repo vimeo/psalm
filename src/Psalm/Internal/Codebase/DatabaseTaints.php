@@ -104,6 +104,8 @@ final class DatabaseTaints
     /** The conversion specifiers of sprintf() but %% */
     private const SPRINTF_SPECIFIERS = ['b', 'c', 'd', 'e', 'E', 'f', 'F', 'g', 'G', 'h', 'H', 'o', 's', 'u', 'x', 'X'];
 
+    private const SPRINTF_MAX_WIDTH = 1000;
+
     /** @var null|array<lowercase-string, list<Spec>> */
     private static ?array $map = null;
 
@@ -1150,8 +1152,11 @@ final class DatabaseTaints
                 continue;
             }
 
-            // `*` takes the width or the precision from an argument
-            if ($width === '*' || $precision === '.*' || !in_array($type, self::SPRINTF_SPECIFIERS, true)) {
+            // `*` takes the width or the precision from an argument, and a large one would make a long text
+            if ($width === '*' || $precision === '.*' || (int) $width > self::SPRINTF_MAX_WIDTH
+                || (int) substr($precision, 1) > self::SPRINTF_MAX_WIDTH
+                || !in_array($type, self::SPRINTF_SPECIFIERS, true)
+            ) {
                 return null;
             }
 

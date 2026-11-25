@@ -796,8 +796,7 @@ final class TaintStore
     private static function getKnownStartOfFunctionCall(
         StatementsAnalyzer $statements_analyzer,
         string $function_id,
-    ): ?string
-    {
+    ): ?string {
         $codebase = $statements_analyzer->getCodebase();
 
         return self::hasFunctionStorage($statements_analyzer, $function_id)
@@ -827,7 +826,9 @@ final class TaintStore
             ),
         );
 
-        return self::hasFunctionStorage($statements_analyzer, $function_id) ? $function_id : strtolower($name->toString());
+        return self::hasFunctionStorage($statements_analyzer, $function_id)
+            ? $function_id
+            : strtolower($name->toString());
     }
 
     /**
