@@ -1353,6 +1353,78 @@ final class MissingReturnTypeTest extends FileManipulationTestCase
                 'safe_types' => true,
                 'allow_backwards_incompatible_changes' => true,
             ],
+            'propertiesOfTemplateReturn' => [
+                'input' => '<?php
+                    /**
+                     * @template T of object
+                     * @param T $o
+                     * @return properties-of<T>
+                     */
+                    function p($o) { return []; }
+
+                    /**
+                     * @template T of object
+                     * @param T $o
+                     */
+                    function q($o) { return p($o); }
+                    ',
+                'output' => '<?php
+                    /**
+                     * @template T of object
+                     * @param T $o
+                     * @return properties-of<T>
+                     */
+                    function p($o) { return []; }
+
+                    /**
+                     * @template T of object
+                     *
+                     * @param T $o
+                     *
+                     * @return properties-of<T>
+                     */
+                    function q($o): array { return p($o); }
+                    ',
+                'php_version' => '8.0',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => true,
+            ],
+            'nullablePropertiesOfTemplateReturn' => [
+                'input' => '<?php
+                    /**
+                     * @template T of object
+                     * @param T $o
+                     * @return properties-of<T>
+                     */
+                    function p($o) { return []; }
+
+                    /**
+                     * @template T of object
+                     * @param T $o
+                     */
+                    function q($o, bool $b) { return $b ? p($o) : null; }
+                    ',
+                'output' => '<?php
+                    /**
+                     * @template T of object
+                     * @param T $o
+                     * @return properties-of<T>
+                     */
+                    function p($o) { return []; }
+
+                    /**
+                     * @template T of object
+                     *
+                     * @param T $o
+                     *
+                     * @return null|properties-of<T>
+                     */
+                    function q($o, bool $b): array|null { return $b ? p($o) : null; }
+                    ',
+                'php_version' => '8.0',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => true,
+            ],
         ];
     }
 }
