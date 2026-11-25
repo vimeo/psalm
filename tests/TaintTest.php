@@ -7587,6 +7587,81 @@ final class TaintTest extends TestCase
                     convert(new Identity());
                     show(new Identity());',
             ],
+            'dontTaintAVirtualCallWithTheVariadicArgumentOfAnotherCallOfAnOverrideSpecializedByInstance' => [
+                'code' => '<?php // --taint-analysis
+                    interface Joiner {
+                        public function join(string $first, string ...$rest): string;
+                    }
+
+                    /** @psalm-taint-specialize */
+                    final class Last implements Joiner {
+                        #[Override]
+                        public function join(string $first, string ...$rest): string {
+                            return $rest[1] ?? "";
+                        }
+                    }
+
+                    function convert(Joiner $joiner): string {
+                        return $joiner->join("", "", (string) $_GET["text"]);
+                    }
+
+                    function show(Joiner $joiner): void {
+                        echo $joiner->join("", "", "clean");
+                    }
+
+                    convert(new Last());
+                    show(new Last());',
+            ],
+            'dontTaintAVirtualCallWithTheArgumentOfAnotherCallOfATraitOverrideSpecializedByCall' => [
+                'code' => '<?php // --taint-analysis
+                    interface Formatter {
+                        public function format(string $value): string;
+                    }
+
+                    trait IdentityFormat {
+                        /** @psalm-taint-specialize */
+                        public function format(string $value): string {
+                            return $value;
+                        }
+                    }
+
+                    final class Identity implements Formatter {
+                        use IdentityFormat;
+                    }
+
+                    function convert(Formatter $formatter): string {
+                        return $formatter->format((string) $_GET["text"]);
+                    }
+
+                    function show(Formatter $formatter): void {
+                        echo $formatter->format("clean");
+                    }
+
+                    convert(new Identity());
+                    show(new Identity());',
+            ],
+            'dontTaintAStaticVirtualCallWithTheArgumentOfAnotherCallOfAnOverrideSpecializedByCall' => [
+                'code' => '<?php // --taint-analysis
+                    abstract class Mapper {
+                        abstract public static function create(string $id): string;
+                    }
+
+                    final class IdMapper extends Mapper {
+                        /** @psalm-taint-specialize */
+                        #[Override]
+                        public static function create(string $id): string {
+                            return $id;
+                        }
+                    }
+
+                    function convert(Mapper $mapper): string {
+                        return $mapper::create((string) $_GET["id"]);
+                    }
+
+                    function show(Mapper $mapper): void {
+                        echo $mapper::create("clean");
+                    }',
+            ],
             'dontTaintWhatAnInheritedBodyReturnsOfAnotherObjectThroughAnOverrideSpecializedByInstance' => [
                 'code' => '<?php // --taint-analysis
                     /** @psalm-immutable */
@@ -17054,6 +17129,100 @@ final class TaintTest extends TestCase
                     $formatter = new Remembering();
                     convert($formatter);
                     show($formatter);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintAVirtualCallWithItsVariadicArgumentOfAnOverrideSpecializedByInstance' => [
+                'code' => '<?php // --taint-analysis
+                    interface Joiner {
+                        public function join(string $first, string ...$rest): string;
+                    }
+
+                    /** @psalm-taint-specialize */
+                    final class Last implements Joiner {
+                        #[Override]
+                        public function join(string $first, string ...$rest): string {
+                            return $rest[1] ?? "";
+                        }
+                    }
+
+                    function show(Joiner $joiner): void {
+                        echo $joiner->join("", "", (string) $_GET["text"]);
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintAVirtualCallWithItsArgumentOfATraitOverrideSpecializedByCall' => [
+                'code' => '<?php // --taint-analysis
+                    interface Formatter {
+                        public function format(string $value): string;
+                    }
+
+                    trait IdentityFormat {
+                        /** @psalm-taint-specialize */
+                        public function format(string $value): string {
+                            return $value;
+                        }
+                    }
+
+                    final class Identity implements Formatter {
+                        use IdentityFormat;
+                    }
+
+                    function show(Formatter $formatter): void {
+                        echo $formatter->format((string) $_GET["text"]);
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintAStaticVirtualCallWithItsArgumentOfAnOverrideSpecializedByCall' => [
+                'code' => '<?php // --taint-analysis
+                    abstract class Mapper {
+                        abstract public static function create(string $id): string;
+                    }
+
+                    final class IdMapper extends Mapper {
+                        /** @psalm-taint-specialize */
+                        #[Override]
+                        public static function create(string $id): string {
+                            return $id;
+                        }
+                    }
+
+                    function show(Mapper $mapper): void {
+                        echo $mapper::create((string) $_GET["id"]);
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintAVirtualCallWithTheArgumentOfAnotherCallOfAnOverrideNotSpecializedBesideOneSpecialized' => [
+                'code' => '<?php // --taint-analysis
+                    interface Formatter {
+                        public function format(string $value): string;
+                    }
+
+                    /** @psalm-taint-specialize */
+                    final class Identity implements Formatter {
+                        #[Override]
+                        public function format(string $value): string {
+                            return $value;
+                        }
+                    }
+
+                    final class Remembering implements Formatter {
+                        private string $last = "";
+
+                        #[Override]
+                        public function format(string $value): string {
+                            $last = $this->last;
+                            $this->last = $value;
+                            return $last;
+                        }
+                    }
+
+                    function convert(Formatter $formatter): string {
+                        return $formatter->format((string) $_GET["text"]);
+                    }
+
+                    function show(Formatter $formatter): void {
+                        echo $formatter->format("clean");
+                    }',
                 'error_message' => 'TaintedHtml',
             ],
             'taintWhatAnOverrideSpecializedByInstanceReturnsOfTheObjectThroughAVirtualCall' => [
