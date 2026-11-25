@@ -4224,6 +4224,22 @@ final class FunctionTemplateTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'templateBoundedByUnboundedTemplateCanBeNull' => [
+                'code' => '<?php
+                    /**
+                     * @template U
+                     * @template T of U
+                     * @param T $v
+                     * @return T|int
+                     */
+                    function f($v) {
+                        if ($v === null) {
+                            return 0;
+                        }
+
+                        return $v;
+                    }',
+            ],
         ];
     }
 
@@ -5442,6 +5458,18 @@ final class FunctionTemplateTest extends TestCase
                         }
                     }',
                 'error_message' => 'DocblockTypeContradiction',
+            ],
+            'templateBoundedByNonNullableTemplateIsNeverNull' => [
+                'code' => '<?php
+                    /**
+                     * @template U of int
+                     * @template T of U
+                     * @param T $v
+                     */
+                    function f($v): void {
+                        if ($v === null) {}
+                    }',
+                'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:29 - T:fn-f as U:fn-f as int does not contain null',
             ],
             'templateBoundEmptiedByNegatedLiteralEquality' => [
                 'code' => '<?php
