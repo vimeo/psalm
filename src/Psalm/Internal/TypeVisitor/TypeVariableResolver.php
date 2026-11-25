@@ -36,8 +36,8 @@ final class TypeVariableResolver extends MutableTypeVisitor
     public bool $resolved_a_variable = false;
 
     /**
-     * The variables resolved by the unions the traversal is inside of: a bound that holds the variable
-     * (`$box->add($box)` gives `_0 the bound `Box<`_0>`) keeps it there, or the traversal never ends
+     * The variables resolved by the unions the traversal is inside of, by getUnrollingKey(): a bound that holds
+     * the variable (`$box->add($box)` gives `_0 the bound `Box<`_0>`) keeps it there, or the traversal never ends
      *
      * @var array<string, true>
      */
@@ -125,7 +125,7 @@ final class TypeVariableResolver extends MutableTypeVisitor
 
         foreach ($atomic_types as $atomic_type) {
             if (!$atomic_type instanceof TTypeVariable
-                || isset($unrolling[$atomic_type->name])
+                || isset($unrolling[self::getUnrollingKey($atomic_type)])
                 || ($only_never_bound && !$atomic_type->isNeverBound())
                 || ($keep_never_bound && $atomic_type->isNeverBound())
                 || ($resolved = $atomic_type->getResolvedType($codebase, $construction_site_only)) === null
@@ -137,7 +137,7 @@ final class TypeVariableResolver extends MutableTypeVisitor
             $changed = true;
 
             $nested_unrolling = $unrolling;
-            $nested_unrolling[$atomic_type->name] = true;
+            $nested_unrolling[self::getUnrollingKey($atomic_type)] = true;
 
             $resolved_atomics = self::resolveAtomics(
                 $resolved->getAtomicTypes(),
@@ -158,6 +158,17 @@ final class TypeVariableResolver extends MutableTypeVisitor
         }
 
         return $resolved_types;
+    }
+
+    /**
+     * A variable is its bounds, which every occurrence shares: two variables of the same name can come from
+     * different trackers (one per namespace block of a file)
+     *
+     * @psalm-pure
+     */
+    private static function getUnrollingKey(TTypeVariable $variable): string
+    {
+        return $variable->bounds !== null ? "#" . spl_object_id($variable->bounds) : $variable->name;
     }
 
     /**
@@ -251,7 +262,7 @@ final class TypeVariableResolver extends MutableTypeVisitor
 
             foreach ($resolved_atomics as $resolved_atomic) {
                 $replacements[spl_object_id($resolved_atomic)][0] = $resolved_atomic;
-                $replacements[spl_object_id($resolved_atomic)][1][$atomic_type->name] = true;
+                $replacements[spl_object_id($resolved_atomic)][1][self::getUnrollingKey($atomic_type)] = true;
             }
         }
 

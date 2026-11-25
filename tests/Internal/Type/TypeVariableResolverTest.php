@@ -47,6 +47,20 @@ final class TypeVariableResolverTest extends TestCase
         $this->assertSame('Box<_0:Box<_0>|Box<int>>|Box<int>', $type->getId());
     }
 
+    public function testResolvesAVariableOfTheSameNameFromAnotherTracker(): void
+    {
+        $inner = new TTypeVariable('_0', new TypeVariableBounds([new TemplateBound(Type::getInt())]));
+        $outer = new TTypeVariable('_0', new TypeVariableBounds([
+            new TemplateBound(new Union([new TGenericObject('Holder', [new Union([$inner])])])),
+        ]));
+        $type = new Union([$outer]);
+
+        (new TypeVariableResolver($this->project_analyzer->getCodebase(), construction_site_only: false))
+            ->traverse($type);
+
+        $this->assertSame('Holder<int>', $type->getId());
+    }
+
     public function testCombinesTheCountsOfArraysTwoVariablesResolveTo(): void
     {
         $one = new TTypeVariable('_0', new TypeVariableBounds([
