@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Type\Atomic;
 
 use Override;
+use Psalm\Type\Atomic;
 
 use function max;
 use function min;
@@ -32,13 +33,24 @@ final class TIntRange extends TInt
     #[Override]
     public function getKey(bool $include_extra = true): string
     {
-        return 'int<' . ($this->min_bound ?? 'min') . ', ' . ($this->max_bound ?? 'max') . '>';
+        $key = 'int<' . ($this->min_bound ?? 'min') . ', ' . ($this->max_bound ?? 'max') . '>';
+
+        return $this->dependent_list_key === null ? $key : $key . '#' . $this->dependent_list_key;
     }
 
     #[Override]
     public function getId(bool $exact = true): string
     {
         return 'int<' . ($this->min_bound ?? 'min') . ', ' . ($this->max_bound ?? 'max') . '>';
+    }
+
+    #[Override]
+    public function equals(Atomic $other_type, bool $ensure_source_equality): bool
+    {
+        return $other_type instanceof self
+            && $this->min_bound === $other_type->min_bound
+            && $this->max_bound === $other_type->max_bound
+            && $this->dependent_list_key === $other_type->dependent_list_key;
     }
 
     /**

@@ -5126,6 +5126,97 @@ final class ArrayFunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'keyOfAnotherListAssignedInABranchIsNoKeyOfTheList' => [
+                'code' => '<?php
+                    /**
+                     * @param non-empty-list<int> $a
+                     * @param non-empty-list<int> $b
+                     */
+                    function f(array $a, array $b): void {
+                        $j = array_key_last($a);
+                        if (rand(0, 1)) {
+                            $j = array_key_last($b);
+                        }
+                        $a[$j] = 5;
+                        /** @psalm-check-type-exact $a = non-empty-array<int<0, max>, int> */;
+                    }',
+            ],
+            'keyOfAnotherListAssignedInALoopIsNoKeyOfTheList' => [
+                'code' => '<?php
+                    /**
+                     * @param non-empty-list<int> $a
+                     * @param non-empty-list<int> $b
+                     */
+                    function f(array $a, array $b): void {
+                        $j = array_key_last($a);
+                        while (rand(0, 1)) {
+                            $a[$j] = 5;
+                            $j = array_key_last($b);
+                        }
+                        /** @psalm-check-type-exact $a = non-empty-array<int<0, max>, int> */;
+                    }',
+            ],
+            'foreachKeyOfAnotherListIsNoKeyOfTheList' => [
+                'code' => '<?php
+                    /**
+                     * @param list<int> $a
+                     * @param list<int> $b
+                     */
+                    function f(array $a, array $b): void {
+                        foreach ($a as $k => $_) {
+                            foreach ($b as $k => $_) {}
+                            $a[$k] = 5;
+                            /** @psalm-check-type-exact $a = non-empty-array<int<0, max>, int> */;
+                        }
+                    }',
+            ],
+            'foreachKeyOfAnotherListInABranchIsNoKeyOfTheList' => [
+                'code' => '<?php
+                    /**
+                     * @param list<int> $a
+                     * @param list<int> $b
+                     */
+                    function f(array $a, array $b): void {
+                        foreach ($a as $k => $_) {
+                            if (rand(0, 1)) {
+                                foreach ($b as $k => $_) {}
+                            }
+                            $a[$k] = 5;
+                        }
+                        /** @psalm-check-type-exact $a = array<int<0, max>, int> */;
+                    }',
+            ],
+            'keyOfTheSameListAssignedInABranchOrALoopKeepsAList' => [
+                'code' => '<?php
+                    /** @param non-empty-list<int> $a */
+                    function branch(array $a): void {
+                        $j = array_key_last($a);
+                        if (rand(0, 1)) {
+                            $j = array_key_first($a);
+                        }
+                        $a[$j] = 5;
+                        /** @psalm-check-type-exact $a = non-empty-list<int> */;
+                    }
+
+                    /** @param non-empty-list<int> $a */
+                    function loop(array $a): void {
+                        $j = array_key_last($a);
+                        while (rand(0, 1)) {
+                            $a[$j] = 5;
+                            $j = array_key_last($a);
+                        }
+                        /** @psalm-check-type-exact $a = non-empty-list<int> */;
+                    }
+
+                    /** @param list<int> $a */
+                    function nested(array $a): void {
+                        foreach ($a as $k => $_) {
+                            foreach ($a as $k => $_) {}
+                            $a[$k] = 5;
+                            /** @psalm-check-type-exact $a = non-empty-list<int> */;
+                        }
+                    }',
+            ],
             'arrayFunctionsOfAnInvokableLaterInIntersection' => [
                 'code' => '<?php
                     interface Named {}
