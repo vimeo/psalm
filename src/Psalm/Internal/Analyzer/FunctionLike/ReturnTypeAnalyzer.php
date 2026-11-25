@@ -990,16 +990,14 @@ final class ReturnTypeAnalyzer
                 true,
             );
 
-            if (!self::checkConditionTypes(
+            self::checkConditionTypes(
                 $storage->return_type,
                 $function_like_analyzer,
                 $classlike_storage,
                 $parent_class,
                 $storage,
                 $context,
-            )) {
-                return null;
-            }
+            );
 
             /** @psalm-suppress UnusedMethodCall Actually generates issues */
             self::checkTypeAsReturned(
@@ -1062,16 +1060,14 @@ final class ReturnTypeAnalyzer
             $fleshed_out_return_type = $storage->return_type;
         }
 
-        if (!self::checkConditionTypes(
+        $conditions_valid = self::checkConditionTypes(
             $storage->return_type,
             $function_like_analyzer,
             $classlike_storage,
             $parent_class,
             $storage,
             null,
-        )) {
-            return false;
-        }
+        );
 
         if (!self::checkTypeAsReturned(
             $fleshed_out_return_type,
@@ -1080,7 +1076,7 @@ final class ReturnTypeAnalyzer
             $storage->suppressed_issues,
             $storage instanceof MethodStorage && $storage->inherited_return_type,
             null,
-        )) {
+        ) || !$conditions_valid) {
             return false;
         }
 
@@ -1231,6 +1227,8 @@ final class ReturnTypeAnalyzer
         $collector = new ConditionTypeCollector();
         $collector->traverse($return_type);
 
+        $valid = true;
+
         foreach ($collector->getConditions() as $condition) {
             if (!self::checkTypeAsReturned(
                 TypeExpander::expandUnion(
@@ -1246,11 +1244,11 @@ final class ReturnTypeAnalyzer
                 false,
                 $context,
             )) {
-                return false;
+                $valid = false;
             }
         }
 
-        return true;
+        return $valid;
     }
 
     /**

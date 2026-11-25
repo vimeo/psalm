@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Psalm\Tests\Template;
 
 use Override;
+use Psalm\Context;
+use Psalm\IssueBuffer;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
@@ -13,6 +15,54 @@ final class ConditionalReturnTypeTest extends TestCase
 {
     use ValidCodeAnalysisTestTrait;
     use InvalidCodeAnalysisTestTrait;
+
+    public function testEveryUnknownClassOfAConditionalReturnTypeIsReported(): void
+    {
+        $this->testConfig->throw_exception = false;
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile(
+            $file_path,
+            <<<'PHP'
+                <?php
+                /**
+                 * @param int|float $n
+                 * @return ($n is INF ? 'a' : ($n is NAN ? 'b' : string))
+                 */
+                function twoCondDoc($n) { return 'a'; }
+
+                /**
+                 * @param int|float $n
+                 * @return ($n is MissA ? MissBranch : string)
+                 */
+                function condAndBranchDoc($n) { throw new RuntimeException(); }
+
+                /**
+                 * @param int|float $n
+                 * @return ($n is INF ? 'a' : ($n is NAN ? 'b' : string))
+                 */
+                function twoCondSig($n): string { return 'a'; }
+                PHP,
+        );
+        $this->analyzeFile($file_path, new Context());
+
+        $issues = [];
+        foreach (IssueBuffer::getIssuesDataForFile($file_path) as $issue) {
+            $issues[] = $issue->line_from . ':' . $issue->type . ':' . $issue->message;
+        }
+
+        $this->assertSame(
+            [
+                '4:UndefinedDocblockClass:Docblock-defined class, interface or enum named INF does not exist',
+                '4:UndefinedDocblockClass:Docblock-defined class, interface or enum named NAN does not exist',
+                '10:UndefinedDocblockClass:Docblock-defined class, interface or enum named MissA does not exist',
+                '10:UndefinedDocblockClass:Docblock-defined class, interface or enum named MissBranch does not exist',
+                '16:UndefinedDocblockClass:Docblock-defined class, interface or enum named INF does not exist',
+                '16:UndefinedDocblockClass:Docblock-defined class, interface or enum named NAN does not exist',
+            ],
+            $issues,
+        );
+    }
 
     /**
      * @psalm-pure
