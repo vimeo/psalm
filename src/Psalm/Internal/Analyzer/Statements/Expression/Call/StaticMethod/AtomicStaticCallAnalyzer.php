@@ -1067,7 +1067,8 @@ final class AtomicStaticCallAnalyzer
             $class_storage->pseudo_static_method_overloads[$method_id->method_name] ?? null,
             $pseudo_method_storage,
             // `static` in the params is the class the method is called on: that class itself when the call names it,
-            // a subclass too when it is called on an object or a class-string
+            // a subclass too when it is called on an object or a class-string, or through `self::`/`parent::`, which
+            // forward the late static binding
             $lhs_type_part instanceof TNamedObject
                 ? static fn(MethodStorage $storage): MethodStorage => MissingMethodCallHandler::resolveStaticInParams(
                     $codebase,
@@ -1075,7 +1076,9 @@ final class AtomicStaticCallAnalyzer
                     $class_storage,
                     $lhs_type_part,
                     $static_class_storage->final
-                        || ($stmt->class instanceof PhpParser\Node\Name && !$lhs_type_part->is_static),
+                        || ($stmt->class instanceof PhpParser\Node\Name
+                            && !$lhs_type_part->is_static
+                            && !in_array($stmt->class->toLowerString(), ['self', 'parent'], true)),
                 )
                 : null,
         );

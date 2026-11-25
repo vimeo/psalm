@@ -2752,6 +2752,40 @@ final class MagicMethodAnnotationTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],
+            'staticInTheParamsOfAStaticMethodTagCalledThroughSelfMayBeASubclass' => [
+                'code' => '<?php
+                    /** @method static int make(static $o) */
+                    class SM {
+                        public static function __callStatic(string $name, array $args): mixed {
+                            throw new RuntimeException();
+                        }
+
+                        public static function viaSelf(SM $o): void {
+                            self::make($o);
+                        }
+                    }',
+                'error_message' => 'ArgumentTypeCoercion',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'staticInTheParamsOfAStaticMethodTagCalledThroughParentMayBeASubclass' => [
+                'code' => '<?php
+                    /** @method static int make(static $o) */
+                    class SM {
+                        public static function __callStatic(string $name, array $args): mixed {
+                            throw new RuntimeException();
+                        }
+                    }
+
+                    class SMC extends SM {
+                        public static function viaParent(SM $o): void {
+                            parent::make($o);
+                        }
+                    }',
+                'error_message' => 'ArgumentTypeCoercion',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'intersectionTypeOfAMethodParamIsEnforced' => [
                 'code' => '<?php
                     interface I1 {}
