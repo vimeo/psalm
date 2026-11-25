@@ -30,6 +30,8 @@ use Psalm\Internal\Codebase\UrlHosts;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Provider\AddRemoveTaints\HtmlFunctionTainter;
+use Psalm\Internal\Provider\AddRemoveTaints\JsonFunctionTainter;
 use Psalm\Internal\Type\Comparator\CallableTypeComparator;
 use Psalm\Internal\Type\TemplateBound;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
@@ -57,6 +59,7 @@ use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function array_all;
+use function array_any;
 use function array_values;
 use function count;
 use function explode;
@@ -1586,12 +1589,21 @@ final class FunctionCallReturnTypeFetcher
     /**
      * The taints a call removes because of the arguments it is given (`@psalm-taint-escape ($escape is true ? "html" :
      * null)`): a condition the arguments can't decide removes nothing
+     *
+     * @param array<PhpParser\Node\Arg> $args the arguments of a PHP call, if any: an unpacked one removes nothing
      */
     public static function getConditionallyRemovedTaints(
         Codebase $codebase,
         FunctionLikeStorage $storage,
         TemplateResult $template_result,
+        array $args = [],
     ): int {
+        // the parameters an unpacked argument gives are inferred from all of its items, of which it may lack those
+        // after the first: `json_encode(...$args)` may be without the flags of the second item
+        if (array_any($args, static fn(PhpParser\Node\Arg $arg): bool => $arg->unpack)) {
+            return 0;
+        }
+
         $conditionally_removed_taints = 0;
 
         foreach ($storage->conditionally_removed_taints as $conditionally_removed_taint) {
@@ -1642,7 +1654,11 @@ final class FunctionCallReturnTypeFetcher
         $codebase = $statements_analyzer->getCodebase();
         $event = new AddRemoveTaintsEvent($stmt, $context, $statements_analyzer, $codebase);
 
-        $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
+        $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event)
+            // what the decoders give back of the taints escapes removed: their flows only, not a source of input
+            // anywhere the call is (an argument, an array item...), as a handler of the event would be
+            | JsonFunctionTainter::getGivenBackTaints($statements_analyzer, $stmt)
+            | HtmlFunctionTainter::getGivenBackTaints($statements_analyzer, $stmt);
         $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
 
         $node_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
@@ -1665,6 +1681,7 @@ final class FunctionCallReturnTypeFetcher
             $codebase,
             $function_storage,
             $template_result,
+            $stmt->isFirstClassCallable() ? [] : $stmt->getArgs(),
         );
 
         if ($conditionally_removed_taints) {
