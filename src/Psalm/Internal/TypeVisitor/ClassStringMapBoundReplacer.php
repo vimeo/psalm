@@ -32,7 +32,7 @@ final class ClassStringMapBoundReplacer extends MutableTypeVisitor
     }
 
     /**
-     * @psalm-mutation-free
+     * @psalm-pure
      */
     public static function getKeyType(TClassStringMap $map): Union
     {
