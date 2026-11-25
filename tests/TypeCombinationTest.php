@@ -10,10 +10,15 @@ use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 use Psalm\Type;
 use Psalm\Type\Atomic;
+use Psalm\Type\Atomic\TConditional;
+use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TTemplateParamClass;
 
 use function array_reverse;
+use function ini_get;
+use function ini_set;
 
 final class TypeCombinationTest extends TestCase
 {
@@ -68,6 +73,71 @@ final class TypeCombinationTest extends TestCase
         $this->assertSame('Exception', TypeCombiner::combine([$plain, $static])->getId());
         $this->assertSame('Exception', TypeCombiner::combine([$static, $plain, $static])->getId());
         $this->assertSame('Exception&static', TypeCombiner::combine([$static, $static])->getId());
+    }
+
+    public function testFloatsThatPrintAlikeAreKeptApart(): void
+    {
+        $this->assertSame(
+            'float(0.3)|float(0.30000000000000004)',
+            TypeCombiner::combine([new TLiteralFloat(0.3), new TLiteralFloat(0.1 + 0.2)])->getId(),
+        );
+    }
+
+    public function testFloatsAreKeptApartWithALowSerializePrecision(): void
+    {
+        $precision = ini_get('precision');
+        $serialize_precision = ini_get('serialize_precision');
+        ini_set('precision', '14');
+        ini_set('serialize_precision', '3');
+
+        try {
+            $this->assertSame(
+                'float(1.234567890123456)|float(1.234567890123556)',
+                TypeCombiner::combine([
+                    new TLiteralFloat(1.234_567_890_123_456),
+                    new TLiteralFloat(1.234_567_890_123_556),
+                ])->getId(),
+            );
+        } finally {
+            ini_set('precision', $precision);
+            ini_set('serialize_precision', (string) $serialize_precision);
+        }
+    }
+
+    public function testConditionalsOnTheSameTemplateAreKeptApart(): void
+    {
+        $int_conditional = new TConditional(
+            'T',
+            'fn-f',
+            Type::getMixed(),
+            Type::getInt(),
+            Type::getString(),
+            Type::getBool(),
+        );
+        $string_conditional = new TConditional(
+            'T',
+            'fn-f',
+            Type::getMixed(),
+            Type::getString(),
+            Type::getInt(),
+            Type::getFloat(),
+        );
+
+        $this->assertSame(
+            '(T is int ? string : bool)|(T is string ? int : float)',
+            TypeCombiner::combine([$int_conditional, $string_conditional])->getId(),
+        );
+    }
+
+    public function testClassStringsOfTemplatesOfDifferentScopesAreKeptApart(): void
+    {
+        $function_template = new TTemplateParamClass('T', 'Exception', new TNamedObject('Exception'), 'fn-f');
+        $class_template = new TTemplateParamClass('T', 'Exception', new TNamedObject('Exception'), 'Foo');
+
+        $this->assertSame(
+            '(class-string<T:Foo as Exception>)|(class-string<T:fn-f as Exception>)',
+            TypeCombiner::combine([$function_template, $class_template])->getId(),
+        );
     }
 
     /**
@@ -1495,6 +1565,83 @@ final class TypeCombinationTest extends TestCase
                 [
                     'literal-string',
                     'non-empty-literal-string',
+                ],
+            ],
+            'classStringMapAndArrayReplaceTheMapTemplateByItsBound' => [
+                'array<class-string<Foo>|int, Foo|int>',
+                [
+                    'class-string-map<T as Foo, T>',
+                    'array<int, int>',
+                ],
+            ],
+            'classStringMapAndArrayKeepTheIntersectionOfTheMapTemplate' => [
+                'array<class-string<Foo>|int, Foo&Bar|int>',
+                [
+                    'class-string-map<T as Foo, T&Bar>',
+                    'array<int, int>',
+                ],
+            ],
+            'classStringMapWithoutBoundAndArrayKeepTheIntersectionOfTheMapTemplate' => [
+                'array<class-string|int, Bar|int>',
+                [
+                    'class-string-map<T, T&Bar>',
+                    'array<int, int>',
+                ],
+            ],
+            'classStringMapsWithDifferentBoundsReplaceEachTemplateByItsBound' => [
+                'array<class-string<Bar>|class-string<Foo>, Bar|Foo>',
+                [
+                    'class-string-map<T as Foo, T>',
+                    'class-string-map<T as Bar, T>',
+                ],
+            ],
+            'classStringMapsWithDifferentTemplateNamesReplaceEachTemplateByItsBound' => [
+                'array<class-string<Foo>, Foo>',
+                [
+                    'class-string-map<T as Foo, T>',
+                    'class-string-map<U as Foo, U>',
+                ],
+            ],
+            'classStringMapWithoutBoundAndArrayReplaceTheMapTemplateByObject' => [
+                'array<class-string|int, int|list<object>>',
+                [
+                    'class-string-map<T, list<T>>',
+                    'array<int, int>',
+                ],
+            ],
+            'classStringMapAndKeyedArrayReplaceTheMapTemplateByItsBound' => [
+                'array<\'a\'|class-string<Foo>, Foo|int>',
+                [
+                    'class-string-map<T as Foo, T>',
+                    'array{a: int}',
+                ],
+            ],
+            'classStringMapAndListReplaceTheMapTemplateByItsBound' => [
+                'array<class-string<Foo>|int<0, max>, Foo|int>',
+                [
+                    'class-string-map<T as Foo, T>',
+                    'list<int>',
+                ],
+            ],
+            'classStringMapsWithTheSameBoundStayAClassStringMap' => [
+                'class-string-map<T as Foo, (T:class-string-map as Foo)|(list<T:class-string-map as Foo>)>',
+                [
+                    'class-string-map<T as Foo, T>',
+                    'class-string-map<T as Foo, list<T>>',
+                ],
+            ],
+            'classStringMapAndEmptyArrayStayAClassStringMap' => [
+                'class-string-map<T as Foo, T:class-string-map as Foo>',
+                [
+                    'class-string-map<T as Foo, T>',
+                    'array<never, never>',
+                ],
+            ],
+            'classStringMapAndCallableArrayAreNotACallableArray' => [
+                'array<0|1|class-string<Foo>, class-string|non-empty-string|object>',
+                [
+                    'class-string-map<T as Foo, T>',
+                    'callable-array',
                 ],
             ],
         ];

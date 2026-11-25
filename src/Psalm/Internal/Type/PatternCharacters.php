@@ -48,6 +48,7 @@ final class PatternCharacters
         TaintKind::INPUT_LDAP => "*()\\,+\"<>;=\0",
         // whitespace makes an unquoted predicate `1 or 1`
         TaintKind::INPUT_XPATH => "'\"[]()=|*@/:<>!$, \t\n\r\x0B\x0C",
+        TaintKind::INPUT_XPATH_LITERAL => '\'"',
         // `..` is the parent directory wherever the path puts it
         TaintKind::INPUT_FILE => "/\\.\0",
         TaintKind::INPUT_INCLUDE => "/\\.\0",

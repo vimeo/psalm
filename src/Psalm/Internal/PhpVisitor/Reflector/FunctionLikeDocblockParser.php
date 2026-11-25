@@ -150,6 +150,10 @@ final class FunctionLikeDocblockParser
             }
         }
 
+        foreach ($parsed_docblock->tags['psalm-overload'] ?? [] as $offset => $overload_entry) {
+            $info->overloads[] = ['entry' => trim($overload_entry), 'offset' => $offset];
+        }
+
         foreach (['query', 'prepare', 'execute', 'bind', 'insert', 'update', 'select', 'fetch'] as $kind) {
             foreach ($parsed_docblock->tags['psalm-database-' . $kind] ?? [] as $text) {
                 $info->database_calls[] = [$kind, trim($text)];

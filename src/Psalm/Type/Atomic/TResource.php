@@ -27,6 +27,15 @@ final class TResource extends Atomic
     }
 
     /**
+     * @psalm-pure
+     */
+    #[Override]
+    public function getId(bool $exact = true): string
+    {
+        return 'resource';
+    }
+
+    /**
      * @param array<lowercase-string, string> $aliased_classes
      * @psalm-pure
      */

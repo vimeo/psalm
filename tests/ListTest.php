@@ -333,6 +333,22 @@ final class ListTest extends TestCase
                     ["a" => $a, "c" => $c] = $source;',
                 'error_message' => "InvalidArrayOffset - src" . DIRECTORY_SEPARATOR . "somefile.php:3:40 - Cannot access value with offset",
             ],
+            'destructuringAnEmptyArray' => [
+                'code' => '<?php
+                    /** @return array{} */
+                    function none(): array {
+                        return [];
+                    }
+
+                    [$p] = none();',
+                'error_message' => "InvalidArrayOffset - src" . DIRECTORY_SEPARATOR . "somefile.php:7:22 - Cannot access value with offset 0",
+            ],
+            'destructuringAKeyOfAnEmptyArray' => [
+                'code' => '<?php
+                    $e = [];
+                    ["a" => $p] = $e;',
+                'error_message' => "InvalidArrayOffset - src" . DIRECTORY_SEPARATOR . "somefile.php:3:29 - Cannot access value with offset",
+            ],
             'destructuringAPositionMissingFromSomeOfTheTypes' => [
                 'code' => '<?php
                     /** @param list{int, int}|ArrayObject<int, int> $source */

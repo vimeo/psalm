@@ -99,6 +99,20 @@ final class UnusedVariableTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => ['UndefinedClass', 'MixedReturnStatement', 'MixedInferredReturnType'],
             ],
+            'paramWrittenToAnArrayInAnImpossibleBranchIsUsed' => [
+                'code' => '<?php
+                    function f(int $v): void {
+                        $a = ["test" => null];
+
+                        if ($a["test"] !== null) {
+                            $a["x"] = $v;
+                        }
+
+                        echo $a["test"];
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['TypeDoesNotContainType'],
+            ],
             'assignmentBeforeABreakInTheElseIsReadAfterTheIf' => [
                 'code' => '<?php
                     /** @param list<string> $list */

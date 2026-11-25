@@ -18,8 +18,24 @@ final class TEmptyNumeric extends TNumeric
      * @psalm-pure
      */
     #[Override]
-    public function getId(bool $exact = true, bool $nested = false): string
+    public function getId(bool $exact = true): string
     {
         return 'empty-numeric';
+    }
+
+    /**
+     * empty-numeric is no docblock type: written as numeric
+     *
+     * @param array<lowercase-string, string> $aliased_classes
+     * @psalm-pure
+     */
+    #[Override]
+    public function toNamespacedString(
+        ?string $namespace,
+        array $aliased_classes,
+        ?string $this_class,
+        bool $use_phpdoc_format,
+    ): string {
+        return 'numeric';
     }
 }
