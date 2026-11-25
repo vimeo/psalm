@@ -503,6 +503,100 @@ final class TaintTest extends TestCase
     }
 
     /**
+     * A sink on the value under a key of an array parameter takes the values the arrays given to it may hold under
+     * that key: those assigned under it, under a key not known, or held by an array whose keys aren't known, but not
+     * those under another known key.
+     */
+    public function testSinksOnTheValuesUnderKeysOfAParameter(): void
+    {
+        $this->addStubFile(
+            'run.phpstub',
+            '<?php
+                /**
+                 * @param list<string> $arguments
+                 * @psalm-taint-sink shell $command
+                 * @psalm-taint-sink html $arguments[0]
+                 */
+                function run(string $command, array $arguments): void {}
+            ',
+        );
+
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile($file_path, '<?php
+            interface Platform {
+                /**
+                 * @param array<array-key, mixed> $options
+                 * @psalm-taint-sink html $options[\'instructions\']
+                 * @psalm-taint-sink html $options["system"]
+                 */
+                public function invoke(string $model, array $options = []): void;
+            }
+
+            final class Client implements Platform {
+                #[\Override]
+                public function invoke(string $model, array $options = []): void {}
+            }
+
+            function test(Platform $platform, Client $client, array $unknown, string $key): void {
+                $platform->invoke("model", ["instructions" => (string) $_GET["a"]]);
+                $platform->invoke("model", ["system" => (string) $_GET["b"]]);
+                $platform->invoke("model", ["temperature" => (string) $_GET["c"]]);
+                $platform->invoke("model", [(string) $_GET["d"] => "value"]);
+                $platform->invoke("model", [$key => (string) $_GET["e"]]);
+                $platform->invoke("model", $_POST);
+                $platform->invoke("model", [...$unknown, "temperature" => (string) $_GET["f"]]);
+                $platform->invoke("model", [...$_COOKIE, "temperature" => 1]);
+                $platform->invoke("model", ["instructions" => ["nested" => (string) $_GET["g"]]]);
+                $platform->invoke("model", ["other" => ["instructions" => (string) $_GET["h"]]]);
+                $options = ["temperature" => 1];
+                $options["instructions"] = (string) $_GET["i"];
+                $platform->invoke("model", $options);
+                $client->invoke("model", ["instructions" => (string) $_GET["j"]]);
+                $client->invoke("model", ["temperature" => (string) $_GET["k"]]);
+                run("ls", [(string) $_GET["l"]]);
+                run("ls", ["-l", (string) $_GET["m"]]);
+                run((string) $_GET["n"], []);
+                $platform->invoke("model", ["instructions" => (string) $_GET["o"]]);
+            }
+        ');
+        $this->project_analyzer->trackTaintedInputs();
+
+        $this->analyzeFile($file_path, new Context(), false);
+
+        $issues = array_map(
+            static fn(IssueData $issue): array => [$issue->line_from, $issue->type],
+            array_values(array_filter(
+                IssueBuffer::getIssuesDataForFile($file_path),
+                static fn(IssueData $issue): bool => str_starts_with($issue->type, 'Tainted'),
+            )),
+        );
+        sort($issues);
+
+        self::assertSame(
+            [
+                [17, 'TaintedHtml'],
+                [18, 'TaintedHtml'],
+                // a key not known may be any of them
+                [21, 'TaintedHtml'],
+                [21, 'TaintedHtml'],
+                [22, 'TaintedHtml'],
+                [22, 'TaintedHtml'],
+                [24, 'TaintedHtml'],
+                [24, 'TaintedHtml'],
+                [25, 'TaintedHtml'],
+                [29, 'TaintedHtml'],
+                [30, 'TaintedHtml'],
+                [32, 'TaintedHtml'],
+                [34, 'TaintedShell'],
+                // each call is reported on its own, even where the parameter gets the same keys
+                [35, 'TaintedHtml'],
+            ],
+            $issues,
+        );
+    }
+
+    /**
      * json_encode() removes the html taint only when its flags, a constant expression, escape <, > and &, and never the
      * has_quotes one: the " delimiting a JSON string ends a double-quoted attribute, whatever the flags.
      */

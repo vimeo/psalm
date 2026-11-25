@@ -33,6 +33,14 @@ final class FunctionLikeParameter implements HasAttributesInterface, TypeNode
     public int $value_sinks = 0;
 
     /**
+     * The sinks of the values under literal keys of the array given to the parameter, by key
+     * (`@psalm-taint-sink <taint-type> $param['key']`): a value under another known key doesn't reach them
+     *
+     * @var array<array-key, int>
+     */
+    public array $key_sinks = [];
+
+    /**
      * Whether `@psalm-taint-sink` names the parameter, `@psalm-taint-sink none $param` included: its sinks then replace
      * those of the parameter of the method it implements or overrides
      */

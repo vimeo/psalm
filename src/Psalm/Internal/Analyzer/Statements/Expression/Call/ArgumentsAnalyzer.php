@@ -1695,7 +1695,9 @@ final class ArgumentsAnalyzer
                         $function_param->sinks,
                     );
 
-                    if ($sinks || $function_param->value_sinks) {
+                    // the sinks of the values of an array parameter are on each call's own argument (see
+                    // ArgumentAnalyzer::addArgumentArraySinks())
+                    if ($sinks) {
                         if (!$function_storage) {
                             // Mirror the value-node keying in ArgumentAnalyzer::processTaintedness:
                             // when the caller has no storage, resolve it from the cased method id so
@@ -1750,16 +1752,7 @@ final class ArgumentsAnalyzer
                             );
                         }
 
-                        if ($sinks) {
-                            $statements_analyzer->taint_flow_graph->addSink($sink);
-                        }
-
-                        if ($function_param->value_sinks) {
-                            $statements_analyzer->taint_flow_graph->addArgumentValuesSink(
-                                $sink,
-                                $function_param->value_sinks,
-                            );
-                        }
+                        $statements_analyzer->taint_flow_graph->addSink($sink);
                     }
                 }
             }

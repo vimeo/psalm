@@ -63,6 +63,7 @@ use function ksort;
 use function min;
 use function pack;
 use function spl_object_id;
+use function str_starts_with;
 use function strcmp;
 use function strlen;
 use function strpos;
@@ -853,13 +854,44 @@ final class TaintFlowGraph extends DataFlowGraph
      * FunctionLikeParameter::$value_sinks): the parameter's node flows into the sink through a fetch of any
      * value, so what the array holds only as a key doesn't reach it.
      */
-    public function addArgumentValuesSink(DataFlowNode $param_node, int $taints): void
-    {
+    public function addArgumentValuesSink(
+        DataFlowNode $param_node,
+        int $taints,
+        int $added_taints = 0,
+        int $removed_taints = 0,
+    ): void {
         $sink = DataFlowNode::getForArgumentValues($param_node, $taints);
         $this->addNode($param_node);
         $this->addNode($sink);
         $this->addSink($sink);
-        $this->addPath($param_node, $sink, 'arrayvalue-fetch');
+        $this->addPath($param_node, $sink, 'arrayvalue-fetch', $added_taints, $removed_taints);
+    }
+
+    /**
+     * Makes the values under the literal keys of $key_sinks of the array given to a parameter sinks of their taints
+     * (see FunctionLikeParameter::$key_sinks): the parameter's node flows into each sink through a fetch of its key,
+     * which a value assigned under another known key doesn't take, while one under a key not known does.
+     *
+     * @param array<array-key, int> $key_sinks
+     */
+    public function addArgumentKeySinks(
+        DataFlowNode $param_node,
+        array $key_sinks,
+        int $added_taints = 0,
+        int $removed_taints = 0,
+    ): void {
+        if ($key_sinks === []) {
+            return;
+        }
+
+        $this->addNode($param_node);
+
+        foreach ($key_sinks as $key => $taints) {
+            $sink = DataFlowNode::getForArgumentKey($param_node, (string) $key, $taints);
+            $this->addNode($sink);
+            $this->addSink($sink);
+            $this->addPath($param_node, $sink, "arrayvalue-fetch-'" . $key . "'", $added_taints, $removed_taints);
+        }
     }
 
     /**
@@ -1560,12 +1592,13 @@ final class TaintFlowGraph extends DataFlowGraph
         } elseif ($predecessor->code_location !== null) {
             $issue_location = $predecessor->code_location;
 
-            // the values of an argument (see addArgumentValuesSink()) are reported like a sink on the argument
-            // itself: where the argument comes from, when its parameter is declared where issues aren't
-            // reported (a stub)
+            // the values of an argument (see addArgumentValuesSink() and addArgumentKeySinks()) are reported like a
+            // sink on the argument itself: where the argument comes from, when its parameter is declared where
+            // issues aren't reported (a stub)
             $argument_location = $predecessor->taintSource?->code_location;
+            $argument_id = $predecessor->unspecialized_id ?? $predecessor->id;
             if ($argument_location !== null
-                && $sink->id === ($predecessor->unspecialized_id ?? $predecessor->id) . '[*]'
+                && ($sink->id === $argument_id . '[*]' || str_starts_with($sink->id, $argument_id . "['"))
                 && !$config->reportIssueInFile('TaintedInput', $issue_location->file_path)
             ) {
                 $issue_location = $argument_location;

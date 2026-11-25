@@ -89,6 +89,8 @@ use function substr;
 use function substr_replace;
 use function trim;
 
+use const PREG_UNMATCHED_AS_NULL;
+
 /**
  * @internal
  */
@@ -455,9 +457,18 @@ final class FunctionLikeDocblockScanner
         foreach ($docblock_info->taint_sink_params as $taint_sink_param) {
             $param_name = substr($taint_sink_param['name'], 1);
             $values_only = str_ends_with($param_name, '[*]');
+            $key = null;
 
             if ($values_only) {
                 $param_name = substr($param_name, 0, -3);
+            } elseif (preg_match(
+                '/^(\w+)\[(?:\'([^\']*)\'|"([^"]*)"|(-?\d+))\]$/',
+                $param_name,
+                $matches,
+                PREG_UNMATCHED_AS_NULL,
+            ) === 1) {
+                $param_name = $matches[1] ?? $param_name;
+                $key = $matches[2] ?? $matches[3] ?? $matches[4] ?? null;
             }
 
             if (!isset($param_names[$param_name])) {
@@ -474,6 +485,11 @@ final class FunctionLikeDocblockScanner
 
                 if ($values_only) {
                     $param_storage->value_sinks |= $taint_sink_param['taint'];
+                } elseif ($key !== null) {
+                    if ($taint_sink_param['taint'] !== 0) {
+                        $param_storage->key_sinks[$key] = ($param_storage->key_sinks[$key] ?? 0)
+                            | $taint_sink_param['taint'];
+                    }
                 } else {
                     $param_storage->sinks |= $taint_sink_param['taint'];
                 }

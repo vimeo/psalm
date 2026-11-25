@@ -456,6 +456,23 @@ final class DataFlowNode implements Stringable
     }
 
     /**
+     * The sink of the value under the literal key $key of the array a parameter is given, for its key sinks (see
+     * FunctionLikeParameter::$key_sinks): the parameter's node flows into it through a fetch of that key.
+     *
+     * @psalm-mutation-free
+     */
+    public static function getForArgumentKey(self $param_node, string $key, int $taints): self
+    {
+        return self::make(
+            ($param_node->unspecialized_id ?? $param_node->id) . "['" . $key . "']",
+            $param_node->label . "['" . $key . "']",
+            $param_node->code_location,
+            $param_node->specialization_key,
+            $taints,
+        );
+    }
+
+    /**
      * The node through which the arguments a variadic parameter is given after its first reach the body of the
      * function-like, from $param_node, the node of the parameter. Each of those arguments has the node of its own
      * position (see {@see self::getParameterOffset()}), which the sinks of the parameter are on already: this one
