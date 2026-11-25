@@ -3119,8 +3119,6 @@
       <code><![CDATA[self|TArray]]></code>
     </InvalidReturnType>
     <PossiblyUndefinedIntArrayOffset>
-      <code><![CDATA[$fallback_params[1]]]></code>
-      <code><![CDATA[$fallback_params[1]]]></code>
       <code><![CDATA[$this->properties[0]]]></code>
     </PossiblyUndefinedIntArrayOffset>
   </file>

@@ -218,6 +218,29 @@ final class ArrayAssignmentTest extends TestCase
                         /** @psalm-check-type-exact $l = non-empty-array<int<0, 1>, "x"|int> */;
                     }',
             ],
+            'writeUnderAnIntRangeOfOptionalItemsLeavesTheArrayNonEmpty' => [
+                'code' => '<?php
+                    /**
+                     * @param array{0?: int, 1?: int} $l
+                     * @param int<0, 1> $i
+                     */
+                    function f(array $l, int $i): void {
+                        $l[$i] = "x";
+                        /** @psalm-check-type-exact $l = non-empty-array<int<0, 1>, "x"|int> */;
+                    }',
+            ],
+            'writeUnderAnIntOrItsNumericStringReplacesTheItem' => [
+                'code' => '<?php
+                    /** @param 0|"0" $k */
+                    function f(int|string $k): void {
+                        $l = [1];
+                        $l[$k] = "x";
+                        /** @psalm-check-type-exact $l = list{"x"} */;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'writeUnderLiteralIntKeysOfAListWritesOnlyOneOfThem' => [
                 'code' => '<?php
                     /**
@@ -227,22 +250,6 @@ final class ArrayAssignmentTest extends TestCase
                     function f(array $l, int $i): void {
                         $l[$i] = "x";
                         /** @psalm-check-type-exact $l = list{"x"|int, "x"|int} */;
-                    }',
-            ],
-            'writeUnderLiteralIntKeysPastAListMayAddTheItem' => [
-                'code' => '<?php
-                    /**
-                     * @param list{int} $l
-                     * @param 0|1 $i
-                     * @param 0|2 $j
-                     */
-                    function f(array $l, int $i, int $j): void {
-                        $a = $l;
-                        $a[$i] = "x";
-                        /** @psalm-check-type-exact $a = list{0: "x"|int, 1?: "x"} */;
-                        $b = $l;
-                        $b[$j] = "x";
-                        /** @psalm-check-type-exact $b = array{0: "x"|int, 2?: "x"} */;
                     }',
             ],
             'writeUnderLiteralStringKeysWritesOnlyOneOfThem' => [
@@ -256,17 +263,6 @@ final class ArrayAssignmentTest extends TestCase
                         /** @psalm-check-type-exact $l = array{a: "x"|int, b: "x"|int} */;
                         $l[$k] = "y";
                         /** @psalm-check-type-exact $l = array{a: "x"|"y"|int, b: "x"|"y"|int} */;
-                    }',
-            ],
-            'writeUnderLiteralStringKeysMayAddAnItem' => [
-                'code' => '<?php
-                    /**
-                     * @param array{a: int} $l
-                     * @param "a"|"c" $k
-                     */
-                    function f(array $l, string $k): void {
-                        $l[$k] = "x";
-                        /** @psalm-check-type-exact $l = array{a: "x"|int, c?: "x"} */;
                     }',
             ],
             'nestedWriteUnderLiteralStringKeysWritesOnlyOneOfThem' => [

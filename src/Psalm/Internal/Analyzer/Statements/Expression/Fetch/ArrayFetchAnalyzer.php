@@ -2159,7 +2159,8 @@ final class ArrayFetchAnalyzer
         bool $appends = false,
         bool $key_exists = false,
     ): ?TKeyedArray {
-        $existing_keys = $appends ? null : self::getItemKeysOfAWrittenKey($type, $key_type);
+        // a shape that may be empty is no longer once written: only a shape that can't be keeps its items
+        $existing_keys = $appends || !$type->isNonEmpty() ? null : self::getItemKeysOfAWrittenKey($type, $key_type);
 
         if ($existing_keys !== null || ($key_exists && !$appends)) {
             [$can_be_int, $can_be_string] = self::getKindsOfAWrittenKey($key_type);
@@ -2362,12 +2363,10 @@ final class ArrayFetchAnalyzer
                     $has_valid_offset = true;
 
                     if ($replacement_type) {
-                        // of several keys, a new one may not be the one written
-                        $properties[$key_value->value] = isset($properties[$key_value->value])
-                            ? Type::combineUnionTypes($properties[$key_value->value], $replacement_type)
-                            : (count($key_values) > 1
-                                ? $replacement_type->setPossiblyUndefined(true)
-                                : $replacement_type);
+                        $properties[$key_value->value] = Type::combineUnionTypes(
+                            $properties[$key_value->value] ?? null,
+                            $replacement_type,
+                        );
                         if (is_int($key_value->value)
                             && !$stmt->dim
                             && $type->is_list

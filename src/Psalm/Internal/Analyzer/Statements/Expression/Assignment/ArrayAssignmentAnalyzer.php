@@ -869,6 +869,33 @@ final class ArrayAssignmentAnalyzer
     }
 
     /**
+     * Whether the keys are several distinct items the shape surely has (PHP writes `'0'` under `0`)
+     *
+     * @param non-empty-list<TLiteralInt|TLiteralString> $key_values
+     * @psalm-pure
+     */
+    private static function writesOneOfSeveralItems(TKeyedArray $type, array $key_values): bool
+    {
+        $keys = [];
+
+        foreach ($key_values as $key_value) {
+            $int_key = ArrayAnalyzer::getLiteralArrayKeyInt($key_value->value);
+            $key = $int_key === false ? $key_value->value : $int_key;
+
+            if (!isset($type->properties[$key])
+                || $type->properties[$key]->possibly_undefined
+                || $type->properties[$key]->isNever()
+            ) {
+                return false;
+            }
+
+            $keys[$key] = true;
+        }
+
+        return count($keys) > 1;
+    }
+
+    /**
      * @param non-empty-list<TLiteralInt|TLiteralString> $key_values
      */
     private static function updateTypeWithKeyValues(
@@ -894,27 +921,15 @@ final class ArrayAssignmentAnalyzer
                 $has_matching_objectlike_property = true;
             } elseif ($type instanceof TKeyedArray) {
                 $properties = $type->properties;
+                $writes_one_of_its_items = self::writesOneOfSeveralItems($type, $key_values);
                 foreach ($key_values as $key_value) {
                     if (isset($properties[$key_value->value])) {
                         $has_matching_objectlike_property = true;
 
-                        $property = $properties[$key_value->value];
-
-                        // of several keys, only one is written: the others keep their value, or stay missing (an
-                        // item the write created holds nothing yet)
-                        $properties[$key_value->value] = count($key_values) === 1
-                            ? $current_type
-                            : ($property->isNever()
-                                ? $current_type->setPossiblyUndefined(true)
-                                : Type::combineUnionTypes(
-                                    $property,
-                                    $current_type,
-                                    $codebase,
-                                    false,
-                                    true,
-                                    500,
-                                    $property->possibly_undefined,
-                                ));
+                        // of several items the shape surely has, only one is written: the others keep their value
+                        $properties[$key_value->value] = $writes_one_of_its_items
+                            ? Type::combineUnionTypes($properties[$key_value->value], $current_type, $codebase)
+                            : $current_type;
                     }
                 }
 
@@ -1461,6 +1476,7 @@ final class ArrayAssignmentAnalyzer
     ): Union {
         $templated_assignment = false;
 
+        $array_atomic_key_type = null;
         $array_atomic_type_class_string = null;
         $array_atomic_type_array = null;
         $array_atomic_type_list = null;
@@ -1576,7 +1592,7 @@ final class ArrayAssignmentAnalyzer
 
         $array_atomic_type = self::writeUnknownKeyOfTheRootShape(
             $root_type,
-            $current_dim ? $array_atomic_key_type : null,
+            $array_atomic_key_type,
             $value_type,
             $offset_already_existed,
         );
