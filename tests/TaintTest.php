@@ -51,8 +51,6 @@ use function memory_get_peak_usage;
 use function memory_get_usage;
 use function memory_reset_peak_usage;
 use function range;
-use function restore_error_handler;
-use function set_error_handler;
 use function sort;
 use function str_repeat;
 use function str_starts_with;
@@ -2318,12 +2316,12 @@ final class TaintTest extends TestCase
     }
 
     /**
-     * Cases resolving without PHP warnings, which provider cases don't report
+     * Cases resolving without PHP errors, which provider cases don't report
      *
      * @param list<string> $expected_issues
      */
-    #[DataProvider('providerResolvesWithoutWarnings')]
-    public function testResolvesWithoutWarnings(string $code, array $expected_issues, bool $track_unused_variables): void
+    #[DataProvider('providerResolvesWithoutErrors')]
+    public function testResolvesWithoutErrors(string $code, array $expected_issues, bool $track_unused_variables): void
     {
         if ($track_unused_variables) {
             $this->trackUnusedVariables();
@@ -2335,18 +2333,8 @@ final class TaintTest extends TestCase
         $this->project_analyzer->setPhpVersion('8.0', 'tests');
         $this->project_analyzer->trackTaintedInputs();
 
-        $warnings = [];
-        set_error_handler(static function (int $_errno, string $message) use (&$warnings): bool {
-            $warnings[] = $message;
+        $this->withErrorsThrown(fn() => $this->analyzeFile($file_path, new Context(), false));
 
-            return true;
-        });
-
-        try {
-            $this->analyzeFile($file_path, new Context(), false);
-        } finally {
-            restore_error_handler();
-        }
 
         $taint_issues = array_values(array_filter(
             array_map(
@@ -2357,7 +2345,6 @@ final class TaintTest extends TestCase
         ));
         sort($taint_issues);
 
-        self::assertSame([], $warnings);
         self::assertSame($expected_issues, $taint_issues);
     }
 
@@ -2365,7 +2352,7 @@ final class TaintTest extends TestCase
      * @return array<string, array{string, list<string>, bool}>
      * @psalm-pure
      */
-    public static function providerResolvesWithoutWarnings(): array
+    public static function providerResolvesWithoutErrors(): array
     {
         $join_values = '<?php
             function join_values(mixed $a): string {
