@@ -3277,6 +3277,62 @@ final class TypeVariableTest extends TestCase
                 ],
                 'ignored_issues' => ['RedundantCondition'],
             ],
+            'assertionOnAVariableBoundToItsOwnObject' => [
+                'code' => '<?php
+                    /** @template T */
+                    class Base {}
+
+                    /**
+                     * @template T
+                     * @extends Base<T>
+                     */
+                    final class Box extends Base {
+                        /** @param T $v */
+                        public function __construct(mixed $v) {}
+
+                        /** @param T $v */
+                        public function add(mixed $v): void {}
+                    }
+
+                    final class P {}
+
+                    $box = new Box(new P());
+                    $box->add($box);
+                    assert($box instanceof Base);',
+                'assertions' => [
+                    '$box===' => 'Box<`_0:Box<`_0:P>|P>',
+                ],
+                'ignored_issues' => ['RedundantCondition'],
+            ],
+            'propertiesOfAVariableWithSeveralValues' => [
+                'code' => '<?php
+                    /** @template T as object */
+                    final class Box {
+                        /** @param T $o */
+                        public function __construct(object $o) {}
+
+                        /** @param T $o */
+                        public function add(object $o): void {}
+
+                        /** @return properties-of<T> */
+                        public function props() { throw new Exception(); }
+                    }
+
+                    final class P {
+                        public int $x = 0;
+                    }
+
+                    final class Q {
+                        public string $x = "";
+                    }
+
+                    $box = new Box(new P());
+                    $box->add(new Q());
+                    $props = $box->props();',
+                'assertions' => [
+                    '$props===' => 'array{x: int|string}',
+                ],
+            ],
         ];
     }
 
