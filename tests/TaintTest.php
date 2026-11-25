@@ -2512,6 +2512,49 @@ final class TaintTest extends TestCase
     public static function providerValidCodeParse(): array
     {
         return [
+            'arrayObjectUksortOfTaintedValuesPassesSafeKeys' => [
+                'code' => '<?php
+                    $values = new ArrayObject(["key" => (string) $_GET["a"]]);
+                    $values->uksort(static function (string $a, string $b): int {
+                        echo $a . $b;
+                        return 0;
+                    });',
+            ],
+            'arrayObjectUasortOfSafeValues' => [
+                'code' => '<?php
+                    $values = new ArrayObject(["safe"]);
+                    $values->uasort(static function (string $a, string $b): int {
+                        echo $a . $b;
+                        return 0;
+                    });',
+            ],
+            'flowOfAStoreHoldingSafeValuesIntoTheArgumentsOfACallable' => [
+                'code' => '<?php
+                    final class Bus {
+                        /** @psalm-flow ($message) -> Bus::$queue[*] */
+                        public static function send(string $message): void {}
+
+                        /** @psalm-flow Bus::$queue[*] -> $handler() */
+                        public static function consume(callable $handler): void {}
+                    }
+
+                    Bus::send("safe");
+                    Bus::consume(static function (string $message): void {
+                        echo $message;
+                    });',
+            ],
+            'fiberGivenSafeValues' => [
+                'code' => '<?php
+                    $fiber = new Fiber(static function (string $text): string {
+                        echo $text;
+                        echo (string) Fiber::suspend("ready");
+                        return "done";
+                    });
+                    echo (string) $fiber->start("safe");
+                    $fiber->resume("safe");
+                    echo (string) $fiber->getReturn();',
+                'php_version' => '8.1',
+            ],
             'offsetOverwrittenInTheBranchWhereItIsSetIsUntaintedAfterTheIf' => [
                 'code' => '<?php
                     function f(array $a): void {
@@ -11914,13 +11957,106 @@ final class TaintTest extends TestCase
                     function call(string $text, callable $callback): void {}',
                 'error_message' => 'names $fn, which is not a parameter',
             ],
-            'flowIntoTheArgumentsOfACallableOfThis' => [
+            'flowOfThisIntoTheArgumentsOfACallableOfAFunction' => [
+                'code' => '<?php
+                    /** @psalm-flow ($this) -> $callback() */
+                    function call(callable $callback): void {}',
+                'error_message' => 'names $this, which only a method that is not static has',
+            ],
+            'arrayObjectUasortPassesItsValuesToTheCallback' => [
+                'code' => '<?php
+                    $values = new ArrayObject([(string) $_GET["a"]]);
+                    $values->uasort(static function (string $a, string $b): int {
+                        echo $a . $b;
+                        return 0;
+                    });',
+                'error_message' => 'TaintedHtml',
+            ],
+            'arrayIteratorUasortPassesItsValuesToTheCallback' => [
+                'code' => '<?php
+                    $values = new ArrayIterator([(string) $_GET["a"]]);
+                    $values->uasort(static function (string $a, string $b): int {
+                        echo $a . $b;
+                        return 0;
+                    });',
+                'error_message' => 'TaintedHtml',
+            ],
+            'arrayObjectUksortPassesItsKeysToTheCallback' => [
+                'code' => '<?php
+                    $values = new ArrayObject([(string) $_GET["a"] => "safe"]);
+                    $values->uksort(static function (string $a, string $b): int {
+                        echo $a . $b;
+                        return 0;
+                    });',
+                'error_message' => 'TaintedHtml',
+            ],
+            'flowOfThisIntoTheArgumentsOfACallable' => [
                 'code' => '<?php
                     final class Events {
+                        public function __construct(public string $payload) {}
+
                         /** @psalm-flow ($this) -> $callback() */
-                        public function call(callable $callback): void {}
-                    }',
-                'error_message' => 'is neither',
+                        public function dispatch(callable $callback): void {}
+                    }
+
+                    (new Events((string) $_GET["a"]))->dispatch(static function (Events $events): void {
+                        echo $events->payload;
+                    });',
+                'error_message' => 'TaintedHtml',
+            ],
+            'flowOfAStoreIntoTheArgumentsOfACallable' => [
+                'code' => '<?php
+                    final class Bus {
+                        /** @psalm-flow ($message) -> Bus::$queue[*] */
+                        public static function send(string $message): void {}
+
+                        /** @psalm-flow Bus::$queue[*] -> $handler() */
+                        public static function consume(callable $handler): void {}
+                    }
+
+                    Bus::send((string) $_GET["a"]);
+                    Bus::consume(static function (string $message): void {
+                        echo $message;
+                    });',
+                'error_message' => 'TaintedHtml',
+            ],
+            'fiberStartPassesItsArgumentsToTheCallback' => [
+                'code' => '<?php
+                    $fiber = new Fiber(static function (string $text): void {
+                        echo $text;
+                    });
+                    $fiber->start((string) $_GET["a"]);',
+                'error_message' => 'TaintedHtml',
+                'php_version' => '8.1',
+            ],
+            'fiberResumeSendsItsValueToSuspend' => [
+                'code' => '<?php
+                    $fiber = new Fiber(static function (): void {
+                        echo (string) Fiber::suspend("ready");
+                    });
+                    $fiber->start();
+                    $fiber->resume((string) $_GET["a"]);',
+                'error_message' => 'TaintedHtml',
+                'php_version' => '8.1',
+            ],
+            'fiberSuspendHandsItsValueToStart' => [
+                'code' => '<?php
+                    $fiber = new Fiber(static function (): void {
+                        Fiber::suspend((string) $_GET["a"]);
+                    });
+                    echo (string) $fiber->start();',
+                'error_message' => 'TaintedHtml',
+                'php_version' => '8.1',
+            ],
+            'fiberGetReturnGivesWhatTheCallbackReturns' => [
+                'code' => '<?php
+                    $fiber = new Fiber(static function (): string {
+                        return (string) $_GET["a"];
+                    });
+                    $fiber->start();
+                    echo (string) $fiber->getReturn();',
+                'error_message' => 'TaintedHtml',
+                'php_version' => '8.1',
             ],
             'proxyFlowIntoNeitherTheReturnNorNothing' => [
                 'code' => '<?php

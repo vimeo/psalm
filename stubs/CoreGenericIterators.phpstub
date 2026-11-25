@@ -407,6 +407,7 @@ class ArrayIterator implements SeekableIterator, ArrayAccess, Serializable, Coun
      *
      * @psalm-capabilities read-props|write-this-props
      * @psalm-purity-from-template P, TStorage
+     * @psalm-flow ($this) -(arrayvalue-fetch)-> $callback()
      */
     public function uasort($callback) { }
 
@@ -417,6 +418,7 @@ class ArrayIterator implements SeekableIterator, ArrayAccess, Serializable, Coun
      *
      * @psalm-capabilities read-props|write-this-props
      * @psalm-purity-from-template P, TStorage
+     * @psalm-flow ($this) -(arraykey-fetch)-> $callback()
      */
     public function uksort($callback) { }
 

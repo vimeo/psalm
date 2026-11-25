@@ -26,6 +26,8 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\CliOutput;
 use Psalm\Internal\Codebase\ConditionalTaintSinks;
 use Psalm\Internal\Codebase\ReceiverPropertyTaints;
+use Psalm\Internal\Codebase\TaintFlowGraph;
+use Psalm\Internal\Codebase\TaintStore;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
@@ -1082,6 +1084,40 @@ final class NewAnalyzer extends CallAnalyzer
             $stmt_type->setParentNodes($parent_nodes),
             $code_location,
         );
+
+        // what the constructor's `@psalm-flow` annotations say the callables given to it return into the new object,
+        // and what it stores and reads in keyed stores, as for the calls of other methods
+        if ($method_storage && !$stmt->isFirstClassCallable()) {
+            $specialization_location = TaintFlowGraph::isCallSpecialized(
+                $statements_analyzer->taint_flow_graph,
+                $codebase,
+                $method_storage,
+                $code_location,
+            ) ? $code_location : null;
+
+            FunctionCallReturnTypeFetcher::taintUsingCallableFlows(
+                $codebase,
+                $method_storage,
+                $statements_analyzer->taint_flow_graph,
+                $cased_constructor_id,
+                $method_id,
+                $specialization_location,
+                $method_source,
+                $method_storage->removed_taints,
+            );
+
+            $stmt_type = TaintStore::taintCall(
+                $statements_analyzer,
+                $statements_analyzer->taint_flow_graph,
+                $method_storage,
+                $stmt->getArgs(),
+                $code_location,
+                $stmt_type,
+                $cased_constructor_id,
+                $method_id,
+                $specialization_location,
+            );
+        }
 
         // what the constructor's `@psalm-flow` annotations say it sets to the properties of the new object
         if ($method_storage && !$stmt->isFirstClassCallable()) {

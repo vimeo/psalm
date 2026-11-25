@@ -962,6 +962,28 @@ final class FunctionCallReturnTypeFetcher
             $argument_source_nodes[] = [$source_node, $path_type];
         }
 
+        // what a store holds: `@psalm-flow Store::$data[*] -> $callback()` (see TaintStore::taintCall())
+        foreach ($storage->taint_store_reads as $read) {
+            if ($read['callable_param'] === $param_offset) {
+                $read_node = DataFlowNode::getForCallableParamStoreRead(
+                    $cased_method_id,
+                    $param_offset,
+                    $specialization_location,
+                );
+                $graph->addNode($read_node);
+                $argument_source_nodes[] = [$read_node, 'arg'];
+
+                break;
+            }
+        }
+
+        // the object the method is called on: `@psalm-flow ($this) -> $callback()`
+        if (isset($storage->callable_param_argument_this_sources[$param_offset])) {
+            $receiver_node = DataFlowNode::getForCallReceiver($cased_method_id, $specialization_location);
+            $graph->addNode($receiver_node);
+            $argument_source_nodes[] = [$receiver_node, $storage->callable_param_argument_this_sources[$param_offset]];
+        }
+
         return $argument_source_nodes;
     }
 

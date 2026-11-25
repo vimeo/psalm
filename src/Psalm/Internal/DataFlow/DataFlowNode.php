@@ -785,6 +785,45 @@ final class DataFlowNode implements Stringable
     }
 
     /**
+     * What the callables given to the parameter at $param_offset of a function-like are called with from a store
+     * (`@psalm-flow Store::$data[*] -> $callback()`): of the call specialized to its location, else shared by its calls
+     *
+     * @psalm-pure
+     */
+    public static function getForCallableParamStoreRead(
+        string $cased_method_id,
+        int $param_offset,
+        ?CodeLocation $specialization_location,
+    ): self {
+        $label = 'store read for the callables of ' . $cased_method_id . '#' . ($param_offset + 1);
+
+        return self::make(
+            strtolower($label),
+            $label,
+            null,
+            $specialization_location ? self::getSpecializationKey($specialization_location) : null,
+        );
+    }
+
+    /**
+     * The object a method is called on, as the callables given to its parameters get it
+     * (`@psalm-flow ($this) -> $callback()`): that of the call specialized to its location, else shared by its calls
+     *
+     * @psalm-pure
+     */
+    public static function getForCallReceiver(string $cased_method_id, ?CodeLocation $specialization_location): self
+    {
+        $label = '$this of ' . $cased_method_id;
+
+        return self::make(
+            strtolower($label),
+            $label,
+            null,
+            $specialization_location ? self::getSpecializationKey($specialization_location) : null,
+        );
+    }
+
+    /**
      * What the virtual calls of a method on a class give the `$this` of the overrides of the classes extending it
      * that may run instead: shared by all those calls, so it has no location.
      *

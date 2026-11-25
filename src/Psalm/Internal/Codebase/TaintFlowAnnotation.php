@@ -31,7 +31,8 @@ use function trim;
  *   callback with what the callback returned before;
  * - `($value) -> Store::$data[$key]` (STORE_WRITE): a call stores what is given to the parameters under a key (see
  *   TaintStore);
- * - `Store::$data[$key] -> return` (STORE_READ): a call returns what is stored under a key;
+ * - `Store::$data[$key] -> return` (STORE_READ): a call returns what is stored under a key; `Store::$data[$key] ->
+ *   $callback()` calls the callables given to `$callback` with it;
  * - `proxy function($a, $b)`, `proxy function($a) -> return` (PROXY): a call calls the function-like with what is given
  *   to the parameters, and returns what it returns with `-> return`;
  * - `($value) -> $this->$name` (PROPERTY_WRITE): a call of a method sets the property of the object it is called on
@@ -178,13 +179,7 @@ final class TaintFlowAnnotation
             }
 
             if (preg_match('/^\$(\w+)\(\)$/', $target, $matches) === 1 && isset($matches[1]) && $matches[1] !== '') {
-                // what the callables are called with comes from the arguments, or from what callables return
-                foreach ($sources as $source) {
-                    if ($source === 'this') {
-                        return self::getMalformedMessage($annotation);
-                    }
-                }
-
+                // what the callables are called with comes from the arguments, what callables return, or the object
                 return new self(self::CALLABLE_ARGUMENTS, $path_type, $sources, callable_param: $matches[1]);
             }
 
@@ -210,6 +205,12 @@ final class TaintFlowAnnotation
 
         if ($target === 'return') {
             return self::parseStore($source, self::STORE_READ, $path_type, [])
+                ?? self::getMalformedMessage($annotation);
+        }
+
+        // what the callables given to a parameter are called with comes from the store
+        if (preg_match('/^\$(\w+)\(\)$/', $target, $matches) === 1 && isset($matches[1]) && $matches[1] !== '') {
+            return self::parseStore($source, self::STORE_READ, $path_type, [], $matches[1])
                 ?? self::getMalformedMessage($annotation);
         }
 
@@ -280,10 +281,16 @@ final class TaintFlowAnnotation
     /**
      * @param self::STORE_WRITE|self::STORE_READ $kind
      * @param list<non-empty-string> $sources
+     * @param ?non-empty-string $callable_param the parameter given the callables a STORE_READ calls with what it reads
      * @psalm-pure
      */
-    private static function parseStore(string $store, string $kind, string $path_type, array $sources): ?self
-    {
+    private static function parseStore(
+        string $store,
+        string $kind,
+        string $path_type,
+        array $sources,
+        ?string $callable_param = null,
+    ): ?self {
         if (preg_match(self::STORE_REGEX, $store, $matches) !== 1
             || !isset($matches[1], $matches[2], $matches[3])
             || $matches[1] === ''
@@ -308,6 +315,7 @@ final class TaintFlowAnnotation
             $key,
             $key !== null && ($matches[4] ?? '') !== '',
             $other_key_matches[1] ?? [],
+            callable_param: $callable_param,
         );
     }
 

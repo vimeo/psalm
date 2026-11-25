@@ -397,6 +397,7 @@ class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Count
      * @psalm-purity-from-template P, TStorage
      *
      * @since 5.2.0
+     * @psalm-flow ($this) -(arrayvalue-fetch)-> $callback()
      */
     public function uasort($callback) { }
 
@@ -419,6 +420,7 @@ class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Count
      * @psalm-purity-from-template P, TStorage
      *
      * @since 5.2.0
+     * @psalm-flow ($this) -(arraykey-fetch)-> $callback()
      */
     public function uksort($callback) { }
 
