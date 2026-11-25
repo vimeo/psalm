@@ -994,21 +994,6 @@ final class AssertionReconciler extends Reconciler
 
         $existing_types = $existing_type->getAtomicTypes();
         foreach ($new_type->getAtomicTypes() as $new_type_part) {
-            // `value-of<T>` of a backed enum is `int|string`, which no single part of `int|string` holds
-            if ($new_type_part instanceof TTemplateKeyOf || $new_type_part instanceof TTemplateValueOf) {
-                $bound = $new_type_part instanceof TTemplateKeyOf
-                    ? TKeyOf::getArrayKeyType($new_type_part->as)
-                    : TValueOf::getValueType($new_type_part->as, $codebase);
-
-                if ($bound !== null
-                    && !$bound->isSingle()
-                    && UnionTypeComparator::isContainedBy($codebase, $bound, $existing_type)
-                ) {
-                    $matching_atomic_types[] = $new_type_part;
-                    continue;
-                }
-            }
-
             foreach ($existing_types as &$existing_type_part) {
                 $matching_atomic_type = self::filterAtomicWithAnother(
                     $existing_type_part,
