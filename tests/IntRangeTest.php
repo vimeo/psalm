@@ -1211,7 +1211,7 @@ final class IntRangeTest extends TestCase
                     ',
                 'assertions' => [
                     '$d===' => 'int',
-                    '$e===' => 'int',
+                    '$e===' => 'int<0, max>',
                     '$f===' => 'int',
                     '$g===' => 'int',
                     '$h===' => 'int',

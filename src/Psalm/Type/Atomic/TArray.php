@@ -57,6 +57,7 @@ class TArray extends Atomic
 
     /**
      * @param  array<lowercase-string, string> $aliased_classes
+     * @psalm-pure
      */
     #[Override]
     public function toPhpString(
@@ -65,7 +66,7 @@ class TArray extends Atomic
         ?string $this_class,
         int $analysis_php_version_id,
     ): string {
-        return $this->getKey();
+        return 'array';
     }
 
     #[Override]

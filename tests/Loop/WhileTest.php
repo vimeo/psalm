@@ -217,6 +217,31 @@ final class WhileTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'compoundAssignmentInTheConditionIsNarrowedByIt' => [
+                'code' => '<?php
+                    $try = 8;
+                    while (($try += 1) < 10) {
+                        echo $try;
+                    }
+                    $afterLoop = $try;
+
+                    $s = (string) rand(0, 1);
+                    $concatenated = ($s .= "a") === "1a" ? $s : "other";',
+                'assertions' => [
+                    '$afterLoop===' => '10',
+                    '$concatenated===' => '\'1a\'|\'other\'',
+                ],
+            ],
+            'variableAssignedInALoopOverARangeStartBelowTheEndIsDefined' => [
+                'code' => '<?php
+                    $try = rand(0, 5);
+                    while (++$try < 10) {
+                        $name = "thing";
+                    }',
+                'assertions' => [
+                    '$name===' => '\'thing\'',
+                ],
+            ],
             'varAssignedRightOfLogicalAndInTheConditionIsDefinedInTheBody' => [
                 'code' => '<?php
                     /** @return int|false */
@@ -3078,7 +3103,7 @@ final class WhileTest extends TestCase
             ],
             'variableAssignedInALoopOverARangeStartIsPossiblyUndefined' => [
                 'code' => '<?php
-                    $try = rand(0, 5);
+                    $try = rand(0, 15);
                     while (++$try < 10) {
                         $name = "thing";
                     }

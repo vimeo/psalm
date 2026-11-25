@@ -111,6 +111,114 @@ final class ClassTemplateExtendsTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'nonTemplatedParentMethodsImplementAnInterfaceOfTheChild' => [
+                'code' => '<?php
+                    interface Entity {}
+
+                    /**
+                     * @template T of Entity
+                     */
+                    interface EntityDao {
+                        /**
+                         * @return T|null
+                         */
+                        public function selectById(int $yId);
+
+                        /**
+                         * @param T $yObj
+                         * @return T
+                         */
+                        public function insert($yObj);
+                    }
+
+                    final class Car implements Entity {}
+
+                    class GeneratedCarDao {
+                        /**
+                         * @return Car
+                         */
+                        public function selectById(int $yId) {
+                            return new Car();
+                        }
+
+                        /**
+                         * @param Car $yObj
+                         * @return Car
+                         */
+                        public function insert($yObj) {
+                            return $yObj;
+                        }
+                    }
+
+                    /**
+                     * @implements EntityDao<Car>
+                     */
+                    final class CarDao extends GeneratedCarDao implements EntityDao {
+                    }',
+            ],
+            'traitMethodImplementingATemplatedInterfaceMethodTakesTheBoundType' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface Setter {
+                        /** @param T $value */
+                        public function set(mixed $value): void;
+                    }
+
+                    trait SetsInt {
+                        /** @param int $value */
+                        public function set(mixed $value): void {}
+                    }
+
+                    /** @implements Setter<int> */
+                    final class Node implements Setter {
+                        use SetsInt;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'traitMethodImplementingATemplatedInterfaceMethodTakesStatic' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface Setter {
+                        /** @param T $value */
+                        public function set(mixed $value): void;
+                    }
+
+                    trait SetsSelf {
+                        /** @param static $value */
+                        public function set(mixed $value): void {}
+                    }
+
+                    /** @implements Setter<static> */
+                    class Node implements Setter {
+                        use SetsSelf;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'traitMethodImplementingATemplatedAbstractParentMethodTakesTheBoundType' => [
+                'code' => '<?php
+                    /** @template T */
+                    abstract class Base {
+                        /** @param T $value */
+                        abstract public function set(mixed $value): void;
+                    }
+
+                    trait SetsInt {
+                        /** @param int $value */
+                        public function set(mixed $value): void {}
+                    }
+
+                    /** @extends Base<int> */
+                    final class Node extends Base {
+                        use SetsInt;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'staticOfAnImplementedTemplateIsTheObjectItIsInferredFrom' => [
                 'code' => '<?php
                     /** @template T */
@@ -2458,6 +2566,26 @@ final class ClassTemplateExtendsTest extends TestCase
                 'assertions' => [
                     '$b' => 'AContainer<A>',
                 ],
+            ],
+            'newStaticWithStaticOnlyAsAShapeKeyOfTheReturnType' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @psalm-consistent-constructor
+                     */
+                    class Container {
+                        /** @param T $t */
+                        public function __construct($t) {}
+
+                        /**
+                         * @param mixed $t
+                         * @return array{static: int}
+                         */
+                        public static function count($t): array {
+                            new static($t);
+                            return ["static" => 1];
+                        }
+                    }',
             ],
             'templateExtendsSameNameWithStaticCall' => [
                 'code' => '<?php
@@ -6604,6 +6732,27 @@ final class ClassTemplateExtendsTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'traitMethodImplementingATemplatedInterfaceMethodWithAnotherType' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface Setter {
+                        /** @param T $value */
+                        public function set(mixed $value): void;
+                    }
+
+                    trait SetsString {
+                        /** @param string $value */
+                        public function set(mixed $value): void {}
+                    }
+
+                    /** @implements Setter<int> */
+                    final class Node implements Setter {
+                        use SetsString;
+                    }',
+                'error_message' => 'ImplementedParamTypeMismatch',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'extendsTagWithoutClass' => [
                 'code' => '<?php
                     /** @template T */
@@ -8240,6 +8389,48 @@ final class ClassTemplateExtendsTest extends TestCase
                         public function getValue()
                         {
                             return $this->t;
+                        }
+                    }',
+                'error_message' => 'UnsafeGenericInstantiation',
+            ],
+            'newStaticWithStaticNestedInTheReturnType' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @psalm-consistent-constructor
+                     */
+                    class Container {
+                        /** @param T $t */
+                        public function __construct($t) {}
+
+                        /**
+                         * @param mixed $t
+                         * @return list<static>
+                         */
+                        public static function many($t): array {
+                            return [new static($t)];
+                        }
+                    }',
+                'error_message' => 'UnsafeGenericInstantiation',
+            ],
+            'newStaticWithStaticInTheBoundOfAValueOfReturnType' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @psalm-consistent-constructor
+                     */
+                    class Container {
+                        /** @param T $t */
+                        public function __construct($t) {}
+
+                        /**
+                         * @template U of array<int, static>
+                         * @param U $u
+                         * @return value-of<U>
+                         */
+                        public static function first(array $u) {
+                            new static(1);
+                            return $u[0];
                         }
                     }',
                 'error_message' => 'UnsafeGenericInstantiation',

@@ -29,6 +29,12 @@ final class TKeyOf extends TArrayKey
         return 'key-of<' . $this->type . '>';
     }
 
+    #[Override]
+    public function getId(bool $exact = true): string
+    {
+        return 'key-of<' . $this->type->getId() . '>';
+    }
+
     /**
      * @param array<lowercase-string, string> $aliased_classes
      * @psalm-pure

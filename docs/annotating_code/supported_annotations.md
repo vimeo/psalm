@@ -328,6 +328,54 @@ $searcher->count(1, 2);                                   // string
 $searcher->count(1.5);                                    // InvalidArgument, TooFewArguments
 ```
 
+### `@psalm-overload`
+
+Declares one signature a function or method can be called with, for one whose behaviour depends on the arguments. A call is checked against the first `@psalm-overload` whose parameters accept its arguments (by position and by name), or, when none does, against its own signature if that accepts them (an `int|string` argument for separate `int` and `string` overloads), else against the last overload. A first-class callable (`search(...)`) has the own signature. A method that overrides one with overloads has its own signature unless it declares the overloads again. Not supported yet: constructors.
+
+```php
+<?php
+/**
+ * @psalm-overload (LimitedQuery $query): PagedResult
+ * @psalm-overload (UnlimitedQuery $query): PlainResult
+ */
+function search(Query $query): Result {
+    // ...
+}
+
+search(new LimitedQuery())->getPageCount();    // no issue
+search(new LimitedQuery())->getAllRecords();   // UndefinedMethod
+search(new UnlimitedQuery())->getAllRecords(); // no issue
+
+/** @var LimitedQuery|UnlimitedQuery $query */
+search($query);                                // Result, from the function's own signature
+
+class Repository {
+    /**
+     * @psalm-overload (string $id): int
+     * @psalm-overload (int $id): string
+     */
+    public static function find(string|int $id): int|string {
+        // ...
+    }
+}
+
+Repository::find("a"); // int
+Repository::find(1);   // string
+```
+
+An overload has to fit the signature: the same parameter names at the same positions, and types the signature accepts. By-reference comes from the signature.
+
+```php
+<?php
+/**
+ * @psalm-overload (int $value): int
+ * @psalm-overload (string $other): string
+ */
+function pick(int|string $value): int|string { // InvalidDocblock: $other is at the position of $value
+    return $value;
+}
+```
+
 ### `@psalm-seal-methods`, `@psalm-no-seal-methods`, `@seal-methods`, `@no-seal-methods`
 
 If you have a magic method caller, you can use `@psalm-seal-methods` to instruct Psalm to disallow calling any methods not contained in a list of `@method` annotations.

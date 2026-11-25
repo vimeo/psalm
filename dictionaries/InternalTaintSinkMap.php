@@ -156,11 +156,11 @@ return [
 'SoapClient::__construct' => [TaintKind::INPUT_FILE|TaintKind::INPUT_SSRF|TaintKind::INPUT_URL_COMPONENT|TaintKind::INPUT_URL_PATH],
 'SoapClient::__setLocation' => [TaintKind::INPUT_SSRF|TaintKind::INPUT_URL_COMPONENT|TaintKind::INPUT_URL_PATH],
 // XPath expressions
-'DOMXPath::evaluate' => [TaintKind::INPUT_XPATH],
-'DOMXPath::query' => [TaintKind::INPUT_XPATH],
-'Dom\\XPath::evaluate' => [TaintKind::INPUT_XPATH],
-'Dom\\XPath::query' => [TaintKind::INPUT_XPATH],
-'SimpleXMLElement::xpath' => [TaintKind::INPUT_XPATH],
+'DOMXPath::evaluate' => [TaintKind::INPUT_XPATH | TaintKind::INPUT_XPATH_LITERAL],
+'DOMXPath::query' => [TaintKind::INPUT_XPATH | TaintKind::INPUT_XPATH_LITERAL],
+'Dom\\XPath::evaluate' => [TaintKind::INPUT_XPATH | TaintKind::INPUT_XPATH_LITERAL],
+'Dom\\XPath::query' => [TaintKind::INPUT_XPATH | TaintKind::INPUT_XPATH_LITERAL],
+'SimpleXMLElement::xpath' => [TaintKind::INPUT_XPATH | TaintKind::INPUT_XPATH_LITERAL],
 // MongoDB query documents
 'MongoDB\\Driver\\Query::__construct' => [TaintKind::INPUT_NOSQL],
 'MongoDB\\Driver\\Command::__construct' => [TaintKind::INPUT_NOSQL],

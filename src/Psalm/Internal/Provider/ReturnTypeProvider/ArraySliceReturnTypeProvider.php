@@ -85,7 +85,7 @@ final class ArraySliceReturnTypeProvider implements FunctionReturnTypeProviderIn
 
         $dont_preserve_int_keys = !isset($call_args[3]->value)
             || (($third_arg_type = $statements_source->node_data->getType($call_args[3]->value))
-                && ((string) $third_arg_type === 'false'));
+                && $third_arg_type->isFalse());
 
         if ($dont_preserve_int_keys && $return_atomic_type->type_params[0]->isInt()) {
             $return_atomic_type = Type::getListAtomic($return_atomic_type->type_params[1]);

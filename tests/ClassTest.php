@@ -2345,6 +2345,74 @@ final class ClassTest extends TestCase
                     }',
                 'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:25',
             ],
+            'methodOfAClassDeclaredConditionallyInANamespaceIsAnalyzed' => [
+                'code' => '<?php
+                    namespace Foo;
+
+                    if (!class_exists(C::class)) {
+                        final class C {
+                            public function m(): string {
+                                return 1;
+                            }
+                        }
+                    }',
+                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:40',
+            ],
+            'methodOfAnInterfaceDeclaredConditionallyInANamespaceIsAnalyzed' => [
+                'code' => '<?php
+                    namespace Foo;
+
+                    if (!interface_exists(I::class)) {
+                        interface I {
+                            /** @return Missing */
+                            public function m(): string;
+                        }
+                    }',
+                'error_message' => 'UndefinedDocblockClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:41',
+            ],
+            'methodOfAnEnumDeclaredConditionallyInANamespaceIsAnalyzed' => [
+                'code' => '<?php
+                    namespace Foo;
+
+                    if (!enum_exists(E::class)) {
+                        enum E: string {
+                            case A = "a";
+
+                            public function m(): string {
+                                return 1;
+                            }
+                        }
+                    }',
+                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:40',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'methodOfAClassDeclaredInAFunctionOfANamespaceIsAnalyzed' => [
+                'code' => '<?php
+                    namespace Foo;
+
+                    function f(): void {
+                        final class C {
+                            public function m(): string {
+                                return 1;
+                            }
+                        }
+                    }',
+                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:40',
+            ],
+            'methodOfAClassDeclaredConditionallyInABracedNamespaceIsAnalyzed' => [
+                'code' => '<?php
+                    namespace Foo {
+                        if (!class_exists(C::class)) {
+                            final class C {
+                                public function m(): string {
+                                    return 1;
+                                }
+                            }
+                        }
+                    }',
+                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:44',
+            ],
             'newStaticOfAClassImplementingAnInterfaceWithoutAConstructor' => [
                 'code' => '<?php
                     interface Marker {}
