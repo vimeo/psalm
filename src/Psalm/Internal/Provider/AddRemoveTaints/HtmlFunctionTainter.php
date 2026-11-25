@@ -11,6 +11,7 @@ use Psalm\Internal\Type\IntMask;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Plugin\EventHandler\RemoveTaintsInterface;
 use Psalm\Type\TaintKind;
+use Psalm\Type\Union;
 
 use function array_any;
 use function count;
@@ -112,6 +113,43 @@ final class HtmlFunctionTainter implements RemoveTaintsInterface
         }
 
         return TaintKind::INPUT_HTML;
+    }
+
+    /**
+     * What a call PHP code doesn't make (see Codebase::addTaintedCall()) of one of the functions gives back and
+     * removes, with the number and the types of its arguments, as for a PHP call
+     *
+     * @param array<int, Union> $argument_types
+     * @return array{int, int}
+     * @psalm-pure
+     */
+    public static function getWiredCallTaints(
+        int $analysis_php_version_id,
+        string $function_id,
+        int $argument_count,
+        array $argument_types,
+    ): array {
+        $has_flags = $argument_count > 1;
+        [$certain_bits, $possible_bits] = ConstantFlags::getTypeBits($argument_types[1] ?? null);
+
+        if ($function_id === 'html_entity_decode' || $function_id === 'htmlspecialchars_decode') {
+            return [
+                $has_flags && ($possible_bits & ENT_QUOTES) === 0
+                    ? TaintKind::INPUT_HTML
+                    : TaintKind::INPUT_HTML | TaintKind::INPUT_HAS_QUOTES,
+                0,
+            ];
+        }
+
+        if ($function_id === 'htmlentities' || $function_id === 'htmlspecialchars') {
+            $escapes_quotes = $has_flags
+                ? ($certain_bits & ENT_QUOTES) === ENT_QUOTES
+                : $analysis_php_version_id >= 8_01_00;
+
+            return [0, $escapes_quotes ? TaintKind::INPUT_HTML | TaintKind::INPUT_HAS_QUOTES : TaintKind::INPUT_HTML];
+        }
+
+        return [0, 0];
     }
 
     /**

@@ -568,6 +568,10 @@ Plugins can add flows that annotations can't express with these `Codebase` metho
   can't carry those taints, as long as it holds the same value: `$validator->fails()` and `passes()` for a result of
   kind `validator`, `count($violations) > 0`, `$violations->count() === 0`, ... for one of kind `violations`. Call it
   from `afterExpressionAnalysis()`.
++ `addTaintedCall($function, $argument_nodes, $argument_types, $call_location, $source = null)`: wires a call of a
+  function or a method from the nodes and the types of its arguments, as Psalm wires a PHP call of it (sinks,
+  conditional sinks and escapes, flows, specialization), and returns the node of what it returns. See
+  [Wiring calls into the taint graph](../running_psalm/plugins/authoring_plugins.md#wiring-calls-into-the-taint-graph).
 + `tracksTaintFlow($source)`: false when taints aren't tracked there, e.g. when `TaintedInput` is suppressed. The
   methods above then add nothing.
 
