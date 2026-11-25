@@ -4136,6 +4136,94 @@ final class FunctionTemplateTest extends TestCase
                         $same(fn() => $x);
                     }',
             ],
+            'narrowTemplateBoundOnNegatedTraversable' => [
+                'code' => '<?php
+                    /** @param array<int> $_a */
+                    function takesArray(array $_a): void {}
+
+                    /**
+                     * @template T as iterable<int>
+                     * @param T $i
+                     */
+                    function f(iterable $i): void {
+                        if (!$i instanceof Traversable) {
+                            takesArray($i);
+                        }
+                    }',
+            ],
+            'narrowTemplateBoundOnNegatedLiteralEquality' => [
+                'code' => '<?php
+                    enum Suit {
+                        case Hearts;
+                        case Spades;
+                    }
+
+                    /** @param 2|3 $_i */
+                    function takesTwoOrThree(int $_i): void {}
+
+                    /** @param Suit::Spades $_s */
+                    function takesSpades(Suit $_s): void {}
+
+                    /**
+                     * @template T as 1|2|3
+                     * @param T $i
+                     */
+                    function notOne(int $i): void {
+                        if ($i !== 1) {
+                            takesTwoOrThree($i);
+                        }
+                    }
+
+                    /**
+                     * @template T as Suit
+                     * @param T $s
+                     */
+                    function notHearts(Suit $s): void {
+                        if ($s !== Suit::Hearts) {
+                            takesSpades($s);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'narrowNestedTemplateBoundOnNegatedInstanceof' => [
+                'code' => '<?php
+                    final class A {}
+                    final class B {}
+
+                    function takesA(A $_a): void {}
+
+                    /**
+                     * @template T as A|B
+                     * @template U as T
+                     * @param U $ab
+                     */
+                    function f(object $ab): void {
+                        if (!$ab instanceof B) {
+                            takesA($ab);
+                        }
+                    }',
+            ],
+            'narrowTemplateBoundOnInstanceofOfASupertypeAfterNegatedInstanceof' => [
+                'code' => '<?php
+                    /**
+                     * @template T of DateTimeInterface|string
+                     * @param T $value
+                     */
+                    function f($value): void {
+                        if ($value instanceof DateTimeImmutable) {
+                            return;
+                        }
+
+                        if ($value instanceof DateTimeInterface) {
+                            DateTimeImmutable::createFromInterface($value);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
@@ -5352,6 +5440,17 @@ final class FunctionTemplateTest extends TestCase
                         if ($t === $s) {
                             echo "never";
                         }
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+            ],
+            'templateBoundEmptiedByNegatedLiteralEquality' => [
+                'code' => '<?php
+                    /**
+                     * @template T as 1
+                     * @param T $i
+                     */
+                    function f(int $i): void {
+                        if ($i !== 1) {}
                     }',
                 'error_message' => 'DocblockTypeContradiction',
             ],
