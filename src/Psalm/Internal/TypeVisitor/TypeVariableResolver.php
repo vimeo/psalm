@@ -18,6 +18,7 @@ use Psalm\Type\Union;
 use function array_key_first;
 use function array_values;
 use function count;
+use function spl_object_id;
 
 /**
  * Replaces type variables, however deeply nested, with the type they were
@@ -215,11 +216,12 @@ final class TypeVariableResolver extends MutableTypeVisitor
         }
 
         // the members are traversed here: only what a variable resolves to is traversed with that variable kept,
-        // so `T|array<int, T>` still resolves the `T` of its array. A type several variables resolve to is
-        // traversed once, or bounds shared along a chain of variables are expanded exponentially often
+        // so `T|array<int, T>` still resolves the `T` of its array. A type several variables share as their bound
+        // is traversed once, or bounds shared along a chain of variables are expanded exponentially often; it is
+        // the same object, as types equal by id (`non-empty-array`s of different counts) are combined below
         $atomic_types = [];
         $changed = false;
-        /** @var array<string, array{Atomic, array<string, true>}> */
+        /** @var array<int, array{Atomic, array<string, true>}> */
         $replacements = [];
 
         foreach ($type->getAtomicTypes() as $atomic_type) {
@@ -248,8 +250,8 @@ final class TypeVariableResolver extends MutableTypeVisitor
             $changed = true;
 
             foreach ($resolved_atomics as $resolved_atomic) {
-                $replacements[$resolved_atomic->getId()][0] = $resolved_atomic;
-                $replacements[$resolved_atomic->getId()][1][$atomic_type->name] = true;
+                $replacements[spl_object_id($resolved_atomic)][0] = $resolved_atomic;
+                $replacements[spl_object_id($resolved_atomic)][1][$atomic_type->name] = true;
             }
         }
 

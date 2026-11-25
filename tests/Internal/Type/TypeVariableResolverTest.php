@@ -11,6 +11,7 @@ use Psalm\Tests\TestCase;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TGenericObject;
+use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Union;
 
@@ -44,6 +45,24 @@ final class TypeVariableResolverTest extends TestCase
             ->traverse($type);
 
         $this->assertSame('Box<_0:Box<_0>|Box<int>>|Box<int>', $type->getId());
+    }
+
+    public function testCombinesTheCountsOfArraysTwoVariablesResolveTo(): void
+    {
+        $one = new TTypeVariable('_0', new TypeVariableBounds([
+            new TemplateBound(new Union([new TNonEmptyArray([Type::getInt(), Type::getInt()], 1)])),
+        ]));
+        $two = new TTypeVariable('_1', new TypeVariableBounds([
+            new TemplateBound(new Union([new TNonEmptyArray([Type::getInt(), Type::getInt()], 2)])),
+        ]));
+        $type = new Union([$one, $two]);
+
+        (new TypeVariableResolver($this->project_analyzer->getCodebase(), construction_site_only: false))
+            ->traverse($type);
+
+        $array = $type->getSingleAtomic();
+        $this->assertInstanceOf(TNonEmptyArray::class, $array);
+        $this->assertNull($array->count);
     }
 
     public function testResolvesABoundSharedByTwoVariablesOnce(): void
