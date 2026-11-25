@@ -273,5 +273,22 @@ final class NativeSymbolAvailabilityTest extends TestCase
             'ignored_issues' => [],
             'php_version' => '8.0',
         ];
+
+        yield 'dateExceptionBelowItsVersion' => [
+            'code' => '<?php
+                function f(string $s): ?DateInterval {
+                    try {
+                        return DateInterval::createFromDateString($s) ?: null;
+                    } catch (DateMalformedIntervalStringException $e) {
+                        return null;
+                    }
+                }
+            ',
+            'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:30 -'
+                . ' DateMalformedIntervalStringException is not defined for the analysed PHP version 8.2'
+                . ' (it was introduced in PHP 8.3); install symfony/polyfill-php83',
+            'ignored_issues' => [],
+            'php_version' => '8.2',
+        ];
     }
 }

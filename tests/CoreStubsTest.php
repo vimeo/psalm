@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Override;
+use Psalm\Config;
+use Psalm\Context;
+use Psalm\Exception\CodeException;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
@@ -12,6 +15,74 @@ final class CoreStubsTest extends TestCase
 {
     use ValidCodeAnalysisTestTrait;
     use InvalidCodeAnalysisTestTrait;
+
+    public function testDateIntervalCreateFromDateStringThrowsFromPhp83(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage(
+            'MissingThrowsDocblock - somefile.php:3:28 - DateMalformedIntervalStringException is thrown',
+        );
+
+        Config::getInstance()->check_for_throws_docblock = true;
+        $this->project_analyzer->setPhpVersion('8.3', 'tests');
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                function f(string $s): DateInterval {
+                    return DateInterval::createFromDateString($s);
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testDateIntervalCreateFromDateStringExceptionIsADateException(): void
+    {
+        Config::getInstance()->check_for_throws_docblock = true;
+        $this->project_analyzer->setPhpVersion('8.3', 'tests');
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @throws DateMalformedIntervalStringException */
+                function a(string $s): DateInterval {
+                    return DateInterval::createFromDateString($s);
+                }
+
+                /** @throws Exception */
+                function b(string $s): DateInterval {
+                    return DateInterval::createFromDateString($s);
+                }
+
+                function c(string $s): ?DateInterval {
+                    try {
+                        return DateInterval::createFromDateString($s);
+                    } catch (DateException $e) {
+                        return null;
+                    }
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testDateIntervalCreateFromDateStringDoesNotThrowBeforePhp83(): void
+    {
+        Config::getInstance()->check_for_throws_docblock = true;
+        $this->project_analyzer->setPhpVersion('8.2', 'tests');
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @return DateInterval|false */
+                function f(string $s) {
+                    return DateInterval::createFromDateString($s);
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
 
     #[Override]
     public function providerValidCodeParse(): iterable
@@ -106,6 +177,38 @@ final class CoreStubsTest extends TestCase
             'assertions' => [],
             'ignored_issues' => ['RedundantCondition'],
             'php_version' => '8.0',
+        ];
+        yield 'DateInterval::createFromDateString returns DateInterval|false on PHP 8.2' => [
+            'code' => '<?php
+
+            $i = DateInterval::createFromDateString("42 days");',
+            'assertions' => [
+                '$i' => 'DateInterval|false',
+            ],
+            'ignored_issues' => [],
+            'php_version' => '8.2',
+        ];
+        yield 'DateInterval::createFromDateString returns DateInterval on PHP 8.3' => [
+            'code' => '<?php
+
+            $i = DateInterval::createFromDateString("42 days");
+            echo $i->format("%d");',
+            'assertions' => [
+                '$i' => 'DateInterval',
+            ],
+            'ignored_issues' => [],
+            'php_version' => '8.3',
+        ];
+        yield 'DateInterval::createFromDateString returns DateInterval on PHP 8.4' => [
+            'code' => '<?php
+
+            $i = DateInterval::createFromDateString("42 days");
+            echo $i->format("%d");',
+            'assertions' => [
+                '$i' => 'DateInterval',
+            ],
+            'ignored_issues' => [],
+            'php_version' => '8.4',
         ];
         yield 'sprintf yields a non-empty-string for non-empty-string value' => [
             'code' => '<?php
