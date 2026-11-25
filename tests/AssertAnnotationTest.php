@@ -294,6 +294,99 @@ final class AssertAnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'assertIfTrueOfAMethodNotReturningABoolComparedWithFalseKeepsTheMethodNarrowing' => [
+                'code' => '<?php
+                    final class Box {
+                        public ?int $v = null;
+
+                        /**
+                         * @psalm-assert-if-true !null $this->v
+                         * @psalm-capabilities read-props
+                         */
+                        public function get(): string|false {
+                            return $this->v === null ? false : (string) $this->v;
+                        }
+                    }
+
+                    /** @psalm-pure */
+                    function takesString(string $s): string {
+                        return $s;
+                    }
+
+                    function f(Box $b): int {
+                        if ($b->get() !== false) {
+                            echo takesString($b->get());
+
+                            return $b->v + 1;
+                        }
+
+                        return 0;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'assertIfFalseOfAMemoizedMethodComparedWithABool' => [
+                'code' => '<?php
+                    final class Numbers {
+                        /** @var list<int> */
+                        public array $items = [];
+
+                        /**
+                         * @return list<int>
+                         * @psalm-capabilities read-props
+                         */
+                        public function getAll(): array {
+                            return $this->items;
+                        }
+
+                        /**
+                         * @psalm-assert-if-false non-empty-list<int> $this->getAll()
+                         * @psalm-capabilities read-props
+                         */
+                        public function isEmpty(): bool {
+                            return !$this->items;
+                        }
+
+                        /**
+                         * @psalm-assert-if-false non-empty-list<int> $this->items
+                         * @psalm-capabilities read-props
+                         */
+                        public function hasNoItems(): bool {
+                            return !$this->items;
+                        }
+                    }
+
+                    /**
+                     * @param non-empty-list<int> $numbers
+                     * @psalm-pure
+                     */
+                    function takesNonEmpty(array $numbers): int {
+                        return count($numbers);
+                    }
+
+                    function f(Numbers $n): void {
+                        if (false === $n->isEmpty()) {
+                            echo takesNonEmpty($n->getAll());
+                        }
+
+                        if (false === $n->hasNoItems()) {
+                            echo takesNonEmpty($n->items);
+                        }
+
+                        if ($n->isEmpty() === false) {
+                            echo takesNonEmpty($n->getAll());
+                        }
+
+                        if ($n->isEmpty() !== true) {
+                            echo takesNonEmpty($n->getAll());
+                        }
+
+                        if (true !== $n->hasNoItems()) {
+                            echo takesNonEmpty($n->items);
+                        }
+                    }',
+            ],
             'assertIterableIntersectionOnAnIterable' => [
                 'code' => '<?php
                     /**
@@ -482,6 +575,38 @@ final class AssertAnnotationTest extends TestCase
                             return;
                         }
                         useText($s);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'callWithTwoAssertIfTrueTagsKeepsItsOwnAssertionWhenComparedToFalse' => [
+                'code' => '<?php
+                    final class Box {
+                        public ?int $v = null;
+                        public ?int $w = null;
+
+                        /**
+                         * @psalm-assert-if-true !null $this->v
+                         * @psalm-assert-if-true !null $this->w
+                         * @psalm-capabilities read-props
+                         */
+                        public function get(): string|false {
+                            return $this->v === null || $this->w === null ? false : (string) $this->v;
+                        }
+                    }
+
+                    /** @psalm-pure */
+                    function takesString(string $s): string {
+                        return $s;
+                    }
+
+                    function f(Box $b): string {
+                        if ($b->get() !== false) {
+                            return takesString($b->get());
+                        }
+
+                        return "";
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],
@@ -5949,6 +6074,77 @@ final class AssertAnnotationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'assertIfTrueOfAMemoizedMethodComparedWithFalseThenTheMethodIsNeverTrue' => [
+                'code' => '<?php
+                    final class Name {
+                        public string $s = "";
+
+                        /**
+                         * @psalm-assert-if-true non-empty-string $this->s
+                         * @psalm-capabilities read-props
+                         */
+                        public function isSet(): bool {
+                            return $this->s !== "";
+                        }
+                    }
+
+                    function g(Name $n): void {
+                        if (false === $n->isSet()) {
+                            if ($n->isSet()) {
+                                echo 1;
+                            }
+                        }
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'assertIfFalseOfAMemoizedMethodComparedWithTrue' => [
+                'code' => '<?php
+                    final class Numbers {
+                        /** @var list<int> */
+                        public array $items = [];
+
+                        /**
+                         * @return list<int>
+                         * @psalm-capabilities read-props
+                         */
+                        public function getAll(): array {
+                            return $this->items;
+                        }
+
+                        /**
+                         * @psalm-assert-if-false non-empty-list<int> $this->getAll()
+                         * @psalm-capabilities read-props
+                         */
+                        public function isEmpty(): bool {
+                            return !$this->items;
+                        }
+
+                        /**
+                         * @psalm-assert-if-false non-empty-list<int> $this->items
+                         * @psalm-capabilities read-props
+                         */
+                        public function hasNoItems(): bool {
+                            return !$this->items;
+                        }
+                    }
+
+                    /**
+                     * @param non-empty-list<int> $numbers
+                     * @psalm-pure
+                     */
+                    function takesNonEmpty(array $numbers): int {
+                        return count($numbers);
+                    }
+
+                    function f(Numbers $n): void {
+                        if (true === $n->isEmpty()) {
+                            echo takesNonEmpty($n->getAll());
+                        }
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
             'assertIterableIntersectionOnAnArray' => [
                 'code' => '<?php
                     /**
