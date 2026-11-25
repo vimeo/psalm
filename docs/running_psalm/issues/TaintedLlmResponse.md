@@ -6,9 +6,9 @@ Emitted when user-controlled input can be given to an LLM as what the model itse
 
 ## Risk
 
-A model trusts its own earlier replies. An attacker who writes one, for instance in the conversation history a client sends back (an entry with the `assistant` role), in a reply the model is asked to continue (prefill), or in few-shot examples built from user data, makes the model believe it already agreed to something, which steers what it answers next (many-shot jailbreaks, prefill attacks).
+A model trusts its own earlier replies: an assistant turn written by an attacker (in the conversation history a client sends back, a prefilled reply or few-shot examples built from user data) steers what the model answers next.
 
-This is separate from [TaintedLlmPrompt](TaintedLlmPrompt.md): the reply the model gave, downloaded from the provider, is input too, yet it is what an assistant turn holds. Removing only `llm_response` from it keeps every other taint, so the reply is still reported in a prompt or in HTML.
+The reply downloaded from the provider is input too. Escaping only `llm_response` from it lets it into assistant turns, and it is still reported in a prompt ([TaintedLlmPrompt](TaintedLlmPrompt.md)) or in HTML.
 
 ## Example
 

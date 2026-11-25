@@ -38,6 +38,7 @@ Fix the flow at the sink, for the kind of sink:
 | `TaintedFile`, `TaintedInclude` | resolve against a fixed directory and check the result, or map input to a whitelist |
 | `TaintedHeader`, `TaintedCookie` | validate the value against the expected format |
 | `TaintedSSRF` | check the URL's host against an allow-list |
+| `TaintedLlmResponse` | build the assistant turns from the model's replies kept on the server, not from what the client sends; the function that reads the provider's reply declares it with `@psalm-taint-escape llm_response` |
 
 A value can only carry the taints its type can hold: `(int) $_GET['id']` carries no SQL or HTML, and after
 `in_array($sort, ['name', 'date'], true)` the value is one of the literals and carries nothing. A pattern
