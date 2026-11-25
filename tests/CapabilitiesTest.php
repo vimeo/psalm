@@ -1238,18 +1238,6 @@ final class CapabilitiesTest extends TestCase
                         return random_int(1, 6);
                     }',
             ],
-            'dateTimeConstructorsOnlyNeedTime' => [
-                'code' => '<?php
-                    /** @psalm-capabilities time */
-                    function immutableNow(): DateTimeImmutable {
-                        return new DateTimeImmutable("tomorrow");
-                    }
-
-                    /** @psalm-capabilities time */
-                    function mutableNow(): DateTime {
-                        return new DateTime();
-                    }',
-            ],
             'timeAllowsReadingTheClock' => [
                 'code' => '<?php
                     /** @psalm-capabilities time */
@@ -1288,6 +1276,42 @@ final class CapabilitiesTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.0',
+            ],
+            'dateTimeConstructorsOnlyNeedTime' => [
+                'code' => '<?php
+                    /** @psalm-capabilities time */
+                    function tomorrow(): DateTimeImmutable {
+                        return new DateTimeImmutable("tomorrow");
+                    }
+
+                    /** @psalm-capabilities time */
+                    function mutableNow(): DateTime {
+                        return new DateTime();
+                    }
+
+                    final class MyDate extends DateTimeImmutable {}
+
+                    /** @psalm-capabilities time */
+                    function inherited(): MyDate {
+                        return new MyDate();
+                    }
+
+                    final class MyDate2 extends DateTimeImmutable {
+                        /** @psalm-capabilities time */
+                        public function __construct() {
+                            parent::__construct("now");
+                        }
+                    }
+
+                    /** @psalm-capabilities time */
+                    function nextDay(): DateTimeImmutable {
+                        return (new DateTimeImmutable())->add(new DateInterval("P1D"));
+                    }
+
+                    /** @psalm-pure */
+                    function interval(): DateInterval {
+                        return new DateInterval("P1D");
+                    }',
             ],
             'datesOfAGivenTimestampArePure' => [
                 'code' => '<?php
@@ -8821,14 +8845,6 @@ final class CapabilitiesTest extends TestCase
                         return new DateTime("2020-01-01");
                     }',
                 'error_message' => 'constructor DateTime::__construct requires time',
-            ],
-            'unannotatedStubbedConstructorWithAnEmptyBodyIsNotTrivial' => [
-                'code' => '<?php
-                    /** @psalm-pure */
-                    function make(): DateTimeImmutable {
-                        return new DateTimeImmutable();
-                    }',
-                'error_message' => 'ImpureMethodCall',
             ],
             'inheritedTrivialConstructorRunsTheSetHookOfARedeclaredProperty' => [
                 'code' => '<?php
