@@ -2302,6 +2302,27 @@ final class TypeParseTest extends TestCase
         self::assertSame($fully_expressed, $type->canBeFullyExpressedInPhp($php_version_id));
     }
 
+    public function testUnionDeclaresNoRedundantIntersection(): void
+    {
+        $countable = ['Countable' => new TNamedObject('Countable')];
+        $same_native_intersection = new Union([
+            new TGenericObject('Ns\Foo', [Type::getInt()], false, false, $countable),
+            new TGenericObject('Ns\Foo', [Type::getString()], false, false, $countable),
+        ]);
+        $class_and_its_intersection = new Union([
+            new TNamedObject('Ns\Foo', false, false, $countable),
+            new TNamedObject('Ns\Foo'),
+        ]);
+        $same_classes = new Union([
+            new TNamedObject('Ns\Foo', false, false, $countable),
+            new TNamedObject('Countable', false, false, ['Ns\Foo' => new TNamedObject('Ns\Foo')]),
+        ]);
+
+        self::assertSame('Foo&\Countable', $same_native_intersection->toPhpString('Ns', [], null, 8_02_00));
+        self::assertSame('Foo', $class_and_its_intersection->toPhpString('Ns', [], null, 8_02_00));
+        self::assertSame('Foo&\Countable', $same_classes->toPhpString('Ns', [], null, 8_02_00));
+    }
+
     public function testStaticGenericObjectIsDeclaredSelfBeforePhp8(): void
     {
         $type = new Union([new TGenericObject('Ns\Foo', [Type::getInt()], false, true)]);
