@@ -556,6 +556,10 @@ final class TypeComparatorTest extends TestCase
      */
     public static function getUnsuccessfulComparisons(): iterable
     {
+        yield 'iterableIntersectionDoesNotAcceptIterable' => [
+            'iterable&Countable',
+            'iterable',
+        ];
         yield 'objectOrStringDoesNotAcceptIterable' => [
             'object|string',
             'iterable<int>',

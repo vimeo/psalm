@@ -240,7 +240,10 @@ final class TGenericObject extends TNamedObject
             return false;
         }
 
-        if ($this->is_static !== $other_type->is_static) {
+        if ($this->value !== $other_type->value
+            || $this->is_static !== $other_type->is_static
+            || !$this->intersectionTypesEqual($other_type->extra_types, $ensure_source_equality)
+        ) {
             return false;
         }
 

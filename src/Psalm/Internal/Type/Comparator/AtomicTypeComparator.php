@@ -806,6 +806,9 @@ final class AtomicTypeComparator
             if ($input_type_part->hasTraversableInterface($codebase)) {
                 return true;
             }
+
+            // the key of an iterable, compared below, leaves out the intersected types checked above
+            return false;
         }
 
         if ($container_type_part instanceof TString || $container_type_part instanceof TScalar) {

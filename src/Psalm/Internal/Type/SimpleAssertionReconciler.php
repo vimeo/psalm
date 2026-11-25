@@ -412,6 +412,7 @@ final class SimpleAssertionReconciler extends Reconciler
         if ($assertion_type instanceof TIterable
             && $assertion_type->type_params[0]->isMixed()
             && $assertion_type->type_params[1]->isMixed()
+            && !$assertion_type->extra_types
         ) {
             return self::reconcileIterable(
                 $assertion,

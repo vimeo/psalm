@@ -294,6 +294,21 @@ final class AssertAnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'assertIterableIntersectionOnAnIterable' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-assert iterable&Countable $x
+                     */
+                    function assertCountable(mixed $x): void {}
+
+                    function f(iterable $x): int {
+                        assertCountable($x);
+                        return count($x);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'assertionOnAPropertyIsForgottenAfterAMethodWritingIt' => [
                 'code' => '<?php
                     /**
