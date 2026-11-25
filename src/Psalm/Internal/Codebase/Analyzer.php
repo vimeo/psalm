@@ -773,8 +773,9 @@ final class Analyzer
             }
         }
 
+        // a file with no analysed method left is analysed in full, and replaces its maps, but only if it is analysed
         foreach ($this->reference_map as $file_path => $reference_map) {
-            if (!isset($this->analyzed_methods[$file_path])) {
+            if (!isset($this->analyzed_methods[$file_path]) && isset($this->files_to_analyze[$file_path])) {
                 unset($this->reference_map[$file_path]);
                 continue;
             }
@@ -810,7 +811,7 @@ final class Analyzer
         }
 
         foreach ($this->type_map as $file_path => $type_map) {
-            if (!isset($this->analyzed_methods[$file_path])) {
+            if (!isset($this->analyzed_methods[$file_path]) && isset($this->files_to_analyze[$file_path])) {
                 unset($this->type_map[$file_path]);
                 continue;
             }
@@ -846,7 +847,7 @@ final class Analyzer
         }
 
         foreach ($this->argument_map as $file_path => $argument_map) {
-            if (!isset($this->analyzed_methods[$file_path])) {
+            if (!isset($this->analyzed_methods[$file_path]) && isset($this->files_to_analyze[$file_path])) {
                 unset($this->argument_map[$file_path]);
                 continue;
             }
