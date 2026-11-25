@@ -7967,6 +7967,26 @@ final class TypeAlgebraTest extends TestCase
                     }',
                 'error_message' => 'PossiblyNullReference',
             ],
+            'boolVarNarrowingDroppedAfterReassignmentOfAssignedVariableInElseifCondition' => [
+                'code' => '<?php
+                    final class Slot {
+                        public string $attributes = "";
+                    }
+
+                    function f(?Slot $source, ?Slot $other, bool $b, bool $c): void {
+                        $action = $source;
+                        $hasAction = $action !== null;
+                        if ($b) {
+                            echo 1;
+                        } elseif ($c && (($action = $other) !== null)) {
+                            echo 2;
+                        }
+                        if ($hasAction) {
+                            echo $action->attributes;
+                        }
+                    }',
+                'error_message' => 'PossiblyNullPropertyFetch',
+            ],
         ];
     }
 }
