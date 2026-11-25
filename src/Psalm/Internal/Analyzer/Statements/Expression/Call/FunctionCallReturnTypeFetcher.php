@@ -18,6 +18,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\ConcatAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\CanonicalPaths;
 use Psalm\Internal\Codebase\ConditionalTaintSinks;
 use Psalm\Internal\Codebase\DatabaseTaints;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
@@ -421,14 +422,19 @@ final class FunctionCallReturnTypeFetcher
             }
         }
 
-        // the host of a URL, which a list of hosts can fix
-        return UrlHosts::recordParseUrl(
+        // the host of a URL, which a list of hosts can fix, and the canonical path realpath() returns
+        return CanonicalPaths::recordRealpath(
             $statements_analyzer,
-            $context,
             $stmt,
             $function_id,
-            $stmt->getArgs(),
-            $stmt_type,
+            UrlHosts::recordParseUrl(
+                $statements_analyzer,
+                $context,
+                $stmt,
+                $function_id,
+                $stmt->getArgs(),
+                $stmt_type,
+            ),
         );
     }
 

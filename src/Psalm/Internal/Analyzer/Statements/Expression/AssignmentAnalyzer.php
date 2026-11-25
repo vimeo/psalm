@@ -35,6 +35,7 @@ use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\Statements\GlobalAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
+use Psalm\Internal\Codebase\CanonicalPaths;
 use Psalm\Internal\Codebase\CombinedFlowGraph;
 use Psalm\Internal\Codebase\DataFlowGraph;
 use Psalm\Internal\Codebase\DatabaseTaints;
@@ -3641,6 +3642,7 @@ final class AssignmentAnalyzer
                             $assigned_type,
                             $var_node,
                         );
+                        CanonicalPaths::recordFlow($taint_flow_graph, $assigned_type->parent_nodes, $var_node);
                     }
                 }
             }

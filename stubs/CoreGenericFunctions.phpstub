@@ -1583,12 +1583,15 @@ function printf(string $format, ...$values) {}
 function vprintf(string $format, array $values) {}
 
 /**
+ * A local path, which isn't the URL of a server
+ *
  * @psalm-pure
  *
  * @return string|false
  * @psalm-ignore-falsable-return
  *
  * @psalm-flow ($path) -> return
+ * @psalm-taint-escape ssrf
  */
 function realpath(string $path) {}
 
