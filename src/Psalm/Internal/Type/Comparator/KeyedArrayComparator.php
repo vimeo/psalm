@@ -85,14 +85,18 @@ final class KeyedArrayComparator
             if ($input_property_type->possibly_undefined
                 && !$container_property_type->possibly_undefined
             ) {
+                // the key may be missing, but its value, when set, must still fit
                 $all_types_contain = false;
 
-                if ($atomic_comparison_result
-                    && $input_type_part instanceof TKeyedArray
-                    && $input_type_part->fallback_params === null
-                ) {
-                    $atomic_comparison_result->mergeFailedPart(new TypeComparisonResult());
-                }
+                self::isPartContainedBy(
+                    $codebase,
+                    $input_property_type->setPossiblyUndefined(false),
+                    $container_property_type,
+                    $allow_interface_equality,
+                    $atomic_comparison_result,
+                );
+
+                continue;
             }
 
             if (!self::isPartContainedBy(
