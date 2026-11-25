@@ -57,6 +57,19 @@ final class ClassTemplateTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'resourceIsAValidTemplateDefaultOfAClass' => [
+                'code' => '<?php
+                    /** @template T = resource */
+                    class A {}
+
+                    final class B extends A {}
+
+                    /** @template T = array<string, resource> */
+                    final class C {}
+
+                    /** @template T = resource|null */
+                    final class D {}',
+            ],
             'nullCoalescingATemplatePropertyBoundedByANullableStringToAString' => [
                 'code' => '<?php
                     /**

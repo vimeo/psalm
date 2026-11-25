@@ -438,6 +438,8 @@ final class TemplateDefaults
                 continue;
             }
 
+            $default = $default->setFromDocblock(true);
+
             $type_scanner->traverseArray($default->getAtomicTypes());
 
             foreach (self::getUsedTemplates($default) as $used_template) {

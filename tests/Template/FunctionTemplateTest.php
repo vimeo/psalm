@@ -111,6 +111,17 @@ final class FunctionTemplateTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'resourceIsAValidTemplateDefaultOfAFunction' => [
+                'code' => '<?php
+                    /**
+                     * @template T = resource
+                     * @param T $t
+                     * @return T
+                     */
+                    function f($t) {
+                        return $t;
+                    }',
+            ],
             'classStringOrTemplateIsBoundToTheClassOfAClassString' => [
                 'code' => '<?php
                     final class Foo {}
