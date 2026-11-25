@@ -515,18 +515,6 @@ final class TaintFlowResolution
     private array $state_later_added = [];
 
     /**
-     * State => taint => the index in $later_reaches of the reach that gave it that taint as a kept one, and as an
-     * added one: each taint comes to a state once as either (see findReach()). At most one entry per taint a later
-     * reach gave, which those few states get.
-     *
-     * @var array<int, array<int, int>>
-     */
-    private array $later_kept_reaches = [];
-
-    /** @var array<int, array<int, int>> */
-    private array $later_added_reaches = [];
-
-    /**
      * The clock of the resolution: it ticks whenever a state is reached, and whenever an entry gets its first caller
      * or a caller giving it a taint first, which is all a trace's walk back reads that changes during the walk. A
      * flow is reported once the walk is done, as it was when it reached its sink (see reportFlows()).
@@ -2217,21 +2205,6 @@ final class TaintFlowResolution
         $this->later_reaches[$state][] = [$predecessor, $link, $path_type, $this->sequence++, $new_kept, $new_added];
         $this->state_later_kept[$state] = ($this->state_later_kept[$state] ?? 0) | $new_kept;
         $this->state_later_added[$state] = ($this->state_later_added[$state] ?? 0) | $new_added;
-        $index = count($this->later_reaches[$state]) - 1;
-
-        for ($bit = 0; $bit < 64 && ($new_kept | $new_added) !== 0; $bit++) {
-            $taint = 1 << $bit;
-
-            if (($new_kept & $taint) !== 0) {
-                $this->later_kept_reaches[$state][$taint] = $index;
-                $new_kept &= ~$taint;
-            }
-
-            if (($new_added & $taint) !== 0) {
-                $this->later_added_reaches[$state][$taint] = $index;
-                $new_added &= ~$taint;
-            }
-        }
 
         if (!isset($this->queued[$state])) {
             $this->queue[] = $state;
@@ -5020,10 +4993,15 @@ final class TaintFlowResolution
             return self::FIRST_REACH;
         }
 
-        $index = $which === self::TRACE_KEPT
-            ? $this->later_kept_reaches[$state][$taint] ?? null
-            : $this->later_added_reaches[$state][$taint] ?? null;
+        // each taint comes to a state once, as a kept or as an added one
+        $offset = $which === self::TRACE_KEPT ? 4 : 5;
 
-        return $index !== null && $this->later_reaches[$state][$index][3] < $before ? $index : self::NO_REACH;
+        foreach ($this->later_reaches[$state] ?? [] as $index => $reach) {
+            if (($reach[$offset] & $taint) !== 0) {
+                return $reach[3] < $before ? $index : self::NO_REACH;
+            }
+        }
+
+        return self::NO_REACH;
     }
 }
