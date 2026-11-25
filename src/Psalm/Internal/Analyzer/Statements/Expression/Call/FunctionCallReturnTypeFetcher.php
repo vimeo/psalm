@@ -19,6 +19,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\CanonicalPaths;
+use Psalm\Internal\Codebase\CombinedFlowGraph;
 use Psalm\Internal\Codebase\ConditionalTaintSinks;
 use Psalm\Internal\Codebase\DatabaseTaints;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
@@ -27,6 +28,7 @@ use Psalm\Internal\Codebase\StringContext;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\TaintStore;
 use Psalm\Internal\Codebase\UrlHosts;
+use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\MethodIdentifier;
@@ -1638,6 +1640,43 @@ final class FunctionCallReturnTypeFetcher
         return $conditionally_removed_taints;
     }
 
+    /**
+     * A node of the call's own, when what it removes depends on its arguments or the call taint handlers add or remove
+     * taints: $function_call_node may be shared with the other calls, the last call deciding for all
+     *
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
+     */
+    private static function addEscapedCallNode(
+        TaintFlowGraph|CombinedFlowGraph|VariableUseGraph $graph,
+        ?TaintFlowGraph $taint_flow_graph,
+        string $function_id,
+        CodeLocation $node_location,
+        DataFlowNode $function_call_node,
+        int $added_taints,
+        int $removed_taints,
+        int $call_added_taints,
+    ): DataFlowNode {
+        $assignment_node = DataFlowNode::getForAssignment($function_id . '-escaped', $node_location);
+
+        $graph->addNode($assignment_node);
+
+        $graph->addPath(
+            $function_call_node,
+            $assignment_node,
+            'conditionally-escaped',
+            $added_taints,
+            $removed_taints,
+        );
+
+        // what a handler adds to the call is there whatever the call is given
+        $source_taints = $call_added_taints & ~$removed_taints;
+        if ($source_taints !== 0 && $taint_flow_graph) {
+            $taint_flow_graph->addSource($assignment_node->setTaints($source_taints));
+        }
+
+        return $assignment_node;
+    }
+
     private static function taintReturnType(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\FuncCall $stmt,
@@ -1665,15 +1704,11 @@ final class FunctionCallReturnTypeFetcher
 
         $node_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
 
-        $call_added_taints = 0;
-        $call_removed_taints = 0;
-        if ($taint_flow_graph) {
-            $call_event = new AddRemoveCallTaintsEvent($codebase, $cased_function_id, null, null, $node_location);
-            [$call_added_taints, $call_removed_taints] = $codebase->config->eventDispatcher
-                ->dispatchAddRemoveCallTaints($call_event);
-            $added_taints |= $call_added_taints;
-            $removed_taints |= $call_removed_taints;
-        }
+        [$call_added_taints, $call_removed_taints] = $taint_flow_graph
+            ? $codebase->config->eventDispatcher->dispatchAddRemoveCallTaints(
+                new AddRemoveCallTaintsEvent($codebase, $cased_function_id, null, null, $node_location),
+            )
+            : [0, 0];
 
         $specialization_location = TaintFlowGraph::isCallSpecialized(
             $taint_flow_graph,
@@ -1696,31 +1731,23 @@ final class FunctionCallReturnTypeFetcher
             $stmt->isFirstClassCallable() ? [] : $stmt->getArgs(),
         );
 
-        if ($conditionally_removed_taints || $call_added_taints !== 0 || $call_removed_taints !== 0) {
-            // a node of this call's own: what it removes depends on its arguments, and $function_call_node may be
-            // shared with the other calls, the last call deciding for all
-            $assignment_node = DataFlowNode::getForAssignment($function_id . '-escaped', $node_location);
+        $added_taints |= $call_added_taints;
+        $removed_taints |= $call_removed_taints;
 
-            $graph->addNode($assignment_node);
-
-            $graph->addPath(
+        $result_node = $conditionally_removed_taints || $call_added_taints !== 0 || $call_removed_taints !== 0
+            ? self::addEscapedCallNode(
+                $graph,
+                $taint_flow_graph,
+                $function_id,
+                $node_location,
                 $function_call_node,
-                $assignment_node,
-                'conditionally-escaped',
                 $added_taints,
                 $removed_taints | $conditionally_removed_taints,
-            );
+                $call_added_taints,
+            )
+            : $function_call_node;
 
-            // what a handler adds to the call is there whatever the call is given
-            $source_taints = $call_added_taints & ~($removed_taints | $conditionally_removed_taints);
-            if ($source_taints !== 0 && $taint_flow_graph) {
-                $taint_flow_graph->addSource($assignment_node->setTaints($source_taints));
-            }
-
-            $stmt_type = $stmt_type->addParentNodes([$assignment_node->id => $assignment_node]);
-        } else {
-            $stmt_type = $stmt_type->addParentNodes([$function_call_node->id => $function_call_node]);
-        }
+        $stmt_type = $stmt_type->addParentNodes([$result_node->id => $result_node]);
 
         if (!$taint_flow_graph) {
             return $function_call_node;

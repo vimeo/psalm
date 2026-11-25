@@ -2061,26 +2061,45 @@ final class ArgumentAnalyzer
     }
 
     /**
-     * What the call taint handlers add to and remove from an argument, where taint analysis runs
+     * What the handlers add to and remove from an argument, and what it can't carry: the HTML of what code running
+     * from the command line prints, and, where taint analysis runs, what the call taint handlers remove and what its
+     * type can't hold
      *
      * @return array{int, int}
      */
-    private static function getCallTaints(
+    private static function getArgumentTaints(
         StatementsAnalyzer $statements_analyzer,
+        Context $context,
+        PhpParser\Node\Expr $expr,
         string $cased_method_id,
         int $argument_offset,
         Union $input_type,
         CodeLocation $arg_location,
     ): array {
-        if (!$statements_analyzer->getTaintFlowGraphWithSuppressed()) {
-            return [0, 0];
+        $codebase = $statements_analyzer->getCodebase();
+        $dispatcher = $codebase->config->eventDispatcher;
+
+        $event = new AddRemoveTaintsEvent($expr, $context, $statements_analyzer, $codebase);
+        $added_taints = $dispatcher->dispatchAddTaints($event);
+        $removed_taints = $dispatcher->dispatchRemoveTaints($event);
+
+        // printed by code only running from the command line: to a terminal
+        if ($expr->getAttribute(CliOutput::PRINTED_ATTRIBUTE) === true) {
+            $removed_taints |= CliOutput::HTML_TAINTS;
         }
 
-        $codebase = $statements_analyzer->getCodebase();
+        if (!$statements_analyzer->getTaintFlowGraphWithSuppressed()) {
+            return [$added_taints, $removed_taints];
+        }
 
-        return $codebase->config->eventDispatcher->dispatchAddRemoveCallTaints(
+        [$call_added_taints, $call_removed_taints] = $dispatcher->dispatchAddRemoveCallTaints(
             new AddRemoveCallTaintsEvent($codebase, $cased_method_id, $argument_offset, $input_type, $arg_location),
         );
+
+        return [
+            $added_taints | $call_added_taints,
+            $removed_taints | $call_removed_taints | $input_type->getTaintsToRemove($codebase->getInputTaints()),
+        ];
     }
 
     /**
@@ -2156,27 +2175,15 @@ final class ArgumentAnalyzer
         }
         $taint_flow_graph = $statements_analyzer->getTaintFlowGraphWithSuppressed();
 
-        $removed_taints = $taint_flow_graph ? $input_type->getTaintsToRemove($codebase->getInputTaints()) : 0;
-
-        $event = new AddRemoveTaintsEvent($expr, $context, $statements_analyzer, $codebase);
-
-        $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
-        $removed_taints |= $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
-
-        [$call_added_taints, $call_removed_taints] = self::getCallTaints(
+        [$added_taints, $removed_taints] = self::getArgumentTaints(
             $statements_analyzer,
+            $context,
+            $expr,
             $cased_method_id,
             $argument_offset,
             $input_type,
             $arg_location,
         );
-        $added_taints |= $call_added_taints;
-        $removed_taints |= $call_removed_taints;
-
-        // printed by code only running from the command line: to a terminal
-        if ($expr->getAttribute(CliOutput::PRINTED_ATTRIBUTE) === true) {
-            $removed_taints |= CliOutput::HTML_TAINTS;
-        }
 
         $callable_kind = $in_call_map ? 'builtin' : ($method_id ? 'magic-method' : 'callable-object');
 
