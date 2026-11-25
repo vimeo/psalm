@@ -3131,6 +3131,8 @@ final class Codebase
      *
      * Null without taint analysis, while the taints of $source are not tracked (see tracksTaintFlow()), or if
      * $function_id has no storage. A function is looked up from the file of $call_location, then among all functions.
+     * Pass the PHP code making the call as $source, so that its `@psalm-suppress TaintedInput` applies: a call without
+     * $source (from a template, a configuration file) is in no PHP code, which nothing suppresses.
      *
      * @param list<list<DataFlowNode>> $argument_nodes the nodes each argument comes from, by position
      * @param array<int, Union> $argument_types the types of the arguments, by position: a literal type decides the
