@@ -2683,6 +2683,40 @@ final class StubTest extends DeferredAnalyzerTestCase
         );
     }
 
+    public function testProjectClassExtendingAClassUsingAStubTraitTakesItsMethods(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('TaintedShell - src/somefile.php:7');
+
+        $this->analyzeWithInterfaceAndTraitStub(
+            '<?php
+                class UsesTrait { use StubRunsCommands; }
+                final class Child extends UsesTrait {}
+
+                $command = $_GET["command"];
+                if (is_string($command)) {
+                    (new Child())->exec($command);
+                }',
+        );
+    }
+
+    public function testProjectClassUsingATraitUsingAStubTraitTakesItsMethods(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('TaintedShell - src/somefile.php:7');
+
+        $this->analyzeWithInterfaceAndTraitStub(
+            '<?php
+                trait RunsCommands { use StubRunsCommands; }
+                final class UsesTrait { use RunsCommands; }
+
+                $command = $_GET["command"];
+                if (is_string($command)) {
+                    (new UsesTrait())->exec($command);
+                }',
+        );
+    }
+
     public function testProjectClassOfAStubInterfaceOrTraitWithoutInput(): void
     {
         $this->analyzeWithInterfaceAndTraitStub(

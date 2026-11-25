@@ -895,6 +895,19 @@ final class Populator
         } while ($repopulated);
     }
 
+    /**
+     * Makes $storage, populated from the class or trait $from_lc, populated again with it once what it lacks is
+     * scanned (see repopulateStaleClassLikes())
+     */
+    private function inheritStaleness(ClassLikeStorage $storage, string $from_lc): void
+    {
+        foreach ($this->stale_class_storages as $dependency => $storages) {
+            if (isset($storages[$from_lc])) {
+                $this->stale_class_storages[$dependency][strtolower($storage->name)] = $storage;
+            }
+        }
+    }
+
     private function populateOverriddenMethods(
         ClassLikeStorage $storage,
         ClassLikeStorageProvider $storage_provider,
@@ -1121,6 +1134,7 @@ final class Populator
         }
 
         $this->populateClassLikeStorage($trait_storage, $dependent_classlikes);
+        $this->inheritStaleness($storage, $used_trait_lc);
 
         // a constructor of a trait wins over the one of the parent, which the empty one would hide
         if (isset($trait_storage->methods['__construct'])) {
@@ -1262,6 +1276,7 @@ final class Populator
         }
 
         $this->populateClassLikeStorage($parent_storage, $dependent_classlikes);
+        $this->inheritStaleness($storage, $parent_storage_class);
 
         // The parent was named by a class_alias() that is only scanned after this class
         if ($storage->parent_class !== null && strtolower($storage->parent_class) !== $parent_storage_class) {
