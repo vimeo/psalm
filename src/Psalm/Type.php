@@ -1578,7 +1578,11 @@ abstract class Type
      */
     private static function areSameClassWithObjectShapes(TNamedObject $type_1, TNamedObject $type_2): bool
     {
-        return $type_1->setIntersectionTypes([])->getKey() === $type_2->setIntersectionTypes([])->getKey()
+        // class names are case-insensitive, type arguments are not
+        return $type_1::class === $type_2::class
+            && strtolower($type_1->value) === strtolower($type_2->value)
+            && substr($type_1->getKey(false), strlen($type_1->value))
+                === substr($type_2->getKey(false), strlen($type_2->value))
             && ($type_1->extra_types['object'] ?? null) instanceof TObjectWithProperties
             && ($type_2->extra_types['object'] ?? null) instanceof TObjectWithProperties;
     }

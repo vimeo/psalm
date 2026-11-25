@@ -855,29 +855,13 @@ final class AssertionReconciler extends Reconciler
                         );
                     }
 
-                    $intersected_var_type_part = self::addIntersectionPart(
-                        $codebase,
-                        $existing_var_type_part,
-                        $intersected_type_part,
-                    );
-
-                    if ($intersected_var_type_part !== null) {
-                        $acceptable_atomic_types[] = $intersected_var_type_part;
-                    }
-
-                    continue;
+                    $existing_var_type_part = $existing_var_type_part->addIntersectionType($intersected_type_part);
+                    $acceptable_atomic_types[] = $existing_var_type_part;
                 }
 
                 if ($existing_var_type_part instanceof TTemplateParam) {
-                    $intersected_var_type_part = self::addIntersectionPart(
-                        $codebase,
-                        $existing_var_type_part,
-                        $new_type_part,
-                    );
-
-                    if ($intersected_var_type_part !== null) {
-                        $acceptable_atomic_types[] = $intersected_var_type_part;
-                    }
+                    $existing_var_type_part = $existing_var_type_part->addIntersectionType($new_type_part);
+                    $acceptable_atomic_types[] = $existing_var_type_part;
                 }
             }
 
@@ -1878,7 +1862,7 @@ final class AssertionReconciler extends Reconciler
             return $type_1_atomic->replaceAs($type_1_as);
         } elseif ($type_1_atomic instanceof TNamedObject
             && $type_2_atomic instanceof TNamedObject
-            && $type_1_atomic->value === $type_2_atomic->value
+            && strtolower($type_1_atomic->value) === strtolower($type_2_atomic->value)
             && ($type_1_atomic->extra_types['object'] ?? null) instanceof TObjectWithProperties
             && ($type_2_atomic->extra_types['object'] ?? null) instanceof TObjectWithProperties
         ) {
@@ -2934,16 +2918,28 @@ final class AssertionReconciler extends Reconciler
     }
 
     /**
-     * @template T of TNamedObject|TTemplateParam|TObjectWithProperties|TCallableObject
-     * @param T $type
+     * @param TNamedObject|TTemplateParam|TObjectWithProperties|TCallableObject $type
      * @param TNamedObject|TTemplateParam|TIterable|TObjectWithProperties|TCallableObject $part
-     * @return T|null null when no value has both types of a property of two object shapes
+     * @return TNamedObject|TTemplateParam|TObjectWithProperties|TCallableObject|null null when no value has both
+     *     types of a property of two object shapes
      */
     public static function addIntersectionPart(Codebase $codebase, Atomic $type, Atomic $part): ?Atomic
     {
+        if (!$part instanceof TObjectWithProperties) {
+            return $type->addIntersectionType($part);
+        }
+
+        if ($type instanceof TObjectWithProperties) {
+            try {
+                return TypeParser::mergeObjectShapes($codebase, $type, $part);
+            } catch (TypeParseTreeException) {
+                return null;
+            }
+        }
+
         $shape = $type->extra_types['object'] ?? null;
 
-        if ($part instanceof TObjectWithProperties && $shape instanceof TObjectWithProperties) {
+        if ($shape instanceof TObjectWithProperties) {
             try {
                 $part = TypeParser::mergeObjectShapes($codebase, $shape, $part);
             } catch (TypeParseTreeException) {
