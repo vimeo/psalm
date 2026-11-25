@@ -263,7 +263,7 @@ final class TypeVariableResolver extends MutableTypeVisitor
 
         $this->unrolling = $outer_unrolling;
 
-        if ($changed) {
+        if ($changed && $atomic_types !== []) {
             // rebuild through the builder so the union's own properties survive:
             // a `list<T>` is a keyed array whose first entry is a *possibly
             // undefined* `T`, and constructing a bare `new Union` here would drop
