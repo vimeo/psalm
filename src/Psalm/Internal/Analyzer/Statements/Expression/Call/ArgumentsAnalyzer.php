@@ -980,10 +980,17 @@ final class ArgumentsAnalyzer
                 $param_storage->type_inferred = true;
             }
 
-            if ($method_id === 'array_map' || in_array($method_id, self::ARRAY_FILTERLIKE, true)) {
+            // array_map() gives each parameter of its callback the elements of the array after it in the call
+            $element_array = $method_id === 'array_map'
+                ? $args[1 + $closure_param_offset] ?? null
+                : $args[1 - $argument_offset] ?? null;
+
+            if ($element_array !== null
+                && ($method_id === 'array_map' || in_array($method_id, self::ARRAY_FILTERLIKE, true))
+            ) {
                 self::taintClosureParamWithArrayElements(
                     $statements_analyzer,
-                    $args[1 - $argument_offset]->value,
+                    $element_array->value,
                     $param_storage,
                     $method_id === 'array_map'
                         ? ArrayMapReturnTypeProvider::getElementMarker($statements_analyzer, $context, $args)

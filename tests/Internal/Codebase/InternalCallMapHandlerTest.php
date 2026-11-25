@@ -16,6 +16,7 @@ use Psalm\Codebase;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Codebase\Reflection;
+use Psalm\Internal\Codebase\TaintFlowAnnotation;
 use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
@@ -274,6 +275,34 @@ final class InternalCallMapHandlerTest extends TestCase
             }
             foreach (array_diff_key($signature, [-2 => true]) as $type) {
                 self::assertStringIsParsableType($type, "Function " . $function . " in returned CallMap contains invalid type declaration " . $type);
+            }
+        }
+    }
+
+    public function testCallableTaintFlowsNameParametersOfTheirBuiltins(): void
+    {
+        /** @var array<lowercase-string, non-empty-list<non-empty-string>> $flows */
+        $flows = require dirname(__DIR__, 3) . '/dictionaries/InternalTaintCallableFlowMap.php';
+
+        foreach ($flows as $function_id => $annotations) {
+            $callables = InternalCallMapHandler::getCallablesFromCallMap($function_id);
+            $this->assertNotNull($callables, $function_id);
+
+            // the parameters of all its variants: a flow naming one a variant lacks is skipped for it
+            $names = [];
+            foreach ($callables as $callable) {
+                foreach ($callable->params ?? [] as $param) {
+                    $names[] = $param->name;
+                }
+            }
+
+            foreach ($annotations as $annotation) {
+                $flow = TaintFlowAnnotation::parse($annotation);
+                $this->assertInstanceOf(TaintFlowAnnotation::class, $flow, $function_id . ': ' . $annotation);
+
+                foreach ($flow->getParamNames() as $name) {
+                    $this->assertContains($name, $names, $function_id . ': ' . $annotation);
+                }
             }
         }
     }

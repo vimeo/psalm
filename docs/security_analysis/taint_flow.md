@@ -177,7 +177,8 @@ function listen(Events $events): void
 ```
 
 `-> $listener()` states that the callables given to `$listener` are called with what is given to `$payload`, as their
-arguments.
+arguments. A callable parameter as a source, `($reducer()) -> $reducer()`, gives them what the callables given to it
+return, as `array_reduce()` gives its callback the carry its previous call returned.
 
 ### Keyed stores
 

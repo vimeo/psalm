@@ -763,6 +763,10 @@ final class FunctionCallReturnTypeFetcher
      * it is passed: its unspecialized nodes belong to its body, which all of its calls share, and an edge out of its
      * unspecialized return node would keep what the body returns from leaving through the calls specialized at their
      * own call sites.
+     *
+     * @param ?list<array{DataFlowNode, string}> $argument_source_nodes what the callables are called with and the types
+     *                                                              of its paths, for a builtin without storage, whose
+     *                                                              arguments have no nodes of a parameter
      */
     public static function taintCallablePassedToParam(
         StatementsAnalyzer $statements_analyzer,
@@ -773,6 +777,7 @@ final class FunctionCallReturnTypeFetcher
         ?CodeLocation $specialization_location,
         Union $input_type,
         CodeLocation $callable_location,
+        ?array $argument_source_nodes = null,
     ): void {
         $param_type = isset($storage->params[$param_offset]) ? $storage->params[$param_offset]->type : null;
 
@@ -805,6 +810,7 @@ final class FunctionCallReturnTypeFetcher
                     $specialization_location,
                     $callable_id,
                     $callable_location,
+                    $argument_source_nodes,
                 );
             }
         }
@@ -812,6 +818,7 @@ final class FunctionCallReturnTypeFetcher
 
     /**
      * @param non-empty-lowercase-string $callable_id
+     * @param ?list<array{DataFlowNode, string}> $argument_source_nodes see taintCallablePassedToParam()
      */
     private static function taintCallableIdPassedToParam(
         StatementsAnalyzer $statements_analyzer,
@@ -822,6 +829,7 @@ final class FunctionCallReturnTypeFetcher
         ?CodeLocation $specialization_location,
         string $callable_id,
         CodeLocation $callable_location,
+        ?array $argument_source_nodes = null,
     ): void {
         $return_node = DataFlowNode::getForCallableParamReturn(
             $cased_method_id,
@@ -873,17 +881,13 @@ final class FunctionCallReturnTypeFetcher
         }
 
         // what the function-like passes them, as its body doesn't say: `@psalm-flow ($subject) -> $callback()`
-        $argument_source_nodes = [];
-        foreach ($storage->callable_param_argument_sources[$param_offset] ?? [] as $source_offset => $path_type) {
-            $source_node = DataFlowNode::getForMethodArgument(
-                $cased_method_id,
-                $source_offset,
-                $storage,
-                $specialization_location,
-            );
-            $graph->addNode($source_node);
-            $argument_source_nodes[] = [$source_node, $path_type];
-        }
+        $argument_source_nodes ??= self::getCallableArgumentSourceNodes(
+            $graph,
+            $cased_method_id,
+            $param_offset,
+            $storage,
+            $specialization_location,
+        );
 
         foreach ($callable_storage->params as $i => $param) {
             if ($param->location === null) {
@@ -917,6 +921,48 @@ final class FunctionCallReturnTypeFetcher
                 $graph->addPath($source_node, $argument_node, $path_type);
             }
         }
+    }
+
+    /**
+     * The nodes of what a function-like calls the callables given to the parameter at $param_offset with, and the
+     * types of their paths: what is given to its parameters, `@psalm-flow ($subject) -> $callback()`, and what the
+     * callables given to its parameters return, `@psalm-flow ($callback()) -> $callback()`
+     *
+     * @return list<array{DataFlowNode, string}>
+     */
+    private static function getCallableArgumentSourceNodes(
+        TaintFlowGraph $graph,
+        string $cased_method_id,
+        int $param_offset,
+        FunctionLikeStorage $storage,
+        ?CodeLocation $specialization_location,
+    ): array {
+        $argument_source_nodes = [];
+        foreach ($storage->callable_param_argument_sources[$param_offset] ?? [] as $source_offset => $path_type) {
+            $source_node = DataFlowNode::getForMethodArgument(
+                $cased_method_id,
+                $source_offset,
+                $storage,
+                $specialization_location,
+            );
+            $graph->addNode($source_node);
+            $argument_source_nodes[] = [$source_node, $path_type];
+        }
+
+        // what the callables given to a parameter return: `@psalm-flow ($callback()) -> $callback()`
+        $callable_sources = $storage->callable_param_argument_callable_sources[$param_offset] ?? [];
+        foreach ($callable_sources as $source_offset => $path_type) {
+            $source_node = DataFlowNode::getForCallableParamReturn(
+                $cased_method_id,
+                $source_offset,
+                $storage,
+                $specialization_location,
+            );
+            $graph->addNode($source_node);
+            $argument_source_nodes[] = [$source_node, $path_type];
+        }
+
+        return $argument_source_nodes;
     }
 
     /**
@@ -1399,7 +1445,8 @@ final class FunctionCallReturnTypeFetcher
 
     /**
      * The builtins only declared by the call map have no storage for `@psalm-flow`: the taints of the arguments
-     * given to the parameters dictionaries/InternalTaintFlowMap.php lists flow into what this call returns.
+     * given to the parameters dictionaries/InternalTaintFlowMap.php lists flow into what this call returns, and the
+     * callables given to them are called and return as dictionaries/InternalTaintCallableFlowMap.php says.
      */
     private static function taintInternalFlows(
         StatementsAnalyzer $statements_analyzer,
@@ -1420,8 +1467,15 @@ final class FunctionCallReturnTypeFetcher
 
         $params = $callmap_callable->params ?? [];
         $flows = InternalCallMapHandler::getReturnTaintFlows($function_id, $params);
+        $callable_return_nodes = self::taintInternalCallables(
+            $statements_analyzer,
+            $graph,
+            $stmt,
+            $function_id,
+            $params,
+        );
 
-        if ($flows === []) {
+        if ($flows === [] && $callable_return_nodes === []) {
             return;
         }
 
@@ -1458,7 +1512,95 @@ final class FunctionCallReturnTypeFetcher
             }
         }
 
+        foreach ($callable_return_nodes as [$callable_return_node, $path_type]) {
+            $graph->addPath($callable_return_node, $return_node, $path_type, 0, $removed_taints);
+        }
+
         $stmt_type = $stmt_type->addParentNodes([$return_node->id => $return_node]);
+    }
+
+    /**
+     * Calls the callables given to the parameters of the builtin $function_id, only declared by the call map, with
+     * what is given to the others, as dictionaries/InternalTaintCallableFlowMap.php says: the arguments of a builtin
+     * without storage have no nodes of its parameters, so the callables are given what the arguments hold.
+     *
+     * @param list<FunctionLikeParameter> $params
+     * @return list<array{DataFlowNode, string}> the nodes of what the callables return that the call returns, and the
+     *                                           types of their paths
+     */
+    private static function taintInternalCallables(
+        StatementsAnalyzer $statements_analyzer,
+        TaintFlowGraph $graph,
+        PhpParser\Node\Expr\FuncCall $stmt,
+        string $function_id,
+        array $params,
+    ): array {
+        $storage = new FunctionStorage();
+        $storage->setParams($params);
+        InternalCallMapHandler::addCallableTaintFlows($storage, $function_id);
+
+        $callable_offsets = $storage->callable_param_argument_sources
+            + $storage->callable_param_argument_callable_sources
+            + $storage->return_source_callable_params;
+        if ($callable_offsets === []) {
+            return [];
+        }
+
+        $call_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
+        $args = $stmt->getArgs();
+        $node_data = $statements_analyzer->node_data;
+
+        foreach ($callable_offsets as $callable_offset => $_) {
+            $argument_source_nodes = [];
+            $sources = $storage->callable_param_argument_sources[$callable_offset] ?? [];
+            foreach ($sources as $source_offset => $path_type) {
+                foreach (self::callableArgIndices($params, $args, $source_offset) as $arg_offset) {
+                    foreach ($node_data->getType($args[$arg_offset]->value)?->parent_nodes ?? [] as $parent_node) {
+                        $argument_source_nodes[] = [$parent_node, $path_type];
+                    }
+                }
+            }
+
+            $callable_sources = $storage->callable_param_argument_callable_sources[$callable_offset] ?? [];
+            foreach ($callable_sources as $source_offset => $path_type) {
+                $source_node = DataFlowNode::getForCallableParamReturn(
+                    $function_id,
+                    $source_offset,
+                    $storage,
+                    $call_location,
+                );
+                $graph->addNode($source_node);
+                $argument_source_nodes[] = [$source_node, $path_type];
+            }
+
+            foreach (self::callableArgIndices($params, $args, $callable_offset) as $arg_offset) {
+                $callable_type = $node_data->getType($args[$arg_offset]->value);
+                if ($callable_type === null) {
+                    continue;
+                }
+
+                self::taintCallablePassedToParam(
+                    $statements_analyzer,
+                    $graph,
+                    $function_id,
+                    $callable_offset,
+                    $storage,
+                    $call_location,
+                    $callable_type,
+                    new CodeLocation($statements_analyzer->getSource(), $args[$arg_offset]->value),
+                    $argument_source_nodes,
+                );
+            }
+        }
+
+        $return_nodes = [];
+        foreach ($storage->return_source_callable_params as $offset => $path_type) {
+            $return_node = DataFlowNode::getForCallableParamReturn($function_id, $offset, $storage, $call_location);
+            $graph->addNode($return_node);
+            $return_nodes[] = [$return_node, $path_type];
+        }
+
+        return $return_nodes;
     }
 
     /**

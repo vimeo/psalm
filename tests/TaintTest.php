@@ -2812,6 +2812,38 @@ final class TaintTest extends TestCase
 
                     echo render("<p>{value}</p>", (string) $_GET["bad"]);',
             ],
+            'noTaintOfTheKeysPassedToTheArrayReduceCallback' => [
+                'code' => '<?php
+                    array_reduce([(string) $_GET["bad"] => "a"], function (string $carry, string $item): string {
+                        echo $item;
+                        return $carry;
+                    }, "");',
+            ],
+            'noTaintReturnedByAnArrayReduceCallbackIgnoringTheItems' => [
+                'code' => '<?php
+                    echo array_reduce([(string) $_GET["bad"]], fn(string $carry, string $item): string => "safe", "");',
+            ],
+            'noTaintOfTheKeysInTheValuesMappedByArrayMap' => [
+                'code' => '<?php
+                    echo implode("", array_map(fn(string $item): string => "a", [(string) $_GET["bad"] => "a"]));',
+            ],
+            'noTaintPassedToTheArrayWalkCallbackOfAnotherCall' => [
+                'code' => '<?php
+                    $bad = [(string) $_GET["bad"]];
+                    array_walk($bad, function (string $item): void {});
+                    $safe = ["a"];
+                    array_walk($safe, function (string $item): void {
+                        echo $item;
+                    });',
+            ],
+            'noTaintPassedToTheUksortCallbackByTheValues' => [
+                'code' => '<?php
+                    $items = ["a" => (string) $_GET["bad"]];
+                    uksort($items, function (string $a, string $b): int {
+                        echo $a;
+                        return 0;
+                    });',
+            ],
             'anchoredPatternWithoutQuotesRemovesTheXpathTaint' => [
                 'code' => '<?php
                     $data = (string) $_GET["id"];
@@ -11882,10 +11914,12 @@ final class TaintTest extends TestCase
                     function call(string $text, callable $callback): void {}',
                 'error_message' => 'names $fn, which is not a parameter',
             ],
-            'flowIntoTheArgumentsOfACallableOfWhatACallableReturns' => [
+            'flowIntoTheArgumentsOfACallableOfThis' => [
                 'code' => '<?php
-                    /** @psalm-flow ($callback()) -> $callback() */
-                    function call(callable $callback): void {}',
+                    final class Events {
+                        /** @psalm-flow ($this) -> $callback() */
+                        public function call(callable $callback): void {}
+                    }',
                 'error_message' => 'is neither',
             ],
             'proxyFlowIntoNeitherTheReturnNorNothing' => [
@@ -18576,6 +18610,223 @@ final class TaintTest extends TestCase
                     );
 
                     echo $b;',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintThroughTheItemsOfArrayReduce' => [
+                'code' => '<?php
+                    echo array_reduce([(string) $_GET["bad"]], fn(string $carry, string $item): string => $carry . $item, "");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintPassedToTheArrayReduceCallback' => [
+                'code' => '<?php
+                    array_reduce([(string) $_GET["bad"]], function (string $carry, string $item): string {
+                        echo $item;
+                        return $carry;
+                    }, "");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintPassedToTheArrayReduceCallbackAsTheInitialCarry' => [
+                'code' => '<?php
+                    array_reduce([], function (string $carry, string $item): string {
+                        echo $carry;
+                        return $carry;
+                    }, (string) $_GET["bad"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintReturnedByTheArrayReduceCallbackToItsNextCall' => [
+                'code' => '<?php
+                    array_reduce(["a", "b"], function (string $carry, string $item): string {
+                        echo $carry;
+                        return (string) $_GET["bad"];
+                    }, "");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintPassedToTheArrayWalkCallback' => [
+                'code' => '<?php
+                    $items = [(string) $_GET["bad"]];
+                    array_walk($items, function (string $item): void {
+                        echo $item;
+                    });',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintOfAKeyPassedToTheArrayWalkCallback' => [
+                'code' => '<?php
+                    $items = [(string) $_GET["bad"] => "a"];
+                    array_walk($items, function (string $item, string $key): void {
+                        echo $key;
+                    });',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintOfTheArgumentPassedToTheArrayWalkCallback' => [
+                'code' => '<?php
+                    $items = ["a"];
+                    array_walk($items, function (string $item, int $key, string $arg): void {
+                        echo $arg;
+                    }, (string) $_GET["bad"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintPassedToTheArrayWalkCallbackNamedByAString' => [
+                'code' => '<?php
+                    function show(string $item): void {
+                        echo $item;
+                    }
+
+                    $items = [(string) $_GET["bad"]];
+                    array_walk($items, "show");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintPassedToTheArrayWalkRecursiveCallback' => [
+                'code' => '<?php
+                    $items = [[(string) $_GET["bad"]]];
+                    array_walk_recursive($items, function (string $item): void {
+                        echo $item;
+                    });',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintPassedToTheCallbackOfTheSecondArrayOfArrayMap' => [
+                'code' => '<?php
+                    array_map(function (string $a, string $b): string {
+                        echo $b;
+                        return $a;
+                    }, ["a"], [(string) $_GET["bad"]]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintOfAnArrayMappedWithoutCallback' => [
+                'code' => '<?php
+                    /** @var list<string> */
+                    $items = $_GET["bad"];
+                    echo implode("", array_map(null, $items));',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintOfArraysZippedByArrayMapWithoutCallback' => [
+                'code' => '<?php
+                    /** @var list<string> */
+                    $items = $_GET["bad"];
+                    echo implode("", array_map(null, ["a"], $items)[0]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintOfTheKeysKeptByArrayMap' => [
+                'code' => '<?php
+                    echo implode("", array_keys(array_map(fn(string $item): string => "a", [(string) $_GET["bad"] => "a"])));',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintPassedToTheUsortCallback' => [
+                'code' => '<?php
+                    $items = ["a", (string) $_GET["bad"]];
+                    usort($items, function (string $a, string $b): int {
+                        echo $b;
+                        return 0;
+                    });',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintPassedToTheUasortCallback' => [
+                'code' => '<?php
+                    $items = ["a", (string) $_GET["bad"]];
+                    uasort($items, function (string $a, string $b): int {
+                        echo $b;
+                        return 0;
+                    });',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintOfAKeyPassedToTheUksortCallback' => [
+                'code' => '<?php
+                    $items = [(string) $_GET["bad"] => "a"];
+                    uksort($items, function (string $a, string $b): int {
+                        echo $a;
+                        return 0;
+                    });',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintPassedToTheArrayUdiffCallback' => [
+                'code' => '<?php
+                    array_udiff([(string) $_GET["bad"]], ["a"], function (string $a, string $b): int {
+                        echo $a;
+                        return 0;
+                    });',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintPassedToTheArrayUintersectCallback' => [
+                'code' => '<?php
+                    array_uintersect([(string) $_GET["bad"]], ["a"], function (string $a, string $b): int {
+                        echo $a;
+                        return 0;
+                    });',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintOfAKeyPassedToTheArrayDiffUkeyCallback' => [
+                'code' => '<?php
+                    array_diff_ukey([(string) $_GET["bad"] => "a"], ["a" => "a"], function (string $a, string $b): int {
+                        echo $a;
+                        return 0;
+                    });',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintPassedToTheArrayUdiffUassocValueCallback' => [
+                'code' => '<?php
+                    array_udiff_uassoc([(string) $_GET["bad"]], ["a"], function (string $a, string $b): int {
+                        echo $a;
+                        return 0;
+                    }, fn(int $a, int $b): int => 0);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintPassedToTheMbEregReplaceCallbackCallback' => [
+                'code' => '<?php
+                    mb_ereg_replace_callback("x", function (array $matches): string {
+                        echo (string) $matches[0];
+                        return "";
+                    }, (string) $_GET["bad"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintReturnedByTheMbEregReplaceCallbackCallback' => [
+                'code' => '<?php
+                    echo mb_ereg_replace_callback("x", fn(array $matches): string => (string) $_GET["bad"], "x");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintPassedToTheForwardStaticCallCallback' => [
+                'code' => '<?php
+                    forward_static_call(function (string $value): void {
+                        echo $value;
+                    }, (string) $_GET["bad"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintReturnedByTheForwardStaticCallCallback' => [
+                'code' => '<?php
+                    echo forward_static_call(fn(string $value): string => $value, (string) $_GET["bad"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintPassedToTheForwardStaticCallArrayCallback' => [
+                'code' => '<?php
+                    forward_static_call_array(function (string $value): void {
+                        echo $value;
+                    }, [(string) $_GET["bad"]]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintReturnedByTheForwardStaticCallArrayCallback' => [
+                'code' => '<?php
+                    echo forward_static_call_array(fn(string $value): string => $value, [(string) $_GET["bad"]]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintPassedToTheIteratorApplyCallback' => [
+                'code' => '<?php
+                    iterator_apply(new ArrayIterator(["a"]), function (string $value): bool {
+                        echo $value;
+                        return true;
+                    }, [(string) $_GET["bad"]]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintPassedToTheCallbackOfACallbackFilterIterator' => [
+                'code' => '<?php
+                    new CallbackFilterIterator(new ArrayIterator([(string) $_GET["bad"]]), function (string $value): bool {
+                        echo $value;
+                        return true;
+                    });',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintPassedToTheRegisterShutdownFunctionCallback' => [
+                'code' => '<?php
+                    register_shutdown_function(function (string $value): void {
+                        echo $value;
+                    }, (string) $_GET["bad"]);',
                 'error_message' => 'TaintedHtml',
             ],
             'taintReturnedByThePregReplaceCallbackCallback' => [
