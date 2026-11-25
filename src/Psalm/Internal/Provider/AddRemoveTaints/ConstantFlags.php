@@ -520,7 +520,9 @@ final class ConstantFlags
     /**
      * The bits of a constant: a builtin one, which no code can declare again, or one the project declares once, by a
      * statement of a file or namespace. The name resolver leaves an unqualified name in a namespace without
-     * `use const` unresolved: it is the constant of the namespace if one is declared, else the global one.
+     * `use const` unresolved: it is the constant of the namespace if one is declared, else the global one. A define()
+     * whose name psalm doesn't know isn't taken to declare the constant of the namespace: else one in a library would
+     * make every builtin flag of a namespace unknown.
      *
      * @param array<string, true> $visited
      * @return array{int, int}
@@ -532,7 +534,7 @@ final class ConstantFlags
         if ($resolved_name === '') {
             $namespaced_name = (string) $name->getAttribute('namespacedName');
 
-            if ($namespaced_name === '' || self::countConstantDeclarations($namespaced_name) !== 0) {
+            if ($namespaced_name === '' || self::countConstantDeclarations($namespaced_name, false) !== 0) {
                 return self::UNKNOWN;
             }
 
@@ -580,17 +582,17 @@ final class ConstantFlags
 
     /**
      * How many `const` statements and define() calls of the code psalm scanned declare the global constant, or null
-     * if a define() call may declare a name psalm doesn't know
+     * if a define() call may declare a name psalm doesn't know (unless $count_dynamic is false)
      *
      * @psalm-capabilities read-props|write-this-props|write-refs
      */
-    private static function countConstantDeclarations(string $name): ?int
+    private static function countConstantDeclarations(string $name, bool $count_dynamic = true): ?int
     {
         $name_lc = strtolower($name);
         $count = 0;
 
         foreach (FileStorageProvider::getAll() as $file_storage) {
-            if ($file_storage->has_dynamic_define) {
+            if ($count_dynamic && $file_storage->has_dynamic_define) {
                 return null;
             }
 

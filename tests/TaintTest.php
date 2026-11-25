@@ -1190,8 +1190,9 @@ final class TaintTest extends TestCase
     }
 
     /**
-     * A define() of a name psalm doesn't know may declare any constant, of any namespace, and a write to `$GLOBALS`
-     * under a name it doesn't know any variable of the global code: a builtin constant named as such stays known.
+     * A define() of a name psalm doesn't know may declare any constant of the project, and a write to `$GLOBALS` under
+     * a name it doesn't know any variable of the global code. A builtin constant stays known, also unqualified in a
+     * namespace: such a define() isn't taken to declare the constant of the namespace shadowing it.
      */
     public function testDynamicDefinesAndGlobalsMakeFlagsUnknown(): void
     {
@@ -1208,6 +1209,7 @@ final class TaintTest extends TestCase
                 function a(): void {
                     echo json_encode($_GET["a"], JSON_HEX_TAG | JSON_HEX_AMP);
                     echo json_encode($_GET["b"], \JSON_HEX_TAG | \JSON_HEX_AMP);
+                    echo "<a title=\"" . htmlspecialchars((string) $_GET["f"], ENT_QUOTES) . "\">";
                 }
             }
 
@@ -1227,11 +1229,12 @@ final class TaintTest extends TestCase
 
         $issues = array_values(array_filter(
             IssueBuffer::getIssuesDataForFile($file_path),
-            static fn(IssueData $issue): bool => $issue->type === 'TaintedHtml',
+            static fn(IssueData $issue): bool => $issue->type === 'TaintedHtml'
+                || ($issue->type === 'TaintedTextWithQuotes' && $issue->line_from === 6),
         ));
 
         self::assertEqualsCanonicalizing(
-            [4, 12, 15],
+            [13, 16],
             array_map(static fn(IssueData $issue): int => $issue->line_from, $issues),
         );
     }
