@@ -443,6 +443,60 @@ final class TypeVariableTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'constructorClassStringOrTemplateParamIsBoundToTheTemplateOfAClassString' => [
+                'code' => '<?php
+                    /** @template TModel */
+                    final class Select
+                    {
+                        /** @param class-string<TModel>|string|TModel $model */
+                        public function __construct(public mixed $model) {}
+                    }
+
+                    /** @template TModel */
+                    final class QB
+                    {
+                        /** @param class-string<TModel>|TModel|string $model */
+                        public function __construct(private readonly string|object $model) {}
+
+                        /** @return Select<TModel> */
+                        public function select(): Select
+                        {
+                            return new Select(model: $this->model);
+                        }
+
+                        /**
+                         * @param class-string<TModel> $class
+                         * @return Select<TModel>
+                         */
+                        public function selectClass(string $class): Select
+                        {
+                            return new Select($class);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'constructorClassStringOrTemplateParamIsBoundToTheClassOfALiteralClassString' => [
+                'code' => '<?php
+                    final class Foo {}
+
+                    /** @template T */
+                    final class Select
+                    {
+                        /** @param class-string<T>|string|T $model */
+                        public function __construct(public mixed $model) {}
+                    }
+
+                    /** @return Select<Foo> */
+                    function f(): Select
+                    {
+                        return new Select(Foo::class);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'unboundConstructorTemplateHeldBySiblingConstraints' => [
                 'code' => '<?php
                     /**

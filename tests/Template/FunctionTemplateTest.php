@@ -111,6 +111,78 @@ final class FunctionTemplateTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'classStringOrTemplateIsBoundToTheClassOfAClassString' => [
+                'code' => '<?php
+                    final class Foo {}
+
+                    /**
+                     * @template T
+                     * @param class-string<T>|T $m
+                     * @return list<T>
+                     */
+                    function g(mixed $m): array { return []; }
+
+                    /** @var Foo|class-string<Foo> $u */
+                    $u = new Foo();
+
+                    $literal = g(Foo::class);
+                    $union = g($u);
+                    $object = g(new Foo());',
+                'assertions' => [
+                    '$literal===' => 'list<Foo>',
+                    '$union===' => 'list<Foo>',
+                    '$object===' => 'list<Foo>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'classStringAndTemplateParamsAreBoundByBothArguments' => [
+                'code' => '<?php
+                    final class Foo {}
+                    final class Bar {}
+
+                    /**
+                     * @template T
+                     * @param class-string<T> $c
+                     * @param T $o
+                     * @return list<T>
+                     */
+                    function g(string $c, mixed $o): array { return []; }
+
+                    /**
+                     * @template T
+                     * @param class-string<T>|T $a
+                     * @param class-string<T>|T $b
+                     * @return list<T>
+                     */
+                    function h(mixed $a, mixed $b): array { return []; }
+
+                    $r = g(Foo::class, new Bar());
+                    $s = h(Foo::class, new Bar());',
+                'assertions' => [
+                    '$r===' => 'list<Bar|Foo>',
+                    '$s===' => 'list<Bar|Foo>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'templateOrListOfTemplateIsBoundByEachArgument' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T|list<T> $a
+                     * @param T|list<T> $b
+                     * @return list<T>
+                     */
+                    function h($a, $b): array { return []; }
+
+                    $listFirst = h([1], "x");
+                    $listSecond = h("x", [1]);',
+                'assertions' => [
+                    '$listFirst===' => 'list<\'x\'|1>',
+                    '$listSecond===' => 'list<\'x\'|1>',
+                ],
+            ],
             'paramOutOfATemplateIsTheTypeOfTheArgumentBindingIt' => [
                 'code' => '<?php
                     /**

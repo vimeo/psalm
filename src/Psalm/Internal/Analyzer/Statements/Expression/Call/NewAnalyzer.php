@@ -2321,7 +2321,10 @@ final class NewAnalyzer extends CallAnalyzer
                     $generic_param_type = self::mintTypeVariable(
                         $statements_analyzer,
                         $stmt,
-                        $lower_bounds[$template_name][$fq_class_name],
+                        TemplateStandinTypeReplacer::getMostSpecificBounds(
+                            $lower_bounds[$template_name][$fq_class_name],
+                            $codebase,
+                        ),
                         $template_result->upper_bounds[$template_name][$fq_class_name] ?? null,
                         $constraint,
                         $method_storage
