@@ -2622,6 +2622,9 @@ final class ConfigTest extends DeferredAnalyzerTestCase
             ],
             'constant of a define()' => ['echo PGSQL_CONNECT_FORCE_NEW;', ['pgsql'], []],
             'class a builtin function returns' => ['$db = mysqli_connect("localhost");', ['mysqli'], []],
+            'parent class' => ['final class Db extends PDO {}', ['pdo'], []],
+            'interface' => ['abstract class Key implements Ds\\Hashable {}', ['ds'], []],
+            'parent interface' => ['interface Key extends Ds\\Hashable {}', ['ds'], []],
             'nothing' => ['echo 1;', [], ['redis', 'mongodb', 'xdebug', 'zstd', 'mysqli', 'pgsql']],
         ];
     }
@@ -2765,6 +2768,36 @@ final class ConfigTest extends DeferredAnalyzerTestCase
 
         $this->expectException(CodeException::class);
         $this->expectExceptionMessageMatches('/^' . $error . '\b/');
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    /**
+     * The code names only its own class, whose parent is the one of the extension
+     */
+    public function testSinkOfTheParentOfAClass(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithAConfigOfThisRepository('8.4');
+        $this->project_analyzer->getConfig()->declared_extensions = null;
+        $this->project_analyzer->trackTaintedInputs();
+
+        $file_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'somefile.php';
+        $this->addFile(
+            $file_path,
+            '<?php
+                final class Db extends PDO {}
+
+                /** @psalm-suppress PossiblyUnusedReturnValue, UnusedMethodCall */
+                function run(Db $db): void {
+                    $input = $_GET["input"] ?? "";
+                    if (is_string($input)) {
+                        $db->query($input);
+                    }
+                }',
+        );
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessageMatches('/^TaintedSql\b/');
 
         $this->analyzeFile($file_path, new Context());
     }

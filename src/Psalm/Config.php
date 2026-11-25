@@ -3286,7 +3286,8 @@ final class Config
     }
 
     /**
-     * The class-likes, functions and constants the scanned files reference, lowercase
+     * The class-likes, functions and constants the scanned files reference, lowercase: also the parents, interfaces
+     * and traits of their class-likes
      *
      * @return array<lowercase-string, true>
      * @psalm-capabilities read-props|write-this-props|write-refs
@@ -3296,7 +3297,9 @@ final class Config
         $symbols = [];
         foreach (FileStorageProvider::getAll() as $file_storage) {
             $symbols += $file_storage->referenced_functions_and_constants;
-            foreach ($file_storage->referenced_classlikes as $classlike_lc => $_) {
+            foreach ($file_storage->referenced_classlikes
+                + $file_storage->required_classes
+                + $file_storage->required_interfaces as $classlike_lc => $_) {
                 $symbols[$classlike_lc] = true;
             }
         }
