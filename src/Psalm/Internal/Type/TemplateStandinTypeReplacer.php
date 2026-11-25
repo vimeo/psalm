@@ -175,15 +175,9 @@ final class TemplateStandinTypeReplacer
                 }
 
                 foreach ($other_input_type->getAtomicTypes() as $input_key => $input_atomic_type) {
-                    if (array_any(
-                        $template_free_atomic_types,
-                        static fn(Atomic $atomic_type): bool
-                            => AtomicTypeComparator::isContainedBy($codebase, $input_atomic_type, $atomic_type),
-                    ) && !array_any(
-                        $templated_atomic_types,
-                        static fn(Atomic $atomic_type): bool
-                            => AtomicTypeComparator::isContainedBy($codebase, $input_atomic_type, $atomic_type),
-                    )) {
+                    if (self::isContainedByAny($codebase, $input_atomic_type, $template_free_atomic_types)
+                        && !self::isContainedByAny($codebase, $input_atomic_type, $templated_atomic_types)
+                    ) {
                         $template_free_input_type->removeType($input_key);
                     }
                 }
@@ -206,16 +200,17 @@ final class TemplateStandinTypeReplacer
 
         $had_template = false;
 
-        // a class string a `class-string<T>` of the union takes binds that atom, not a bare template of the union
-        // (`Foo::class` for `class-string<T>|T` is not a `T`)
+        // a class string a `class-string<T>` of the union takes binds that atom, not the bare `T` of the union
+        // (`Foo::class` for `class-string<T>|T` is not a `T`), by template
         $class_string_atomic_types = [];
 
         foreach ($original_atomic_types as $original_atomic_type) {
             if ($original_atomic_type instanceof TTemplateParamClass) {
-                $class_string_atomic_types[] = new TClassString(
-                    $original_atomic_type->as,
-                    $original_atomic_type->as_type,
-                );
+                $class_string_atomic_types[$original_atomic_type->param_name]
+                    [$original_atomic_type->defining_class][] = new TClassString(
+                        $original_atomic_type->as,
+                        $original_atomic_type->as_type,
+                    );
             }
         }
 
@@ -223,11 +218,14 @@ final class TemplateStandinTypeReplacer
             $matches_input_key = $input_type && $input_type->hasType($key);
             $atomic_input_type = $matches_input_key ? $input_type : $other_input_type;
 
-            if ($atomic_input_type && $class_string_atomic_types && $atomic_type instanceof TTemplateParam) {
+            if ($atomic_input_type
+                && $atomic_type instanceof TTemplateParam
+                && isset($class_string_atomic_types[$atomic_type->param_name][$atomic_type->defining_class])
+            ) {
                 $atomic_input_type = self::removeContainedAtomicTypes(
                     $codebase,
                     $atomic_input_type,
-                    $class_string_atomic_types,
+                    $class_string_atomic_types[$atomic_type->param_name][$atomic_type->defining_class],
                 );
             }
 
@@ -299,16 +297,27 @@ final class TemplateStandinTypeReplacer
         $builder = $input_type->getBuilder();
 
         foreach ($input_type->getAtomicTypes() as $input_key => $input_atomic_type) {
-            if (array_any(
-                $container_atomic_types,
-                static fn(Atomic $atomic_type): bool
-                    => AtomicTypeComparator::isContainedBy($codebase, $input_atomic_type, $atomic_type),
-            )) {
+            if (self::isContainedByAny($codebase, $input_atomic_type, $container_atomic_types)) {
                 $builder->removeType($input_key);
             }
         }
 
         return $builder->isUnionEmpty() ? null : $builder->freeze();
+    }
+
+    /**
+     * @param list<Atomic> $container_atomic_types
+     */
+    private static function isContainedByAny(
+        Codebase $codebase,
+        Atomic $input_atomic_type,
+        array $container_atomic_types,
+    ): bool {
+        return array_any(
+            $container_atomic_types,
+            static fn(Atomic $atomic_type): bool
+                => AtomicTypeComparator::isContainedBy($codebase, $input_atomic_type, $atomic_type),
+        );
     }
 
     /**

@@ -166,6 +166,35 @@ final class FunctionTemplateTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'classStringOfAnotherTemplateLeavesTheClassStringToTheTemplate' => [
+                'code' => '<?php
+                    final class Foo {}
+
+                    /**
+                     * @template T
+                     * @template U of object
+                     * @param class-string<U>|T $x
+                     * @return T
+                     */
+                    function two(mixed $x): mixed { throw new Exception(); }
+
+                    /**
+                     * @template T of string
+                     * @template U of object
+                     * @param class-string<U>|T $x
+                     * @return array{T, U}
+                     */
+                    function twos(string $x): array { throw new Exception(); }
+
+                    $t = two(Foo::class);
+                    $tu = twos(Foo::class);',
+                'assertions' => [
+                    '$t===' => 'Foo::class',
+                    '$tu===' => 'list{Foo::class, Foo}',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'classStringOrObjectTemplateKeepsTheObjectOfTheArgument' => [
                 'code' => '<?php
                     final class Foo {}
