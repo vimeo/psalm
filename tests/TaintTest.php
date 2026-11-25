@@ -2548,6 +2548,41 @@ final class TaintTest extends TestCase
                         }
                     }',
             ],
+            'valueEscapedForXpathByTheCodeInAStringLiteral' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-taint-escape xpath
+                     */
+                    function xpathLiteral(string $value): string {
+                        return "concat(\'" . str_replace("\'", "\', \"\'\", \'", $value) . "\', \'\')";
+                    }
+
+                    function find(DOMXPath $xpath): void {
+                        $xpath->query("//user[@id=" . xpathLiteral((string) $_GET["id"]) . "]");
+                        $xpath->query("//user[@id=\'" . xpathLiteral((string) $_GET["id"]) . "\']");
+                    }',
+            ],
+            'valueWithoutQuotesInAnXpathStringLiteral' => [
+                'code' => '<?php
+                    function find(DOMXPath $xpath): void {
+                        $id = trim((string) $_GET["id"]);
+                        if (!preg_match("#^[a-zA-Z0-9 _.%~\-]+$#", $id)) {
+                            return;
+                        }
+                        $xpath->query("//user[@id=\'" . $id . "\']");
+                        $xpath->query(\'//user[@id="\' . $id . \'"]\');
+                    }',
+            ],
+            'valueWithoutQuotesInAnXpathStringLiteralFollowedByAnotherQuote' => [
+                'code' => '<?php
+                    function find(DOMXPath $xpath): void {
+                        $id = trim((string) $_GET["id"]);
+                        if (!preg_match("#^[a-zA-Z0-9 _.%~\-]+$#", $id)) {
+                            return;
+                        }
+                        $xpath->query("//user[@id=\'" . $id . "\"]");
+                    }',
+            ],
             'deprecatedPromotedPropertyIsNotUsedByItsOwnDeclaration' => [
                 'code' => '<?php
                     final class A {
@@ -9055,6 +9090,58 @@ final class TaintTest extends TestCase
                         echo (string) $row["comment"];
                     }',
                 'error_message' => 'TaintedHtml',
+            ],
+            'valueAssignedWithAQuoteOfItsOwnInAnXpathStringLiteral' => [
+                'code' => '<?php
+                    function find(DOMXPath $xpath): void {
+                        $id = trim((string) $_GET["id"]);
+                        if (!preg_match("#^[a-zA-Z0-9 ]+$#", $id)) {
+                            return;
+                        }
+                        $condition = "\' or @b=" . $id;
+                        $xpath->query("//user[@a=\'" . $condition . "\']");
+                    }',
+                'error_message' => 'TaintedXpath',
+            ],
+            'valueAfterAClosedXpathStringLiteral' => [
+                'code' => '<?php
+                    function find(DOMXPath $xpath): void {
+                        $id = trim((string) $_GET["id"]);
+                        if (!preg_match("#^[a-zA-Z0-9 ]+$#", $id)) {
+                            return;
+                        }
+                        $xpath->query("//user[@a=\'x\'" . $id . "\']");
+                    }',
+                'error_message' => 'TaintedXpath',
+            ],
+            'valueBuiltWithQuotesOfItsOwnInAnXpathStringLiteral' => [
+                'code' => '<?php
+                    function find(DOMXPath $xpath): void {
+                        $id = trim((string) $_GET["id"]);
+                        if (!preg_match("#^[a-zA-Z0-9 ]+$#", $id)) {
+                            return;
+                        }
+                        $xpath->query("//user[@a=\'" . ("\' or @b=" . $id) . "\']");
+                    }',
+                'error_message' => 'TaintedXpath',
+            ],
+            'valueWithSpacesOutsideAnXpathStringLiteral' => [
+                'code' => '<?php
+                    function find(DOMXPath $xpath): void {
+                        $id = trim((string) $_GET["id"]);
+                        if (!preg_match("#^[a-zA-Z0-9 ]+$#", $id)) {
+                            return;
+                        }
+                        $xpath->query("//user[@id=" . $id . "]");
+                    }',
+                'error_message' => 'TaintedXpath',
+            ],
+            'valueWithQuotesInAnXpathStringLiteral' => [
+                'code' => '<?php
+                    function find(DOMXPath $xpath): void {
+                        $xpath->query("//user[@id=\'" . (string) $_GET["id"] . "\']");
+                    }',
+                'error_message' => 'TaintedXpath',
             ],
             'intOrStringCastToAStringFoundInAListWithANumberKeepsItsTaints' => [
                 'code' => '<?php

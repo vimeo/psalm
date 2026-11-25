@@ -1581,7 +1581,8 @@ final class TaintFlowGraph extends DataFlowGraph
         $max = $codebase->taint_count;
         for ($x = 0; $x < $max; $x++) {
             $t = 1 << $x;
-            if (!($taints & $t)) {
+            // both are reported as a tainted XPath query
+            if (!($taints & $t) || ($t === TaintKind::INPUT_XPATH_LITERAL && ($taints & TaintKind::INPUT_XPATH))) {
                 continue;
             }
             $issue = match ($t) {
@@ -1717,7 +1718,7 @@ final class TaintFlowGraph extends DataFlowGraph
                     $issue_trace,
                     $path,
                 ),
-                TaintKind::INPUT_XPATH => new TaintedXpath(
+                TaintKind::INPUT_XPATH, TaintKind::INPUT_XPATH_LITERAL => new TaintedXpath(
                     'Detected tainted xpath query',
                     $issue_location,
                     $issue_trace,
