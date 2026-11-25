@@ -2730,6 +2730,13 @@ final class ConfigTest extends DeferredAnalyzerTestCase
             'mysqli_execute_query' => ['mysqli $db', 'mysqli_execute_query($db, $input)', 'TaintedSql'],
             'mysqli_result::fetch_object' => ['mysqli_result $r', '$r->fetch_object($input)', 'TaintedCallable'],
             'mysqli_fetch_object' => ['mysqli_result $r', 'mysqli_fetch_object($r, $input)', 'TaintedCallable'],
+            // a value in a string literal of the query keeps the taint of what can end it
+            'DOMXPath::query in a string literal'
+                => ['DOMXPath $x', '$x->query("//u[@id=\'" . $input . "\']")', 'TaintedXpath'],
+            'DOMXPath::evaluate in a string literal'
+                => ['DOMXPath $x', '$x->evaluate("//u[@id=\'" . $input . "\']")', 'TaintedXpath'],
+            'SimpleXMLElement::xpath in a string literal'
+                => ['SimpleXMLElement $x', '$x->xpath("//u[@id=\'" . $input . "\']")', 'TaintedXpath'],
             'SoapClient::__setLocation' => ['SoapClient $c', '$c->__setLocation($input)', 'TaintedSSRF'],
             'MongoDB\\Driver\\Query::__construct'
                 => ['', 'new MongoDB\\Driver\\Query(json_decode($input, true))', 'TaintedNosql'],
