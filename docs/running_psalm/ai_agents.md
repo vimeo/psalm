@@ -2,8 +2,8 @@
 
 Psalm ships an [MCP](https://modelcontextprotocol.io) server, `psalm-mcp`, and an
 [agent skill](https://agentskills.io) that teaches agents to run Psalm and fix what it reports. The plugins below set
-both up, together with the [language server](language_server.md). They run the Psalm of the project, so install it
-first:
+both up, together with the [language server](language_server.md). They run the Psalm of the project, which loads the
+project's autoloader and plugins as `vendor/bin/psalm` does, so install it first:
 
 ```bash
 composer require --dev vimeo/psalm

@@ -22,6 +22,7 @@ use function mkdir;
 use function proc_close;
 use function proc_open;
 use function proc_terminate;
+use function rmdir;
 use function str_replace;
 use function stream_select;
 use function symlink;
@@ -256,11 +257,40 @@ final class PsalmMcpEndToEndTest extends PsalmEndToEndTestCase
             $this->markTestSkipped('No symlinks here');
         }
 
+        // from a subdirectory of the repository
+        @mkdir(self::$tmpDir . '/.git');
+
         try {
             $this->startServer([__DIR__ . '/../../skills/psalm/scripts/server.php', 'mcp', self::$tmpDir . '/src']);
 
             $output = $this->callTool('psalm_check', ['paths' => ['src/FileWithErrors.php']]);
             $this->assertStringContainsString(self::native('InvalidReturnType - src/FileWithErrors.php:5:'), $output);
+        } finally {
+            unlink($package);
+            @rmdir(self::$tmpDir . '/.git');
+        }
+    }
+
+    public function testTheLauncherOfTheSkillDoesNotRunThePsalmOfADirectoryAboveTheRepository(): void
+    {
+        $this->initPsalm();
+        $package = self::$tmpDir . '/vendor/vimeo/psalm';
+        @mkdir(dirname($package), 0777, true);
+        if (!@symlink(dirname(__DIR__, 2), $package)) {
+            $this->markTestSkipped('No symlinks here');
+        }
+
+        $repository = self::$tmpDir . '/src/repository';
+        @mkdir($repository . '/.git', 0777, true);
+
+        try {
+            $this->startServer([__DIR__ . '/../../skills/psalm/scripts/server.php', 'mcp', $repository], [
+                'PATH' => '',
+            ]);
+
+            $result = $this->request('tools/call', ['name' => 'psalm_check', 'arguments' => (object) []]);
+            $this->assertTrue(self::at($result, 'isError'));
+            $this->assertStringContainsString('Psalm is not installed in', self::string($result, 'content', 0, 'text'));
         } finally {
             unlink($package);
         }

@@ -13,7 +13,8 @@ Arguments after PROJECT_DIR are passed on to the server.
 TXT;
 
 /**
- * The project root: the closest directory above the start that has a composer.json or a psalm.xml
+ * The project root: the closest directory from the start up that has a composer.json or a psalm.xml. It stays in the
+ * Git repository of the start, so that the Psalm of a directory above the project never runs.
  */
 function findProjectRoot(string $start): string
 {
@@ -25,12 +26,23 @@ function findProjectRoot(string $start): string
             }
         }
 
-        if (dirname($dir) === $dir) {
+        if (file_exists($dir . '/.git') || dirname($dir) === $dir || !isInGitRepository(dirname($dir))) {
             return $start;
         }
 
         $dir = dirname($dir);
     }
+}
+
+function isInGitRepository(string $dir): bool
+{
+    for (; dirname($dir) !== $dir; $dir = dirname($dir)) {
+        if (file_exists($dir . '/.git')) {
+            return true;
+        }
+    }
+
+    return file_exists($dir . '/.git');
 }
 
 /**
@@ -46,7 +58,12 @@ function getVendorDirs(string $root): array
         $vendor_dir = $composer['config']['vendor-dir'];
     }
 
-    $dirs = [$root . '/' . $vendor_dir];
+    // only inside the project
+    $project_vendor_dir = realpath($root . '/' . $vendor_dir);
+    $dirs = $project_vendor_dir !== false
+        && str_starts_with(strtr($project_vendor_dir, '\\', '/') . '/', strtr($root, '\\', '/') . '/')
+        ? [$project_vendor_dir]
+        : [];
     foreach ([...(glob($root . '/vendor-bin/*/vendor') ?: []), ...(glob($root . '/tools/*/vendor') ?: [])] as $dir) {
         $dirs[] = $dir;
     }
