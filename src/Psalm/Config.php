@@ -3179,8 +3179,8 @@ final class Config
             $this->internal_stubs[] = $stubsDir . 'Php86Functions.phpstub';
         }
 
-        // also the stubs of the extensions composer.json doesn't require, if the scanned code uses one of their symbols:
-        // MissingExtensionRequirement reports that use
+        // also the stubs of the extensions composer.json doesn't require, if the scanned code uses one of their
+        // symbols: MissingExtensionRequirement reports that use
         $ext_stubs_dir = $dir_lvl_2 . DIRECTORY_SEPARATOR . "stubs" . DIRECTORY_SEPARATOR . "extensions";
         $referenced_symbols = null;
         $extension_stubs = [];
