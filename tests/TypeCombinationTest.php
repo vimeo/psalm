@@ -99,7 +99,7 @@ final class TypeCombinationTest extends TestCase
                 ])->getId(),
             );
         } finally {
-            ini_set('precision', (string) $precision);
+            ini_set('precision', $precision);
             ini_set('serialize_precision', (string) $serialize_precision);
         }
     }
