@@ -225,9 +225,7 @@
       <code><![CDATA[$context->self]]></code>
       <code><![CDATA[$parent_storage->template_types]]></code>
       <code><![CDATA[$resolved_name]]></code>
-      <code><![CDATA[$storage->template_covariants]]></code>
       <code><![CDATA[$storage->template_extended_params]]></code>
-      <code><![CDATA[$storage->template_types]]></code>
       <code><![CDATA[$storage->template_types]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
@@ -453,7 +451,6 @@
       <code><![CDATA[$switch_scope->possibly_redefined_vars]]></code>
       <code><![CDATA[$switch_scope->possibly_redefined_vars]]></code>
       <code><![CDATA[$switch_scope->redefined_vars]]></code>
-      <code><![CDATA[$switch_var_id]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Block/SwitchCaseAnalyzer.php">
@@ -569,10 +566,6 @@
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/Assignment/ArrayAssignmentAnalyzer.php">
-    <ImplicitToStringCast>
-      <code><![CDATA[$child_stmt_dim_type]]></code>
-      <code><![CDATA[$child_stmt_dim_type]]></code>
-    </ImplicitToStringCast>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[!$parent_var_id]]></code>
       <code><![CDATA[$object_id]]></code>
@@ -858,7 +851,6 @@
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[$class_template_params]]></code>
       <code><![CDATA[$context->calling_method_id]]></code>
-      <code><![CDATA[$lhs_var_id]]></code>
       <code><![CDATA[$method_storage->template_types]]></code>
       <code><![CDATA[$method_storage->template_types]]></code>
     </RiskyTruthyFalsyComparison>
@@ -1649,18 +1641,6 @@
                         )]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
-  <file src="src/Psalm/Internal/PhpVisitor/Reflector/ClassLikeDocblockParser.php">
-    <ImplicitToStringCast>
-      <code><![CDATA[$e]]></code>
-    </ImplicitToStringCast>
-    <PossiblyUndefinedIntArrayOffset>
-      <code><![CDATA[$method_tree->children[0]]]></code>
-      <code><![CDATA[$method_tree->children[1]]]></code>
-    </PossiblyUndefinedIntArrayOffset>
-    <RiskyTruthyFalsyComparison>
-      <code><![CDATA[!strpos($doc_line_parts[1], '(')]]></code>
-    </RiskyTruthyFalsyComparison>
-  </file>
   <file src="src/Psalm/Internal/PhpVisitor/Reflector/ClassLikeNodeScanner.php">
     <RedundantCondition>
       <code><![CDATA[$fq_classlike_name !== ""]]></code>
@@ -1741,6 +1721,18 @@
       <code><![CDATA[$stmt->stmts]]></code>
       <code><![CDATA[$this->aliases->namespace]]></code>
       <code><![CDATA[$this->aliases->namespace]]></code>
+    </RiskyTruthyFalsyComparison>
+  </file>
+  <file src="src/Psalm/Internal/PhpVisitor/Reflector/PseudoMethodParser.php">
+    <ImplicitToStringCast>
+      <code><![CDATA[$e]]></code>
+    </ImplicitToStringCast>
+    <PossiblyUndefinedIntArrayOffset>
+      <code><![CDATA[$method_tree->children[0]]]></code>
+      <code><![CDATA[$method_tree->children[1]]]></code>
+    </PossiblyUndefinedIntArrayOffset>
+    <RiskyTruthyFalsyComparison>
+      <code><![CDATA[!strpos($doc_line_parts[1], '(')]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/PhpVisitor/Reflector/TypeHintResolver.php">
@@ -1944,9 +1936,6 @@
     <ImpureStaticProperty>
       <code><![CDATA[self::$handlers]]></code>
     </ImpureStaticProperty>
-    <RiskyTruthyFalsyComparison>
-      <code><![CDATA[$result]]></code>
-    </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/Provider/FunctionReturnTypeProvider.php">
     <ImpureStaticProperty>
@@ -2073,7 +2062,6 @@
   <file src="src/Psalm/Internal/Scanner/DocblockParser.php">
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[$first_line_padding]]></code>
-      <code><![CDATA[empty($special[$type])]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/Scanner/ParsedDocblock.php">
@@ -2866,6 +2854,7 @@
                 $this,
                 $container_type_params_covariant,
                 $input_star_offsets,
+                $container_type_params_contravariant,
             )]]></code>
       <code><![CDATA[TemplateStandinTypeReplacer::replace(
                 $type_param,
@@ -2877,8 +2866,9 @@
                 $calling_class,
                 $calling_function,
                 $replace,
-                $add_lower_bound,
-                !($container_type_params_covariant[$offset] ?? true)
+                $contravariant ? !$add_lower_bound : $add_lower_bound,
+                !$contravariant
+                    && !($container_type_params_covariant[$offset] ?? true)
                     && $this instanceof TGenericObject
                     ? $this->value
                     : null,
@@ -2904,12 +2894,6 @@
   </file>
   <file src="src/Psalm/Type/Atomic/TCallableObject.php">
     <ImmutableDependency>
-      <code><![CDATA[#[Override]]]></code>
-    </ImmutableDependency>
-  </file>
-  <file src="src/Psalm/Type/Atomic/TCallableString.php">
-    <ImmutableDependency>
-      <code><![CDATA[#[Override]]]></code>
       <code><![CDATA[#[Override]]]></code>
     </ImmutableDependency>
   </file>
@@ -3156,10 +3140,6 @@
     <ImmutableDependency>
       <code><![CDATA[#[Override]]]></code>
     </ImmutableDependency>
-    <InvalidOperand>
-      <code><![CDATA[$this->value]]></code>
-      <code><![CDATA[$this->value]]></code>
-    </InvalidOperand>
   </file>
   <file src="src/Psalm/Type/Atomic/TLiteralInt.php">
     <ImmutableDependency>

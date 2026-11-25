@@ -67,6 +67,12 @@ final class TValueOf extends Atomic
         return 'value-of<' . $this->type . '>';
     }
 
+    #[Override]
+    public function getId(bool $exact = true): string
+    {
+        return 'value-of<' . $this->type->getId() . '>';
+    }
+
     /**
      * @param array<lowercase-string, string> $aliased_classes
      * @psalm-pure

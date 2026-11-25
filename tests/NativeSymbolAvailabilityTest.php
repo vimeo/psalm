@@ -1193,5 +1193,22 @@ final class NativeSymbolAvailabilityTest extends TestCase
             'error_levels' => [],
             'php_version' => '8.6',
         ];
+
+        yield 'dateExceptionBelowItsVersion' => [
+            'code' => '<?php
+                function f(string $s): ?DateInterval {
+                    try {
+                        return DateInterval::createFromDateString($s) ?: null;
+                    } catch (DateMalformedIntervalStringException $e) {
+                        return null;
+                    }
+                }
+            ',
+            'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:30 -'
+                . ' DateMalformedIntervalStringException is not defined for the analysed PHP version 8.2'
+                . ' (it was introduced in PHP 8.3',
+            'error_levels' => [],
+            'php_version' => '8.2',
+        ];
     }
 }

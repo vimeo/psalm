@@ -34,6 +34,15 @@ final class KeyedArrayComparator
         bool $allow_interface_equality,
         ?TypeComparisonResult $atomic_comparison_result,
     ): bool {
+        if ($container_type_part instanceof TKeyedArray
+            && $container_type_part->is_callable
+            && $input_type_part instanceof TKeyedArray
+            && !$input_type_part->is_callable
+            && CallableTypeComparator::isLiteralPairOfNoMethod($codebase, $input_type_part)
+        ) {
+            return false;
+        }
+
         $container_sealed = $container_type_part instanceof TKeyedArray
             && $container_type_part->fallback_params === null;
 
@@ -62,6 +71,14 @@ final class KeyedArrayComparator
             if (!isset($input_properties[$key])) {
                 if (!$container_property_type->possibly_undefined) {
                     $all_types_contain = false;
+
+                    // a sealed array never has a key it doesn't declare, so no value of the input fits
+                    if ($atomic_comparison_result
+                        && $input_type_part instanceof TKeyedArray
+                        && $input_type_part->fallback_params === null
+                    ) {
+                        $atomic_comparison_result->mergeFailedPart(new TypeComparisonResult());
+                    }
                 }
 
                 continue;

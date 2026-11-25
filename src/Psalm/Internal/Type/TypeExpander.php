@@ -18,12 +18,14 @@ use Psalm\Storage\Capabilities;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TConditional;
 use Psalm\Type\Atomic\TEnumCase;
+use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TGlobalConstant;
 use Psalm\Type\Atomic\TInt;
@@ -39,8 +41,10 @@ use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TPropertiesOf;
+use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateValueOf;
@@ -603,11 +607,28 @@ final class TypeExpander
             $potential_ints = [];
 
             foreach ($new_value_types as $new_value_type) {
+                // a wildcard like `self::FLAG_*` may also match constants that are not flags
+                if ($new_value_type instanceof TString
+                    || $new_value_type instanceof TFloat
+                    || $new_value_type instanceof TBool
+                    || $new_value_type instanceof TNull
+                    || $new_value_type instanceof TArray
+                    || $new_value_type instanceof TKeyedArray
+                    || $new_value_type instanceof TNamedObject
+                    || $new_value_type instanceof TObject
+                ) {
+                    continue;
+                }
+
                 if (!$new_value_type instanceof TLiteralInt) {
                     return [new TInt()];
                 }
 
                 $potential_ints[] = $new_value_type->value;
+            }
+
+            if ($potential_ints === []) {
+                return [new TInt()];
             }
 
             return TypeParser::getComputedIntsFromMask($potential_ints);
@@ -1055,6 +1076,16 @@ final class TypeExpander
                 $static_class_type,
                 false,
             );
+        } elseif ($return_type->is_static
+            && is_string($static_class_type)
+            && $final
+            && $self_class !== null
+            && $codebase->classImplements($self_class, $return_type->value)
+        ) {
+            // the interface stays next to the class, it holds the type arguments of `I<int>&static`
+            $return_type = $return_type
+                ->setIsStatic(false)
+                ->addIntersectionType(new TNamedObject($static_class_type));
         } elseif ($self_class && $return_type_lc === 'self') {
             $return_type = $return_type->setValue($self_class);
         } elseif ($parent_class && $return_type_lc === 'parent') {
@@ -1262,7 +1293,7 @@ final class TypeExpander
 
             if ($assertion
                 && $return_type->subject_type === null
-                && $return_type->param_name === (string) $return_type->if_type
+                && self::isTheConditionalTemplate($return_type, $return_type->if_type)
             ) {
                 $if_conditional_return_type = TypeCombiner::combine(
                     $if_conditional_return_types,
@@ -1283,7 +1314,7 @@ final class TypeExpander
 
             if ($assertion
                 && $return_type->subject_type === null
-                && $return_type->param_name === (string) $return_type->else_type
+                && self::isTheConditionalTemplate($return_type, $return_type->else_type)
             ) {
                 $else_conditional_return_type = TypeCombiner::combine(
                     $else_conditional_return_types,
@@ -1380,6 +1411,24 @@ final class TypeExpander
             ),
         );
         return [$return_type];
+    }
+
+    /**
+     * Whether a branch of the conditional is its template itself, as `T` in `(T is list ? T : null)`
+     *
+     * @psalm-pure
+     */
+    private static function isTheConditionalTemplate(TConditional $conditional, Union $branch): bool
+    {
+        if (!$branch->isSingle()) {
+            return false;
+        }
+
+        $atomic = $branch->getSingleAtomic();
+
+        return $atomic instanceof TTemplateParam
+            && $atomic->param_name === $conditional->param_name
+            && $atomic->defining_class === $conditional->defining_class;
     }
 
     /**

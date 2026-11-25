@@ -45,6 +45,13 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
      */
     public array $param_lookup = [];
 
+    /**
+     * The signatures of the `@psalm-overload` tags, in the order of the docblock
+     *
+     * @var list<MethodStorage>
+     */
+    public array $overloads = [];
+
     public ?Union $return_type = null;
 
     public ?CodeLocation $return_type_location = null;
@@ -403,6 +410,7 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
      *     from?: int,
      *     result?: 'result'|'rows'|'value'|'column'|'any_value'|'any_column'|'value_or_row'|'none',
      *     optional_first?: int,
+     *     readonly?: true,
      * }>
      */
     public array $database_calls = [];
@@ -488,6 +496,50 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
     public function isExternalMutationFree(): bool
     {
         return Capabilities::allowsAnyOf(Capabilities::EXTERNAL_MUTATION_FREE, $this->capabilities);
+    }
+
+    /**
+     * This function-like called as one of its overloads: with the parameters and the return type of the overload
+     *
+     * @psalm-mutation-free
+     */
+    public function withOverload(self $overload): static
+    {
+        $variant = clone $this;
+        $variant->params = $overload->params;
+
+        $last_param = $this->params === [] ? null : $this->params[count($this->params) - 1];
+        $real_variadic = $last_param !== null && $last_param->is_variadic ? $last_param : null;
+
+        // what the real parameter at the same position declares for the arguments, not their types
+        foreach ($variant->params as $position => $overload_param) {
+            $real_param = $this->params[$position] ?? $real_variadic;
+
+            if ($real_param === null) {
+                continue;
+            }
+
+            $overload_param = clone $overload_param;
+            $overload_param->sinks |= $real_param->sinks;
+            $overload_param->value_sinks |= $real_param->value_sinks;
+            $overload_param->assert_untainted = $overload_param->assert_untainted || $real_param->assert_untainted;
+            $overload_param->by_ref = $real_param->by_ref;
+            $overload_param->out_type ??= $real_param->by_ref ? $real_param->out_type : null;
+            $overload_param->closure_this_type ??= $real_param->closure_this_type;
+
+            $variant->params[$position] = $overload_param;
+        }
+
+        $variant->param_lookup = $overload->param_lookup;
+        $variant->required_param_count = $overload->required_param_count;
+        $variant->return_type = $overload->return_type ?? $this->return_type;
+        $variant->return_type_location = $overload->return_type === null
+            ? $this->return_type_location
+            : $overload->return_type_location;
+        $variant->template_types = $overload->template_types ?? $this->template_types;
+        $variant->overloads = [];
+
+        return $variant;
     }
 
     /**

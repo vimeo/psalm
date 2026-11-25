@@ -415,7 +415,8 @@ Such a constructor needs `write-this-props` without being annotated (nothing at 
 neither `new` nor its class needs an annotation for the waiver. Any other statement makes it non-trivial:
 a call (`parent::__construct()` included), a by-reference parameter, a default value that creates an
 object or calls something, a property with hooks or one the class doesn't declare before the
-constructor, or `$this` stored anywhere. A non-trivial constructor without an annotation may do
+constructor, or `$this` stored anywhere. A constructor declared in a stub is never trivial: its body is
+not what runs. A non-trivial constructor without an annotation may do
 anything, as any unannotated method. So may a trivial constructor run for a class that redeclares one
 of the properties it assigns with a hook (PHP 8.4), or by `new static()` / `new $class()` where the
 class may be extended: the hook may do anything.
@@ -553,8 +554,11 @@ and so does writing a property of what the chain returns. `@return static` is no
 method may return another instance of the class.
 
 `@return $this` is a promise, checked like a return type: the method and every override of it may
-only return `$this`, or a call on it of another method returning its receiver; any other return is
-an [InvalidReturnStatement](../running_psalm/issues/InvalidReturnStatement.md).
+only return `$this`, a call on it of another method returning its receiver, or a call giving back
+its `$this` argument (the callee returns a template of its own that only arguments that are `$this`
+bind); any other return is an [InvalidReturnStatement](../running_psalm/issues/InvalidReturnStatement.md).
+Psalm trusts the callee's template signature here: a templated function returning a clone of its
+argument is not caught.
 
 ```php
 <?php
@@ -584,6 +588,32 @@ abstract class Query {
     /** @psalm-capabilities read-props|write-this-props */
     public function copyWhere(string $condition): static {
         return $this->copy()->where($condition); // ImpureMethodCall: The context is read-props|write-this-props but method Query::where requires write-props
+    }
+}
+```
+
+```php
+<?php
+/**
+ * @template T
+ * @param T $value
+ * @param callable(T): mixed $callback
+ * @return T
+ */
+function tap($value, callable $callback) {
+    $callback($value);
+    return $value;
+}
+
+final class Config {
+    /** @return $this */
+    public function configure(): static {
+        return tap($this, function (self $_config): void {}); // no issue
+    }
+
+    /** @return $this */
+    public function copy(): static {
+        return tap(clone $this, function (self $_config): void {}); // InvalidReturnStatement
     }
 }
 ```

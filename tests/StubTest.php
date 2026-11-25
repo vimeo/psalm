@@ -16,7 +16,9 @@ use Psalm\Exception\InvalidClasslikeOverrideException;
 use Psalm\Exception\InvalidMethodOverrideException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\IncludeCollector;
+use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Provider\Providers;
+use Psalm\Storage\Capabilities;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 
 use function array_values;
@@ -383,6 +385,43 @@ final class StubTest extends DeferredAnalyzerTestCase
         } finally {
             unlink($stub_path);
         }
+    }
+
+    public function testUnannotatedStubbedConstructorWithAnEmptyBodyIsImpure(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('ImpureMethodCall');
+
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+
+                    <stubs>
+                        <file name="tests/fixtures/stubs/empty_constructor.phpstub" />
+                    </stubs>
+                </psalm>',
+            ),
+        );
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @psalm-pure */
+                function make(): StubbedWithEmptyConstructor {
+                    return new StubbedWithEmptyConstructor(1);
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
     }
 
     public function testStubFileClass(): void
@@ -2727,6 +2766,41 @@ final class StubTest extends DeferredAnalyzerTestCase
     }
 
     /**
+     * A stub that extends a class from an already scanned real file forces its rescan during stub registration.
+     */
+    public function testRealFileRescannedDuringStubRegistrationKeepsItsTrivialConstructor(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm errorLevel="1">
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+
+                    <stubs>
+                        <file name="tests/fixtures/stubs/stub_extending_trivial_constructor.phpstub" />
+                    </stubs>
+                </psalm>',
+            ),
+        );
+
+        $codebase = $this->project_analyzer->getCodebase();
+        $codebase->scanner->addFileToShallowScan(
+            dirname(__DIR__) . '/tests/fixtures/stub_dependency/TrivialConstructor.php',
+        );
+        $codebase->scanFiles();
+        $codebase->config->visitStubFiles($codebase);
+
+        $constructor = $codebase->methods->getStorage(
+            new MethodIdentifier('StubDependency\TrivialConstructor', '__construct'),
+        );
+        $this->assertFalse($constructor->stubbed);
+        $this->assertSame(Capabilities::WRITE_THIS_PROPS, $constructor->capabilities);
+    }
+
+    /**
      * @return iterable<string, array{string}>
      * @psalm-pure
      */
@@ -2758,6 +2832,39 @@ final class StubTest extends DeferredAnalyzerTestCase
                     return mb_strtolower(...);
                 }',
         );
+    }
+
+    public function testDateIntervalConstructorStillDeclaresItsThrows(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                    checkForThrowsDocblock="true"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                </psalm>',
+            ),
+        );
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                function i(): DateInterval {
+                    return new DateInterval("P1D");
+                }',
+        );
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('MissingThrowsDocblock');
+
+        $this->analyzeFile($file_path, new Context());
     }
 
     private function analyzeWithThrowingBuiltinFunctionStubs(string $code): void

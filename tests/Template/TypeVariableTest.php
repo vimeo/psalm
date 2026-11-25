@@ -443,6 +443,138 @@ final class TypeVariableTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'unboundConstructorTemplateHeldBySiblingConstraints' => [
+                'code' => '<?php
+                    /**
+                     * @template TItem of int
+                     * @template TList as list<TItem>
+                     */
+                    final class Lists {
+                        public function __construct() {}
+
+                        /** @param TList $list */
+                        public function add(array $list): void {}
+                    }
+
+                    /**
+                     * @template T1 of int
+                     * @template T2 of list<T1>
+                     * @template T3 of list<T2>
+                     */
+                    final class Chain {
+                        public function __construct() {}
+
+                        /** @param T3 $lists */
+                        public function add(array $lists): void {}
+                    }
+
+                    /** @param Iterator<int, SplFileInfo> $files */
+                    function f(Iterator $files, RecursiveDirectoryIterator $dir): void {
+                        $lists = new Lists();
+                        $lists->add([1, 2]);
+                        $lists->add([3]);
+
+                        $chain = new Chain();
+                        $chain->add([[1]]);
+
+                        $all = new AppendIterator();
+                        $all->append($files);
+                        $all->append(new RecursiveIteratorIterator($dir));
+                    }',
+            ],
+            'unboundConstructorTemplateHeldByInvariantSiblingConstraint' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /** @param T $value */
+                        public function __construct(public mixed $value) {}
+                    }
+
+                    /**
+                     * @template T
+                     * @template TBox of Box<T>
+                     */
+                    final class Shelf {
+                        public function __construct() {}
+
+                        /** @param TBox $box */
+                        public function put(Box $box): void {}
+                    }
+
+                    /**
+                     * @param Box<int> $a
+                     * @param Box<int> $b
+                     */
+                    function f(Box $a, Box $b): void {
+                        $shelf = new Shelf();
+                        $shelf->put($a);
+                        $shelf->put($b);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'unboundConstructorTemplateHeldByAWideningBoundSibling' => [
+                'code' => '<?php
+                    /**
+                     * @template TValue
+                     * @template TIterator of Iterator<int, TValue>
+                     */
+                    final class Holder {
+                        /** @param TValue $value */
+                        public function __construct($value) {}
+
+                        /** @param TIterator $iterator */
+                        public function put(Iterator $iterator): void {}
+                    }
+
+                    /** @param Iterator<int, int> $ints */
+                    function f(Iterator $ints): void {
+                        $holder = new Holder("x");
+                        $holder->put($ints);
+                    }',
+            ],
+            'unboundConstructorTemplateViolatingSiblingConstraintIsSuppressed' => [
+                'code' => '<?php
+                    /**
+                     * @template TItem of int
+                     * @template TList as list<TItem>
+                     */
+                    final class Lists {
+                        public function __construct() {}
+
+                        /** @param TList $list */
+                        public function add(array $list): void {}
+                    }
+
+                    function f(): void {
+                        $lists = new Lists();
+                        /** @psalm-suppress IncompatibleTypeParameters */
+                        $lists->add(["a"]);
+                    }',
+            ],
+            'falseArgumentRecordsABoundOnATypeVariable' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     */
+                    final class A {
+                        /**
+                         * @param T $value
+                         */
+                        public function __construct($value) {}
+
+                        /**
+                         * @param T $value
+                         */
+                        public function takeValue($value): void {}
+                    }
+
+                    /** @var bool */
+                    $value = true;
+                    $obj = new A($value);
+                    $obj->takeValue(false);',
+            ],
             'magicPropertyOfObjectsBuiltEmptyOnEachBranch' => [
                 'code' => '<?php
                     /**
@@ -865,7 +997,7 @@ final class TypeVariableTest extends TestCase
                      * @template TContext as array
                      */
                     class a {
-                        
+
                         /**
                          * @param (callable(): TContext)|null $row_context
                          */
@@ -873,7 +1005,7 @@ final class TypeVariableTest extends TestCase
                             protected $row_context = null,
                         ) {
                         }
-                        
+
                         /**
                          * @psalm-type TReturn = string|null|Stringable|int|float|list<Stringable|string>
                          *
@@ -1437,13 +1569,14 @@ final class TypeVariableTest extends TestCase
                         public function all(): array { return []; }
                     }
 
-                    function dump(): void {
-                        $map = new Map(["a" => 1.5]);
+                    /** @param array<string, float> $data */
+                    function dump(array $data): void {
+                        $map = new Map($data);
                         foreach ($map->all() as $k => $v) {
-                            echo (string) $k;
+                            echo (int) $k;
                             echo "key: {$k}";
                             echo (int) $v;
-                            echo (float) $v;
+                            echo (string) $v;
                         }
                     }',
             ],
@@ -1560,6 +1693,113 @@ final class TypeVariableTest extends TestCase
                         $n = new NoCtor();
                         $n->add("a");
                         return $n;
+                    }',
+            ],
+            'constructionOfATemplateConstrainedThroughAGrandparentMember' => [
+                'code' => '<?php
+                    /** @template T */
+                    class GP {
+                        public function __construct() {}
+
+                        /** @param T $x */
+                        public function add($x): void {}
+                    }
+
+                    /**
+                     * @template U
+                     * @extends GP<U>
+                     */
+                    class P extends GP {}
+
+                    /**
+                     * @template W
+                     * @extends P<W>
+                     */
+                    final class GrandChild extends P {
+                        public function __construct() {}
+                    }
+
+                    /** @return GrandChild<int> */
+                    function grand(): GrandChild {
+                        return new GrandChild();
+                    }',
+            ],
+            'constructionOfATemplateConstrainedThroughADocblockInheritedParam' => [
+                'code' => '<?php
+                    /** @template T */
+                    abstract class AbsBase {
+                        /** @param T $x */
+                        abstract public function add($x): void;
+                    }
+
+                    /**
+                     * @template U
+                     * @extends AbsBase<U>
+                     */
+                    final class Impl extends AbsBase {
+                        public function add($x): void {}
+                    }
+
+                    /** @return Impl<int> */
+                    function impl(): Impl {
+                        return new Impl();
+                    }',
+            ],
+            'constructionOfATemplateConstrainedThroughInheritedMembers' => [
+                'code' => '<?php
+                    /** @template T */
+                    class Collection {
+                        public function __construct() {}
+
+                        /** @param T $x */
+                        public function add($x): void {}
+                    }
+
+                    /**
+                     * @template U
+                     * @extends Collection<U>
+                     */
+                    final class ChildCollection extends Collection {
+                        public function __construct() {}
+                    }
+
+                    /** @template T */
+                    trait Pushes {
+                        /** @param T $x */
+                        public function push($x): void {}
+                    }
+
+                    /** @template V */
+                    final class Stack {
+                        /** @use Pushes<V> */
+                        use Pushes;
+                    }
+
+                    /** @template T */
+                    class Slot {
+                        /** @var T|null */
+                        public $item = null;
+                    }
+
+                    /**
+                     * @template W
+                     * @extends Slot<W>
+                     */
+                    final class ChildSlot extends Slot {}
+
+                    /** @return ChildCollection<int> */
+                    function collection(): ChildCollection {
+                        return new ChildCollection();
+                    }
+
+                    /** @return Stack<int> */
+                    function stack(): Stack {
+                        return new Stack();
+                    }
+
+                    /** @return ChildSlot<int> */
+                    function slot(): ChildSlot {
+                        return new ChildSlot();
                     }',
             ],
             'constructionOfACovariantTemplateNothingCanConstrain' => [
@@ -1893,6 +2133,389 @@ final class TypeVariableTest extends TestCase
                 'assertions' => [
                     '$copy' => 'Foo',
                 ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'typeVariableResolvedByForeachOverAListOfIt' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Bag {
+                        /** @param iterable<T> $items */
+                        public function __construct(iterable $items) {}
+
+                        /** @param T $item */
+                        public function add(mixed $item): void {}
+
+                        /** @return list<T> */
+                        public function all(): array { return []; }
+                    }
+
+                    /** @var array<string, int> $counts */
+                    $counts = [];
+                    $names = new Bag(array_keys($counts));
+                    $name = null;
+                    $count = null;
+                    foreach ($names->all() as $name) {
+                        $count = $counts[$name];
+                    }',
+                'assertions' => [
+                    '$name===' => 'null|string',
+                    '$count===' => 'int|null',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'typeVariableResolvedByForeachKey' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /** @param T $value */
+                        public function __construct(private mixed $value) {}
+
+                        /** @param T $value */
+                        public function set(mixed $value): void { $this->value = $value; }
+
+                        /** @return array<T, int> */
+                        public function counts(): array { return []; }
+                    }
+
+                    /** @var string $s */
+                    $s = "a";
+                    $box = new Box($s);
+                    $key = null;
+                    foreach ($box->counts() as $key => $_) {
+                        $_ = [$key => true];
+                    }',
+                'assertions' => [
+                    '$key===' => 'null|string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'typeVariableResolvedByForeachOverAnIteratorAggregate' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @implements IteratorAggregate<int, T>
+                     */
+                    final class Set implements IteratorAggregate {
+                        /** @param iterable<T> $items */
+                        public function __construct(iterable $items) {}
+
+                        /** @param T $item */
+                        public function add(mixed $item): void {}
+
+                        public function getIterator(): Iterator { return new ArrayIterator([]); }
+                    }
+
+                    final class Foo { const C = 1; }
+
+                    $set = new Set([new Foo()]);
+                    $c = null;
+                    foreach ($set as $foo) {
+                        $c = $foo::C;
+                    }',
+                'assertions' => [
+                    '$c===' => '1|null',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'typeVariableResolvedByArrayFetchAndDestructuring' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /** @param T $value */
+                        public function __construct(private mixed $value) {}
+
+                        /** @param T $value */
+                        public function set(mixed $value): void { $this->value = $value; }
+
+                        /** @return non-empty-list<T> */
+                        public function all(): array { return [$this->value]; }
+
+                        /** @return array{0: T, k: T} */
+                        public function shape(): array { return [$this->value, "k" => $this->value]; }
+                    }
+
+                    final class Foo { const C = 1; }
+
+                    $box = new Box(new Foo());
+                    $item = $box->all()[0];
+                    $item_by_key = $box->shape()["k"];
+                    [$first] = $box->all();
+                    ["k" => $kth] = $box->shape();
+                    $fetched = $item::C;
+                    $fetched_by_key = $item_by_key::C;
+                    $destructured = $first::C;
+                    $destructured_by_key = $kth::C;',
+                'assertions' => [
+                    '$fetched===' => '1',
+                    '$fetched_by_key===' => '1',
+                    '$destructured===' => '1',
+                    '$destructured_by_key===' => '1',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'typeVariableOfANestedListResolvedByTheInnerForeach' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /** @param T $value */
+                        public function __construct(private mixed $value) {}
+
+                        /** @param T $value */
+                        public function set(mixed $value): void { $this->value = $value; }
+
+                        /** @return list<list<T>> */
+                        public function chunks(): array { return [[$this->value]]; }
+                    }
+
+                    final class Foo { const C = 1; }
+
+                    $box = new Box(new Foo());
+                    $c = null;
+                    foreach ($box->chunks() as $chunk) {
+                        foreach ($chunk as $foo) {
+                            $c = $foo::C;
+                        }
+                    }',
+                'assertions' => [
+                    '$c===' => '1|null',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'typeVariableResolvedByIssetCoalesceAndArrayKeyExists' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /** @param T $value */
+                        public function __construct(private mixed $value) {}
+
+                        /** @param T $value */
+                        public function set(mixed $value): void { $this->value = $value; }
+
+                        /** @return array<string, T> */
+                        public function byName(): array { return ["a" => $this->value]; }
+                    }
+
+                    final class Foo { const C = 1; }
+
+                    $foos = (new Box(new Foo()))->byName();
+                    $by_isset = null;
+                    $by_key_exists = null;
+                    if (isset($foos["a"])) {
+                        $foo = $foos["a"];
+                        $by_isset = $foo::C;
+                    }
+                    if (array_key_exists("b", $foos)) {
+                        $foo = $foos["b"];
+                        $by_key_exists = $foo::C;
+                    }
+                    $maybe_foo = $foos["c"] ?? null;',
+                'assertions' => [
+                    '$by_isset===' => '1|null',
+                    '$by_key_exists===' => '1|null',
+                    '$maybe_foo===' => 'Foo|null',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'typeVariableResolvedByDestructuringAnArrayAccess' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @implements ArrayAccess<int, T>
+                     */
+                    final class Vec implements ArrayAccess {
+                        /** @param list<T> $items */
+                        public function __construct(private array $items) {}
+
+                        /** @param T $item */
+                        public function push(mixed $item): void { $this->items[] = $item; }
+
+                        public function offsetExists(mixed $offset): bool { return isset($this->items[$offset]); }
+
+                        /** @return T */
+                        public function offsetGet(mixed $offset): mixed { return $this->items[$offset]; }
+
+                        public function offsetSet(mixed $offset, mixed $value): void {}
+
+                        public function offsetUnset(mixed $offset): void {}
+                    }
+
+                    final class Foo { const C = 1; }
+
+                    $vec = new Vec([new Foo()]);
+                    [$first] = $vec;
+                    $c = $first::C;',
+                'assertions' => [
+                    '$c===' => '1',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'itemOfAVariableAndAnArrayArmCombinesBoth' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /** @param T $value */
+                        public function __construct(private mixed $value) {}
+
+                        /** @param T $value */
+                        public function set(mixed $value): void { $this->value = $value; }
+
+                        /** @return non-empty-list<T|array<int, string>> */
+                        public function items(): array { return [$this->value]; }
+                    }
+
+                    /** @var array<int, int> $ints */
+                    $ints = [];
+                    $box = new Box($ints);
+                    $item = $box->items()[0];',
+                'assertions' => [
+                    '$item===' => 'array<int, int|string>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'templateGivenToAConstructionIsItsBound' => [
+                'code' => '<?php
+                    /**
+                     * @template Tk
+                     * @template Tv
+                     */
+                    final class Queue {
+                        /**
+                         * @param Tk $key
+                         * @param Tv $value
+                         */
+                        public function enqueue(mixed $key, mixed $value): void {}
+
+                        /** @return Tk */
+                        public function firstKey(): mixed { throw new Exception(); }
+
+                        /** @return null|array{0: Tk, 1: Tv} */
+                        public function consume(): ?array { return null; }
+                    }
+
+                    /**
+                     * @template Tk
+                     * @template Tv
+                     * @param iterable<Tk, Tv> $values
+                     * @return Tk
+                     */
+                    function firstKey(iterable $values): mixed {
+                        $queue = new Queue();
+                        foreach ($values as $key => $value) {
+                            $queue->enqueue($key, $value);
+                        }
+
+                        return $queue->firstKey();
+                    }
+
+                    /**
+                     * @template Tk
+                     * @template Tv
+                     * @param iterable<Tk, Tv> $values
+                     * @return Generator<Tk, Tv, null, void>
+                     */
+                    function inOrder(iterable $values): Generator {
+                        $queue = new Queue();
+                        if (is_array($values)) {
+                            foreach ($values as $key => $value) {
+                                $queue->enqueue($key, $value);
+                            }
+                        }
+
+                        while ($item = $queue->consume()) {
+                            yield $item[0] => $item[1];
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'templatePartlyTakenByAConcreteParamPartIsTheBound' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Bag {
+                        /** @param T|int $item */
+                        public function add(mixed $item): void {}
+
+                        /** @return list<T> */
+                        public function all(): array { return []; }
+                    }
+
+                    /**
+                     * @template T as int|string
+                     * @param T $value
+                     * @return list<T>
+                     */
+                    function f($value): array {
+                        $bag = new Bag();
+                        $bag->add($value);
+                        $items = [];
+                        foreach ($bag->all() as $item) {
+                            $items[] = $item;
+                        }
+
+                        return $items;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            // Known limit: an item read out of a construction is resolved to what its type variable stands for at
+            // the read (as what a call returns is), and keeps no link to the variable. What the read requires
+            // (`string` here) is no longer a bound of the variable, so the widening that follows isn't reported
+            'knownLimitItemReadBeforeAWideningDoesNotConstrainIt' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Bag {
+                        /** @param iterable<T> $items */
+                        public function __construct(iterable $items) {}
+
+                        /** @param T $item */
+                        public function add(mixed $item): void {}
+
+                        /** @return list<T> */
+                        public function all(): array { return []; }
+                    }
+
+                    function takesString(string $s): void {}
+
+                    /** @param list<string> $names */
+                    function f(array $names): void {
+                        $bag = new Bag($names);
+                        foreach ($bag->all() as $name) {
+                            takesString($name);
+                        }
+                        $bag->add(42);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            // Known limit: the item a foreach reads is resolved once, before the loop is analysed, so what the body
+            // adds to the iterated construction (`B` here) isn't seen by the reads of the item in later iterations
+            'knownLimitForeachItemDoesNotSeeWhatTheLoopAdds' => [
+                'code' => '<?php
+                    final class A { public function a(): void {} }
+                    final class B {}
+
+                    function f(): void {
+                        $it = new ArrayObject([new A()]);
+                        foreach ($it as $item) {
+                            if (count($it) === 1) {
+                                $it->append(new B());
+                            }
+                            $item->a();
+                        }
+                    }',
+                'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
@@ -2407,6 +3030,175 @@ final class TypeVariableTest extends TestCase
                     '$last===' => '1|2|null',
                 ],
             ],
+            'classStringOfAVariableResolvesThroughItsValues' => [
+                'code' => '<?php
+                    /** @template T as object */
+                    class Box {
+                        /** @param T $o */
+                        public function __construct(object $o) {}
+
+                        /** @param T $o */
+                        public function add(object $o): void {}
+
+                        /** @return class-string<T> */
+                        public function getName(): string { throw new Exception(); }
+                    }
+
+                    final class P {}
+                    final class Q {}
+
+                    $box = new Box(new P());
+                    $name = $box->getName();
+
+                    $widened = new Box(new P());
+                    $widened->add(new Q());
+                    $widened_name = $widened->getName();',
+                'assertions' => [
+                    '$box===' => 'Box<`_0:P>',
+                    '$name===' => 'class-string<P>',
+                    '$widened_name===' => 'class-string<P>|class-string<Q>',
+                ],
+            ],
+            'classStringOfAVariableResolvesInASubclass' => [
+                'code' => '<?php
+                    /** @template T as object */
+                    class Base {
+                        /** @param T $o */
+                        public function __construct(object $o) {}
+
+                        /** @return class-string<T> */
+                        public function getName(): string { throw new Exception(); }
+
+                        /** @param T $o */
+                        public function isInstance(object $o): bool { return true; }
+                    }
+
+                    /**
+                     * @template T as object
+                     * @extends Base<T>
+                     */
+                    final class Child extends Base {
+                        /** @param T $o */
+                        public function __construct(object $o) { parent::__construct($o); }
+                    }
+
+                    final class P {}
+
+                    $child = new Child(new P());
+                    $name = $child->getName();',
+                'assertions' => [
+                    '$child===' => 'Child<`_0:P>',
+                    '$name===' => 'class-string<P>',
+                ],
+            ],
+            'keyOfValueOfAndIndexedAccessOfAVariableResolveThroughItsValues' => [
+                'code' => '<?php
+                    /** @template T of array<string, int> */
+                    final class Row {
+                        /** @param T $a */
+                        public function __construct(array $a) {}
+
+                        /** @param T $a */
+                        public function add(array $a): void {}
+
+                        /** @return key-of<T> */
+                        public function key() { throw new Exception(); }
+
+                        /** @return value-of<T> */
+                        public function value() { throw new Exception(); }
+
+                        /**
+                         * @template K of key-of<T>
+                         * @param K $k
+                         * @return T[K]
+                         */
+                        public function at(string $k) { throw new Exception(); }
+                    }
+
+                    $row = new Row(["a" => 1]);
+                    $key = $row->key();
+                    $value = $row->value();
+                    $at = $row->at("a");
+
+                    $widened = new Row(["a" => 1]);
+                    $widened->add(["b" => 2]);
+                    $widened_key = $widened->key();',
+                'assertions' => [
+                    '$row===' => 'Row<`_0:array{a: 1}>',
+                    '$key===' => "'a'",
+                    '$value===' => '1',
+                    '$at===' => '1',
+                    '$widened_key===' => "'a'|'b'",
+                ],
+            ],
+            'propertiesOfAVariableResolveThroughItsValues' => [
+                'code' => '<?php
+                    /** @template T as object */
+                    final class Box {
+                        /** @param T $o */
+                        public function __construct(object $o) {}
+
+                        /** @param T $o */
+                        public function add(object $o): void {}
+
+                        /** @return properties-of<T> */
+                        public function props() { throw new Exception(); }
+                    }
+
+                    final class P {
+                        public int $x = 0;
+                    }
+
+                    $box = new Box(new P());
+                    $props = $box->props();',
+                'assertions' => [
+                    '$box===' => 'Box<`_0:P>',
+                    '$props===' => 'array{x: int}',
+                ],
+            ],
+            'assertionOfAParentNarrowsTheVariableOfASubclass' => [
+                'code' => '<?php
+                    /** @template T as object */
+                    class Base {
+                        /** @param T $o */
+                        public function __construct(object $o) {}
+
+                        /** @param T $o */
+                        public function isInstance(object $o): bool { return true; }
+
+                        /**
+                         * @template C of object
+                         * @param class-string<C> $c
+                         * @psalm-assert-if-true self<T&C> $this
+                         */
+                        public function isSubclassOf(string $c): bool { return true; }
+                    }
+
+                    /**
+                     * @template T as object
+                     * @extends Base<T>
+                     */
+                    final class Child extends Base {
+                        /** @param T $o */
+                        public function __construct(object $o) { parent::__construct($o); }
+                    }
+
+                    interface I {}
+                    class P {}
+
+                    $child = new Child(new P());
+                    if (!$child->isSubclassOf(I::class)) {
+                        throw new Exception();
+                    }
+
+                    $kept = new Child(new P());
+                    assert($kept instanceof Base);',
+                'assertions' => [
+                    '$child===' => 'Child<P&I>',
+                    '$kept===' => 'Child<`_1:P>',
+                ],
+                'ignored_issues' => ['RedundantCondition'],
+            ],
         ];
     }
 
@@ -2417,6 +3209,49 @@ final class TypeVariableTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'constructionOfATemplateOnlyATemplateOfAnInheritedMethodNamesLikeIt' => [
+                'code' => '<?php
+                    class Collection {
+                        public function __construct() {}
+
+                        /**
+                         * @template T
+                         * @param T $x
+                         */
+                        public function add($x): void {}
+                    }
+
+                    /** @template T */
+                    final class ChildCollection extends Collection {
+                        public function __construct() {}
+                    }
+
+                    /** @return ChildCollection<int> */
+                    function collection(): ChildCollection {
+                        return new ChildCollection();
+                    }',
+                'error_message' => 'MixedReturnTypeCoercion',
+            ],
+            'constructionOfATemplateOnlyAProtectedInheritedMethodTakes' => [
+                'code' => '<?php
+                    /** @template T */
+                    class Collection {
+                        /** @param T $x */
+                        protected function add($x): void {}
+                    }
+
+                    /**
+                     * @template U
+                     * @extends Collection<U>
+                     */
+                    final class ChildCollection extends Collection {}
+
+                    /** @return ChildCollection<int> */
+                    function collection(): ChildCollection {
+                        return new ChildCollection();
+                    }',
+                'error_message' => 'MixedReturnTypeCoercion',
+            ],
             'constructionOfAnInvariantTemplateNothingCanConstrain' => [
                 'code' => '<?php
                     /** @template T */
@@ -2432,6 +3267,28 @@ final class TypeVariableTest extends TestCase
                         return new Coll();
                     }',
                 'error_message' => 'MixedReturnTypeCoercion',
+            ],
+            'falseArgumentIsCheckedAgainstADeclaredTypeArgument' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     */
+                    final class A {
+                        /**
+                         * @param T $value
+                         */
+                        public function __construct($value) {}
+
+                        /**
+                         * @param T $value
+                         */
+                        public function takeValue($value): void {}
+                    }
+
+                    /** @var A<int> */
+                    $obj = new A(1);
+                    $obj->takeValue(false);',
+                'error_message' => 'InvalidArgument',
             ],
             'mixedConstructionCallableParamRequirement' => [
                 // a value that entered the variable as mixed is then required to
@@ -2812,6 +3669,25 @@ final class TypeVariableTest extends TestCase
                 'error_message' => 'IncompatibleTypeParameters - src' . DIRECTORY_SEPARATOR
                     . 'somefile.php:26:30 - Type \'x\' should be a subtype of int',
             ],
+            'valueAddedAfterConstructionMustFitTheConstructorCallback' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class CallbackPipe {
+                        /** @param Closure(T): void $callback */
+                        public function __construct(private Closure $callback) {}
+                        /** @param T $v */
+                        public function push(mixed $v): void { ($this->callback)($v); }
+                    }
+                    function f(): void {
+                        $p = new CallbackPipe(function (int $x): void {});
+                        $p->push("s");
+                        $p->push(1);
+                    }',
+                'error_message' => 'IncompatibleTypeParameters - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:11:34 - Type \'s\' should be a subtype of int',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'untypedCallbackSeesObjectAddedAfterConstruction' => [
                 'code' => '<?php
                     final class A {
@@ -2956,6 +3832,77 @@ final class TypeVariableTest extends TestCase
                         });
                     }',
                 'error_message' => 'IncompatibleTypeParameters',
+            ],
+            'unboundConstructorTemplateViolatesSiblingConstraint' => [
+                'code' => '<?php
+                    /**
+                     * @template TItem of int
+                     * @template TList as list<TItem>
+                     */
+                    final class Lists {
+                        public function __construct() {}
+
+                        /** @param TList $list */
+                        public function add(array $list): void {}
+                    }
+
+                    function bad(): void {
+                        $lists = new Lists();
+                        $lists->add(["a"]);
+                    }',
+                'error_message' => 'somefile.php:15:37 - Type \'a\' should be a subtype of int',
+            ],
+            'unboundConstructorTemplateViolatesChainedSiblingConstraints' => [
+                'code' => '<?php
+                    /**
+                     * @template T1 of int
+                     * @template T2 of list<T1>
+                     * @template T3 of list<T2>
+                     */
+                    final class Chain {
+                        public function __construct() {}
+
+                        /** @param T3 $lists */
+                        public function add(array $lists): void {}
+                    }
+
+                    function bad(): void {
+                        $chain = new Chain();
+                        $chain->add([["a"]]);
+                    }',
+                'error_message' => 'somefile.php:16:37 - Type \'a\' should be a subtype of int',
+            ],
+            'unboundConstructorTemplateViolatesInvariantSiblingConstraint' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /** @param T $value */
+                        public function __construct(public mixed $value) {}
+                    }
+
+                    /**
+                     * @template T
+                     * @template TBox of Box<T>
+                     */
+                    final class Shelf {
+                        public function __construct() {}
+
+                        /** @param TBox $box */
+                        public function put(Box $box): void {}
+                    }
+
+                    /**
+                     * @param Box<int> $ints
+                     * @param Box<string> $strings
+                     */
+                    function f(Box $ints, Box $strings): void {
+                        $shelf = new Shelf();
+                        $shelf->put($ints);
+                        $shelf->put($strings);
+                    }',
+                'error_message' => 'somefile.php:25:37 - Type int should be a subtype of string',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'typeVariableBoundViolation' => [
                 'code' => '<?php
@@ -3357,6 +4304,63 @@ final class TypeVariableTest extends TestCase
                     }',
                 'error_message' => 'IncompatibleTypeParameters - src' . DIRECTORY_SEPARATOR
                     . "somefile.php:11:38 - Type 5 should be a subtype of array",
+            ],
+            'itemOfAWidenedConstructionReadByForeachIsWhatFlowedIn' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Bag {
+                        /** @param iterable<T> $items */
+                        public function __construct(iterable $items) {}
+
+                        /** @param T $item */
+                        public function add(mixed $item): void {}
+
+                        /** @return list<T> */
+                        public function all(): array { return []; }
+                    }
+
+                    /** @param array<string, int> $counts */
+                    function f(array $counts): void {
+                        $names = new Bag(array_keys($counts));
+                        $names->add(42);
+                        foreach ($names->all() as $name) {
+                            echo $counts[$name];
+                        }
+                    }',
+                'error_message' => 'PossiblyInvalidArrayOffset - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:19:34 - Cannot access value on variable $counts using a 42|string offset, '
+                    . 'expecting string',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'itemReadInALoopSeesWhatALaterIterationAdds' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Bag {
+                        /** @param iterable<T> $items */
+                        public function __construct(iterable $items) {}
+
+                        /** @param T $item */
+                        public function add(mixed $item): void {}
+
+                        /** @return list<T> */
+                        public function all(): array { return []; }
+                    }
+
+                    function takesString(string $s): void {}
+
+                    /** @param list<string> $names */
+                    function f(array $names): void {
+                        $bag = new Bag($names);
+                        for ($i = 0; $i < 2; $i++) {
+                            takesString($bag->all()[0]);
+                            $bag->add(42);
+                        }
+                    }',
+                'error_message' => 'InvalidScalarArgument - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:20:41 - Argument 1 of takesString expects string, but 42|string provided',
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
         ];
     }

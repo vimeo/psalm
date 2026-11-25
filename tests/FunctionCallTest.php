@@ -24,6 +24,60 @@ final class FunctionCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'strtolowerAndStrtoupperOfLiterals' => [
+                'code' => '<?php
+                    $lower = strtolower("Hello");
+                    $upper = strtoupper(rand(0, 1) ? "get" : "Post");
+                    $accented = strtolower("ÄRGER");',
+                'assertions' => [
+                    '$lower===' => "'hello'",
+                    '$upper===' => "'GET'|'POST'",
+                    '$accented===' => "'Ärger'",
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'strtolowerOfANonAsciiLiteralBeforePhp82' => [
+                'code' => '<?php
+                    $accented = strtolower("ÄRGER");',
+                'assertions' => [
+                    '$accented===' => 'non-empty-lowercase-string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'negatedArrayIsListKeepsAnArrayThatMayBeAList' => [
+                'code' => '<?php
+                    /** @param array<int, int> $a */
+                    function f(array $a): void {
+                        if (!array_is_list($a)) {
+                            /** @psalm-check-type-exact $a = array<int, int> */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'urlencodeOfANonEmptyStringIsNonEmpty' => [
+                'code' => '<?php
+                    /** @param non-empty-string $input */
+                    function encode(string $input, string $any): void {
+                        /** @psalm-check-type-exact $encoded = non-empty-string */
+                        $encoded = urlencode($input);
+                        /** @psalm-check-type-exact $rawEncoded = non-empty-string */
+                        $rawEncoded = rawurlencode($input);
+                        /** @psalm-check-type-exact $maybeEmpty = string */
+                        $maybeEmpty = urlencode($any);
+                        /** @psalm-check-type-exact $decoded = non-empty-string */
+                        $decoded = urldecode($input);
+                        /** @psalm-check-type-exact $rawDecoded = non-empty-string */
+                        $rawDecoded = rawurldecode($input);
+                        /** @psalm-check-type-exact $maybeEmptyDecoded = string */
+                        $maybeEmptyDecoded = urldecode($any);
+                        /** @psalm-check-type-exact $maybeEmptyRawDecoded = string */
+                        $maybeEmptyRawDecoded = rawurldecode($any);
+                    }',
+            ],
             'filterVarThrowOnFailureHasNoFailureValue' => [
                 'code' => '<?php
                     $input = (string) rand();
@@ -192,8 +246,22 @@ final class FunctionCallTest extends TestCase
                     $json = encode([1]);
                     $upper = up("x");',
                 'assertions' => [
-                    '$upper===' => 'non-falsy-string',
+                    '$upper===' => "'X'",
                 ],
+            ],
+            'fullyQualifiedCallOfAFunctionWhoseNameAnotherIsImportedAs' => [
+                'code' => '<?php
+                    namespace App;
+
+                    use function App\\encode as json_encode;
+
+                    function encode(int $value): string {
+                        return (string) $value;
+                    }
+
+                    $local = json_encode(1);
+                    $global = \\json_encode(1);
+                    $relative = namespace\\encode(1);',
             ],
             'functionCalledWithItsDeclaredCasing' => [
                 'code' => '<?php
@@ -217,6 +285,278 @@ final class FunctionCallTest extends TestCase
                     '$a===' => 'int',
                     '$c===' => 'int<1, max>',
                 ],
+            ],
+            'psalmOverloadIsChosenByTheTypeOfTheArgument' => [
+                'code' => '<?php
+                    interface Query {}
+                    final class LimitedQuery implements Query {}
+                    final class UnlimitedQuery implements Query {}
+                    final class PagedResult {}
+                    final class PlainResult {}
+
+                    /**
+                     * @psalm-overload (LimitedQuery $query): PagedResult
+                     * @psalm-overload (UnlimitedQuery $query): PlainResult
+                     */
+                    function search(Query $query): object {
+                        return new PlainResult();
+                    }
+
+                    $paged = search(new LimitedQuery());
+                    $plain = search(new UnlimitedQuery());',
+                'assertions' => [
+                    '$paged===' => 'PagedResult',
+                    '$plain===' => 'PlainResult',
+                ],
+            ],
+            'psalmOverloadIsChosenByTheNumberOfArguments' => [
+                'code' => '<?php
+                    /**
+                     * @param string|int $a
+                     * @return int|string|float
+                     * @psalm-overload (string $a): int
+                     * @psalm-overload (int $a, int $b): string
+                     * @psalm-overload (int $a, int $b, int $c, int ...$more): float
+                     */
+                    function pick($a, ?int $b = null, ?int $c = null, int ...$more) {
+                        return 0;
+                    }
+
+                    $one = pick("a");
+                    $two = pick(1, 2);
+                    $many = pick(1, 2, 3, 4, 5);',
+                'assertions' => [
+                    '$one===' => 'int',
+                    '$two===' => 'string',
+                    '$many===' => 'float',
+                ],
+            ],
+            'psalmOverloadIsChosenByTheNamesOfTheArguments' => [
+                'code' => '<?php
+                    /**
+                     * @param string $name
+                     * @param int $id
+                     * @return int|string
+                     * @psalm-overload (string $name): int
+                     * @psalm-overload (string $name = "", int $id = 0): string
+                     */
+                    function pick($name = "", $id = 0) {
+                        return 0;
+                    }
+
+                    $byName = pick(name: "a");
+                    $byId = pick(id: 5);',
+                'assertions' => [
+                    '$byName===' => 'int',
+                    '$byId===' => 'string',
+                ],
+            ],
+            'psalmOverloadKeepsTheByReferenceOfTheRealParameter' => [
+                'code' => '<?php
+                    /**
+                     * @param-out list<int> $a
+                     * @psalm-overload (array $a): void
+                     * @psalm-overload (array $a, int $n): void
+                     */
+                    function fill(array &$a, int $n = 1): void {
+                        $a = [$n];
+                    }
+
+                    $x = ["a" => "b"];
+                    fill($x);',
+                'assertions' => [
+                    '$x===' => 'list<int>',
+                ],
+            ],
+            'psalmOverloadOfAVariadicParameterNamesItsParametersFreely' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-overload (int $first): int
+                     * @psalm-overload (int $first, int $second, int ...$others): string
+                     */
+                    function total(int ...$numbers): int|string {
+                        return 0;
+                    }
+
+                    $one = total(1);
+                    $many = total(1, 2, 3);',
+                'assertions' => [
+                    '$one===' => 'int',
+                    '$many===' => 'string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'psalmOverloadOfNestedCallsOfTheSameFunction' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-overload (int $x): int
+                     * @psalm-overload (string $x): string
+                     */
+                    function pick(int|string $x): int|string {
+                        return $x;
+                    }
+
+                    $nested = pick(pick(pick(1)));
+                    $text = pick(pick(pick("a")));',
+                'assertions' => [
+                    '$nested===' => 'int',
+                    '$text===' => 'string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'psalmOverloadOfAFunctionWithATemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @psalm-overload (T $x): T
+                     * @psalm-overload (T $x, int $n): list<T>
+                     */
+                    function dup(mixed $x, int $n = 0): mixed {
+                        return $x;
+                    }
+
+                    $one = dup("a");
+                    $many = dup(5, 2);',
+                'assertions' => [
+                    '$one===' => "'a'",
+                    '$many===' => 'list<5>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'psalmOverloadOfAUnionArgumentFallsBackToTheRealSignature' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-overload (int $x): int
+                     * @psalm-overload (string $x): string
+                     */
+                    function pick(int|string $x): int|string {
+                        return $x;
+                    }
+
+                    /** @var int|string $v */
+                    $either = pick($v);
+                    $int = pick(1);',
+                'assertions' => [
+                    '$either===' => 'int|string',
+                    '$int===' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'psalmOverloadWithoutAReturnTypeKeepsTheRealOne' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-overload (string $x)
+                     * @psalm-overload (int $x, int $y)
+                     */
+                    function pick(string|int $x, int $y = 0): int {
+                        return 0;
+                    }
+
+                    $a = pick("a");
+                    $b = pick(1, 2);',
+                'assertions' => [
+                    '$a===' => 'int',
+                    '$b===' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'psalmOverloadSkipsAnOptionalParameterWithANamedArgument' => [
+                'code' => '<?php
+                    /**
+                     * @return int|string
+                     * @psalm-overload (string $a, int $b = 0): int
+                     * @psalm-overload (string $a, int|string $b = 0, string $c = ""): string
+                     */
+                    function pick(string $a, int|string $b = 0, string $c = "") {
+                        return 0;
+                    }
+
+                    $first = pick("x", b: 1);
+                    $second = pick("x", c: "y");',
+                'assertions' => [
+                    '$first===' => 'int',
+                    '$second===' => 'string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'psalmOverloadWithAnUnpackedArgumentChecksTheArgumentsBeforeIt' => [
+                'code' => '<?php
+                    /**
+                     * @param string|int $a
+                     * @param string|int ...$rest
+                     * @return int|string
+                     * @psalm-overload (string $a, string ...$rest): int
+                     * @psalm-overload (int $a, int ...$rest): string
+                     */
+                    function pick($a, ...$rest) {
+                        return 0;
+                    }
+
+                    /** @var list<string> $strings */
+                    $strings = [];
+
+                    /** @var list<int> $numbers */
+                    $numbers = [];
+
+                    $byString = pick("a", ...$strings);
+                    $byInt = pick(1, ...$numbers);',
+                'assertions' => [
+                    '$byString===' => 'int',
+                    '$byInt===' => 'string',
+                ],
+            ],
+            'psalmOverloadOfAFunctionInANamespaceUsesTheImports' => [
+                'code' => '<?php
+                    namespace Domain {
+                        final class Order {}
+                        final class Invoice {}
+                    }
+
+                    namespace Api {
+                        use Domain\Invoice;
+                        use Domain\Order;
+
+                        /**
+                         * @psalm-overload (Order $document): int
+                         * @psalm-overload (Invoice $document): string
+                         */
+                        function number(object $document): int|string {
+                            return 0;
+                        }
+
+                        $order = number(new Order());
+                        $invoice = number(new Invoice());
+                    }',
+                'assertions' => [
+                    '$order===' => 'int',
+                    '$invoice===' => 'string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'functionWithOverloadsAsAFirstClassCallableKeepsItsOwnSignature' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-overload (string $a): int
+                     * @psalm-overload (int $a): string
+                     */
+                    function pick(string|int $a): int|string {
+                        return 0;
+                    }
+
+                    $callable = pick(...);
+                    $result = $callable("a");',
+                'assertions' => [
+                    '$result===' => 'int|string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
             'fileTestFunctionsKeepAMixedArgument' => [
                 'code' => <<<'PHP'
@@ -1597,6 +1937,22 @@ final class FunctionCallTest extends TestCase
                     extract($a);
                     takesInt($foo);',
             ],
+            'possiblyUndefinedVariableAfterExtractCheckedWithIsset' => [
+                'code' => '<?php
+                    function takesInt(int $_i): void {}
+
+                    /** @param array<string, mixed> $vars */
+                    function f(array $vars): void {
+                        extract($vars);
+                        if (rand(0, 1)) {
+                            $a = 1;
+                        }
+                        if (isset($a)) {
+                            takesInt($a);
+                        }
+                        takesInt($a ?? 0);
+                    }',
+            ],
             'extractSkipExtr' => [
                 'code' => '<?php
                     $a = 1;
@@ -2496,6 +2852,19 @@ final class FunctionCallTest extends TestCase
                             return "foo";
                     }',
             ],
+            'getTypeSwitchFallingThroughAnImpossibleCase' => [
+                'code' => '<?php
+                    function f(int $data): string {
+                        switch (gettype($data)) {
+                            case "string":
+                                echo "string";
+                            case "unknown type":
+                                return "s";
+                        }
+
+                        return "";
+                    }',
+            ],
             'functionResolutionInNamespace' => [
                 'code' => '<?php
                     namespace Foo;
@@ -3368,6 +3737,32 @@ final class FunctionCallTest extends TestCase
                     }',
                 'assertions' => [],
                 'ignored_issues' => ['DeprecatedSyntax'],
+                'php_version' => '8.0',
+            ],
+            'getTypeAndGetDebugTypeAreNonFalsy' => [
+                'code' => '<?php
+                    /** @return non-empty-string */
+                    function a(mixed $x): string {
+                        $t = gettype($x);
+                        return $t;
+                    }
+                    /** @return non-falsy-string */
+                    function b(mixed $x): string {
+                        $t = gettype($x);
+                        return $t;
+                    }
+                    /** @return non-empty-string */
+                    function c(mixed $x): string {
+                        $t = get_debug_type($x);
+                        return $t;
+                    }
+                    /** @return non-falsy-string */
+                    function d(mixed $x): string {
+                        $t = get_debug_type($x);
+                        return $t;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
             'getTypeDoubleThenInt' => [
@@ -4462,6 +4857,17 @@ final class FunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.5',
             ],
+            'nativeConditionalUsesStringableArgument' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function test(Throwable $error): void {
+                        $result = mb_convert_encoding($error, 'UTF-8');
+                        /** @psalm-check-type-exact $result = false|string */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['ImplicitToStringCast'],
+            ],
         ];
     }
 
@@ -4472,12 +4878,84 @@ final class FunctionCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'possiblyUndefinedVariableAfterExtractIsMixed' => [
+                'code' => '<?php
+                    function takesInt(int $_i): void {}
+
+                    /** @param array<string, mixed> $vars */
+                    function f(array $vars): void {
+                        extract($vars);
+                        if (rand(0, 1)) {
+                            $a = 1;
+                        }
+                        takesInt($a);
+                    }',
+                'error_message' => 'MixedArgument',
+            ],
+            'negatedArrayIsListOfAList' => [
+                'code' => '<?php
+                    function f(): void {
+                        $ids = [1, 2];
+                        if (!array_is_list($ids)) {
+                            echo "never";
+                        }
+                    }',
+                'error_message' => 'is always list<mixed>, so its negation can never be true',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'negatedDocblockShapeAssertionOfAShapeIsImpossible' => [
+                'code' => '<?php
+                    /** @psalm-assert-if-true array{a: int} $x */
+                    function isA(array $x): bool { return isset($x["a"]); }
+
+                    /** @param array{a: int} $x */
+                    function f(array $x): void {
+                        if (!isA($x)) {}
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'negatedDocblockArrayAssertionOfAnArrayIsImpossible' => [
+                'code' => '<?php
+                    /** @psalm-assert !array<string, int> $x */
+                    function notMap(mixed $x): void {}
+
+                    /** @param array<string, int> $x */
+                    function g(array $x): void { notMap($x); }',
+                'error_message' => 'TypeDoesNotContainType',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'getTypeSwitchFallingThroughAnImpossibleCaseOfTheSameVariable' => [
+                'code' => '<?php
+                    function f(int $data): string {
+                        switch (gettype($data)) {
+                            case "string":
+                            case "integer":
+                                return "s";
+                        }
+
+                        return "";
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+            ],
             'strtolowerOfDocblockLiteralsKeepsFromDocblock' => [
                 'code' => '<?php
                     /** @param \'A\'|\'B\' $k */
                     function f(string $k): void {
                         $l = strtolower($k);
                         if ($l === \'c\') {}
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+            ],
+            'strtoupperOfDocblockLiteralsKeepsFromDocblock' => [
+                'code' => '<?php
+                    /** @param \'a\'|\'b\' $k */
+                    function f(string $k): void {
+                        $u = strtoupper($k);
+                        if ($u === \'C\') {}
                     }',
                 'error_message' => 'DocblockTypeContradiction',
             ],
@@ -4576,6 +5054,199 @@ final class FunctionCallTest extends TestCase
                 'error_message' => 'WrongCaseFunction - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:26 - '
                     . 'Function STRLEN is declared as strlen and has wrong casing',
             ],
+            'psalmOverloadReportsAMethodOfTheOtherResult' => [
+                'code' => '<?php
+                    final class PagedResult {
+                        public function getPageCount(): int {
+                            return 1;
+                        }
+                    }
+
+                    final class PlainResult {
+                        public function getAllRecords(): array {
+                            return [];
+                        }
+                    }
+
+                    /**
+                     * @psalm-overload (int $argument): PagedResult
+                     * @psalm-overload (string $argument): PlainResult
+                     */
+                    function search(int|string $argument): object {
+                        return new PlainResult();
+                    }
+
+                    search(1)->getAllRecords();',
+                'error_message' => 'UndefinedMethod - src' . DIRECTORY_SEPARATOR . 'somefile.php:22:32 - '
+                    . 'Method PagedResult::getAllRecords does not exist',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'psalmOverloadWithoutAMatchingOneReportsTheLastDeclared' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-overload (string $a): int
+                     * @psalm-overload (int $a): string
+                     */
+                    function pick(string|int $a): int|string {
+                        return 0;
+                    }
+
+                    pick(1.5);',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:26',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'psalmOverloadWithANamedArgumentOfAWrongTypeReportsTheLastDeclared' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-overload (string $name): int
+                     * @psalm-overload (string $name = "", int $id = 0): string
+                     */
+                    function pick(string|int $name = "", int $id = 0): int|string {
+                        return 0;
+                    }
+
+                    pick(id: "a");',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:30',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'psalmOverloadRenamingARealParameter' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-overload (int $page): int
+                     * @psalm-overload (string $query): string
+                     */
+                    function find(int|string $argument): int|string {
+                        return $argument;
+                    }',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:21 - '
+                    . 'Parameter $page of an @psalm-overload of find is at the position of $argument in its signature',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'psalmOverloadWithARealParameterAtAnotherPosition' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-overload (string $name): int
+                     * @psalm-overload (int $id): string
+                     */
+                    function pick(string $name = "", int $id = 0): int|string {
+                        return 0;
+                    }',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:21 - '
+                    . 'Parameter $id of an @psalm-overload of pick is at the position of $name in its signature',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'psalmOverloadWithoutTheAmpersandStillNeedsAVariable' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-overload (array $a): void
+                     */
+                    function fill(array &$a): void {
+                        $a = [];
+                    }
+
+                    fill([1]);',
+                'error_message' => 'InvalidPassByReference',
+            ],
+            'psalmOverloadVariadicWithATypeACoveredParameterRejects' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-overload (int ...$values): int
+                     */
+                    function pick(int $a = 0, string $b = ""): int {
+                        return 0;
+                    }',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:21 - '
+                    . 'The type int of parameter $values of an @psalm-overload of pick is not accepted by its '
+                    . 'signature, which declares string',
+            ],
+            'psalmOverloadWithAParameterTypeTheSignatureDoesNotAccept' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-overload (int $x): int
+                     */
+                    function pick(string $x): int {
+                        return 0;
+                    }',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:21 - '
+                    . 'The type int of parameter $x of an @psalm-overload of pick is not accepted by its '
+                    . 'signature, which declares string',
+            ],
+            'psalmOverloadWithAParameterTheSignatureDoesNotHave' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-overload (string $x, int $extra): int
+                     */
+                    function pick(string $x): int {
+                        return 0;
+                    }',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:21 - '
+                    . 'Parameter $extra of an @psalm-overload of pick is not a parameter of its signature',
+            ],
+            'psalmOverloadMakingARequiredParameterOptional' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-overload (int $a = 0): int
+                     * @psalm-overload (string $a): string
+                     */
+                    function f(int|string $a): int|string {
+                        return $a;
+                    }',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:21 - '
+                    . 'Parameter $a of an @psalm-overload of f is optional, but $a is required in its signature',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'psalmOverloadMakingRequiredParametersVariadic' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-overload (int ...$values): int
+                     */
+                    function g(int $a, int $b = 0): int {
+                        return $a + $b;
+                    }',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:21 - '
+                    . 'Parameter $values of an @psalm-overload of g is optional, but $a is required in its signature',
+            ],
+            'psalmOverloadLeavingOutARequiredParameter' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-overload (string $x): int
+                     */
+                    function pick(string $x, int $y): int {
+                        return $y;
+                    }',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:21 - '
+                    . 'An @psalm-overload of pick leaves out $y, which is required in its signature',
+            ],
+            'psalmOverloadWithAReturnTypeTheSignatureDoesNotDeclare' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-overload (string $x): string
+                     */
+                    function pick(string $x): int {
+                        return 0;
+                    }',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:21 - '
+                    . 'The return type string of an @psalm-overload of pick is not contained by the declared '
+                    . 'one, int',
+            ],
+            'psalmOverloadWithAnInvalidSignature' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-overload (string $a: int
+                     */
+                    function pick(string $a): int {
+                        return 0;
+                    }',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:21 - '
+                    . '@psalm-overload (string $a: int is not a valid overload: Unterminated method '
+                    . 'in docblock for pick',
+            ],
             'fileTestFunctionOnAnEmptyStringIsAlwaysFalse' => [
                 'code' => '<?php
                     $path = "";
@@ -4667,7 +5338,7 @@ final class FunctionCallTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.5',
             ],
-            'callableAndScalarUnionIsInvalidForInt' => [
+            'callableAndScalarUnionIsPossiblyInvalidForInt' => [
                 'code' => '<?php
                     /** @param int $i */
                     function takesInt($i): void {}
@@ -4676,9 +5347,9 @@ final class FunctionCallTest extends TestCase
                     function f($x): void {
                         takesInt($x);
                     }',
-                'error_message' => 'InvalidArgument',
+                'error_message' => 'PossiblyInvalidArgument',
             ],
-            'scalarAndCallableUnionIsInvalidForInt' => [
+            'scalarAndCallableUnionIsPossiblyInvalidForInt' => [
                 'code' => '<?php
                     /** @param int $i */
                     function takesInt($i): void {}
@@ -4687,7 +5358,7 @@ final class FunctionCallTest extends TestCase
                     function f($x): void {
                         takesInt($x);
                     }',
-                'error_message' => 'InvalidArgument',
+                'error_message' => 'PossiblyInvalidArgument',
             ],
             'arrayAndScalarUnionIsAPlainMismatchForString' => [
                 'code' => '<?php
@@ -4697,7 +5368,7 @@ final class FunctionCallTest extends TestCase
                     function f($x): void {
                         takesString($x);
                     }',
-                'error_message' => 'InvalidArgument',
+                'error_message' => 'PossiblyInvalidArgument',
             ],
             'stringableAndArrayAndScalarUnionIsPossiblyInvalidForStringable' => [
                 'code' => '<?php
@@ -6098,6 +6769,156 @@ final class FunctionCallTest extends TestCase
                     }
                 ',
                 'error_message' => 'InvalidArgument',
+            ],
+            'parentTypeAndInvalidTypeArgument' => [
+                'code' => '<?php
+                    final class Foo {}
+                    function takesFoo(Foo $_f): void {}
+
+                    function passes(object|int $o): void {
+                        takesFoo($o);
+                    }
+                ',
+                'error_message' => 'PossiblyInvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'invalidTypeAndParentTypeArgument' => [
+                'code' => '<?php
+                    final class Foo {}
+                    function takesFoo(Foo $_f): void {}
+
+                    function passes(int|object $o): void {
+                        takesFoo($o);
+                    }
+                ',
+                'error_message' => 'PossiblyInvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'parentScalarTypeAndInvalidTypeArgument' => [
+                'code' => '<?php
+                    /** @param non-empty-string $_s */
+                    function takesNonEmptyString(string $_s): void {}
+
+                    function passes(string|int $s): void {
+                        takesNonEmptyString($s);
+                    }
+                ',
+                'error_message' => 'PossiblyInvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'curlHandleArgumentGivenObjectOrResource' => [
+                'code' => '<?php
+                    /** @param object|resource $h */
+                    function g($h): void {
+                        curl_getinfo($h, CURLINFO_HTTP_CODE);
+                    }
+                ',
+                'error_message' => 'PossiblyInvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:38'
+                    . ' - Argument 1 of curl_getinfo expects CurlHandle, but possibly different type'
+                    . ' object|resource provided',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'sealedShapeWithAMixedValueMissingARequiredKeyArgument' => [
+                'code' => '<?php
+                    /** @param array{a: int, b: int} $_a */
+                    function takesShape(array $_a): void {}
+
+                    /** @param array{a: mixed} $a */
+                    function passes(array $a): void {
+                        takesShape($a);
+                    }
+                ',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'sealedShapeMissingARequiredKeyArgument' => [
+                'code' => '<?php
+                    /** @param array{a: non-empty-string, b: int} $_a */
+                    function takesShape(array $_a): void {}
+
+                    /** @param array{a: string} $a */
+                    function passes(array $a): void {
+                        takesShape($a);
+                    }
+                ',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'sealedShapeWithAPossiblyUndefinedRequiredKeyArgument' => [
+                'code' => '<?php
+                    /** @param array{a: non-empty-string, b: int} $_a */
+                    function takesShape(array $_a): void {}
+
+                    /** @param array{a: string, b?: int} $a */
+                    function passes(array $a): void {
+                        takesShape($a);
+                    }
+                ',
+                'error_message' => 'ArgumentTypeCoercion',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'shapeMissingARequiredKeyAndInvalidTypeArgument' => [
+                'code' => '<?php
+                    /** @param array{a: non-empty-string, b: int} $_a */
+                    function takesShape(array $_a): void {}
+
+                    /** @param array{a: string}|int $a */
+                    function passes(array|int $a): void {
+                        takesShape($a);
+                    }
+                ',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'noMemberFitsArgument' => [
+                'code' => '<?php
+                    final class Foo {}
+                    final class Bar {}
+                    function takesFoo(Foo $_f): void {}
+
+                    function passes(Bar|int $o): void {
+                        takesFoo($o);
+                    }
+                ',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'implementedInterfaceAndInvalidTypeArgument' => [
+                'code' => '<?php
+                    interface I {}
+                    final class Foo implements I {}
+                    function takesFoo(Foo $_f): void {}
+
+                    function passes(I|int $o): void {
+                        takesFoo($o);
+                    }
+                ',
+                'error_message' => 'PossiblyInvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'unimplementedInterfaceAndInvalidTypeArgument' => [
+                'code' => '<?php
+                    interface I {}
+                    final class Foo {}
+                    function takesFoo(Foo $_f): void {}
+
+                    function passes(I|int $o): void {
+                        takesFoo($o);
+                    }
+                ',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'possiblyInvalidEntryOfAList' => [
                 'code' => '<?php

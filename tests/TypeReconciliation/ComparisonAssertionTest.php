@@ -103,6 +103,92 @@ final class ComparisonAssertionTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.2',
             ],
+            'looseEqualityToAScalarKeepsTheLooselyEqualBoolsAndNull' => [
+                'code' => '<?php
+                    /** @return int|false */
+                    function intOrFalse() { return 1; }
+
+                    /** @return int|bool */
+                    function intOrBool() { return 1; }
+
+                    /** @return string|null */
+                    function stringOrNull() { return null; }
+
+                    /** @return string|false */
+                    function stringOrFalse() { return false; }
+
+                    /** @return float|null */
+                    function floatOrNull() { return null; }
+
+                    /** @return 0|false */
+                    function zeroOrFalse() { return 0; }
+
+                    $a = intOrFalse();
+                    $zeroOrFalse = $a == 0 ? $a : null;
+                    $elseBranch = $a != 0 ? null : $a;
+
+                    $b = intOrBool();
+                    $zeroOrFalseFromBool = $b == 0 ? $b : null;
+                    $fiveOrTrue = $b == 5 ? $b : null;
+
+                    $c = stringOrNull();
+                    $emptyOrNull = $c == "" ? $c : 1;
+                    $zeroStringWithoutNull = $c == "0" ? $c : 1;
+
+                    $d = stringOrFalse();
+                    $zeroStringOrFalse = $d == "0" ? $d : null;
+                    $nonFalsyString = $d == "a" ? $d : null;
+
+                    $e = floatOrNull();
+                    $zeroFloatOrNull = $e == 0.0 ? $e : 1;
+
+                    $f = zeroOrFalse();
+                    $unchanged = $f == 0 ? $f : null;',
+                'assertions' => [
+                    '$zeroOrFalse===' => '0|false|null',
+                    '$elseBranch===' => '0|false|null',
+                    '$zeroOrFalseFromBool===' => '0|false|null',
+                    '$fiveOrTrue===' => '5|null|true',
+                    '$emptyOrNull===' => "''|1|null",
+                    '$zeroStringWithoutNull===' => "'0'|1",
+                    '$zeroStringOrFalse===' => "'0'|false|null",
+                    '$nonFalsyString===' => "'a'|null",
+                    '$zeroFloatOrNull===' => '1|float(0)|null',
+                    '$unchanged===' => '0|false|null',
+                ],
+                'ignored_issues' => ['LessSpecificReturnType'],
+            ],
+            'looseEqualityToAnIntKeepsTheLooselyEqualFloatsBoolsAndNull' => [
+                'code' => '<?php
+                    /** @return int|float|bool|null */
+                    function scalarOrNull() { return 1; }
+
+                    function anInt(): int { return 1; }
+
+                    $a = scalarOrNull();
+                    $i = anInt();
+                    $equal = $a == $i ? $a : "no";',
+                'assertions' => [
+                    '$equal===' => "'no'|bool|float|int|null",
+                ],
+                'ignored_issues' => ['LessSpecificReturnType'],
+            ],
+            'looseEqualityLeavingATemplateWithABoolUnchangedKeepsTheOtherTypes' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array-key|true
+                     * @param T|Stringable $x
+                     */
+                    function f($x): ?Stringable {
+                        if ($x == "1" && is_object($x)) {
+                            return $x;
+                        }
+                        return null;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'looseEqualityKeepsEveryNumericallyEqualLiteral' => [
                 'code' => '<?php
                     /** @return \'1\'|\'01\' */
@@ -218,6 +304,38 @@ final class ComparisonAssertionTest extends TestCase
                         } else {
                             /** @psalm-check-type-exact $a = A */;
                         }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'nullsafePropertyNotIdenticalToAValueNarrowsTheReceiverWhereItIsIdentical' => [
+                'code' => '<?php
+                    final class Item {
+                        public bool $flag = true;
+
+                        public function ok(): bool {
+                            return true;
+                        }
+                    }
+
+                    function f(?Item $item): bool {
+                        if ($item?->flag !== true) {
+                            /** @psalm-check-type-exact $item = Item|null */;
+                            return false;
+                        }
+
+                        /** @psalm-check-type-exact $item = Item */;
+                        return $item->flag;
+                    }
+
+                    function g(?Item $item, ?bool $maybe): bool {
+                        if ($item?->flag !== $maybe) {
+                            return false;
+                        }
+
+                        /** @psalm-check-type-exact $item = Item|null */;
+                        return true;
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],
@@ -462,6 +580,39 @@ final class ComparisonAssertionTest extends TestCase
                         }
                     }',
             ],
+            'identicalToAUnionOfClassStringsKeepsEachOfThem' => [
+                'code' => '<?php
+                    final class A {}
+                    final class B {}
+
+                    /** @param class-string<A>|class-string<B> $y */
+                    function f(string $x, string $y): void {
+                        if ($x === $y) {
+                            /** @psalm-check-type-exact $x = class-string<A>|class-string<B> */;
+                        }
+                        if ($x !== $y) {
+                        } else {
+                            /** @psalm-check-type-exact $x = class-string<A>|class-string<B> */;
+                        }
+                        if ($x === $y && $x === A::class) {}
+                    }',
+            ],
+            'identicalToAUnionOfGenericObjectsKeepsEachOfThem' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {}
+
+                    /** @param Box<int>|Box<string> $y */
+                    function f(object $x, object $y): void {
+                        if ($x === $y) {
+                            /** @psalm-check-type-exact $x = Box<int>|Box<string> */;
+                        }
+                        if ($x !== $y) {
+                        } else {
+                            /** @psalm-check-type-exact $x = Box<int>|Box<string> */;
+                        }
+                    }',
+            ],
             'intLiteralOnEitherSideOfAnOrderComparison' => [
                 'code' => '<?php
                     function f(int $i): void {
@@ -489,6 +640,23 @@ final class ComparisonAssertionTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'nullsafePropertyNeverIdenticalToAValueStaysARedundantCondition' => [
+                'code' => '<?php
+                    final class Item {
+                        public bool $flag = true;
+                    }
+
+                    function f(?Item $item): bool {
+                        if ($item?->flag !== "x") {
+                            return false;
+                        }
+
+                        return true;
+                    }',
+                'error_message' => 'RedundantCondition',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'looseComparisonOfDifferentNonNumericStringLiteralsIsNeverTrue' => [
                 'code' => '<?php
                     $first = "abc";
@@ -641,6 +809,79 @@ final class ComparisonAssertionTest extends TestCase
                         if ($a !== $b) {}
                     }',
                 'error_message' => 'RedundantConditionGivenDocblockType - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:29 - Docblock-defined type 2 can never contain 1',
+            ],
+            'looseEqualityOfATemplateToZeroKeepsFalse' => [
+                'code' => '<?php
+                    /**
+                     * @template T of int|false
+                     * @param T $x
+                     */
+                    function f($x): int {
+                        if ($x == 0) {
+                            return $x;
+                        }
+                        return 1;
+                    }',
+                'error_message' => 'FalsableReturnStatement',
+            ],
+            'getClassIdenticalToEitherOfTwoTemplatedClassStrings' => [
+                'code' => '<?php
+                    /**
+                     * @template T of object
+                     * @template U of object
+                     * @param class-string<T> $t
+                     * @param class-string<U> $u
+                     * @return T
+                     */
+                    function f(object $o, string $t, string $u): object {
+                        if (get_class($o) === $t || get_class($o) === $u) {
+                            return $o;
+                        }
+                        throw new Exception();
+                    }',
+                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:36 - The inferred type \'(T:fn-f as object)|(U:fn-f as object)\' does not match',
+            ],
+            'getClassLooselyEqualToEitherOfTwoTemplatedClassStrings' => [
+                'code' => '<?php
+                    /**
+                     * @template T of object
+                     * @template U of object
+                     * @param class-string<T> $t
+                     * @param class-string<U> $u
+                     * @return T
+                     */
+                    function f(object $o, string $t, string $u): object {
+                        if (get_class($o) == $t || get_class($o) == $u) {
+                            return $o;
+                        }
+                        throw new Exception();
+                    }',
+                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:36 - The inferred type \'(T:fn-f as object)|(U:fn-f as object)\' does not match',
+            ],
+            'getClassIdenticalToEitherOfTwoTemplatedClassStringsInANegatedCondition' => [
+                'code' => '<?php
+                    /**
+                     * @template T of object
+                     * @template U of object
+                     * @param class-string<T> $t
+                     * @param class-string<U> $u
+                     * @return T
+                     */
+                    function f(object $o, string $t, string $u): object {
+                        if (!(get_class($o) === $t || get_class($o) === $u)) {
+                            throw new Exception();
+                        }
+                        return $o;
+                    }',
+                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:32 - The inferred type \'(T:fn-f as object)|(U:fn-f as object)\' does not match',
+            ],
+            'looseEqualityOfTrueToZeroIsImpossible' => [
+                'code' => '<?php
+                    /** @param true|resource $x */
+                    function f($x): void {
+                        if ($x == 0) {}
+                    }',
+                'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29',
             ],
             'looseEqualityOfIntsThatCannotBeIdentical' => [
                 'code' => '<?php

@@ -7,6 +7,7 @@ namespace Psalm\Internal\Scanner;
 use PhpParser\Node\Stmt\ClassMethod;
 use Psalm\Storage\Capabilities;
 use Psalm\Storage\NamedArguments;
+use Psalm\Storage\TemplateVariance;
 
 /**
  * @internal
@@ -51,7 +52,7 @@ final class ClassLikeDocblockComment
     public array $mixins = [];
 
     /**
-     * @var array<int, array{string, ?string, ?string, bool, int}>
+     * @var array<int, array{string, ?string, ?string, TemplateVariance, int}>
      */
     public array $templates = [];
 

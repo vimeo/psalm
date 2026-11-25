@@ -1297,6 +1297,7 @@ final class ArrayFunctionArgumentsAnalyzer
                     $closure_param_type,
                     true,
                     true,
+                    coerced_parts_match: true,
                 );
 
                 if ($union_comparison_results->scalar_type_match_found) {

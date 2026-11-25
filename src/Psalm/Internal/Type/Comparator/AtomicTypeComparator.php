@@ -118,6 +118,33 @@ final class AtomicTypeComparator
             );
         }
 
+        if (($container_type_part instanceof TIterable || $container_type_part instanceof TObjectWithProperties)
+            && $container_type_part->extra_types
+        ) {
+            // the input is contained by each type of the intersection
+            foreach ($container_type_part->extra_types as $extra_type) {
+                if (!self::isContainedBy(
+                    $codebase,
+                    $input_type_part,
+                    $extra_type,
+                    $allow_interface_equality,
+                    $allow_float_int_equality,
+                    $atomic_comparison_result,
+                )) {
+                    return false;
+                }
+            }
+
+            return self::isContainedBy(
+                $codebase,
+                $input_type_part,
+                $container_type_part->setIntersectionTypes([]),
+                $allow_interface_equality,
+                $allow_float_int_equality,
+                $atomic_comparison_result,
+            );
+        }
+
         if ($input_type_part instanceof TIntersection) {
             // any type of the intersection contains all of its values
             $container_type = new Union([$container_type_part]);
@@ -374,8 +401,19 @@ final class AtomicTypeComparator
         }
 
         if ($input_type_part instanceof TCallableObject &&
-            $container_type_part instanceof TObject
+            $container_type_part instanceof TObject &&
+            !$container_type_part instanceof TObjectWithProperties
         ) {
+            if ($container_type_part instanceof TCallableObject && $container_type_part->callable !== null) {
+                // a callable object must also fit the signature of the callable object it is passed as
+                return CallableTypeComparator::isContainedBy(
+                    $codebase,
+                    $input_type_part->callable ?? new TCallable(),
+                    $container_type_part->callable,
+                    $atomic_comparison_result,
+                );
+            }
+
             return true;
         }
 
@@ -418,7 +456,6 @@ final class AtomicTypeComparator
         if ($container_type_part instanceof TObjectWithProperties
             && $input_type_part instanceof TObject
             && !$input_type_part instanceof TObjectWithProperties
-            && !$input_type_part instanceof TCallableObject
         ) {
             if ($atomic_comparison_result) {
                 $atomic_comparison_result->type_coerced = true;
@@ -749,6 +786,8 @@ final class AtomicTypeComparator
                 }
 
                 $all_types_contain = true;
+                $all_failures_coercible = true;
+                $some_failure_from_mixed = false;
 
                 foreach ($input_type_part->type_params as $i => $input_param) {
                     $container_param_offset = $i - (2 - count($container_type_part->type_params));
@@ -777,9 +816,10 @@ final class AtomicTypeComparator
                         )
                             && !$array_comparison_result->type_coerced_from_scalar
                         ) {
-                            if ($atomic_comparison_result && $array_comparison_result->type_coerced_from_mixed) {
-                                $atomic_comparison_result->type_coerced_from_mixed = true;
-                            }
+                            $all_failures_coercible = $all_failures_coercible
+                                && $array_comparison_result->type_coerced === true;
+                            $some_failure_from_mixed = $some_failure_from_mixed
+                                || $array_comparison_result->type_coerced_from_mixed === true;
                             $all_types_contain = false;
                         } else {
                             if ($atomic_comparison_result) {
@@ -789,6 +829,13 @@ final class AtomicTypeComparator
                             }
                         }
                     }
+                }
+                if ($atomic_comparison_result && !$all_types_contain) {
+                    // A mixed parameter must not hide a hard mismatch in another parameter.
+                    $mixed_coercion = $all_failures_coercible && $some_failure_from_mixed;
+                    $atomic_comparison_result->type_coerced = $mixed_coercion;
+                    // Keep the mixed-parameter detail even when another parameter rules out coercion.
+                    $atomic_comparison_result->type_coerced_from_mixed = $some_failure_from_mixed;
                 }
                 return $all_types_contain;
             }
@@ -857,7 +904,8 @@ final class AtomicTypeComparator
                         && ($input_type_part->value === 'Stringable'
                             || ($codebase->classlikes->classExists($input_type_part->value)
                                 && $codebase->classlikes->classImplements($input_type_part->value, 'Stringable'))
-                            || $codebase->classlikes->interfaceExtends($input_type_part->value, 'Stringable'))
+                            || ($codebase->classlike_storage_provider->has($input_type_part->value)
+                                && $codebase->classlikes->interfaceExtends($input_type_part->value, 'Stringable')))
                     ) {
                         if ($atomic_comparison_result) {
                             $atomic_comparison_result->to_string_cast = true;
