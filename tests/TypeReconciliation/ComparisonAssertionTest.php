@@ -597,6 +597,22 @@ final class ComparisonAssertionTest extends TestCase
                         if ($x === $y && $x === A::class) {}
                     }',
             ],
+            'identicalToAUnionOfGenericObjectsKeepsEachOfThem' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {}
+
+                    /** @param Box<int>|Box<string> $y */
+                    function f(object $x, object $y): void {
+                        if ($x === $y) {
+                            /** @psalm-check-type-exact $x = Box<int>|Box<string> */;
+                        }
+                        if ($x !== $y) {
+                        } else {
+                            /** @psalm-check-type-exact $x = Box<int>|Box<string> */;
+                        }
+                    }',
+            ],
             'intLiteralOnEitherSideOfAnOrderComparison' => [
                 'code' => '<?php
                     function f(int $i): void {
