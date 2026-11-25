@@ -1574,6 +1574,20 @@ final class TypeCombinationTest extends TestCase
                     'array<int, int>',
                 ],
             ],
+            'classStringMapAndArrayKeepTheIntersectionOfTheMapTemplate' => [
+                'array<class-string<Foo>|int, Foo&Bar|int>',
+                [
+                    'class-string-map<T as Foo, T&Bar>',
+                    'array<int, int>',
+                ],
+            ],
+            'classStringMapWithoutBoundAndArrayKeepTheIntersectionOfTheMapTemplate' => [
+                'array<class-string|int, Bar|int>',
+                [
+                    'class-string-map<T, T&Bar>',
+                    'array<int, int>',
+                ],
+            ],
             'classStringMapsWithDifferentBoundsReplaceEachTemplateByItsBound' => [
                 'array<class-string<Bar>|class-string<Foo>, Bar|Foo>',
                 [

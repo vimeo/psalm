@@ -180,6 +180,28 @@ final class ClassStringMapTest extends TestCase
                     '$c===' => 'class-string-map<T as Foo, T:class-string-map as Foo>',
                 ],
             ],
+            'foreachOverClassStringMapKeepsTheIntersectionOfItsTemplate' => [
+                'code' => '<?php
+                    class Foo {}
+                    interface Bar {
+                        public function bar(): int;
+                    }
+
+                    /**
+                     * @param class-string-map<T as Foo, T&Bar> $m
+                     * @param class-string-map<T, T&Bar> $n
+                     */
+                    function f(array $m, array $n): int {
+                        $i = 0;
+                        foreach ($m as $v) {
+                            $i += $v->bar();
+                        }
+                        foreach ($n as $v) {
+                            $i += $v->bar();
+                        }
+                        return $i;
+                    }',
+            ],
             'classStringMapBoundWithOfInANamespace' => [
                 'code' => '<?php
                     namespace NS;

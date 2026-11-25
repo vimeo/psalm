@@ -14,6 +14,8 @@ use Psalm\Type\MutableTypeVisitor;
 use Psalm\Type\TypeNode;
 use Psalm\Type\Union;
 
+use function array_shift;
+
 /**
  * Replaces the template of a class-string-map by its bound, leaving every other template as it is
  *
@@ -46,6 +48,9 @@ final class ClassStringMapBoundReplacer extends MutableTypeVisitor
         return $value_type;
     }
 
+    /**
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
     #[Override]
     protected function enterNode(TypeNode &$type): ?int
     {
@@ -58,7 +63,18 @@ final class ClassStringMapBoundReplacer extends MutableTypeVisitor
             && $type->param_name === $this->map->param_name
             && $type->defining_class === 'class-string-map'
         ) {
-            $type = $this->map->as_type ?? new TObject();
+            $extra_types = $type->extra_types;
+            $bound = $this->map->as_type;
+
+            if ($bound) {
+                $type = $bound->setIntersectionTypes([...$bound->extra_types, ...$extra_types]);
+            } elseif ($extra_types) {
+                // object&Bar is Bar
+                $type = array_shift($extra_types);
+                $type = $extra_types ? $type->setIntersectionTypes([...$type->extra_types, ...$extra_types]) : $type;
+            } else {
+                $type = new TObject();
+            }
 
             return self::DONT_TRAVERSE_CHILDREN;
         }
@@ -76,7 +92,7 @@ final class ClassStringMapBoundReplacer extends MutableTypeVisitor
     }
 
     /**
-     * @psalm-mutation-free
+     * @psalm-pure
      */
     private static function getBoundClassString(TClassStringMap $map): TClassString
     {
