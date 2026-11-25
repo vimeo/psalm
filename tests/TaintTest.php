@@ -2621,6 +2621,14 @@ final class TaintTest extends TestCase
     public static function providerValidCodeParse(): array
     {
         return [
+            'arrayWalkCallbackWritingSafeValuesByReference' => [
+                'code' => '<?php
+                    $items = ["a"];
+                    array_walk($items, static function (string &$item): void {
+                        $item = "safe";
+                    });
+                    echo implode("", $items);',
+            ],
             'offsetOverwrittenInTheBranchWhereItIsSetIsUntaintedAfterTheIf' => [
                 'code' => '<?php
                     function f(array $a): void {
@@ -8608,6 +8616,48 @@ final class TaintTest extends TestCase
     public static function providerInvalidCodeParse(): array
     {
         return [
+            'arrayWalkCallbackWritingTaintedValuesByReference' => [
+                'code' => '<?php
+                    $items = ["a"];
+                    array_walk($items, static function (string &$item): void {
+                        $item = (string) $_GET["a"];
+                    });
+                    echo implode("", $items);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'arrayWalkRecursiveCallbackWritingTaintedValuesByReference' => [
+                'code' => '<?php
+                    $items = [["a"]];
+                    array_walk_recursive($items, static function (string &$item): void {
+                        $item = (string) $_GET["a"];
+                    });
+                    echo implode("", $items[0]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'arrayWalkNamedFunctionWritingTaintedValuesByReference' => [
+                'code' => '<?php
+                    function fill(string &$item): void {
+                        $item = (string) $_GET["a"];
+                    }
+
+                    $items = ["a"];
+                    array_walk($items, "fill");
+                    echo implode("", $items);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'arrayWalkStaticMethodWritingTaintedValuesByReference' => [
+                'code' => '<?php
+                    final class Filler {
+                        public static function fill(string &$item): void {
+                            $item = (string) $_GET["a"];
+                        }
+                    }
+
+                    $items = ["a"];
+                    array_walk($items, [Filler::class, "fill"]);
+                    echo implode("", $items);',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintSinkOfAFunctionWithOverloadsIsStillChecked' => [
                 'code' => '<?php
                     /**

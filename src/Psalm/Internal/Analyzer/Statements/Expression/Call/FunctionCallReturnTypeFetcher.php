@@ -1252,6 +1252,43 @@ final class FunctionCallReturnTypeFetcher
     }
 
     /**
+     * The nodes of what the callables $callable_type holds leave in their by-reference parameters when they return
+     * (see FunctionLikeAnalyzer::taintByRefParamsOut()), by their ids
+     *
+     * @return array<string, DataFlowNode>
+     */
+    public static function getCallableByRefOutNodes(
+        StatementsAnalyzer $statements_analyzer,
+        Union $callable_type,
+    ): array {
+        $nodes = [];
+        foreach ($callable_type->getAtomicTypes() as $atomic) {
+            if ($atomic instanceof TClosure || $atomic instanceof TCallable) {
+                $callable_ids = $atomic->callable_id === null ? [] : [$atomic->callable_id];
+            } else {
+                $callable_ids = self::getCallableIds($statements_analyzer->getCodebase(), $atomic, null);
+            }
+
+            foreach ($callable_ids as $callable_id) {
+                [$storage, $target_id] = self::getCallableTarget($statements_analyzer, $callable_id)
+                    ?? [self::getClosureStorage($statements_analyzer, $callable_id), $callable_id];
+                if ($storage === null) {
+                    continue;
+                }
+
+                foreach ($storage->params as $i => $param) {
+                    if ($param->by_ref) {
+                        $node = DataFlowNode::getForMethodArgumentOut($target_id, $i, $storage);
+                        $nodes[$node->id] = $node;
+                    }
+                }
+            }
+        }
+
+        return $nodes;
+    }
+
+    /**
      * The function-like a callable id names, and the id the nodes of its body have: those of a method are keyed by
      * the class its body is analyzed as one of
      *
