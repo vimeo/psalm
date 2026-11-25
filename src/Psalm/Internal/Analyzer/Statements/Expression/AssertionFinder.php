@@ -31,6 +31,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ArrayFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
+use Psalm\Internal\Codebase\CanonicalPaths;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Codebase\StringContext;
 use Psalm\Internal\Codebase\TaintValidations;
@@ -513,6 +514,12 @@ final class AssertionFinder
             && ($pattern_match = self::getPatternMatchComparedToOne($conditional))
         ) {
             return self::getPatternMatchAssertions($pattern_match, $source, $this_class_name, $negated);
+        }
+
+        if ($source instanceof StatementsAnalyzer
+            && ($prefix_assertions = self::getCanonicalPathPrefixAssertions($conditional, $source, $negated)) !== []
+        ) {
+            return $prefix_assertions;
         }
 
         $null_position = self::hasNullVariable($conditional, $source);
@@ -1018,6 +1025,7 @@ final class AssertionFinder
             return [
                 ...self::processCustomAssertion($expr, $this_class_name, $source),
                 ...self::getUrlStartAssertions($expr, $source, $this_class_name),
+                ...CanonicalPaths::getAssertions($source, $expr->getArgs(), false),
             ];
         } else {
             return self::processCustomAssertion($expr, $this_class_name, $source);
@@ -1212,7 +1220,7 @@ final class AssertionFinder
             return false;
         }
 
-        return $type->getId() === 'bool' && !$type->possibly_undefined;
+        return $type->isBool() && !$type->possibly_undefined;
     }
 
     /**
@@ -1300,6 +1308,22 @@ final class AssertionFinder
                 );
             }
         }
+    }
+
+    /**
+     * Whether the expression is a call of a function-like with `@psalm-assert-if-true` or `@psalm-assert-if-false`
+     *
+     * @psalm-capabilities read-props
+     */
+    private static function hasConditionalAssertions(PhpParser\Node\Expr $expr, FileSource $source): bool
+    {
+        return ($expr instanceof PhpParser\Node\Expr\FuncCall
+                || $expr instanceof PhpParser\Node\Expr\MethodCall
+                || $expr instanceof PhpParser\Node\Expr\StaticCall)
+            && !$expr->isFirstClassCallable()
+            && $source instanceof StatementsAnalyzer
+            && ($source->node_data->getIfTrueAssertions($expr) !== null
+                || $source->node_data->getIfFalseAssertions($expr) !== null);
     }
 
     /**
@@ -2656,7 +2680,7 @@ final class AssertionFinder
         if ($var_name) {
             if ($base_conditional instanceof PhpParser\Node\Expr\Assign
                 || $base_conditional instanceof PhpParser\Node\Expr\AssignRef
-                || $base_conditional instanceof PhpParser\Node\Expr\AssignOp\Coalesce
+                || $base_conditional instanceof PhpParser\Node\Expr\AssignOp
             ) {
                 $var_name = '=' . $var_name;
             }
@@ -2738,11 +2762,16 @@ final class AssertionFinder
 
         [$base_conditional] = self::getOperands($conditional, $bool_position);
 
-        $var_name = ExpressionIdentifier::getExtendedVarId(
+        $call_var_id = ExpressionIdentifier::getExtendedVarId(
             $base_conditional,
             $this_class_name,
             $source,
         );
+
+        // a call Psalm remembers the result of has an id, but its `@psalm-assert-if-*` assertions say more: they are
+        // given, and the call's own assertion is added to them
+        $has_conditional_assertions = self::hasConditionalAssertions($base_conditional, $source);
+        $var_name = $has_conditional_assertions ? null : $call_var_id;
 
         if ($var_name) {
             if ($strict && !self::isBoolVariable($base_conditional, $source)) {
@@ -2763,6 +2792,12 @@ final class AssertionFinder
                 : [];
 
             $if_types = $operand_holds ? $base_assertions : self::getNegatedAssertions($base_assertions);
+            $if_types = self::addCallAssertion(
+                $if_types,
+                $has_conditional_assertions ? $call_var_id : null,
+                self::isBoolVariable($base_conditional, $source) ? new Falsy() : new IsType(new TFalse()),
+                $negated,
+            );
         } else {
             if ($base_conditional instanceof PhpParser\Node\Expr\FuncCall
                 && !$base_conditional->isFirstClassCallable()
@@ -2814,6 +2849,14 @@ final class AssertionFinder
             }
 
             $if_types = $operand_holds ? $base_assertions : self::getNegatedAssertions($base_assertions);
+            $if_types = self::addCallAssertion(
+                $if_types,
+                $has_conditional_assertions ? $call_var_id : null,
+                $strict && !self::isBoolVariable($base_conditional, $source)
+                    ? new IsType($value ? new TTrue() : new TFalse())
+                    : ($value ? new Truthy() : new Falsy()),
+                $negated,
+            );
         }
 
         if ($strict
@@ -2850,6 +2893,28 @@ final class AssertionFinder
         }
 
         /** @psalm-suppress LessSpecificReturnStatement */
+        return $if_types;
+    }
+
+    /**
+     * The assertion on a remembered call's own id, as one more conjunct of the call's `@psalm-assert-if-*` assertions
+     *
+     * @param list<array<string, non-empty-list<non-empty-list<Assertion>>>> $if_types
+     * @return list<array<string, non-empty-list<non-empty-list<Assertion>>>>
+     * @psalm-pure
+     */
+    private static function addCallAssertion(
+        array $if_types,
+        ?string $call_var_id,
+        Assertion $assertion,
+        bool $negated,
+    ): array {
+        if ($call_var_id === null) {
+            return $if_types;
+        }
+
+        $if_types[] = [$call_var_id => [[self::withPolarity($assertion, $negated)]]];
+
         return $if_types;
     }
 
@@ -3414,7 +3479,7 @@ final class AssertionFinder
 
             while ($operand instanceof PhpParser\Node\Expr\Assign
                 || $operand instanceof PhpParser\Node\Expr\AssignRef
-                || $operand instanceof PhpParser\Node\Expr\AssignOp\Coalesce
+                || $operand instanceof PhpParser\Node\Expr\AssignOp
                 || $operand instanceof PhpParser\Node\Expr\PreInc
                 || $operand instanceof PhpParser\Node\Expr\PreDec
             ) {
@@ -3555,6 +3620,39 @@ final class AssertionFinder
         return $haystack_var_id === null
             ? []
             : [[$haystack_var_id => [[new MatchesPattern(TaintKind::INPUT_URL_SCHEME)]]]];
+    }
+
+    /**
+     * The assertion that a canonical path starts with a directory (`strpos($path, '/var/app/') === 0`), or none
+     *
+     * @return list<non-empty-array<string, non-empty-list<non-empty-list<Assertion>>>>
+     */
+    private static function getCanonicalPathPrefixAssertions(
+        PhpParser\Node\Expr\BinaryOp $conditional,
+        StatementsAnalyzer $source,
+        bool $negated,
+    ): array {
+        // `strpos() == 0` is also true when it didn't find the prefix (false)
+        if (!$conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical
+            && !$conditional instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical
+        ) {
+            return [];
+        }
+
+        $sides = [[$conditional->left, $conditional->right], [$conditional->right, $conditional->left]];
+        foreach ($sides as [$call, $zero]) {
+            if ($call instanceof PhpParser\Node\Expr\FuncCall
+                && $call->name instanceof PhpParser\Node\Name
+                && $call->name->toLowerString() === 'strpos'
+                && !$call->isFirstClassCallable()
+                && $zero instanceof PhpParser\Node\Scalar\Int_
+                && $zero->value === 0
+            ) {
+                return CanonicalPaths::getAssertions($source, $call->getArgs(), $negated);
+            }
+        }
+
+        return [];
     }
 
     /**
@@ -3778,7 +3876,7 @@ final class AssertionFinder
                         // - The array may have one of the types but not the others.
                         //
                         // NOTE: the negation of the negation is the original assertion.
-                        if ($value_type->getId() !== '' && !$value_type->isMixed() && !$value_type->hasTemplate()) {
+                        if (!$value_type->isUnionEmpty() && !$value_type->isMixed() && !$value_type->hasTemplate()) {
                             $assertions[] = new InArray($value_type, $haystack);
                         }
                     } else {

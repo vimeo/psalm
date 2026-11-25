@@ -178,6 +178,7 @@ final class TObjectWithProperties extends TObject
 
     /**
      * @param  array<lowercase-string, string> $aliased_classes
+     * @psalm-pure
      */
     #[Override]
     public function toPhpString(
@@ -186,7 +187,7 @@ final class TObjectWithProperties extends TObject
         ?string $this_class,
         int $analysis_php_version_id,
     ): string {
-        return $this->getKey();
+        return 'object';
     }
 
     /**
@@ -209,7 +210,9 @@ final class TObjectWithProperties extends TObject
             return false;
         }
 
-        if ($this->methods !== $other_type->methods) {
+        if ($this->methods !== $other_type->methods
+            || !$this->intersectionTypesEqual($other_type->extra_types, $ensure_source_equality)
+        ) {
             return false;
         }
 
@@ -326,9 +329,12 @@ final class TObjectWithProperties extends TObject
         return ['properties', 'extra_types'];
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function getAssertionString(): string
     {
-        return $this->getKey();
+        return 'object';
     }
 }

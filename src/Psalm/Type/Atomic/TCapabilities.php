@@ -42,7 +42,7 @@ final class TCapabilities extends Atomic
     #[Override]
     public function getId(bool $exact = true): string
     {
-        return $this->getKey();
+        return Capabilities::toString($this->capabilities);
     }
 
     /**
@@ -76,6 +76,6 @@ final class TCapabilities extends Atomic
         ?string $this_class,
         bool $use_phpdoc_format,
     ): string {
-        return $this->getKey();
+        return Capabilities::toString($this->capabilities);
     }
 }

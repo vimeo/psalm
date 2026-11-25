@@ -1278,7 +1278,11 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 // declares it
                 $class_context->vars_in_scope['static::$' . $property_name] = $fleshed_out_type;
             } else {
-                $class_context->vars_in_scope['$this->' . $property_name] = $fleshed_out_type;
+                // a readonly property keeps its value after a call
+                $class_context->vars_in_scope['$this->' . $property_name] = $property_storage->readonly
+                    && !$property_storage->allow_private_mutation
+                    ? $fleshed_out_type->setProperties(['has_mutations' => false])
+                    : $fleshed_out_type;
             }
         }
 

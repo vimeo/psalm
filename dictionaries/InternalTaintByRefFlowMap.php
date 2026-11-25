@@ -6,11 +6,14 @@ declare(strict_types=1);
  * The builtin functions only declared by the call map that fill a by-reference parameter with data given to some of
  * their other parameters: by-reference parameter => the parameters whose taints flow into it. A parameter given as a
  * key flows through the path its value names, as in InternalTaintFlowMap.php: what builds an array out of a string
- * goes through `unserialization`.
+ * goes through `unserialization`. A parameter followed by `(&)` names what the callables given to it leave in their
+ * by-reference parameters: the elements array_walk() passes them by reference.
  *
  * @var array<lowercase-string, non-empty-array<non-empty-string, non-empty-array<int|non-empty-string, non-empty-string>>>
  */
 return [
+    'array_walk' => ['array' => ['callback(&)' => 'arrayvalue-assignment']],
+    'array_walk_recursive' => ['array' => ['callback(&)' => 'arrayvalue-assignment']],
     'mb_ereg' => ['matches' => ['string']],
     'mb_eregi' => ['matches' => ['string']],
     'mb_parse_str' => ['result' => ['string' => 'unserialization']],

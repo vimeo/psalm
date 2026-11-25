@@ -80,10 +80,10 @@ a library's connection class), so that what one query stores in a column taints 
 return. Psalm reads the SQL at each call and ignores the queries the annotated method's body runs. See
 [Databases](taint_flow.md#databases).
 
-### `@psalm-database-query $sql [$params] [result]`
+### `@psalm-database-query $sql [$params] [result] [readonly]`
 
 The method runs the SQL given to `$sql`, with the values of its placeholders given to `$params`: a list for `?`, an
-array keyed by name for `:name`.
+array keyed by name for `:name` and `{name:Type}`.
 
 ```php
 <?php // --taint-analysis
@@ -127,6 +127,41 @@ The last word says what the method returns of the rows the query selects:
 | `value`            | the first column of the first row                                   | `PDOStatement::fetchColumn()` |
 | `column`           | a list of the first column of each row                              | `fetchAll(PDO::FETCH_COLUMN)` |
 | `none`             | nothing read from the database                                      | `PDO::exec()`                 |
+
+With `readonly`, the method runs only queries that read, like ClickHouse with its `readonly` setting: a query Psalm
+can't parse reads any column, but stores nothing.
+
+```php
+<?php // --taint-analysis
+final class ClickHouse
+{
+    /**
+     * @psalm-database-query $sql $params none
+     */
+    public function write(string $sql, array $params = []): void {}
+
+    /**
+     * @return list<array<string, mixed>>
+     * @psalm-database-query $sql $params rows readonly
+     */
+    public function select(string $sql, array $params = []): array {}
+}
+
+function run(ClickHouse $db, string $sql): void {
+    $db->write(
+        'INSERT INTO users (name, bio) VALUES ({name:String}, {bio:String})',
+        ['name' => 'admin', 'bio' => $_GET['bio'] ?? ''],
+    );
+
+    foreach ($db->select($sql) as $row) {
+        echo (string) $row['bio']; // TaintedHtml
+    }
+
+    foreach ($db->select('SELECT name FROM users') as $user) {
+        echo (string) $user['name']; // no issue (TaintedHtml without readonly)
+    }
+}
+```
 
 ### `@psalm-database-prepare $sql`, `@psalm-database-execute [$params] [result]` and `@psalm-database-bind $key $value`
 
@@ -213,7 +248,7 @@ on (a statement, a result). The last word says how, as in the table of `@psalm-d
 ### `@psalm-database-insert $table $data`, `@psalm-database-update $table $data` and `@psalm-database-select $table`
 
 `insert` and `update` store each value of the array given to `$data` in the column its key names, in the table given
-to `$table`. `select` returns the rows of that table, as `SELECT *` gives them.
+to `$table`, or a list of rows. `select` returns the rows of that table, as `SELECT *` gives them.
 
 ```php
 <?php // --taint-analysis
@@ -239,6 +274,8 @@ final class Table
 function run(Table $db): void {
     $db->insert('users', ['name' => 'admin', 'bio' => '']);
     $db->update('users', ['bio' => $_GET['bio'] ?? ''], ['id' => 1]);
+    $db->insert('posts', [['title' => 'Hello', 'body' => $_GET['body'] ?? '']]);
+    $db->insert('tags', [[1, $_GET['tag'] ?? '']]);
 
     foreach ($db->select('users') as $user) {
         echo (string) $user['bio'];  // TaintedHtml
@@ -246,7 +283,12 @@ function run(Table $db): void {
     }
 
     foreach ($db->select('posts') as $post) {
+        echo (string) $post['body'];  // TaintedHtml
         echo (string) $post['title']; // no issue
+    }
+
+    foreach ($db->select('tags') as $tag) {
+        echo (string) $tag['label']; // TaintedHtml: a value without a column name can be in any column
     }
 }
 ```

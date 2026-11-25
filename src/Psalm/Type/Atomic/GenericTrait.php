@@ -14,6 +14,7 @@ use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeArgumentProjection;
+use Psalm\Internal\Type\TypeTokenizer;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
@@ -145,7 +146,8 @@ trait GenericTrait
 
             $value_type_string = $value_type->toNamespacedString($namespace, $aliased_classes, $this_class, true);
 
-            if (!$value_type->isSingle()) {
+            // `[]` binds tighter than `|` and `&`: `(A&B)[]`, not `A&B[]`
+            if (TypeTokenizer::hasTopLevelOperator($value_type_string, '|&')) {
                 return '(' . $value_type_string . ')[]';
             }
 
