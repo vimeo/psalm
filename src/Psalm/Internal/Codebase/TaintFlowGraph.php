@@ -1341,27 +1341,45 @@ final class TaintFlowGraph extends DataFlowGraph
 
         unset($forward, $useful_queue);
 
+        // The call stacks are interned as a trie, so that pushing and popping one is an array access, and a search
+        // state is the int (stack id << 32) | node index.
+        // stack id => the call entered last (its specialization key), the stack without it, the number of calls
+        $stack_key = [null];
+        $stack_parent = [0];
+        $stack_depth = [0];
+        $stack_children = [];
+        $node_index = [];
+        // node id => what splitSpecializedId() returns
+        $split_unspecialized = [];
+        $split_key = [];
+
         foreach ($this->generator_sends as $send_id => $generator_ids) {
             ksort($generator_ids);
 
             $send_node = $this->table->decode($send_id, $this->nodes[$send_id]);
 
-            // [node id, specialization keys of the calls entered through their returns, innermost last]
+            // [node id, the stack of the calls entered through their returns, innermost last; 0 if none]
             $queue = [];
             $visited = [];
             $stacks_per_node = [];
             $searched = [];
 
             foreach ($generator_ids as $generator_id => $_) {
-                $queue[] = [$generator_id, []];
-                $visited[$generator_id . "\0"] = true;
+                $queue[] = [$generator_id, 0];
+                $node_index[$generator_id] ??= count($node_index);
+                $visited[$node_index[$generator_id]] = true;
             }
 
             while ($queue) {
-                [$id, $calls] = array_pop($queue);
+                [$id, $stack] = array_pop($queue);
                 $searched[$id] = true;
 
-                [$unspecialized_id, $specialization_key] = self::splitSpecializedId($id);
+                if (!isset($split_unspecialized[$id])) {
+                    [$split_unspecialized[$id], $split_key[$id]] = self::splitSpecializedId($id);
+                }
+
+                $unspecialized_id = $split_unspecialized[$id];
+                $specialization_key = $split_key[$id];
 
                 if (isset($this->generator_sent_nodes[$unspecialized_id])) {
                     $new_predecessors = $this->linkGeneratorSend(
@@ -1381,14 +1399,16 @@ final class TaintFlowGraph extends DataFlowGraph
                     }
 
                     foreach ($new_predecessors as $linked_id => $from_id) {
+                        $node_index[$from_id] ??= count($node_index);
+
                         // reached from $linked_id with any of its call stacks: any call matches
                         if (isset($useful[$from_id])
                             && isset($searched[$linked_id])
-                            && !isset($visited[$from_id . "\0"])
+                            && !isset($visited[$node_index[$from_id]])
                         ) {
-                            $visited[$from_id . "\0"] = true;
+                            $visited[$node_index[$from_id]] = true;
                             $stacks_per_node[$from_id] = ($stacks_per_node[$from_id] ?? 0) + 1;
-                            $queue[] = [$from_id, []];
+                            $queue[] = [$from_id, 0];
                         }
                     }
 
@@ -1400,37 +1420,46 @@ final class TaintFlowGraph extends DataFlowGraph
                         continue;
                     }
 
-                    $from_calls = $calls;
+                    $from_stack = $stack;
 
                     if ($specialization_key !== null && $from_id === $unspecialized_id) {
                         // into the body of a call through its return
-                        $from_calls[] = $specialization_key;
-
-                        if (count($from_calls) > self::GENERATOR_SEND_CALL_DEPTH) {
+                        if ($stack_depth[$stack] >= self::GENERATOR_SEND_CALL_DEPTH) {
                             // too deep (recursion): any call matches
-                            $from_calls = [];
+                            $from_stack = 0;
+                        } elseif (isset($stack_children[$stack][$specialization_key])) {
+                            $from_stack = $stack_children[$stack][$specialization_key];
+                        } else {
+                            $from_stack = count($stack_key);
+                            $stack_key[] = $specialization_key;
+                            $stack_parent[] = $stack;
+                            $stack_depth[] = $stack_depth[$stack] + 1;
+                            $stack_children[$stack][$specialization_key] = $from_stack;
                         }
                     } else {
-                        [$from_unspecialized_id, $from_specialization_key] = self::splitSpecializedId($from_id);
+                        if (!isset($split_unspecialized[$from_id])) {
+                            [$split_unspecialized[$from_id], $split_key[$from_id]] = self::splitSpecializedId($from_id);
+                        }
 
-                        if ($from_unspecialized_id === $id) {
+                        if ($split_unspecialized[$from_id] === $id && $stack !== 0) {
                             // out of a body through the arguments of a call: the one entered, if any
-                            if ($from_calls && end($from_calls) !== $from_specialization_key) {
+                            if ($stack_key[$stack] !== $split_key[$from_id]) {
                                 continue;
                             }
 
-                            array_pop($from_calls);
+                            $from_stack = $stack_parent[$stack];
                         }
                     }
 
-                    $state_key = $from_id . "\0" . implode("\0", $from_calls);
+                    $node_index[$from_id] ??= count($node_index);
+                    $state_key = ($from_stack << 32) | $node_index[$from_id];
 
                     if (!isset($visited[$state_key])
                         && ($stacks_per_node[$from_id] ?? 0) >= self::GENERATOR_SEND_STACKS
                     ) {
                         // a new call stack at a node with too many: any call matches
-                        $from_calls = [];
-                        $state_key = $from_id . "\0";
+                        $from_stack = 0;
+                        $state_key = $node_index[$from_id];
                     }
 
                     if (isset($visited[$state_key])) {
@@ -1439,7 +1468,7 @@ final class TaintFlowGraph extends DataFlowGraph
 
                     $visited[$state_key] = true;
                     $stacks_per_node[$from_id] = ($stacks_per_node[$from_id] ?? 0) + 1;
-                    $queue[] = [$from_id, $from_calls];
+                    $queue[] = [$from_id, $from_stack];
                 }
             }
         }
