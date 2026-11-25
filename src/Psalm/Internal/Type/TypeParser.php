@@ -1027,7 +1027,7 @@ final class TypeParser
                     continue;
                 }
 
-                throw new TypeParseTreeException('Invalid array key type ' . $atomic_type->getKey());
+                throw new TypeParseTreeException('Invalid array key type ' . $atomic_type->getId());
             }
 
             return $generic_type_value === 'array'
