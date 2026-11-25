@@ -465,6 +465,74 @@ final class MissingReturnTypeTest extends FileManipulationTestCase
                 'issues_to_fix' => ['MissingReturnType'],
                 'safe_types' => true,
             ],
+            'addMissingReturnTypeParenthesisesAUnionTemplateBoundInAnIntersection' => [
+                'input' => '<?php
+                    namespace Foo;
+                    interface Baz {}
+                    interface Qux {}
+                    interface Quux {}
+                    /**
+                     * @template T as Baz|Qux
+                     * @param Quux&T $s
+                     */
+                    function foo($s) {
+                        return $s;
+                    }',
+                'output' => '<?php
+                    namespace Foo;
+                    interface Baz {}
+                    interface Qux {}
+                    interface Quux {}
+                    /**
+                     * @template T as Baz|Qux
+                     *
+                     * @param Quux&T $s
+                     *
+                     * @return Quux&(Baz|Qux)
+                     *
+                     * @psalm-return Quux&T
+                     */
+                    function foo($s) {
+                        return $s;
+                    }',
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => true,
+            ],
+            'addMissingReturnTypeParenthesisesAUnionTemplateBoundInAnIntersectionOfListValues' => [
+                'input' => '<?php
+                    namespace Foo;
+                    interface Baz {}
+                    interface Qux {}
+                    interface Quux {}
+                    /**
+                     * @template T as Baz|Qux
+                     * @param list<Quux&T> $s
+                     */
+                    function foo(array $s) {
+                        return $s;
+                    }',
+                'output' => '<?php
+                    namespace Foo;
+                    interface Baz {}
+                    interface Qux {}
+                    interface Quux {}
+                    /**
+                     * @template T as Baz|Qux
+                     *
+                     * @param list<Quux&T> $s
+                     *
+                     * @return (Quux&(Baz|Qux))[]
+                     *
+                     * @psalm-return list<Quux&T>
+                     */
+                    function foo(array $s) {
+                        return $s;
+                    }',
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => true,
+            ],
             'addMissingReturnTypeWritesEmptyNumericAsNumeric' => [
                 'input' => '<?php
                     /**

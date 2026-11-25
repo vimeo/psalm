@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Type\Atomic;
 
 use Override;
+use Psalm\Internal\Type\TypeTokenizer;
 use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
@@ -82,7 +83,10 @@ final class TIntersection extends Atomic
 
         foreach ($this->types as $type) {
             $type_string = $type->toNamespacedString($namespace, $aliased_classes, $this_class, $use_phpdoc_format);
-            $type_strings[] = count($type->getAtomicTypes()) > 1 ? '(' . $type_string . ')' : $type_string;
+            // a single atomic can be written as a union, such as a template param written as its bound `A|B`
+            $type_strings[] = TypeTokenizer::hasTopLevelOperator($type_string, '|')
+                ? '(' . $type_string . ')'
+                : $type_string;
         }
 
         return implode('&', $type_strings);
