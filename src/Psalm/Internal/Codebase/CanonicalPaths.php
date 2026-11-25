@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Codebase;
 
-use PhpParser\Node\Expr;
+use PhpParser\Node\Arg;
 use PhpParser\Node\Expr\FuncCall;
 use Psalm\CodeLocation;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
@@ -68,28 +68,43 @@ final class CanonicalPaths
     }
 
     /**
-     * The assertion that the path the subject is starts with the directory the prefix is
+     * The assertion that the haystack given to str_starts_with() or strpos() is a path starting with the directory
+     * the needle is
      *
-     * @return ?array{string, MatchesPattern} the id of the variable and the assertion
+     * @param array<array-key, Arg> $args
+     * @return list<non-empty-array<string, non-empty-list<non-empty-list<MatchesPattern>>>>
      */
-    public static function getAssertion(
-        StatementsAnalyzer $statements_analyzer,
-        Expr $subject,
-        Expr $prefix,
-        bool $negated,
-    ): ?array {
-        $graph = $statements_analyzer->getTaintFlowGraphWithSuppressed();
-        $subject_type = $statements_analyzer->node_data->getType($subject);
-        $prefix_type = $statements_analyzer->node_data->getType($prefix);
+    public static function getAssertions(StatementsAnalyzer $statements_analyzer, array $args, bool $negated): array
+    {
+        $subject = null;
+        $prefix = null;
+        foreach ($args as $offset => $arg) {
+            $name = $arg->name?->name;
+            if ($arg->unpack) {
+                return [];
+            } elseif ($name === 'haystack' || ($name === null && $offset === 0)) {
+                $subject = $arg->value;
+            } elseif ($name === 'needle' || ($name === null && $offset === 1)) {
+                $prefix = $arg->value;
+            } else {
+                // strpos() from an offset
+                return [];
+            }
+        }
 
-        if ($graph === null
+        $graph = $statements_analyzer->getTaintFlowGraphWithSuppressed();
+        $subject_type = $subject === null ? null : $statements_analyzer->node_data->getType($subject);
+        $prefix_type = $prefix === null ? null : $statements_analyzer->node_data->getType($prefix);
+
+        if ($subject === null
+            || $graph === null
             || $subject_type === null
             || $subject_type->parent_nodes === []
             || $prefix_type === null
             || !$prefix_type->isSingleStringLiteral()
             || !self::isDirectory($prefix_type->getSingleStringLiteral()->value)
         ) {
-            return null;
+            return [];
         }
 
         $var_id = ExpressionIdentifier::getExtendedVarId(
@@ -102,7 +117,7 @@ final class CanonicalPaths
             ? TaintKind::INPUT_SSRF | TaintKind::INPUT_FILE
             : TaintKind::INPUT_SSRF;
 
-        return $var_id === null ? null : [$var_id, new MatchesPattern($removed_taints, $negated)];
+        return $var_id === null ? [] : [[$var_id => [[new MatchesPattern($removed_taints, $negated)]]]];
     }
 
     /**

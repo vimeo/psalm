@@ -1960,6 +1960,15 @@ final class TaintTest extends TestCase
                         }
                     }',
             ],
+            'canonicalPathCheckedWithNamedArgumentsIsInTheDirectory' => [
+                'code' => '<?php
+                    function save(): void {
+                        $path = realpath((string) $_GET["path"]);
+                        if ($path !== false && str_starts_with(needle: "/srv/files/", haystack: $path)) {
+                            file_put_contents($path, "data");
+                        }
+                    }',
+            ],
             'pathStartingWithADirectoryIsNoServer' => [
                 'code' => '<?php
                     function connect(): void {
@@ -8363,6 +8372,16 @@ final class TaintTest extends TestCase
                             return;
                         }
                         file_put_contents($resolved, "data");
+                    }',
+                'error_message' => 'TaintedFile',
+            ],
+            'canonicalPathThatIsTheStartOfADirectoryCanBeAnywhere' => [
+                'code' => '<?php
+                    function save(): void {
+                        $path = realpath((string) $_GET["path"]);
+                        if ($path !== false && strpos(needle: $path, haystack: "/srv/files/") === 0) {
+                            file_put_contents($path, "data");
+                        }
                     }',
                 'error_message' => 'TaintedFile',
             ],

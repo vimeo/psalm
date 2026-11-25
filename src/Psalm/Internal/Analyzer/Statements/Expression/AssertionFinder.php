@@ -1025,12 +1025,7 @@ final class AssertionFinder
             return [
                 ...self::processCustomAssertion($expr, $this_class_name, $source),
                 ...self::getUrlStartAssertions($expr, $source, $this_class_name),
-                ...(($prefix = CanonicalPaths::getAssertion(
-                    $source,
-                    $expr->getArgs()[0]->value,
-                    $expr->getArgs()[1]->value,
-                    false,
-                )) === null ? [] : [[$prefix[0] => [[$prefix[1]]]]]),
+                ...CanonicalPaths::getAssertions($source, $expr->getArgs(), false),
             ];
         } else {
             return self::processCustomAssertion($expr, $this_class_name, $source);
@@ -3591,19 +3586,12 @@ final class AssertionFinder
         foreach ($sides as [$call, $zero]) {
             if ($call instanceof PhpParser\Node\Expr\FuncCall
                 && $call->name instanceof PhpParser\Node\Name
-                && strtolower($call->name->getFirst()) === 'strpos'
+                && $call->name->toLowerString() === 'strpos'
                 && !$call->isFirstClassCallable()
-                && count($call->getArgs()) === 2
                 && $zero instanceof PhpParser\Node\Scalar\Int_
                 && $zero->value === 0
-                && ($prefix = CanonicalPaths::getAssertion(
-                    $source,
-                    $call->getArgs()[0]->value,
-                    $call->getArgs()[1]->value,
-                    $negated,
-                )) !== null
             ) {
-                return [[$prefix[0] => [[$prefix[1]]]]];
+                return CanonicalPaths::getAssertions($source, $call->getArgs(), $negated);
             }
         }
 
