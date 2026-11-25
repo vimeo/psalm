@@ -59,11 +59,9 @@ package provides or replaces it (the polyfills, such as `symfony/polyfill-mbstri
 [`<enableExtensions>`](../configuration.md#enableextensions) lists it. Without a `composer.json`, the issue isn't
 reported.
 
-In a monorepo, the `composer.json` of a file is that of the package it belongs to: the nearest one above it, below
-the root of the project and outside its vendor directory. The package then declares the extensions it requires,
-requires for development or suggests, and those of the packages it requires that are installed (directly or through
-the packages they require) provide or replace; its `php` requirement, if any, is the one checked. The other files take
-the `composer.json` of the project:
+In a monorepo, a file takes the `composer.json` of its package, the nearest one above it below the project root and
+outside the vendor directory: its extensions, those of the installed packages it requires, and its `php` requirement.
+Other files take the `composer.json` of the project:
 
 ```
 composer.json                     requires ext-mbstring
