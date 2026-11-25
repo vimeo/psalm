@@ -667,7 +667,7 @@ final class Config
      * The extensions Psalm has a stub for in stubs/extensions, by name (without `ext-`). Values:
      *  - true: composer.json requires the extension, or `<enableExtensions>` lists it: its stub is loaded
      *  - false: `<disableExtensions>` lists it: its stub isn't loaded
-     *  - null: neither: its stub is loaded if the scanned code uses one of its symbols
+     *  - null: neither: its stub is loaded if the scanned code uses one of its symbols, or by the language server
      *
      * @psalm-readonly-allow-private-mutation
      * @var array<string, bool|null>
@@ -3180,13 +3180,16 @@ final class Config
         }
 
         // also the stubs of the extensions composer.json doesn't require, if the scanned code uses one of their
-        // symbols: MissingExtensionRequirement reports that use
+        // symbols: MissingExtensionRequirement reports that use. The language server visits the stubs once, before
+        // the code it later sees changing, so it loads all of them.
         $ext_stubs_dir = $dir_lvl_2 . DIRECTORY_SEPARATOR . "stubs" . DIRECTORY_SEPARATOR . "extensions";
         $referenced_symbols = null;
         $extension_stubs = [];
         foreach ($this->php_extensions as $ext => $enabled) {
             $stub_path = $ext_stubs_dir . DIRECTORY_SEPARATOR . "$ext.phpstub";
-            if ($enabled === null) {
+            if ($enabled === null && $codebase->language_server) {
+                $enabled = true;
+            } elseif ($enabled === null) {
                 $referenced_symbols ??= self::getReferencedSymbols();
                 $enabled = array_any(
                     self::getExtensionStubSymbols($stub_path),

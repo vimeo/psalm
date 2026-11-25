@@ -2651,6 +2651,26 @@ final class ConfigTest extends DeferredAnalyzerTestCase
         }
     }
 
+    /**
+     * The language server visits the stubs once, before the code it sees changing uses an extension
+     */
+    public function testLanguageServerLoadsTheStubOfEveryExtension(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithAConfigOfThisRepository('8.4');
+        $config = $this->project_analyzer->getConfig();
+        $codebase = $this->project_analyzer->getCodebase();
+        $codebase->language_server = true;
+
+        $file_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'somefile.php';
+        $this->addFile($file_path, '<?php echo 1;');
+        $codebase->addFilesToAnalyze([$file_path => $file_path]);
+        $codebase->scanFiles();
+        $config->visitStubFiles($codebase);
+
+        $this->assertContains(self::getExtensionStubPath('redis'), $config->internal_stubs);
+        $this->assertContains(self::getExtensionStubPath('mongodb'), $config->internal_stubs);
+    }
+
     public function testStubOfADisabledExtensionIsNotLoaded(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(

@@ -840,7 +840,7 @@ Optional. Extensions the project uses besides those `composer.json` declares, so
 ```
 
 #### &lt;disableExtensions&gt;
-Optional. Extensions whose stub Psalm doesn't load. Psalm loads the stub of an extension it has one for (`stubs/extensions`) when the code uses one of its classes, functions or constants, whether or not `composer.json` requires the extension.
+Optional. Extensions whose stub Psalm doesn't load. Psalm loads the stub of an extension it has one for (`stubs/extensions`) when the code uses one of its classes, functions or constants (the language server loads all of them), whether or not `composer.json` requires the extension.
 ```xml
 <disableExtensions>
   <extension name="gmp"/>
