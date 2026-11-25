@@ -443,6 +443,84 @@ final class TypeVariableTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'constructorClassStringOrTemplateParamIsBoundToTheTemplateOfAClassString' => [
+                'code' => '<?php
+                    /** @template TModel */
+                    final class Select
+                    {
+                        /** @param class-string<TModel>|string|TModel $model */
+                        public function __construct(public mixed $model) {}
+                    }
+
+                    /** @template TModel */
+                    final class QB
+                    {
+                        /** @param class-string<TModel>|TModel|string $model */
+                        public function __construct(private readonly string|object $model) {}
+
+                        /** @return Select<TModel> */
+                        public function select(): Select
+                        {
+                            return new Select(model: $this->model);
+                        }
+
+                        /**
+                         * @param class-string<TModel> $class
+                         * @return Select<TModel>
+                         */
+                        public function selectClass(string $class): Select
+                        {
+                            return new Select($class);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'constructorClassStringOrTemplateParamIsBoundToTheClassOfALiteralClassString' => [
+                'code' => '<?php
+                    final class Foo {}
+
+                    /** @template T */
+                    final class Select
+                    {
+                        /** @param class-string<T>|string|T $model */
+                        public function __construct(public mixed $model) {}
+                    }
+
+                    /** @return Select<Foo> */
+                    function f(): Select
+                    {
+                        return new Select(Foo::class);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'constructorClassStringParamsAreBoundByEachArgument' => [
+                'code' => '<?php
+                    final class Foo {}
+                    final class Bar {}
+
+                    /** @template T */
+                    final class Pair
+                    {
+                        /**
+                         * @param class-string<T> $a
+                         * @param class-string<T> $b
+                         */
+                        public function __construct(string $a, string $b) {}
+
+                        /** @param T $t */
+                        public function set(mixed $t): void {}
+                    }
+
+                    $pair = new Pair(Foo::class, Bar::class);
+                    $pair->set(new Bar());',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'unboundConstructorTemplateHeldBySiblingConstraints' => [
                 'code' => '<?php
                     /**
@@ -3198,6 +3276,62 @@ final class TypeVariableTest extends TestCase
                     '$kept===' => 'Child<`_1:P>',
                 ],
                 'ignored_issues' => ['RedundantCondition'],
+            ],
+            'assertionOnAVariableBoundToItsOwnObject' => [
+                'code' => '<?php
+                    /** @template T */
+                    class Base {}
+
+                    /**
+                     * @template T
+                     * @extends Base<T>
+                     */
+                    final class Box extends Base {
+                        /** @param T $v */
+                        public function __construct(mixed $v) {}
+
+                        /** @param T $v */
+                        public function add(mixed $v): void {}
+                    }
+
+                    final class P {}
+
+                    $box = new Box(new P());
+                    $box->add($box);
+                    assert($box instanceof Base);',
+                'assertions' => [
+                    '$box===' => 'Box<`_0:Box<`_0:P>|P>',
+                ],
+                'ignored_issues' => ['RedundantCondition'],
+            ],
+            'propertiesOfAVariableWithSeveralValues' => [
+                'code' => '<?php
+                    /** @template T as object */
+                    final class Box {
+                        /** @param T $o */
+                        public function __construct(object $o) {}
+
+                        /** @param T $o */
+                        public function add(object $o): void {}
+
+                        /** @return properties-of<T> */
+                        public function props() { throw new Exception(); }
+                    }
+
+                    final class P {
+                        public int $x = 0;
+                    }
+
+                    final class Q {
+                        public string $x = "";
+                    }
+
+                    $box = new Box(new P());
+                    $box->add(new Q());
+                    $props = $box->props();',
+                'assertions' => [
+                    '$props===' => 'array{x: int|string}',
+                ],
             ],
         ];
     }

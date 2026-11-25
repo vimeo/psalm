@@ -61,8 +61,8 @@ projects:
 
   drupal:
     repo: https://github.com/drupal/drupal
-    ref: "5183efd351caa95ff6a0d8972d40e575d53174c0"
-    tag: 11.4.13
+    ref: "2d587c53511e71c16663b4b9d5ef12e67f18e1be"
+    tag: 11.4.14
     timeout: 600
     exercises: custom file extensions (.module/.inc/.install), procedural hooks plus OOP services, plugin/annotation/attribute discovery, dynamic entity APIs, large taint graph
     psalm:

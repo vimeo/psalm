@@ -850,6 +850,11 @@ final class AssertionFinder
             return;
         }
 
+        // a possibly undefined variable read in isset mode (`$a?->b ?? 1`) is null, as the reconciler takes it
+        if ($var_type->possibly_undefined && !$var_type->possibly_undefined_from_try && $value_type->isNull()) {
+            return;
+        }
+
         $code_location = new CodeLocation($source, $conditional);
         // the key of the issue the reconciler reports for the same comparison, so that only one is shown
         $dupe_key = !$negated && !$var_type->from_docblock && $value_type->isNull()
