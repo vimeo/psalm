@@ -1689,6 +1689,9 @@ final class AssignmentAnalyzer
             }
         }
 
+        // the variable is another value now: what was known of it before holds no more
+        $context->removeVarFromConflictingClauses($lhs_var_id);
+
         $context->vars_in_scope[$lhs_var_id] = &$context->vars_in_scope[$rhs_var_id];
         $context->hasVariable($lhs_var_id);
         $context->references_in_scope[$lhs_var_id] = $rhs_var_id;

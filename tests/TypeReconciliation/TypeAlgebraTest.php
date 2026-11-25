@@ -5701,6 +5701,54 @@ final class TypeAlgebraTest extends TestCase
                         return 0;
                     }',
             ],
+            'boolVarNarrowingKeptAfterUnrelatedReassignmentInElseifCondition' => [
+                'code' => '<?php
+                    final class Bag {
+                        public function get(): int {
+                            return 1;
+                        }
+                    }
+                    function f(?Bag $b, ?Bag $x, ?Bag $y, bool $c, bool $d): void {
+                        $has = $x !== null;
+                        if ($c) {
+                            echo 1;
+                        } elseif ($d && (($y = $b) !== null)) {
+                            echo 2;
+                        }
+                        if ($has) {
+                            echo $x->get();
+                        }
+                    }',
+            ],
+            'boolVarNarrowingKeptAfterUnrelatedReassignmentInConjunctionBeforeOr' => [
+                'code' => '<?php
+                    final class Bag {
+                        public function get(): int {
+                            return 1;
+                        }
+                    }
+                    function f(?Bag $b, ?Bag $x, ?Bag $y, bool $c): bool {
+                        $has = $x !== null;
+                        return ($c && (($y = $b) !== null)) || ($has && $x->get() > 0);
+                    }',
+            ],
+            'boolVarNarrowingKeptAfterReferenceAssignmentOfAnotherVariable' => [
+                'code' => '<?php
+                    final class Bag {
+                        public function get(): int {
+                            return 1;
+                        }
+                    }
+                    function f(?Bag $b, ?Bag $x, ?Bag $y, bool $c): void {
+                        $has = $x !== null;
+                        if ($c) {
+                            $y = &$b;
+                        }
+                        if ($has) {
+                            echo $x->get();
+                        }
+                    }',
+            ],
         ];
     }
 
@@ -7864,6 +7912,60 @@ final class TypeAlgebraTest extends TestCase
                         }
                     }',
                 'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:46',
+            ],
+            'boolVarNarrowingDroppedAfterReferenceAssignment' => [
+                'code' => '<?php
+                    final class Bag {
+                        public function get(): int {
+                            return 1;
+                        }
+                    }
+
+                    function f(?Bag $b, ?Bag $x, bool $c): void {
+                        $has = $x !== null;
+                        if ($c) {
+                            $x = &$b;
+                        }
+                        if ($has) {
+                            echo $x->get();
+                        }
+                    }',
+                'error_message' => 'PossiblyNullReference',
+            ],
+            'boolVarNarrowingDroppedByReassignmentInConjunctionBeforeOr' => [
+                'code' => '<?php
+                    final class Bag {
+                        public function get(): int {
+                            return 1;
+                        }
+                    }
+
+                    function f(?Bag $b, ?Bag $x, bool $c): bool {
+                        $has = $x !== null;
+                        return ($c && (($x = $b) !== null)) || ($has && $x->get() > 0);
+                    }',
+                'error_message' => 'PossiblyNullReference',
+            ],
+            'boolVarNarrowingDroppedAfterReassignmentInElseifCondition' => [
+                'code' => '<?php
+                    final class Bag {
+                        public function get(): int {
+                            return 1;
+                        }
+                    }
+
+                    function f(?Bag $b, ?Bag $x, bool $c, bool $d): void {
+                        $has = $x !== null;
+                        if ($c) {
+                            echo 1;
+                        } elseif ($d && (($x = $b) !== null)) {
+                            echo 2;
+                        }
+                        if ($has) {
+                            echo $x->get();
+                        }
+                    }',
+                'error_message' => 'PossiblyNullReference',
             ],
         ];
     }

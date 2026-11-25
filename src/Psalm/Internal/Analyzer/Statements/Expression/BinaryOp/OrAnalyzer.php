@@ -78,6 +78,7 @@ final class OrAnalyzer
             || !$stmt->left->left->left instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
         ) {
             $if_scope = new IfScope();
+            $pre_left_remove_vars = $context->parent_remove_vars;
 
             try {
                 $if_conditional_scope = IfConditionalAnalyzer::analyze(
@@ -90,6 +91,9 @@ final class OrAnalyzer
                 );
 
                 $left_context = $if_conditional_scope->if_context;
+
+                // the left operand was analysed in this context, which only marked what it changed
+                $context->removeClausesOfVarsChangedSince($pre_left_remove_vars);
 
                 $left_referenced_var_ids = $if_conditional_scope->cond_referenced_var_ids;
                 $left_assigned_var_ids = $if_conditional_scope->assigned_in_conditional_var_ids;
