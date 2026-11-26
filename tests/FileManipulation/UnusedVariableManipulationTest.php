@@ -515,16 +515,92 @@ final class UnusedVariableManipulationTest extends FileManipulationTestCase
                 'issues_to_fix' => ['UnusedVariable'],
                 'safe_types' => true,
             ],
-            'keepCloneOfUnusedAssignment' => [
+            'removeCloneWithTheAssignmentOfItsSource' => [
                 'input' => '<?php
-                    function foo(stdClass $o) : void {
+                    function foo() : void {
+                        $o = new stdClass();
                         $a = clone $o;
                     }',
                 'output' => '<?php
-                    function foo(stdClass $o) : void {
-                        clone $o;
+                    function foo() : void {
+                        new stdClass();
                     }',
                 'php_version' => '7.1',
+                'issues_to_fix' => ['UnusedVariable'],
+                'safe_types' => true,
+            ],
+            'removeIncrementOfAVariableNotReadAfterwards' => [
+                'input' => '<?php
+                    function foo() : void {
+                        $i = 0;
+                        $a = $i++;
+                        $s = "a";
+                        $b = "x" . ($s .= "y");
+                    }',
+                'output' => '<?php
+                    function foo() : void {
+                    }',
+                'php_version' => '7.1',
+                'issues_to_fix' => ['UnusedVariable'],
+                'safe_types' => true,
+            ],
+            'keepIncrementOfAStaticVariable' => [
+                'input' => '<?php
+                    function foo() : void {
+                        static $n = 0;
+                        $a = $n++;
+                    }',
+                'output' => '<?php
+                    function foo() : void {
+                        static $n = 0;
+                        $n++;
+                    }',
+                'php_version' => '7.1',
+                'issues_to_fix' => ['UnusedVariable'],
+                'safe_types' => true,
+            ],
+            'keepPropertyWriteOfUnusedAssignment' => [
+                'input' => '<?php
+                    function foo(stdClass $o) : void {
+                        $a = ($o->p = 1);
+                    }',
+                'output' => '<?php
+                    function foo(stdClass $o) : void {
+                        ($o->p = 1);
+                    }',
+                'php_version' => '7.1',
+                'issues_to_fix' => ['UnusedVariable'],
+                'safe_types' => true,
+            ],
+            'keepTheGuardOfAnUnusedCoalesceAssignment' => [
+                'input' => '<?php
+                    function foo(?int $x, int $i) : int {
+                        $x ??= $i++;
+                        $y = null;
+                        $y ??= rand(0, 1);
+                        return $i;
+                    }',
+                'output' => '<?php
+                    function foo(?int $x, int $i) : int {
+                        $x ?? $i++;
+                        $y = null;
+                        $y ?? rand(0, 1);
+                        return $i;
+                    }',
+                'php_version' => '7.4',
+                'issues_to_fix' => ['UnusedVariable'],
+                'safe_types' => true,
+            ],
+            'keepTheGuardOfAnUnusedCoalesceAssignmentOfATernary' => [
+                'input' => '<?php
+                    function foo(?int $x) : void {
+                        $x ??= rand(0, 1) ? 1 : 2;
+                    }',
+                'output' => '<?php
+                    function foo(?int $x) : void {
+                        $x ?? (rand(0, 1) ? 1 : 2);
+                    }',
+                'php_version' => '7.4',
                 'issues_to_fix' => ['UnusedVariable'],
                 'safe_types' => true,
             ],

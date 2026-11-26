@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Analyzer\Statements;
 
+use Closure;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
@@ -34,6 +35,8 @@ final class UnusedAssignmentRemover
     /**
      * @param array<PhpParser\Node\Stmt>   $stmts
      * @param array<string, CodeLocation> $var_loc_map
+     * @param Closure(PhpParser\Node\Expr\Variable):bool $is_used_write whether the value a write gives the
+     *                                                                  variable is used afterwards
      */
     public function findUnusedAssignment(
         Codebase $codebase,
@@ -41,6 +44,7 @@ final class UnusedAssignmentRemover
         array $var_loc_map,
         string $var_id,
         CodeLocation $original_location,
+        Closure $is_used_write,
     ): void {
         $search_result = $this->findAssignStmt($stmts, $var_id, $original_location);
         [$assign_stmt, $assign_exp] = $search_result;
@@ -72,7 +76,7 @@ final class UnusedAssignmentRemover
                 }
 
                 $traverser = new PhpParser\NodeTraverser();
-                $visitor = new CheckTrivialExprVisitor();
+                $visitor = new CheckTrivialExprVisitor($is_used_write);
                 $traverser->addVisitor($visitor);
                 $traverser->traverse([$value_exp]);
 
@@ -88,23 +92,22 @@ final class UnusedAssignmentRemover
             }
 
             if ($treat_as_expr) {
-                $is_assign_ref = $assign_exp instanceof PhpParser\Node\Expr\AssignRef;
-                $new_file_manipulation = self::getPartialRemovalBounds(
+                $new_file_manipulations = self::getPartialRemovalManipulations(
                     $codebase,
                     $original_location,
                     $assign_stmt->getEndFilePos(),
-                    $is_assign_ref,
+                    $assign_exp,
                 );
                 $this->removed_unref_vars[$var_id] = $original_location;
             } else {
                 // Remove whole assignment statement
-                $new_file_manipulation = new FileManipulation(
+                $new_file_manipulations = [new FileManipulation(
                     $assign_stmt->getStartFilePos(),
                     $assign_stmt->getEndFilePos() + 1,
                     "",
                     false,
                     true,
-                );
+                )];
 
                 // If statement we are removing is a chain of assignments, mark other variables as removed
                 if ($chain_assignment) {
@@ -114,19 +117,54 @@ final class UnusedAssignmentRemover
                 }
             }
 
-            FileManipulationBuffer::add($original_location->file_path, [$new_file_manipulation]);
+            FileManipulationBuffer::add($original_location->file_path, $new_file_manipulations);
         } elseif ($assign_exp !== null) {
-            $is_assign_ref = $assign_exp instanceof PhpParser\Node\Expr\AssignRef;
-            $new_file_manipulation = self::getPartialRemovalBounds(
-                $codebase,
-                $original_location,
-                $assign_exp->getEndFilePos(),
-                $is_assign_ref,
+            FileManipulationBuffer::add(
+                $original_location->file_path,
+                self::getPartialRemovalManipulations(
+                    $codebase,
+                    $original_location,
+                    $assign_exp->getEndFilePos(),
+                    $assign_exp,
+                ),
             );
-
-            FileManipulationBuffer::add($original_location->file_path, [$new_file_manipulation]);
             $this->removed_unref_vars[$var_id] = $original_location;
         }
+    }
+
+    /**
+     * Removes `$var = ` and keeps the value, or turns `$var ??= ` into `$var ?? `, which still evaluates the value
+     * only when the variable is null
+     *
+     * @return non-empty-list<FileManipulation>
+     */
+    private static function getPartialRemovalManipulations(
+        Codebase $codebase,
+        CodeLocation $var_loc,
+        int $end_bound,
+        PhpParser\Node\Expr\Assign|PhpParser\Node\Expr\AssignOp|PhpParser\Node\Expr\AssignRef $assign_exp,
+    ): array {
+        if (!$assign_exp instanceof PhpParser\Node\Expr\AssignOp\Coalesce) {
+            return [self::getPartialRemovalBounds(
+                $codebase,
+                $var_loc,
+                $end_bound,
+                $assign_exp instanceof PhpParser\Node\Expr\AssignRef,
+            )];
+        }
+
+        $manipulations = [self::getPartialRemovalBounds($codebase, $var_loc, $end_bound, false, true)];
+
+        // a ternary binds looser than `??`
+        if ($assign_exp->expr instanceof PhpParser\Node\Expr\Ternary) {
+            $start = $assign_exp->expr->getStartFilePos();
+            $end = $assign_exp->expr->getEndFilePos() + 1;
+
+            $manipulations[] = new FileManipulation($start, $start, '(', false);
+            $manipulations[] = new FileManipulation($end, $end, ')', false);
+        }
+
+        return $manipulations;
     }
 
     /**
@@ -137,6 +175,7 @@ final class UnusedAssignmentRemover
         CodeLocation $var_loc,
         int $end_bound,
         bool $assign_ref = false,
+        bool $keep_coalesce_guard = false,
     ): FileManipulation {
         $var_start_loc= $var_loc->raw_file_start;
         $stmt_content = $codebase->file_provider->getContents(
@@ -152,6 +191,16 @@ final class UnusedAssignmentRemover
         if (is_array($token_list[$iter]) && trim($token_list[$iter][1]) === '') {
             $offset_count += strlen($token_list[1][1]);
             $iter++;
+        }
+
+        // `$x ??= f()` only calls f() when $x is null: keep that check as `$x ?? f()`
+        if ($keep_coalesce_guard && is_array($token_list[$iter])) {
+            return new FileManipulation(
+                $var_start_loc + $offset_count,
+                $var_start_loc + $offset_count + strlen($token_list[$iter][1]),
+                '??',
+                false,
+            );
         }
 
         // Add offset for assignment operator
