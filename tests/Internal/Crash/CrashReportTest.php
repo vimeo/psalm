@@ -25,7 +25,9 @@ use RuntimeException;
 use Symfony\Component\Filesystem\Filesystem;
 use Throwable;
 
+use function array_filter;
 use function array_keys;
+use function basename;
 use function dirname;
 use function explode;
 use function file_get_contents;
@@ -41,12 +43,14 @@ use function rawurlencode;
 use function rewind;
 use function rtrim;
 use function str_repeat;
+use function str_replace;
 use function stream_get_contents;
 use function strlen;
 use function sys_get_temp_dir;
 use function touch;
 use function uniqid;
 
+use const DIRECTORY_SEPARATOR;
 use const PHP_EOL;
 use const PHP_URL_QUERY;
 use const PHP_VERSION;
@@ -221,16 +225,25 @@ final class CrashReportTest extends TestCase
         $reports = glob($directory . '/crash-*-' . (int) getmypid() . '.txt');
         $this->assertIsArray($reports);
         $this->assertCount(1, $reports);
-        $this->assertStringContainsString('Full report: ' . $reports[0] . PHP_EOL, $output);
+        $this->assertStringContainsString(
+            'Full report: ' . $directory . DIRECTORY_SEPARATOR . basename($reports[0]) . PHP_EOL,
+            $output,
+        );
 
         $report = (string) file_get_contents($reports[0]);
         $this->assertStringContainsString('PHP: ' . PHP_VERSION . PHP_EOL, $report);
         $this->assertStringContainsString('Command: psalm --threads=2' . PHP_EOL, $report);
         $this->assertStringContainsString('LogicException: the plugin failed' . PHP_EOL, $report);
         // the tests run in Psalm's own project
-        $this->assertStringContainsString('  at <project>/tests/Internal/Crash/Plugin/PluginCode.php:', $report);
+        $this->assertStringContainsString(
+            '  at <project>/tests/Internal/Crash/Plugin/PluginCode.php:',
+            str_replace('\\', '/', $report),
+        );
         $this->assertStringNotContainsString(__DIR__, $report);
-        $this->assertStringNotContainsString((string) getenv('HOME') . '/', $report);
+        $home = (string) getenv('HOME');
+        if ($home !== '') {
+            $this->assertStringNotContainsString($home . DIRECTORY_SEPARATOR, $report);
+        }
     }
 
     public function testAReportThatCannotBeWrittenDoesNotHideTheCrash(): void
@@ -280,15 +293,19 @@ final class CrashReportTest extends TestCase
         );
         $this->assertSame('crash.yml', $fields['template']);
         $this->assertSame('Crash: RuntimeException: Undefined array key "X"', $fields['title']);
+        // the separators after the prefix are the platform's
         $this->assertSame(
             'RuntimeException: PHP Error: Undefined array key "X"'
                 . ' in <project>/tests/Internal/Crash/CrashReportTest.php:12',
-            $fields['exception'],
+            str_replace('\\', '/', $fields['exception']),
         );
         // where it was thrown and 10 frames
         $this->assertCount(11, explode("\n", $fields['frames']));
-        $this->assertStringStartsWith('at <project>/tests/Internal/Crash/CrashReportTest.php:', $fields['frames']);
-        foreach ([dirname(__DIR__, 3), $home . '/', sys_get_temp_dir()] as $private) {
+        $this->assertStringStartsWith(
+            'at <project>/tests/Internal/Crash/CrashReportTest.php:',
+            str_replace('\\', '/', $fields['frames']),
+        );
+        foreach (array_filter([dirname(__DIR__, 3), $home === '' ? '' : $home . '/', sys_get_temp_dir()]) as $private) {
             $this->assertStringNotContainsString($private, $url);
             $this->assertStringNotContainsString(rawurlencode($private), $url);
         }

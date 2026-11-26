@@ -7,6 +7,7 @@ namespace Psalm\Tests\EndToEnd;
 use Override;
 use PHPUnit\Framework\Attributes\DataProvider;
 
+use function basename;
 use function extension_loaded;
 use function file_get_contents;
 use function file_put_contents;
@@ -16,6 +17,7 @@ use function json_encode;
 use function mkdir;
 use function unlink;
 
+use const DIRECTORY_SEPARATOR;
 use const JSON_THROW_ON_ERROR;
 use const PHP_BINARY;
 use const PHP_EOL;
@@ -154,7 +156,10 @@ final class PsalmCrashReportEndToEndTest extends PsalmEndToEndTestCase
         $files = glob($reports . '/crash-*.txt');
         $this->assertIsArray($files);
         $this->assertCount(1, $files);
-        $this->assertStringContainsString(PHP_EOL . 'Full report: ' . $files[0] . PHP_EOL, $stderr);
+        $this->assertStringContainsString(
+            PHP_EOL . 'Full report: ' . $reports . DIRECTORY_SEPARATOR . basename($files[0]) . PHP_EOL,
+            $stderr,
+        );
         $this->assertStringContainsString(
             PHP_EOL . 'Report it to the plugin: https://github.com/acme/psalm-crash-plugin/issues/new?title=',
             $stderr,
