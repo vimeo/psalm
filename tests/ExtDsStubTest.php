@@ -235,17 +235,24 @@ final class ExtDsStubTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.3',
             ],
-            'a collection has the jsonSerialize method of JsonSerializable' => [
+            'a collection serializes to an array' => [
                 'code' => <<<'PHP'
                     <?php
+                    use Ds\Map;
                     use Ds\Vector;
 
-                    /** @param Vector<int> $vector */
-                    function encode(Vector $vector): string {
-                        return json_encode($vector->jsonSerialize(), JSON_THROW_ON_ERROR);
-                    }
+                    /** @var Vector<string> */
+                    $vector = new Vector(['x']);
+                    /** @var Map<string, int> */
+                    $map = new Map(['a' => 17]);
+
+                    $vectorJson = $vector->jsonSerialize();
+                    $mapJson = $map->jsonSerialize();
                     PHP,
-                'assertions' => [],
+                'assertions' => [
+                    '$vectorJson===' => 'array<int, string>',
+                    '$mapJson===' => 'array<array-key, mixed>',
+                ],
                 'ignored_issues' => [],
                 'php_version' => '8.3',
             ],

@@ -53,6 +53,12 @@ interface Collection extends IteratorAggregate, Countable, JsonSerializable
      * @psalm-mutation-free
      */
     public function count(): int;
+
+    /**
+     * @return array<TKey, TValue>
+     * @psalm-mutation-free
+     */
+    public function jsonSerialize(): array;
 }
 
 /**

@@ -885,12 +885,14 @@ final class Populator
 
         foreach ($interface_method_implementers as $method_name => $interface_method_ids) {
             // a stub may leave out the methods of the interfaces its class implements: the class then has them as
-            // the most derived of these interfaces declares them
+            // the most derived of these interfaces declares them, unless the CallMap knows the method
             if ($storage->stubbed
                 && !$storage->abstract
                 && !$storage->is_interface
                 && !$storage->is_trait
                 && !isset($storage->declaring_method_ids[$method_name])
+                && ($storage->user_defined
+                    || !InternalCallMapHandler::inCallMap($storage->name . '::' . $method_name))
             ) {
                 $interface_method_id = $interface_method_ids[0];
 
