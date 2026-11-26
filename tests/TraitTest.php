@@ -2263,6 +2263,58 @@ final class TraitTest extends TestCase
                     '$a===' => 'string',
                 ],
             ],
+            'traitConstructorInheritedWithUninitialisedParentProperty' => [
+                'code' => <<<'PHP'
+                    <?php
+                    trait PromotesMessage {
+                        public function __construct(public string $message) {}
+                    }
+
+                    /** @psalm-suppress MissingConstructor */
+                    class Component {
+                        public string $name;
+                    }
+
+                    /** @psalm-suppress PropertyNotSetInConstructor */
+                    abstract class Base extends Component {
+                        use PromotesMessage;
+                    }
+
+                    /** @psalm-suppress PropertyNotSetInConstructor */
+                    final class Child extends Base {}
+                PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'traitConstructorCallingParentConstructorInherited' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Component {
+                        public string $name;
+
+                        public function __construct() {
+                            $this->name = 'x';
+                        }
+                    }
+
+                    trait Promotes {
+                        public function __construct(public string $message) {
+                            parent::__construct();
+                        }
+                    }
+
+                    abstract class Base extends Component {
+                        use Promotes;
+                    }
+
+                    /** @psalm-suppress PropertyNotSetInConstructor */
+                    final class Child extends Base {}
+                PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
         ];
     }
 
