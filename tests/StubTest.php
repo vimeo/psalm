@@ -3014,4 +3014,77 @@ final class StubTest extends DeferredAnalyzerTestCase
 
         $this->analyzeFile($file_path, new Context());
     }
+
+    /**
+     * @return iterable<string, array{string, ?string}>
+     */
+    public static function providerChildOfStubbedParentWithProperties(): iterable
+    {
+        yield 'redeclared public property, initialized by the parent constructor' => [
+            '<?php
+                final class Xyz extends \Foo\Bar {
+                    /** @var string */
+                    public $hello;
+
+                    public function __construct() {
+                        parent::__construct("b");
+                    }
+                }',
+            null,
+        ];
+
+        yield 'private property shadowing one of the parent' => [
+            '<?php
+                final class Xyz extends \Foo\Bar {
+                    /** @var string */
+                    private $world;
+
+                    public function __construct() {
+                        parent::__construct("b");
+                    }
+                }',
+            'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29 - Property Xyz::$world',
+        ];
+
+        yield 'parent constructor not called' => [
+            '<?php
+                final class Xyz extends \Foo\Bar {
+                    public function __construct() {}
+                }',
+            'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:29 - Property Xyz::$hello',
+        ];
+    }
+
+    #[DataProvider('providerChildOfStubbedParentWithProperties')]
+    public function testChildOfStubbedParentWithProperties(string $code, ?string $error_message): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+
+                    <stubs>
+                        <file name="tests/fixtures/stubs/ParentClassWithProperty.phpstub" />
+                    </stubs>
+                </psalm>',
+            ),
+        );
+
+        $file_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'somefile.php';
+
+        $this->addFile($file_path, $code);
+
+        if ($error_message !== null) {
+            $this->expectException(CodeException::class);
+            $this->expectExceptionMessage($error_message);
+        }
+
+        $this->analyzeFile($file_path, new Context());
+    }
 }
