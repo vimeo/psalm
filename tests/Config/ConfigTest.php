@@ -1815,6 +1815,47 @@ final class ConfigTest extends DeferredAnalyzerTestCase
         $this->assertSame([], $mismatches);
     }
 
+    /**
+     * FileFilter reads allowMissingFiles on every element it loads: projectFiles, extraFiles, ignoreFiles (also the
+     * taint analysis one) and each errorLevel
+     */
+    public function testTheSchemaDeclaresAllowMissingFilesWhereFileFilterReadsIt(): void
+    {
+        $schema = new DOMDocument();
+        $schema->load(dirname(__DIR__, 2) . '/config.xsd');
+        $xpath = new DOMXPath($schema);
+        $xpath->registerNamespace('xs', 'http://www.w3.org/2001/XMLSchema');
+
+        $missing = [];
+
+        foreach (['ProjectFilesType', 'IgnoreFilesType'] as $type) {
+            $declared = $xpath->query(
+                '//xs:complexType[@name="' . $type . '"]/xs:attribute[@name="allowMissingFiles"]',
+            );
+
+            if (!$declared || $declared->length === 0) {
+                $missing[] = $type;
+            }
+        }
+
+        $error_levels = $xpath->query('//xs:complexType[substring(@name, string-length(@name) - 15) = '
+            . '"IssueHandlerType"]/xs:sequence/xs:element[@name="errorLevel"]/xs:complexType');
+        $this->assertNotFalse($error_levels);
+        $this->assertGreaterThan(8, $error_levels->length);
+
+        foreach ($error_levels as $error_level) {
+            $this->assertInstanceOf(DOMElement::class, $error_level);
+            $declared = $xpath->query('xs:attribute[@name="allowMissingFiles"]', $error_level);
+
+            if (!$declared || $declared->length === 0) {
+                $handler = $error_level->parentNode?->parentNode?->parentNode;
+                $missing[] = ($handler instanceof DOMElement ? $handler->getAttribute('name') : '?') . '/errorLevel';
+            }
+        }
+
+        $this->assertSame([], $missing);
+    }
+
     public function testAMissingDependencyIsSuppressedByTheNameOfTheDependency(): void
     {
         $this->expectNotToPerformAssertions();
