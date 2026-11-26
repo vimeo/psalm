@@ -44,6 +44,7 @@ use Psalm\Internal\Codebase\CliOutput;
 use Psalm\Internal\Codebase\CombinedFlowGraph;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\VariableUseGraph;
+use Psalm\Internal\Crash\CrashContext;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\Perf;
@@ -76,6 +77,7 @@ use Psalm\Storage\Capabilities;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
+use Throwable;
 use UnexpectedValueException;
 
 use function array_change_key_case;
@@ -88,7 +90,6 @@ use function assert;
 use function count;
 use function explode;
 use function fwrite;
-use function hrtime;
 use function is_string;
 use function preg_match;
 use function preg_replace;
@@ -298,18 +299,23 @@ final class StatementsAnalyzer extends SourceAnalyzer
             }
 
             foreach ($stmts as $stmt) {
-                if (Perf\Collector::$enabled) {
-                    $perf_outer_child_ns = Perf\Collector::$child_ns;
-                    Perf\Collector::$child_ns = 0;
-                    $perf_start_ns = (int) hrtime(true);
-                    $analysis_result = self::analyzeStatement($this, $stmt, $context, $global_context);
-                    Perf\Collector::statementEnd($this, $stmt, $perf_start_ns, $perf_outer_child_ns);
+                try {
+                    if (Perf\Collector::$enabled) {
+                        $perf_outer_child_ns = Perf\Collector::$child_ns;
+                        Perf\Collector::$child_ns = 0;
+                        $perf_start_ns = Perf\Collector::nowNs();
+                        $analysis_result = self::analyzeStatement($this, $stmt, $context, $global_context);
+                        Perf\Collector::statementEnd($this, $stmt, $perf_start_ns, $perf_outer_child_ns);
 
-                    if ($analysis_result === false) {
+                        if ($analysis_result === false) {
+                            return false;
+                        }
+                    } elseif (self::analyzeStatement($this, $stmt, $context, $global_context) === false) {
                         return false;
                     }
-                } elseif (self::analyzeStatement($this, $stmt, $context, $global_context) === false) {
-                    return false;
+                } catch (Throwable $e) {
+                    CrashContext::recordStatement($e, $this, $stmt);
+                    throw $e;
                 }
 
                 if ($stmt === $this->cli_instance_guard) {
@@ -1231,6 +1237,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
                         array_combine($var_list, $loc_list),
                         $var_id,
                         $original_location,
+                        fn(PhpParser\Node\Expr\Variable $var): bool => $this->isUsedWrite($var, $context),
                     );
                 }
 
@@ -1241,6 +1248,25 @@ final class StatementsAnalyzer extends SourceAnalyzer
                 );
             }
         }
+    }
+
+    /**
+     * Whether the value a write gives the variable is read afterwards, as for an assignment checked above
+     */
+    private function isUsedWrite(PhpParser\Node\Expr\Variable $var, Context $context): bool
+    {
+        if (!is_string($var->name) || !$this->variable_use_graph) {
+            return true;
+        }
+
+        $var_id = '$' . $var->name;
+
+        return isset($this->byref_uses[$var_id])
+            || isset($context->referenced_globals[$var_id])
+            || VariableFetchAnalyzer::isSuperGlobal($var_id)
+            || $this->variable_use_graph->isVariableUsed(
+                DataFlowNode::getForAssignment($var_id, new CodeLocation($this->getSource(), $var)),
+            );
     }
 
     /**

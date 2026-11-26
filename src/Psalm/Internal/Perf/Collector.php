@@ -167,6 +167,9 @@ final class Collector
     /** Read by every hook: nothing else is evaluated when false */
     public static bool $enabled = false;
 
+    /** @var ?Closure(): int replaces hrtime() in tests */
+    private static ?Closure $clock = null;
+
     /** Where the storage of the file being scanned came from, set by the scanner while collecting */
     private static string $scan_storage = '';
 
@@ -268,7 +271,7 @@ final class Collector
         self::$enabled = true;
         self::$dump_path = $dump_path === null ? null : self::absolutePath($dump_path, (string) getcwd());
         self::$option_names = $option_names;
-        self::$t0 = (int) hrtime(true);
+        self::$t0 = self::nowNs();
         self::$pid = (int) getmypid();
         self::$start_sys_us = self::sysUs();
         self::$marks[] = self::mark('bootstrap');
@@ -365,7 +368,7 @@ final class Collector
     /** @return array{int, int, int} */
     public static function fileStart(): array
     {
-        return [(int) hrtime(true), self::cpuUs(0), memory_get_peak_usage()];
+        return [self::nowNs(), self::cpuUs(0), memory_get_peak_usage()];
     }
 
     /**
@@ -391,7 +394,7 @@ final class Collector
 
     public static function statementEnd(StatementsSource $source, Stmt $stmt, int $start_ns, int $outer_child_ns): void
     {
-        $inclusive_ns = (int) hrtime(true) - $start_ns;
+        $inclusive_ns = self::nowNs() - $start_ns;
         $self_ns = $inclusive_ns - self::$child_ns;
         self::$child_ns = $outer_child_ns + $inclusive_ns;
 
@@ -430,7 +433,7 @@ final class Collector
         $outer_child_ns = self::$function_child_ns;
         self::$function_child_ns = 0;
 
-        return [(int) hrtime(true), $outer_child_ns];
+        return [self::nowNs(), $outer_child_ns];
     }
 
     /** @param array{int, int} $start */
@@ -442,7 +445,7 @@ final class Collector
         bool $initializations,
         array $start,
     ): void {
-        $inclusive_ns = (int) hrtime(true) - $start[0];
+        $inclusive_ns = self::nowNs() - $start[0];
         $self_ns = $inclusive_ns - self::$function_child_ns;
         self::$function_child_ns = $start[1] + $inclusive_ns;
 
@@ -548,7 +551,7 @@ final class Collector
             'workers' => [],
         ];
         self::$pool_cpu_us = self::cpuUs(1);
-        self::$pool_mark_ns = (int) hrtime(true);
+        self::$pool_mark_ns = self::nowNs();
         self::$payload_sum = null;
         self::$payload_max = 0;
     }
@@ -681,9 +684,9 @@ final class Collector
      */
     public static function timed(callable $handler, object $event, string $class, string $hook): mixed
     {
-        $start = (int) hrtime(true);
+        $start = self::nowNs();
         $result = $handler($event);
-        self::addHook($class, $hook, 1, (int) hrtime(true) - $start);
+        self::addHook($class, $hook, 1, self::nowNs() - $start);
 
         return $result;
     }
@@ -714,7 +717,7 @@ final class Collector
     /** The plugin was initialised since $start_ns */
     public static function pluginInit(string $class, int $start_ns): void
     {
-        self::$plugins[] = ['class' => $class, 'init_us' => intdiv((int) hrtime(true) - $start_ns, 1_000)];
+        self::$plugins[] = ['class' => $class, 'init_us' => intdiv(self::nowNs() - $start_ns, 1_000)];
     }
 
     /** Statements of a file that were reused instead of parsed */
@@ -983,7 +986,7 @@ final class Collector
      */
     private static function fileRecord(string $op, string $file_path, string $file_name, array $start): array
     {
-        $end_ns = (int) hrtime(true);
+        $end_ns = self::nowNs();
         $start_us = intdiv($start[0] - self::$t0, 1_000);
         $end_us = intdiv($end_ns - self::$t0, 1_000);
 
@@ -1035,7 +1038,7 @@ final class Collector
     /** Microseconds since the last pool mark, which moves to now */
     private static function sincePoolMark(): int
     {
-        $now_ns = (int) hrtime(true);
+        $now_ns = self::nowNs();
         $elapsed_us = intdiv($now_ns - self::$pool_mark_ns, 1_000);
         self::$pool_mark_ns = $now_ns;
 
@@ -1044,7 +1047,24 @@ final class Collector
 
     private static function nowUs(): int
     {
-        return intdiv((int) hrtime(true) - self::$t0, 1_000);
+        return intdiv(self::nowNs() - self::$t0, 1_000);
+    }
+
+    /** The time every measurement is read from, in nanoseconds */
+    public static function nowNs(): int
+    {
+        return self::$clock === null ? (int) hrtime(true) : (self::$clock)();
+    }
+
+    /**
+     * Reads the time from $clock instead of the system, or from the system again with null: for tests, which
+     * advance a clock they control instead of waiting
+     *
+     * @param ?Closure(): int $clock
+     */
+    public static function setClock(?Closure $clock): void
+    {
+        self::$clock = $clock;
     }
 
     /** User plus system CPU time in microseconds of this process (0) or of its waited-for children (1) */

@@ -15,11 +15,13 @@ use Psalm\Internal\TypeVisitor\ContainsStaticVisitor;
 use Psalm\Internal\TypeVisitor\TemplateBoundNarrower;
 use Psalm\Storage\Assertion\IsType;
 use Psalm\Storage\Capabilities;
+use Psalm\Storage\TemplateVariance;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TCallable;
+use Psalm\Type\Atomic\TCallableObject;
 use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClosure;
@@ -50,6 +52,7 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateValueOf;
 use Psalm\Type\Atomic\TTypeAlias;
 use Psalm\Type\Atomic\TTypeVariable;
+use Psalm\Type\Atomic\TUnknownClassString;
 use Psalm\Type\Atomic\TValueOf;
 use Psalm\Type\Atomic\TVoid;
 use Psalm\Type\Union;
@@ -68,6 +71,8 @@ use function count;
 use function is_string;
 use function reset;
 use function strtolower;
+
+use const ARRAY_FILTER_USE_BOTH;
 
 /**
  * @internal
@@ -339,6 +344,8 @@ final class TypeExpander
             }
 
             if ($return_type instanceof TNamedObject) {
+                $is_receiver = false;
+
                 $return_type = self::expandNamedObject(
                     $codebase,
                     $return_type,
@@ -347,7 +354,14 @@ final class TypeExpander
                     $parent_class,
                     $final,
                     $expand_generic,
+                    $is_receiver,
                 );
+
+                // the receiver is expanded already, and expanding its type arguments with itself again never ends
+                // when one of them is bound by `static`
+                if ($is_receiver) {
+                    return [$return_type];
+                }
             }
         }
 
@@ -376,6 +390,32 @@ final class TypeExpander
                     $new_as_type,
                 );
             }
+        } elseif ($return_type instanceof TUnknownClassString
+            && $return_type->as_unknown_type
+        ) {
+            $new_as_type = $return_type->as_unknown_type;
+
+            self::expandAtomic(
+                $codebase,
+                $new_as_type,
+                $self_class,
+                $static_class_type,
+                $parent_class,
+                $evaluate_class_constants,
+                $evaluate_conditional_types,
+                $final,
+                $expand_generic,
+                $expand_templates,
+                $throw_on_unresolvable_constant,
+            );
+
+            if ($new_as_type instanceof TObject && $new_as_type !== $return_type->as_unknown_type) {
+                $return_type = new TUnknownClassString(
+                    $new_as_type,
+                    $return_type->is_loaded,
+                    $return_type->from_docblock,
+                );
+            }
         } elseif ($return_type instanceof TTemplateParam) {
             $new_as_type = self::expandUnion(
                 $codebase,
@@ -393,6 +433,17 @@ final class TypeExpander
 
             if ($expand_templates) {
                 return array_values($new_as_type->getAtomicTypes());
+            }
+
+            // `T as (T as X)`, from a `static` bound read on a receiver typed T, is `T as X`
+            $bound = $new_as_type->getSingleAtomic();
+            if ($new_as_type->isSingle()
+                && $bound instanceof TTemplateParam
+                && $bound->param_name === $return_type->param_name
+                && $bound->defining_class === $return_type->defining_class
+                && !$return_type->extra_types
+            ) {
+                return [$bound];
             }
 
             $return_type = $return_type->replaceAs($new_as_type);
@@ -700,6 +751,20 @@ final class TypeExpander
             ) {
                 $class_storage = $codebase->classlike_storage_provider->get($return_type->value);
 
+                // the variance of the template's declaration written again (`Source<covariant X>` for
+                // `@template-covariant T`) is the same type as without it
+                $return_type = $return_type->setProjections(array_filter(
+                    $return_type->getProjections(),
+                    static fn(TypeArgumentProjection $projection, int $offset): bool => match ($projection) {
+                        TypeArgumentProjection::Covariant
+                            => $class_storage->getTemplateVariance($offset) !== TemplateVariance::Covariant,
+                        TypeArgumentProjection::Contravariant
+                            => $class_storage->getTemplateVariance($offset) !== TemplateVariance::Contravariant,
+                        default => true,
+                    },
+                    ARRAY_FILTER_USE_BOTH,
+                ));
+
                 $type_params = StarProjection::boundStars(
                     $return_type,
                     PurityArguments::align(
@@ -716,7 +781,10 @@ final class TypeExpander
                 );
             }
 
-            /** @psalm-suppress InvalidArgument Psalm bug */
+            /**
+             * @psalm-suppress InvalidArgument Psalm bug
+             * @psalm-suppress ArgumentTypeCoercion Psalm bug
+             */
             $return_type = $return_type instanceof TGenericObject
                 ? $return_type->setHeldTypes($type_params)
                 : $return_type->setTypeParams($type_params);
@@ -821,6 +889,28 @@ final class TypeExpander
             $return_type = $return_type->setProperties($properties);
         }
 
+        if ($return_type instanceof TCallableObject && $return_type->callable !== null) {
+            $callable = $return_type->callable;
+            self::expandAtomic(
+                $codebase,
+                $callable,
+                $self_class,
+                $static_class_type,
+                $parent_class,
+                $evaluate_class_constants,
+                $evaluate_conditional_types,
+                $final,
+                $expand_generic,
+                $expand_templates,
+                $throw_on_unresolvable_constant,
+            );
+            if ($callable !== $return_type->callable) {
+                /** @var TCallable $callable */
+                $return_type = (new TCallableObject($return_type->from_docblock, $callable))
+                    ->setIntersectionTypes($return_type->extra_types);
+            }
+        }
+
         if ($return_type instanceof TCallable
             || $return_type instanceof TClosure
         ) {
@@ -915,6 +1005,7 @@ final class TypeExpander
         ?string $parent_class,
         bool $final = false,
         bool &$expand_generic = false,
+        bool &$is_receiver = false,
     ): TNamedObject|TTemplateParam {
         // a static type is resolved to the called class below, with its own type arguments
         if ($expand_generic
@@ -1016,8 +1107,10 @@ final class TypeExpander
                         $is_static,
                         $is_static_resolved,
                     );
+                    $is_receiver = true;
                 } else {
                     $return_type = $static_class_type;
+                    $is_receiver = true;
                 }
             }
         } elseif ($return_type->is_static
@@ -1031,6 +1124,7 @@ final class TypeExpander
             $return_type = $static_class_type->setIntersectionTypes(
                 array_merge($return_type->extra_types, $static_class_type->extra_types),
             )->setIsStatic(!$final, true);
+            $is_receiver = true;
         } elseif ($return_type->is_static && !$return_type->is_static_resolved
             && ($static_class_type instanceof TNamedObject
                 || $static_class_type instanceof TTemplateParam)
@@ -1271,9 +1365,21 @@ final class TypeExpander
                 $if_conditional_return_types = [...$if_conditional_return_types, ...$candidate_types];
             }
 
+            $else_type = $return_type->else_type;
+
+            if ($return_type->subject_type === null) {
+                (new TemplateBoundNarrower(
+                    $return_type->param_name,
+                    $return_type->defining_class,
+                    $return_type->conditional_type,
+                    $codebase,
+                    true,
+                ))->traverse($else_type);
+            }
+
             $else_conditional_return_types = [];
 
-            foreach ($return_type->else_type->getAtomicTypes() as $else_atomic_type) {
+            foreach ($else_type->getAtomicTypes() as $else_atomic_type) {
                 $candidate_types = self::expandAtomic(
                     $codebase,
                     $else_atomic_type,

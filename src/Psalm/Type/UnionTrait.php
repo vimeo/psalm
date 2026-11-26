@@ -51,6 +51,7 @@ use Psalm\Type\Atomic\TNonFalsyLowercaseString;
 use Psalm\Type\Atomic\TNonspecificLiteralInt;
 use Psalm\Type\Atomic\TNonspecificLiteralString;
 use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Atomic\TNumeric;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
@@ -464,7 +465,10 @@ trait UnionTrait
                 return null;
             }
 
-            $php_types[] = $php_type;
+            // array-key is declared int|string
+            foreach (explode('|', $php_type) as $php_member_type) {
+                $php_types[] = $php_member_type;
+            }
         }
 
         $php_types = array_unique($php_types);
@@ -526,18 +530,24 @@ trait UnionTrait
             return $this->types['mixed']->canBeFullyExpressedInPhp($analysis_php_version_id);
         }
 
-        if (!$this->isSingleAndMaybeNullable() && $analysis_php_version_id < 8_00_00) {
+        if ($analysis_php_version_id < 7_00_00
+            || (!$this->isSingleAndMaybeNullable() && $analysis_php_version_id < 8_00_00)
+        ) {
             return false;
         }
 
         $types = $this->types;
 
-        if (isset($types['null'])) {
-            if (count($types) > 1) {
-                unset($types['null']);
-            } else {
+        if (isset($types['null']) && count($types) > 1) {
+            if ($analysis_php_version_id < 7_01_00) {
                 return false;
             }
+
+            unset($types['null']);
+        }
+
+        if (isset($types['false']) && count($types) > 1) {
+            unset($types['false']);
         }
 
         foreach ($types as $t) {
@@ -1870,6 +1880,11 @@ trait UnionTrait
             return $input_taints & ~TaintKind::NUMERIC_ONLY;
         }
 
+        // a numeric string can also hold whitespace, such as a newline
+        if ($atomic instanceof TNumeric) {
+            return $input_taints & ~(TaintKind::NUMERIC_ONLY | TaintKind::INPUT_SHELL | TaintKind::INPUT_HEADER);
+        }
+
         if ($atomic instanceof TBool) {
             return $input_taints & ~TaintKind::BOOL_ONLY;
         }
@@ -1880,7 +1895,7 @@ trait UnionTrait
             return TaintKind::ARRAY_ONLY;
         }
 
-        // neither can any other scalar, such as scalar, array-key or numeric
+        // neither can any other scalar, such as scalar or array-key
         if ($atomic instanceof Scalar) {
             return TaintKind::ARRAY_ONLY;
         }

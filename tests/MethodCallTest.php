@@ -1529,6 +1529,9 @@ final class MethodCallTest extends TestCase
                             return $this->ctx->joinSql;
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'propertyOfAHeldObjectIsForgottenAfterAMethodWritingItInABranchOrUnsettingIt' => [
                 'code' => '<?php
