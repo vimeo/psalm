@@ -585,7 +585,9 @@ final class ReturnTypeAnalyzer
             && !$inferred_yield_types
             && (!$function_like_storage || !$function_like_storage->has_yield)
         ) {
-            if ($declared_return_type->isVoid() || $declared_return_type->isNever()) {
+            if (($declared_return_type->isVoid() && !$declared_return_type->explicit_never)
+                || $declared_return_type->isNever()
+            ) {
                 return null;
             }
 
@@ -613,7 +615,9 @@ final class ReturnTypeAnalyzer
                 return null;
             }
 
-            if (!$declared_return_type->from_docblock || !$declared_return_type->isNullable()) {
+            if (!$declared_return_type->isVoid()
+                && (!$declared_return_type->from_docblock || !$declared_return_type->isNullable())
+            ) {
                 if (IssueBuffer::accepts(
                     new InvalidReturnType(
                         'No return statements were found for method ' . $cased_method_id .
@@ -645,7 +649,8 @@ final class ReturnTypeAnalyzer
 
         if (!$declared_return_type->hasMixed()) {
             if ($inferred_return_type->isVoid()
-                && ($declared_return_type->isVoid() || ($function_like_storage && $function_like_storage->has_yield))
+                && (($declared_return_type->isVoid() && !$declared_return_type->explicit_never)
+                    || ($function_like_storage && $function_like_storage->has_yield))
             ) {
                 return null;
             }
