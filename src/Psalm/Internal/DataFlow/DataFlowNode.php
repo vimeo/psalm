@@ -188,9 +188,8 @@ final class DataFlowNode implements Stringable
      * specialized to their location have one of their own, which only goes to the overrides.
      *
      * An override binds a named argument by its name (case-sensitive), unless the positional arguments before it
-     * (null: unknown, after an unpack) filled that parameter: those calls have a node per binding. So do the
-     * calls with an argument that may be any following parameter, and with one unpacked into a parameter that is
-     * not variadic, which an override binds by the name of the declared parameter.
+     * (null: unknown) filled that parameter: those calls have a node per binding. So do the calls with an argument
+     * that may be any following parameter.
      *
      * @psalm-pure
      */
@@ -201,7 +200,6 @@ final class DataFlowNode implements Stringable
         ?string $named_argument = null,
         bool $any_following = false,
         ?int $positional_arguments = null,
-        bool $unpacked_argument = false,
     ): self {
         $label = ($specialized_calls ? 'specialized ' : '') . 'dispatch of ' . $cased_method_id
             . '#' . ($argument_offset + 1);
@@ -211,8 +209,6 @@ final class DataFlowNode implements Stringable
             $binding = ' (' . $named_argument . ': after ' . ($positional_arguments ?? 'unpack') . ')';
         } elseif ($any_following) {
             $binding = ' (...)';
-        } elseif ($unpacked_argument) {
-            $binding = ' unpacked';
         }
 
         return self::make(strtolower($label) . $binding, $label . $binding, null);
