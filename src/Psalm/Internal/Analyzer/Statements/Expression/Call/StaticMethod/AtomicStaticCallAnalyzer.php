@@ -21,11 +21,11 @@ use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollect
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallPurityAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallReturnTypeFetcher;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodVisibilityAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MissingMethodCallHandler;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\NewAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\OverloadSelector;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\StaticCallAnalyzer;
-use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\MixinLookup;
@@ -445,10 +445,30 @@ final class AtomicStaticCallAnalyzer
             && isset($class_storage->declaring_method_ids['__callstatic'])
             && $stmt->getAttribute(ClassAnalyzer::FAKE_CONSTRUCTOR_CALL_ATTRIBUTE) !== true;
 
-        // a `@method static` of the class or of its interfaces wins over its mixins
+        // what a return type provider of the class gives the call through __callStatic(), asked once
+        $return_type_provider_asked = $hidden_by_magic_call
+            && !$stmt->isFirstClassCallable()
+            && $codebase->methods->return_type_provider->has($fq_class_name);
+        $provided_return_type = $return_type_provider_asked
+            ? $codebase->methods->return_type_provider->getReturnType(
+                $statements_analyzer,
+                $fq_class_name,
+                $method_name_lc,
+                $stmt,
+                $context,
+                new CodeLocation($statements_analyzer->getSource(), $stmt_name),
+                null,
+                null,
+                $method_name_lc,
+            )
+            : null;
+
+        // a `@method static` of the class or of its interfaces, or a return type a provider of the class gives the
+        // call through __callStatic(), wins over its mixins
         if ((!$naive_method_exists || $hidden_by_magic_call)
             && self::findPseudoMethodAndClassStorages($codebase, $class_storage, $method_name_lc, $method_id, false)
                 === null
+            && $provided_return_type === null
         ) {
             $mixin = MixinLookup::findMember(
                 $codebase,
@@ -700,29 +720,44 @@ final class AtomicStaticCallAnalyzer
         ) {
             if ($callstatic_method_exists) {
                 $callstatic_mutations = self::getCallStaticCapabilities($codebase, $fq_class_name);
-                if ($codebase->methods->return_type_provider->has($fq_class_name)) {
-                    $return_type_candidate = $codebase->methods->return_type_provider->getReturnType(
-                        $statements_analyzer,
-                        $method_id->fq_class_name,
-                        $method_id->method_name,
-                        $stmt,
-                        $context,
-                        new CodeLocation($statements_analyzer->getSource(), $stmt_name),
-                        null,
-                        null,
-                        strtolower($stmt_name->name),
-                    );
+                if ($return_type_provider_asked || $codebase->methods->return_type_provider->has($fq_class_name)) {
+                    $return_type_candidate = $return_type_provider_asked
+                        ? $provided_return_type
+                        : $codebase->methods->return_type_provider->getReturnType(
+                            $statements_analyzer,
+                            $method_id->fq_class_name,
+                            $method_id->method_name,
+                            $stmt,
+                            $context,
+                            new CodeLocation($statements_analyzer->getSource(), $stmt_name),
+                            null,
+                            null,
+                            strtolower($stmt_name->name),
+                        );
 
                     if ($return_type_candidate) {
                         $args_analyzed = true;
 
-                        CallAnalyzer::checkMethodArgs(
-                            $method_id,
-                            $stmt->getArgs(),
-                            new TemplateResult([], []),
-                            $context,
-                            new CodeLocation($statements_analyzer->getSource(), $stmt),
+                        MissingMethodCallHandler::checkMagicCallArgs(
                             $statements_analyzer,
+                            $codebase,
+                            $stmt,
+                            $method_id,
+                            $context,
+                        );
+
+                        // what __callStatic() does
+                        $stmt->setAttribute(
+                            NewAnalyzer::CALLEE_CAPABILITIES_ATTRIBUTE,
+                            (NewAnalyzer::getCalleeCapabilities($stmt) ?? Capabilities::NONE) | $callstatic_mutations,
+                        );
+
+                        $statements_analyzer->signalMutation(
+                            $callstatic_mutations,
+                            $context,
+                            'method ' . $class_storage->name . '::' . $stmt_name->name,
+                            ImpureMethodCall::class,
+                            $stmt->name,
                         );
 
                         $statements_analyzer->node_data->setType($stmt, $return_type_candidate);

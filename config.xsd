@@ -317,6 +317,7 @@
             <xs:element name="InsecureCookie" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InterfaceInstantiation" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InternalClass" type="ClassIssueHandlerType" minOccurs="0" />
+            <xs:element name="InternalFunction" type="FunctionIssueHandlerType" minOccurs="0" />
             <xs:element name="InternalMethod" type="MethodIssueHandlerType" minOccurs="0" />
             <xs:element name="InternalProperty" type="PropertyIssueHandlerType" minOccurs="0" />
             <xs:element name="IntMaskComparison" type="IssueHandlerType" minOccurs="0" />

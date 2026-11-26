@@ -8,7 +8,7 @@ Input such as `$_GET['id']`, `$_POST['email']` or `$_COOKIE['token']` is a **sou
 not reach unescaped, such as `<div id="section_<?= $id ?>">` or
 `$pdo->exec("select * from users where name='" . $name . "'")`.
 
-Taint analysis runs by default alongside type checking.
+Taint analysis runs by default alongside type checking. `--no-taint-analysis` skips it for one run.
 
 **On this page:**
 

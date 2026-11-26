@@ -250,6 +250,7 @@ These issues become info (non-blocking) at level 5 and higher.
  - [ImplicitToStringCast](issues/ImplicitToStringCast.md)
  - [InheritorViolation](issues/InheritorViolation.md)
  - [InternalClass](issues/InternalClass.md)
+ - [InternalFunction](issues/InternalFunction.md)
  - [InternalMethod](issues/InternalMethod.md)
  - [InternalProperty](issues/InternalProperty.md)
  - [InvalidDocblock](issues/InvalidDocblock.md)

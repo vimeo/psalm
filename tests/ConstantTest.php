@@ -3303,6 +3303,75 @@ final class ConstantTest extends TestCase
                     abstract class Pagination extends Field implements PaginationInterface {}
                     PHP,
             ],
+            'phpIntMinIsNegative' => [
+                'code' => '<?php
+                    $min = PHP_INT_MIN;
+                ',
+                'assertions' => [
+                    '$min===' => 'int<min, -1>',
+                ],
+            ],
+            'phpIntMinInClassConstantIsNegative' => [
+                'code' => '<?php
+                    class A {
+                        const MIN = PHP_INT_MIN;
+                    }
+                    $min = A::MIN;
+                ',
+                'assertions' => [
+                    '$min===' => 'int<min, -1>',
+                ],
+            ],
+            'phpDebugAndPhpZtsAreZeroOrOneBeforePhp84' => [
+                'code' => '<?php
+                    $debug = PHP_DEBUG;
+                    $zts = PHP_ZTS;
+                ',
+                'assertions' => [
+                    '$debug===' => 'int<0, 1>',
+                    '$zts===' => 'int<0, 1>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'phpDebugAndPhpZtsAreBoolSincePhp84' => [
+                'code' => '<?php
+                    $debug = PHP_DEBUG;
+                    $zts = PHP_ZTS;
+                ',
+                'assertions' => [
+                    '$debug===' => 'bool',
+                    '$zts===' => 'bool',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'phpDebugInClassConstantIsBoolSincePhp84' => [
+                'code' => '<?php
+                    class A {
+                        const DEBUG = PHP_DEBUG;
+                    }
+                    $debug = A::DEBUG;
+                ',
+                'assertions' => [
+                    '$debug===' => 'bool',
+                ],
+                'ignored_issues' => ['MissingClassConstType'],
+                'php_version' => '8.4',
+            ],
+            'phpDebugInClassConstantIsZeroOrOneBeforePhp84' => [
+                'code' => '<?php
+                    class A {
+                        const DEBUG = PHP_DEBUG;
+                    }
+                    $debug = A::DEBUG;
+                ',
+                'assertions' => [
+                    '$debug===' => 'int<0, 1>',
+                ],
+                'ignored_issues' => ['MissingClassConstType'],
+                'php_version' => '8.3',
+            ],
         ];
     }
 
@@ -4272,6 +4341,21 @@ final class ConstantTest extends TestCase
                 'error_message' => 'MixedArgument',
                 'error_levels' => ['MissingClassConstType'],
                 'php_version' => '8.1',
+            ],
+            'phpIntMinIsNeverPositive' => [
+                'code' => '<?php
+                    $min = PHP_INT_MIN;
+                    if ($min > 0) {}
+                ',
+                'error_message' => 'TypeDoesNotContainType',
+            ],
+            'phpDebugIsNeverIntSincePhp84' => [
+                'code' => '<?php
+                    if (PHP_DEBUG === 1) {}
+                ',
+                'error_message' => 'TypeDoesNotContainType',
+                'error_levels' => [],
+                'php_version' => '8.4',
             ],
         ];
     }

@@ -64,6 +64,7 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
 {
     /**
      * @param  TNamedObject|TTemplateParam|null $static_type
+     * @param  list<Atomic> $intersection_siblings the other members of the intersection the receiver is a member of
      * @psalm-suppress ComplexMethod it's really complex, but unavoidably so
      */
     public static function analyze(
@@ -78,6 +79,7 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
         ?string $lhs_var_id,
         AtomicMethodCallAnalysisResult $result,
         ?TemplateResult $inferred_template_result = null,
+        array $intersection_siblings = [],
     ): void {
         if ($lhs_type_part instanceof TTemplateParam
             && !$lhs_type_part->as->isMixed()
@@ -369,6 +371,21 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
             && isset($class_storage->declaring_method_ids['__call'])
             && !MethodAnalyzer::isMethodVisible($method_id, $context, $statements_analyzer->getSource());
 
+        // what a return type provider of the class gives the call through __call(), asked once
+        $return_type_provider_asked = $hidden_by_magic_call
+            && !$stmt->isFirstClassCallable()
+            && $codebase->methods->return_type_provider->has($fq_class_name);
+        $provided_return_type = $return_type_provider_asked
+            ? $codebase->methods->return_type_provider->getReturnType(
+                $statements_analyzer,
+                $fq_class_name,
+                $method_name_lc,
+                $stmt,
+                $context,
+                new CodeLocation($source, $stmt->name),
+            )
+            : null;
+
         if (!$naive_method_exists || $hidden_by_magic_call) {
             // if the method doesn't exist we check for any method existence providers
             if (!$naive_method_exists && $codebase->methods->existence_provider->has($fq_class_name)) {
@@ -384,14 +401,16 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                 }
             }
 
-            // a `@method` of the class, of its parent classes or of its interfaces, or a method an existence provider
-            // adds to the class, wins over its mixins
+            // a `@method` of the class, of its parent classes or of its interfaces, a method an existence provider
+            // adds to the class, or a return type a provider of the class gives the call through __call(), wins over
+            // its mixins
             if (!$fake_method_exists
                 && MissingMethodCallHandler::findPseudoMethodAndClassStorages(
                     $codebase,
                     $class_storage,
                     $method_name_lc,
                 ) === null
+                && $provided_return_type === null
             ) {
                 [$mixin, $mixin_method_exists] = self::findMixinWithMethod(
                     $statements_analyzer,
@@ -407,6 +426,7 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                 if ($mixin !== null) {
                     if ($mixin_method_exists || $class_storage->is_interface) {
                         $mixin_user_class = $fq_class_name;
+                        $return_type_provider_asked = false;
                         ['type' => $lhs_type_part, 'storage' => $class_storage] = $mixin;
                         $fq_class_name = $class_storage->name;
                         $method_id = new MethodIdentifier($fq_class_name, $method_name_lc);
@@ -441,6 +461,7 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                     $lhs_var_id,
                     $result,
                     $intersection_types,
+                    $intersection_siblings,
                 );
         }
 
@@ -500,6 +521,8 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                     $lhs_type_part,
                     $lhs_var_id,
                     $pseudo_method_mixin,
+                    $provided_return_type,
+                    $return_type_provider_asked,
                 );
 
                 if ($new_call_context) {
@@ -596,6 +619,11 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
             $result,
             $inferred_template_result,
             $method_id === $mixin_method_id ? $mixin_user_class : null,
+            self::getIntersectionMethodIds(
+                $codebase,
+                $method_id,
+                [...$intersection_siblings, ...array_values($intersection_types)],
+            ),
         );
 
         $statements_analyzer->node_data = $old_node_data;
@@ -629,6 +657,7 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
     /**
      * @param  TNamedObject|TTemplateParam $lhs_type_part
      * @param   array<string, Atomic> $intersection_types
+     * @param   list<Atomic> $intersection_siblings
      * @return  array{?Union, array<string, bool>}
      */
     private static function getIntersectionReturnType(
@@ -641,11 +670,15 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
         ?string $lhs_var_id,
         AtomicMethodCallAnalysisResult $result,
         array $intersection_types,
+        array $intersection_siblings,
     ): array {
         $all_intersection_return_type = null;
         $all_intersection_existent_method_ids = [];
 
-        foreach ($intersection_types as $intersection_type) {
+        foreach ($intersection_types as $key => $intersection_type) {
+            $siblings = $intersection_types;
+            unset($siblings[$key]);
+
             $intersection_result = clone $result;
 
             /** @var ?Union $intersection_result->return_type */
@@ -663,6 +696,12 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                 true,
                 $lhs_var_id,
                 $intersection_result,
+                null,
+                [
+                    $lhs_type_part->setIntersectionTypes([]),
+                    ...array_values($siblings),
+                    ...$intersection_siblings,
+                ],
             );
 
             $result->returns_by_ref = $intersection_result->returns_by_ref;
@@ -692,6 +731,44 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
         }
 
         return [$all_intersection_return_type, $all_intersection_existent_method_ids];
+    }
+
+    /**
+     * The declarations of the method by the other members of an intersection receiver, other than the one called
+     *
+     * @param  list<Atomic> $intersection_siblings
+     * @return list<MethodIdentifier>
+     * @psalm-capabilities read-props
+     */
+    private static function getIntersectionMethodIds(
+        Codebase $codebase,
+        MethodIdentifier $method_id,
+        array $intersection_siblings,
+    ): array {
+        $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id) ?? $method_id;
+
+        $method_ids = [];
+
+        foreach ($intersection_siblings as $sibling) {
+            if (!$sibling instanceof TNamedObject
+                || !$codebase->classlike_storage_provider->has(strtolower($sibling->value))
+            ) {
+                continue;
+            }
+
+            $sibling_method_id = $codebase->methods->getDeclaringMethodId(
+                new MethodIdentifier($sibling->value, $method_id->method_name),
+            );
+
+            if ($sibling_method_id !== null
+                && (string) $sibling_method_id !== (string) $declaring_method_id
+                && $codebase->methods->hasStorage($sibling_method_id)
+            ) {
+                $method_ids[(string) $sibling_method_id] = $sibling_method_id;
+            }
+        }
+
+        return array_values($method_ids);
     }
 
     private static function updateResultReturnType(

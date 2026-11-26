@@ -24,6 +24,8 @@ Run Psalm on the PHP version CI uses: a Psalm installed in a tool directory (`to
 
 - Psalm caches results and re-analyses only the files that changed and the files that depend on them.
   `--no-diff` re-analyses every file, `--no-cache` runs without the cache, `--clear-cache` deletes it.
+- `--no-taint-analysis` skips taint analysis, for a faster run with less memory while iterating. Some type
+  issues are only reported with taint analysis on, so the final run goes without it.
 - Threads: one per CPU core by default, `--threads=N` to change it. Always one on Windows and without the
   `pcntl` extension, whatever the flag says.
 
