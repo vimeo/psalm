@@ -24,32 +24,33 @@ gh pr comment <n> --repo vimeo/psalm --body 'bugbot review'
 ## 2. Wait for the findings
 
 Bugbot (user `cursor[bot]`) reacts with 👀 to the comment (👍 once it's done) and runs a
-`Cursor Bugbot` check on the head commit, which takes about 5 minutes. Then it posts:
+`Cursor Bugbot` check on the head commit, which takes about 5 minutes. When the check completes,
+its output summary has the verdict (`**Final Result:** … no issues found` or `found N potential
+issue(s)`), and Bugbot has posted:
 
-- a PR review whose body starts with `<!-- BUGBOT_REVIEW -->`, with `commit_id` = the
-  reviewed commit. It says "found no new issues" for a clean round, or "found N potential
-  issues";
 - one review comment per finding (`### Title`, severity, description). Its
   `original_commit_id` is the reviewed commit. `commit_id` moves to the PR head on later
-  pushes, so don't use it to tell rounds apart.
+  pushes, so don't use it to tell rounds apart;
+- usually a PR review whose body starts with `<!-- BUGBOT_REVIEW -->`. A clean round may post
+  none (seen on the first round of a draft PR), so wait for the check, not for the review.
 
-Wait for that review with a background until-loop (no foreground `sleep`), then read it
-and its findings:
+Wait for the check with a background until-loop (no foreground `sleep`), then read the
+verdict and the findings:
 
 ```sh
 deadline=$(( $(date +%s) + 1200 ))
-review=
-until review=$(gh api repos/vimeo/psalm/pulls/<n>/reviews --paginate --jq ".[] | select(.user.login ==
-    \"cursor[bot]\" and .commit_id == \"$head\" and .submitted_at > \"$requested\") | .id" | tail -n 1) \
-    && [ -n "$review" ] || [ "$(date +%s)" -ge "$deadline" ]; do
+summary=
+until summary=$(gh api repos/vimeo/psalm/commits/$head/check-runs --jq '.check_runs[]
+    | select(.name == "Cursor Bugbot" and .status == "completed" and .completed_at > "'"$requested"'")
+    | .output.summary') && [ -n "$summary" ] || [ "$(date +%s)" -ge "$deadline" ]; do
   sleep 60
 done
-if [ -z "$review" ]; then
-  echo 'no Bugbot review in 20 minutes'
+if [ -z "$summary" ]; then
+  echo 'no Bugbot result in 20 minutes'
 else
-  gh api repos/vimeo/psalm/pulls/<n>/reviews/$review --jq .body
-  gh api repos/vimeo/psalm/pulls/<n>/reviews/$review/comments --paginate \
-    --jq '.[] | {id, path, line: .original_line, body}'
+  echo "$summary" | grep 'Final Result'
+  gh api repos/vimeo/psalm/pulls/<n>/comments --paginate --jq ".[] | select(.user.login ==
+    \"cursor[bot]\" and .original_commit_id == \"$head\") | {id, path, line: .original_line, body}"
 fi
 ```
 
