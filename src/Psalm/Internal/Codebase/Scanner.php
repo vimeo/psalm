@@ -42,6 +42,7 @@ use function enum_exists;
 use function error_reporting;
 use function explode;
 use function file_exists;
+use function hash;
 use function interface_exists;
 use function ksort;
 use function ltrim;
@@ -67,7 +68,8 @@ use const SORT_STRING;
  *     array<string, string>,
  *     array<string, bool>,
  *     array<string, bool>,
- *     array<string, bool>
+ *     array<string, bool>,
+ *     array<string, string>
  * }
  *
  * @psalm-type  PoolData = array{
@@ -140,6 +142,13 @@ final class Scanner
      * @var array<string, bool>
      */
     private array $scanned_files = [];
+
+    /**
+     * The xxh128 hash of the contents of each file that is analysed, as scanned
+     *
+     * @var array<string, string>
+     */
+    private array $scanned_file_hashes = [];
 
     /**
      * The deep-scanned files whose classes queueFilesOfInheritedMethods() went through => true
@@ -261,7 +270,7 @@ final class Scanner
      */
     public function removeFile(string $file_path): void
     {
-        unset($this->scanned_files[$file_path]);
+        unset($this->scanned_files[$file_path], $this->scanned_file_hashes[$file_path]);
     }
 
     /**
@@ -728,6 +737,10 @@ final class Scanner
 
         $this->scanned_files[$file_path] = $will_analyze;
 
+        if ($will_analyze) {
+            $this->scanned_file_hashes[$file_path] = hash('xxh128', $file_contents);
+        }
+
         $file_storage = $this->file_storage_provider->get($file_path);
 
         $file_scanner->scan(
@@ -871,6 +884,33 @@ final class Scanner
     }
 
     /**
+     * Whether a file that is analysed differs from the one that was scanned: it came or went, or has other contents.
+     * Never throws, as it runs while a crash is being reported.
+     */
+    public function changedSinceScan(string $file_path): bool
+    {
+        if (!isset($this->scanned_files[$file_path])
+            || !$this->file_provider->fileExists($file_path)
+            || $this->file_provider->isDirectory($file_path)
+        ) {
+            return true;
+        }
+
+        $hash = $this->scanned_file_hashes[$file_path] ?? null;
+
+        if ($hash === null) {
+            return false;
+        }
+
+        try {
+            return $hash !== $this->file_provider->getContentsHash($file_path);
+        } catch (UnexpectedValueException) {
+            // it was readable at scan time
+            return true;
+        }
+    }
+
+    /**
      * Checks whether a class exists, and if it does then records what file it's in
      * for later checking
      */
@@ -984,6 +1024,7 @@ final class Scanner
             $this->deep_scanned_classlike_files,
             $this->scanned_files,
             $this->reflected_classlikes_lc,
+            $this->scanned_file_hashes,
         ];
     }
 
@@ -1003,6 +1044,7 @@ final class Scanner
             $deep_scanned_classlike_files,
             $scanned_files,
             $reflected_classlikes_lc,
+            $scanned_file_hashes,
         ] = $thread_data;
 
         $this->files_to_scan = array_merge($files_to_scan, $this->files_to_scan);
@@ -1035,6 +1077,7 @@ final class Scanner
             $this->scanned_files[$file_path] = $deep || ($this->scanned_files[$file_path] ?? false);
         }
         $this->reflected_classlikes_lc = array_merge($reflected_classlikes_lc, $this->reflected_classlikes_lc);
+        $this->scanned_file_hashes = array_merge($scanned_file_hashes, $this->scanned_file_hashes);
     }
 
     /**

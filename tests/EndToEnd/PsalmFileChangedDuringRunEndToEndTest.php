@@ -69,6 +69,71 @@ final class PsalmFileChangedDuringRunEndToEndTest extends PsalmEndToEndTestCase
     }
 
     /**
+     * @return iterable<string, array{int, string}>
+     * @psalm-pure
+     */
+    public static function threadCountsWithTheirCrashReport(): iterable
+    {
+        yield '1 thread' => [1, 'RuntimeException: PHP Error: Undefined array key "X"'];
+        yield '2 threads' => [
+            2,
+            'Psalm crashed while analysing src/C3.php' . PHP_EOL . 'RuntimeException: PHP Error: Undefined array key',
+        ];
+    }
+
+    #[DataProvider('threadCountsWithTheirCrashReport')]
+    public function testACrashOnAFileEditedDuringTheRunIsReportedInOneLine(int $threads, string $crash_report): void
+    {
+        if ($threads > 1 && !(extension_loaded('pcntl') && extension_loaded('posix'))) {
+            $this->markTestSkipped('--threads needs pcntl and posix');
+        }
+
+        // The provider keeps what it read, which the scan workers of a large project leave out of the parent
+        // process, so the plugin makes it forget the file it edits, under the path the scanner knows it by.
+        $this->initProjectOfSixClasses(
+            <<<'PHP'
+                <?php
+
+                namespace Repro;
+
+                use Psalm\Plugin\EventHandler\AfterCodebasePopulatedInterface;
+                use Psalm\Plugin\EventHandler\Event\AfterCodebasePopulatedEvent;
+
+                final class EditFile implements AfterCodebasePopulatedInterface
+                {
+                    public static function afterCodebasePopulated(AfterCodebasePopulatedEvent $event): void
+                    {
+                        $path = realpath(dirname(__DIR__) . '/src/C3.php');
+                        file_put_contents($path, "<?php\n\nfinal class C3 { const X = 1; }\necho C3::X;\n");
+                        $event->getCodebase()->file_provider->closeFile($path);
+                    }
+                }
+                PHP,
+        );
+
+        $result = $this->runPsalmExpectingExitCode1($threads);
+
+        $this->assertStringContainsString(
+            'src/C3.php changed while Psalm was running: run Psalm again' . PHP_EOL,
+            $result['STDERR'],
+        );
+        $this->assertStringNotContainsString('Stack trace', $result['STDERR']);
+        $this->assertStringNotContainsString('#0', $result['STDERR']);
+        $this->assertStringNotContainsString('crashed', $result['STDERR']);
+
+        // the plugin has edited the file for good
+        file_put_contents(self::$tmpDir . '/src/C3.php', "<?php\n\nfinal class C3 {}\n");
+        $debug = $this->runPsalmExpectingExitCode1($threads, ['--debug']);
+
+        $this->assertStringContainsString($crash_report, $debug['STDOUT'] . $debug['STDERR']);
+        $this->assertStringContainsString('#0 ', $debug['STDOUT'] . $debug['STDERR']);
+        $this->assertStringContainsString(
+            'src/C3.php changed while Psalm was running: run Psalm again' . PHP_EOL,
+            $debug['STDERR'],
+        );
+    }
+
+    /**
      * Six classes in src/ and a plugin of the given code in plugins/
      */
     private function initProjectOfSixClasses(string $plugin): void

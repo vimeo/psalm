@@ -22,6 +22,7 @@ use Psalm\Internal\Fork\AnalyzerTask;
 use Psalm\Internal\Fork\InitAnalyzerTask;
 use Psalm\Internal\Fork\Pool;
 use Psalm\Internal\Fork\ShutdownAnalyzerTask;
+use Psalm\Internal\Fork\TaskCrashedException;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Perf;
 use Psalm\Internal\Provider\FileProvider;
@@ -34,6 +35,7 @@ use Psalm\Storage\Capabilities;
 use Psalm\Type;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Union;
+use Throwable;
 use UnexpectedValueException;
 
 use function Amp\Future\await;
@@ -363,7 +365,11 @@ final class Analyzer
             Perf\Collector::poolStart('analysis', count($this->files_to_analyze));
             await($pool->runAll(new InitAnalyzerTask));
             Perf\Collector::poolStep('init_us');
-            $pool->run($this->files_to_analyze, AnalyzerTask::class, 'analysing', $task_done_closure);
+            try {
+                $pool->run($this->files_to_analyze, AnalyzerTask::class, 'analysing', $task_done_closure);
+            } catch (TaskCrashedException $e) {
+                $this->throwUnlessFileChanged($codebase, $e->path, $e);
+            }
             Perf\Collector::poolStep('run_us');
             Perf\Collector::stage('analysis.merge');
             $this->progress->debug('Collecting forked analysis results' . "\n");
@@ -452,9 +458,32 @@ final class Analyzer
             Perf\Collector::poolEnd();
         } else {
             foreach ($this->files_to_analyze as $file_path => $_) {
-                $task_done_closure(self::analysisWorker($this->config, $this->progress, $file_path));
+                try {
+                    $task_done_closure(self::analysisWorker($this->config, $this->progress, $file_path));
+                } catch (Throwable $e) {
+                    $this->throwUnlessFileChanged($codebase, $file_path, $e);
+                }
             }
         }
+    }
+
+    /**
+     * A file edited after the scan is analysed against the storage of its old contents, and whatever crash follows
+     * is the edit's doing, not Psalm's.
+     */
+    private function throwUnlessFileChanged(Codebase $codebase, string $file_path, Throwable $e): never
+    {
+        if (!$codebase->scanner->changedSinceScan($file_path)) {
+            throw $e;
+        }
+
+        $this->progress->debug(($e instanceof TaskCrashedException ? $e->getMessage() : (string) $e) . PHP_EOL);
+
+        throw new FileChangedDuringRunException(
+            $this->config->shortenFileName($file_path) . ' changed while Psalm was running: run Psalm again',
+            0,
+            $e,
+        );
     }
 
     public function loadCachedResults(ProjectAnalyzer $project_analyzer): void
