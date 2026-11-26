@@ -106,6 +106,7 @@ const PIE_PACKAGES = [
     'swoole' => [
         'package' => 'swoole/swoole',
         'apk' => ['openssl-dev', 'curl-dev', 'postgresql-dev', 'linux-headers', 'c-ares-dev', 'brotli-dev', 'sqlite-dev', 'zstd-dev', 'ncurses-dev', 'liburing-dev'],
+        // no --with-swoole-ssh2: it defines the ssh2_* functions of the ssh2 extension, which the images build
         'options' => [
             '--with-openssl-dir=yes', '--enable-mysqlnd', '--enable-swoole-curl', '--enable-cares', '--enable-brotli', '--enable-zstd',
             '--enable-swoole-pgsql', '--enable-swoole-sqlite', '--enable-iouring', '--enable-uring-socket',

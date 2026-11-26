@@ -154,6 +154,21 @@ final class MissingExtensionRequirementTest extends TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
+    public function testDeclaredExtensionThatSwooleCanBundleOnPhp74(): void
+    {
+        $this->project_analyzer->getConfig()->declared_extensions = ['ssh2' => true];
+        $this->project_analyzer->setPhpVersion('7.4', 'tests');
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+        $this->addFile($file_path, '<?php
+            function f(): void {
+                $c = ssh2_connect("localhost", 22);
+                if ($c) { ssh2_disconnect($c); }
+            }');
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
     public function testFunctionAddedAfterTheLowestPhpComposerAllows(): void
     {
         $this->project_analyzer->getConfig()->lowest_composer_php_version_id = 7_04_00;
