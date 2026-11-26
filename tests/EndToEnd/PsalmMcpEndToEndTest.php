@@ -32,7 +32,6 @@ use function var_export;
 
 use const JSON_THROW_ON_ERROR;
 use const PHP_BINARY;
-use const PHP_OS_FAMILY;
 
 /**
  * Runs psalm-mcp in a copy of the DummyProjectWithErrors fixture and talks to it as an MCP client
@@ -215,7 +214,6 @@ final class PsalmMcpEndToEndTest extends PsalmEndToEndTestCase
 
     public function testAPingIsAnsweredWhileTheWholeProjectIsChecked(): void
     {
-        $this->skipOnWindows();
         $this->initPsalm();
         $this->startServer();
 
@@ -234,7 +232,6 @@ final class PsalmMcpEndToEndTest extends PsalmEndToEndTestCase
 
     public function testACancelledCheckIsStoppedAndGetsNoResponse(): void
     {
-        $this->skipOnWindows();
         $this->initPsalm();
         $this->startServer();
 
@@ -256,7 +253,6 @@ final class PsalmMcpEndToEndTest extends PsalmEndToEndTestCase
 
     public function testClosingTheInputStopsTheCheckThatRuns(): void
     {
-        $this->skipOnWindows();
         $this->initPsalm();
         $this->startServer();
 
@@ -373,13 +369,6 @@ final class PsalmMcpEndToEndTest extends PsalmEndToEndTestCase
         unlink($package . '/psalm-mcp');
         rmdir($package);
         rmdir(dirname($package));
-    }
-
-    private function skipOnWindows(): void
-    {
-        if (PHP_OS_FAMILY === 'Windows') {
-            $this->markTestSkipped('On Windows, psalm-mcp handles one message at a time');
-        }
     }
 
     private function initPsalm(): void

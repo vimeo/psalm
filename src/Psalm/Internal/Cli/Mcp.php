@@ -28,8 +28,6 @@ use const LC_CTYPE;
 use const PHP_BINARY;
 use const PHP_EOL;
 use const STDERR;
-use const STDIN;
-use const STDOUT;
 
 // phpcs:disable PSR1.Files.SideEffects
 
@@ -158,7 +156,7 @@ final class Mcp
         if ($path_to_config === null && Config::locateConfigFile($current_dir) === null) {
             // the agent can't read a server that fails to start, so the tools say what to do
             (new McpServer(null, 'No psalm.xml was found in ' . $current_dir . ' or above it. Create one with'
-                . ' `vendor/bin/psalm --init`, then restart this MCP server.'))->run(STDIN, STDOUT);
+                . ' `vendor/bin/psalm --init`, then restart this MCP server.'))->run();
             exit;
         }
 
@@ -182,7 +180,7 @@ final class Mcp
             self::getPsalmCommand($options, $path_to_config, $current_dir),
         );
 
-        (new McpServer($session, null))->run(STDIN, STDOUT);
+        (new McpServer($session, null))->run();
     }
 
     /**

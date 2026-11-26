@@ -4,9 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Mcp;
 
-use Amp\ByteStream\ReadableResourceStream;
 use Amp\ByteStream\StreamException;
-use Amp\ByteStream\WritableResourceStream;
 use Amp\Cancellation;
 use Amp\CancelledException;
 use Amp\DeferredCancellation;
@@ -19,6 +17,8 @@ use Revolt\EventLoop\Driver\StreamSelectDriver;
 use Throwable;
 use stdClass;
 
+use function Amp\ByteStream\getStdin;
+use function Amp\ByteStream\getStdout;
 use function Amp\async;
 use function array_filter;
 use function array_is_list;
@@ -27,9 +27,6 @@ use function array_map;
 use function array_pop;
 use function array_values;
 use function explode;
-use function fflush;
-use function fgets;
-use function fwrite;
 use function in_array;
 use function is_array;
 use function is_bool;
@@ -45,7 +42,6 @@ use const JSON_INVALID_UTF8_SUBSTITUTE;
 use const JSON_THROW_ON_ERROR;
 use const JSON_UNESCAPED_SLASHES;
 use const JSON_UNESCAPED_UNICODE;
-use const PHP_OS_FAMILY;
 
 /**
  * A Model Context Protocol server: JSON-RPC messages, one per line, on stdin and stdout. Each message is handled in
@@ -82,34 +78,17 @@ final class McpServer
     }
 
     /**
-     * Serves the client until it closes the input
-     *
-     * @param resource $input
-     * @param resource $output
+     * Serves the client on stdin and stdout until it closes stdin
      */
-    public function run($input, $output): void
+    public function run(): void
     {
         // the analysis forks its workers while this loop runs, which a driver with a native handle can't do (see Pool)
         if (EventLoop::getDriver()->getHandle() !== null) {
             EventLoop::setDriver(new StreamSelectDriver());
         }
 
-        if (PHP_OS_FAMILY === 'Windows') {
-            // the event loop can't wait for a pipe on Windows, so messages are read and handled one at a time
-            while (($line = fgets($input)) !== false) {
-                $response = $this->handleLine($line);
-
-                if ($response !== null) {
-                    fwrite($output, $response . "\n");
-                    fflush($output);
-                }
-            }
-
-            return;
-        }
-
-        $input = new ReadableResourceStream($input);
-        $output = new WritableResourceStream($output);
+        $input = getStdin();
+        $output = getStdout();
 
         /** @var array<int, Future<void>> $handlers */
         $handlers = [];
