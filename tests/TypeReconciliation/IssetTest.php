@@ -148,6 +148,21 @@ final class IssetTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'nullCoalesceOnNullsafePropertyFetch' => [
+                'code' => '<?php
+                    final class U {
+                        /** @var list<int> */
+                        public array $parent_nodes = [];
+                    }
+
+                    /** @return list<int> */
+                    function f(?U $value_type): array {
+                        return $value_type?->parent_nodes ?? [];
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'negatedIssetAlternativeAddsOptionalOffset' => [
                 'code' => '<?php
                     function getArray(): array {

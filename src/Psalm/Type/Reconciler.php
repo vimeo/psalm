@@ -2528,6 +2528,10 @@ class Reconciler
         array $existing_types,
         Union $result_type,
     ): ?Union {
+        if (count($key_parts) < 4 || $key_parts[count($key_parts) - 1] !== ']') {
+            return null;
+        }
+
         $array_key = $key_parts[count($key_parts) - 2];
         $base_key = implode('', array_slice($key_parts, 0, -3));
 
