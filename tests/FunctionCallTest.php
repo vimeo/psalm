@@ -6106,6 +6106,42 @@ final class FunctionCallTest extends TestCase
                     $a();',
                 'error_message' => 'PossiblyInvalidFunctionCall',
             ],
+            'assignmentOfVoidOrNeverReturn' => [
+                'code' => '<?php
+                    /**
+                     * @return void|never
+                     */
+                    function foo() {
+                        if (rand(0, 1)) {
+                            exit;
+                        }
+                    }
+
+                    $a = foo();',
+                'error_message' => 'AssignmentToVoid',
+            ],
+            'assignmentOfVoidOrNeverTernary' => [
+                'code' => '<?php
+                    function foo(): void {}
+
+                    /**
+                     * @return never
+                     */
+                    function bar() {
+                        exit;
+                    }
+
+                    $a = rand(0, 1) ? foo() : bar();',
+                'error_message' => 'AssignmentToVoid',
+            ],
+            'voidOrNeverParam' => [
+                'code' => '<?php
+                    /**
+                     * @param void|never $i
+                     */
+                    function foo($i): void {}',
+                'error_message' => 'ParadoxicalCondition',
+            ],
             'varExportAssignmentToVoid' => [
                 'code' => '<?php
                     $a = var_export(["a"]);',
