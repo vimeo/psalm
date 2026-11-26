@@ -57,6 +57,7 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCapabilities;
 use Psalm\Type\Atomic\TConditional;
+use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
@@ -68,6 +69,7 @@ use function array_column;
 use function array_diff;
 use function array_fill_keys;
 use function array_filter;
+use function array_key_first;
 use function array_map;
 use function array_merge;
 use function array_values;
@@ -79,6 +81,7 @@ use function is_string;
 use function preg_match;
 use function preg_quote;
 use function preg_replace;
+use function reset;
 use function str_contains;
 use function str_ends_with;
 use function str_replace;
@@ -895,9 +898,14 @@ final class FunctionLikeDocblockScanner
             $assertion_type = substr($assertion_type, 1);
         }
 
-        $class_template_types = !$stmt instanceof PhpParser\Node\Stmt\ClassMethod || !$stmt->isStatic()
-            ? $class_template_types
-            : [];
+        $static_declaring_class = null;
+
+        // the class templates are not in scope in a static method, but `static<...>` is still written for them
+        if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod && $stmt->isStatic()) {
+            $class_templates = reset($class_template_types);
+            $static_declaring_class = $class_templates === false ? null : array_key_first($class_templates);
+            $class_template_types = [];
+        }
 
         if ($assertion_type === 'array-key-exists') {
             return [$is_negation ? new ArrayKeyDoesNotExist() : new ArrayKeyExists()];
@@ -962,6 +970,13 @@ final class FunctionLikeDocblockScanner
         $assertion_type_parts = [];
 
         foreach ($namespaced_type->getAtomicTypes() as $namespaced_type_part) {
+            if ($static_declaring_class !== null
+                && $namespaced_type_part instanceof TGenericObject
+                && strtolower($namespaced_type_part->value) === 'static'
+            ) {
+                $namespaced_type_part = $namespaced_type_part->setStaticDeclaringClass($static_declaring_class);
+            }
+
             if ($is_negation) {
                 if ($is_strict_equality) {
                     $assertion_type_parts[] = new IsNotIdentical($namespaced_type_part);

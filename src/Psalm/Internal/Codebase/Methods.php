@@ -28,6 +28,7 @@ use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Internal\TypeVisitor\ContainsStaticVisitor;
 use Psalm\Internal\TypeVisitor\TypeLocalizer;
 use Psalm\StatementsSource;
 use Psalm\Storage\ClassLikeStorage;
@@ -1010,7 +1011,13 @@ final class Methods
                     if ($attempted_intersection) {
                         $self_class = $overridden_method_id->fq_class_name;
 
-                        return $attempted_intersection;
+                        return self::getInheritedReturnType(
+                            $codebase,
+                            $overridden_storage->return_type,
+                            $overridden_storage_return_type,
+                            $overridden_class_storage,
+                            $attempted_intersection,
+                        ) ?? $attempted_intersection;
                     }
 
                     $self_class = $appearing_fq_class_storage->name;
@@ -1026,7 +1033,12 @@ final class Methods
 
                 $self_class = $overridden_method_id->fq_class_name;
 
-                return $overridden_storage_return_type;
+                return self::getInheritedReturnType(
+                    $codebase,
+                    $overridden_storage->return_type,
+                    $overridden_storage_return_type,
+                    $overridden_class_storage,
+                ) ?? $overridden_storage_return_type;
             }
         }
 
@@ -1124,6 +1136,66 @@ final class Methods
         }
 
         return $candidate_type;
+    }
+
+    /**
+     * The return type a method takes from the method of $overridden_class_storage it overrides, or the $intersection
+     * of both. Its `static` is left for the call to resolve: it is the class the method is called on, which may extend
+     * the one the method appears in ($resolved_return_type has it resolved to that one, to compare it with the
+     * method's own type). Null when the type has no `static`.
+     */
+    private static function getInheritedReturnType(
+        Codebase $codebase,
+        Union $overridden_return_type,
+        Union $resolved_return_type,
+        ClassLikeStorage $overridden_class_storage,
+        ?Union $intersection = null,
+    ): ?Union {
+        if ($resolved_return_type->getId() === $overridden_return_type->getId()) {
+            return null;
+        }
+
+        $static_visitor = new ContainsStaticVisitor();
+        $static_visitor->traverse($overridden_return_type);
+
+        if (!$static_visitor->matches()) {
+            return null;
+        }
+
+        $inherited_return_type = TypeExpander::expandUnion(
+            $codebase,
+            $overridden_return_type,
+            $overridden_class_storage->name,
+            null,
+            $overridden_class_storage->parent_class,
+        );
+
+        if ($intersection === null || $intersection->getId() === $resolved_return_type->getId()) {
+            return $inherited_return_type;
+        }
+
+        // the method narrows the other types (`static|false` for `static<T>|bool`): its `static` is still the parent's
+        $narrowed_types = [];
+
+        foreach ($intersection->getAtomicTypes() as $atomic_type) {
+            if (!$atomic_type instanceof TNamedObject || !$atomic_type->is_static) {
+                $narrowed_types[] = $atomic_type;
+            }
+        }
+
+        $static_types = [];
+
+        foreach ($inherited_return_type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TNamedObject && strtolower($atomic_type->value) === 'static') {
+                $static_types[] = $atomic_type;
+            }
+        }
+
+        if ($static_types === [] || count($narrowed_types) === count($intersection->getAtomicTypes())) {
+            return null;
+        }
+
+        return new Union([...$narrowed_types, ...$static_types]);
     }
 
     /**

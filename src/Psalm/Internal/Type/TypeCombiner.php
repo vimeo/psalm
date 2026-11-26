@@ -69,6 +69,7 @@ use function array_filter;
 use function array_intersect_assoc;
 use function array_intersect_key;
 use function array_key_exists;
+use function array_key_first;
 use function array_keys;
 use function array_merge;
 use function array_values;
@@ -300,6 +301,10 @@ final class TypeCombiner
 
         foreach ($combination->object_type_params as $generic_type => $generic_type_params) {
             $projections = $combination->getProjections($generic_type);
+            $static_declaring_classes = $combination->object_static_declaring_classes[$generic_type] ?? [];
+            $static_declaring_class = count($static_declaring_classes) === 1
+                ? array_key_first($static_declaring_classes) ?: null
+                : null;
             $generic_type = substr($generic_type, 0, strcspn($generic_type, '<['));
 
             /** @psalm-suppress ArgumentTypeCoercion Caused by the PropertyTypeCoercion above */
@@ -313,7 +318,7 @@ final class TypeCombiner
             ))->setIsStatic(
                 $combination->object_static[$generic_type] ?? false,
                 $combination->object_static_resolved[$generic_type] ?? false,
-            )->setProjections($projections);
+            )->setProjections($projections)->setStaticDeclaringClass($static_declaring_class);
         }
 
         if ($combination->class_string_types) {
@@ -833,6 +838,11 @@ final class TypeCombiner
         }
 
         if ($type instanceof TGenericObject) {
+            // an untagged `static<...>` under the key ('') keeps the combination from taking a tag
+            if ($type->value === 'static') {
+                $combination->object_static_declaring_classes[$type_key][$type->getStaticDeclaringClass() ?? ''] = true;
+            }
+
             foreach ($type->type_params as $i => $type_param) {
                 /** @psalm-suppress PropertyTypeCoercion */
                 $combination->object_type_params[$type_key][$i] = Type::combineUnionTypes(

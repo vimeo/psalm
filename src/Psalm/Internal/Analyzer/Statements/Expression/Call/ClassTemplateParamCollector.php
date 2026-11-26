@@ -21,9 +21,11 @@ use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
+use function array_key_first;
 use function array_keys;
 use function array_merge;
 use function array_search;
+use function reset;
 
 /**
  * @internal
@@ -176,14 +178,12 @@ final class ClassTemplateParamCollector
                         }
 
                         $class_template_params[$type_name][$candidate_class_storage->name] = $resolved_type
-                            ?? new Union(
-                                self::expandType(
-                                    $codebase,
-                                    $e[$candidate_class_storage->name][$type_name],
-                                    $e,
-                                    $static_class_storage->name,
-                                    $static_class_storage->template_types,
-                                ),
+                            ?? self::expandExtendedType(
+                                $codebase,
+                                $e[$candidate_class_storage->name][$type_name],
+                                $e,
+                                $static_class_storage,
+                                !$self_call && !$lhs_type_part instanceof TGenericObject,
                             );
                     }
                 }
@@ -400,7 +400,7 @@ final class ClassTemplateParamCollector
      *
      * @psalm-mutation-free
      */
-    private static function getOwnTemplateOffset(
+    public static function getOwnTemplateOffset(
         ClassLikeStorage $static_class_storage,
         string $defining_class,
         string $template_name,
@@ -416,7 +416,8 @@ final class ClassTemplateParamCollector
             $extended_type = $static_class_storage->template_extended_params[$defining_class][$template_name] ?? null;
             $extended_atomic = $extended_type?->isSingle() ? $extended_type->getSingleAtomic() : null;
 
-            if (!$extended_atomic instanceof TTemplateParam) {
+            // `T&Foo` is not exactly T
+            if (!$extended_atomic instanceof TTemplateParam || $extended_atomic->extra_types) {
                 return null;
             }
 
@@ -500,6 +501,42 @@ final class ClassTemplateParamCollector
             }
         }
         return $output_type_extends;
+    }
+
+    /**
+     * The type a class extends a template with, through the classes in between. With $to_bounds, for a receiver
+     * without type arguments, the templates of $static_class_storage in it are their bounds.
+     *
+     * @param array<string, array<string, Union>> $e
+     */
+    private static function expandExtendedType(
+        Codebase $codebase,
+        Union $extended_type,
+        array $e,
+        ClassLikeStorage $static_class_storage,
+        bool $to_bounds,
+    ): Union {
+        $type = new Union(
+            self::expandType(
+                $codebase,
+                $extended_type,
+                $e,
+                $static_class_storage->name,
+                $static_class_storage->template_types,
+            ),
+        );
+
+        if (!$to_bounds || $static_class_storage->template_types === null) {
+            return $type;
+        }
+
+        $bounds = [];
+
+        foreach ($static_class_storage->template_types as $template_name => $type_map) {
+            $bounds[$template_name][array_key_first($type_map)] = PurityArguments::getOmittedArgument(reset($type_map));
+        }
+
+        return TemplateInferredTypeReplacer::replace($type, new TemplateResult([], $bounds), $codebase);
     }
 
     /**

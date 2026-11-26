@@ -55,6 +55,12 @@ final class TGenericObject extends TNamedObject
     private array $projections = [];
 
     /**
+     * For `static<...>`: the class, interface or trait the type is written in, whose templates its type arguments
+     * are for, in their order. Null for a named class, and for a `static<...>` written outside a templated class.
+     */
+    private ?string $static_declaring_class = null;
+
+    /**
      * @param string                $value the name of the object
      * @param non-empty-list<Union> $type_params
      * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties|TCallableObject> $extra_types
@@ -137,6 +143,30 @@ final class TGenericObject extends TNamedObject
 
         $cloned = clone $this;
         $cloned->projections = $projections;
+
+        return $cloned;
+    }
+
+    /**
+     * @internal
+     * @psalm-mutation-free
+     */
+    public function getStaticDeclaringClass(): ?string
+    {
+        return $this->static_declaring_class;
+    }
+
+    /**
+     * @internal
+     */
+    public function setStaticDeclaringClass(?string $static_declaring_class): self
+    {
+        if ($this->static_declaring_class === $static_declaring_class) {
+            return $this;
+        }
+
+        $cloned = clone $this;
+        $cloned->static_declaring_class = $static_declaring_class;
 
         return $cloned;
     }
@@ -329,7 +359,9 @@ final class TGenericObject extends TNamedObject
             $this->remapped_params,
             $this->is_static,
             $intersection ?? $this->extra_types,
-        ))->setIsStatic($this->is_static, $this->is_static_resolved)->setProjections($this->projections);
+        ))->setIsStatic($this->is_static, $this->is_static_resolved)
+            ->setProjections($this->projections)
+            ->setStaticDeclaringClass($this->static_declaring_class);
     }
 
     /**
@@ -366,7 +398,8 @@ final class TGenericObject extends TNamedObject
             $intersection ?? $this->extra_types,
         ))
             ->setIsStatic($this->is_static, $this->is_static_resolved)
-            ->setProjections($projections);
+            ->setProjections($projections)
+            ->setStaticDeclaringClass($this->static_declaring_class);
     }
 
     /**

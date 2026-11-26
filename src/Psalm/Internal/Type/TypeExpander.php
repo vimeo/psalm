@@ -9,12 +9,14 @@ use Psalm\Exception\CircularReferenceException;
 use Psalm\Exception\TypeParseTreeException;
 use Psalm\Exception\UnresolvableConstantException;
 use Psalm\Internal\Analyzer\Statements\Expression\ArrayAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\AtomicPropertyFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\TypeVisitor\ContainsStaticVisitor;
 use Psalm\Internal\TypeVisitor\TemplateBoundNarrower;
 use Psalm\Storage\Assertion\IsType;
 use Psalm\Storage\Capabilities;
+use Psalm\Storage\ClassLikeStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
@@ -59,12 +61,16 @@ use function array_all;
 use function array_any;
 use function array_fill;
 use function array_filter;
+use function array_key_first;
 use function array_keys;
 use function array_map;
 use function array_merge;
+use function array_pop;
+use function array_search;
 use function array_shift;
 use function array_values;
 use function count;
+use function end;
 use function is_string;
 use function reset;
 use function strtolower;
@@ -986,6 +992,19 @@ final class TypeExpander
                 $is_static = true;
                 $is_static_resolved = true;
             }
+            $generic_receiver = $static_class_type instanceof TTemplateParam
+                ? self::getGenericBound($static_class_type)
+                : $static_class_type;
+
+            // the arguments of `static<...>` are for the templates of the class it is written in. A class name is a
+            // declaration of that class
+            $projected_type = $return_type instanceof TGenericObject
+                && $return_type->getStaticDeclaringClass() !== null
+                && $generic_receiver !== null
+                ? self::projectStaticArguments($codebase, $return_type, $generic_receiver)
+                : null;
+            $return_type = $projected_type ?? $return_type;
+
             if (is_string($static_class_type)) {
                 $return_type = $return_type->setValueIsStatic(
                     $static_class_type,
@@ -993,10 +1012,6 @@ final class TypeExpander
                     $is_static_resolved,
                 );
             } else {
-                $generic_receiver = $static_class_type instanceof TTemplateParam
-                    ? self::getGenericBound($static_class_type)
-                    : $static_class_type;
-
                 // a template receiver is its bound with the other type arguments: `C` only stands for itself
                 if ($return_type instanceof TGenericObject
                     && $generic_receiver instanceof TGenericObject
@@ -1036,11 +1051,21 @@ final class TypeExpander
                         $static_class_type->extra_types,
                     ));
                 } elseif ($static_class_type instanceof TNamedObject) {
-                    $return_type = $static_class_type->setIsStatic(
-                        $is_static,
-                        $is_static_resolved,
-                    );
-                    $is_receiver = true;
+                    // on a receiver without type arguments, `static<...>` keeps its own
+                    if ($projected_type instanceof TGenericObject) {
+                        $return_type = $return_type
+                            ->setValueIsStatic($static_class_type->value, $is_static, $is_static_resolved)
+                            ->setIntersectionTypes(array_merge(
+                                $return_type->extra_types,
+                                $static_class_type->extra_types,
+                            ));
+                    } else {
+                        $return_type = $static_class_type->setIsStatic(
+                            $is_static,
+                            $is_static_resolved,
+                        );
+                        $is_receiver = true;
+                    }
                 } else {
                     $return_type = $static_class_type;
                     $is_receiver = true;
@@ -1123,6 +1148,204 @@ final class TypeExpander
         }
 
         return $return_type;
+    }
+
+    /**
+     * `static<...>` with its type arguments in the order of the templates of the class `static` is resolved to. They
+     * are written for the templates of the class the type is declared in: each goes to the template of the called
+     * class that stands for exactly that template (`@extends Base<TY, TX>`) and for nothing else in the `@extends`
+     * arguments. The other templates of the called class take the argument of the receiver, else their default or
+     * bound. In a declaration of the called class ($receiver is its name) they stand for themselves. Null for a
+     * receiver whose class does not extend that class (a `@mixin`).
+     *
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
+     */
+    public static function projectStaticArguments(
+        Codebase $codebase,
+        TGenericObject $static,
+        string|TNamedObject $receiver,
+    ): ?TNamedObject {
+        $declaring_class = $static->getStaticDeclaringClass();
+        $called_class = is_string($receiver) ? $receiver : $receiver->value;
+        $provider = $codebase->classlike_storage_provider;
+
+        if ($declaring_class === null
+            || strtolower($declaring_class) === strtolower($called_class)
+            || !$provider->has($declaring_class)
+            || !$provider->has($called_class)
+        ) {
+            return $static;
+        }
+
+        $declaring_storage = $provider->get($declaring_class);
+        $called_storage = $provider->get($called_class);
+        $extended_params = $called_storage->template_extended_params[$declaring_storage->name] ?? null;
+
+        if ($declaring_storage === $called_storage) {
+            return $static;
+        }
+
+        if ($extended_params === null) {
+            return null;
+        }
+
+        [$static_type_args, $static_purity_args] = PurityArguments::split($static->type_params);
+        /** @var array<int, array{Union, ?TypeArgumentProjection}> $sources what goes to a template of the called class */
+        $sources = [];
+        /** @var array<int, true> $unmapped templates of the called class that no single argument goes to */
+        $unmapped = [];
+        $type_offset = 0;
+        $purity_offset = 0;
+
+        foreach ($declaring_storage->template_types ?? [] as $template_name => $_) {
+            if (isset($declaring_storage->purity_templates[$template_name])) {
+                $argument = [$static_purity_args[$purity_offset++] ?? null, null];
+            } else {
+                $argument = [$static_type_args[$type_offset] ?? null, $static->getProjection($type_offset)];
+                $type_offset++;
+            }
+
+            $called_offset = ClassTemplateParamCollector::getOwnTemplateOffset(
+                $called_storage,
+                $declaring_storage->name,
+                $template_name,
+            );
+
+            if ($called_offset === null) {
+                // `@extends Base<list<TX>, TX>`: `static<string, int>` is `L<TX>` for no TX, so TX takes no argument
+                if (isset($extended_params[$template_name])) {
+                    $unmapped += self::getTemplateOffsets($called_storage, $extended_params[$template_name]);
+                }
+            } elseif ($argument[0] === null || isset($sources[$called_offset])) {
+                // no argument for the template, or `@extends Base<T, T>`
+                $unmapped[$called_offset] = true;
+            } else {
+                $sources[$called_offset] = $argument;
+            }
+        }
+
+        [$receiver_type_args, $receiver_purity_args] = $receiver instanceof TGenericObject
+            ? PurityArguments::split($receiver->type_params)
+            : [[], []];
+        $projected_type_args = [];
+        $projected_purity_args = [];
+        /** @var list<bool> $omitted_purity whether each purity argument is one a use may leave out */
+        $omitted_purity = [];
+        $projections = [];
+        /** @var array<string, array<string, Union>> $bound what the templates before the current one stand for */
+        $bound = [];
+        $called_offset = 0;
+
+        foreach ($called_storage->template_types ?? [] as $template_name => $type_map) {
+            $is_purity = isset($called_storage->purity_templates[$template_name]);
+            $receiver_args = $is_purity ? $receiver_purity_args : $receiver_type_args;
+            $offset = $is_purity ? count($projected_purity_args) : count($projected_type_args);
+            $projection = null;
+            $is_omitted = false;
+
+            if (isset($sources[$called_offset]) && !isset($unmapped[$called_offset])) {
+                [$argument, $projection] = $sources[$called_offset];
+            } elseif (isset($receiver_args[$offset])) {
+                $argument = $receiver_args[$offset];
+                $projection = $receiver instanceof TGenericObject && !$is_purity
+                    ? $receiver->getProjection($offset)
+                    : null;
+            } elseif (is_string($receiver)) {
+                $argument = new Union([
+                    new TTemplateParam($template_name, reset($type_map), array_key_first($type_map)),
+                ]);
+            } elseif (isset($called_storage->template_defaults[$template_name])) {
+                $argument = TemplateDefaults::resolve(
+                    $called_storage->template_defaults[$template_name],
+                    new TemplateResult([], $bound),
+                    null,
+                );
+                $is_omitted = true;
+            } else {
+                $argument = PurityArguments::getOmittedArgument(reset($type_map));
+                $projection = $is_purity ? null : TypeArgumentProjection::Omitted;
+                $is_omitted = true;
+            }
+
+            if ($is_purity) {
+                $projected_purity_args[] = $argument;
+                $omitted_purity[] = $is_omitted;
+            } else {
+                if ($projection !== null) {
+                    $projections[$offset] = $projection;
+                }
+
+                $projected_type_args[] = $argument;
+            }
+
+            $bound[$template_name][array_key_first($type_map)] = $argument;
+            $called_offset++;
+        }
+
+        // the trailing purity arguments that are their defaults are left out, as in any use of the class
+        while (end($omitted_purity) === true) {
+            array_pop($omitted_purity);
+            array_pop($projected_purity_args);
+        }
+
+        $projected = [...$projected_type_args, ...$projected_purity_args];
+
+        // the arguments have no template to go to in a class that has none
+        if ($projected === []) {
+            return new TNamedObject(
+                $static->value,
+                $static->is_static,
+                false,
+                $static->extra_types,
+                $static->from_docblock,
+            );
+        }
+
+        return $static
+            ->setTypeParams($projected)
+            ->setProjections($projections)
+            ->setStaticDeclaringClass(null);
+    }
+
+    /**
+     * The offsets of the templates of $called_storage that $type is written with, through the classes in between
+     *
+     * @param array<string, true> $seen
+     * @return array<int, true>
+     * @psalm-mutation-free
+     */
+    private static function getTemplateOffsets(ClassLikeStorage $called_storage, Union $type, array $seen = []): array
+    {
+        $offsets = [];
+
+        foreach ($type->getTemplateTypes() as $template) {
+            $key = $template->defining_class . '::' . $template->param_name;
+
+            if (isset($seen[$key])) {
+                continue;
+            }
+
+            $seen[$key] = true;
+
+            if ($template->defining_class === $called_storage->name) {
+                $offset = array_search($template->param_name, array_keys($called_storage->template_types ?? []), true);
+
+                if ($offset !== false) {
+                    $offsets[$offset] = true;
+                }
+
+                continue;
+            }
+
+            $extended_param = $called_storage
+                ->template_extended_params[$template->defining_class][$template->param_name] ?? null;
+
+            if ($extended_param !== null) {
+                $offsets += self::getTemplateOffsets($called_storage, $extended_param, $seen);
+            }
+        }
+
+        return $offsets;
     }
 
     /**

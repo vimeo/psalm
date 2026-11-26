@@ -1050,6 +1050,44 @@ final class MixinAnnotationTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'staticArgumentsThroughAMixinOfAnotherClassAreLeftOut' => [
+                'code' => '<?php
+                    /**
+                     * @template TA
+                     * @template TB
+                     */
+                    abstract class Base {
+                        /** @return static<TA, int> */
+                        public function withIntB(): static {
+                            throw new \Exception();
+                        }
+                    }
+
+                    /** @mixin Base<string, bool> */
+                    final class Holder {
+                        /** @param list<mixed> $args */
+                        public function __call(string $name, array $args): mixed {
+                            return null;
+                        }
+                    }
+
+                    /** @mixin Base */
+                    final class BareHolder {
+                        /** @param list<mixed> $args */
+                        public function __call(string $name, array $args): mixed {
+                            return null;
+                        }
+                    }
+
+                    $h = (new Holder())->withIntB();
+                    $b = (new BareHolder())->withIntB();',
+                'assertions' => [
+                    '$h===' => 'Holder',
+                    '$b===' => 'BareHolder',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'staticCallThroughAMixinIsTheInstanceCall' => [
                 'code' => '<?php
                     /** @template TModel of Model */
