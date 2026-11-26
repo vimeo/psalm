@@ -26,6 +26,7 @@ use function rmdir;
 use function str_replace;
 use function stream_select;
 use function touch;
+use function uniqid;
 use function unlink;
 use function var_export;
 
@@ -394,7 +395,9 @@ final class PsalmMcpEndToEndTest extends PsalmEndToEndTestCase
      */
     private function startServer(array $command = [__DIR__ . '/../../psalm-mcp'], array $env = []): void
     {
-        $this->stderr = self::$tmpDir . '/mcp-stderr.txt';
+        // one file per server: on Windows, a file deleted while a process still has it open can't be created
+        // again until that process exits, and the wrapper amphp starts the whole-project run with can outlive the server
+        $this->stderr = self::$tmpDir . '/mcp-stderr-' . uniqid() . '.txt';
 
         // a file, so that a full pipe can't block the server
         $process = proc_open(
