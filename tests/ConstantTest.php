@@ -3346,6 +3346,32 @@ final class ConstantTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.4',
             ],
+            'phpDebugInClassConstantIsBoolSincePhp84' => [
+                'code' => '<?php
+                    class A {
+                        const DEBUG = PHP_DEBUG;
+                    }
+                    $debug = A::DEBUG;
+                ',
+                'assertions' => [
+                    '$debug===' => 'bool',
+                ],
+                'ignored_issues' => ['MissingClassConstType'],
+                'php_version' => '8.4',
+            ],
+            'phpDebugInClassConstantIsZeroOrOneBeforePhp84' => [
+                'code' => '<?php
+                    class A {
+                        const DEBUG = PHP_DEBUG;
+                    }
+                    $debug = A::DEBUG;
+                ',
+                'assertions' => [
+                    '$debug===' => 'int<0, 1>',
+                ],
+                'ignored_issues' => ['MissingClassConstType'],
+                'php_version' => '8.3',
+            ],
         ];
     }
 
