@@ -448,7 +448,7 @@ final class ExpressionScanner
                 );
             }
 
-            if (!$path_to_file) {
+            if ($path_to_file === null || $path_to_file === '') {
                 continue;
             }
 
@@ -469,10 +469,10 @@ final class ExpressionScanner
     }
 
     /**
-     * Which branch of a ternary is included depends on runtime values, so any of them may be
+     * Each branch of a ternary may be the included path, depending on runtime values
      *
      * @return list<PhpParser\Node\Expr>
-     * @psalm-pure
+     * @psalm-mutation-free
      */
     private static function getIncludablePathExprs(PhpParser\Node\Expr $expr): array
     {

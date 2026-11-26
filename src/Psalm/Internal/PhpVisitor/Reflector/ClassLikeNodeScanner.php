@@ -215,35 +215,38 @@ final class ClassLikeNodeScanner
                         || $duplicate_storage->stmt_location->file_path !== $this->file_path
                         || $class_location->getHash() !== $duplicate_storage->stmt_location->getHash())
                     ) {
-                        // declarations in files that are not analysed (dependencies) are alternatives, one per PHP
-                        // or dependency version (`if (!class_exists(...))`): the first one is kept as is. This file
-                        // is not cached, so that it declares the class again if the other one goes.
+                        // the declarations of a dependency are alternatives, one per PHP or dependency version
+                        // (`if (!class_exists(...))`): the project's declaration replaces them, else the first one is
+                        // kept. A dependency file dropped here is not cached, so that it declares the class again if
+                        // the other file goes.
                         $analyzer = $this->codebase->analyzer;
 
-                        if (!$analyzer->canReportIssues($this->file_path)
-                            && !($duplicate_storage->location
-                                && $analyzer->canReportIssues($duplicate_storage->location->file_path))
-                        ) {
+                        if (!$analyzer->isOwnCodeFile($this->file_path)) {
                             $this->file_storage->has_visitor_issues = true;
 
                             return false;
                         }
 
-                        IssueBuffer::maybeAdd(
-                            new DuplicateClass(
-                                'Class ' . $fq_classlike_name . ' has already been defined'
-                                . ($duplicate_storage->location
-                                    ? ' in ' . $duplicate_storage->location->file_path
-                                    : ''),
-                                $name_location,
-                            ),
-                        );
+                        if ($duplicate_storage->stubbed
+                            || !$duplicate_storage->location
+                            || $analyzer->isOwnCodeFile($duplicate_storage->location->file_path)
+                        ) {
+                            IssueBuffer::maybeAdd(
+                                new DuplicateClass(
+                                    'Class ' . $fq_classlike_name . ' has already been defined'
+                                    . ($duplicate_storage->location
+                                        ? ' in ' . $duplicate_storage->location->file_path
+                                        : ''),
+                                    $name_location,
+                                ),
+                            );
 
-                        $this->file_storage->has_visitor_issues = true;
+                            $this->file_storage->has_visitor_issues = true;
 
-                        $duplicate_storage->has_visitor_issues = true;
+                            $duplicate_storage->has_visitor_issues = true;
 
-                        return false;
+                            return false;
+                        }
                     }
                 } elseif (!$duplicate_storage->location
                     || $duplicate_storage->location->file_path !== $this->file_path

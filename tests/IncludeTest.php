@@ -1782,15 +1782,36 @@ final class IncludeTest extends TestCase
     }
 
     /**
-     * A dependency's class is scanned, not analysed, and so are the files its file requires: each file a ternary
-     * can require is.
+     * Psalm scans the files that a dependency's file requires, including each branch of a ternary. A class
+     * declared in several of them, or also in the project, has one declaration and its subclasses are analysed.
      *
      * @param array<string, string> $required_files the files beside the dependency's file
+     * @param 'before'|'after'|null $project_base whether the project declares the class too, before or after the
+     *                                           dependency is registered
      */
     #[DataProvider('providerFilesRequiredByADependency')]
-    public function testFilesRequiredByADependencyAreScanned(string $require, array $required_files): void
-    {
+    public function testFilesRequiredByADependencyAreScanned(
+        string $require,
+        array $required_files,
+        ?string $project_base = null,
+    ): void {
         $dir = (string) getcwd() . DIRECTORY_SEPARATOR . 'vendor' . DIRECTORY_SEPARATOR . 'lib' . DIRECTORY_SEPARATOR;
+        $src = 'src' . DIRECTORY_SEPARATOR;
+        $files_to_analyze = [$src . 'Mine.php'];
+
+        if ($project_base !== null) {
+            $files_to_analyze[] = $src . 'Base.php';
+        }
+
+        $add_project_base = function () use ($src): void {
+            $this->addFile((string) getcwd() . DIRECTORY_SEPARATOR . $src . 'Base.php', '<?php
+                namespace Lib;
+                class Base { public function both(): void {} }');
+        };
+
+        if ($project_base === 'before') {
+            $add_project_base();
+        }
 
         foreach ($required_files as $file_name => $contents) {
             $this->file_provider->registerFile($dir . $file_name, $contents);
@@ -1808,17 +1829,22 @@ final class IncludeTest extends TestCase
                 }
             }');
 
+        if ($project_base === 'after') {
+            $add_project_base();
+        }
+
         $this->assertSame(
-            [
-                'src' . DIRECTORY_SEPARATOR . 'Mine.php: InvalidReturnStatement@5',
-                'src' . DIRECTORY_SEPARATOR . 'Mine.php: InvalidReturnType@3',
-            ],
-            $this->analyzeFilesInOrder(['src' . DIRECTORY_SEPARATOR . 'Mine.php']),
+            [$src . 'Mine.php: InvalidReturnStatement@5', $src . 'Mine.php: InvalidReturnType@3'],
+            $this->analyzeFilesInOrder($files_to_analyze),
         );
     }
 
     /**
-     * @return iterable<string, array{require: string, required_files: array<string, string>}>
+     * @return iterable<string, array{
+     *     require: string,
+     *     required_files: array<string, string>,
+     *     project_base?: 'before'|'after',
+     * }>
      * @psalm-pure
      */
     public static function providerFilesRequiredByADependency(): iterable
@@ -1864,6 +1890,14 @@ final class IncludeTest extends TestCase
             'require' => 'require __DIR__ . "/New.php";',
             'required_files' => ['New.php' => $base],
         ];
+
+        foreach (['before', 'after'] as $project_base) {
+            yield "ternary, and the project declaring the class $project_base" => [
+                'require' => 'require PHP_VERSION_ID < 80200 ? __DIR__ . "/Old.php" : __DIR__ . "/New.php";',
+                'required_files' => ['Old.php' => $base, 'New.php' => $base],
+                'project_base' => $project_base,
+            ];
+        }
     }
 
     /**

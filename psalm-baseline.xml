@@ -1673,7 +1673,6 @@
       <code><![CDATA[!$skip_if_descendants]]></code>
       <code><![CDATA[!$skip_if_descendants]]></code>
       <code><![CDATA[$include_path]]></code>
-      <code><![CDATA[$path_to_file]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/PhpVisitor/Reflector/FunctionLikeDocblockParser.php">
