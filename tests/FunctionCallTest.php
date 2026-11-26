@@ -4438,6 +4438,45 @@ final class FunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'noNeverReturnErrorTraitMethodUsedByFinalClass' => [
+                'code' => '<?php
+                    trait T {
+                        /**
+                         * @return string
+                         */
+                        public function foo() {
+                            exit;
+                        }
+                    }
+
+                    final class A {
+                        use T;
+                    }
+
+                    class B {
+                        use T;
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'noNeverReturnErrorNativeTraitMethodUsedByFinalClass' => [
+                'code' => '<?php
+                    trait T {
+                        public function foo(): string {
+                            exit;
+                        }
+                    }
+
+                    final class A {
+                        use T;
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'noInvalidReturnTypeVoidNeverExplicit' => [
                 'code' => '<?php
                     /**
@@ -6707,6 +6746,30 @@ final class FunctionCallTest extends TestCase
                         public function foo(): string {
                             exit;
                         }
+                    }',
+                'error_message' => 'InvalidReturnType',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'shouldReturnNeverNotNativeStringClosure' => [
+                'code' => '<?php
+                    $f = function (): string {
+                        exit;
+                    };',
+                'error_message' => 'InvalidReturnType',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'shouldReturnNeverNotNativeStringPrivateTraitMethod' => [
+                'code' => '<?php
+                    trait T {
+                        private function foo(): string {
+                            exit;
+                        }
+                    }
+
+                    class A {
+                        use T;
                     }',
                 'error_message' => 'InvalidReturnType',
                 'error_levels' => [],
