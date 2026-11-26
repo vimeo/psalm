@@ -276,6 +276,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
                 $trait_file_analyzer,
                 $fq_trait_name,
                 $trait_aliases,
+                $this->parent_fq_class_name,
             );
 
             foreach ($trait_node->stmts as $trait_stmt) {
@@ -340,19 +341,6 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
             '/(^|\\\)(int|float|bool|string|void|null|false|true|object|mixed)$/i',
             $fq_class_name,
         ) || strtolower($fq_class_name) === 'resource';
-    }
-
-    /**
-     * The parent class `parent` stands for in the code being analysed. In a trait it is the parent of the class using
-     * the trait, which is the class of the context.
-     */
-    public static function getParentClassOfContext(Context $context, StatementsSource $source): ?string
-    {
-        $codebase = $source->getCodebase();
-
-        return $context->self !== null && $codebase->classlike_storage_provider->has($context->self)
-            ? $codebase->classlike_storage_provider->get($context->self)->parent_class
-            : $source->getParentFQCLN();
     }
 
     /**

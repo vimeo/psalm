@@ -176,7 +176,7 @@ final class ClassConstAnalyzer
 
                 $fq_class_name = $context->self;
             } elseif ($first_part_lc === 'parent') {
-                $fq_class_name = ClassLikeAnalyzer::getParentClassOfContext($context, $statements_analyzer);
+                $fq_class_name = $statements_analyzer->getParentFQCLN();
 
                 if ($fq_class_name === null) {
                     return !IssueBuffer::accepts(

@@ -259,42 +259,52 @@ final class TraitTest extends TestCase
             'parentClassConstantAndStaticPropertyInATraitAreTheOnesOfTheClassUsingIt' => [
                 'code' => '<?php
                     class Box {
-                        /** @var string */
+                        /** @var "box"|"crate" */
                         public const KIND = "box";
-                        public static int $count = 0;
-                        public function getSize(): int {
-                            return 1;
-                        }
+                        /** @var "box"|"other" */
+                        public static string $count = "box";
                     }
 
                     trait Describes {
-                        public function name(): string {
-                            return parent::class;
-                        }
-
-                        public function kind(): string {
-                            return parent::KIND;
-                        }
-
-                        public function count(): int {
-                            return parent::$count;
-                        }
-
-                        public function size(): int {
-                            return parent::getSize();
+                        public function describe(): void {
+                            $name = parent::class;
+                            /** @psalm-check-type-exact $name = Box::class */;
+                            $kind = parent::KIND;
+                            /** @psalm-check-type-exact $kind = "box" */;
+                            $count = parent::$count;
+                            /** @psalm-check-type-exact $count = "box"|"other" */;
                         }
                     }
 
                     final class UsesTrait extends Box {
                         use Describes;
+
+                        /** @var "crate" */
+                        public const KIND = "crate";
+                    }',
+            ],
+            'callableArrayOfTheParentInATraitIsAMethodOfTheParentOfTheUsingClass' => [
+                'code' => '<?php
+                    class Box {
+                        public static function cmp(int $a, int $b): int {
+                            return $a <=> $b;
+                        }
                     }
 
-                    $name = (new UsesTrait())->name();',
-                'assertions' => [
-                    '$name===' => 'string',
-                ],
-                'ignored_issues' => [],
-                'php_version' => '8.1',
+                    trait Sorts {
+                        /**
+                         * @param list<int> $a
+                         * @return list<int>
+                         */
+                        public function sort(array $a): array {
+                            usort($a, [parent::class, "cmp"]);
+                            return $a;
+                        }
+                    }
+
+                    final class UsesTrait extends Box {
+                        use Sorts;
+                    }',
             ],
             'selfConstantInTheTypeOfATraitPropertyIsTheOneOfTheUsingClass' => [
                 'code' => '<?php
