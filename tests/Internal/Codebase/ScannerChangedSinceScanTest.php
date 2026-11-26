@@ -36,6 +36,7 @@ final class ScannerChangedSinceScanTest extends TestCase
             [$path => true],
             [],
             [$path => hash('xxh128', self::SCANNED_CONTENTS)],
+            [],
         ]);
 
         $this->assertFalse($scanner->changedSinceScan($path));
@@ -53,5 +54,15 @@ final class ScannerChangedSinceScanTest extends TestCase
     public function testAFileThatWasNotScannedIsChanged(): void
     {
         $this->assertTrue($this->project_analyzer->getCodebase()->scanner->changedSinceScan('/not/scanned.php'));
+    }
+
+    public function testTheFilesThatVanishedDuringAWorkersScanReachTheParent(): void
+    {
+        $scanner = $this->project_analyzer->getCodebase()->scanner;
+
+        $scanner->addThreadData([[], [], [], [], [], [], [], [], [], [], ['/gone/a.php' => true]]);
+        $scanner->addThreadData([[], [], [], [], [], [], [], [], [], [], ['/gone/b.php' => true]]);
+
+        $this->assertEquals(['/gone/a.php' => true, '/gone/b.php' => true], $scanner->getVanishedFiles());
     }
 }

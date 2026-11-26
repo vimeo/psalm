@@ -70,7 +70,8 @@ use const SORT_STRING;
  *     array<string, bool>,
  *     array<string, bool>,
  *     array<string, bool>,
- *     array<string, string>
+ *     array<string, string>,
+ *     array<string, true>
  * }
  *
  * @psalm-type  PoolData = array{
@@ -150,6 +151,13 @@ final class Scanner
      * @var array<string, string>
      */
     private array $scanned_file_hashes = [];
+
+    /**
+     * The files that were queued for the scan and gone when their turn came
+     *
+     * @var array<string, true>
+     */
+    private array $vanished_files = [];
 
     /**
      * The deep-scanned files whose classes queueFilesOfInheritedMethods() went through => true
@@ -721,6 +729,8 @@ final class Scanner
         if (!$this->file_provider->fileExists($file_path)) {
             // deleted since it was queued, as shouldScan() skips a file that doesn't exist; if it is back by the
             // analysis, Analyzer::analyzeFiles() reports it
+            $this->vanished_files[$file_path] = true;
+
             return;
         }
 
@@ -885,6 +895,17 @@ final class Scanner
     }
 
     /**
+     * The files that were queued for the scan and gone when their turn came
+     *
+     * @return array<string, true>
+     * @psalm-mutation-free
+     */
+    public function getVanishedFiles(): array
+    {
+        return $this->vanished_files;
+    }
+
+    /**
      * Whether a file differs from the one that was scanned: it was not scanned, or its contents are not the ones
      * that were, or can't be read now. Never throws, as it runs while a crash is being reported.
      */
@@ -1024,6 +1045,7 @@ final class Scanner
             $this->scanned_files,
             $this->reflected_classlikes_lc,
             $this->scanned_file_hashes,
+            $this->vanished_files,
         ];
     }
 
@@ -1044,6 +1066,7 @@ final class Scanner
             $scanned_files,
             $reflected_classlikes_lc,
             $scanned_file_hashes,
+            $vanished_files,
         ] = $thread_data;
 
         $this->files_to_scan = array_merge($files_to_scan, $this->files_to_scan);
@@ -1077,6 +1100,7 @@ final class Scanner
         }
         $this->reflected_classlikes_lc = array_merge($reflected_classlikes_lc, $this->reflected_classlikes_lc);
         $this->scanned_file_hashes = array_merge($scanned_file_hashes, $this->scanned_file_hashes);
+        $this->vanished_files = array_merge($vanished_files, $this->vanished_files);
     }
 
     /**

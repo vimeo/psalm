@@ -7,8 +7,10 @@ namespace Psalm\Tests\EndToEnd;
 use PHPUnit\Framework\Attributes\DataProvider;
 
 use function extension_loaded;
+use function file_get_contents;
 use function file_put_contents;
 use function mkdir;
+use function str_replace;
 use function substr_count;
 use function unlink;
 
@@ -88,6 +90,57 @@ final class PsalmFileChangedDuringRunEndToEndTest extends PsalmEndToEndTestCase
 
         $this->assertSame(
             PHP_EOL . 'src/C3.php changed while Psalm was running. Run Psalm again.' . PHP_EOL,
+            $result['STDERR'],
+        );
+    }
+
+    public function testADependencyRemovedWhileAnotherIsScannedAndRestoredBeforeTheAnalysisIsReportedInOneLine(): void
+    {
+        $this->initProjectOfSixClasses(
+            <<<'PHP'
+                <?php
+
+                namespace Repro;
+
+                use Psalm\Plugin\EventHandler\AfterClassLikeVisitInterface;
+                use Psalm\Plugin\EventHandler\AfterCodebasePopulatedInterface;
+                use Psalm\Plugin\EventHandler\Event\AfterClassLikeVisitEvent;
+                use Psalm\Plugin\EventHandler\Event\AfterCodebasePopulatedEvent;
+
+                final class RemoveAndRestoreDependency implements
+                    AfterClassLikeVisitInterface,
+                    AfterCodebasePopulatedInterface
+                {
+                    public static function afterClassLikeVisit(AfterClassLikeVisitEvent $event): void
+                    {
+                        // DepB is queued for the scan when DepA is visited, and gone when its turn comes
+                        if ($event->getStorage()->name === 'DepA') {
+                            rename(__DIR__ . '/dep/DepB.php', __DIR__ . '/DepB.php.away');
+                        }
+                    }
+
+                    public static function afterCodebasePopulated(AfterCodebasePopulatedEvent $event): void
+                    {
+                        rename(__DIR__ . '/DepB.php.away', __DIR__ . '/dep/DepB.php');
+                    }
+                }
+                PHP,
+        );
+
+        // the two files are scanned shallowly: they are not in the project, only a dependency of it
+        mkdir(self::$tmpDir . '/plugins/dep');
+        file_put_contents(self::$tmpDir . '/plugins/dep/DepA.php', "<?php\n\nfinal class DepA {}\n");
+        file_put_contents(self::$tmpDir . '/plugins/dep/DepB.php', "<?php\n\nfinal class DepB {}\n");
+        $psalm_xml = (string) file_get_contents(self::$tmpDir . '/psalm.xml');
+        file_put_contents(
+            self::$tmpDir . '/psalm.xml',
+            str_replace('</psalm>', '<extraFiles><directory name="plugins/dep"/></extraFiles></psalm>', $psalm_xml),
+        );
+
+        $result = $this->runPsalmExpectingExitCode1(1);
+
+        $this->assertSame(
+            PHP_EOL . 'plugins/dep/DepB.php changed while Psalm was running. Run Psalm again.' . PHP_EOL,
             $result['STDERR'],
         );
     }

@@ -251,7 +251,9 @@ final class Analyzer
         $scanned = $codebase->scanner->getScannedFiles();
         $changed_files = [];
 
-        foreach ($this->files_to_analyze as $file_path => $_) {
+        // a file that was gone when its scan came, and is back, is analysed against a codebase without it, whether
+        // it is a file to analyse or one that a file to analyse depends on
+        foreach ($this->files_to_analyze + $codebase->scanner->getVanishedFiles() as $file_path => $_) {
             if (!isset($scanned[$file_path])
                 && $this->file_provider->fileExists($file_path)
                 && !$this->file_provider->isDirectory($file_path)
