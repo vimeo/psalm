@@ -1,8 +1,8 @@
 name: Run Psalm (mac OS)
 
 on:
+  # not on pull requests: Shepherd runs the same analysis on them, on Linux
   push:
-  pull_request:
   # dispatched by bin/ci/apply-queued-changes.php after merging, which doesn't trigger pushes
   workflow_dispatch:
 
