@@ -42,7 +42,8 @@ final class TCallableObject extends TObject
             $key .= $this->callable->getParamString() . $this->callable->getReturnTypeString();
         }
         if ($include_extra && $this->extra_types) {
-            $key .= '&' . implode('&', $this->extra_types);
+            // parenthesised so that the intersection doesn't read as part of the return type
+            $key = '(' . $key . ')&' . implode('&', $this->extra_types);
         }
         return $key;
     }

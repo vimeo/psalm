@@ -21,6 +21,7 @@ use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TCallable;
+use Psalm\Type\Atomic\TCallableObject;
 use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClosure;
@@ -51,6 +52,7 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateValueOf;
 use Psalm\Type\Atomic\TTypeAlias;
 use Psalm\Type\Atomic\TTypeVariable;
+use Psalm\Type\Atomic\TUnknownClassString;
 use Psalm\Type\Atomic\TValueOf;
 use Psalm\Type\Atomic\TVoid;
 use Psalm\Type\Union;
@@ -386,6 +388,32 @@ final class TypeExpander
                 $return_type = $return_type->setAs(
                     $new_as_type->value,
                     $new_as_type,
+                );
+            }
+        } elseif ($return_type instanceof TUnknownClassString
+            && $return_type->as_unknown_type
+        ) {
+            $new_as_type = $return_type->as_unknown_type;
+
+            self::expandAtomic(
+                $codebase,
+                $new_as_type,
+                $self_class,
+                $static_class_type,
+                $parent_class,
+                $evaluate_class_constants,
+                $evaluate_conditional_types,
+                $final,
+                $expand_generic,
+                $expand_templates,
+                $throw_on_unresolvable_constant,
+            );
+
+            if ($new_as_type instanceof TObject && $new_as_type !== $return_type->as_unknown_type) {
+                $return_type = new TUnknownClassString(
+                    $new_as_type,
+                    $return_type->is_loaded,
+                    $return_type->from_docblock,
                 );
             }
         } elseif ($return_type instanceof TTemplateParam) {
@@ -859,6 +887,28 @@ final class TypeExpander
             }
             unset($property_type);
             $return_type = $return_type->setProperties($properties);
+        }
+
+        if ($return_type instanceof TCallableObject && $return_type->callable !== null) {
+            $callable = $return_type->callable;
+            self::expandAtomic(
+                $codebase,
+                $callable,
+                $self_class,
+                $static_class_type,
+                $parent_class,
+                $evaluate_class_constants,
+                $evaluate_conditional_types,
+                $final,
+                $expand_generic,
+                $expand_templates,
+                $throw_on_unresolvable_constant,
+            );
+            if ($callable !== $return_type->callable) {
+                /** @var TCallable $callable */
+                $return_type = (new TCallableObject($return_type->from_docblock, $callable))
+                    ->setIntersectionTypes($return_type->extra_types);
+            }
         }
 
         if ($return_type instanceof TCallable
