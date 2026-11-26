@@ -424,6 +424,96 @@ final class StubTest extends DeferredAnalyzerTestCase
         $this->analyzeFile($file_path, new Context());
     }
 
+    public function testStubbedClassHasTheInterfaceMethodsItLeavesOut(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+
+                    <stubs>
+                        <file name="tests/fixtures/stubs/class_leaving_out_interface_methods.phpstub" />
+                    </stubs>
+                </psalm>',
+            ),
+        );
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @param StubbedCollection<string> $collection */
+                function read(StubbedCollection $collection): void {
+                    $count = $collection->count();
+                    /** @psalm-check-type-exact $count = int */
+
+                    $first = $collection[0];
+                    /** @psalm-check-type-exact $first = string */
+
+                    $collection[] = "a";
+
+                    foreach ($collection as $key => $value) {
+                        /** @psalm-check-type-exact $key = int */
+                        /** @psalm-check-type-exact $value = string */
+                    }
+                }
+
+                /** @extends StubbedCollection<int> */
+                final class IntCollection extends StubbedCollection {}
+
+                function readInts(IntCollection $collection): void {
+                    $first = $collection[0];
+                    /** @psalm-check-type-exact $first = int */
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testStubbedClassChecksTheInterfaceMethodsItLeavesOut(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('InvalidArgument');
+
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+
+                    <stubs>
+                        <file name="tests/fixtures/stubs/class_leaving_out_interface_methods.phpstub" />
+                    </stubs>
+                </psalm>',
+            ),
+        );
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @param StubbedCollection<string> $collection */
+                function write(StubbedCollection $collection): void {
+                    $collection[] = 1;
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
     public function testStubFileClass(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
