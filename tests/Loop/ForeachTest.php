@@ -246,6 +246,14 @@ final class ForeachTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'mongodbCursorInterfaceWithoutTypeArgumentsYieldsDocuments' => [
+                'code' => '<?php
+                    function rows(MongoDB\Driver\CursorInterface $cursor): void {
+                        foreach ($cursor as $document) {
+                            /** @psalm-check-type-exact $document = array<array-key, mixed>|object */;
+                        }
+                    }',
+            ],
             'variableAssignedBeforeABreakTwoLevelsOutInsideALoopIsDefinedAfterTheLoopItLeaves' => [
                 'code' => '<?php
                     /** @param non-empty-list<non-empty-list<string>> $rows */
