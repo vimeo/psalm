@@ -599,6 +599,36 @@ final class ArrayAssignmentTest extends TestCase
                     '$c===' => 'array{x: 2, y: 1}',
                 ],
             ],
+            'offsetZeroAssignedToANullableListKeepsItAList' => [
+                'code' => '<?php
+                    /** @return list<int>|null */
+                    function getList(): ?array {
+                        return rand(0, 1) ? [1] : null;
+                    }
+
+                    $a = getList();
+                    $a[0] = 5;
+
+                    $b = rand(0, 1) ? [1, 2] : null;
+                    $b[0] = 5;
+
+                    $c = rand(0, 1) ? [] : null;
+                    $c[0] = 5;
+
+                    /** @param list<int> $l */
+                    function takesList(array $l): void {}
+
+                    /** @param list<int>|null $l */
+                    function f(?array $l): void {
+                        $l[0] = 5;
+                        takesList($l);
+                    }',
+                'assertions' => [
+                    '$a===' => 'list{5, ...<int>}',
+                    '$b===' => 'list{0: 5, 1?: 2}',
+                    '$c===' => 'list{5}',
+                ],
+            ],
             'assignToTheItemOfAnArrayAFunctionReturnsByReference' => [
                 'code' => '<?php
                     function &ensureArray(array &$what): array {

@@ -956,6 +956,8 @@ final class ArrayAssignmentAnalyzer
             TKeyedArray::make(
                 $properties,
                 $classStrings ?: null,
+                null,
+                array_keys($properties) === [0],
             ),
         ]);
 
