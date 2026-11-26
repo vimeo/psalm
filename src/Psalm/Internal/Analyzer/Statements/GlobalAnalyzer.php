@@ -180,6 +180,11 @@ final class GlobalAnalyzer
                     $context->vars_possibly_in_scope[$var_id] = true;
 
                     $context->byref_constraints[$var_id] = new ReferenceConstraint();
+
+                    // what the variable holds now is not what a call can leave in the global
+                    if ($context->is_global) {
+                        $global_type = null;
+                    }
                 }
             }
 

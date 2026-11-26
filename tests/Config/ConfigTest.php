@@ -2889,6 +2889,19 @@ final class ConfigTest extends DeferredAnalyzerTestCase
             $x->test();',
             'NullReference',
         ];
+        yield 'globalAtFileScopeReadsDeclaredTypeAfterCall' => [
+            'Foo|null',
+            'function clearX(): void {
+                global $x;
+                $x = null;
+            }
+            $x = new Foo();
+            /** @psalm-suppress InvalidGlobal */
+            global $x;
+            clearX();
+            $x->test();',
+            'PossiblyNullReference',
+        ];
         yield 'assignmentInFunctionWins' => [
             'Foo',
             'function f(): void {
