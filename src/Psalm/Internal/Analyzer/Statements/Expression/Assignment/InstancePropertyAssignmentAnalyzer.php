@@ -72,7 +72,6 @@ use function array_pop;
 use function count;
 use function explode;
 use function in_array;
-use function preg_match;
 use function reset;
 use function str_ends_with;
 use function strtolower;
@@ -896,12 +895,11 @@ final class InstancePropertyAssignmentAnalyzer
             $statements_analyzer,
         );
 
-        // `$this->$name = ...` and `$this->{'name'} = ...` assign the property their literal name resolves to; a name
-        // that isn't an identifier, like `a[0]`, would make the id of another expression
+        // `$this->$name = ...` and `$this->{'name'} = ...` assign the property their literal name resolves to
         if ($var_id === null
             && $lhs_var_id !== null
             && !$stmt->name instanceof PhpParser\Node\Identifier
-            && preg_match('/^[a-zA-Z_\x80-\xff][a-zA-Z0-9_\x80-\xff]*$/D', $prop_name)
+            && ExpressionIdentifier::isLiteralPropertyNameOfVarId($prop_name)
         ) {
             $var_id = $lhs_var_id . '->' . $prop_name;
         }

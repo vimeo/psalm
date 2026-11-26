@@ -2811,6 +2811,15 @@ final class PropertyTypeTest extends TestCase
                 ],
                 'ignored_issues' => ['MixedAssignment'],
             ],
+            'variablePropertyAssignmentWithADash' => [
+                'code' => '<?php
+                    $o = new stdClass();
+                    $o->{"a-b"} = 5;
+                    $v = $o->{"a-b"};',
+                'assertions' => [
+                    '$v===' => '5',
+                ],
+            ],
             'goodArrayProperties' => [
                 'code' => '<?php
                     interface I1 {}
