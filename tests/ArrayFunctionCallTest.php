@@ -190,6 +190,58 @@ final class ArrayFunctionCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'countOfASealedShapeWithOnlyOptionalKeysIsNonEmpty' => [
+                'code' => '<?php
+                    /** @var array{a?: int, b?: int} $x */
+                    $x = [];
+
+                    $first = 0;
+                    if (count($x) === 1) {
+                        $first = array_key_first($x);
+                    }',
+                'assertions' => [
+                    '$first===' => '\'a\'|\'b\'|0',
+                ],
+            ],
+            'countGreaterThanZeroOfASealedShapeWithOnlyOptionalKeysIsNonEmpty' => [
+                'code' => '<?php
+                    /** @var array{a?: int, b?: int} $x */
+                    $x = [];
+
+                    $y = null;
+                    if (count($x) > 0) {
+                        $y = $x;
+                    }',
+                'assertions' => [
+                    '$y===' => 'non-empty-array<\'a\'|\'b\', int>|null',
+                ],
+            ],
+            'countOfASealedShapeWithOptionalKeysOfDifferentTypesKeepsTheShape' => [
+                'code' => '<?php
+                    /** @var array{a?: int, b?: string} $x */
+                    $x = [];
+
+                    $y = null;
+                    if (count($x) === 1) {
+                        $y = $x;
+                    }',
+                'assertions' => [
+                    '$y===' => 'array{a?: int, b?: string}|null',
+                ],
+            ],
+            'countOfASealedShapeWithARequiredKeyKeepsTheShape' => [
+                'code' => '<?php
+                    /** @var array{a: int, b?: int, c?: int} $x */
+                    $x = [];
+
+                    $y = null;
+                    if (count($x) === 2) {
+                        $y = $x;
+                    }',
+                'assertions' => [
+                    '$y===' => 'array{a: int, b?: int, c?: int}|null',
+                ],
+            ],
             'arrayKeyExistsNotFindingALiteralFallbackKeyOfAnUnsealedShape' => [
                 'code' => '<?php
                     /**
