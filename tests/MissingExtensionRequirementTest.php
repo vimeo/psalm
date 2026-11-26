@@ -42,6 +42,32 @@ final class MissingExtensionRequirementTest extends TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
+    public function testExtensionTheComposerJsonOfThePackageDeclares(): void
+    {
+        // the project declares ext-pdo and ext-sodium, not ext-mbstring
+        $file_path = (string) getcwd() . '/tests/fixtures/MonorepoPackages/declaring/src/somefile.php';
+        $this->addFile($file_path, '<?php
+            function length(string $s): int {
+                return mb_strlen($s);
+            }');
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testExtensionTheProjectDeclaresButNotThePackage(): void
+    {
+        $file_path = (string) getcwd() . '/tests/fixtures/MonorepoPackages/undeclaring/src/somefile.php';
+        $this->addFile($file_path, '<?php
+            function connect(): PDO {
+                return new PDO("sqlite::memory:");
+            }');
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('PDO is part of the ext-pdo extension');
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
     public function testCoreExtensionOfAPhpNewerThanComposerAllows(): void
     {
         $this->project_analyzer->getConfig()->lowest_composer_php_version_id = 7_03_00;

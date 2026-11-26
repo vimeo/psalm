@@ -473,7 +473,8 @@ final class InternalCallMapHandler
 
     /**
      * The extensions declaring a builtin function (`mb_strlen`) or class (`PDO`) in the PHP versions from the lowest
-     * composer.json allows to the analysed one, as reflection names them (`mbstring`, `zend opcache`), each with the
+     * composer.json allows ($lowest_composer_php_version_id, see Config::getLowestComposerPhpVersionIdOf()) to the
+     * analysed one, as reflection names them (`mbstring`, `zend opcache`), each with the
      * lowest of these versions (as an id) it is part of. A symbol can move: `random_int()` is part of `standard` until
      * PHP 8.1, of `random` from 8.2. A class belongs to the extension of most of its methods: some come from others
      * (`PDO::sqliteCreateFunction()` from `pdo_sqlite`). The stub image of the analysed version may not build an
@@ -482,8 +483,11 @@ final class InternalCallMapHandler
      *
      * @return array<string, int>
      */
-    public static function getExtensions(string $function_or_class, bool $is_class): array
-    {
+    public static function getExtensions(
+        string $function_or_class,
+        bool $is_class,
+        ?int $lowest_composer_php_version_id,
+    ): array {
         $codebase = ProjectAnalyzer::getInstance()->getCodebase();
         $analysis_version = self::getCallMapVersion(
             $codebase->getMajorAnalysisPhpVersion(),
@@ -491,7 +495,7 @@ final class InternalCallMapHandler
         );
         $lowest_version_id = min(
             $codebase->analysis_php_version_id,
-            $codebase->config->lowest_composer_php_version_id ?? $codebase->analysis_php_version_id,
+            $lowest_composer_php_version_id ?? $codebase->analysis_php_version_id,
         );
         $lowest_version = self::getCallMapVersion(
             intdiv($lowest_version_id, 10_000),

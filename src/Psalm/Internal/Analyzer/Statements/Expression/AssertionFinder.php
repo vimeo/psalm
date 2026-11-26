@@ -19,6 +19,7 @@ use PhpParser\Node\Expr\UnaryPlus;
 use PhpParser\Node\Scalar\Int_;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
+use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\TypeParseTreeException;
 use Psalm\FileSource;
@@ -1080,7 +1081,10 @@ final class AssertionFinder
             $if_types[Context::PHP_SYMBOL_GUARD_VAR_ID] = [[$native_symbol_guard]];
         }
 
-        foreach (self::getCheckedExtensions($expr, $function_id) as $checked_extension) {
+        $config = $codebase !== null ? $codebase->config : Config::getInstance();
+        $lowest_php_version_id = $config->getLowestComposerPhpVersionIdOf($source->getFilePath());
+        $checked_extensions = self::getCheckedExtensions($expr, $function_id, $lowest_php_version_id);
+        foreach ($checked_extensions as $checked_extension) {
             $if_types[Context::getExtensionVarId($checked_extension)] = [[new IsType(new TTrue())]];
         }
 
@@ -1096,6 +1100,7 @@ final class AssertionFinder
     private static function getCheckedExtensions(
         PhpParser\Node\Expr\FuncCall $expr,
         ?string $function_id,
+        ?int $lowest_php_version_id,
     ): array {
         $first_arg = $expr->isFirstClassCallable() ? null : ($expr->getArgs()[0] ?? null);
         if ($first_arg === null) {
@@ -1108,14 +1113,20 @@ final class AssertionFinder
 
         if ($function_id === 'function_exists') {
             return $first_arg->value instanceof PhpParser\Node\Scalar\String_
-                ? array_keys(InternalCallMapHandler::getExtensions($first_arg->value->value, false))
+                ? array_keys(InternalCallMapHandler::getExtensions(
+                    $first_arg->value->value,
+                    false,
+                    $lowest_php_version_id,
+                ))
                 : [];
         }
 
         if (in_array($function_id, ['class_exists', 'interface_exists', 'enum_exists'], true)) {
             $class = self::getLiteralClassName($first_arg->value);
 
-            return $class !== null ? array_keys(InternalCallMapHandler::getExtensions($class, true)) : [];
+            return $class !== null
+                ? array_keys(InternalCallMapHandler::getExtensions($class, true, $lowest_php_version_id))
+                : [];
         }
 
         return [];

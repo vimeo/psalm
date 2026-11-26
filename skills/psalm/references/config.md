@@ -25,6 +25,7 @@ autoloader (`composer dump-autoload`) or add the directory to `<extraFiles>`.
 Code using a function or class of an extension `composer.json` doesn't declare is
 `MissingExtensionRequirement`. Add the extension to `require` (`"ext-mbstring": "*"`), or to `suggest` when the
 code checks `extension_loaded()` first.
+In a monorepo, a file of a package takes the nearest `composer.json` above it: declare the extension in that one.
 
 Psalm loads the precise stubs of an extension (`pdo`, `redis`, `mongodb`, `imagick`, …) only when
 `composer.json` requires it or `psalm.xml` enables it; without them its methods may return `mixed`:
