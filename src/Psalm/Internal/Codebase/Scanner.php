@@ -145,7 +145,7 @@ final class Scanner
     private array $scanned_files = [];
 
     /**
-     * The xxh128 hash of the contents of each file that is analysed, as scanned
+     * The xxh128 hash of the contents of each deep-scanned file, as scanned
      *
      * @var array<string, string>
      */
@@ -886,15 +886,12 @@ final class Scanner
     }
 
     /**
-     * Whether a file that is analysed differs from the one that was scanned: it came or went, or has other contents.
-     * Never throws, as it runs while a crash is being reported.
+     * Whether a file differs from the one that was scanned: it was not scanned, or its contents are not the ones
+     * that were, or can't be read now. Never throws, as it runs while a crash is being reported.
      */
     public function changedSinceScan(string $file_path): bool
     {
-        if (!isset($this->scanned_files[$file_path])
-            || !$this->file_provider->fileExists($file_path)
-            || $this->file_provider->isDirectory($file_path)
-        ) {
+        if (!isset($this->scanned_files[$file_path])) {
             return true;
         }
 
@@ -907,7 +904,8 @@ final class Scanner
         try {
             return $hash !== $this->file_provider->getContentsHash($file_path);
         } catch (RuntimeException) {
-            // it was readable at scan time; ErrorHandler turns the warning of a file that is gone into this
+            // a file that is gone, or a directory, makes getContentsHash() throw, and a warning raised by an
+            // unreadable one is turned into an exception by ErrorHandler
             return true;
         }
     }

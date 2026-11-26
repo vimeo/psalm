@@ -475,8 +475,8 @@ final class Analyzer
     }
 
     /**
-     * A file edited after the scan is analysed against the storage of its old contents, and whatever crash follows
-     * is the edit's doing, not Psalm's.
+     * A file that differs from the one that was scanned is analysed against storage built from the scanned contents,
+     * which can crash the analysis. The crash is then reported as that change: the likely cause, not a proven one.
      */
     private function throwUnlessFileChanged(Codebase $codebase, string $file_path, Throwable $e): never
     {
