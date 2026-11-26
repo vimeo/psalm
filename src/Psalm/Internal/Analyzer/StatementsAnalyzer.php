@@ -88,7 +88,6 @@ use function assert;
 use function count;
 use function explode;
 use function fwrite;
-use function hrtime;
 use function is_string;
 use function preg_match;
 use function preg_replace;
@@ -301,7 +300,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
                 if (Perf\Collector::$enabled) {
                     $perf_outer_child_ns = Perf\Collector::$child_ns;
                     Perf\Collector::$child_ns = 0;
-                    $perf_start_ns = (int) hrtime(true);
+                    $perf_start_ns = Perf\Collector::nowNs();
                     $analysis_result = self::analyzeStatement($this, $stmt, $context, $global_context);
                     Perf\Collector::statementEnd($this, $stmt, $perf_start_ns, $perf_outer_child_ns);
 
