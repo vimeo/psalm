@@ -2111,19 +2111,32 @@ final class NewAnalyzer extends CallAnalyzer
             }
         }
 
-        // a `@method` is called and a `@property` or `@property-write` is assigned like a real one
-        foreach ($storage->getDeclaredPseudoMethods() as $pseudo_method) {
-            foreach ($pseudo_method->params as $param) {
-                foreach ($param->type?->getTemplateTypes() ?? [] as $template_type) {
-                    unset($unconstrainable[$template_type->param_name]);
+        // a `@method` is called and a `@property` or `@property-write` is assigned like a real one, also when
+        // a parent declares it
+        foreach ([
+            [$storage->pseudo_methods, $storage->declaring_pseudo_method_ids, false],
+            [$storage->pseudo_static_methods, $storage->declaring_pseudo_static_method_ids, true],
+        ] as [$pseudo_methods, $declaring_ids, $is_static]) {
+            foreach ($pseudo_methods as $method_name => $pseudo_method) {
+                $declaring_storage = isset($declaring_ids[$method_name])
+                    ? $codebase->classlike_storage_provider->get($declaring_ids[$method_name]->fq_class_name)
+                    : $storage;
+                $overloads = $is_static
+                    ? $declaring_storage->pseudo_static_method_overloads
+                    : $declaring_storage->pseudo_method_overloads;
+
+                foreach ($overloads[$method_name] ?? [$pseudo_method] as $overload) {
+                    foreach ($overload->params as $param) {
+                        if ($param->type) {
+                            self::removeConstrainableTemplates($unconstrainable, $param->type, $storage);
+                        }
+                    }
                 }
             }
         }
 
         foreach ($storage->pseudo_property_set_types as $pseudo_property_type) {
-            foreach ($pseudo_property_type->getTemplateTypes() as $template_type) {
-                unset($unconstrainable[$template_type->param_name]);
-            }
+            self::removeConstrainableTemplates($unconstrainable, $pseudo_property_type, $storage);
         }
 
         // a purity template is what the object was constructed with: what its methods cost is

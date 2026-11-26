@@ -2008,6 +2008,60 @@ final class TypeVariableTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'constructionOfAnInvariantTemplateAParentPseudoMethodTakes' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @method void add(T $item)
+                     */
+                    abstract class Base {
+                        public function __call(string $name, array $arguments): mixed {
+                            return null;
+                        }
+                    }
+
+                    /**
+                     * @template U
+                     * @extends Base<U>
+                     */
+                    final class Child extends Base {}
+
+                    /** @param Child<int> $child */
+                    function takesInts(Child $child): void {}
+
+                    $c = new Child();
+                    $c->add(1);
+                    takesInts($c);',
+                'assertions' => [
+                    '$c===' => 'Child<`_0:mixed>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'constructionOfACovariantTemplateAParentPseudoMethodTakes' => [
+                'code' => '<?php
+                    /**
+                     * @template-covariant T
+                     * @method void add(T $item)
+                     */
+                    abstract class Base {
+                        public function __call(string $name, array $arguments): mixed {
+                            return null;
+                        }
+                    }
+
+                    /**
+                     * @template-covariant U
+                     * @extends Base<U>
+                     */
+                    final class Child extends Base {}
+
+                    $c = new Child();
+                    $c->add(1);',
+                'assertions' => [],
+                'ignored_issues' => ['InvalidTemplateParam'],
+                'php_version' => '8.0',
+            ],
             'constructionOfACovariantTemplateAPseudoPropertyIsOnlyRead' => [
                 'code' => '<?php
                     /**
