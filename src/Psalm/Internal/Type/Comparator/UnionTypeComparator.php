@@ -38,6 +38,7 @@ use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Atomic\TValueOf;
 use Psalm\Type\Union;
 
+use function array_filter;
 use function array_map;
 use function array_merge;
 use function array_pop;
@@ -584,6 +585,7 @@ final class UnionTypeComparator
         ?TypeComparisonResult $union_comparison_result,
     ): array {
         $input_parts = self::withConditionalsSplit(
+            $codebase,
             self::getTypeParts($codebase, $input_type, !self::hasTemplateKeyOrValueOf($container_type)),
         );
 
@@ -1159,22 +1161,65 @@ final class UnionTypeComparator
      * (`($a is null ? T : TA)` by `T|TA`), so it is compared as the parts of its branches
      *
      * @param list<Atomic> $atomic_types
+     * @param array<string, Union> $narrowed_bounds the bounds of the templates the enclosing conditionals are on,
+     *     narrowed for the branch, by `name:defining class`
      * @return list<Atomic>
-     * @psalm-pure
      */
-    private static function withConditionalsSplit(array $atomic_types): array
-    {
+    private static function withConditionalsSplit(
+        Codebase $codebase,
+        array $atomic_types,
+        array $narrowed_bounds = [],
+    ): array {
         $split_types = [];
 
         foreach ($atomic_types as $atomic_type) {
             if ($atomic_type instanceof TConditional) {
+                $key = $atomic_type->param_name . ':' . $atomic_type->defining_class;
+                $if_bounds = $narrowed_bounds;
+                $else_bounds = $narrowed_bounds;
+
+                // a template the condition is on is within the conditional type in the if branch, outside it in the
+                // else branch
+                if ($atomic_type->subject_type === null) {
+                    $as_type = $narrowed_bounds[$key] ?? $atomic_type->as_type;
+
+                    if (self::isContainedBy($codebase, $atomic_type->conditional_type, $as_type)) {
+                        $if_bounds[$key] = $atomic_type->conditional_type;
+                    }
+
+                    $else_parts = array_filter(
+                        $as_type->getAtomicTypes(),
+                        static fn(Atomic $part): bool => !self::isContainedBy(
+                            $codebase,
+                            new Union([$part]),
+                            $atomic_type->conditional_type,
+                        ),
+                    );
+
+                    if ($else_parts !== [] && count($else_parts) < count($as_type->getAtomicTypes())) {
+                        $else_bounds[$key] = new Union(array_values($else_parts));
+                    }
+                }
+
                 $split_types = [
                     ...$split_types,
-                    ...self::withConditionalsSplit([
-                        ...array_values($atomic_type->if_type->getAtomicTypes()),
-                        ...array_values($atomic_type->else_type->getAtomicTypes()),
-                    ]),
+                    ...self::withConditionalsSplit(
+                        $codebase,
+                        array_values($atomic_type->if_type->getAtomicTypes()),
+                        $if_bounds,
+                    ),
+                    ...self::withConditionalsSplit(
+                        $codebase,
+                        array_values($atomic_type->else_type->getAtomicTypes()),
+                        $else_bounds,
+                    ),
                 ];
+            } elseif ($atomic_type instanceof TTemplateParam
+                && isset($narrowed_bounds[$atomic_type->param_name . ':' . $atomic_type->defining_class])
+            ) {
+                $split_types[] = $atomic_type->replaceAs(
+                    $narrowed_bounds[$atomic_type->param_name . ':' . $atomic_type->defining_class],
+                );
             } else {
                 $split_types[] = $atomic_type;
             }

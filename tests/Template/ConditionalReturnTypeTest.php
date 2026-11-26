@@ -779,6 +779,24 @@ final class ConditionalReturnTypeTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'templateTheConditionIsOnIsOutsideTheConditionalTypeInTheElseBranch' => [
+                'code' => '<?php
+                    /**
+                     * @template TKey of array-key
+                     * @template-covariant TValue
+                     */
+                    interface Enumerable {
+                        /**
+                         * @template TNewKey of array-key|\UnitEnum
+                         * @param (callable(TValue, TKey): TNewKey)|array|string $keyBy
+                         * @return static<($keyBy is (array|string) ? array-key : (TNewKey is \UnitEnum ? array-key : TNewKey)), TValue>
+                         */
+                        public function keyBy($keyBy);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'conditionalOnAParamInAnInlineVarIsTheConditionalOfTheReturnType' => [
                 'code' => '<?php
                     /**
@@ -3576,6 +3594,23 @@ final class ConditionalReturnTypeTest extends TestCase
                 'error_message' => 'InvalidScalarArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:33',
                 'error_levels' => [],
                 'php_version' => '8.0',
+            ],
+            'templateTheConditionIsOnIsWithinTheConditionalTypeInTheIfBranch' => [
+                'code' => '<?php
+                    /**
+                     * @template TKey of array-key
+                     */
+                    interface Enumerable {
+                        /**
+                         * @template TNewKey of array-key|\UnitEnum
+                         * @param callable(): TNewKey $keyBy
+                         * @return static<(TNewKey is \UnitEnum ? TNewKey : array-key)>
+                         */
+                        public function keyBy(callable $keyBy);
+                    }',
+                'error_message' => 'InvalidTemplateParam',
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
             'conditionalReturnTypeWithoutIsTypeIsReportedInsteadOfCrashing' => [
                 'code' => '<?php
