@@ -92,7 +92,7 @@ abstract class CodeIssue
     /**
      * @param IssueData::SEVERITY_* $severity
      */
-    public function toIssueData(string $severity): IssueData
+    public function toIssueData(string $severity, bool $is_fixable = false): IssueData
     {
         $location = $this->code_location;
         $selection_bounds = $location->getSelectionBounds();
@@ -132,6 +132,7 @@ abstract class CodeIssue
             $this instanceof SecurityIssue,
             $this->group_key,
             static::CWE_IDS,
+            $is_fixable,
         );
     }
 }
