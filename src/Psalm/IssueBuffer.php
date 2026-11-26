@@ -45,6 +45,7 @@ use Psalm\Report\TextReport;
 use Psalm\Report\XmlReport;
 use RuntimeException;
 use UnexpectedValueException;
+use WeakMap;
 
 use function array_filter;
 use function array_keys;
@@ -118,6 +119,13 @@ final class IssueBuffer
     private static array $recorded_issues = [];
 
     /**
+     * The recorded issues that are fixable: bubbleUp() adds them as such
+     *
+     * @var ?WeakMap<CodeIssue, true>
+     */
+    private static ?WeakMap $recorded_fixable_issues = null;
+
+    /**
      * The issues raised while collecting them, before the config or a suppression filters them, keyed by
      * getIssueLocationKey()
      *
@@ -185,6 +193,11 @@ final class IssueBuffer
         $event = new BeforeAddIssueEvent($e, $is_fixable, $codebase);
         if ($config->eventDispatcher->dispatchBeforeAddIssue($event) === false) {
             return false;
+        }
+
+        if ($is_fixable && self::$recording_level > 0) {
+            self::$recorded_fixable_issues ??= new WeakMap();
+            self::$recorded_fixable_issues[$e] = true;
         }
 
         if (self::isSuppressed($e, $suppressed_issues)) {
@@ -1631,7 +1644,7 @@ final class IssueBuffer
     public static function bubbleUp(CodeIssue $e): void
     {
         if (self::$recording_level === 0) {
-            self::add($e);
+            self::add($e, isset(self::$recorded_fixable_issues[$e]));
 
             return;
         }

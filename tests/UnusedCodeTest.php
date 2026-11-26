@@ -277,6 +277,70 @@ final class UnusedCodeTest extends TestCase
         $this->assertSame(4, $issue->line_from);
     }
 
+    public function testAFixableIssueOfALoopBodyStaysFixable(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                function int(): int {
+                    return 1;
+                }
+
+                /** @param list<int> $ints */
+                function f(array $ints): void {
+                    foreach ($ints as $_) {
+                        /** @var int $a */
+                        $a = int();
+                        echo $a;
+                    }
+                }
+            ',
+        );
+        $this->analyzeFile($file_path, new Context(), false);
+        $this->project_analyzer->consolidateAnalyzedData();
+
+        $issue = IssueBuffer::getIssuesDataForFile($file_path)[0];
+        $this->assertSame('UnnecessaryVarAnnotation', $issue->type);
+        $this->assertTrue($issue->is_fixable);
+    }
+
+    public function testAFixableIssueOfTheBodyOfALoopOverNeverStaysFixable(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                function int(): int {
+                    return 1;
+                }
+
+                /** @return list<never> */
+                function nothing(): array {
+                    return [];
+                }
+
+                function f(): void {
+                    foreach (nothing() as $item) {
+                        /** @var int $a */
+                        $a = int();
+                        echo $a, count($item);
+                    }
+                }
+            ',
+        );
+        $this->analyzeFile($file_path, new Context(), false);
+        $this->project_analyzer->consolidateAnalyzedData();
+
+        $issue = IssueBuffer::getIssuesDataForFile($file_path)[0];
+        $this->assertSame('UnnecessaryVarAnnotation', $issue->type);
+        $this->assertTrue($issue->is_fixable);
+    }
+
     public function testTheArgumentsOfACallOfAMissingClassAreNotAnalysed(): void
     {
         $this->project_analyzer->getConfig()->throw_exception = false;
@@ -1256,6 +1320,60 @@ final class UnusedCodeTest extends TestCase
                     function f(array $values): void {
                         /** @psalm-suppress UnusedVariable */
                         foreach ($values as $value) {
+                        }
+                    }',
+            ],
+            'variableUsedOnlyInTheBodyOfALoopOverNothingIsUsed' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-api
+                     * @param list<never> $nothing
+                     */
+                    function f(array $nothing): void {
+                        $prefix = "item";
+
+                        foreach ($nothing as $item) {
+                            echo $prefix, count($item);
+                        }
+                    }',
+            ],
+            'variableUsedAfterAMethodCallOnTheItemOfALoopOverNothingIsUsed' => [
+                'code' => '<?php
+                    /** @psalm-api */
+                    final class User {
+                        public function name(): string {
+                            return "";
+                        }
+                    }
+
+                    /**
+                     * @psalm-api
+                     * @param list<never> $nothing
+                     */
+                    function f(array $nothing): void {
+                        $prefix = "item";
+
+                        foreach ($nothing as $user) {
+                            $user->name();
+                            echo $prefix;
+                        }
+                    }',
+            ],
+            'copyOfTheItemOfALoopOverNothingIsUsed' => [
+                'code' => '<?php
+                    /** @psalm-api */
+                    final class User {
+                        public int $id = 0;
+                    }
+
+                    /**
+                     * @psalm-api
+                     * @param list<never> $nothing
+                     */
+                    function f(array $nothing): void {
+                        foreach ($nothing as $user) {
+                            $copy = $user;
+                            echo $copy->id;
                         }
                     }',
             ],
