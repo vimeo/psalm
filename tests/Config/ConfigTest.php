@@ -37,6 +37,7 @@ use Psalm\Issue\TooManyArguments;
 use Psalm\Issue\UndefinedFunction;
 use Psalm\Issue\UnusedBaselineEntry;
 use Psalm\Issue\VariableIssue;
+use Psalm\Issue\WeakHash;
 use Psalm\Tests\Config\Plugin\FileTypeSelfRegisteringPlugin;
 use Psalm\Tests\Config\Plugin\TestPluginIssue;
 use Psalm\Tests\Config\Plugin\TestPluginIssueDefaultLevel;
@@ -4050,6 +4051,39 @@ final class ConfigTest extends DeferredAnalyzerTestCase
         $this->assertFalse($config->isSuppressible('TaintedHtml'));
         $this->assertFalse($config->isSuppressible('TaintedSql'));
         $this->assertFalse($config->isSuppressible('MixedArgument'));
+        $this->assertTrue($config->isSuppressible('InvalidArgument'));
+    }
+
+    public function testUnsuppressibleSecurityIssues(): void
+    {
+        $config = Config::loadFromXML(
+            (string) getcwd(),
+            <<<XML
+            <?xml version="1.0"?>
+            <psalm errorLevel="8">
+                <issueHandlers>
+                    <WeakHash errorLevel="suppress" />
+                </issueHandlers>
+                <unsuppressibleIssues>
+                    <issue name="SecurityIssue" />
+                </unsuppressibleIssues>
+            </psalm>
+            XML,
+        );
+
+        $this->assertSame(
+            Config::REPORT_ERROR,
+            $config->getReportingLevelForIssue(
+                new WeakHash(
+                    'md5 is a weak hash',
+                    new Raw('aaa', 'aaa.php', 'aaa.php', 1, 2),
+                ),
+            ),
+        );
+        $this->assertFalse($config->isSuppressible('WeakHash'));
+        $this->assertFalse($config->isSuppressible('InsecureCookie'));
+        $this->assertFalse($config->isSuppressible('TaintedInput'));
+        $this->assertFalse($config->isSuppressible('TaintedSql'));
         $this->assertTrue($config->isSuppressible('InvalidArgument'));
     }
 
