@@ -6,6 +6,7 @@ namespace Psalm\Tests\Internal\Codebase;
 
 use Override;
 use PHPUnit\Framework\Attributes\DataProvider;
+use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\FileStorageProvider;
 use Psalm\IssueBuffer;
@@ -13,12 +14,13 @@ use Psalm\Storage\ClassLikeStorage;
 use Psalm\Tests\TestCase;
 
 use function array_keys;
+use function array_map;
 use function getcwd;
 
 use const DIRECTORY_SEPARATOR;
 
 /**
- * A class declared in several files belongs to the file with the smallest path, however the scanner's processes
+ * A class declared in several files belongs to the file a single process keeps, however the scanner's processes
  * finish.
  */
 final class DuplicateClassWinnerTest extends TestCase
@@ -72,7 +74,11 @@ if (!class_exists(Lazy::class, false)) {
         foreach ($arrival as $process) {
             [$file_path, $classlike_storages] = $processes[$process];
             $codebase = $this->project_analyzer->getCodebase();
-            $codebase->classlike_storage_provider->addMore($classlike_storages);
+            $codebase->classlike_storage_provider->addMore(
+                $classlike_storages,
+                [],
+                $codebase->analysis_php_version_id,
+            );
             $codebase->scanner->addThreadData([[], [], [], [], [], ['lib\lazy' => $file_path], [], [], [], [], []]);
         }
 
@@ -103,6 +109,114 @@ if (!class_exists(Lazy::class, false)) {
     {
         yield 'process with the smallest path finishes first' => [['w1', 'w2']];
         yield 'process with the smallest path finishes last' => [['w2', 'w1']];
+    }
+
+    /**
+     * A class the merging process scanned before the pool (an autoloaded file, an earlier scan pass) keeps its
+     * declaration, as in a single process, even when a worker found one in a smaller path.
+     */
+    public function testPoolMergeKeepsTheDeclarationScannedBeforeThePool(): void
+    {
+        [$worker_file, $worker_storages] = $this->scanAlone('a');
+        $codebase = $this->project_analyzer->getCodebase();
+        $earlier_file = $this->dir . 'b.php';
+
+        $this->file_provider->registerFile($earlier_file, self::SOURCES['b']);
+        $codebase->scanner->addFileToShallowScan($earlier_file);
+        $codebase->scanner->scanFiles($codebase->classlikes);
+        $earlier = ClassLikeStorageProvider::getAll();
+
+        $codebase->classlike_storage_provider->addMore($worker_storages, $earlier, $codebase->analysis_php_version_id);
+        $codebase->scanner->addThreadData([[], [], [], [], [], ['lib\lazy' => $worker_file], [], [], [], [], []]);
+
+        self::assertSame($earlier['lib\lazy'], ClassLikeStorageProvider::getAll()['lib\lazy']);
+        self::assertSame($earlier_file, $codebase->scanner->getClassLikeFilePath('lib\lazy'));
+
+        $issues = IssueBuffer::getIssuesData();
+        self::assertSame([$worker_file], array_keys($issues));
+        self::assertCount(1, $issues[$worker_file]);
+        self::assertSame('DuplicateClass', $issues[$worker_file][0]->type);
+        self::assertSame(
+            'Class Lib\Lazy has already been defined in ' . $earlier_file,
+            $issues[$worker_file][0]->message,
+        );
+    }
+
+    /**
+     * A worker that rescans the file of the declaration held before the pool (a shallow scan queued for a deep
+     * one) does not hand the class to a later worker's declaration in a smaller path.
+     */
+    public function testPoolMergeKeepsTheDeclarationScannedBeforeThePoolWhenAWorkerRescansIt(): void
+    {
+        [$worker_file, $worker_storages] = $this->scanAlone('a');
+        [$earlier_file, $rescanned_storages] = $this->scanAlone('b');
+        $codebase = $this->project_analyzer->getCodebase();
+
+        $codebase->classlike_storage_provider->addMore(
+            ['lib\lazy' => clone $rescanned_storages['lib\lazy']],
+            [],
+            $codebase->analysis_php_version_id,
+        );
+        $earlier = ClassLikeStorageProvider::getAll();
+
+        foreach ([$rescanned_storages, $worker_storages] as $storages) {
+            $codebase->classlike_storage_provider->addMore($storages, $earlier, $codebase->analysis_php_version_id);
+        }
+
+        self::assertSame(
+            $earlier_file,
+            ClassLikeStorageProvider::getAll()['lib\lazy']->location?->file_path,
+        );
+
+        $issues = IssueBuffer::getIssuesData();
+        self::assertSame([$worker_file], array_keys($issues));
+        self::assertSame('DuplicateClass', $issues[$worker_file][0]->type);
+    }
+
+    /**
+     * A project declaration of a native class replaces its stub only below the PHP version the stub's `@since`
+     * gives, as in a single process.
+     */
+    #[DataProvider('providerPolyfillVersion')]
+    public function testPoolMergeReplacesAStubbedNativeClassOnlyBelowItsSince(
+        int $analysis_php_version_id,
+        bool $replaced,
+    ): void {
+        [, $worker_storages] = $this->scanAlone('a');
+        [, $native_storages] = $this->scanAlone('b');
+        $codebase = $this->project_analyzer->getCodebase();
+
+        $native_storage = $native_storages['lib\lazy'];
+        $native_storage->stubbed = true;
+        $native_storage->user_defined = false;
+        $native_storage->since_php_version_id = 8_02_00;
+        $codebase->classlike_storage_provider->addMore($native_storages, [], $analysis_php_version_id);
+        $earlier = ClassLikeStorageProvider::getAll();
+
+        $codebase->classlike_storage_provider->addMore($worker_storages, $earlier, $analysis_php_version_id);
+
+        self::assertSame(
+            $replaced ? $worker_storages['lib\lazy'] : $native_storage,
+            ClassLikeStorageProvider::getAll()['lib\lazy'],
+        );
+        self::assertSame(
+            $replaced ? [] : ['DuplicateClass'],
+            array_map(
+                static fn(IssueData $issue): string => $issue->type,
+                IssueBuffer::getIssuesData()[$this->dir . 'a.php'] ?? [],
+            ),
+        );
+    }
+
+    /**
+     * @return iterable<string, array{int, bool}>
+     * @psalm-pure
+     */
+    public static function providerPolyfillVersion(): iterable
+    {
+        yield 'below the since: polyfill' => [8_01_00, true];
+        yield 'at the since: duplicate' => [8_02_00, false];
+        yield 'above the since: duplicate' => [8_03_00, false];
     }
 
     /**

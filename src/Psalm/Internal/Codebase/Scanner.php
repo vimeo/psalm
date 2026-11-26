@@ -556,7 +556,8 @@ final class Scanner
         }
 
         // Each scanning process takes its files in path order, so the declaration of a class it keeps is the
-        // one in the smallest path; the pool's merge then picks the smallest path among the processes.
+        // one in the smallest path; the pool's merge then picks the smallest path among the processes, unless
+        // the class was already held before the pool.
         // Stub files keep the order they are registered in: a later stub refines an earlier one.
         if (!$this->codebase->register_stub_files) {
             ksort($files_to_scan, SORT_STRING);
@@ -570,6 +571,9 @@ final class Scanner
         $this->progress->expand($file_count);
         if ($pool_size > 1) {
             $this->progress->debug('Forking process for scanning' . PHP_EOL);
+
+            // the workers forget these (InitScannerTask), so the merge has to keep them over a later declaration
+            $earlier_classlike_storages = ClassLikeStorageProvider::getAll();
 
             // Run scanning one file at a time, splitting the set of
             // files up among a given number of child processes.
@@ -624,7 +628,11 @@ final class Scanner
                 }
 
                 $this->codebase->file_storage_provider->addMore($pool_data['file_storage']);
-                $this->codebase->classlike_storage_provider->addMore($pool_data['classlike_storage']);
+                $this->codebase->classlike_storage_provider->addMore(
+                    $pool_data['classlike_storage'],
+                    $earlier_classlike_storages,
+                    $this->codebase->analysis_php_version_id,
+                );
 
                 $this->codebase->classlikes->addThreadData($pool_data['classlikes_data']);
 
