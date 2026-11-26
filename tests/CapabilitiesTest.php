@@ -1830,6 +1830,34 @@ final class CapabilitiesTest extends TestCase
                         }
                     }',
             ],
+            'callingAStaticClosureWritingByRefCapturesKeepsThisProperties' => [
+                'code' => '<?php
+                    final class Writer {
+                        /** @var resource|null */
+                        private $lock = null;
+
+                        /** @param resource $lock */
+                        public function run($lock): int {
+                            $this->lock = $lock;
+                            $total = 0;
+
+                            $add = static function (int $n) use (&$total): void {
+                                $total += $n;
+                            };
+                            $append = static function (int $n) use ($add): void {
+                                $add($n);
+                            };
+
+                            $add(1);
+                            $append(2);
+
+                            $lock = $this->lock;
+                            /** @psalm-check-type-exact $lock = resource */;
+
+                            return $total;
+                        }
+                    }',
+            ],
             'callingAClosureReadingThisKeepsItsProperties' => [
                 'code' => '<?php
                     final class Strategy {
