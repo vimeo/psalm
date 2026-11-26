@@ -135,9 +135,11 @@ final class ClassLikeStorageProvider
                     && $location !== null
                     && $duplicate_location->getHash() !== $location->getHash()
                 ) {
-                    // a single process keeps what it scanned before, then the declaration in the smaller path:
-                    // it takes its files in path order
-                    $new_is_kept = ($earlier[$k] ?? null) !== $duplicate_storage
+                    // a single process keeps what it scanned before (a worker may have rescanned that file),
+                    // then the declaration in the smaller path: it takes its files in path order
+                    $earlier_storage = $earlier[$k] ?? null;
+                    $earlier_location = $earlier_storage?->location ?? $earlier_storage?->stmt_location;
+                    $new_is_kept = $duplicate_location->file_path !== $earlier_location?->file_path
                         && strcmp($location->file_path, $duplicate_location->file_path) < 0;
                     [$kept, $kept_location, $dropped_location] = $new_is_kept
                         ? [$storage, $location, $duplicate_location]

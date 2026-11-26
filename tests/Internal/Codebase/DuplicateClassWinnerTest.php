@@ -143,6 +143,37 @@ if (!class_exists(Lazy::class, false)) {
     }
 
     /**
+     * A worker that rescans the file of the declaration held before the pool (a shallow scan queued for a deep
+     * one) does not hand the class to a later worker's declaration in a smaller path.
+     */
+    public function testPoolMergeKeepsTheDeclarationScannedBeforeThePoolWhenAWorkerRescansIt(): void
+    {
+        [$worker_file, $worker_storages] = $this->scanAlone('a');
+        [$earlier_file, $rescanned_storages] = $this->scanAlone('b');
+        $codebase = $this->project_analyzer->getCodebase();
+
+        $codebase->classlike_storage_provider->addMore(
+            ['lib\lazy' => clone $rescanned_storages['lib\lazy']],
+            [],
+            $codebase->analysis_php_version_id,
+        );
+        $earlier = ClassLikeStorageProvider::getAll();
+
+        foreach ([$rescanned_storages, $worker_storages] as $storages) {
+            $codebase->classlike_storage_provider->addMore($storages, $earlier, $codebase->analysis_php_version_id);
+        }
+
+        self::assertSame(
+            $earlier_file,
+            ClassLikeStorageProvider::getAll()['lib\lazy']->location?->file_path,
+        );
+
+        $issues = IssueBuffer::getIssuesData();
+        self::assertSame([$worker_file], array_keys($issues));
+        self::assertSame('DuplicateClass', $issues[$worker_file][0]->type);
+    }
+
+    /**
      * A project declaration of a native class replaces its stub only below the PHP version the stub's `@since`
      * gives, as in a single process.
      */

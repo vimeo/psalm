@@ -556,7 +556,8 @@ final class Scanner
         }
 
         // Each scanning process takes its files in path order, so the declaration of a class it keeps is the
-        // one in the smallest path; the pool's merge then picks the smallest path among the processes.
+        // one in the smallest path; the pool's merge then picks the smallest path among the processes, unless
+        // the class was already held before the pool.
         // Stub files keep the order they are registered in: a later stub refines an earlier one.
         if (!$this->codebase->register_stub_files) {
             ksort($files_to_scan, SORT_STRING);
