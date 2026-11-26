@@ -283,6 +283,7 @@ final class Methods
      *
      * @param lowercase-string $method_name_lc
      * @return array<lowercase-string, true>
+     * @psalm-capabilities read-props
      */
     private function getPotentialDeclaringMethodIds(ClassLikeStorage $storage, string $method_name_lc): array
     {
@@ -319,6 +320,7 @@ final class Methods
      *
      * @param lowercase-string $method_name_lc
      * @return array{ClassLikeStorage, lowercase-string}|null
+     * @psalm-capabilities read-props
      */
     private function getInheritedMethodSource(ClassLikeStorage $storage, string $method_name_lc): ?array
     {
@@ -385,6 +387,9 @@ final class Methods
         return null;
     }
 
+    /**
+     * @psalm-capabilities read-props
+     */
     private function getUnAliasedStorage(string $fq_classlike_name): ?ClassLikeStorage
     {
         try {
