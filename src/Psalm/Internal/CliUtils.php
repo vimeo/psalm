@@ -790,7 +790,10 @@ final class CliUtils
                     $config = Config::getConfigForPath($current_dir, $current_dir);
                 } catch (ConfigNotFoundException $e) {
                     if (!$create_if_non_existent) {
-                        if (in_array($output_format, [Report::TYPE_CONSOLE, Report::TYPE_PHP_STORM])) {
+                        // compact is also the default format under an AI agent, which needs the hint as much
+                        if (in_array($output_format, [Report::TYPE_CONSOLE, Report::TYPE_PHP_STORM])
+                            || ($output_format === Report::TYPE_COMPACT && self::runningUnderAiAgent())
+                        ) {
                             fwrite(
                                 STDERR,
                                 'Could not locate a config XML file in path ' . $current_dir
@@ -1005,6 +1008,8 @@ final class CliUtils
      * variable on its own is too generic to trust (it collides with shell
      * rc files and unrelated tooling), so we only match it when paired
      * with a known agent name.
+     *
+     * @psalm-capabilities read-globals|io
      */
     public static function runningUnderAiAgent(): bool
     {
@@ -1051,6 +1056,9 @@ final class CliUtils
         return false;
     }
 
+    /**
+     * @psalm-capabilities read-globals
+     */
     private static function envVarLooksTruthy(string $name): bool
     {
         $value = getenv($name);
