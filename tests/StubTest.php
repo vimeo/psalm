@@ -2294,6 +2294,17 @@ final class StubTest extends DeferredAnalyzerTestCase
             }');
     }
 
+    public function testFloatParamOverridingAnIntParamLeftOutOfAStub(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('MethodSignatureMismatch');
+
+        $this->analyzeWithPartialUserlandStubs('
+            final class Response extends PartiallyStubbedResponse {
+                public function setStatus(float|string $code): void {}
+            }');
+    }
+
     public function testStubbedMethodWithConditionalReturnOverridingSource(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
