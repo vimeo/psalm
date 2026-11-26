@@ -137,36 +137,51 @@ if ($has_branch) {
         exit(0);
     }
     $run(['git', 'worktree', 'add', '--quiet', '--detach', $clone, 'FETCH_HEAD']);
+    $orphan = null;
 } else {
     $run(['git', 'worktree', 'add', '--quiet', '--detach', $clone]);
-    $run(['git', 'checkout', '--quiet', '--orphan', $branch . '-' . getmypid()], $clone);
+    $orphan = $branch . '-' . getmypid();
 }
 
-foreach (new DirectoryIterator($clone) as $file) {
-    if (!$file->isDot() && $file->getFilename() !== '.git') { // a file in a worktree
-        $run(['rm', '-rf', $file->getPathname()]);
+// the worktree and its branch are removed also when a step fails, so that they don't stay in the checkout
+try {
+    if ($orphan !== null) {
+        $run(['git', 'checkout', '--quiet', '--orphan', $orphan], $clone);
+    }
+
+    foreach (new DirectoryIterator($clone) as $file) {
+        if (!$file->isDot() && $file->getFilename() !== '.git') { // a file in a worktree
+            $run(['rm', '-rf', $file->getPathname()]);
+        }
+    }
+    foreach (new DirectoryIterator($work . '/tree') as $file) {
+        if (!$file->isDot()) {
+            $run(['mv', $file->getPathname(), $clone . '/' . $file->getFilename()]);
+        }
+    }
+
+    $run(['git', 'add', '--all'], $clone);
+    $run([
+        'git',
+        '-c', 'user.name=github-actions[bot]',
+        '-c', 'user.email=41898282+github-actions[bot]@users.noreply.github.com',
+        'commit', '--quiet', '--message', "Psalm $version",
+    ], $clone);
+
+    if ($dry_run) {
+        echo $run(['git', 'show', '--stat', '--format=%s', 'HEAD'], $clone);
+        echo "Would push this to " . $branch . PHP_EOL;
+    } else {
+        $run(['git', 'push', '--quiet', 'origin', 'HEAD:refs/heads/' . $branch], $clone);
+        echo "Published Psalm $version on " . $branch . PHP_EOL;
+    }
+} finally {
+    $run(['git', 'worktree', 'remove', '--force', $clone]);
+    if ($orphan !== null) {
+        try {
+            $run(['git', 'branch', '--quiet', '-D', $orphan]);
+        } catch (RuntimeException) {
+            // a failed step can come before the branch has a commit
+        }
     }
 }
-foreach (new DirectoryIterator($work . '/tree') as $file) {
-    if (!$file->isDot()) {
-        $run(['mv', $file->getPathname(), $clone . '/' . $file->getFilename()]);
-    }
-}
-
-$run(['git', 'add', '--all'], $clone);
-$run([
-    'git',
-    '-c', 'user.name=github-actions[bot]',
-    '-c', 'user.email=41898282+github-actions[bot]@users.noreply.github.com',
-    'commit', '--quiet', '--message', "Psalm $version",
-], $clone);
-
-if ($dry_run) {
-    echo $run(['git', 'show', '--stat', '--format=%s', 'HEAD'], $clone);
-    echo "Would push this to " . $branch . PHP_EOL;
-} else {
-    $run(['git', 'push', '--quiet', 'origin', 'HEAD:refs/heads/' . $branch], $clone);
-    echo "Published Psalm $version on " . $branch . PHP_EOL;
-}
-
-$run(['git', 'worktree', 'remove', '--force', $clone]);
