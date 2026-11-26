@@ -473,9 +473,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
             return;
         }
 
-        if (!$storage->abstract
-            && $this->checkUnimplementedAbstractMethods($class_context, $class, $codebase, $storage) === false
-        ) {
+        if (!$this->checkUnimplementedAbstractMethods($class_context)) {
             return;
         }
 
@@ -2668,12 +2666,17 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
         );
     }
 
-    private function checkUnimplementedAbstractMethods(
-        Context $class_context,
-        PhpParser\Node\Stmt\Class_|PhpParser\Node\Stmt\Enum_ $class,
-        Codebase $codebase,
-        ClassLikeStorage $storage,
-    ): bool {
+    private function checkUnimplementedAbstractMethods(Context $class_context): bool
+    {
+        $storage = $this->storage;
+
+        if ($storage->abstract) {
+            return true;
+        }
+
+        $codebase = $this->getCodebase();
+        $class = $this->class;
+
         foreach ($storage->declaring_method_ids as $declaring_method_id) {
             $method_storage = $codebase->methods->getStorage($declaring_method_id);
 
