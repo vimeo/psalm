@@ -330,7 +330,7 @@ $searcher->count(1.5);                                    // InvalidArgument, To
 
 ### `@psalm-overload`
 
-Declares one signature a function or method can be called with, for one whose behaviour depends on the arguments. A call is checked against the first `@psalm-overload` whose parameters accept its arguments (by position and by name), or, when none does, against its own signature if that accepts them (an `int|string` argument for separate `int` and `string` overloads), else against the last overload. A first-class callable (`search(...)`) has the own signature. A method that overrides one with overloads has its own signature unless it declares the overloads again. On a constructor, the overloads are the only signatures `new` is checked against (their return type is not used).
+Declares one signature a function or method can be called with, for one whose behaviour depends on the arguments. A call is checked against the first `@psalm-overload` whose parameters accept its arguments (by position and by name), or, when none does, against its own signature if that accepts them (an `int|string` argument for separate `int` and `string` overloads), else against the last overload. A first-class callable (`search(...)`) has the own signature. A method that overrides one with overloads has its own signature unless it declares the overloads again. On a constructor, `new` is checked like a call of a method (the return type of an overload is not used).
 
 ```php
 <?php

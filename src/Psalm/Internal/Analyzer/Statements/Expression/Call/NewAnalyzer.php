@@ -606,7 +606,8 @@ final class NewAnalyzer extends CallAnalyzer
     }
 
     /**
-     * The `@psalm-overload` of the constructor that the arguments select, null when it has none
+     * The `@psalm-overload` of the constructor that the arguments select, null when it has none or the arguments
+     * are only accepted by the constructor's own signature
      */
     private static function getConstructorOverload(
         StatementsAnalyzer $statements_analyzer,
@@ -616,10 +617,18 @@ final class NewAnalyzer extends CallAnalyzer
     ): ?FunctionLikeStorage {
         $codebase = $statements_analyzer->getCodebase();
         $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
-        $overloads = $declaring_method_id ? $codebase->methods->getStorage($declaring_method_id)->overloads : [];
+        $declaring_storage = $declaring_method_id ? $codebase->methods->getStorage($declaring_method_id) : null;
+        $overloads = $declaring_storage ? $declaring_storage->overloads : [];
 
         return $overloads !== []
-            ? OverloadSelector::select($statements_analyzer, $codebase, $stmt->getArgs(), $context, $overloads)
+            ? OverloadSelector::selectOrReal(
+                $statements_analyzer,
+                $codebase,
+                $stmt->getArgs(),
+                $context,
+                $overloads,
+                $declaring_storage,
+            )
             : null;
     }
 

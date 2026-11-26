@@ -33,6 +33,36 @@ final class MethodCallTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
+    public function testConstructorOverloadReportsBothIssuesOfTheLastDeclaredSignature(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile(
+            $file_path,
+            '<?php
+                class Connection {
+                    /**
+                     * @psalm-overload (string $dsnOrHost)
+                     * @psalm-overload (string $dsnOrHost, int $port)
+                     */
+                    public function __construct(string $dsnOrHost, ?int $port = null) {}
+                }
+
+                new Connection(3306);',
+        );
+
+        $this->project_analyzer->setPhpVersion('8.0', 'tests');
+        $this->analyzeFile($file_path, new Context(), false);
+
+        self::assertSame(
+            ['InvalidArgument', 'TooFewArguments'],
+            array_map(
+                static fn(IssueData $issue): string => $issue->type,
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
+        );
+    }
+
     public function testNewOfAnObjectOrAClassStringOfTheSameClassIsReportedOnce(): void
     {
         $this->testConfig->throw_exception = false;
@@ -484,6 +514,29 @@ final class MethodCallTest extends TestCase
                     '$named===' => 'Connection',
                     '$memory===' => 'Connection',
                 ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'psalmOverloadOfAConstructorFallsBackToTheRealSignature' => [
+                'code' => '<?php
+                    class View {
+                        /**
+                         * @psalm-overload (int $x)
+                         * @psalm-overload (string $x)
+                         */
+                        public function __construct(int|string $x) {}
+                    }
+
+                    final class Sub extends View {
+                        public function __construct(int|string $y) {
+                            parent::__construct($y);
+                        }
+                    }
+
+                    function create(int|string $v): View {
+                        return new View($v);
+                    }',
+                'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
@@ -4044,7 +4097,7 @@ final class MethodCallTest extends TestCase
                         }
                     }
 
-                    new Version("a", 2);',
+                    new Version("a", "b");',
                 'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:33 - '
                     . 'Argument 1 of Version::__construct expects int, but \'a\' provided',
                 'error_levels' => [],
@@ -4063,9 +4116,9 @@ final class MethodCallTest extends TestCase
 
                     final class Child extends Base {}
 
-                    new Child(1);',
+                    new Child();',
                 'error_message' => 'TooFewArguments - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:21 - '
-                    . 'Too few arguments for Child::__construct - expecting second to be passed',
+                    . 'Too few arguments for Child::__construct - expecting first to be passed',
                 'error_levels' => [],
                 'php_version' => '8.1',
             ],
