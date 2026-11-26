@@ -504,6 +504,9 @@ final class CliOnlyCallTest extends TestCase
                             return ["path" => $this->path];
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'cliOnlyInstancesThatCanNotBeUnserialized' => [
                 'code' => '<?php

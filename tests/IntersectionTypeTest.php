@@ -8,6 +8,8 @@ use Override;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
+use const DIRECTORY_SEPARATOR;
+
 final class IntersectionTypeTest extends TestCase
 {
     use ValidCodeAnalysisTestTrait;
@@ -20,6 +22,89 @@ final class IntersectionTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'objectShapesOfAnIntersectionAreMerged' => [
+                'code' => '<?php
+                    class Card {}
+
+                    /** @param Card&object{last4: string}&object{brand: string} $card */
+                    function describe(object $card): string {
+                        return $card->last4 . $card->brand;
+                    }
+
+                    /** @param object{id: int|string}&object{id: int} $o */
+                    function id(object $o): int {
+                        return $o->id;
+                    }',
+            ],
+            'objectShapesIntersectedByAnAssertionAreMerged' => [
+                'code' => '<?php
+                    class Card {}
+
+                    /** @psalm-assert Card&object{brand: string} $c */
+                    function assertBrand(object $c): void {}
+
+                    /** @psalm-assert object{brand: string} $c */
+                    function assertBareBrand(object $c): void {}
+
+                    /** @param Card&object{last4: string} $card */
+                    function named(object $card): string {
+                        assertBrand($card);
+                        return $card->last4 . $card->brand;
+                    }
+
+                    /** @param object{last4: string} $card */
+                    function bare(object $card): string {
+                        assertBareBrand($card);
+                        return $card->last4 . $card->brand;
+                    }
+
+                    /** @param Card&object{last4: string} $card */
+                    function namedThenBare(object $card): string {
+                        assertBareBrand($card);
+                        return $card->last4 . $card->brand;
+                    }',
+            ],
+            'objectShapeAssertedOnABareShapeIsMergedIntoIt' => [
+                'code' => '<?php
+                    /** @psalm-assert object{id: int, b: string} $c */
+                    function assertIdB(object $c): void {}
+
+                    /** @return object{id: int|null} */
+                    function o(): object {
+                        return (object) ["id" => null];
+                    }
+
+                    $o = o();
+                    assertIdB($o);
+                    $id = $o->id;
+                    $b = $o->b;',
+                'assertions' => [
+                    '$o===' => 'object{id:int, b:string}',
+                    '$id===' => 'int',
+                    '$b===' => 'string',
+                ],
+            ],
+            'objectShapeAssertedWithAClassNameInAnotherCaseIsMerged' => [
+                'code' => '<?php
+                    class Card {}
+
+                    /** @psalm-assert card&object{brand: string} $c */
+                    function assertBrand(object $c): void {}
+
+                    /** @return Card&object{last4: string} */
+                    function card(): object {
+                        throw new RuntimeException();
+                    }
+
+                    $card = card();
+                    assertBrand($card);
+                    $last4 = $card->last4;
+                    $brand = $card->brand;',
+                'assertions' => [
+                    '$last4===' => 'string',
+                    '$brand===' => 'string',
+                ],
+            ],
             'iterableIntersectionAcceptsObjectsOfEachType' => [
                 'code' => '<?php
                     /** @param iterable<int, string>&Countable $x */
@@ -244,6 +329,9 @@ final class IntersectionTypeTest extends TestCase
                     function wrap(array $filtered): array {
                         return array_map(fn ($x) => new Wrapper($x), $filtered);
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'intersectionBoundOfATemplateKeepsItsInterfacesInAClosureParam' => [
                 'code' => '<?php
@@ -610,6 +698,155 @@ final class IntersectionTypeTest extends TestCase
                         return $v->x;
                     }',
             ],
+            'argumentOfAMethodDeclaredByEveryIntersectionMemberFitsAnyDeclaration' => [
+                'code' => '<?php
+                    interface IntConsumer {
+                        public function consume(int $value): void;
+                    }
+                    interface StringConsumer {
+                        public function consume(string $value): void;
+                    }
+                    interface BoolConsumer {
+                        public function consume(?bool $value): void;
+                    }
+                    interface AnyConsumer {
+                        /** @param mixed $value */
+                        public function consume($value): void;
+                    }
+                    class IntBase {
+                        public function consume(int $value): void {}
+                    }
+
+                    /** @param IntConsumer&StringConsumer $consumer */
+                    function feed($consumer, int|string $value): void {
+                        $consumer->consume(1);
+                        $consumer->consume("a");
+                        $consumer->consume($value);
+                        $consumer->consume(value: "a");
+                    }
+
+                    /** @param IntConsumer&StringConsumer&BoolConsumer $consumer */
+                    function feedThree($consumer): void {
+                        $consumer->consume(1);
+                        $consumer->consume("a");
+                        $consumer->consume(null);
+                    }
+
+                    /** @param IntConsumer&AnyConsumer $consumer */
+                    function feedUntyped($consumer): void {
+                        $consumer->consume([1]);
+                    }
+
+                    /** @param IntBase&StringConsumer $consumer */
+                    function feedClassAndInterface($consumer): void {
+                        $consumer->consume("a");
+                    }
+
+                    /**
+                     * @template T of IntConsumer&StringConsumer
+                     * @param T $consumer
+                     */
+                    function feedTemplate($consumer): void {
+                        $consumer->consume("a");
+                    }
+
+                    function feedNarrowed(IntConsumer $consumer): void {
+                        if ($consumer instanceof StringConsumer) {
+                            $consumer->consume("a");
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'arrayArgumentOfAMethodDeclaredByEveryIntersectionMemberFitsAnyDeclaration' => [
+                'code' => '<?php
+                    interface StringKeys {
+                        /** @param array<string, int> $p */
+                        public function map(array $p): void;
+                        /** @param list<int> $p */
+                        public function list(array $p): void;
+                        /** @param array{a: int} $p */
+                        public function shape(array $p): void;
+                    }
+                    interface IntKeys {
+                        /** @param array<int, string> $p */
+                        public function map(array $p): void;
+                        /** @param list<string> $p */
+                        public function list(array $p): void;
+                        /** @param array{b: string} $p */
+                        public function shape(array $p): void;
+                    }
+
+                    /** @param StringKeys&IntKeys $x */
+                    function feed($x): void {
+                        $x->map(["k" => 1]);
+                        $x->map([1 => "v"]);
+                        $x->list([1, 2]);
+                        $x->list(["a"]);
+                        $x->shape(["a" => 1]);
+                        $x->shape(["b" => "x"]);
+                    }',
+            ],
+            'closureArgumentOfAMethodDeclaredByEveryIntersectionMemberFitsAnyDeclaration' => [
+                'code' => '<?php
+                    interface IntRunner {
+                        /** @param Closure(int):void $c */
+                        public function run(Closure $c): void;
+                        /** @param callable(int):void $c */
+                        public function call(callable $c): void;
+                    }
+                    interface StringRunner {
+                        /** @param Closure(string):void $c */
+                        public function run(Closure $c): void;
+                        /** @param callable(string):void $c */
+                        public function call(callable $c): void;
+                    }
+
+                    /** @param IntRunner&StringRunner $x */
+                    function feed($x): void {
+                        $x->run(fn(int $v) => null);
+                        $x->run(function (string $v): void {});
+                        $x->run(function ($v): void {});
+                        $x->call(function (int $v): void {});
+                        $x->call(function (string $v): void {});
+                    }',
+            ],
+            'namedArgumentOfAMethodDeclaredByEveryIntersectionMemberMatchesByName' => [
+                'code' => '<?php
+                    interface A {
+                        public function m(int $a = 0, string $b = ""): void;
+                    }
+                    interface B {
+                        public function m(string $b = "", int $a = 0): void;
+                    }
+
+                    /** @param A&B $x */
+                    function f($x): void {
+                        $x->m(b: "s");
+                        $x->m(a: 1);
+                        $x->m(1, 2);
+                        $x->m("s");
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'selfParamOfAMethodDeclaredByEveryIntersectionMemberIsTheirOwnClass' => [
+                'code' => '<?php
+                    interface First {
+                        public function with(self $other): void;
+                    }
+                    interface Second {
+                        public function with(self $other): void;
+                    }
+
+                    /** @param First&Second $both */
+                    function combine($both, First $first, Second $second): void {
+                        $both->with($first);
+                        $both->with($second);
+                    }',
+            ],
         ];
     }
 
@@ -620,6 +857,12 @@ final class IntersectionTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'objectShapesOfAnIntersectionGivingAPropertyIncompatibleTypes' => [
+                'code' => '<?php
+                    /** @param object{id: int}&object{id: string} $o */
+                    function id(object $o): void {}',
+                'error_message' => 'InvalidDocblock',
+            ],
             'iterableIntersectionDoesNotAcceptTraversable' => [
                 'code' => '<?php
                     /** @param iterable&Countable $x */
@@ -938,6 +1181,218 @@ final class IntersectionTypeTest extends TestCase
                         }
                     }',
                 'error_message' => 'PossiblyUndefinedMethod',
+            ],
+            'argumentFittingNoDeclarationOfAnIntersectionMethodIsReported' => [
+                'code' => '<?php
+                    interface IntConsumer {
+                        public function consume(int $value): void;
+                    }
+                    interface StringConsumer {
+                        public function consume(string $value): void;
+                    }
+
+                    /** @param IntConsumer&StringConsumer $consumer */
+                    function feed($consumer): void {
+                        $consumer->consume(1.5);
+                    }',
+                'error_message' => 'Argument 1 of StringConsumer::consume expects string, but float(1.5) provided',
+            ],
+            'objectFittingNoDeclarationOfAnIntersectionMethodIsReported' => [
+                'code' => '<?php
+                    interface First {
+                        public function with(self $other): void;
+                    }
+                    interface Second {
+                        public function with(self $other): void;
+                    }
+
+                    /** @param First&Second $both */
+                    function combine($both): void {
+                        $both->with(new stdClass());
+                    }',
+                'error_message' => 'Argument 1 of Second::with expects Second, but stdClass provided',
+            ],
+            'mapFittingNoDeclarationOfAnIntersectionMethodIsReported' => [
+                'code' => '<?php
+                    interface StringKeys {
+                        /** @param array<string, int> $p */
+                        public function map(array $p): void;
+                        /** @param list<int> $p */
+                        public function list(array $p): void;
+                        /** @param array{a: int} $p */
+                        public function shape(array $p): void;
+                        /** @param Closure(int):void $c */
+                        public function run(Closure $c): void;
+                    }
+                    interface IntKeys {
+                        /** @param array<int, string> $p */
+                        public function map(array $p): void;
+                        /** @param list<string> $p */
+                        public function list(array $p): void;
+                        /** @param array{b: string} $p */
+                        public function shape(array $p): void;
+                        /** @param Closure(string):void $c */
+                        public function run(Closure $c): void;
+                    }
+
+                    /** @param StringKeys&IntKeys $x */
+                    function feed($x): void {
+                        $x->map(["k" => "v"]);
+                    }',
+                'error_message' => 'Argument 1 of IntKeys::map expects array<int, string>, but array{k: \'v\'} provided',
+            ],
+            'listFittingNoDeclarationOfAnIntersectionMethodIsReported' => [
+                'code' => '<?php
+                    interface StringKeys {
+                        /** @param array<string, int> $p */
+                        public function map(array $p): void;
+                        /** @param list<int> $p */
+                        public function list(array $p): void;
+                        /** @param array{a: int} $p */
+                        public function shape(array $p): void;
+                        /** @param Closure(int):void $c */
+                        public function run(Closure $c): void;
+                    }
+                    interface IntKeys {
+                        /** @param array<int, string> $p */
+                        public function map(array $p): void;
+                        /** @param list<string> $p */
+                        public function list(array $p): void;
+                        /** @param array{b: string} $p */
+                        public function shape(array $p): void;
+                        /** @param Closure(string):void $c */
+                        public function run(Closure $c): void;
+                    }
+
+                    /** @param StringKeys&IntKeys $x */
+                    function feed($x): void {
+                        $x->list([1, "a"]);
+                    }',
+                'error_message' => 'Argument 1 of IntKeys::list expects list<string>, but list{1, \'a\'} provided',
+            ],
+            'shapeFittingNoDeclarationOfAnIntersectionMethodIsReported' => [
+                'code' => '<?php
+                    interface StringKeys {
+                        /** @param array<string, int> $p */
+                        public function map(array $p): void;
+                        /** @param list<int> $p */
+                        public function list(array $p): void;
+                        /** @param array{a: int} $p */
+                        public function shape(array $p): void;
+                        /** @param Closure(int):void $c */
+                        public function run(Closure $c): void;
+                    }
+                    interface IntKeys {
+                        /** @param array<int, string> $p */
+                        public function map(array $p): void;
+                        /** @param list<string> $p */
+                        public function list(array $p): void;
+                        /** @param array{b: string} $p */
+                        public function shape(array $p): void;
+                        /** @param Closure(string):void $c */
+                        public function run(Closure $c): void;
+                    }
+
+                    /** @param StringKeys&IntKeys $x */
+                    function feed($x): void {
+                        $x->shape([]);
+                    }',
+                'error_message' => 'Argument 1 of IntKeys::shape expects array{b: string}, but array<never, never> provided',
+            ],
+            'closureFittingNoDeclarationOfAnIntersectionMethodIsReported' => [
+                'code' => '<?php
+                    interface StringKeys {
+                        /** @param array<string, int> $p */
+                        public function map(array $p): void;
+                        /** @param list<int> $p */
+                        public function list(array $p): void;
+                        /** @param array{a: int} $p */
+                        public function shape(array $p): void;
+                        /** @param Closure(int):void $c */
+                        public function run(Closure $c): void;
+                    }
+                    interface IntKeys {
+                        /** @param array<int, string> $p */
+                        public function map(array $p): void;
+                        /** @param list<string> $p */
+                        public function list(array $p): void;
+                        /** @param array{b: string} $p */
+                        public function shape(array $p): void;
+                        /** @param Closure(string):void $c */
+                        public function run(Closure $c): void;
+                    }
+
+                    /** @param StringKeys&IntKeys $x */
+                    function feed($x): void {
+                        $x->run(function (array $v): void {});
+                    }',
+                'error_message' => 'Argument 1 of IntKeys::run expects Closure[impure](string):void',
+            ],
+            'namedArgumentFittingNoDeclarationOfAnIntersectionMethodIsReported' => [
+                'code' => '<?php
+                    interface A {
+                        public function m(int $a = 0, string $b = ""): void;
+                    }
+                    interface B {
+                        public function m(string $b = "", int $a = 0): void;
+                    }
+
+                    /** @param A&B $x */
+                    function f($x): void {
+                        $x->m(b: 1);
+                    }',
+                'error_message' => 'Argument 1 of B::m expects string, but 1 provided',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'otherNamedArgumentFittingNoDeclarationOfAnIntersectionMethodIsReported' => [
+                'code' => '<?php
+                    interface A {
+                        public function m(int $a = 0, string $b = ""): void;
+                    }
+                    interface B {
+                        public function m(string $b = "", int $a = 0): void;
+                    }
+
+                    /** @param A&B $x */
+                    function f($x): void {
+                        $x->m(a: "s");
+                    }',
+                'error_message' => 'Argument 2 of B::m expects int, but \'s\' provided',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'namedArgumentRepeatingAPositionalOneOfAnIntersectionMethodKeepsTheDeclaredType' => [
+                'code' => '<?php
+                    interface A {
+                        public function m(int $a = 0, string $b = ""): void;
+                    }
+                    interface B {
+                        public function m(string $b = "", int $a = 0): void;
+                    }
+
+                    /** @param A&B $x */
+                    function f($x): void {
+                        $x->m(1, b: "s");
+                    }',
+                'error_message' => 'InvalidScalarArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:31 - Argument 1 of B::m expects string, but 1 provided',
+                'error_levels' => ['InvalidNamedArgument'],
+                'php_version' => '8.0',
+            ],
+            'argumentOfAMethodDeclaredByOneIntersectionMemberIsCheckedAgainstIt' => [
+                'code' => '<?php
+                    interface IntConsumer {
+                        public function consume(int $value): void;
+                    }
+                    interface Other {
+                        public function other(): void;
+                    }
+
+                    /** @param IntConsumer&Other $consumer */
+                    function feed($consumer): void {
+                        $consumer->consume("a");
+                    }',
+                'error_message' => 'Argument 1 of IntConsumer::consume expects int, but \'a\' provided',
             ],
         ];
     }

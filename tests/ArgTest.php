@@ -523,6 +523,9 @@ final class ArgTest extends TestCase
                             email: $input["email"],
                         );
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'useNamedArgumentsSimple' => [
                 'code' => '<?php
@@ -1271,6 +1274,8 @@ final class ArgTest extends TestCase
                         );
                     }',
                 'error_message' => 'InvalidNamedArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'usePositionalArgAfterNamed' => [
                 'code' => '<?php
@@ -1284,6 +1289,8 @@ final class ArgTest extends TestCase
 
                     new Person(name: "", 0);',
                 'error_message' => 'InvalidNamedArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'useUnpackedInvalidNamedArgument' => [
                 'code' => '<?php
@@ -1328,6 +1335,8 @@ final class ArgTest extends TestCase
                         );
                     }',
                 'error_message' => 'NamedArgumentNotAllowed',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'noNamedArgsFunction' => [
                 'code' => '<?php
@@ -1603,6 +1612,8 @@ final class ArgTest extends TestCase
                 );
                 ',
                 'error_message' => 'TooFewArguments',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'SealedCoercesUnsealed' => [
                 'code' => '<?php

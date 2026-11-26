@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Internal\Provider\ParamsProvider;
 
 use Override;
+use PhpParser\Node\Arg;
 use PhpParser\Node\Expr\ConstFetch;
 use PhpParser\Node\Expr\FuncCall;
 use PhpParser\Node\Expr\MethodCall;
@@ -18,6 +19,8 @@ use Psalm\Plugin\EventHandler\Event\FunctionParamsProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionParamsProviderInterface;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Type;
+use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Union;
 
 use function in_array;
 
@@ -70,6 +73,19 @@ final class ArrayMultisortParamsProvider implements FunctionParamsProviderInterf
             return null;
         }
 
+        return self::getArgumentParams($event, $statements_source, $call_args)
+            ?? self::getFallbackParams($event, $statements_source, $call_args[0]);
+    }
+
+    /**
+     * @param list<Arg> $call_args
+     * @return ?list<FunctionLikeParameter> null when an argument cannot be told apart
+     */
+    private static function getArgumentParams(
+        FunctionParamsProviderEvent $event,
+        StatementsAnalyzer $statements_source,
+        array $call_args,
+    ): ?array {
         $code_location = $event->getCodeLocation();
         $params = [];
         $previous_param = false;
@@ -77,6 +93,10 @@ final class ArrayMultisortParamsProvider implements FunctionParamsProviderInterf
         $last_by_ref_index = -1;
         $first_non_ref_index_after_by_ref = -1;
         foreach ($call_args as $key => $call_arg) {
+            if ($call_arg->unpack) {
+                return null;
+            }
+
             $param_type = SimpleTypeInferer::infer(
                 $statements_source->getCodebase(),
                 $statements_source->node_data,
@@ -319,5 +339,49 @@ final class ArrayMultisortParamsProvider implements FunctionParamsProviderInterf
         }
 
         return $params;
+    }
+
+    /**
+     * PHP's own signature, for the calls whose arguments cannot be told apart. Sorting keeps the type of the arrays,
+     * so the first argument is only taken by reference when it is a variable known to hold an array: its type is then
+     * the type written back.
+     *
+     * @return list<FunctionLikeParameter>
+     */
+    private static function getFallbackParams(
+        FunctionParamsProviderEvent $event,
+        StatementsAnalyzer $statements_source,
+        Arg $first_arg,
+    ): array {
+        $first_var_id = $first_arg->unpack ? null : ExpressionIdentifier::getExtendedVarId(
+            $first_arg->value,
+            null,
+            $statements_source,
+        );
+        $first_var_type = $first_var_id !== null ? $event->getContext()->vars_in_scope[$first_var_id] ?? null : null;
+        $first_array_type = $first_var_type !== null && $first_var_type->isArray() ? $first_var_type : null;
+
+        return [
+            new FunctionLikeParameter(
+                'array',
+                $first_array_type !== null,
+                $first_array_type ?? Type::getArray(),
+                Type::getArray(),
+                null,
+                null,
+                false,
+            ),
+            new FunctionLikeParameter(
+                'rest',
+                false,
+                new Union([Type::getArrayAtomic(), new TInt()]),
+                null,
+                null,
+                null,
+                true,
+                false,
+                true,
+            ),
+        ];
     }
 }

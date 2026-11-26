@@ -161,7 +161,7 @@ function make(string $class): object { … }
   Put it on the class rather than on single members. `@psalm-api` means the same to Psalm.
 - `@internal` on a symbol: code outside the symbol's top-level namespace may not use it.
   `@psalm-internal Vendor\Package` narrows that to the given namespace or class. A violation is
-  `InternalClass`, `InternalMethod` or `InternalProperty`.
+  `InternalClass`, `InternalFunction`, `InternalMethod` or `InternalProperty`.
 
 ## Variables
 

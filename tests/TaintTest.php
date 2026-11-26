@@ -2063,9 +2063,10 @@ final class TaintTest extends TestCase
      */
     public function testKeyWritesDontMakeAStateOfEveryKeyAtEveryNodeAfterThem(): void
     {
+        // without the forgetting, 1500 writes take about 390 MB, and 160 MB with it
         $writes = implode('', array_map(
             static fn(int $i): string => "    \$form['k$i'] = \$value;\n",
-            range(1, 4000),
+            range(1, 1500),
         ));
 
         $this->testConfig->throw_exception = false;
@@ -2077,7 +2078,7 @@ final class TaintTest extends TestCase
             . "/** @psalm-taint-specialize */\n"
             . "function build(string \$value, mixed \$form): void {\n"
             . $writes
-            . "    echo \$form['k4000'];\n"
+            . "    echo \$form['k1500'];\n"
             . "}\n"
             . "build((string) \$_GET['q'], []);\n",
         );
@@ -2099,7 +2100,7 @@ final class TaintTest extends TestCase
         ));
 
         self::assertSame(['TaintedHtml', 'TaintedTextWithQuotes'], $taint_issue_types);
-        self::assertLessThan(768 * 1024 * 1024, $memory_used);
+        self::assertLessThan(256 * 1024 * 1024, $memory_used);
     }
 
     /**
@@ -18031,6 +18032,13 @@ final class TaintTest extends TestCase
                     include str_replace("a", "b", $b);',
                 'error_message' => 'TaintedInclude',
             ],
+            'taintedInputInABranchOfAnIncludedTernary' => [
+                'code' => '<?php
+                    $a = (string) $_GET["file"];
+                    /** @psalm-suppress UnresolvableInclude, MissingFile */
+                    include rand(0, 1) ? "default.php" : $a;',
+                'error_message' => 'TaintedInclude',
+            ],
             'taintedInputFromReturnToEval' => [
                 'code' => '<?php
                     $a = $_GET["file"];
@@ -19524,6 +19532,28 @@ final class TaintTest extends TestCase
                 'code' => '<?php
                     exec(escapeshellcmd("curl " . (string) $_GET["x"]));',
                 'error_message' => 'TaintedShell',
+            ],
+            'taintHtmlThroughStripTagsKeepingSomeTags' => [
+                'code' => '<?php
+                    echo strip_tags((string) $_GET["x"], "<a>");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintHtmlThroughStripTagsKeepingSomeTagsGivenAsAnArray' => [
+                'code' => '<?php
+                    echo strip_tags((string) $_GET["x"], ["a"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'stripTagsWithNullAllowedTagsStillEscapesHtml' => [
+                'code' => '<?php
+                    echo strip_tags((string) $_GET["x"], null);',
+                'error_message' => 'TaintedTextWithQuotes',
+            ],
+            'taintHtmlThroughStripTagsWithUnknownAllowedTags' => [
+                'code' => '<?php
+                    function f(?string $t): void {
+                        echo strip_tags((string) $_GET["x"], $t);
+                    }',
+                'error_message' => 'TaintedHtml',
             ],
             'taintThroughBuiltinStaticMethod' => [
                 'code' => '<?php

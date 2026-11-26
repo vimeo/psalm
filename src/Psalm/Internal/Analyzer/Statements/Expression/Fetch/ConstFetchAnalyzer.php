@@ -353,11 +353,17 @@ final class ConstFetchAnalyzer
                 case 'PHP_MAJOR_VERSION':
                 case 'PHP_MINOR_VERSION':
                 case 'PHP_RELEASE_VERSION':
-                case 'PHP_DEBUG':
                 case 'PHP_FLOAT_DIG':
-                case 'PHP_INT_MIN':
-                case 'PHP_ZTS':
                     return Type::getInt();
+
+                case 'PHP_INT_MIN':
+                    return Type::getIntRange(null, -1);
+
+                case 'PHP_DEBUG':
+                case 'PHP_ZTS':
+                    return $codebase->analysis_php_version_id >= 8_04_00
+                        ? Type::getBool()
+                        : Type::getIntRange(0, 1);
 
                 case 'PHP_INT_MAX':
                 case 'PHP_INT_SIZE':

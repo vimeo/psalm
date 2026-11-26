@@ -971,17 +971,15 @@ final class ArrayAssignmentAnalyzer
                 $classStrings[$key_value->value] = true;
             }
         }
-        $array_assignment_type = new Union([
-            TKeyedArray::make(
-                $properties,
-                $classStrings ?: null,
-            ),
-        ]);
-
         if ($adds_offset) {
             $child_stmt_type = Type::combineUnionTypes(
                 $child_stmt_type,
-                $array_assignment_type,
+                new Union([
+                    TKeyedArray::make(
+                        $properties,
+                        $classStrings ?: null,
+                    ),
+                ]),
                 $codebase,
                 true,
                 false,
@@ -992,7 +990,14 @@ final class ArrayAssignmentAnalyzer
             // the other offsets of the array may be missing
             $child_stmt_type = Type::combineUnionTypes(
                 $child_stmt_type,
-                $array_assignment_type,
+                new Union([
+                    TKeyedArray::make(
+                        $properties,
+                        $classStrings ?: null,
+                        null,
+                        array_keys($properties) === [0],
+                    ),
+                ]),
                 $codebase,
             );
         }

@@ -96,6 +96,7 @@ use function array_values;
 use function count;
 use function explode;
 use function implode;
+use function is_int;
 use function is_numeric;
 use function is_string;
 use function key;
@@ -1017,7 +1018,12 @@ class Reconciler
                             if (is_string($array_key) && str_contains($array_key, '\'')) {
                                 $new_types[$base_key][] = [new HasStringArrayAccess()];
                             } else {
-                                $new_types[$base_key][] = [new HasIntOrStringArrayAccess()];
+                                $new_types[$base_key][] = [new HasIntOrStringArrayAccess(
+                                    !$key_parts
+                                        && (is_int($array_key)
+                                            || preg_match('/^-?\d+$/', $array_key) === 1
+                                            || ($existing_types[$array_key] ?? null)?->isInt() === true),
+                                )];
                             }
 
                             $base_key = $new_base_key;
