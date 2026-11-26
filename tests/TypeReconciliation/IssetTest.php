@@ -778,31 +778,31 @@ final class IssetTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => ['EmptyArrayAccess'],
             ],
-            'issetOnAnEmptyArrayAddsTheOffset' => [
+            'issetOnAnEmptyArrayLeavesItEmpty' => [
                 'code' => '<?php
                     $a = [];
                     assert(isset($a["min"]));',
                 'assertions' => [
-                    '$a===' => 'array{min: mixed}',
+                    '$a===' => 'array<never, never>',
                 ],
             ],
-            'issetOfSeveralOffsetsOfAnEmptyArray' => [
+            'issetOfSeveralOffsetsOfAnEmptyArrayLeavesItEmpty' => [
                 'code' => '<?php
                     $a = [];
                     assert(isset($a["min"], $a["max"]));',
                 'assertions' => [
-                    '$a===' => 'array{max: mixed, min: mixed}',
+                    '$a===' => 'array<never, never>',
                 ],
             ],
-            'issetOfAnIntOffsetOfAnEmptyArray' => [
+            'issetOfAnIntOffsetOfAnEmptyArrayLeavesItEmpty' => [
                 'code' => '<?php
                     $a = [];
                     assert(isset($a[3]));',
                 'assertions' => [
-                    '$a===' => 'array{3: mixed}',
+                    '$a===' => 'array<never, never>',
                 ],
             ],
-            'issetOfAnUnknownOffsetLeavesAnEmptyArrayEmpty' => [
+            'issetOfAnUnknownOffsetOfAnEmptyArrayLeavesItEmpty' => [
                 'code' => '<?php
                     function f(string $k): void {
                         $a = [];
@@ -810,31 +810,33 @@ final class IssetTest extends TestCase
                         /** @psalm-check-type-exact $a = array<never, never> */;
                     }',
             ],
-            'notIssetOnAnEmptyArrayAddsTheOffsetAfterwards' => [
-                'code' => '<?php
-                    $a = [];
-                    if (!isset($a["min"])) {
-                        $a["max"] = 1;
-                    }',
-                'assertions' => [
-                    '$a===' => 'array{max?: 1, min?: mixed}',
-                ],
-            ],
-            'arrayKeyExistsOnAnEmptyArrayAddsTheOffset' => [
-                'code' => '<?php
-                    $a = [];
-                    assert(array_key_exists("min", $a));',
-                'assertions' => [
-                    '$a===' => 'array{min: mixed}',
-                ],
-            ],
-            'issetOfANestedOffsetOfAnEmptyArray' => [
+            'issetOfANestedOffsetOfAnEmptyArrayLeavesItEmpty' => [
                 'code' => '<?php
                     $a = [];
                     assert(isset($a["a"]["b"]));',
                 'assertions' => [
-                    '$a===' => 'array{a: ArrayAccess|array{b: mixed, ...<array-key, mixed>}}',
+                    '$a===' => 'array<never, never>',
                 ],
+            ],
+            'coalesceOnAnEmptyArrayGivesTheDefault' => [
+                'code' => '<?php
+                    $a = [];
+                    $b = $a["x"] ?? 5;',
+                'assertions' => [
+                    '$b===' => '5',
+                ],
+                'ignored_issues' => ['EmptyArrayAccess'],
+            ],
+            'coalesceAssignmentFillsAnEmptyArrayInALoop' => [
+                'code' => '<?php
+                    /** @param list<string> $keys */
+                    function f(array $keys): void {
+                        $a = [];
+                        foreach ($keys as $k) {
+                            $a[$k] ??= 1;
+                        }
+                        /** @psalm-check-type-exact $a = array<string, 1> */;
+                    }',
             ],
             'issetWithMultipleAssignments' => [
                 'code' => '<?php

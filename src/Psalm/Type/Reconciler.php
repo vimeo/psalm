@@ -1693,9 +1693,6 @@ class Reconciler
                                     $new_base_type_candidate->addType(new TNull);
                                     $new_base_type_candidate->possibly_undefined = true;
                                     $new_base_type_candidate = $new_base_type_candidate->freeze();
-                                } elseif ($has_isset && $existing_key_type_part->isEmptyArray()) {
-                                    // nothing is known of the value of an offset an empty array is asserted to have
-                                    $new_base_type_candidate = Type::getMixed()->setPossiblyUndefined(true);
                                 } else {
                                     $new_base_type_candidate = $new_base_type_candidate->setPossiblyUndefined(true);
                                 }
@@ -2565,9 +2562,8 @@ class Reconciler
             if (isset($existing_types[$base_key])) {
                 foreach ($existing_types[$base_key]->getAtomicTypes() as $base_atomic_type) {
                     if ($base_atomic_type instanceof TKeyedArray
-                    // an empty array that has the offset becomes the shape with only that offset
                     || ($base_atomic_type instanceof TArray
-                        && (!$base_atomic_type->isEmptyArray() || !$result_type->isNever()))
+                        && !$base_atomic_type->isEmptyArray())
                     || $base_atomic_type instanceof TClassStringMap
                     ) {
                         $new_base_type = $existing_types[$base_key];
