@@ -809,6 +809,52 @@ function f(Box $box, Reader $reader, Pair $pair, string $class, array $list): vo
 
 Psalm reports [InvalidDocblock](../running_psalm/issues/InvalidDocblock.md) for `*` in `@extends`, `@implements` or `@use`.
 
+## Call-site variance
+
+`Box<covariant Animal>` is a `Box` of `Animal` or of any subtype, for reading. `Box<contravariant Cat>` is a `Box` of `Cat` or of any supertype, for writing. Kotlin calls them [type projections](https://kotlinlang.org/docs/generics.html#type-projections) (`Box<out Animal>`, `Box<in Cat>`), Java [bounded wildcards](https://docs.oracle.com/javase/tutorial/java/generics/wildcards.html) (`Box<? extends Animal>`, `Box<? super Cat>`), Scala [wildcard arguments](https://docs.scala-lang.org/scala3/reference/changed-features/wildcards.html) (`Box[? <: Animal]`, `Box[? >: Cat]`).
+
+```php
+<?php
+class Animal {}
+final class Cat extends Animal {}
+
+/** @template T of object */
+interface Box {
+    /** @return T */
+    public function get(): object;
+
+    /** @param T $value */
+    public function set(object $value): void;
+}
+
+/** @param Box<Animal> $box */
+function exact(Box $box): void {}
+
+/** @param Box<covariant Animal> $box */
+function read(Box $box): void {
+    $box->get(); // Animal
+    $box->set(new Cat()); // InvalidArgument
+}
+
+/** @param Box<contravariant Cat> $box */
+function write(Box $box): void {
+    $box->set(new Cat()); // no issue
+    $box->get(); // object
+}
+
+/**
+ * @param Box<Cat> $cats
+ * @param Box<Animal> $animals
+ */
+function f(Box $cats, Box $animals): void {
+    exact($cats); // InvalidArgument
+    read($cats); // no issue
+    write($animals); // no issue
+}
+```
+
+Both fit a `Box<*>` parameter. A keyword that contradicts `@template-covariant` or `@template-contravariant` is reported as [InvalidTemplateParam](../running_psalm/issues/InvalidTemplateParam.md), and one in `@extends`, `@implements` or `@use` as [InvalidDocblock](../running_psalm/issues/InvalidDocblock.md).
+
 ## Builtin templated classes and interfaces
 
 Psalm declares templates for many builtin classes and interfaces. Extend or implement them like your own templated classes:

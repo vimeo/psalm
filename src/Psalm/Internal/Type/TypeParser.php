@@ -117,6 +117,7 @@ use function octdec;
 use function preg_match;
 use function preg_replace;
 use function reset;
+use function spl_object_id;
 use function str_contains;
 use function str_ends_with;
 use function str_starts_with;
@@ -831,6 +832,8 @@ final class TypeParser
         $generic_params = [];
         /** @var list<Union> the `*` arguments among the generic params, by identity */
         $star_params = [];
+        /** @var array<int, TypeArgumentProjection> the `covariant` and `contravariant` arguments, by object id */
+        $variance_params = [];
 
         foreach ($parse_tree->children as $i => $child_tree) {
             if ($child_tree instanceof Value && $child_tree->value === StarProjection::NAME) {
@@ -874,6 +877,12 @@ final class TypeParser
                 );
             }
 
+            if (isset($parse_tree->projections[$i])) {
+                // marked by identity, as the `*` arguments are; the parser may share one instance between equal types
+                $tree_type = $tree_type->getBuilder()->freeze();
+                $variance_params[spl_object_id($tree_type)] = $parse_tree->projections[$i];
+            }
+
             $generic_params[] = $tree_type;
         }
 
@@ -908,6 +917,7 @@ final class TypeParser
                 $generic_params,
                 $purity_params,
                 $star_params,
+                $variance_params,
                 $from_docblock,
             );
         }
@@ -1408,22 +1418,25 @@ final class TypeParser
         }
 
         return (new TGenericObject($generic_type_value, $generic_params, false, false, [], $from_docblock))
-            ->setProjections(self::getStarProjections($generic_params, $star_params));
+            ->setProjections(self::getStarProjections($generic_params, $star_params, $variance_params));
     }
 
     /**
      * @param list<Union> $generic_params
      * @param list<Union> $star_params
+     * @param array<int, TypeArgumentProjection> $variance_params
      * @return array<int, TypeArgumentProjection>
      * @psalm-pure
      */
-    private static function getStarProjections(array $generic_params, array $star_params): array
+    private static function getStarProjections(array $generic_params, array $star_params, array $variance_params): array
     {
         $projections = [];
 
         foreach ($generic_params as $offset => $generic_param) {
             if (in_array($generic_param, $star_params, true)) {
                 $projections[$offset] = TypeArgumentProjection::Star;
+            } elseif (isset($variance_params[spl_object_id($generic_param)])) {
+                $projections[$offset] = $variance_params[spl_object_id($generic_param)];
             }
         }
 
@@ -1437,6 +1450,8 @@ final class TypeParser
      * @param list<Union> $generic_params
      * @param non-empty-list<Union> $purity_params
      * @param list<Union> $star_params the `*` arguments among the generic params, by identity
+     * @param array<int, TypeArgumentProjection> $variance_params the `covariant` and `contravariant` arguments, by
+     *                                                           object id
      * @throws TypeParseTreeException
      * @psalm-pure
      */
@@ -1445,6 +1460,7 @@ final class TypeParser
         array $generic_params,
         array $purity_params,
         array $star_params,
+        array $variance_params,
         bool $from_docblock,
     ): TIterable|TGenericObject {
         if (isset(TypeTokenizer::PSALM_RESERVED_WORDS[$generic_type_value])
@@ -1499,7 +1515,7 @@ final class TypeParser
             false,
             [],
             $from_docblock,
-        ))->setProjections(self::getStarProjections($generic_params, $star_params));
+        ))->setProjections(self::getStarProjections($generic_params, $star_params, $variance_params));
     }
 
     /**
