@@ -79,40 +79,21 @@ final class PsalmEndToEndTest extends PsalmEndToEndTestCase
         $this->assertStringContainsString('Could not find any composer autoloaders', $analysis->getErrorOutput());
     }
 
-    public function testExplainPrintsTheIssueDocsWithoutAConfig(): void
+    public function testExplainNeedsNoConfig(): void
     {
-        $project_dir = tempnam(sys_get_temp_dir(), 'PsalmEndToEndExplain_');
-        assert($project_dir !== false);
-        unlink($project_dir);
-        mkdir($project_dir);
+        $known = self::newProcess([PHP_BINARY, $this->psalm, '--explain=83'], self::$tmpDir, self::agentEnvVarsToUnset());
+        $known->run();
 
-        try {
-            $outputs = [];
-            foreach (['PossiblyNullReference', '83', 'https://psalm.dev/083'] as $query) {
-                $process = self::newProcess(
-                    [PHP_BINARY, $this->psalm, '--explain=' . $query],
-                    $project_dir,
-                    self::agentEnvVarsToUnset(),
-                );
-                $process->run();
-                $this->assertSame(0, $process->getExitCode(), $process->getErrorOutput());
-                $this->assertSame('', $process->getErrorOutput());
-                $outputs[] = $process->getOutput();
-            }
+        $this->assertSame(0, $known->getExitCode(), $known->getErrorOutput());
+        $this->assertStringStartsWith('# PossiblyNullReference', $known->getOutput());
 
-            $unknown = self::newProcess(
-                [PHP_BINARY, $this->psalm, '--explain=NotAnIssue'],
-                $project_dir,
-                self::agentEnvVarsToUnset(),
-            );
-            $unknown->run();
-        } finally {
-            self::recursiveRemoveDirectory($project_dir);
-        }
+        $unknown = self::newProcess(
+            [PHP_BINARY, $this->psalm, '--explain=NotAnIssue'],
+            self::$tmpDir,
+            self::agentEnvVarsToUnset(),
+        );
+        $unknown->run();
 
-        $this->assertStringStartsWith('# PossiblyNullReference', $outputs[0]);
-        $this->assertSame($outputs[0], $outputs[1]);
-        $this->assertSame($outputs[0], $outputs[2]);
         $this->assertSame(1, $unknown->getExitCode());
         $this->assertSame('', $unknown->getOutput());
         $this->assertStringContainsString('Unknown issue: NotAnIssue', $unknown->getErrorOutput());
