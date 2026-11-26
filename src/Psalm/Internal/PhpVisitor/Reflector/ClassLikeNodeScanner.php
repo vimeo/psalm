@@ -1601,7 +1601,8 @@ final class ClassLikeNodeScanner
     }
 
     /**
-     * Reports a `*` argument, which cannot bind a template of the parent (`@extends Box<*>`), as PHPStan does
+     * Reports a `*`, `covariant` or `contravariant` argument, which cannot bind a template of the parent
+     * (`@extends Box<*>`), as PHPStan does
      */
     private function reportStarArgument(
         ClassLikeStorage $storage,
@@ -1609,12 +1610,13 @@ final class ClassLikeNodeScanner
         TGenericObject $atomic_type,
         string $tag,
     ): bool {
-        if (!$atomic_type->hasStarProjection()) {
+        if (!$atomic_type->hasUnknownArgument()) {
             return false;
         }
 
         $storage->docblock_issues[] = new InvalidDocblock(
-            'The * type argument of ' . $atomic_type->getId() . ' is not allowed in ' . $tag,
+            ($atomic_type->hasStarProjection() ? 'The * type argument' : 'The variance of a type argument')
+                . ' of ' . $atomic_type->getId() . ' is not allowed in ' . $tag,
             new CodeLocation($this->file_scanner, $node, null, true),
         );
 

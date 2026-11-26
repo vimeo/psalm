@@ -1,0 +1,15 @@
+<?php
+namespace Foo;
+
+interface PartiallyStubbedInterface
+{
+    public function denormalize(mixed $data, array $context = []): mixed;
+}
+
+class PartiallyStubbedResponse
+{
+    /** @param array<string, mixed> $headers */
+    public function setHeaders(array $headers): void
+    {
+    }
+}

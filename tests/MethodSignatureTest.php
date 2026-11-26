@@ -2372,6 +2372,39 @@ final class MethodSignatureTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.5',
             ],
+            'widerParamOfAStubbedNativeMethodMissingFromTheCallmap' => [
+                'code' => '<?php
+                    final class Property extends ReflectionProperty {
+                        /** @psalm-capabilities read-props */
+                        public function isReadable(mixed $scope, ?object $object = null): bool {
+                            return true;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'intOrFloatOverridingFloat' => [
+                'code' => '<?php
+                    class A {
+                        public function f(float $x): void {}
+
+                        public function g(): int|float {
+                            return 1;
+                        }
+                    }
+
+                    final class B extends A {
+                        public function f(int|float $x): void {}
+
+                        public function g(): int {
+                            return 1;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'nativeToStringFromTraits' => [
                 'code' => '<?php
                     trait StringableTrait {
@@ -3511,6 +3544,44 @@ final class MethodSignatureTest extends TestCase
                 'error_message' => 'MethodSignatureMismatch',
                 'error_levels' => [],
                 'php_version' => '8.5',
+            ],
+            'narrowerParamOfAStubbedNativeMethodMissingFromTheCallmap' => [
+                'code' => '<?php
+                    final class Property extends ReflectionProperty {
+                        /** @psalm-capabilities read-props */
+                        public function isReadable(int $scope, ?object $object = null): bool {
+                            return true;
+                        }
+                    }',
+                'error_message' => 'MethodSignatureMismatch',
+                'error_levels' => [],
+                'php_version' => '8.5',
+            ],
+            'floatParamOverridingIntParam' => [
+                'code' => '<?php
+                    class A {
+                        public function f(int $x): void {}
+                    }
+
+                    final class B extends A {
+                        public function f(float $x): void {}
+                    }',
+                'error_message' => 'MethodSignatureMismatch',
+            ],
+            'intReturnOverridingFloatReturn' => [
+                'code' => '<?php
+                    class A {
+                        public function f(): float {
+                            return 1.0;
+                        }
+                    }
+
+                    final class B extends A {
+                        public function f(): int {
+                            return 1;
+                        }
+                    }',
+                'error_message' => 'MethodSignatureMismatch',
             ],
             'nativeMysqliRequiresReturnSignature' => [
                 'code' => '<?php

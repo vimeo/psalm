@@ -101,6 +101,9 @@ function names(): Collection { … }
   `T` may then only appear in return positions.
 - A parameter that takes a `Collection` of any type: `Collection<*>`. What it returns as `T` has the
   template's bound (`mixed`, or `object` for `T of object`), and its `T` parameters accept nothing.
+- A parameter that takes a `Collection` of `Parent` or of any subtype, for reading:
+  `Collection<covariant Parent>`. Of `Child` or of any supertype, for writing:
+  `Collection<contravariant Child>`.
 - Details: `docs/annotating_code/templated_annotations.md`.
 
 ## Assertions
