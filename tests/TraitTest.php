@@ -2263,6 +2263,66 @@ final class TraitTest extends TestCase
                     '$a===' => 'string',
                 ],
             ],
+            'immutableTraitMethodOfAMutableClassForgottenAfterAMutation' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @psalm-immutable */
+                    trait Reads {
+                        public function get(): int {
+                            return $this->value;
+                        }
+                    }
+
+                    final class Counter {
+                        use Reads;
+
+                        private int $value = 0;
+
+                        /** @psalm-capabilities read-props|write-this-props */
+                        public function set(int $value): void {
+                            $this->value = $value;
+                        }
+                    }
+
+                    function f(Counter $c): void {
+                        if ($c->get() === 0) {
+                            $c->set(1);
+                            if ($c->get() === 1) {}
+                        }
+                    }
+                PHP,
+            ],
+            'immutableTraitMethodOfAMutableParentForgottenAfterAMutation' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @psalm-immutable */
+                    trait Reads {
+                        public function get(): int {
+                            return $this->value;
+                        }
+                    }
+
+                    class Counter {
+                        use Reads;
+
+                        private int $value = 0;
+
+                        /** @psalm-capabilities read-props|write-this-props */
+                        public function set(int $value): void {
+                            $this->value = $value;
+                        }
+                    }
+
+                    final class ChildCounter extends Counter {}
+
+                    function f(ChildCounter $c): void {
+                        if ($c->get() === 0) {
+                            $c->set(1);
+                            if ($c->get() === 1) {}
+                        }
+                    }
+                PHP,
+            ],
         ];
     }
 
@@ -2909,6 +2969,66 @@ final class TraitTest extends TestCase
                     (new Child)->product();
                 PHP,
                 'error_message' => 'InaccessibleMethod',
+            ],
+            'immutableTraitMethodOfAnImmutableClassStaysMemoized' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @psalm-immutable */
+                    trait Reads {
+                        private int $value = 0;
+
+                        public function get(): int {
+                            return $this->value;
+                        }
+                    }
+
+                    /** @psalm-immutable */
+                    final class Counter {
+                        use Reads;
+                    }
+
+                    function report(): void {
+                        echo "report";
+                    }
+
+                    function f(Counter $c): void {
+                        if ($c->get() === 0) {
+                            report();
+                            if ($c->get() === 1) {}
+                        }
+                    }
+                PHP,
+                'error_message' => 'TypeDoesNotContainType',
+            ],
+            'traitMethodOfAnImmutableClassStaysMemoized' => [
+                'code' => <<<'PHP'
+                    <?php
+                    trait Reads {
+                        private int $value = 0;
+
+                        /** @psalm-capabilities read-props */
+                        public function get(): int {
+                            return $this->value;
+                        }
+                    }
+
+                    /** @psalm-immutable */
+                    final class Counter {
+                        use Reads;
+                    }
+
+                    function report(): void {
+                        echo "report";
+                    }
+
+                    function f(Counter $c): void {
+                        if ($c->get() === 0) {
+                            report();
+                            if ($c->get() === 1) {}
+                        }
+                    }
+                PHP,
+                'error_message' => 'TypeDoesNotContainType',
             ],
         ];
     }
