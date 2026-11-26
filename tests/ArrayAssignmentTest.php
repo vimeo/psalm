@@ -132,6 +132,142 @@ final class ArrayAssignmentTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'nestedWriteUnderAListedKeyOfAShapeWithAMixedFallback' => [
+                'code' => '<?php
+                    /** @param array{meta: array<string, string>, ...} $payload */
+                    function addId(array $payload): array {
+                        $payload["meta"]["id"] = "foo";
+                        /** @psalm-check-type-exact $payload = array{meta: array{id: \'foo\', ...<string, string>}, ...<array-key, mixed>} */;
+
+                        return $payload;
+                    }
+
+                    /** @param array{blocks: list<int>, ...<string, mixed>} $document */
+                    function addBlock(array $document): array {
+                        $document["blocks"][] = 1;
+                        /** @psalm-check-type-exact $document = array{blocks: non-empty-list<int>, ...<string, mixed>} */;
+
+                        return $document;
+                    }',
+            ],
+            'foreachWritingBackUnderItsKeysKeepsTheListShape' => [
+                'code' => '<?php
+                    /** @param list{int, int} $l */
+                    function f(array $l): void {
+                        foreach ($l as $i => $v) {
+                            $l[$i] = (string) $v;
+                        }
+                        /** @psalm-check-type-exact $l = list{decimal-int-string|int, decimal-int-string|int} */;
+                    }',
+            ],
+            'foreachWritingBackUnderItsKeysConditionallyKeepsTheListShape' => [
+                'code' => '<?php
+                    /** @param list{int, int} $l */
+                    function f(array $l, bool $c): void {
+                        foreach ($l as $i => $v) {
+                            if ($c) {
+                                $l[$i] = $v + 1;
+                            }
+                        }
+                        /** @psalm-check-type-exact $l = list{int, int} */;
+                    }',
+            ],
+            'foreachWritingBackUnderItsKeysKeepsNestedListShapes' => [
+                'code' => '<?php
+                    /** @param list{list{int}, list{int}} $l */
+                    function f(array $l): void {
+                        foreach ($l as $i => $_) {
+                            $l[$i][0] = "x";
+                        }
+                        /** @psalm-check-type-exact $l = list{list{"x"|int}, list{"x"|int}} */;
+                    }',
+            ],
+            'foreachWritingUnderTheKeysOfAnotherListMayAddItems' => [
+                'code' => '<?php
+                    /**
+                     * @param list{int, int, int} $a
+                     * @param list{int, int} $l
+                     */
+                    function f(array $a, array $l): void {
+                        foreach ($a as $i => $_) {
+                            $l[$i] = "x";
+                        }
+                        /** @psalm-check-type-exact $l = non-empty-array<int<0, 2>, "x"|int> */;
+                    }',
+            ],
+            'writeUnderTheLastKeyOfAListKeepsItsShape' => [
+                'code' => '<?php
+                    /** @param list{int, int} $l */
+                    function f(array $l): void {
+                        $l[array_key_last($l)] = "x";
+                        /** @psalm-check-type-exact $l = list{"x"|int, "x"|int} */;
+                    }',
+            ],
+            'writeUnderAnIntRangeOfTheItemsOfAListKeepsItsShape' => [
+                'code' => '<?php
+                    /**
+                     * @param list{int, int} $l
+                     * @param int<0, 1> $i
+                     */
+                    function f(array $l, int $i): void {
+                        $l[$i] = "x";
+                        /** @psalm-check-type-exact $l = list{"x"|int, "x"|int} */;
+                    }',
+            ],
+            'writeUnderAnIntRangeOfSomeItemsLeavesTheOthers' => [
+                'code' => '<?php
+                    /**
+                     * @param array{0: int, 1: int, 2: int} $l
+                     * @param int<0, 1> $i
+                     */
+                    function f(array $l, int $i): void {
+                        $l[$i] = "x";
+                        /** @psalm-check-type-exact $l = array{0: "x"|int, 1: "x"|int, 2: int} */;
+                    }',
+            ],
+            'writeUnderAnIntRangeOfAnOptionalItemOfAListMayMakeItNoList' => [
+                'code' => '<?php
+                    /**
+                     * @param list{0: int, 1?: int} $l
+                     * @param int<0, 1> $i
+                     */
+                    function f(array $l, int $i): void {
+                        $l[$i] = "x";
+                        /** @psalm-check-type-exact $l = non-empty-array<int<0, 1>, "x"|int> */;
+                    }',
+            ],
+            'writeUnderAnExistingOffsetOfAListKeepsItNonEmpty' => [
+                'code' => '<?php
+                    /** @param list<int> $l */
+                    function f(array $l, int $k): void {
+                        if (isset($l[$k])) {
+                            $l[$k] = 5;
+                            /** @psalm-check-type-exact $l = non-empty-list<int> */;
+                        }
+                    }',
+            ],
+            'writeUnderAnIntRangeUpToTheLargestIntEnds' => [
+                'code' => '<?php
+                    /**
+                     * @param array{0: int, 1: int} $l
+                     * @param int<9223372036854775806, 9223372036854775807> $i
+                     */
+                    function f(array $l, int $i): array {
+                        $l[$i] = "x";
+                        return $l;
+                    }',
+            ],
+            'writeUnderAnIntRangeOfOptionalItemsLeavesTheArrayNonEmpty' => [
+                'code' => '<?php
+                    /**
+                     * @param array{0?: int, 1?: int} $l
+                     * @param int<0, 1> $i
+                     */
+                    function f(array $l, int $i): void {
+                        $l[$i] = "x";
+                        /** @psalm-check-type-exact $l = non-empty-array<int<0, 1>, "x"|int> */;
+                    }',
+            ],
             'namedSpreadOfAShapeWrittenUnderAnUnknownKeyMayPassAnyParameter' => [
                 'code' => '<?php
                     /** @param Closure(int $mapper, mixed $from): mixed $c */
@@ -686,6 +822,52 @@ final class ArrayAssignmentTest extends TestCase
 
                         return $roots;
                     }',
+            ],
+            'offsetAssignedToANullableShapeMakesItsOtherOffsetsOptional' => [
+                'code' => '<?php
+                    $a = rand(0, 1) ? ["y" => 1] : null;
+                    $a["x"] = 2;
+
+                    $b = rand(0, 1) ? ["x" => 1, "y" => 1] : null;
+                    $b["x"] = 2;
+
+                    $c = ["y" => 1];
+                    $c["x"] = 2;',
+                'assertions' => [
+                    '$a===' => 'array{x: 2, y?: 1}',
+                    '$b===' => 'array{x: 2, y?: 1}',
+                    '$c===' => 'array{x: 2, y: 1}',
+                ],
+            ],
+            'offsetZeroAssignedToANullableListKeepsItAList' => [
+                'code' => '<?php
+                    /** @return list<int>|null */
+                    function getList(): ?array {
+                        return rand(0, 1) ? [1] : null;
+                    }
+
+                    $a = getList();
+                    $a[0] = 5;
+
+                    $b = rand(0, 1) ? [1, 2] : null;
+                    $b[0] = 5;
+
+                    $c = rand(0, 1) ? [] : null;
+                    $c[0] = 5;
+
+                    /** @param list<int> $l */
+                    function takesList(array $l): void {}
+
+                    /** @param list<int>|null $l */
+                    function f(?array $l): void {
+                        $l[0] = 5;
+                        takesList($l);
+                    }',
+                'assertions' => [
+                    '$a===' => 'list{5, ...<int>}',
+                    '$b===' => 'list{0: 5, 1?: 2}',
+                    '$c===' => 'array{0: 5}',
+                ],
             ],
             'assignToTheItemOfAnArrayAFunctionReturnsByReference' => [
                 'code' => '<?php
@@ -4015,6 +4197,16 @@ final class ArrayAssignmentTest extends TestCase
                     $e = ["a" => 1];
                     $e["b"] ??= 2;',
                 'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:21 - Type null for $e["b"] is never isset',
+            ],
+            'nestedWriteUnderAnUnlistedKeyOfAShapeWithAMixedFallback' => [
+                'code' => '<?php
+                    /** @param array{meta: array, ...} $payload */
+                    function addId(array $payload): array {
+                        $payload["other"]["id"] = "foo";
+
+                        return $payload;
+                    }',
+                'error_message' => 'MixedArrayAssignment',
             ],
             'invalidArrayOffsetShowsTheFullKeyType' => [
                 'code' => '<?php

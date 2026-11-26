@@ -7,6 +7,7 @@ namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
 use PhpParser;
 use PhpParser\NodeFinder;
 use Psalm\CodeLocation;
+use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeNameOptions;
@@ -32,13 +33,16 @@ use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\NonStaticSelfCall;
 use Psalm\Issue\ParentNotFound;
 use Psalm\IssueBuffer;
+use Psalm\Plugin\EventHandler\Event\AddRemoveCallTaintsEvent;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Storage\Capabilities;
+use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
 
+use function assert;
 use function count;
 use function in_array;
 use function is_string;
@@ -140,52 +144,6 @@ final class StaticCallAnalyzer extends CallAnalyzer
                     $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
 
                     $fq_class_name = $class_storage->name;
-
-                    if ($context->collect_initializations
-                        && isset($stmt->name->name)
-                        && $stmt->name->name === '__construct'
-                        && isset($class_storage->declaring_method_ids['__construct'])) {
-                        $construct_fq_class_name = $class_storage->declaring_method_ids['__construct']->fq_class_name;
-                        $construct_class_storage = $codebase->classlike_storage_provider->get($construct_fq_class_name);
-                        $construct_fq_class_name = $construct_class_storage->name;
-
-                        foreach ($construct_class_storage->properties as $property_name => $property_storage) {
-                            if ($property_storage->is_promoted
-                                && isset($context->vars_in_scope['$this->' . $property_name])) {
-                                $context_type = $context->vars_in_scope['$this->' . $property_name];
-                                $context->vars_in_scope['$this->' . $property_name] = $context_type->setProperties(
-                                    [
-                                        'initialized_class' => $construct_fq_class_name,
-                                        'initialized' => true,
-                                    ],
-                                );
-                            }
-                        }
-
-                        // the body of a constructor declared by a stub isn't the one that runs: the properties of its
-                        // class, and of the stubbed classes it extends, are taken as initialized by it
-                        $stubbed_class_storage = $construct_class_storage;
-                        while ($stubbed_class_storage->stubbed) {
-                            foreach ($stubbed_class_storage->properties as $property_name => $property_storage) {
-                                $context_type = $context->vars_in_scope['$this->' . $property_name] ?? null;
-                                if (!$property_storage->is_static && (!$context_type || !$context_type->initialized)) {
-                                    $context->vars_in_scope['$this->' . $property_name]
-                                        = ($property_storage->type ?? Type::getMixed())->setProperties([
-                                            'initialized_class' => $construct_fq_class_name,
-                                            'initialized' => true,
-                                        ]);
-                                }
-                            }
-
-                            if ($stubbed_class_storage->parent_class === null) {
-                                break;
-                            }
-
-                            $stubbed_class_storage = $codebase->classlike_storage_provider->get(
-                                $stubbed_class_storage->parent_class,
-                            );
-                        }
-                    }
                 } elseif ($context->self) {
                     if ($stmt->class->getFirst() === 'static' && isset($context->vars_in_scope['$this'])) {
                         $lhs_type = $context->vars_in_scope['$this'];
@@ -313,6 +271,28 @@ final class StaticCallAnalyzer extends CallAnalyzer
                     }
 
                     return $does_class_exist !== false;
+                }
+            }
+
+            // `parent::__construct()`, or the constructor of an ancestor called by its name
+            if ($context->collect_initializations
+                && $context->self !== null
+                && !$stmt->isFirstClassCallable()
+                && isset($stmt->name->name)
+                && $stmt->name->name === '__construct'
+                && $codebase->classlike_storage_provider->has($fq_class_name)
+                && $codebase->classExtends($context->self, $fq_class_name)
+            ) {
+                $called_class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
+
+                if (isset($called_class_storage->declaring_method_ids['__construct'])) {
+                    self::markInitializedByAncestorConstructor(
+                        $codebase,
+                        $context,
+                        $codebase->classlike_storage_provider->get(
+                            $called_class_storage->declaring_method_ids['__construct']->fq_class_name,
+                        ),
+                    );
                 }
             }
 
@@ -448,6 +428,82 @@ final class StaticCallAnalyzer extends CallAnalyzer
      * `parent::$property::get()` and `parent::$property::set($value)`, in a hook of that property, run the hook
      * of the parent class, or read and write the property where it has none.
      */
+    /**
+     * Marks the properties of the class of a constructor that `parent::__construct()` or `Ancestor::__construct()`
+     * runs as initialized, where the analysis of its body doesn't
+     */
+    private static function markInitializedByAncestorConstructor(
+        Codebase $codebase,
+        Context $context,
+        ClassLikeStorage $construct_class_storage,
+    ): void {
+        assert($context->self !== null);
+        $self_storage = $codebase->classlike_storage_provider->get($context->self);
+        $construct_fq_class_name = $construct_class_storage->name;
+
+        foreach ($construct_class_storage->properties as $property_name => $property_storage) {
+            if ($property_storage->is_promoted
+                && isset($context->vars_in_scope['$this->' . $property_name])
+                && self::isPropertyOf($self_storage, $property_name, $construct_class_storage)
+            ) {
+                $context_type = $context->vars_in_scope['$this->' . $property_name];
+                $context->vars_in_scope['$this->' . $property_name] = $context_type->setProperties(
+                    [
+                        'initialized_class' => $construct_fq_class_name,
+                        'initialized' => true,
+                    ],
+                );
+            }
+        }
+
+        // the constructor of a stubbed class isn't analysed (a stub has no body, and the real constructor is in
+        // another file): the properties of its class, and of the stubbed classes it extends, are taken as initialized
+        // by it
+        $stubbed_class_storage = $construct_class_storage;
+        while ($stubbed_class_storage->stubbed) {
+            foreach ($stubbed_class_storage->properties as $property_name => $property_storage) {
+                $context_type = $context->vars_in_scope['$this->' . $property_name] ?? null;
+                if (!$property_storage->is_static
+                    && (!$context_type || !$context_type->initialized)
+                    && self::isPropertyOf($self_storage, $property_name, $stubbed_class_storage)
+                ) {
+                    $context->vars_in_scope['$this->' . $property_name]
+                        = ($property_storage->type ?? Type::getMixed())->setProperties([
+                            'initialized_class' => $construct_fq_class_name,
+                            'initialized' => true,
+                        ]);
+                }
+            }
+
+            if ($stubbed_class_storage->parent_class === null) {
+                break;
+            }
+
+            $stubbed_class_storage = $codebase->classlike_storage_provider->get($stubbed_class_storage->parent_class);
+        }
+    }
+
+    /**
+     * Whether `$this->$property_name` of the class is the property $ancestor_storage declares: a redeclaration of a
+     * public or protected property is that same property, but one shadowing a private property is another
+     *
+     * @psalm-mutation-free
+     */
+    private static function isPropertyOf(
+        ClassLikeStorage $storage,
+        string $property_name,
+        ClassLikeStorage $ancestor_storage,
+    ): bool {
+        $declaring_class = $storage->declaring_property_ids[$property_name] ?? null;
+
+        if ($declaring_class === null) {
+            return false;
+        }
+
+        return strtolower($declaring_class) === strtolower($ancestor_storage->name)
+            || $ancestor_storage->properties[$property_name]->visibility !== ClassLikeAnalyzer::VISIBILITY_PRIVATE;
+    }
+
     private static function analyzeParentPropertyHookCall(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\StaticCall $stmt,
@@ -603,6 +659,7 @@ final class StaticCallAnalyzer extends CallAnalyzer
                 $codebase,
                 $method_storage,
                 $template_result,
+                $stmt->isFirstClassCallable() ? [] : $stmt->getArgs(),
             )
             : 0;
 
@@ -614,6 +671,16 @@ final class StaticCallAnalyzer extends CallAnalyzer
 
             $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
             $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
+        }
+
+        $call_added_taints = 0;
+        $source_graph = $statements_analyzer->getTaintFlowGraphWithSuppressed();
+        if ($source_graph) {
+            $call_event = new AddRemoveCallTaintsEvent($codebase, $cased_method_id, null, null, $node_location);
+            [$call_added_taints, $call_removed_taints] = $codebase->config->eventDispatcher
+                ->dispatchAddRemoveCallTaints($call_event);
+            $added_taints |= $call_added_taints;
+            $removed_taints |= $call_removed_taints;
         }
 
         if ($conditionally_removed_taints || $added_taints !== 0 || $removed_taints !== 0) {
@@ -630,6 +697,12 @@ final class StaticCallAnalyzer extends CallAnalyzer
                 $added_taints,
                 $conditionally_removed_taints | $removed_taints,
             );
+
+            // what a handler adds to the call is there whatever the call is given
+            $source_taints = $call_added_taints & ~($conditionally_removed_taints | $removed_taints);
+            if ($source_taints !== 0 && $source_graph) {
+                $source_graph->addSource($assignment_node->setTaints($source_taints));
+            }
 
             $return_type_candidate = $return_type_candidate->addParentNodes([$assignment_node->id => $assignment_node]);
         } else {

@@ -72,7 +72,7 @@ final class TLiteralClassString extends TLiteralString
     #[Override]
     public function getAssertionString(): string
     {
-        return $this->getKey();
+        return 'class-string(' . $this->value . ')';
     }
 
     /**

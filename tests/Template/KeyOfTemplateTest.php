@@ -21,6 +21,30 @@ final class KeyOfTemplateTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'assertionOfKeyOfAnArrayTemplateWithSeveralKeyTypesNarrowsTheirUnion' => [
+                'code' => '<?php
+                    /** @template T of array<int|string, mixed> */
+                    final class Keys {
+                        /** @param T $values */
+                        public function __construct(private array $values) {}
+
+                        /** @psalm-assert-if-true key-of<T> $key */
+                        public function has(mixed $key): bool {
+                            return (is_int($key) || is_string($key)) && array_key_exists($key, $this->values);
+                        }
+
+                        /** @return key-of<T> */
+                        public function key(int|string $key): int|string {
+                            if ($this->has($key)) {
+                                return $key;
+                            }
+                            throw new RuntimeException();
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'acceptsArrayKeysFn' => [
                 'code' => '<?php
                     /**

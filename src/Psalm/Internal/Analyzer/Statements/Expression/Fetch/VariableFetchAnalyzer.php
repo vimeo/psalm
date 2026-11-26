@@ -153,7 +153,15 @@ final class VariableFetchAnalyzer
                     self::addDataFlowToVariable($statements_analyzer, $stmt, $var_name, $stmt_type, $context);
 
                     $context->vars_in_scope[$var_name] = $stmt_type;
-                    $statements_analyzer->node_data->setType($stmt, $stmt_type);
+                    // the variables aren't checked: where the variable isn't assigned, it holds a value from
+                    // elsewhere (extract(), the including scope), so it can be anything (an isset() asks about
+                    // the variable)
+                    $statements_analyzer->node_data->setType(
+                        $stmt,
+                        $stmt_type->possibly_undefined && !$context->inside_isset
+                            ? Type::getMixed()->setParentNodes($stmt_type->parent_nodes)
+                            : $stmt_type,
+                    );
                 }
             } else {
                 $statements_analyzer->node_data->setType($stmt, Type::getMixed());
@@ -951,7 +959,8 @@ final class VariableFetchAnalyzer
                 'REQUEST_TIME'         => $positive_int_helper,
                 'REQUEST_TIME_FLOAT'   => $request_time_float_helper,
                 'QUERY_STRING'         => $string_helper,
-                'DOCUMENT_ROOT'        => $non_empty_string_helper,
+                // empty in CLI
+                'DOCUMENT_ROOT'        => $string_helper,
                 'HTTP_ACCEPT'          => $non_empty_string_helper,
                 'HTTP_ACCEPT_CHARSET'  => $non_empty_string_helper,
                 'HTTP_ACCEPT_ENCODING' => $non_empty_string_helper,
@@ -966,11 +975,13 @@ final class VariableFetchAnalyzer
                 'REMOTE_PORT'          => $string_helper,
                 'REMOTE_USER'          => $non_empty_string_helper,
                 'REDIRECT_REMOTE_USER' => $non_empty_string_helper,
-                'SCRIPT_FILENAME'      => $non_empty_string_helper,
+                // empty for `php -r` and code read from stdin
+                'SCRIPT_FILENAME'      => $string_helper,
                 'SERVER_ADMIN'         => $non_empty_string_helper,
                 'SERVER_PORT'          => $non_empty_string_helper,
                 'SERVER_SIGNATURE'     => $non_empty_string_helper,
-                'PATH_TRANSLATED'      => $non_empty_string_helper,
+                // empty for `php -r` and code read from stdin
+                'PATH_TRANSLATED'      => $string_helper,
                 'SCRIPT_NAME'          => $non_empty_string_helper,
                 'REQUEST_URI'          => $non_empty_string_helper,
                 'PHP_AUTH_DIGEST'      => $non_empty_string_helper,

@@ -24,6 +24,15 @@ class TFloat extends Scalar
     }
 
     /**
+     * @psalm-mutation-free
+     */
+    #[Override]
+    public function getId(bool $exact = true): string
+    {
+        return 'float';
+    }
+
+    /**
      * @param array<lowercase-string, string> $aliased_classes
      * @psalm-pure
      */

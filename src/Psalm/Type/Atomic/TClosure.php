@@ -10,6 +10,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Storage\Capabilities;
 use Psalm\Storage\FunctionLikeParameter;
+use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 
@@ -48,6 +49,8 @@ final class TClosure extends TNamedObject
      *                                  variable it is (see
      *                                  {@see \Psalm\Internal\Analyzer\ClosureAnalyzer::getByRefUseScopes()}); a
      *                                  name without scopes is taken to be a variable of any scope
+     * @param array<string, Union> $byref_use_types For a name of $byref_uses, what the closure may leave in the
+     *                                  variable when it returns
      */
     public function __construct(
         ?array $params = null,
@@ -58,6 +61,7 @@ final class TClosure extends TNamedObject
         bool $from_docblock = false,
         public ?string $callable_id = null,
         public array $byref_use_scopes = [],
+        public array $byref_use_types = [],
     ) {
         $this->params = $params;
         $this->return_type = $return_type;
@@ -90,6 +94,25 @@ final class TClosure extends TNamedObject
             && parent::equals($other_type, $ensure_source_equality);
     }
 
+    /**
+     * @param  array<lowercase-string, string> $aliased_classes
+     */
+    #[Override]
+    public function toPhpString(
+        ?string $namespace,
+        array $aliased_classes,
+        ?string $this_class,
+        int $analysis_php_version_id,
+    ): string {
+        return $this->addNativeIntersectionTypes(
+            Type::getStringFromFQCLN($this->value, $namespace, $aliased_classes, $this_class, true),
+            $namespace,
+            $aliased_classes,
+            $this_class,
+            $analysis_php_version_id,
+        );
+    }
+
     #[Override]
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
@@ -97,7 +120,8 @@ final class TClosure extends TNamedObject
         return $this->params === null
             && $this->return_type === null
             && $this->hasFixedPurity()
-            && $this->getCapabilities() === Capabilities::ALL;
+            && $this->getCapabilities() === Capabilities::ALL
+            && $this->canExpressIntersectionTypesInPhp($analysis_php_version_id);
     }
 
     /**
@@ -122,6 +146,7 @@ final class TClosure extends TNamedObject
             $this->from_docblock,
             $this->callable_id,
             $this->byref_use_scopes,
+            $this->byref_use_types,
         );
     }
 
@@ -177,6 +202,7 @@ final class TClosure extends TNamedObject
             $this->from_docblock,
             $this->callable_id,
             $this->byref_use_scopes,
+            $this->byref_use_types,
         );
     }
 

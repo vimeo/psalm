@@ -32,6 +32,15 @@ class TMixed extends Atomic
     }
 
     /**
+     * @psalm-mutation-free
+     */
+    #[Override]
+    public function getId(bool $exact = true): string
+    {
+        return 'mixed';
+    }
+
+    /**
      * @param array<lowercase-string, string> $aliased_classes
      * @psalm-pure
      */

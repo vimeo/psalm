@@ -6,7 +6,7 @@ Most surprising results come from the setup. Rule these out first:
 2. The class or function is known to Psalm: autoloader, `<extraFiles>`, `ext-*` in `composer.json`, the
    framework's plugin ([config.md](config.md)).
 3. The inferred types are what you think: `@psalm-check-type` along the way ([debugging.md](debugging.md)).
-4. `docs/running_psalm/common_issues.md` and the issue's page (`php scripts/explain.php IssueType`)
+4. `docs/running_psalm/common_issues.md` and the issue's page (`vendor/bin/psalm --explain=IssueType`)
    don't describe the behaviour as intended.
 
 ## Minimal repro

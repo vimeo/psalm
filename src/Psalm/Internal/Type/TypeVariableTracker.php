@@ -21,6 +21,7 @@ use Psalm\Type\Union;
 
 use function array_filter;
 use function array_map;
+use function array_reverse;
 use function array_splice;
 use function array_unique;
 use function array_values;
@@ -302,14 +303,37 @@ final class TypeVariableTracker
         $this->bounds = [];
         $this->position_orders = [];
 
-        foreach ($all_bounds as $bounds) {
+        // a bound may name another variable (the `list<TItem>` bounding `TList` in a `new Lists()`), which was
+        // minted before it: going from the latest variable back, what the bounds of the others put on a variable
+        // is known before it is reconciled
+        $nested_lower_bounds = [];
+        $nested_upper_bounds = [];
+
+        foreach (array_reverse($all_bounds, true) as $name => $bounds) {
+            $nested_bounds = [];
+
             self::reconcileLowerBoundsWithUpperBounds(
                 $codebase,
-                $bounds->lower_bounds,
-                $bounds->upper_bounds,
+                [...$bounds->lower_bounds, ...$nested_lower_bounds[$name] ?? []],
+                [...$bounds->upper_bounds, ...$nested_upper_bounds[$name] ?? []],
                 $fallback_location,
                 $suppressed_issues,
+                $nested_bounds,
             );
+
+            unset($all_bounds[$name], $nested_lower_bounds[$name], $nested_upper_bounds[$name]);
+
+            foreach ($nested_bounds as [$nested_name, $is_lower, $nested_bound]) {
+                if (!isset($all_bounds[$nested_name])) {
+                    continue;
+                }
+
+                if ($is_lower) {
+                    $nested_lower_bounds[$nested_name][] = $nested_bound;
+                } else {
+                    $nested_upper_bounds[$nested_name][] = $nested_bound;
+                }
+            }
         }
     }
 
@@ -333,6 +357,9 @@ final class TypeVariableTracker
      * @param list<TemplateBound> $lower_bounds
      * @param list<TemplateBound> $upper_bounds
      * @param array<string> $suppressed_issues
+     * @param list<array{string, bool, TemplateBound}> $nested_bounds receives what a lower bound held by an upper
+     *     bound puts on the variables they name (`list{'a'}` held by `list<T>` puts `'a'` below `T`): the name of
+     *     the variable, whether the bound is a lower one, and the bound
      */
     private static function reconcileLowerBoundsWithUpperBounds(
         Codebase $codebase,
@@ -340,6 +367,7 @@ final class TypeVariableTracker
         array $upper_bounds,
         CodeLocation $fallback_location,
         array $suppressed_issues,
+        array &$nested_bounds,
     ): void {
         $relevant_lower_bounds = self::getRelevantBounds($lower_bounds);
 
@@ -365,7 +393,7 @@ final class TypeVariableTracker
             foreach ($upper_bounds as $upper_bound) {
                 $union_comparison_result = new TypeComparisonResult();
 
-                if (!UnionTypeComparator::isContainedBy(
+                if (UnionTypeComparator::isContainedBy(
                     $codebase,
                     $relevant_lower_bound->type,
                     $upper_bound->type,
@@ -373,6 +401,20 @@ final class TypeVariableTracker
                     false,
                     $union_comparison_result,
                 )) {
+                    foreach ([
+                        [true, $union_comparison_result->type_variable_lower_bounds],
+                        [false, $union_comparison_result->type_variable_upper_bounds],
+                    ] as [$is_lower, $recorded_bounds]) {
+                        foreach ($recorded_bounds as [$nested_name, $nested_bound]) {
+                            // a violation is reported where the value that causes it was given
+                            $nested_bound->pos = $relevant_lower_bound->pos;
+                            $nested_bound->suppressed_issues = $relevant_lower_bound->suppressed_issues;
+                            $nested_bound->recorded_order = $relevant_lower_bound->recorded_order;
+
+                            $nested_bounds[] = [$nested_name, $is_lower, $nested_bound];
+                        }
+                    }
+                } else {
                     // suppressions in effect where either bound was recorded
                     // apply to the issue, as the statement-level suppression
                     // of an eagerly reported coercion would have (the keys are

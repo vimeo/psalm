@@ -44,7 +44,7 @@ use Psalm\Internal\IncludeCollector;
 use Psalm\Internal\Lz4Serializer;
 use Psalm\Internal\Perf;
 use Psalm\Internal\Provider\AddRemoveTaints\HtmlFunctionTainter;
-use Psalm\Internal\Provider\AddRemoveTaints\JsonEncodeTainter;
+use Psalm\Internal\Provider\AddRemoveTaints\JsonFunctionTainter;
 use Psalm\Internal\Scanner\FileScanner;
 use Psalm\Internal\ZstdSerializer;
 use Psalm\Issue\ArgumentIssue;
@@ -110,7 +110,6 @@ use function getcwd;
 use function getenv;
 use function glob;
 use function hash;
-use function hrtime;
 use function implode;
 use function in_array;
 use function interface_exists;
@@ -118,6 +117,7 @@ use function is_a;
 use function is_array;
 use function is_dir;
 use function is_file;
+use function is_readable;
 use function is_resource;
 use function is_string;
 use function is_writable;
@@ -848,6 +848,10 @@ final class Config
      */
     public static function loadFromXMLFile(string $file_path, string $current_dir): Config
     {
+        if (!is_file($file_path) || !is_readable($file_path)) {
+            throw new ConfigException('Cannot read the config file ' . $file_path);
+        }
+
         $file_contents = file_get_contents($file_path);
 
         $base_dir = dirname($file_path);
@@ -2229,7 +2233,7 @@ final class Config
             }
 
             try {
-                $perf_start = Perf\Collector::$enabled ? (int) hrtime(true) : 0;
+                $perf_start = Perf\Collector::$enabled ? Perf\Collector::nowNs() : 0;
                 $plugin($socket, $plugin_config);
 
                 if ($perf_start !== 0) {
@@ -2272,7 +2276,7 @@ final class Config
 
         foreach ($this->plugin_paths as $path) {
             try {
-                $perf_start = Perf\Collector::$enabled ? (int) hrtime(true) : 0;
+                $perf_start = Perf\Collector::$enabled ? Perf\Collector::nowNs() : 0;
                 $plugin = new FileBasedPluginAdapter($path, $this, $codebase);
                 $plugin($socket);
 
@@ -2289,10 +2293,10 @@ final class Config
         }
 
         new HtmlFunctionTainter();
-        new JsonEncodeTainter();
+        new JsonFunctionTainter();
 
         $socket->registerHooksFromClass(HtmlFunctionTainter::class);
-        $socket->registerHooksFromClass(JsonEncodeTainter::class);
+        $socket->registerHooksFromClass(JsonFunctionTainter::class);
     }
 
     private function loadPlugin(ProjectAnalyzer $projectAnalyzer, string $pluginClassName): PluginInterface
@@ -3152,6 +3156,10 @@ final class Config
             $this->php_extensions['random'] = true; // random is a part of the PHP core starting from PHP 8.2
         }
 
+        if ($codebase->analysis_php_version_id >= 8_03_00) {
+            $this->internal_stubs[] = $stubsDir . 'Php83.phpstub';
+        }
+
         if ($codebase->analysis_php_version_id >= 8_04_00) {
             $this->internal_stubs[] = $stubsDir . 'Php84.phpstub';
         }
@@ -3595,6 +3603,42 @@ final class Config
     }
 
     /**
+     * The Composer packages of the project and of Psalm's own installation, the project's first, with absolute
+     * install paths
+     *
+     * @internal
+     * @return list<array{
+     *     name: string,
+     *     version: ?string,
+     *     install_path: string,
+     *     issues: ?string,
+     *     source: ?string,
+     *     plugin_class: ?string
+     * }>
+     */
+    public function getInstalledPackages(): array
+    {
+        $packages = [];
+        foreach ([$this->getProjectInstalledJsonPath(), self::getPsalmInstalledJsonPath()] as $installed_path) {
+            foreach (self::readInstalledPackages($installed_path) as $package) {
+                $key = strtolower($package['name']);
+                if ($package['install_path'] !== null && !isset($packages[$key])) {
+                    $packages[$key] = [
+                        'name' => $package['name'],
+                        'version' => $package['version'],
+                        'install_path' => Path::makeAbsolute($package['install_path'], dirname($installed_path)),
+                        'issues' => $package['issues'],
+                        'source' => $package['source'],
+                        'plugin_class' => $package['plugin_class'],
+                    ];
+                }
+            }
+        }
+
+        return array_values($packages);
+    }
+
+    /**
      * The packages of an installed.json
      *
      * @return list<array{
@@ -3602,7 +3646,10 @@ final class Config
      *     install_path: ?string,
      *     require: list<array-key>,
      *     replace: list<array-key>,
-     *     plugin_class: ?string
+     *     plugin_class: ?string,
+     *     version: ?string,
+     *     issues: ?string,
+     *     source: ?string
      * }>
      */
     private static function readInstalledPackages(string $installed_path): array
@@ -3631,6 +3678,19 @@ final class Config
                         && is_array($package['extra']['psalm'])
                         && is_string($package['extra']['psalm']['pluginClass'])
                             ? $package['extra']['psalm']['pluginClass']
+                            : null,
+                    'version' => isset($package['version']) && is_string($package['version'])
+                        ? $package['version']
+                        : null,
+                    'issues' => isset($package['support']['issues'])
+                        && is_array($package['support'])
+                        && is_string($package['support']['issues'])
+                            ? $package['support']['issues']
+                            : null,
+                    'source' => isset($package['source']['url'])
+                        && is_array($package['source'])
+                        && is_string($package['source']['url'])
+                            ? $package['source']['url']
                             : null,
                 ];
             }

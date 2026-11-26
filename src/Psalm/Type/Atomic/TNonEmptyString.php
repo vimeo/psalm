@@ -26,4 +26,13 @@ class TNonEmptyString extends TString
 
         return 'non-empty-string';
     }
+
+    /**
+     * @psalm-pure
+     */
+    #[Override]
+    public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
+    {
+        return false;
+    }
 }

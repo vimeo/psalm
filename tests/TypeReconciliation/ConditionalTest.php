@@ -1957,6 +1957,8 @@ final class ConditionalTest extends TestCase
                 'assertions' => [
                     '$box' => 'Box<int>|null',
                 ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'arrayAssignmentPropagation' => [
                 'code' => '<?php
@@ -2506,6 +2508,9 @@ final class ConditionalTest extends TestCase
                             return $this->id === $other->id;
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'negatedInstanceofThisNarrowsInTheElseBranch' => [
                 'code' => '<?php
@@ -7591,6 +7596,146 @@ final class ConditionalTest extends TestCase
                         }
                     }',
             ],
+            'typeChecksOfAnEmptyOrNonEmptyScalarGiveTheExactPartsOfEachKind' => [
+                'code' => '<?php
+                    /** @param non-empty-scalar $v */
+                    function nonEmptyInt($v): void {
+                        if (!is_int($v)) {
+                            /** @psalm-check-type-exact $v = float|non-falsy-string|true */;
+                        }
+                    }
+
+                    /** @param non-empty-scalar $v */
+                    function nonEmptyString($v): void {
+                        if (is_string($v)) {
+                            /** @psalm-check-type-exact $v = non-falsy-string */;
+                        }
+                    }
+
+                    /** @param non-empty-scalar $v */
+                    function nonEmptyBool($v): void {
+                        if (is_bool($v)) {
+                            /** @psalm-check-type-exact $v = true */;
+                        }
+                    }
+
+                    /** @param non-empty-scalar $v */
+                    function nonEmptyFloat($v): void {
+                        if (is_float($v)) {
+                            /** @psalm-check-type-exact $v = float */;
+                        }
+                    }
+
+                    /** @param non-empty-scalar $v */
+                    function nonEmptyNumeric($v): void {
+                        if (is_numeric($v)) {
+                            if (is_string($v)) {
+                                /** @psalm-check-type-exact $v = non-falsy-string&numeric-string */;
+                            }
+
+                            if (is_float($v)) {
+                                /** @psalm-check-type-exact $v = float */;
+                            }
+                        } else {
+                            /** @psalm-check-type-exact $v = non-falsy-string|true */;
+                        }
+                    }
+
+                    /** @param empty-scalar $v */
+                    function emptyInt($v): void {
+                        if (is_int($v)) {
+                            /** @psalm-check-type-exact $v = 0 */;
+                        } else {
+                            /** @psalm-check-type-exact $v = \'\'|\'0\'|false|0.0 */;
+                        }
+                    }
+
+                    /** @param empty-scalar $v */
+                    function emptyString($v): void {
+                        if (is_string($v)) {
+                            /** @psalm-check-type-exact $v = \'\'|\'0\' */;
+                        } else {
+                            /** @psalm-check-type-exact $v = 0|false|0.0 */;
+                        }
+                    }
+
+                    /** @param empty-scalar $v */
+                    function emptyBool($v): void {
+                        if (is_bool($v)) {
+                            /** @psalm-check-type-exact $v = false */;
+                        } else {
+                            /** @psalm-check-type-exact $v = \'\'|\'0\'|0|0.0 */;
+                        }
+                    }
+
+                    /** @param empty-scalar $v */
+                    function emptyFloat($v): void {
+                        if (is_float($v)) {
+                            /** @psalm-check-type-exact $v = 0.0 */;
+                        } else {
+                            /** @psalm-check-type-exact $v = \'\'|\'0\'|0|false */;
+                        }
+                    }
+
+                    /** @param empty-scalar $v */
+                    function emptyNumeric($v): void {
+                        if (is_numeric($v)) {
+                            /** @psalm-check-type-exact $v = \'0\'|0|0.0 */;
+                        } else {
+                            /** @psalm-check-type-exact $v = \'\'|false */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'typeChecksOfAnEmptyOrNonEmptyScalarKeepItsEmptiness' => [
+                'code' => '<?php
+                    /** @param int<1, max>|int<min, -1> $i */
+                    function takesNonZero(int $i): void {}
+                    function takesTrue(true $b): void {}
+                    /** @param non-falsy-string $s */
+                    function takesNonFalsy(string $s): void {}
+                    /** @param float|non-falsy-string|true $x */
+                    function takesNonEmptyNonInt($x): void {}
+                    /** @param 0 $i */
+                    function takesZero(int $i): void {}
+                    function takesFalse(false $b): void {}
+                    /** @param \'\'|\'0\' $s */
+                    function takesEmptyString(string $s): void {}
+
+                    /** @param non-empty-scalar $n */
+                    function nonEmpty($n): void {
+                        if (is_int($n)) {
+                            takesNonZero($n);
+                        }
+                        if (is_bool($n)) {
+                            takesTrue($n);
+                        }
+                        if (is_string($n)) {
+                            takesNonFalsy($n);
+                        }
+                        if (!is_int($n)) {
+                            takesNonEmptyNonInt($n);
+                        }
+                    }
+
+                    /** @param empty-scalar $e */
+                    function emptyScalar($e): void {
+                        if (is_int($e)) {
+                            takesZero($e);
+                        }
+                        if (is_bool($e)) {
+                            takesFalse($e);
+                        }
+                        if (is_string($e)) {
+                            takesEmptyString($e);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
             'looseEqualityWithAStringKeepsTheOtherScalars' => [
                 'code' => '<?php
                     /** @param numeric $n */
@@ -9262,6 +9407,46 @@ final class ConditionalTest extends TestCase
                     $x = rand(0, 3);
                     if (10 <= $x) {}',
                 'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:25 - Type int<0, 3> for $x is never >= 10',
+            ],
+            'isStringOfADocblockScalarTwiceIsARedundantCondition' => [
+                'code' => '<?php
+                    /** @param scalar $x */
+                    function f($x): void {
+                        if (is_string($x)) {
+                            if (is_string($x)) {}
+                        }
+                    }',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:33',
+            ],
+            'isIntOfADocblockNonEmptyScalarTwiceIsARedundantCondition' => [
+                'code' => '<?php
+                    /** @param non-empty-scalar $x */
+                    function f($x): void {
+                        if (is_int($x)) {
+                            if (is_int($x)) {}
+                        }
+                    }',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:33',
+            ],
+            'isBoolOfADocblockEmptyScalarTwiceIsARedundantCondition' => [
+                'code' => '<?php
+                    /** @param empty-scalar $x */
+                    function f($x): void {
+                        if (is_bool($x)) {
+                            if (is_bool($x)) {}
+                        }
+                    }',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:33',
+            ],
+            'isBoolAfterIsNumericOfADocblockEmptyScalarDoesNotContainTheType' => [
+                'code' => '<?php
+                    /** @param empty-scalar $x */
+                    function f($x): void {
+                        if (is_numeric($x)) {
+                            if (is_bool($x)) {}
+                        }
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:33',
             ],
         ];
     }

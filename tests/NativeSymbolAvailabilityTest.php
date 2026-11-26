@@ -707,6 +707,21 @@ final class NativeSymbolAvailabilityTest extends TestCase
             'php_version' => '8.6',
         ];
 
+        yield 'php85GlobalConstantsAreDefined' => [
+            'code' => '<?php
+                $follow = CURLFOLLOW_ALL;
+                $buildDate = PHP_BUILD_DATE;
+                $ethernetProtocol = ETH_P_ALL;
+            ',
+            'assertions' => [
+                '$follow===' => '1',
+                '$buildDate===' => 'string',
+                '$ethernetProtocol===' => 'int',
+            ],
+            'ignored_issues' => [],
+            'php_version' => '8.5',
+        ];
+
         yield 'stubConstantWithAVarDocblockHasTheDocblockType' => [
             'code' => '<?php
                 $icuVersion = INTL_ICU_VERSION;
@@ -1192,6 +1207,23 @@ final class NativeSymbolAvailabilityTest extends TestCase
             'error_message' => 'InvalidArgument',
             'error_levels' => [],
             'php_version' => '8.6',
+        ];
+
+        yield 'dateExceptionBelowItsVersion' => [
+            'code' => '<?php
+                function f(string $s): ?DateInterval {
+                    try {
+                        return DateInterval::createFromDateString($s) ?: null;
+                    } catch (DateMalformedIntervalStringException $e) {
+                        return null;
+                    }
+                }
+            ',
+            'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:30 -'
+                . ' DateMalformedIntervalStringException is not defined for the analysed PHP version 8.2'
+                . ' (it was introduced in PHP 8.3',
+            'error_levels' => [],
+            'php_version' => '8.2',
         ];
     }
 }

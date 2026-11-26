@@ -45,6 +45,7 @@ use Psalm\Report\TextReport;
 use Psalm\Report\XmlReport;
 use RuntimeException;
 use UnexpectedValueException;
+use WeakMap;
 
 use function array_filter;
 use function array_keys;
@@ -118,6 +119,13 @@ final class IssueBuffer
     private static array $recorded_issues = [];
 
     /**
+     * The recorded issues that are fixable: bubbleUp() adds them as such
+     *
+     * @var ?WeakMap<CodeIssue, true>
+     */
+    private static ?WeakMap $recorded_fixable_issues = null;
+
+    /**
      * The issues raised while collecting them, before the config or a suppression filters them, keyed by
      * getIssueLocationKey()
      *
@@ -185,6 +193,11 @@ final class IssueBuffer
         $event = new BeforeAddIssueEvent($e, $is_fixable, $codebase);
         if ($config->eventDispatcher->dispatchBeforeAddIssue($event) === false) {
             return false;
+        }
+
+        if ($is_fixable && self::$recording_level > 0) {
+            self::$recorded_fixable_issues ??= new WeakMap();
+            self::$recorded_fixable_issues[$e] = true;
         }
 
         if (self::isSuppressed($e, $suppressed_issues)) {
@@ -405,7 +418,10 @@ final class IssueBuffer
 
         if ($reporting_level === Config::REPORT_INFO) {
             if (($is_tainted || !self::alreadyEmitted($emitted_key))
-                && self::addIssueData($e->getFilePath(), $e->toIssueData(IssueData::SEVERITY_INFO))
+                && self::addIssueData(
+                    $e->getFilePath(),
+                    self::toIssueData($e, IssueData::SEVERITY_INFO, $is_fixable),
+                )
             ) {
                 if ($is_fixable) {
                     self::addFixableIssue($issue_type);
@@ -433,7 +449,10 @@ final class IssueBuffer
         }
 
         if (($is_tainted || !self::alreadyEmitted($emitted_key))
-            && self::addIssueData($e->getFilePath(), $e->toIssueData(IssueData::SEVERITY_ERROR))
+            && self::addIssueData(
+                $e->getFilePath(),
+                self::toIssueData($e, IssueData::SEVERITY_ERROR, $is_fixable),
+            )
         ) {
             ++self::$error_count;
 
@@ -443,6 +462,17 @@ final class IssueBuffer
         }
 
         return true;
+    }
+
+    /**
+     * @param IssueData::SEVERITY_* $severity
+     */
+    private static function toIssueData(CodeIssue $e, string $severity, bool $is_fixable): IssueData
+    {
+        $issue_data = $e->toIssueData($severity);
+        $issue_data->is_fixable = $is_fixable;
+
+        return $issue_data;
     }
 
     /**
@@ -758,6 +788,27 @@ final class IssueBuffer
     }
 
     /**
+     * Marks an issue that was already added as fixable, for a fix that is only known after the analysis, such as a
+     * parameter type inferred from the calls of its method. It is done before the issues are cached.
+     *
+     * @internal
+     */
+    public static function markIssueFixable(string $issue_type, ?CodeLocation $location): void
+    {
+        if ($location === null) {
+            return;
+        }
+
+        [$from, $to] = $location->getSelectionBounds();
+
+        foreach (self::$issues_data[$location->file_path] ?? [] as $issue_data) {
+            if ($issue_data->type === $issue_type && $issue_data->from === $from && $issue_data->to === $to) {
+                $issue_data->is_fixable = true;
+            }
+        }
+    }
+
+    /**
      * @param  array<string,array<string,array{o:int, s:array<int, string>}>>  $issue_baseline
      */
     public static function finish(
@@ -991,6 +1042,19 @@ final class IssueBuffer
                 $project_analyzer->stdout_report_options->use_color,
                 $start_time,
             );
+        } elseif ($project_analyzer->stdout_report_options->agent_output) {
+            self::printAgentFooter($issues_data, $project_analyzer->stdout_report_options, $error_count, $info_count);
+
+            // no timing, memory or type coverage: the explicitly requested statistics print as in the console report
+            if ($start_time && $add_stats) {
+                echo '-----------------' . "\n";
+                echo $codebase->analyzer->getNonMixedStats();
+                echo "\n";
+            }
+
+            $prints_performance_summary = $start_time > 0 && Perf\Collector::$enabled;
+
+            self::printUnusedIssueHandlerNotice($codebase, $is_full);
         } elseif ($prints_to_console) {
             echo str_repeat('-', 30) . "\n";
 
@@ -1052,14 +1116,7 @@ final class IssueBuffer
                 $prints_performance_summary = Perf\Collector::$enabled;
             }
 
-            if ($codebase->config->find_unused_issue_handler_suppression && (!$is_full || $codebase->diff_run)) {
-                fwrite(
-                    STDERR,
-                    PHP_EOL . 'To whom it may concern: Psalm cannot detect unused issue handler suppressions when'
-                    . PHP_EOL . 'analyzing individual files and folders or running in diff mode. Run on the full'
-                    . PHP_EOL . 'project with diff mode off to enable unused issue handler detection.' . PHP_EOL,
-                );
-            }
+            self::printUnusedIssueHandlerNotice($codebase, $is_full);
         } elseif ($start_time) {
             // the report is the output of the other formats: the statistics go to stderr, as plain text
             $printed_peak_bytes = memory_get_peak_usage();
@@ -1128,6 +1185,72 @@ final class IssueBuffer
             && $codebase->analyzer->getChangedFilesCount() > 0
         ) {
             exit(2);
+        }
+    }
+
+    private static function printUnusedIssueHandlerNotice(Codebase $codebase, bool $is_full): void
+    {
+        if ($codebase->config->find_unused_issue_handler_suppression && (!$is_full || $codebase->diff_run)) {
+            fwrite(
+                STDERR,
+                PHP_EOL . 'To whom it may concern: Psalm cannot detect unused issue handler suppressions when'
+                . PHP_EOL . 'analyzing individual files and folders or running in diff mode. Run on the full'
+                . PHP_EOL . 'project with diff mode off to enable unused issue handler detection.' . PHP_EOL,
+            );
+        }
+    }
+
+    /**
+     * What the console and compact reports end with for an AI coding agent: the result line, the fixable line
+     * and the docs line, each at most once
+     *
+     * @param array<string, array<int, IssueData>> $issues_data
+     */
+    private static function printAgentFooter(
+        array $issues_data,
+        ReportOptions $report_options,
+        int $error_count,
+        int $info_count,
+    ): void {
+        $show_info = $report_options->show_info;
+        $printed_count = $error_count + ($show_info ? $info_count : 0);
+
+        $result = $printed_count . ($printed_count === 1 ? ' issue' : ' issues');
+
+        if (!$show_info && $info_count > 0) {
+            $result .= ', ' . $info_count . ($info_count === 1 ? ' info issue' : ' info issues')
+                . ' hidden (--show-info=true shows them)';
+        }
+
+        echo $result . "\n";
+
+        // the issues the report marks with [*], not the fixable counts, which also cover the hidden ones
+        $fixable_issue_counts = [];
+
+        if ($report_options->show_suggestions) {
+            foreach ($issues_data as $file_issues) {
+                foreach ($file_issues as $issue_data) {
+                    if (!$issue_data->is_fixable
+                        || (!$show_info && $issue_data->severity === IssueData::SEVERITY_INFO)
+                    ) {
+                        continue;
+                    }
+
+                    $fixable_issue_counts[$issue_data->type] = ($fixable_issue_counts[$issue_data->type] ?? 0) + 1;
+                }
+            }
+        }
+
+        if ($fixable_issue_counts) {
+            ksort($fixable_issue_counts);
+
+            echo '[*] ' . array_sum($fixable_issue_counts) . ' fixable with --alter --issues='
+                . implode(',', array_keys($fixable_issue_counts)) . ' (add --dry-run to preview)' . "\n";
+        }
+
+        if ($printed_count > 0) {
+            echo 'Explain an issue: psalm --explain=<IssueType>, '
+                . 'or https://psalm.dev/docs/running_psalm/issues/<IssueType>.md' . "\n";
         }
     }
 
@@ -1521,7 +1644,7 @@ final class IssueBuffer
     public static function bubbleUp(CodeIssue $e): void
     {
         if (self::$recording_level === 0) {
-            self::add($e);
+            self::add($e, isset(self::$recorded_fixable_issues[$e]));
 
             return;
         }

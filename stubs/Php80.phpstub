@@ -63,7 +63,7 @@ class ReflectionClass implements Reflector {
      *
      * @return T
      */
-    public function newInstanceArgs(array $args): object {}
+    public function newInstanceArgs(array $args = []): object {}
 }
 
 /** @psalm-immutable */

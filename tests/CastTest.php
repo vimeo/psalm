@@ -21,6 +21,36 @@ final class CastTest extends TestCase
     #[Override]
     public static function providerValidCodeParse(): iterable
     {
+        yield 'templateBoundedByAClassAndIntersectedWithStringableCastsToString' => [
+            'code' => '<?php
+                interface Foo {}
+
+                /**
+                 * @template T as Foo
+                 * @param T&Stringable $n
+                 */
+                function cast($n): string {
+                    return (string) $n;
+                }',
+            'assertions' => [],
+            'ignored_issues' => [],
+            'php_version' => '8.0',
+        ];
+
+        yield 'templateBoundedByObjectAndIntersectedWithStringableCastsToString' => [
+            'code' => '<?php
+                /**
+                 * @template T as object
+                 * @param T&Stringable $n
+                 */
+                function cast($n): string {
+                    return (string) $n;
+                }',
+            'assertions' => [],
+            'ignored_issues' => [],
+            'php_version' => '8.0',
+        ];
+
         yield 'intCastOfStringNotRepresentableAsInt' => [
             'code' => '<?php
                 $a = (int) "1e999";
@@ -490,6 +520,9 @@ final class CastTest extends TestCase
                     /** @psalm-check-type-exact $twice = string */
                 }
             ',
+            'assertions' => [],
+            'ignored_issues' => [],
+            'php_version' => '8.0',
         ];
         yield 'interpolationWithClassStringUnionStaysNonEmpty' => [
             'code' => '<?php

@@ -57,6 +57,60 @@ final class ClassTemplateTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'nullCoalescingATemplatePropertyBoundedByANullableStringToAString' => [
+                'code' => '<?php
+                    /**
+                     * @template-covariant T of non-empty-string|null
+                     */
+                    final class X implements Stringable
+                    {
+                        /**
+                         * @param T $value
+                         */
+                        public function __construct(private ?string $value)
+                        {
+                        }
+
+                        public function __toString(): string
+                        {
+                            return $this->value ?? \'\';
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'nullableArrayOfAnInterfaceTemplateBoundByTheClassTemplatePassedBackInALoop' => [
+                'code' => '<?php
+                    /**
+                     * @template T1 of array|object
+                     */
+                    interface ExampleInterface
+                    {
+                        /**
+                         * @param ?T1[] $args
+                         * @return ?T1[]
+                         */
+                        public function run(?array $args): ?array;
+                    }
+
+                    /**
+                     * @template T2 of array|object
+                     */
+                    final class Example
+                    {
+                        /**
+                         * @param ExampleInterface<T2> $example
+                         */
+                        public function run(ExampleInterface $example): void
+                        {
+                            $arg = null;
+                            do {
+                                $arg = $example->run($arg);
+                            } while ($arg !== null);
+                        }
+                    }',
+            ],
             'classTemplateBoundNamingATemplateDeclaredAfterIt' => [
                 'code' => '<?php
                     /** @template-covariant TValue */
@@ -397,6 +451,8 @@ final class ClassTemplateTest extends TestCase
 
                     $pager = new PagerOnQuery($items);',
                 'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'closureOfAMethodOfAGenericObject' => [
                 'code' => '<?php
@@ -684,6 +740,8 @@ final class ClassTemplateTest extends TestCase
                     '$copy===' => 'Coll<stdClass>&static',
                     '$std_copy===' => 'StdColl',
                 ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'templateIntersection' => [
                 'code' => '<?php
@@ -4230,6 +4288,8 @@ final class ClassTemplateTest extends TestCase
                 'assertions' => [
                     '$b===' => '1|2',
                 ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'generaliseTemplatedString' => [
                 'code' => '<?php
@@ -4583,6 +4643,9 @@ final class ClassTemplateTest extends TestCase
                     final class One {}
                     final class Two {}
                     final class Three {}',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'refineTemplateTypeOfUnionMoreComplex' => [
                 'code' => '<?php
@@ -4603,6 +4666,9 @@ final class ClassTemplateTest extends TestCase
                     final class One {}
                     final class Two {}
                     final class Three {}',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'issue7825' => [
                 'code' => '<?php
@@ -4711,6 +4777,8 @@ final class ClassTemplateTest extends TestCase
                     '$a===' => 'FutureB<123>',
                     '$r===' => 'ArrayObject<int, 123>',
                 ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'return TemplatedClass<static>' => [
                 'code' => '<?php
@@ -4749,6 +4817,9 @@ final class ClassTemplateTest extends TestCase
                             return Maybe::just(new static());
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'return list<static> created in a static method of another class' => [
                 'code' => '<?php
@@ -4816,6 +4887,9 @@ final class ClassTemplateTest extends TestCase
                             return $maybe->value;
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'static is the return type of an analyzed static method' => [
                 'code' => '<?php
@@ -6637,6 +6711,9 @@ final class ClassTemplateTest extends TestCase
                             return new Wrapper($c);
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'newOfTheClassItselfWithTheInstancesOwnTemplateKeepsIt' => [
                 'code' => '<?php
@@ -6650,6 +6727,9 @@ final class ClassTemplateTest extends TestCase
                             return new Box($this->item);
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'templateNestedInACovariantGenericParamAcceptsASubtype' => [
                 'code' => '<?php
@@ -6721,6 +6801,67 @@ final class ClassTemplateTest extends TestCase
                     $map = new Map();
                     f($map);',
             ],
+            'templateBoundByStaticReadOnThis' => [
+                'code' => '<?php
+                    /**
+                     * @template T of static
+                     */
+                    class SelfBound {
+                        /** @return T */
+                        public function get() {
+                            throw new Exception();
+                        }
+
+                        /** @return T */
+                        public static function getStatic() {
+                            throw new Exception();
+                        }
+
+                        /** @return T */
+                        public function viaThis() {
+                            return $this->get();
+                        }
+
+                        /** @return T */
+                        public function chained() {
+                            return $this->get()->get()->get();
+                        }
+
+                        /** @return T */
+                        public function viaStatic() {
+                            return static::getStatic();
+                        }
+
+                        /** @return T */
+                        public function inClosure() {
+                            return (fn() => $this->get())();
+                        }
+
+                        /** @return T|static */
+                        public function inLoop(bool $b) {
+                            $x = $this;
+                            while ($b) {
+                                $x = $x->get();
+                            }
+                            return $x;
+                        }
+                    }
+
+                    /**
+                     * @template T of static|null
+                     */
+                    class NullableSelfBound {
+                        /** @return T */
+                        public function get() {
+                            throw new Exception();
+                        }
+
+                        /** @return list<T> */
+                        public function all() {
+                            return [$this->get()];
+                        }
+                    }',
+            ],
         ];
     }
 
@@ -6731,6 +6872,23 @@ final class ClassTemplateTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'templateBoundByStaticReadOnThisIsTheTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template T of static
+                     */
+                    class SelfBound {
+                        /** @return T */
+                        public function get() {
+                            throw new Exception();
+                        }
+
+                        public function test(): int {
+                            return $this->get()->get();
+                        }
+                    }',
+                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:12:36 - The inferred type \'T:SelfBound as SelfBound<T:SelfBound as SelfBound&static>&static',
+            ],
             'staticWithOtherTypeArgumentsOfATemplateReceiverIsNotTheTemplate' => [
                 'code' => '<?php
                     /**
@@ -6802,6 +6960,8 @@ final class ClassTemplateTest extends TestCase
 
                     $pager = new PagerOnQuery($items);',
                 'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'closureOfAMethodOfAnObjectWithTheTemplatesOfTheCaller' => [
                 'code' => '<?php
@@ -7836,6 +7996,8 @@ final class ClassTemplateTest extends TestCase
                     final class Two {}
                     final class Three {}',
                 'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:12:40 - The inferred type \'T:A as One|Two\' ',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'preventMixedNestedCoercion' => [
                 'code' => '<?php
@@ -7853,6 +8015,8 @@ final class ClassTemplateTest extends TestCase
                         return $c;
                     }',
                 'error_message' => 'InvalidReturnStatement',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'noCrashOnBrokenTemplate' => [
                 'code' => <<<'PHP'
@@ -8156,6 +8320,8 @@ final class ClassTemplateTest extends TestCase
                         take($onlyA);
                     }',
                 'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'templateNestedInAnInvariantGenericParamStillConflictsWithAnotherArgument' => [
                 'code' => '<?php

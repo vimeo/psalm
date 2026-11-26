@@ -16,9 +16,35 @@ If you want to run on specific files, use
 
 Run with `--help` to see a list of options that Psalm supports.
 
+## Output format
+
+`--output-format` picks the format printed on stdout. Without it Psalm prints `console`, or `compact` (one line per issue, no snippets) when an AI coding agent is driving the shell (see [Running Psalm from AI coding agents](ai_agents.md)):
+
+```
+ERROR src/Foo.php:12:5 InvalidReturnType: The declared return type 'string' for foo is incorrect, got 'int'
+```
+
+An explicit `--output-format` always wins, and `--report=FILE` is not affected:
+
+```bash
+./vendor/bin/psalm --output-format=console
+```
+
+## Explaining an issue
+
+`--explain` prints the documentation of an issue: what it means, an example and how to fix it. It takes an issue type, a shortcode (the number in the `https://psalm.dev/083` link behind each reported issue) or a psalm.dev link, works offline and needs no config file:
+
+```bash
+./vendor/bin/psalm --explain=PossiblyNullReference
+./vendor/bin/psalm --explain=83
+./vendor/bin/psalm --explain=https://psalm.dev/083
+```
+
+All three print the same Markdown page and exit with status `0`. For an unknown issue Psalm prints `Unknown issue: …` to stderr and exits with status `1`.
+
 ## Statistics
 
-At the end of a run Psalm prints how long it took, how much memory it used and how much of the code it could infer types for, plus the output of `--stats` and [`--debug-performance`](performance.md) if you give them. With any output format other than `console`, `phpstorm` and `github` (`json`, `checkstyle`, `sarif`, …) this goes to stderr, so that stdout stays the report; `--no-progress` leaves stderr empty.
+At the end of a run Psalm prints (except [for an AI agent](ai_agents.md#what-changes-under-an-agent)) how long it took, how much memory it used and how much of the code it could infer types for, plus the output of `--stats` and [`--debug-performance`](performance.md) if you give them. With any output format other than `console`, `phpstorm` and `github` (`json`, `checkstyle`, `sarif`, …) this goes to stderr, so that stdout stays the report; `--no-progress` leaves stderr empty.
 
 ## Exit status
 

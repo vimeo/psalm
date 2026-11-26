@@ -42,16 +42,34 @@ use Psalm\Internal\Type\PurityWildcardPaths;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Internal\TypeVisitor\ClassStringMapBoundReplacer;
 use Psalm\Internal\TypeVisitor\TypeVariableResolver;
 use Psalm\Issue\ImpureMethodCall;
+use Psalm\Issue\InvalidArrayAccess;
+use Psalm\Issue\InvalidArrayOffset;
+use Psalm\Issue\InvalidCast;
+use Psalm\Issue\InvalidClone;
 use Psalm\Issue\InvalidDocblock;
+use Psalm\Issue\InvalidFunctionCall;
 use Psalm\Issue\InvalidIterator;
+use Psalm\Issue\InvalidPropertyAssignment;
+use Psalm\Issue\InvalidReturnType;
+use Psalm\Issue\MissingClosureReturnType;
+use Psalm\Issue\MixedArgument;
+use Psalm\Issue\MixedAssignment;
+use Psalm\Issue\MixedMethodCall;
+use Psalm\Issue\MixedPropertyFetch;
+use Psalm\Issue\NoValue;
 use Psalm\Issue\NullIterator;
+use Psalm\Issue\ParadoxicalCondition;
 use Psalm\Issue\PossibleRawObjectIteration;
 use Psalm\Issue\PossiblyFalseIterator;
 use Psalm\Issue\PossiblyInvalidIterator;
 use Psalm\Issue\PossiblyNullIterator;
 use Psalm\Issue\RawObjectIteration;
+use Psalm\Issue\RedundantCondition;
+use Psalm\Issue\TypeDoesNotContainType;
+use Psalm\Issue\UndefinedClass;
 use Psalm\Issue\UnnecessaryVarAnnotation;
 use Psalm\IssueBuffer;
 use Psalm\Node\Expr\VirtualMethodCall;
@@ -65,7 +83,6 @@ use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallableObject;
 use Psalm\Type\Atomic\TCapabilities;
-use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClassStringMap;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TGenericObject;
@@ -101,7 +118,6 @@ use function in_array;
 use function is_string;
 use function reset;
 use function str_contains;
-use function stripos;
 use function strtolower;
 use function substr;
 
@@ -113,6 +129,30 @@ use const ARRAY_FILTER_USE_BOTH;
  */
 final class ForeachAnalyzer
 {
+    /**
+     * The issues the uses of an item that is never raise (a check of its type, a call or a clone of it, a class
+     * named by it, a return of it, what is done with a value of it), as never is a type nothing is done with
+     */
+    private const ISSUES_OF_A_NEVER_ITEM = [
+        InvalidArrayAccess::class => true,
+        InvalidArrayOffset::class => true,
+        InvalidCast::class => true,
+        InvalidClone::class => true,
+        InvalidFunctionCall::class => true,
+        InvalidPropertyAssignment::class => true,
+        InvalidReturnType::class => true,
+        MissingClosureReturnType::class => true,
+        MixedArgument::class => true,
+        MixedAssignment::class => true,
+        MixedMethodCall::class => true,
+        MixedPropertyFetch::class => true,
+        NoValue::class => true,
+        ParadoxicalCondition::class => true,
+        RedundantCondition::class => true,
+        TypeDoesNotContainType::class => true,
+        UndefinedClass::class => true,
+    ];
+
     /**
      * @return  false|null
      */
@@ -360,6 +400,13 @@ final class ForeachAnalyzer
             $value_type = new Union([new TMixed()], ['by_ref' => $stmt->byRef]);
         }
 
+        // nothing is iterated: the item is never, and what the body does with it is not reported
+        $iterates_nothing = $value_type->isNever() || $key_type?->isNever() === true;
+
+        if ($iterates_nothing) {
+            IssueBuffer::startRecording();
+        }
+
         if ($stmt->byRef
             && $stmt->valueVar instanceof PhpParser\Node\Expr\Variable
             && is_string($stmt->valueVar->name)
@@ -458,47 +505,7 @@ final class ForeachAnalyzer
             $foreach_context->vars_in_scope[$var_comment->var_id] = $comment_type;
         }
 
-        if (!$stmt->byRef
-            && $iterator_type !== null
-            && $iterator_type->parent_nodes
-            && ArrayAssignmentAnalyzer::hasElementsOfItsOwn($iterator_type)
-            && $stmt->keyVar instanceof PhpParser\Node\Expr\Variable
-            && is_string($stmt->keyVar->name)
-            && $stmt->valueVar instanceof PhpParser\Node\Expr\Variable
-            && is_string($stmt->valueVar->name)
-            && isset($foreach_context->vars_in_scope['$' . $stmt->keyVar->name])
-            && isset($foreach_context->vars_in_scope['$' . $stmt->valueVar->name])
-        ) {
-            $key_node_ids = ArrayAssignmentAnalyzer::getValueNodeIds(
-                $foreach_context->vars_in_scope['$' . $stmt->keyVar->name],
-            );
-            $value_node_ids = ArrayAssignmentAnalyzer::getValueNodeIds(
-                $foreach_context->vars_in_scope['$' . $stmt->valueVar->name],
-            );
-
-            if ($key_node_ids !== [] && $value_node_ids !== []) {
-                $foreach_context->foreach_element_copies['$' . $stmt->valueVar->name] = [
-                    '$' . $stmt->keyVar->name,
-                    $key_node_ids,
-                    $value_node_ids,
-                    $iterator_type->parent_nodes,
-                ];
-            }
-        }
-
-        if ($foreach_marker !== null
-            && $stmt->keyVar instanceof PhpParser\Node\Expr\Variable
-            && is_string($stmt->keyVar->name)
-            && isset($foreach_context->vars_in_scope['$' . $stmt->keyVar->name])
-        ) {
-            $key_node_ids = ArrayAssignmentAnalyzer::getValueNodeIds(
-                $foreach_context->vars_in_scope['$' . $stmt->keyVar->name],
-            );
-
-            if ($key_node_ids !== []) {
-                $foreach_context->foreach_keys['$' . $stmt->keyVar->name] = [$key_node_ids, $foreach_marker];
-            }
-        }
+        self::trackKeyAndValueNodes($stmt, $iterator_type, $foreach_marker, $foreach_context);
 
         $loop_scope = new LoopScope($foreach_context, $context);
 
@@ -506,7 +513,7 @@ final class ForeachAnalyzer
 
         $stmt->setAttribute('alwaysEntered', $iterator_type !== null && $always_non_empty_array);
 
-        if (LoopAnalyzer::analyze(
+        $loop_result = LoopAnalyzer::analyze(
             $statements_analyzer,
             $stmt->stmts,
             [],
@@ -515,7 +522,13 @@ final class ForeachAnalyzer
             $inner_loop_context,
             false,
             $always_non_empty_array,
-        ) === false) {
+        );
+
+        if ($iterates_nothing) {
+            self::reportWhatIsNotDueToANeverItem();
+        }
+
+        if ($loop_result === false) {
             return false;
         }
 
@@ -558,6 +571,74 @@ final class ForeachAnalyzer
         }
 
         return null;
+    }
+
+    /**
+     * Stops the recording of the issues of a loop body analysed with an item that is never, and reports the ones
+     * that are not due to the item
+     */
+    private static function reportWhatIsNotDueToANeverItem(): void
+    {
+        $recorded_issues = IssueBuffer::clearRecordingLevel();
+        IssueBuffer::stopRecording();
+
+        foreach ($recorded_issues as $recorded_issue) {
+            if (!isset(self::ISSUES_OF_A_NEVER_ITEM[$recorded_issue::class])) {
+                IssueBuffer::bubbleUp($recorded_issue);
+            }
+        }
+    }
+
+    /**
+     * What the key and the value variables of a foreach take from the iterated value, for the data flow
+     */
+    private static function trackKeyAndValueNodes(
+        PhpParser\Node\Stmt\Foreach_ $stmt,
+        ?Union $iterator_type,
+        ?string $foreach_marker,
+        Context $foreach_context,
+    ): void {
+        if (!$stmt->byRef
+            && $iterator_type !== null
+            && $iterator_type->parent_nodes
+            && ArrayAssignmentAnalyzer::hasElementsOfItsOwn($iterator_type)
+            && $stmt->keyVar instanceof PhpParser\Node\Expr\Variable
+            && is_string($stmt->keyVar->name)
+            && $stmt->valueVar instanceof PhpParser\Node\Expr\Variable
+            && is_string($stmt->valueVar->name)
+            && isset($foreach_context->vars_in_scope['$' . $stmt->keyVar->name])
+            && isset($foreach_context->vars_in_scope['$' . $stmt->valueVar->name])
+        ) {
+            $key_node_ids = ArrayAssignmentAnalyzer::getValueNodeIds(
+                $foreach_context->vars_in_scope['$' . $stmt->keyVar->name],
+            );
+            $value_node_ids = ArrayAssignmentAnalyzer::getValueNodeIds(
+                $foreach_context->vars_in_scope['$' . $stmt->valueVar->name],
+            );
+
+            if ($key_node_ids !== [] && $value_node_ids !== []) {
+                $foreach_context->foreach_element_copies['$' . $stmt->valueVar->name] = [
+                    '$' . $stmt->keyVar->name,
+                    $key_node_ids,
+                    $value_node_ids,
+                    $iterator_type->parent_nodes,
+                ];
+            }
+        }
+
+        if ($foreach_marker !== null
+            && $stmt->keyVar instanceof PhpParser\Node\Expr\Variable
+            && is_string($stmt->keyVar->name)
+            && isset($foreach_context->vars_in_scope['$' . $stmt->keyVar->name])
+        ) {
+            $key_node_ids = ArrayAssignmentAnalyzer::getValueNodeIds(
+                $foreach_context->vars_in_scope['$' . $stmt->keyVar->name],
+            );
+
+            if ($key_node_ids !== []) {
+                $foreach_context->foreach_keys['$' . $stmt->keyVar->name] = [$key_node_ids, $foreach_marker];
+            }
+        }
     }
 
     /**
@@ -1377,7 +1458,7 @@ final class ForeachAnalyzer
         // the loop body only runs for the iterable part: null and false are skipped below
 
         $has_valid_iterator = false;
-        $invalid_iterator_types = [];
+        $invalid_iterator_messages = [];
         $raw_object_types = [];
 
         $remaining_atomic_types = array_values($iterator_type->getAtomicTypes());
@@ -1391,10 +1472,12 @@ final class ForeachAnalyzer
                 continue;
             }
 
-            // if it's an empty array, we cannot iterate over it
+            // an empty array has no item to iterate over: what the loop body sees of one is never
             if ($iterator_atomic_type instanceof TArray && $iterator_atomic_type->isEmptyArray()) {
                 $always_non_empty_array = false;
                 $has_valid_iterator = true;
+                $value_type = Type::combineUnionTypes($value_type, Type::getNever());
+                $key_type = Type::combineUnionTypes($key_type, Type::getNever());
                 continue;
             }
 
@@ -1451,25 +1534,19 @@ final class ForeachAnalyzer
 
             if ($iterator_atomic_type instanceof TClassStringMap) {
                 // the key is a class of the bound, and what is stored under it an object of that class
-                $bound = new Union([$iterator_atomic_type->as_type ?? new TObject()]);
-
                 $key_type = Type::combineUnionTypes(
                     $key_type,
-                    new Union([new TClassString($bound->getId(), $iterator_atomic_type->as_type)]),
+                    ClassStringMapBoundReplacer::getKeyType($iterator_atomic_type),
                 );
 
                 $value_type = Type::combineUnionTypes(
                     $value_type,
-                    TemplateInferredTypeReplacer::replace(
-                        $iterator_atomic_type->value_param,
-                        new TemplateResult([], [$iterator_atomic_type->param_name => ['class-string-map' => $bound]]),
-                        $codebase,
-                    ),
+                    ClassStringMapBoundReplacer::getValueType($iterator_atomic_type),
                 );
 
                 $has_valid_iterator = true;
             } elseif ($iterator_atomic_type instanceof Scalar || $iterator_atomic_type instanceof TVoid) {
-                $invalid_iterator_types[] = $iterator_atomic_type->getId(false);
+                $invalid_iterator_messages[] = 'Cannot iterate over ' . $iterator_atomic_type->getId(false);
 
                 // what the other types of the iterated value hold is still iterated
                 $value_type = Type::getMixed()->setParentNodes($value_type?->parent_nodes ?? []);
@@ -1613,7 +1690,7 @@ final class ForeachAnalyzer
                         $key_type,
                         $value_type,
                         $has_valid_iterator,
-                        $invalid_iterator_types,
+                        $invalid_iterator_messages,
                         $forwards_send,
                     );
                 } else {
@@ -1672,11 +1749,8 @@ final class ForeachAnalyzer
             }
         }
 
-        if ($invalid_iterator_types) {
-            $message = (stripos($invalid_iterator_types[0], 'generator<') === 0
-                    ? 'Cannot iterate over generator with non-null send() type '
-                    : 'Cannot iterate over ')
-                . $invalid_iterator_types[0];
+        if ($invalid_iterator_messages) {
+            $message = $invalid_iterator_messages[0];
 
             if ($has_valid_iterator) {
                 IssueBuffer::maybeAdd(
@@ -1703,7 +1777,7 @@ final class ForeachAnalyzer
         return null;
     }
 
-    /** @param list<string> $invalid_iterator_types */
+    /** @param list<string> $invalid_iterator_messages */
     public static function handleIterable(
         StatementsAnalyzer $statements_analyzer,
         TNamedObject $iterator_atomic_type,
@@ -1713,7 +1787,7 @@ final class ForeachAnalyzer
         ?Union &$key_type,
         ?Union &$value_type,
         bool &$has_valid_iterator,
-        array &$invalid_iterator_types = [],
+        array &$invalid_iterator_messages = [],
         bool $forwards_send = false,
     ): void {
         if ($iterator_atomic_type->extra_types) {
@@ -1823,7 +1897,7 @@ final class ForeachAnalyzer
                                             $key_type,
                                             $value_type,
                                             $has_valid_iterator,
-                                            $invalid_iterator_types,
+                                            $invalid_iterator_messages,
                                             $forwards_send,
                                         );
 
@@ -1873,7 +1947,8 @@ final class ForeachAnalyzer
                         && !$type_params[2]->isVoid()
                         && !$type_params[2]->isMixed()
                     ) {
-                        $invalid_iterator_types[] = $iterator_atomic_type->getId();
+                        $invalid_iterator_messages[] = 'Cannot iterate over generator with non-null send() type '
+                            . $iterator_atomic_type->getId();
                     } else {
                         $has_valid_iterator = true;
                     }

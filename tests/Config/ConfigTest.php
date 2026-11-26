@@ -37,6 +37,7 @@ use Psalm\Issue\TooManyArguments;
 use Psalm\Issue\UndefinedFunction;
 use Psalm\Issue\UnusedBaselineEntry;
 use Psalm\Issue\VariableIssue;
+use Psalm\Issue\WeakHash;
 use Psalm\Tests\Config\Plugin\FileTypeSelfRegisteringPlugin;
 use Psalm\Tests\Config\Plugin\TestPluginIssue;
 use Psalm\Tests\Config\Plugin\TestPluginIssueDefaultLevel;
@@ -285,6 +286,15 @@ final class ConfigTest extends DeferredAnalyzerTestCase
 
         $this->assertTrue($config->isInProjectDirs((string) realpath('src/Psalm/Type.php')));
         $this->assertFalse($config->isInProjectDirs((string) realpath('examples/TemplateScanner.php')));
+    }
+
+    public function testLoadFromXMLFileThrowsOnADirectory(): void
+    {
+        $this->expectException(ConfigException::class);
+        $this->expectExceptionMessage('Cannot read the config file ' . __DIR__);
+        ErrorHandler::install();
+
+        Config::loadFromXMLFile(__DIR__, __DIR__);
     }
 
     public function testIgnoreProjectDirectory(): void
@@ -1815,6 +1825,47 @@ final class ConfigTest extends DeferredAnalyzerTestCase
         $this->assertSame([], $mismatches);
     }
 
+    /**
+     * FileFilter reads allowMissingFiles on every element it loads: projectFiles, extraFiles, ignoreFiles (also the
+     * taint analysis one) and each errorLevel
+     */
+    public function testTheSchemaDeclaresAllowMissingFilesWhereFileFilterReadsIt(): void
+    {
+        $schema = new DOMDocument();
+        $schema->load(dirname(__DIR__, 2) . '/config.xsd');
+        $xpath = new DOMXPath($schema);
+        $xpath->registerNamespace('xs', 'http://www.w3.org/2001/XMLSchema');
+
+        $missing = [];
+
+        foreach (['ProjectFilesType', 'IgnoreFilesType'] as $type) {
+            $declared = $xpath->query(
+                '//xs:complexType[@name="' . $type . '"]/xs:attribute[@name="allowMissingFiles"]',
+            );
+
+            if (!$declared || $declared->length === 0) {
+                $missing[] = $type;
+            }
+        }
+
+        $error_levels = $xpath->query('//xs:complexType[substring(@name, string-length(@name) - 15) = '
+            . '"IssueHandlerType"]/xs:sequence/xs:element[@name="errorLevel"]/xs:complexType');
+        $this->assertNotFalse($error_levels);
+        $this->assertGreaterThan(8, $error_levels->length);
+
+        foreach ($error_levels as $error_level) {
+            $this->assertInstanceOf(DOMElement::class, $error_level);
+            $declared = $xpath->query('xs:attribute[@name="allowMissingFiles"]', $error_level);
+
+            if (!$declared || $declared->length === 0) {
+                $handler = $error_level->parentNode?->parentNode?->parentNode;
+                $missing[] = ($handler instanceof DOMElement ? $handler->getAttribute('name') : '?') . '/errorLevel';
+            }
+        }
+
+        $this->assertSame([], $missing);
+    }
+
     public function testAMissingDependencyIsSuppressedByTheNameOfTheDependency(): void
     {
         $this->expectNotToPerformAssertions();
@@ -2581,7 +2632,7 @@ final class ConfigTest extends DeferredAnalyzerTestCase
     }
 
     /**
-     * @return array<string, array{string, string, string}>
+     * @return array<string, array{0: string, 1: string, 2: string, 3?: string}>
      * @psalm-pure
      */
     public static function providerSinksOfExtensionsWithoutTheirStubs(): array
@@ -2596,6 +2647,12 @@ final class ConfigTest extends DeferredAnalyzerTestCase
             'DOMXPath::query' => ['DOMXPath', 'query', 'TaintedXpath'],
             'DOMXPath::evaluate' => ['DOMXPath', 'evaluate', 'TaintedXpath'],
             'SimpleXMLElement::xpath' => ['SimpleXMLElement', 'xpath', 'TaintedXpath'],
+            // a value in a string literal of the query keeps the taint of what can end it
+            'DOMXPath::query in a string literal' => ['DOMXPath', 'query', 'TaintedXpath', '"//u[@id=\'" . $input . "\']"'],
+            'DOMXPath::evaluate in a string literal'
+                => ['DOMXPath', 'evaluate', 'TaintedXpath', '"//u[@id=\'" . $input . "\']"'],
+            'SimpleXMLElement::xpath in a string literal'
+                => ['SimpleXMLElement', 'xpath', 'TaintedXpath', '"//u[@id=\'" . $input . "\']"'],
             'SoapClient::__setLocation' => ['SoapClient', '__setLocation', 'TaintedSSRF'],
         ];
     }
@@ -2605,8 +2662,12 @@ final class ConfigTest extends DeferredAnalyzerTestCase
      * out for the bundled ones: the sinks of their functions still apply
      */
     #[DataProvider('providerSinksOfExtensionsWithoutTheirStubs')]
-    public function testSinksOfExtensionsWithoutTheirStubs(string $class, string $method, string $error): void
-    {
+    public function testSinksOfExtensionsWithoutTheirStubs(
+        string $class,
+        string $method,
+        string $error,
+        string $argument = '$input',
+    ): void {
         if (!class_exists($class)) {
             // without its stub, Psalm only knows the class of an extension that PHP loads
             $this->markTestSkipped('The extension of ' . $class . ' is not loaded');
@@ -2643,7 +2704,7 @@ final class ConfigTest extends DeferredAnalyzerTestCase
                     if (!is_string($input)) {
                         return;
                     }
-                    $object->' . $method . '($input);
+                    $object->' . $method . '(' . $argument . ');
                 }',
         );
 
@@ -3999,6 +4060,39 @@ final class ConfigTest extends DeferredAnalyzerTestCase
         $this->assertFalse($config->isSuppressible('TaintedHtml'));
         $this->assertFalse($config->isSuppressible('TaintedSql'));
         $this->assertFalse($config->isSuppressible('MixedArgument'));
+        $this->assertTrue($config->isSuppressible('InvalidArgument'));
+    }
+
+    public function testUnsuppressibleSecurityIssues(): void
+    {
+        $config = Config::loadFromXML(
+            (string) getcwd(),
+            <<<XML
+            <?xml version="1.0"?>
+            <psalm errorLevel="8">
+                <issueHandlers>
+                    <WeakHash errorLevel="suppress" />
+                </issueHandlers>
+                <unsuppressibleIssues>
+                    <issue name="SecurityIssue" />
+                </unsuppressibleIssues>
+            </psalm>
+            XML,
+        );
+
+        $this->assertSame(
+            Config::REPORT_ERROR,
+            $config->getReportingLevelForIssue(
+                new WeakHash(
+                    'md5 is a weak hash',
+                    new Raw('aaa', 'aaa.php', 'aaa.php', 1, 2),
+                ),
+            ),
+        );
+        $this->assertFalse($config->isSuppressible('WeakHash'));
+        $this->assertFalse($config->isSuppressible('InsecureCookie'));
+        $this->assertFalse($config->isSuppressible('TaintedInput'));
+        $this->assertFalse($config->isSuppressible('TaintedSql'));
         $this->assertTrue($config->isSuppressible('InvalidArgument'));
     }
 

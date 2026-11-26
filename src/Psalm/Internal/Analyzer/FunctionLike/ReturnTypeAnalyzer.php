@@ -35,6 +35,7 @@ use Psalm\Internal\Type\IterationPurity;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Internal\TypeVisitor\ConditionTypeCollector;
 use Psalm\Internal\TypeVisitor\TypeChecker;
 use Psalm\Issue\ImplicitToStringCast;
 use Psalm\Issue\InvalidFalsableReturnType;
@@ -51,6 +52,7 @@ use Psalm\Issue\MoreSpecificReturnType;
 use Psalm\Issue\UnresolvableConstant;
 use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
+use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Storage\TemplateVariance;
@@ -87,8 +89,14 @@ final class ReturnTypeAnalyzer
             && $fq_class_name !== null
             && !$storage->final
             && $storage->visibility !== ClassLikeAnalyzer::VISIBILITY_PRIVATE
-            && !$codebase->classlike_storage_provider->get($fq_class_name)->final
-            && !$codebase->classlike_storage_provider->get($fq_class_name)->anonymous;
+            && (
+                // a return type declared in a trait also applies to the other classes using it, final or not
+                ($storage->return_type !== null
+                    && $storage->defining_fqcln !== null
+                    && $codebase->classlike_storage_provider->get($storage->defining_fqcln)->is_trait)
+                || (!$codebase->classlike_storage_provider->get($fq_class_name)->final
+                    && !$codebase->classlike_storage_provider->get($fq_class_name)->anonymous)
+            );
     }
 
     /**
@@ -199,6 +207,21 @@ final class ReturnTypeAnalyzer
         }
 
         $cased_method_id = $function_like_analyzer->getCorrectlyCasedMethodId();
+
+        // a docblock type the signature rules out is reported by checkReturnType(): the body is checked against what
+        // PHP enforces
+        if ($return_type
+            && $function_like_storage
+            && $function_like_storage->signature_return_type
+            && self::isDocblockReturnTypeRejected(
+                $codebase,
+                $function_like_storage,
+                $fq_class_name ?? $source->getFQCLN(),
+                $function instanceof Closure || $function instanceof ArrowFunction,
+            )
+        ) {
+            $return_type = $function_like_storage->signature_return_type;
+        }
 
         if (!$function->getStmts() &&
             (
@@ -564,7 +587,9 @@ final class ReturnTypeAnalyzer
             && !$inferred_yield_types
             && (!$function_like_storage || !$function_like_storage->has_yield)
         ) {
-            if ($declared_return_type->isVoid() || $declared_return_type->isNever()) {
+            if (($declared_return_type->isVoid() && !$declared_return_type->explicit_never)
+                || $declared_return_type->isNever()
+            ) {
                 return null;
             }
 
@@ -592,7 +617,9 @@ final class ReturnTypeAnalyzer
                 return null;
             }
 
-            if (!$declared_return_type->from_docblock || !$declared_return_type->isNullable()) {
+            if (!$declared_return_type->isVoid()
+                && (!$declared_return_type->from_docblock || !$declared_return_type->isNullable())
+            ) {
                 if (IssueBuffer::accepts(
                     new InvalidReturnType(
                         'No return statements were found for method ' . $cased_method_id .
@@ -624,7 +651,8 @@ final class ReturnTypeAnalyzer
 
         if (!$declared_return_type->hasMixed()) {
             if ($inferred_return_type->isVoid()
-                && ($declared_return_type->isVoid() || ($function_like_storage && $function_like_storage->has_yield))
+                && (($declared_return_type->isVoid() && !$declared_return_type->explicit_never)
+                    || ($function_like_storage && $function_like_storage->has_yield))
             ) {
                 return null;
             }
@@ -657,7 +685,7 @@ final class ReturnTypeAnalyzer
                 // a generator function returns its Generator even if its body never ends
                 && !$function_like_storage?->has_yield
                 // never return type only available from PHP 8.1 in non-docblock
-                && ($declared_return_type->from_docblock || $codebase->analysis_php_version_id >= 8_10_00)
+                && ($declared_return_type->from_docblock || $codebase->analysis_php_version_id >= 8_01_00)
                 // no error for single throw, as extending a class might not work without errors
                 // https://3v4l.org/vCSF4#v8.1.12
                 && !ScopeAnalyzer::onlyThrows($function_stmts)
@@ -1021,6 +1049,17 @@ final class ReturnTypeAnalyzer
                 $classlike_storage->name ?? null,
                 $classlike_storage->name ?? null,
                 $parent_class,
+                true,
+                true,
+            );
+
+            self::checkConditionTypes(
+                $storage->return_type,
+                $function_like_analyzer,
+                $classlike_storage,
+                $parent_class,
+                $storage,
+                $context,
             );
 
             /** @psalm-suppress UnusedMethodCall Actually generates issues */
@@ -1084,6 +1123,15 @@ final class ReturnTypeAnalyzer
             $fleshed_out_return_type = $storage->return_type;
         }
 
+        $conditions_valid = self::checkConditionTypes(
+            $storage->return_type,
+            $function_like_analyzer,
+            $classlike_storage,
+            $parent_class,
+            $storage,
+            null,
+        );
+
         if (!self::checkTypeAsReturned(
             $fleshed_out_return_type,
             $function_like_analyzer,
@@ -1091,7 +1139,7 @@ final class ReturnTypeAnalyzer
             $storage->suppressed_issues,
             $storage instanceof MethodStorage && $storage->inherited_return_type,
             null,
-        )) {
+        ) || !$conditions_valid) {
             return false;
         }
 
@@ -1124,17 +1172,7 @@ final class ReturnTypeAnalyzer
             }
         }
 
-        $union_comparison_result = new TypeComparisonResult();
-
-        if (!UnionTypeComparator::isContainedBy(
-            $codebase,
-            $fleshed_out_return_type,
-            $fleshed_out_signature_type,
-            false,
-            false,
-            $union_comparison_result,
-        ) && !$union_comparison_result->type_coerced_from_mixed
-        ) {
+        if (!self::isContainedBySignatureType($codebase, $fleshed_out_return_type, $fleshed_out_signature_type)) {
             if ($codebase->alter_code
                 && isset($project_analyzer->getIssuesToFix()['MismatchingDocblockReturnType'])
             ) {
@@ -1148,7 +1186,7 @@ final class ReturnTypeAnalyzer
                 return null;
             }
 
-            if (IssueBuffer::accepts(
+            IssueBuffer::maybeAdd(
                 new MismatchingDocblockReturnType(
                     'Docblock has incorrect return type \'' . $storage->return_type->getId() .
                         '\', should be \'' . $storage->signature_return_type->getId() . '\'',
@@ -1156,12 +1194,101 @@ final class ReturnTypeAnalyzer
                 ),
                 $storage->suppressed_issues,
                 true,
-            )) {
-                return false;
-            }
+            );
         }
 
         return null;
+    }
+
+    /**
+     * Whether the docblock return type of a function-like is ruled out by its signature type, which is reported as a
+     * MismatchingDocblockReturnType: the docblock type is then rejected and the signature type is the declared one.
+     * That is only where checkReturnType() reports it: not for a closure or an arrow function.
+     */
+    public static function isDocblockReturnTypeRejected(
+        Codebase $codebase,
+        FunctionLikeStorage $storage,
+        ?string $self_class,
+        bool $is_closure,
+    ): bool {
+        if ($is_closure
+            || !$storage->return_type
+            || !$storage->return_type_location
+            || !$storage->signature_return_type
+            || $storage->signature_return_type === $storage->return_type
+        ) {
+            return false;
+        }
+
+        $classlike_storage = $self_class !== null ? $codebase->classlike_storage_provider->get($self_class) : null;
+        $parent_class = $classlike_storage?->parent_class;
+
+        $signature_type = TypeExpander::expandUnion(
+            $codebase,
+            $storage->signature_return_type,
+            $classlike_storage->name ?? null,
+            $classlike_storage->name ?? null,
+            $parent_class,
+        );
+
+        try {
+            $return_type = TypeExpander::expandUnion(
+                $codebase,
+                $storage->return_type,
+                $classlike_storage->name ?? null,
+                $classlike_storage->name ?? null,
+                $parent_class,
+                true,
+                true,
+                false,
+                false,
+                false,
+                true,
+            );
+        } catch (UnresolvableConstantException) {
+            return false;
+        }
+
+        if ($classlike_storage && $self_class !== null && $storage->cased_name !== null) {
+            $class_template_params = ClassTemplateParamCollector::collect(
+                $codebase,
+                $classlike_storage,
+                $classlike_storage,
+                strtolower($storage->cased_name),
+                new TNamedObject($self_class),
+                true,
+            );
+
+            if ($class_template_params !== null && $class_template_params !== []) {
+                $return_type = TemplateStandinTypeReplacer::replace(
+                    $return_type,
+                    new TemplateResult($class_template_params, []),
+                    $codebase,
+                    null,
+                    null,
+                    null,
+                );
+            }
+        }
+
+        return !self::isContainedBySignatureType($codebase, $return_type, $signature_type);
+    }
+
+    private static function isContainedBySignatureType(
+        Codebase $codebase,
+        Union $return_type,
+        Union $signature_type,
+    ): bool {
+        $union_comparison_result = new TypeComparisonResult();
+
+        return UnionTypeComparator::isContainedBy(
+            $codebase,
+            $return_type,
+            $signature_type,
+            false,
+            false,
+            $union_comparison_result,
+        ) || $union_comparison_result->type_coerced_from_mixed;
     }
 
     /**
@@ -1221,6 +1348,49 @@ final class ReturnTypeAnalyzer
             $inferred_return_type->canBeFullyExpressedInPhp($codebase->analysis_php_version_id),
             $function_like_storage->return_type_description ?? null,
         );
+    }
+
+    /**
+     * The types a conditional return type tests its subject against are not part of the expanded type, which
+     * only keeps the branch that applies
+     */
+    private static function checkConditionTypes(
+        Union $return_type,
+        FunctionLikeAnalyzer $function_like_analyzer,
+        ?ClassLikeStorage $classlike_storage,
+        ?string $parent_class,
+        FunctionLikeStorage $storage,
+        ?Context $context,
+    ): bool {
+        if ($storage->return_type_location === null) {
+            return true;
+        }
+
+        $collector = new ConditionTypeCollector();
+        $collector->traverse($return_type);
+
+        $valid = true;
+
+        foreach ($collector->getConditions() as $condition) {
+            if (!self::checkTypeAsReturned(
+                TypeExpander::expandUnion(
+                    $function_like_analyzer->getCodebase(),
+                    $condition,
+                    $classlike_storage->name ?? null,
+                    $classlike_storage->name ?? null,
+                    $parent_class,
+                ),
+                $function_like_analyzer,
+                $storage->return_type_location,
+                $storage->suppressed_issues,
+                false,
+                $context,
+            )) {
+                $valid = false;
+            }
+        }
+
+        return $valid;
     }
 
     /**

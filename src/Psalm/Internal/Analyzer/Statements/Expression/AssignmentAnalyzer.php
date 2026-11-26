@@ -35,6 +35,7 @@ use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\Statements\GlobalAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
+use Psalm\Internal\Codebase\CanonicalPaths;
 use Psalm\Internal\Codebase\CombinedFlowGraph;
 use Psalm\Internal\Codebase\DataFlowGraph;
 use Psalm\Internal\Codebase\DatabaseTaints;
@@ -929,6 +930,19 @@ final class AssignmentAnalyzer
                     $context->vars_in_scope[$var_id] = $new_mutable->freeze();
                     $context->has_returned = false;
                 } else {
+                    // what is read of the variable is a use of what it is assigned, never or not
+                    self::analyzeAssignValueDataFlow(
+                        $statements_analyzer,
+                        $codebase,
+                        $assign_var,
+                        $assign_value,
+                        $assign_expr,
+                        $assign_value_type,
+                        $var_id,
+                        $context,
+                        $removed_taints,
+                    );
+
                     $context->inside_assignment = $was_in_assignment;
 
                     return $context->vars_in_scope[$var_id];
@@ -3387,7 +3401,7 @@ final class AssignmentAnalyzer
                     ? $assign_value->expr
                     : $assign_value;
 
-                if ($assign_value_type->getId() === 'bool'
+                if ($assign_value_type->isBool()
                     && $assign_value !== null
                     && ($assigned_condition instanceof PhpParser\Node\Expr\BinaryOp
                         || $assigned_condition instanceof PhpParser\Node\Expr\Instanceof_
@@ -3646,6 +3660,7 @@ final class AssignmentAnalyzer
                             $assigned_type,
                             $var_node,
                         );
+                        CanonicalPaths::recordFlow($taint_flow_graph, $assigned_type->parent_nodes, $var_node);
                     }
                 }
             }

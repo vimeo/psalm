@@ -44,6 +44,7 @@ use Psalm\Internal\Codebase\CliOutput;
 use Psalm\Internal\Codebase\CombinedFlowGraph;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\VariableUseGraph;
+use Psalm\Internal\Crash\CrashContext;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\Perf;
@@ -76,6 +77,7 @@ use Psalm\Storage\Capabilities;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
+use Throwable;
 use UnexpectedValueException;
 
 use function array_change_key_case;
@@ -88,7 +90,6 @@ use function assert;
 use function count;
 use function explode;
 use function fwrite;
-use function hrtime;
 use function is_string;
 use function preg_match;
 use function preg_replace;
@@ -298,18 +299,23 @@ final class StatementsAnalyzer extends SourceAnalyzer
             }
 
             foreach ($stmts as $stmt) {
-                if (Perf\Collector::$enabled) {
-                    $perf_outer_child_ns = Perf\Collector::$child_ns;
-                    Perf\Collector::$child_ns = 0;
-                    $perf_start_ns = (int) hrtime(true);
-                    $analysis_result = self::analyzeStatement($this, $stmt, $context, $global_context);
-                    Perf\Collector::statementEnd($this, $stmt, $perf_start_ns, $perf_outer_child_ns);
+                try {
+                    if (Perf\Collector::$enabled) {
+                        $perf_outer_child_ns = Perf\Collector::$child_ns;
+                        Perf\Collector::$child_ns = 0;
+                        $perf_start_ns = Perf\Collector::nowNs();
+                        $analysis_result = self::analyzeStatement($this, $stmt, $context, $global_context);
+                        Perf\Collector::statementEnd($this, $stmt, $perf_start_ns, $perf_outer_child_ns);
 
-                    if ($analysis_result === false) {
+                        if ($analysis_result === false) {
+                            return false;
+                        }
+                    } elseif (self::analyzeStatement($this, $stmt, $context, $global_context) === false) {
                         return false;
                     }
-                } elseif (self::analyzeStatement($this, $stmt, $context, $global_context) === false) {
-                    return false;
+                } catch (Throwable $e) {
+                    CrashContext::recordStatement($e, $this, $stmt);
+                    throw $e;
                 }
 
                 if ($stmt === $this->cli_instance_guard) {
@@ -624,14 +630,19 @@ final class StatementsAnalyzer extends SourceAnalyzer
         PhpParser\Node\Stmt\ClassLike $stmt,
         ?Context $global_context,
     ): void {
+        // the storage is keyed by the name in the namespace the class is declared in
+        $fq_class_name = $stmt->name !== null
+            ? Type::getFQCLNFromString($stmt->name->name, $statements_analyzer->getAliases())
+            : null;
+
         try {
-            if ($stmt instanceof PhpParser\Node\Stmt\Interface_ && $stmt->name !== null) {
-                (new InterfaceAnalyzer($stmt, $statements_analyzer->source, $stmt->name->name))->analyze();
+            if ($stmt instanceof PhpParser\Node\Stmt\Interface_ && $fq_class_name !== null) {
+                (new InterfaceAnalyzer($stmt, $statements_analyzer->source, $fq_class_name))->analyze();
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Class_ || $stmt instanceof PhpParser\Node\Stmt\Enum_) {
                 $class_analyzer = new ClassAnalyzer(
                     $stmt,
                     $statements_analyzer->source,
-                    $stmt->name->name ?? null,
+                    $fq_class_name,
                 );
 
                 $class_analyzer->analyze(null, $global_context);
