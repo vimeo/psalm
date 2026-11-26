@@ -48,6 +48,7 @@ use UnitEnum;
 use function array_any;
 use function array_filter;
 use function array_intersect_key;
+use function array_key_first;
 use function array_keys;
 use function array_merge;
 use function array_pop;
@@ -746,6 +747,15 @@ final class Populator
         $this->inheritPropertyTypes($storage);
 
         $this->populateOverriddenMethods($storage, $storage_provider);
+
+        // these usually hold the same ids, so that one array can serve them
+        if ($storage->inheritable_method_ids === $storage->declaring_method_ids) {
+            $storage->inheritable_method_ids = $storage->declaring_method_ids;
+        }
+
+        if ($storage->appearing_method_ids === $storage->declaring_method_ids) {
+            $storage->appearing_method_ids = $storage->declaring_method_ids;
+        }
 
         $this->progress->debug('Have populated ' . $storage->name . "\n");
 
@@ -1960,6 +1970,37 @@ final class Populator
         return $names;
     }
 
+    /**
+     * A class that doesn't declare the method gets the array of its parent when that one starts with the same id, which
+     * is what adding the id and then the parent's ids would build, so that each class of a deep hierarchy doesn't hold
+     * a copy of it
+     *
+     * @param lowercase-string $method_name_lc
+     * @return bool whether the class now has the array of its parent
+     */
+    private static function addOverriddenMethodId(
+        ClassLikeStorage $storage,
+        ClassLikeStorage $parent_storage,
+        string $method_name_lc,
+        MethodIdentifier $declaring_method_id,
+    ): bool {
+        $parent_overridden_method_ids = $parent_storage->overridden_method_ids[$method_name_lc] ?? [];
+        $first_class = array_key_first($parent_overridden_method_ids);
+
+        if (!isset($storage->overridden_method_ids[$method_name_lc])
+            && $first_class === $declaring_method_id->fq_class_name
+            && $parent_overridden_method_ids[$first_class] === $declaring_method_id
+        ) {
+            $storage->overridden_method_ids[$method_name_lc] = $parent_overridden_method_ids;
+
+            return true;
+        }
+
+        $storage->overridden_method_ids[$method_name_lc][$declaring_method_id->fq_class_name] = $declaring_method_id;
+
+        return false;
+    }
+
     private function inheritMethodsFromParent(
         ClassLikeStorage $storage,
         ClassLikeStorage $parent_storage,
@@ -2013,6 +2054,8 @@ final class Populator
                 || ($this->classlike_storage_provider->get($declaring_method_id->fq_class_name)
                     ->methods['__construct'] ?? null)?->abstract
             ) {
+                $shares_parent_overridden_method_ids = false;
+
                 if ($parent_storage->is_trait) {
                     $declaring_class = $declaring_method_id->fq_class_name;
                     $declaring_class_storage = $this->classlike_storage_provider->get($declaring_class);
@@ -2020,8 +2063,12 @@ final class Populator
                     if (isset($declaring_class_storage->methods[$method_name_lc])
                         && $declaring_class_storage->methods[$method_name_lc]->abstract
                     ) {
-                        $storage->overridden_method_ids[$method_name_lc][$declaring_method_id->fq_class_name]
-                            = $declaring_method_id;
+                        $shares_parent_overridden_method_ids = self::addOverriddenMethodId(
+                            $storage,
+                            $parent_storage,
+                            $method_name_lc,
+                            $declaring_method_id,
+                        );
                     }
                 } else {
                     // A method can end up in $parent_storage->inheritable_method_ids
@@ -2048,12 +2095,17 @@ final class Populator
                     if ($declaring_method_storage === null
                         || $declaring_visibility !== ClassLikeAnalyzer::VISIBILITY_PRIVATE
                     ) {
-                        $storage->overridden_method_ids[$method_name_lc][$declaring_method_id->fq_class_name]
-                            = $declaring_method_id;
+                        $shares_parent_overridden_method_ids = self::addOverriddenMethodId(
+                            $storage,
+                            $parent_storage,
+                            $method_name_lc,
+                            $declaring_method_id,
+                        );
                     }
                 }
 
-                if (isset($parent_storage->overridden_method_ids[$method_name_lc])
+                if (!$shares_parent_overridden_method_ids
+                    && isset($parent_storage->overridden_method_ids[$method_name_lc])
                     && isset($storage->overridden_method_ids[$method_name_lc])
                 ) {
                     $storage->overridden_method_ids[$method_name_lc]
