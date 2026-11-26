@@ -180,11 +180,31 @@ final class CodeLocationTest extends BaseTestCase
         $this->assertSame(16, $location->getColumn());
     }
 
+    public function testDocblockSelectionAfterCodeOnItsLine(): void
+    {
+        $contents = "<?php\n\$s = '@'; \$b = 1; /** @param int \$b */ function f(string \$a): void {}\n";
+        $location = $this->locateWithCommentLine($contents, 'function f(string $a): void {}', 2, 2);
+
+        $this->assertSame('$b', $location->getSelectedText());
+        $this->assertSame(34, $location->getColumn());
+    }
+
+    public function testDocblockSelectionBeforeCodeOnItsLine(): void
+    {
+        $contents = "<?php\n/** @var int */ \$x = 1;\n";
+        $location = $this->locateWithCommentLine($contents, '1', 2, 2, null, null);
+
+        $this->assertSame('@var int', $location->getSelectedText());
+        $this->assertSame(5, $location->getColumn());
+    }
+
     private function locateWithCommentLine(
         string $contents,
         string $selection,
         int $line,
         int $comment_line,
+        ?int $regex_type = CodeLocation::FUNCTION_PARAM_VAR,
+        ?string $selected_text = '$b',
     ): CodeLocation {
         $this->file_provider->registerFile(self::FILE, $contents);
 
@@ -202,8 +222,8 @@ final class CodeLocationTest extends BaseTestCase
             $node,
             null,
             true,
-            CodeLocation::FUNCTION_PARAM_VAR,
-            '$b',
+            $regex_type,
+            $selected_text,
             $comment_line,
         );
     }

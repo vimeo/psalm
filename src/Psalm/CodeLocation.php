@@ -297,10 +297,16 @@ class CodeLocation
             $key_line = substr(
                 $file_contents,
                 $line_start,
-                ($line_end === false ? $file_length : $line_end) - $line_start,
+                min($line_end === false ? $file_length : $line_end, $this->file_start) - $line_start,
             );
 
-            $indentation = (int)strpos($key_line, '@');
+            // On a line holding code too, the tag is in the last doc comment before the node, up to its end
+            $comment_start = strrpos($key_line, '/**');
+            $indentation = (int)strpos($key_line, '@', $comment_start === false ? 0 : $comment_start);
+            $comment_end = strpos($key_line, '*/', $indentation);
+            if ($comment_end !== false) {
+                $key_line = substr($key_line, 0, $comment_end);
+            }
 
             $key_line = trim((string) preg_replace('@\**/\s*@', '', substr($key_line, $indentation)));
 
