@@ -1339,6 +1339,46 @@ final class UnusedCodeTest extends TestCase
                         }
                     }',
             ],
+            'variableUsedAfterAMethodCallOnTheItemOfALoopOverNothingIsUsed' => [
+                'code' => '<?php
+                    /** @psalm-api */
+                    final class User {
+                        public function name(): string {
+                            return "";
+                        }
+                    }
+
+                    /**
+                     * @psalm-api
+                     * @param list<never> $nothing
+                     */
+                    function f(array $nothing): void {
+                        $prefix = "item";
+
+                        foreach ($nothing as $user) {
+                            $user->name();
+                            echo $prefix;
+                        }
+                    }',
+            ],
+            'copyOfTheItemOfALoopOverNothingIsUsed' => [
+                'code' => '<?php
+                    /** @psalm-api */
+                    final class User {
+                        public int $id = 0;
+                    }
+
+                    /**
+                     * @psalm-api
+                     * @param list<never> $nothing
+                     */
+                    function f(array $nothing): void {
+                        foreach ($nothing as $user) {
+                            $copy = $user;
+                            echo $copy->id;
+                        }
+                    }',
+            ],
             'unusedVariableSuppressedInAClosure' => [
                 'code' => '<?php
                     /** @psalm-api */

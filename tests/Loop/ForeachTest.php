@@ -5119,6 +5119,52 @@ final class ForeachTest extends TestCase
                 PHP,
                 'error_message' => 'InvalidArgument',
             ],
+            'foreachOverNeverMethodCallOnTheItemDoesNotHideTheRestOfTheBody' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class User {
+                        public function name(): string {
+                            return '';
+                        }
+                    }
+
+                    /** @return list<never> */
+                    function nothing(): array {
+                        return [];
+                    }
+
+                    function f(): void {
+                        foreach (nothing() as $user) {
+                            $user->name();
+                            undefined_function();
+                        }
+                    }
+                PHP,
+                'error_message' => 'UndefinedFunction - src' . DIRECTORY_SEPARATOR . 'somefile.php:16:13',
+            ],
+            'foreachOverNeverMethodCallOnTheItemDoesNotHideAnInvalidArgumentAfterIt' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class User {
+                        public function name(): string {
+                            return '';
+                        }
+                    }
+
+                    /** @return list<never> */
+                    function nothing(): array {
+                        return [];
+                    }
+
+                    function f(): void {
+                        foreach (nothing() as $user) {
+                            $user->name();
+                            echo strlen([]);
+                        }
+                    }
+                PHP,
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:16:25',
+            ],
             'foreachOverAnEmptyListOrAListOfIntsStillChecksItsInts' => [
                 'code' => <<<'PHP'
                     <?php
