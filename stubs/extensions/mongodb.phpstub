@@ -271,6 +271,16 @@ namespace MongoDB\Driver
     interface CursorInterface extends Iterator
     {
         /**
+         * @return TValue
+         */
+        public function current(): array|object|null;
+
+        /**
+         * @return TKey
+         */
+        public function key(): int|null;
+
+        /**
          * @return array<TValue>
          */
         public function toArray();
