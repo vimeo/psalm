@@ -8242,7 +8242,7 @@ final class ClassTemplateTest extends TestCase
                      * @template T of int =
                      */
                     final class A {}',
-                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:33 - Missing default after = for template T in docblock for A',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:24 - Missing default after = for template T in docblock for A',
             ],
             'methodParamBoundByTheReceiverIsInvariantOnAnArgument' => [
                 'code' => '<?php
