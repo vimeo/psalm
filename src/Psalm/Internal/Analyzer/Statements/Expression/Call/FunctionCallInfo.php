@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
 
 use PhpParser;
+use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Type\Union;
@@ -51,13 +52,19 @@ final class FunctionCallInfo
      */
     public array $callable_ids = [];
 
+    /** @var array<string, array<string, DataFlowNode>> Captured receivers of each possible method. */
+    public array $bound_receivers = [];
+
     /**
      * @param non-empty-lowercase-string $callable_id
      * @psalm-capabilities read-props|write-this-props|write-refs
      */
-    public function addCallableId(string $callable_id): void
+    public function addCallableId(string $callable_id, ?DataFlowNode $receiver = null): void
     {
         $this->callable_ids[$callable_id] = true;
+        if ($receiver !== null) {
+            $this->bound_receivers[$callable_id][$receiver->id] = $receiver;
+        }
     }
 
     /**

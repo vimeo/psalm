@@ -1370,6 +1370,8 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             && $cased_method_id
             && $storage->specialize_call
             && $storage->location
+            && $storage instanceof MethodStorage
+            && !$storage->preserves_receiver_taints
             && isset($context->vars_in_scope['$this'])
             && $context->vars_in_scope['$this']->parent_nodes
         ) {

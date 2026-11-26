@@ -7,6 +7,7 @@ namespace Psalm\Type\Atomic;
 use Override;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Storage\Capabilities;
 use Psalm\Storage\FunctionLikeParameter;
@@ -62,6 +63,7 @@ final class TClosure extends TNamedObject
         public ?string $callable_id = null,
         public array $byref_use_scopes = [],
         public array $byref_use_types = [],
+        public ?DataFlowNode $bound_receiver = null,
     ) {
         $this->params = $params;
         $this->return_type = $return_type;
@@ -76,6 +78,18 @@ final class TClosure extends TNamedObject
     }
 
     /**
+     * @param non-empty-lowercase-string $callable_id The method on the class of the bound object.
+     * @psalm-mutation-free
+     */
+    public function withBoundReceiver(DataFlowNode $receiver, string $callable_id): self
+    {
+        $closure = clone $this;
+        $closure->bound_receiver = $receiver;
+        $closure->callable_id = $callable_id;
+        return $closure;
+    }
+
+    /**
      * Closures made from different functions or methods are kept apart, though their types read the same
      */
     #[Override]
@@ -83,7 +97,8 @@ final class TClosure extends TNamedObject
     {
         $key = $this->getPurityString() . $this->getParamString() . $this->getReturnTypeString();
 
-        return $this->callable_id === null ? $key : $key . '#' . $this->callable_id;
+        $key = $this->callable_id === null ? $key : $key . '#' . $this->callable_id;
+        return $this->bound_receiver === null ? $key : $key . '#' . $this->bound_receiver->id;
     }
 
     #[Override]
@@ -91,6 +106,7 @@ final class TClosure extends TNamedObject
     {
         return $other_type instanceof self
             && $this->callable_id === $other_type->callable_id
+            && $this->bound_receiver?->id === $other_type->bound_receiver?->id
             && parent::equals($other_type, $ensure_source_equality);
     }
 
@@ -147,6 +163,7 @@ final class TClosure extends TNamedObject
             $this->callable_id,
             $this->byref_use_scopes,
             $this->byref_use_types,
+            $this->bound_receiver,
         );
     }
 
@@ -203,6 +220,7 @@ final class TClosure extends TNamedObject
             $this->callable_id,
             $this->byref_use_scopes,
             $this->byref_use_types,
+            $this->bound_receiver,
         );
     }
 

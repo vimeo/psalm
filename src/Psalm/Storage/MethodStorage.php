@@ -16,6 +16,9 @@ final class MethodStorage extends FunctionLikeStorage
     use UnserializeMemoryUsageSuppressionTrait;
     public bool $is_static = false;
 
+    /** A specialized call to this method keeps the receiver's incoming taint nodes. */
+    public bool $preserves_receiver_taints = false;
+
     /**
      * The properties a constructor without a purity annotation assigns, if it only does that and was given what
      * that needs (see FunctionLikeNodeScanner::applyTrivialConstructorCapabilities())

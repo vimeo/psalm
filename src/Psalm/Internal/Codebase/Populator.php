@@ -162,6 +162,49 @@ final class Populator
     }
 
     /**
+     * A readonly class (whose subclasses PHP requires to be readonly too), or a final class without a parent
+     * whose properties are all readonly or computed by a get hook.
+     * Properties annotated @psalm-readonly-allow-private-mutation count as mutable.
+     *
+     * @psalm-capabilities read-props
+     */
+    private function cannotChangeOnceConstructed(ClassLikeStorage $storage): bool
+    {
+        if ($storage->is_interface || $storage->is_trait || $storage->is_enum) {
+            return false;
+        }
+
+        if ($storage->readonly) {
+            return true;
+        }
+
+        if (!$storage->final || $storage->parent_classes !== []) {
+            return false;
+        }
+
+        $has_instance_property = false;
+
+        // A trait property is kept in the declaring trait's storage.
+        foreach ($storage->declaring_property_ids as $name => $declaring_class) {
+            $property = $this->classlike_storage_provider->get($declaring_class)->properties[$name] ?? null;
+            if ($property === null) {
+                return false;
+            }
+
+            if ($property->is_static) {
+                continue;
+            }
+            $has_instance_property = true;
+            $computed = $property->hook_get !== null && $property->hook_set === null && !$property->is_promoted;
+            if ((!$property->readonly || $property->allow_private_mutation) && !$computed) {
+                return false;
+            }
+        }
+
+        return $has_instance_property;
+    }
+
+    /**
      * Applies a `@psalm-capabilities` value naming imported type aliases, which the scanner
      * could not resolve because the declaring class may not have been scanned yet.
      */
@@ -721,6 +764,21 @@ final class Populator
                         $property->readonly = true;
                         $property->readonly_public_set = false;
                     }
+                }
+            }
+        }
+
+        // A readonly object cannot change once constructed: its properties hold the taints of its own
+        // construction rather than those of every object of its class
+        if (!$storage->specialize_instance && $this->cannotChangeOnceConstructed($storage)) {
+            $storage->specialize_instance = true;
+            foreach ($storage->methods as $name => $method) {
+                // Readonly properties can be initialized late and can hold mutable objects.
+                if (!$method->is_static && $name !== '__construct'
+                    && ($method->writes_only_this_properties || $method->isMutationFree())
+                    && $method->this_property_mutations === null
+                ) {
+                    $method->preserves_receiver_taints = true;
                 }
             }
         }

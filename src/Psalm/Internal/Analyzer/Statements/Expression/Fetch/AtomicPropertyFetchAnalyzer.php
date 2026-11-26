@@ -1014,77 +1014,7 @@ final class AtomicPropertyFetchAnalyzer
             $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
         }
 
-        if ($class_storage->specialize_instance) {
-            $var_id = ExpressionIdentifier::getExtendedVarId(
-                $stmt->var,
-                null,
-                $statements_analyzer,
-            );
-
-            $var_property_id = ExpressionIdentifier::getExtendedVarId(
-                $stmt,
-                null,
-                $statements_analyzer,
-            );
-
-            if ($var_id) {
-                $var_type = $statements_analyzer->node_data->getType($stmt->var);
-
-                $graph = $statements_analyzer->getDataFlowGraphWithSuppressed();
-                if (!$graph) {
-                    if ($var_type) {
-                        $statements_analyzer->node_data->setType($stmt->var, $var_type->setParentNodes([]));
-                    }
-                    return;
-                }
-
-                $var_location = new CodeLocation($statements_analyzer->getSource(), $stmt->var);
-                $property_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
-
-                $var_node = DataFlowNode::getForAssignment(
-                    $var_id,
-                    $var_location,
-                );
-
-                $graph->addNode($var_node);
-
-                $property_node = DataFlowNode::getForAssignment(
-                    $var_property_id ?: $var_id . '->$property',
-                    $property_location,
-                );
-
-                $graph->addNode($property_node);
-
-                $graph->addPath(
-                    $var_node,
-                    $property_node,
-                    'property-fetch'
-                        . ($stmt->name instanceof PhpParser\Node\Identifier ? '-' . $stmt->name : ''),
-                    $added_taints,
-                    $removed_taints,
-                );
-
-                if ($var_type && $var_type->parent_nodes) {
-                    foreach ($var_type->parent_nodes as $parent_node) {
-                        $data_flow_graph->addPath(
-                            $parent_node,
-                            $var_node,
-                            '=',
-                            $added_taints,
-                            $removed_taints,
-                        );
-                    }
-                }
-
-                $type = $type->setParentNodes([$property_node->id => $property_node], true);
-
-                $taints = $added_taints & ~$removed_taints;
-                if ($taints !== 0 && !$graph instanceof VariableUseGraph) {
-                    $taint_source = $var_node->setTaints($taints);
-                    $graph->addSource($taint_source);
-                }
-            }
-        } else {
+        if (!$class_storage->specialize_instance) {
             self::processUnspecialTaints(
                 $statements_analyzer,
                 $stmt,
@@ -1094,6 +1024,76 @@ final class AtomicPropertyFetchAnalyzer
                 $added_taints,
                 $removed_taints,
             );
+            return;
+        }
+
+        // The assignment node is keyed by location, so a temporary receiver needs only a label.
+        $var_id = ExpressionIdentifier::getExtendedVarId(
+            $stmt->var,
+            null,
+            $statements_analyzer,
+        ) ?? 'object';
+
+        $var_property_id = ExpressionIdentifier::getExtendedVarId(
+            $stmt,
+            null,
+            $statements_analyzer,
+        );
+
+        $var_type = $statements_analyzer->node_data->getType($stmt->var);
+
+        $graph = $statements_analyzer->getDataFlowGraphWithSuppressed();
+        if (!$graph) {
+            if ($var_type) {
+                $statements_analyzer->node_data->setType($stmt->var, $var_type->setParentNodes([]));
+            }
+            return;
+        }
+
+        $var_location = new CodeLocation($statements_analyzer->getSource(), $stmt->var);
+        $property_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
+
+        $var_node = DataFlowNode::getForAssignment(
+            $var_id,
+            $var_location,
+        );
+
+        $graph->addNode($var_node);
+
+        $property_node = DataFlowNode::getForAssignment(
+            $var_property_id ?: $var_id . '->$property',
+            $property_location,
+        );
+
+        $graph->addNode($property_node);
+
+        $graph->addPath(
+            $var_node,
+            $property_node,
+            'property-fetch'
+                . ($stmt->name instanceof PhpParser\Node\Identifier ? '-' . $stmt->name : ''),
+            $added_taints,
+            $removed_taints,
+        );
+
+        if ($var_type && $var_type->parent_nodes) {
+            foreach ($var_type->parent_nodes as $parent_node) {
+                $data_flow_graph->addPath(
+                    $parent_node,
+                    $var_node,
+                    '=',
+                    $added_taints,
+                    $removed_taints,
+                );
+            }
+        }
+
+        $type = $type->setParentNodes([$property_node->id => $property_node], true);
+
+        $taints = $added_taints & ~$removed_taints;
+        if ($taints !== 0 && !$graph instanceof VariableUseGraph) {
+            $taint_source = $var_node->setTaints($taints);
+            $graph->addSource($taint_source);
         }
     }
 
