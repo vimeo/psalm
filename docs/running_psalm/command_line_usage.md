@@ -27,6 +27,30 @@ Psalm exits with status `0` when it successfully completed and found no issues,
 successfully but found issues or the [type coverage](#minimum-type-coverage) is
 below the minimum. Any exit status apart from those indicates some internal problem.
 
+## When Psalm crashes
+
+Psalm prints the plugin that threw, if one did, the statement it was analysing, the exception, the path of a full report and a link to report the crash:
+
+```
+Psalm crashed in plugin acme/psalm-crash-plugin 1.2.0 (AfterExpressionAnalysisInterface, Acme\CrashPlugin\ThrowOnBoom)
+while analysing App\Greeter::greet() at src/Greeter.php:10
+LogicException: Cannot greet with boom
+  at vendor/acme/psalm-crash-plugin/src/ThrowOnBoom.php:15
+#0 ...
+(Psalm 7.0.0 crashed due to an uncaught Throwable)
+Full report: .cache/psalm/crash-20261126-140605-88992.txt
+Report it to the plugin: https://github.com/acme/psalm-crash-plugin/issues/new?title=...
+```
+
+The full report holds the versions of Psalm, PHP and its extensions, the OS, the command, the config, the plugins and the whole exception chain. Its paths are relative to the project, to a Composer package or to the home directory. Psalm writes it to the cache directory, or to the temporary directory when the cache is off. `PSALM_CRASH_REPORT` changes that:
+
+```bash
+PSALM_CRASH_REPORT=build/logs ./vendor/bin/psalm   # the report goes to build/logs
+PSALM_CRASH_REPORT=0 ./vendor/bin/psalm            # no report
+```
+
+The link opens an issue on GitHub, Psalm's or the plugin's, with the versions, the exception and the first frames of the trace filled in. It holds no source code and no environment variables, and nothing is sent before you submit the issue. A crash that you fix on your side (a full disk, a file Psalm may not write, an error in `psalm.xml`, a file that changed during the run) gets a line that says what to do instead of a link.
+
 ## Minimum type coverage
 
 `--min-type-coverage` (or the [`minTypeCoverage`](configuration.md#mintypecoverage) config attribute) makes Psalm exit with status `2` when the type coverage is below the given percentage:

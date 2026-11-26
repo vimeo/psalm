@@ -233,7 +233,10 @@ final class PsalmFileChangedDuringRunEndToEndTest extends PsalmEndToEndTestCase
         $this->assertSame(1, substr_count($result['STDERR'], 'LogicException: plugin boom'));
         $this->assertStringNotContainsString('Revolt', $result['STDERR']);
         $this->assertStringNotContainsString('which changed', $result['STDERR']);
-        $this->assertStringEndsWith('crashed due to an uncaught Throwable)' . PHP_EOL, $result['STDERR']);
+        $this->assertStringEndsWith(
+            'crashed due to an uncaught Throwable)' . PHP_EOL . 'Report it to the authors of the plugin' . PHP_EOL,
+            $result['STDERR'],
+        );
     }
 
     /**

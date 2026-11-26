@@ -6,8 +6,11 @@ namespace Psalm\Internal\Crash;
 
 use Amp\Parallel\Worker\Task;
 use Amp\Parallel\Worker\TaskFailureThrowable;
+use Closure;
 use Psalm\Config;
+use Psalm\Exception\ConfigException;
 use Psalm\Internal\CliUtils;
+use Psalm\Internal\FileChangedDuringRunException;
 use Psalm\Internal\Fork\TaskCrashedException;
 use ReflectionClass;
 use RuntimeException;
@@ -15,7 +18,9 @@ use Symfony\Component\Filesystem\Path;
 use Throwable;
 
 use function array_column;
+use function array_map;
 use function array_reverse;
+use function count;
 use function date;
 use function defined;
 use function dirname;
@@ -25,20 +30,25 @@ use function fwrite;
 use function get_loaded_extensions;
 use function getenv;
 use function getmypid;
+use function http_build_query;
 use function implode;
+use function is_a;
 use function is_dir;
 use function is_int;
 use function is_string;
 use function is_subclass_of;
 use function ltrim;
+use function mb_strcut;
 use function mkdir;
 use function php_uname;
 use function phpversion;
+use function preg_match;
 use function preg_replace;
 use function realpath;
 use function rtrim;
 use function simplexml_load_file;
 use function sort;
+use function str_contains;
 use function str_starts_with;
 use function strlen;
 use function strpos;
@@ -51,6 +61,7 @@ use function sys_get_temp_dir;
 use const DIRECTORY_SEPARATOR;
 use const PHP_EOL;
 use const PHP_OS_FAMILY;
+use const PHP_QUERY_RFC3986;
 use const PHP_VERSION;
 use const STDERR;
 
@@ -71,6 +82,21 @@ use const STDERR;
  */
 final class CrashReport
 {
+    private const PSALM_ISSUES = 'https://github.com/vimeo/psalm/issues/new';
+
+    /** VS Code's cap: GitHub answers 414 to longer URLs */
+    private const MAX_URL_LENGTH = 7_500;
+
+    private const MAX_FRAMES = 10;
+
+    /** Errors of the machine Psalm runs on, and what to do about them */
+    private const ENVIRONMENT_ERRORS = [
+        'No space left on device' => 'The disk is full: free some space and run Psalm again',
+        'Too many open files' => 'Psalm has too many files open: raise the limit (ulimit -n) and run Psalm again',
+        'Permission denied' => 'Psalm may not read or write a file: check the permissions of the file in the message',
+        'Read-only file system' => 'Psalm can not write to a read-only file system: check the cache directory',
+    ];
+
     private readonly CrashContext $context;
 
     /** @var non-empty-list<Exception> the exception that was thrown first, then the ones it wraps */
@@ -132,7 +158,7 @@ final class CrashReport
         } catch (Throwable $failure) {
             fwrite(
                 $output,
-                PHP_EOL . 'Uncaught ' . $throwable . PHP_EOL
+                PHP_EOL . 'Uncaught ' . $throwable->__toString() . PHP_EOL
                 . 'Psalm could not report the crash: ' . $failure->getMessage() . PHP_EOL,
             );
 
@@ -149,6 +175,233 @@ final class CrashReport
         } catch (Throwable $failure) {
             fwrite($output, 'Psalm could not write the full report: ' . $failure->getMessage() . PHP_EOL);
         }
+
+        fwrite($output, ($report->getHint() ?? $report->getReportLine()) . PHP_EOL);
+    }
+
+    /**
+     * What the user has to do when the crash is not a bug, as in PHPStan's InternalError::shouldReportBug()
+     *
+     * @psalm-capabilities read-props
+     */
+    public function getHint(): ?string
+    {
+        $config_exception = false;
+        foreach ($this->chain as $exception) {
+            if (is_a($exception['class'], FileChangedDuringRunException::class, true)) {
+                return $exception['message'];
+            }
+
+            foreach (self::ENVIRONMENT_ERRORS as $error => $hint) {
+                if (str_contains($exception['message'], $error)) {
+                    return $hint;
+                }
+            }
+
+            $config_exception = $config_exception || is_a($exception['class'], ConfigException::class, true);
+        }
+
+        // a plugin that fails to load is wrapped in a ConfigException
+        return $config_exception && !$this->isPluginCrash()
+            ? 'Psalm could not load its configuration: fix what the message says and run Psalm again'
+            : null;
+    }
+
+    /**
+     * Where to report the crash, with a link that fills in the report
+     */
+    public function getReportLine(): string
+    {
+        $package = $this->plugin_package;
+        if ($package === null && $this->context->handler !== null) {
+            return 'Report it to the authors of the plugin';
+        }
+
+        try {
+            $url = $package === null ? $this->getPsalmIssueUrl() : $this->getPluginIssueUrl($package);
+        } catch (Throwable) {
+            $url = $package === null ? self::PSALM_ISSUES . '?template=crash.yml' : self::getTracker($package);
+        }
+
+        if ($package === null) {
+            return 'Report the bug to Psalm: ' . $url;
+        }
+
+        return $url === null ? 'Report it to the authors of the plugin' : 'Report it to the plugin: ' . $url;
+    }
+
+    /**
+     * A link to the crash form of Psalm's tracker, filled in
+     */
+    public function getPsalmIssueUrl(): string
+    {
+        $context = $this->getContextLine();
+
+        return $this->fitUrl(
+            self::PSALM_ISSUES,
+            fn(int $max_frames, int $max_length): array => [
+                'template' => 'crash.yml',
+                'title' => $this->getIssueTitle(),
+                'psalm_version' => defined('PSALM_VERSION') ? self::getPsalmVersion() : 'unknown',
+                'php_version' => PHP_VERSION,
+                'os' => self::describeOs(),
+                'plugins' => $this->describePlugins(),
+                'exception' => $this->describeExceptions($max_length),
+                'context' => $context ?? '',
+                'frames' => $this->renderFrames($max_frames),
+            ],
+        );
+    }
+
+    /**
+     * A link to the tracker of a plugin, with the title and the body filled in on GitHub
+     *
+     * @param Package $package
+     */
+    private function getPluginIssueUrl(array $package): ?string
+    {
+        $repository = self::findGithubRepository($package['issues'] ?? $package['source']);
+        if ($repository === null) {
+            return self::getTracker($package);
+        }
+
+        $context = $this->getContextLine();
+        $hook = $this->context->hook === null
+            ? '- Hook: unknown, guessed from the trace' . "\n"
+            : '- Hook: ' . $this->context->hook . ', ' . (string) $this->context->handler . "\n";
+
+        return $this->fitUrl(
+            'https://github.com/' . $repository . '/issues/new',
+            fn(int $max_frames, int $max_length): array => [
+                'title' => $this->getIssueTitle(),
+                'body' => 'Psalm crashed in the plugin.' . "\n\n"
+                    . '- Plugin: ' . $package['name'] . ' ' . ($package['version'] ?? '') . "\n"
+                    . $hook
+                    . '- Psalm: ' . (defined('PSALM_VERSION') ? self::getPsalmVersion() : 'unknown')
+                    . ', PHP ' . PHP_VERSION . ', ' . self::describeOs() . "\n"
+                    . ($context === null ? '' : '- Context: ' . $context . "\n")
+                    . "\n```\n" . $this->describeExceptions($max_length) . "\n" . $this->renderFrames($max_frames)
+                    . "\n```\n\n"
+                    . 'Psalm wrote a full report to a crash-*.txt file: attach it if it helps.' . "\n",
+            ],
+        );
+    }
+
+    /**
+     * The link with the fields, sanitized, and with fewer frames and shorter messages until it fits
+     *
+     * @param Closure(int, int): array<string, string> $fields the fields for a number of frames and a message length
+     */
+    private function fitUrl(string $base, Closure $fields): string
+    {
+        foreach ([[self::MAX_FRAMES, 2_000], [5, 1_000], [0, 500], [0, 100]] as [$max_frames, $max_length]) {
+            $url = $base . '?' . http_build_query(
+                array_map($this->sanitize(...), $fields($max_frames, $max_length)),
+                '',
+                '&',
+                PHP_QUERY_RFC3986,
+            );
+
+            if (strlen($url) <= self::MAX_URL_LENGTH) {
+                return $url;
+            }
+        }
+
+        return $base;
+    }
+
+    /**
+     * The exception that was thrown first, without the details of an error that Psalm turned into an exception
+     *
+     * @psalm-capabilities read-props
+     */
+    private function getIssueTitle(): string
+    {
+        $message = (string) preg_replace(
+            ['# for command with CLI args ".*$#s', '# in \S+:\d+$#', '#^PHP Error: #'],
+            '',
+            $this->chain[0]['message'],
+        );
+
+        return 'Crash: ' . self::cut($this->chain[0]['class'] . ': ' . $message, 200);
+    }
+
+    /**
+     * The class and the message of each exception of the chain
+     *
+     * @psalm-capabilities read-props
+     */
+    private function describeExceptions(int $max_length): string
+    {
+        $exceptions = [];
+        foreach ($this->chain as $exception) {
+            $message = (string) preg_replace('# for command with CLI args ".*$#s', '', $exception['message']);
+            $exceptions[] = $exception['class'] . ': ' . self::cut($message, $max_length);
+        }
+
+        return implode("\nCaused by ", $exceptions);
+    }
+
+    /**
+     * Where the exception that wraps no other was thrown, and the first frames of its trace
+     *
+     * @psalm-capabilities read-props
+     */
+    private function renderFrames(int $max_frames): string
+    {
+        $exception = $this->chain[count($this->chain) - 1];
+        $lines = ['at ' . $exception['file'] . ':' . $exception['line']];
+        foreach ($exception['frames'] as $i => $frame) {
+            if ($i >= $max_frames) {
+                break;
+            }
+
+            $lines[] = self::renderFrame($i, $frame);
+        }
+
+        return implode("\n", $lines);
+    }
+
+    /**
+     * @psalm-pure
+     */
+    private static function cut(string $text, int $max_length): string
+    {
+        return strlen($text) <= $max_length ? $text : mb_strcut($text, 0, $max_length - 3) . '...';
+    }
+
+    /**
+     * The owner and the name of a GitHub repository in its URL
+     *
+     * @psalm-pure
+     */
+    private static function findGithubRepository(?string $url): ?string
+    {
+        return $url !== null
+            && preg_match('~^(?:https?://|git@)github\.com[/:]([\w.-]+/[\w.-]+?)(?:\.git)?(?:[/?#]|$)~', $url, $matches)
+                ? $matches[1] ?? null
+                : null;
+    }
+
+    /**
+     * @param Package $package
+     * @psalm-pure
+     */
+    private static function getTracker(array $package): ?string
+    {
+        $repository = $package['issues'] === null ? self::findGithubRepository($package['source']) : null;
+
+        return $repository === null
+            ? $package['issues'] ?? $package['source']
+            : 'https://github.com/' . $repository . '/issues';
+    }
+
+    /**
+     * @psalm-capabilities read-props
+     */
+    private function isPluginCrash(): bool
+    {
+        return $this->plugin_package !== null || $this->context->handler !== null;
     }
 
     public static function create(Throwable $throwable): self

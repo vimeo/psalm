@@ -7,8 +7,10 @@ namespace Psalm\Tests\Internal\Crash;
 use LogicException;
 use PHPUnit\Framework\Attributes\After;
 use Psalm\Context;
+use Psalm\Exception\ConfigException;
 use Psalm\Internal\Crash\CrashReport;
 use Psalm\Internal\EventDispatcher;
+use Psalm\Plugin\EventHandler\AfterCodebasePopulatedInterface;
 use Psalm\Plugin\EventHandler\Event\AfterCodebasePopulatedEvent;
 use Psalm\Tests\Internal\Crash\Plugin\NestingHandler;
 use Psalm\Tests\Internal\Crash\Plugin\PluginCode;
@@ -16,25 +18,34 @@ use Psalm\Tests\Internal\Crash\Plugin\ThrowOnBoom;
 use Psalm\Tests\Internal\Crash\Plugin\ThrowingHandler;
 use Psalm\Tests\Internal\Crash\Plugin\ThrowingInterpreter;
 use Psalm\Tests\TestCase;
+use RuntimeException;
 use Symfony\Component\Filesystem\Filesystem;
 use Throwable;
 
+use function array_keys;
 use function dirname;
+use function explode;
 use function file_get_contents;
 use function fopen;
 use function getenv;
 use function getmypid;
 use function glob;
 use function mkdir;
+use function parse_str;
+use function parse_url;
 use function putenv;
+use function rawurlencode;
 use function rewind;
 use function rtrim;
+use function str_repeat;
 use function stream_get_contents;
+use function strlen;
 use function sys_get_temp_dir;
 use function touch;
 use function uniqid;
 
 use const PHP_EOL;
+use const PHP_URL_QUERY;
 use const PHP_VERSION;
 
 /**
@@ -205,8 +216,9 @@ final class CrashReportTest extends TestCase
         $output = self::printCrash(self::pluginFailure());
 
         $this->assertStringContainsString('LogicException: the plugin failed', $output);
-        $this->assertStringEndsWith(
-            PHP_EOL . 'Psalm could not write the full report: could not create ' . $directory . PHP_EOL,
+        $this->assertStringContainsString(
+            PHP_EOL . 'Psalm could not write the full report: could not create ' . $directory . PHP_EOL
+                . 'Report the bug to Psalm: https://',
             $output,
         );
     }
@@ -224,6 +236,126 @@ final class CrashReportTest extends TestCase
         $this->assertSame(rtrim(sys_get_temp_dir(), '/\\'), dirname($path));
     }
 
+    public function testTheLinkToPsalmHasNoPathOfTheMachineAndFitsTheCap(): void
+    {
+        $home = (string) getenv('HOME');
+        $e = new RuntimeException(
+            'PHP Error: Undefined array key "X" in ' . __FILE__ . ':12'
+            . ' for command with CLI args "psalm -c=' . $home . '/secret/psalm.xml"',
+        );
+
+        $url = (new CrashReport($e, $this->project_analyzer->getConfig(), []))->getPsalmIssueUrl();
+        $fields = self::getQuery($url, 'https://github.com/vimeo/psalm/issues/new?');
+
+        $this->assertSame(
+            ['template', 'title', 'psalm_version', 'php_version', 'os', 'plugins', 'exception', 'context', 'frames'],
+            array_keys($fields),
+        );
+        $this->assertSame('crash.yml', $fields['template']);
+        $this->assertSame('Crash: RuntimeException: Undefined array key "X"', $fields['title']);
+        $this->assertSame(
+            'RuntimeException: PHP Error: Undefined array key "X"'
+                . ' in <project>/tests/Internal/Crash/CrashReportTest.php:12',
+            $fields['exception'],
+        );
+        // where it was thrown and 10 frames
+        $this->assertCount(11, explode("\n", $fields['frames']));
+        $this->assertStringStartsWith('at <project>/tests/Internal/Crash/CrashReportTest.php:', $fields['frames']);
+        foreach ([dirname(__DIR__, 3), $home . '/', sys_get_temp_dir()] as $private) {
+            $this->assertStringNotContainsString($private, $url);
+            $this->assertStringNotContainsString(rawurlencode($private), $url);
+        }
+
+        $long = (new CrashReport(new RuntimeException(str_repeat('x', 20_000)), null, []))->getPsalmIssueUrl();
+        $this->assertLessThanOrEqual(7_500, strlen($long));
+        $this->assertStringEndsWith(
+            'xxx...',
+            self::getQuery($long, 'https://github.com/vimeo/psalm/issues/new?')['exception'],
+        );
+    }
+
+    public function testACrashInAPluginLinksToItsTrackerWithATitleAndABody(): void
+    {
+        $e = $this->dispatchAfterCodebasePopulated(ThrowingHandler::class);
+
+        $line = (new CrashReport($e, null, [self::package()]))->getReportLine();
+        $fields = self::getQuery($line, 'Report it to the plugin: https://github.com/acme/crash/issues/new?');
+        $this->assertSame(['title', 'body'], array_keys($fields));
+        $this->assertSame('Crash: LogicException: the handler failed', $fields['title']);
+        $this->assertStringContainsString(
+            '- Hook: ' . AfterCodebasePopulatedInterface::class . ', ' . ThrowingHandler::class,
+            $fields['body'],
+        );
+
+        $from_source = ['issues' => null, 'source' => 'git@github.com:acme/crash.git'] + self::package();
+        $this->assertStringStartsWith(
+            'Report it to the plugin: https://github.com/acme/crash/issues/new?title=',
+            (new CrashReport($e, null, [$from_source]))->getReportLine(),
+        );
+
+        $elsewhere = ['issues' => 'https://tracker.example.com/crash'] + self::package();
+        $this->assertSame(
+            'Report it to the plugin: https://tracker.example.com/crash',
+            (new CrashReport($e, null, [$elsewhere]))->getReportLine(),
+        );
+
+        $this->assertSame(
+            'Report it to the authors of the plugin',
+            (new CrashReport($e, null, []))->getReportLine(),
+        );
+    }
+
+    public function testACrashOfTheEnvironmentGetsAHintAndNoLink(): void
+    {
+        putenv('PSALM_CRASH_REPORT=0');
+
+        $output = self::printCrash(new ConfigException('Could not resolve config path'));
+        $this->assertStringEndsWith(
+            PHP_EOL . 'Psalm could not load its configuration: fix what the message says and run Psalm again' . PHP_EOL,
+            $output,
+        );
+        $this->assertStringNotContainsString('https://', $output);
+
+        $output = self::printCrash(new RuntimeException(
+            'PHP Error: file_put_contents(cache): Failed to open stream: No space left on device',
+        ));
+        $this->assertStringEndsWith(
+            PHP_EOL . 'The disk is full: free some space and run Psalm again' . PHP_EOL,
+            $output,
+        );
+        $this->assertStringNotContainsString('https://', $output);
+
+        // a plugin that fails to load is a bug of the plugin
+        $e = new ConfigException('Failed to load plugin Acme\Crash\Plugin', 0, self::pluginFailure());
+        $report = new CrashReport($e, null, [self::package()]);
+        $this->assertNull($report->getHint());
+        $this->assertStringStartsWith('Report it to the plugin: https://', $report->getReportLine());
+
+        $output = self::printCrash(new RuntimeException('boom'));
+        $this->assertStringContainsString(
+            PHP_EOL . 'Report the bug to Psalm: https://github.com/vimeo/psalm/issues/new?template=crash.yml&',
+            $output,
+        );
+    }
+
+    /**
+     * The decoded query of a URL, after its expected prefix
+     *
+     * @param non-empty-string $prefix
+     * @return array<string, string>
+     */
+    private static function getQuery(string $url, string $prefix): array
+    {
+        self::assertStringStartsWith($prefix, $url);
+        parse_str((string) parse_url($url, PHP_URL_QUERY), $fields);
+
+        /** @var array<string, string> */
+        return $fields;
+    }
+
+    /**
+     * @psalm-pure
+     */
     private static function pluginFailure(): LogicException
     {
         try {

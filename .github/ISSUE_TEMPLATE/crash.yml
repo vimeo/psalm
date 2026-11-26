@@ -1,0 +1,49 @@
+name: Crash
+description: Psalm crashed and printed a link to report it
+title: "Crash: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Psalm fills in this form from the link it prints when it crashes. Check that the fields hold nothing you want to keep private before you submit.
+  - type: input
+    id: psalm_version
+    attributes:
+      label: Psalm version
+    validations:
+      required: true
+  - type: input
+    id: php_version
+    attributes:
+      label: PHP version
+  - type: input
+    id: os
+    attributes:
+      label: OS
+  - type: input
+    id: plugins
+    attributes:
+      label: Plugins
+  - type: textarea
+    id: exception
+    attributes:
+      label: Exception
+      render: text
+    validations:
+      required: true
+  - type: input
+    id: context
+    attributes:
+      label: What Psalm was analysing
+  - type: textarea
+    id: frames
+    attributes:
+      label: Trace
+      render: text
+  - type: textarea
+    id: report
+    attributes:
+      label: Full report and how to reproduce
+      description: |
+        Attach the `crash-*.txt` file Psalm wrote (its path follows "Full report:"), by dragging it here.
+        If you can, add the code and the `psalm.xml` that make Psalm crash, or a link to https://psalm.dev that does.
