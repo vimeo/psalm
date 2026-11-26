@@ -384,9 +384,10 @@ final class TaintFlowResolution
 
     /**
      * Slot id => [the marker of the foreach loop, the open assignment of the element the value fetch of the
-     * loop closed, as a path type id]
+     * loop closed, as a path type id, whether that's the innermost one of the call entering the context, fetched
+     * from what the call gave (see applyPathType())]
      *
-     * @var list<array{string, int}>
+     * @var list<array{string, int, bool}>
      */
     private array $slots = [];
 
@@ -1705,7 +1706,11 @@ final class TaintFlowResolution
 
                 if ($foreach_marker !== null && $fetches_elements && $closed[$closed_family] !== self::FORGOTTEN) {
                     // one of the call entering the context, by its depth there
-                    $slot = $this->getSlot($foreach_marker, -$closed[$closed_family]);
+                    $slot = $this->getSlot(
+                        $foreach_marker,
+                        -$closed[$closed_family],
+                        $slot === self::INHERITED_SLOT && $closed[$closed_family] === 1,
+                    );
                 }
             }
         }
@@ -1716,9 +1721,25 @@ final class TaintFlowResolution
                 && $slot >= 0
                 && $this->slots[$slot][0] === $foreach_marker
             ) {
-                // the value of the element, or what was made of it, back under its key
-                $made[$added_family][] = $this->slots[$slot][1];
-                $slot = self::NO_SLOT;
+                [, $element_assignment, $of_call_value] = $this->slots[$slot];
+
+                if ($of_call_value
+                    && $made[self::ARRAY_FAMILY] === []
+                    && $closed[self::ARRAY_FAMILY] === 1
+                    && $made[self::PROPERTY_FAMILY] === []
+                    && $closed[self::PROPERTY_FAMILY] === 0
+                ) {
+                    // An element of what the call gave, or what was made of it, back under its key: that's what the
+                    // call gave again, as the walk started with it, made of the element the caller may be iterating
+                    // over in turn (see composeOpenAssignments()). A recursive call putting what it returns for an
+                    // element back under its key returns it under that key, not in a key, to its caller.
+                    $closed[self::ARRAY_FAMILY] = 0;
+                    $slot = self::INHERITED_SLOT;
+                } else {
+                    // the value of the element, or what was made of it, back under its key
+                    $made[$added_family][] = $element_assignment;
+                    $slot = self::NO_SLOT;
+                }
             } else {
                 $made[$added_family][] = $path_type;
             }
@@ -1735,13 +1756,13 @@ final class TaintFlowResolution
      *
      * @psalm-external-mutation-free
      */
-    private function getSlot(string $foreach_marker, int $assignment): int
+    private function getSlot(string $foreach_marker, int $assignment, bool $of_call_value = false): int
     {
-        $key = $assignment . ' ' . $foreach_marker;
+        $key = $assignment . ' ' . ($of_call_value ? '1' : '0') . ' ' . $foreach_marker;
 
         if (!isset($this->slot_ids[$key])) {
             $this->slot_ids[$key] = count($this->slots);
-            $this->slots[] = [$foreach_marker, $assignment];
+            $this->slots[] = [$foreach_marker, $assignment, $of_call_value];
         }
 
         return $this->slot_ids[$key];
@@ -1763,6 +1784,11 @@ final class TaintFlowResolution
 
         if ($row === null || !$this->table->hasLocation($row)) {
             $scoped_slot = $slot === self::INHERITED_SLOT ? self::BLOCKED_SLOT : self::NO_SLOT;
+        } elseif ($slot >= 0 && $this->isSpecializedCallNode($node_id, $row)) {
+            // A parameter or the return value of a specialized call, even one of the function of the loop: its body
+            // is walked in an entry of its own, and the flow leaving it goes back to this call only, in the
+            // iteration it was made in (see composeOpenAssignments())
+            return $open_assignments;
         } elseif ($slot >= 0) {
             $foreach_marker = $this->slots[$slot][0];
             [$file_path, $function_start, $function_end, $start, $end, $body_start]
@@ -1789,6 +1815,21 @@ final class TaintFlowResolution
         [$made, $closed] = $this->open_assignments[$open_assignments];
 
         return $this->internOpenAssignments($made, $closed, $scoped_slot);
+    }
+
+    /**
+     * Whether node $id is the specialization of a parameter or of the return value of a function-like for one of its
+     * calls that is specialized (see walk())
+     *
+     * @psalm-capabilities read-props
+     */
+    private function isSpecializedCallNode(string $id, string|DataFlowNode $row): bool
+    {
+        $specialization_key = $this->table->getSpecializationKey($id, $row);
+
+        return $specialization_key !== null
+            && isset($this->specialized_calls[$specialization_key])
+            && !isset($this->despecialized_calls[$specialization_key]);
     }
 
     /**
