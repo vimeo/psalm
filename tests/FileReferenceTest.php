@@ -492,6 +492,161 @@ final class FileReferenceTest extends TestCase
                 '\\App\\helper',
                 ['8:21:helper'],
             ],
+            'getFunctionLocationPassedToCallableWithSignature' => [
+                '<?php
+                    function helper(int $i): int {
+                        return $i;
+                    }
+
+                    /** @param callable(int):int $f */
+                    function apply(callable $f): int {
+                        return $f(1);
+                    }
+
+                    final class U {
+                        public function a(): int {
+                            return apply("helper");
+                        }
+                    }',
+                'helper',
+                ['13:42:"helper"'],
+            ],
+            'getFunctionLocationPassedToCallable' => [
+                '<?php
+                    function helper(int $i): int {
+                        return $i;
+                    }
+
+                    function apply(callable $f): void {
+                        $f(1);
+                    }
+
+                    final class U {
+                        public function a(): void {
+                            apply("helper");
+                        }
+                    }',
+                'helper',
+                ['12:35:"helper"'],
+            ],
+            'getFunctionLocationPassedToNullableCallable' => [
+                '<?php
+                    function helper(int $i): int {
+                        return $i;
+                    }
+
+                    function apply(?callable $f): void {
+                        if ($f) {
+                            $f(1);
+                        }
+                    }
+
+                    final class U {
+                        public function a(): void {
+                            apply("helper");
+                        }
+                    }',
+                'helper',
+                ['14:35:"helper"'],
+            ],
+            'getFunctionLocationPassedToCallableInVariable' => [
+                '<?php
+                    function helper(int $i): int {
+                        return $i;
+                    }
+
+                    function apply(callable $f): void {
+                        $f(1);
+                    }
+
+                    final class U {
+                        public function a(): void {
+                            $f = "helper";
+                            apply($f);
+                        }
+                    }',
+                'helper',
+                ['13:35:$f'],
+            ],
+            'getFunctionLocationPassedToCallableAfterIsCallable' => [
+                '<?php
+                    function helper(int $i): int {
+                        return $i;
+                    }
+
+                    /** @param callable(int):int $f */
+                    function apply(callable $f): int {
+                        return $f(1);
+                    }
+
+                    final class U {
+                        /** @param mixed $x */
+                        public function a($x): int {
+                            if (is_callable($x)) {
+                                echo "callable";
+                            }
+
+                            return apply("helper");
+                        }
+                    }',
+                'helper',
+                ['18:42:"helper"'],
+            ],
+            'getFunctionLocationCalledThroughUnionOfNames' => [
+                '<?php
+                    function helper(int $i): int {
+                        return $i;
+                    }
+
+                    final class U {
+                        public function a(): int {
+                            $f = rand(0, 1) ? "helper" : "intval";
+
+                            return $f(6);
+                        }
+                    }',
+                'helper',
+                ['10:36:$f'],
+            ],
+            'getMethodLocationPassedToCallableWithSignature' => [
+                '<?php
+                    final class M {
+                        public static function m(int $i): int {
+                            return $i;
+                        }
+                    }
+
+                    /** @param callable(int):int $f */
+                    function apply(callable $f): int {
+                        return $f(1);
+                    }
+
+                    final class U {
+                        public function a(): int {
+                            return apply("M::m");
+                        }
+                    }',
+                'M::m',
+                ['15:42:"M::m"'],
+            ],
+            'getMethodLocationCalledThroughUnionOfNames' => [
+                '<?php
+                    final class M {
+                        public static function m(int $i): int {
+                            return $i;
+                        }
+                    }
+
+                    final class U {
+                        public function a(): int {
+                            $f = rand(0, 1) ? "M::m" : "intval";
+
+                            return $f(6);
+                        }
+                    }',
+                'M::m',
+                ['12:36:$f'],
+            ],
             'getMethodLocationWithUsedReturnValue' => [
                 '<?php
                     final class A {

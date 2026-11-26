@@ -718,7 +718,6 @@
     </ComplexMethod>
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[$method_name]]></code>
-      <code><![CDATA[$parts[1]]]></code>
       <code><![CDATA[explode('::', $cased_method_id)[1]]]></code>
     </PossiblyUndefinedIntArrayOffset>
     <RiskyTruthyFalsyComparison>
@@ -734,7 +733,6 @@
       <code><![CDATA[$context->calling_method_id]]></code>
       <code><![CDATA[$self_fq_class_name]]></code>
       <code><![CDATA[$static_fq_class_name]]></code>
-      <code><![CDATA[strpos($atomic_type->value, '::')]]></code>
       <code><![CDATA[strpos($input_type_part->value, '::')]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
@@ -800,9 +798,6 @@
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/Call/FunctionCallAnalyzer.php">
-    <PossiblyUndefinedIntArrayOffset>
-      <code><![CDATA[$parts[1]]]></code>
-    </PossiblyUndefinedIntArrayOffset>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[!$function_call_info->function_storage?->assertions]]></code>
       <code><![CDATA[$function_call_info->function_id]]></code>
@@ -812,7 +807,6 @@
       <code><![CDATA[$function_call_info->function_id]]></code>
       <code><![CDATA[$function_call_info->function_id]]></code>
       <code><![CDATA[$statements_analyzer->getTemplateTypeMap()]]></code>
-      <code><![CDATA[strpos($var_type_part->value, '::')]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/Call/FunctionCallReturnTypeFetcher.php">
