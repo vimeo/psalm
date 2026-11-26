@@ -19733,6 +19733,13 @@ final class TaintTest extends TestCase
                     }',
                 'error_message' => 'TaintedCallable',
             ],
+            'taintCallingAStaticMethodNamedByInputOnAnUndefinedClass' => [
+                'code' => '<?php
+                    $name = (string) $_GET["method"];
+                    /** @psalm-suppress UndefinedClass */
+                    MissingLibrary::$name();',
+                'error_message' => 'TaintedCallable',
+            ],
             'taintCallableOfAMethodNamedByInput' => [
                 'code' => '<?php
                     final class A {
