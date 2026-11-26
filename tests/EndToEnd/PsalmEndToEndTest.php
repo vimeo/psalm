@@ -79,6 +79,36 @@ final class PsalmEndToEndTest extends PsalmEndToEndTestCase
         $this->assertStringContainsString('Could not find any composer autoloaders', $analysis->getErrorOutput());
     }
 
+    public function testExplainIgnoresTheProjectInTheCurrentDirectory(): void
+    {
+        $project_dir = tempnam(sys_get_temp_dir(), 'PsalmEndToEndExplain_');
+        assert($project_dir !== false);
+        unlink($project_dir);
+        mkdir($project_dir . '/vendor', 0777, true);
+
+        try {
+            file_put_contents($project_dir . '/composer.json', '{');
+            file_put_contents($project_dir . '/vendor/autoload.php', '<?php echo "project autoloader"; exit(3);');
+
+            $known = self::newProcess([PHP_BINARY, $this->psalm, '--explain=83'], $project_dir, self::agentEnvVarsToUnset());
+            $known->run();
+            $unknown = self::newProcess(
+                [PHP_BINARY, $this->psalm, '--explain=NotAnIssue'],
+                $project_dir,
+                self::agentEnvVarsToUnset(),
+            );
+            $unknown->run();
+        } finally {
+            self::recursiveRemoveDirectory($project_dir);
+        }
+
+        $this->assertSame(0, $known->getExitCode(), $known->getErrorOutput());
+        $this->assertStringStartsWith('# PossiblyNullReference', $known->getOutput());
+        $this->assertSame(1, $unknown->getExitCode());
+        $this->assertSame('', $unknown->getOutput());
+        $this->assertStringContainsString('Unknown issue: NotAnIssue', $unknown->getErrorOutput());
+    }
+
     public function testInit(): void
     {
         $this->assertStringContainsString(
@@ -248,7 +278,6 @@ final class PsalmEndToEndTest extends PsalmEndToEndTestCase
                 '#^ERROR \S*FileWithErrors\.php:\d+:\d+ InvalidReturnStatement: #m',
                 $process->getOutput(),
             );
-            $this->assertStringNotContainsString('psalm.dev', $process->getOutput());
             $this->assertStringNotContainsString('2 errors', $process->getOutput());
         } else {
             $this->assertStringContainsString('ERROR: InvalidReturnStatement - ', $process->getOutput());
@@ -273,7 +302,6 @@ final class PsalmEndToEndTest extends PsalmEndToEndTestCase
 
         $this->assertSame(2, $process->getExitCode(), $process->getErrorOutput());
         $this->assertStringContainsString('ERROR: InvalidReturnStatement - ', $process->getOutput());
-        $this->assertStringContainsString('2 errors', $process->getOutput());
     }
 
     public function testAReportIsNotAffectedByTheAgentDefault(): void

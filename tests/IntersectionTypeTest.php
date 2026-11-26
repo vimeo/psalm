@@ -22,6 +22,89 @@ final class IntersectionTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'objectShapesOfAnIntersectionAreMerged' => [
+                'code' => '<?php
+                    class Card {}
+
+                    /** @param Card&object{last4: string}&object{brand: string} $card */
+                    function describe(object $card): string {
+                        return $card->last4 . $card->brand;
+                    }
+
+                    /** @param object{id: int|string}&object{id: int} $o */
+                    function id(object $o): int {
+                        return $o->id;
+                    }',
+            ],
+            'objectShapesIntersectedByAnAssertionAreMerged' => [
+                'code' => '<?php
+                    class Card {}
+
+                    /** @psalm-assert Card&object{brand: string} $c */
+                    function assertBrand(object $c): void {}
+
+                    /** @psalm-assert object{brand: string} $c */
+                    function assertBareBrand(object $c): void {}
+
+                    /** @param Card&object{last4: string} $card */
+                    function named(object $card): string {
+                        assertBrand($card);
+                        return $card->last4 . $card->brand;
+                    }
+
+                    /** @param object{last4: string} $card */
+                    function bare(object $card): string {
+                        assertBareBrand($card);
+                        return $card->last4 . $card->brand;
+                    }
+
+                    /** @param Card&object{last4: string} $card */
+                    function namedThenBare(object $card): string {
+                        assertBareBrand($card);
+                        return $card->last4 . $card->brand;
+                    }',
+            ],
+            'objectShapeAssertedOnABareShapeIsMergedIntoIt' => [
+                'code' => '<?php
+                    /** @psalm-assert object{id: int, b: string} $c */
+                    function assertIdB(object $c): void {}
+
+                    /** @return object{id: int|null} */
+                    function o(): object {
+                        return (object) ["id" => null];
+                    }
+
+                    $o = o();
+                    assertIdB($o);
+                    $id = $o->id;
+                    $b = $o->b;',
+                'assertions' => [
+                    '$o===' => 'object{id:int, b:string}',
+                    '$id===' => 'int',
+                    '$b===' => 'string',
+                ],
+            ],
+            'objectShapeAssertedWithAClassNameInAnotherCaseIsMerged' => [
+                'code' => '<?php
+                    class Card {}
+
+                    /** @psalm-assert card&object{brand: string} $c */
+                    function assertBrand(object $c): void {}
+
+                    /** @return Card&object{last4: string} */
+                    function card(): object {
+                        throw new RuntimeException();
+                    }
+
+                    $card = card();
+                    assertBrand($card);
+                    $last4 = $card->last4;
+                    $brand = $card->brand;',
+                'assertions' => [
+                    '$last4===' => 'string',
+                    '$brand===' => 'string',
+                ],
+            ],
             'iterableIntersectionAcceptsObjectsOfEachType' => [
                 'code' => '<?php
                     /** @param iterable<int, string>&Countable $x */
@@ -246,6 +329,9 @@ final class IntersectionTypeTest extends TestCase
                     function wrap(array $filtered): array {
                         return array_map(fn ($x) => new Wrapper($x), $filtered);
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'intersectionBoundOfATemplateKeepsItsInterfacesInAClosureParam' => [
                 'code' => '<?php
@@ -771,6 +857,12 @@ final class IntersectionTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'objectShapesOfAnIntersectionGivingAPropertyIncompatibleTypes' => [
+                'code' => '<?php
+                    /** @param object{id: int}&object{id: string} $o */
+                    function id(object $o): void {}',
+                'error_message' => 'InvalidDocblock',
+            ],
             'iterableIntersectionDoesNotAcceptTraversable' => [
                 'code' => '<?php
                     /** @param iterable&Countable $x */

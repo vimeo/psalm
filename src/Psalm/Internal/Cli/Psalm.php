@@ -54,6 +54,7 @@ use function chdir;
 use function count;
 use function ctype_digit;
 use function defined;
+use function dirname;
 use function extension_loaded;
 use function file_exists;
 use function file_get_contents;
@@ -64,6 +65,7 @@ use function gc_collect_cycles;
 use function gc_disable;
 use function getenv;
 use function implode;
+use function in_array;
 use function ini_get;
 use function is_array;
 use function is_dir;
@@ -133,6 +135,7 @@ final class Psalm
         'debug-emitted-issues',
         'diff',
         'disable-extension:',
+        'explain:',
         'find-dead-code::',
         'find-unused-code::',
         'find-unused-variables',
@@ -180,6 +183,7 @@ final class Psalm
         'pretty-print', // used for JSON reports
         'track-tainted-input',
         'taint-analysis',
+        'no-taint-analysis',
         'security-analysis',
         'dump-taint-graph:',
         'find-unused-psalm-suppress',
@@ -245,6 +249,12 @@ final class Psalm
             */
 
             exit;
+        }
+
+        if (array_key_exists('explain', $options)) {
+            // the docs belong to Psalm, so only its own autoloader: not the composer.json or vendor/ of the cwd
+            CliUtils::requireAutoloaders(dirname(__DIR__, 4), false, 'vendor', false);
+            self::explainIssue($options['explain']);
         }
 
         $current_dir = CliUtils::getCurrentDir($options);
@@ -965,6 +975,9 @@ final class Psalm
         $stdout_report_options->show_snippet = !isset($options['show-snippet']) || $options['show-snippet'] !== "false";
         $stdout_report_options->pretty = isset($options['pretty-print']) && $options['pretty-print'] !== "false";
         $stdout_report_options->in_ci = $in_ci;
+        // only the console and compact reports have an agent form
+        $stdout_report_options->agent_output = CliUtils::runningUnderAiAgent()
+            && in_array($output_format, [Report::TYPE_CONSOLE, Report::TYPE_COMPACT], true);
 
         return $stdout_report_options;
     }
@@ -1094,6 +1107,23 @@ final class Psalm
         Preloader::preload($progress, $hasJit);
     }
 
+    private static function explainIssue(mixed $query): never
+    {
+        $docs = is_string($query) ? IssueDocs::read($query) : null;
+
+        if ($docs === null) {
+            fwrite(
+                STDERR,
+                'Unknown issue: ' . (is_string($query) ? $query : '')
+                    . '. See https://psalm.dev/docs/running_psalm/issues/' . PHP_EOL,
+            );
+            exit(1);
+        }
+
+        echo $docs;
+        exit;
+    }
+
     /** @param array<int, string> $argv */
     private static function forwardCliCall(array $options, array $argv): void
     {
@@ -1143,6 +1173,16 @@ final class Psalm
         bool $run_taint_analysis,
         array $options,
     ): array {
+        $skip_taint_analysis = isset($options['no-taint-analysis']);
+        if ($skip_taint_analysis && ($run_taint_analysis || isset($options['dump-taint-graph']))) {
+            fwrite(
+                STDERR,
+                '--no-taint-analysis cannot be combined with --taint-analysis, --track-tainted-input,'
+                    . ' --security-analysis or --dump-taint-graph' . PHP_EOL,
+            );
+            exit(1);
+        }
+
         $init_source_dir = null;
         if (isset($options['i'])) {
             self::generateConfig($current_dir, $args);
@@ -1168,6 +1208,10 @@ final class Psalm
                 $run_taint_analysis,
                 $options,
             );
+        }
+
+        if ($skip_taint_analysis) {
+            $config->run_taint_analysis = false;
         }
         return [$config, $init_source_dir];
     }
@@ -1381,6 +1425,10 @@ final class Psalm
             --taint-analysis, --track-tainted-input, --security-analysis
                 Run Psalm in taint analysis mode – see https://psalm.dev/docs/security_analysis for more info
 
+            --no-taint-analysis
+                Skip taint analysis for this run, even if runTaintAnalysis is true. Some type issues
+                are only reported with taint analysis on, so finish with a run without this flag.
+
             --dump-taint-graph=OUTPUT_PATH
                 Output the taint graph using the DOT language – requires --taint-analysis
 
@@ -1478,6 +1526,11 @@ final class Psalm
         Miscellaneous:
             -h, --help
                 Display this help message
+
+            --explain=ISSUE
+                Print the documentation of an issue: what it means, an example and how to fix it.
+                ISSUE is an issue type (PossiblyNullReference), a shortcode (83) or a link (https://psalm.dev/083).
+                Needs no config file. Exits with 1 when the issue is unknown.
 
             -v, --version
                 Display the Psalm version

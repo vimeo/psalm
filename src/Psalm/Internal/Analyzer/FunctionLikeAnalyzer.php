@@ -2957,6 +2957,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 $this->source->getFQCLN(),
                 true,
             ),
+            $inferred_return_type->canBeFullyExpressedInPhp($codebase->analysis_php_version_id),
         );
     }
 

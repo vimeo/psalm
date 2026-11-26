@@ -24,7 +24,6 @@ use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodVisibilityAn
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MissingMethodCallHandler;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\NewAnalyzer;
-use Psalm\Internal\Analyzer\Statements\Expression\Call\OverloadSelector;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\StaticCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -1098,17 +1097,29 @@ final class AtomicStaticCallAnalyzer
     ): ?bool {
         $codebase = $statements_analyzer->getCodebase();
 
-        $overloads = $class_storage->pseudo_static_method_overloads[$method_id->method_name] ?? null;
-
-        if ($overloads !== null) {
-            $pseudo_method_storage = OverloadSelector::select(
-                $statements_analyzer,
-                $codebase,
-                $args,
-                $context,
-                $overloads,
-            );
-        }
+        $pseudo_method_storage = MissingMethodCallHandler::selectOverload(
+            $statements_analyzer,
+            $codebase,
+            $args,
+            $context,
+            $class_storage->pseudo_static_method_overloads[$method_id->method_name] ?? null,
+            $pseudo_method_storage,
+            // `static` in the params is the class the method is called on: that class itself when the call names it,
+            // a subclass too when it is called on an object or a class-string, or through `self::`/`parent::`, which
+            // forward the late static binding
+            $lhs_type_part instanceof TNamedObject
+                ? static fn(MethodStorage $storage): MethodStorage => MissingMethodCallHandler::resolveStaticInParams(
+                    $codebase,
+                    $storage,
+                    $class_storage,
+                    $lhs_type_part,
+                    $static_class_storage->final
+                        || ($stmt->class instanceof PhpParser\Node\Name
+                            && !$lhs_type_part->is_static
+                            && !in_array($stmt->class->toLowerString(), ['self', 'parent'], true)),
+                )
+                : null,
+        );
 
         if (!$context->isSuppressingExceptions($statements_analyzer)) {
             $context->mergeFunctionExceptions(

@@ -590,6 +590,45 @@ final class TypeCombinationTest extends TestCase
                     'mixed',
                 ],
             ],
+            'voidOrNever' => [
+                'void',
+                [
+                    'void',
+                    'never',
+                ],
+            ],
+            'voidOrNeverOrString' => [
+                'null|string',
+                [
+                    'void',
+                    'never',
+                    'string',
+                ],
+            ],
+            'voidOrNeverOrLiteralString' => [
+                "'hello'|null",
+                [
+                    'void',
+                    'never',
+                    "'hello'",
+                ],
+            ],
+            'voidOrNeverOrNull' => [
+                'null',
+                [
+                    'void',
+                    'never',
+                    'null',
+                ],
+            ],
+            'voidOrNeverOrArray' => [
+                'array<array-key, mixed>|null',
+                [
+                    'void',
+                    'never',
+                    'array',
+                ],
+            ],
             'mixedOrObject' => [
                 'mixed|object',
                 [

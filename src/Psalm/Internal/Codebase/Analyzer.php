@@ -13,6 +13,7 @@ use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\Crash\CrashContext;
 use Psalm\Internal\FileChangedDuringRunException;
 use Psalm\Internal\FileManipulation\ClassDocblockManipulator;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
@@ -236,6 +237,16 @@ final class Analyzer
     public function canReportIssues(string $file_path): bool
     {
         return isset($this->files_with_analysis_results[$file_path]);
+    }
+
+    /**
+     * A file of the project, or analysed: its class declarations are not alternatives to those of a dependency
+     *
+     * @psalm-mutation-free
+     */
+    public function isOwnCodeFile(string $file_path): bool
+    {
+        return isset($this->files_with_analysis_results[$file_path]) || $this->config->isInProjectDirs($file_path);
     }
 
     public function analyzeFiles(
@@ -1597,7 +1608,12 @@ final class Analyzer
 
         $perf_start = Perf\Collector::$enabled ? Perf\Collector::fileStart() : null;
 
-        $file_analyzer->analyze();
+        try {
+            $file_analyzer->analyze();
+        } catch (Throwable $e) {
+            CrashContext::recordFile($e, 'analysing', $file_path);
+            throw $e;
+        }
         $file_analyzer->context = null;
         $file_analyzer->clearSourceBeforeDestruction();
         unset($file_analyzer);

@@ -107,6 +107,11 @@ final class GetObjectVarsReturnTypeProvider implements FunctionReturnTypeProvide
 
                 $properties = [];
                 foreach ($class_storage->appearing_property_ids as $name => $property_id) {
+                    // static properties belong to the class, not to the object
+                    if ($codebase->properties->getStorage($property_id)->is_static) {
+                        continue;
+                    }
+
                     if (ClassAnalyzer::checkPropertyVisibility(
                         $property_id,
                         $context,

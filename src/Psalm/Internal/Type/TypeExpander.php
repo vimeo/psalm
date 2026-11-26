@@ -1298,9 +1298,21 @@ final class TypeExpander
                 $if_conditional_return_types = [...$if_conditional_return_types, ...$candidate_types];
             }
 
+            $else_type = $return_type->else_type;
+
+            if ($return_type->subject_type === null) {
+                (new TemplateBoundNarrower(
+                    $return_type->param_name,
+                    $return_type->defining_class,
+                    $return_type->conditional_type,
+                    $codebase,
+                    true,
+                ))->traverse($else_type);
+            }
+
             $else_conditional_return_types = [];
 
-            foreach ($return_type->else_type->getAtomicTypes() as $else_atomic_type) {
+            foreach ($else_type->getAtomicTypes() as $else_atomic_type) {
                 $candidate_types = self::expandAtomic(
                     $codebase,
                     $else_atomic_type,

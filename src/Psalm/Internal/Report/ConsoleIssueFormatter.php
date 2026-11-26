@@ -32,7 +32,7 @@ trait ConsoleIssueFormatter
     {
         $is_error = $issue_data->severity === Config::REPORT_ERROR;
 
-        $issue_reference = $issue_data->link ? ' (see ' . $issue_data->link . ')' : '';
+        $issue_reference = $issue_data->link && !$this->agent_output ? ' (see ' . $issue_data->link . ')' : '';
 
         $issue_string = $this->formatIssueHeader(
             $issue_data,
@@ -77,6 +77,7 @@ trait ConsoleIssueFormatter
     private function formatIssueHeader(IssueData $issue_data, string $level_label, string $message): string
     {
         return $this->getSeverityLabel($issue_data) . $level_label . ': ' . $issue_data->type
+            . $this->getFixableMarker($issue_data)
             . ' - ' . $this->getFileReference($issue_data)
             . ' - ' . $message . "\n";
     }

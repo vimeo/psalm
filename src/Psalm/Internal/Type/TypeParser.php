@@ -2671,6 +2671,41 @@ final class TypeParser
     }
 
     /**
+     * The shape of the objects having both shapes
+     *
+     * @throws TypeParseTreeException when no value has both types of a property
+     */
+    public static function mergeObjectShapes(
+        Codebase $codebase,
+        TObjectWithProperties $first,
+        TObjectWithProperties $second,
+    ): TObjectWithProperties {
+        $properties = $first->properties;
+
+        foreach ($second->properties as $name => $type) {
+            if (!isset($properties[$name])) {
+                $properties[$name] = $type;
+
+                continue;
+            }
+
+            $intersected_type = Type::intersectUnionTypes($properties[$name], $type, $codebase);
+
+            if ($intersected_type === null) {
+                throw new TypeParseTreeException(
+                    'Incompatible intersection types for "' . $name . '", '
+                    . $properties[$name]->getId() . ' and ' . $type->getId()
+                    . ' provided',
+                );
+            }
+
+            $properties[$name] = $intersected_type;
+        }
+
+        return $first->setProperties($properties)->setMethods([...$first->methods, ...$second->methods]);
+    }
+
+    /**
      * @param TNamedObject|TObjectWithProperties|TCallableObject|TIterable|TTemplateParam|TKeyedArray $intersection_type
      * @psalm-mutation-free
      */
@@ -2715,6 +2750,19 @@ final class TypeParser
             }
 
             $any_object_type_found = true;
+
+            // every object shape has the key `object`: their properties are those of all of them
+            if ($intersection_type instanceof TObjectWithProperties
+                && ($other_shape = $keyed_intersection_types[$intersection_type->getKey()] ?? null)
+                    instanceof TObjectWithProperties
+            ) {
+                $keyed_intersection_types[$intersection_type->getKey()] = self::mergeObjectShapes(
+                    $codebase,
+                    $other_shape,
+                    $intersection_type,
+                );
+                continue;
+            }
 
             if ($intersection_type instanceof TIterable
                 || $intersection_type instanceof TNamedObject
