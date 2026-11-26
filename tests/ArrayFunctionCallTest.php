@@ -209,6 +209,25 @@ final class ArrayFunctionCallTest extends TestCase
                     '$items===' => 'non-empty-array<int<0, max>, int>|null',
                 ],
             ],
+            'countNotEqualOnAnArrayThatMayBeEmptyAfterUnsetKeepsTheTypeWhereItDiffers' => [
+                'code' => '<?php
+                    /** @var list<int> $values */
+                    $values = [];
+                    unset($values[rand(0, 1)]);
+
+                    $differs = null;
+                    $equals = null;
+
+                    if (count($values) !== 1) {
+                        $differs = $values;
+                    } else {
+                        $equals = $values;
+                    }',
+                'assertions' => [
+                    '$differs===' => 'array{0?: int, ...<int<0, max>, int>}|null',
+                    '$equals===' => 'non-empty-array<int<0, max>, int>|null',
+                ],
+            ],
             'countOfAShapeWithAnOptionalLiteralKeyAndAFallbackKeepsTheKeyType' => [
                 'code' => '<?php
                     /** @var array{a?: int, ...<string, string>} $x */
