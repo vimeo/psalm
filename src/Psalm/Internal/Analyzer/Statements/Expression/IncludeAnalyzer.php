@@ -21,6 +21,8 @@ use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Issue\MissingFile;
 use Psalm\Issue\UnresolvableInclude;
 use Psalm\IssueBuffer;
+use Psalm\Node\Expr\VirtualInclude;
+use Psalm\Node\Expr\VirtualTernary;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TNamedObject;
@@ -70,6 +72,10 @@ final class IncludeAnalyzer
             throw new FileIncludeException(
                 'File includes are not allowed per your Psalm config - check the allowFileIncludes flag.',
             );
+        }
+
+        if ($stmt->expr instanceof PhpParser\Node\Expr\Ternary) {
+            return self::analyzeTernary($statements_analyzer, $stmt, $stmt->expr, $context);
         }
 
         $was_inside_call = $context->inside_call;
@@ -331,6 +337,48 @@ final class IncludeAnalyzer
         }
 
         return true;
+    }
+
+    /**
+     * `include $c ? $a : $b` includes the file of one branch, as `$c ? include $a : include $b` does
+     */
+    private static function analyzeTernary(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\Include_ $stmt,
+        PhpParser\Node\Expr\Ternary $path_expr,
+        Context $context,
+    ): bool {
+        // `$c ?: $b` includes $c when it is truthy
+        $if_path_expr = $path_expr->if ?? $path_expr->cond;
+
+        $ternary = new VirtualTernary(
+            $path_expr->cond,
+            new VirtualInclude($if_path_expr, $stmt->type, $if_path_expr->getAttributes()),
+            new VirtualInclude($path_expr->else, $stmt->type, $path_expr->else->getAttributes()),
+            $path_expr->getAttributes(),
+        );
+
+        $old_node_data = $statements_analyzer->node_data;
+
+        $statements_analyzer->node_data = clone $statements_analyzer->node_data;
+
+        $was_inside_call = $context->inside_call;
+
+        $context->inside_call = true;
+
+        $analyzed = ExpressionAnalyzer::analyze($statements_analyzer, $ternary, $context);
+
+        $context->inside_call = $was_inside_call;
+
+        $ternary_type = $statements_analyzer->node_data->getType($ternary);
+
+        $statements_analyzer->node_data = $old_node_data;
+
+        if ($ternary_type) {
+            $statements_analyzer->node_data->setType($stmt, $ternary_type);
+        }
+
+        return $analyzed;
     }
 
     /**

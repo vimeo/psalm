@@ -290,6 +290,52 @@ final class ArrayFunctionCallTest extends TestCase
                     '$inherited===' => 'array{inherited: 1|2}',
                 ],
             ],
+            'getObjectVarsSkipsStaticProperties' => [
+                'code' => '<?php
+                    final class WithStatic {
+                        public static int $s = 1;
+                        public int $i = 2;
+                    }
+
+                    final class OnlyStatic {
+                        public static int $s = 1;
+                    }
+
+                    class OpenOnlyStatic {
+                        public static int $s = 1;
+                    }
+
+                    class Base {
+                        public static int $baseStatic = 1;
+                        public int $base = 1;
+                    }
+
+                    final class Child extends Base {
+                        public int $child = 2;
+                    }
+
+                    trait HasStatic {
+                        public static int $traitStatic = 1;
+                        public int $traitInstance = 1;
+                    }
+
+                    final class UsesTrait {
+                        use HasStatic;
+                    }
+
+                    $withStatic = get_object_vars(new WithStatic());
+                    $onlyStatic = get_object_vars(new OnlyStatic());
+                    $openOnlyStatic = get_object_vars(new OpenOnlyStatic());
+                    $child = get_object_vars(new Child());
+                    $usesTrait = get_object_vars(new UsesTrait());',
+                'assertions' => [
+                    '$withStatic===' => 'array{i: int}',
+                    '$onlyStatic===' => 'array<never, never>',
+                    '$openOnlyStatic===' => 'array<string, mixed>',
+                    '$child===' => 'array{base: int, child: int}',
+                    '$usesTrait===' => 'array{traitInstance: int}',
+                ],
+            ],
             'arrayWalkRecursiveUsesCallbackOutType' => [
                 'code' => <<<'PHP'
                     <?php

@@ -345,56 +345,48 @@ final class HackConformanceTranspiledTest extends TestCase
                 'ignored_issues' => ['InvalidTemplateParam'],
                 'php_version' => '8.3',
             ],
-            'SKIPPED-type_variables/foreach_over_nothing' => [
-                // iterating the items of a `Coll<nothing>`, which a bounded template
-                // (`Bounded<nothing>`) gives as well, binds the loop variable to
-                // `nothing`: the body typechecks, whatever it does with the item.
-                // Skipped, Psalm does not agree with HHVM yet:
-                // Psalm iterates the empty array of a `Coll<never>` as `mixed` and reports MixedAssignment
-                // and MixedArgument for the loop body. Hack binds the loop variable to `nothing` and accepts the body,
-                // dead code as it is.
+            'type_variables/foreach_over_covariant_nothing' => [
+                // a loop over the `vec<TValue>` of a covariant `new` that nothing constrains
+                // (`TValue` is `nothing`) accepts any use of its item.
                 'code' => '<?php
-                    interface Named {}
-
-                    /** @template-covariant T */
-                    final class Coll {
-                        /**
-                         * @psalm-impure
-                         * @return list<T>
-                         */
-                        public function all(): array { return []; }
-                    }
-
-                    /** @template-covariant T of Named */
+                    /** @template-covariant TValue of Countable */
                     final class Bounded {
                         /**
                          * @psalm-impure
-                         * @return list<T>
+                         * @return list<TValue>
                          */
                         public function all(): array { return []; }
                     }
 
                     /** @psalm-impure */
-                    function nameOf(Named $named): string { return \'\'; }
-
-                    /** @psalm-impure */
-                    function names(): string {
-                        $result = \'\';
+                    function run(): void {
                         foreach ((new Bounded())->all() as $item) {
-                            $result .= nameOf($item);
+                            echo count($item);
                         }
-
-                        return $result;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'type_variables/foreach_over_nothing' => [
+                // a loop over a `vec<nothing>` accepts any use of its item: nothing is a
+                // subtype of every type, so any use of the item is accepted.
+                'code' => '<?php
+                    final class User {
+                        public int $id = 0;
                     }
 
-                    /** @psalm-impure */
-                    function total(): int {
-                        $sum = 0;
-                        foreach ((new Coll())->all() as $item) {
-                            $sum += $item;
-                        }
+                    /**
+                     * @psalm-impure
+                     * @return list<never>
+                     */
+                    function nothing(): array { return []; }
 
-                        return $sum;
+                    /** @psalm-impure */
+                    function run(): void {
+                        foreach (nothing() as $user) {
+                            echo $user->id;
+                        }
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],
