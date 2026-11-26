@@ -148,6 +148,44 @@ final class IssetTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'negatedIssetAlternativeKeepsNonEmptyArray' => [
+                'code' => '<?php
+                    /** @return non-empty-array<string, int|string|null> */
+                    function getArray(): array {
+                        return ["a" => 1];
+                    }
+
+                    $a = getArray();
+
+                    if (isset($a["k"]) && !is_string($a["k"])) {
+                        throw new LogicException();
+                    }',
+                'assertions' => [
+                    '$a===' => 'non-empty-array<string, int|null|string>',
+                ],
+            ],
+            'negatedIssetAlternativeKeepsLiteralUnionKeys' => [
+                'code' => '<?php
+                    /** @return array<string, int|string|null> */
+                    function getArray(): array {
+                        return [];
+                    }
+
+                    /** @return "first"|"second" */
+                    function getKey(): string {
+                        return "first";
+                    }
+
+                    $a = getArray();
+                    $key = getKey();
+
+                    if (isset($a[$key]) && !is_string($a[$key])) {
+                        throw new LogicException();
+                    }',
+                'assertions' => [
+                    '$a===' => 'array<string, int|null|string>',
+                ],
+            ],
             'negatedIssetAlternativeAddsMixedOffsetWithoutNull' => [
                 'code' => '<?php
                     function getArray(): array {

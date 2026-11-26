@@ -76,6 +76,7 @@ use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNever;
+use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TObjectWithProperties;
@@ -2569,6 +2570,11 @@ class Reconciler
                     continue;
                 }
             } elseif ($atomic_type instanceof TArray) {
+                // a shape with only an optional offset can't say the array is not empty
+                if ($atomic_type instanceof TNonEmptyArray) {
+                    return null;
+                }
+
                 $value_type = $atomic_type->type_params[1];
                 $possibly_undefined = true;
             } elseif ($atomic_type instanceof TNull) {
