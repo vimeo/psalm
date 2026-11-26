@@ -7,6 +7,7 @@ namespace Psalm\Internal\Codebase;
 use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\IssueData;
+use Psalm\Internal\Crash\CrashContext;
 use Psalm\Internal\ErrorHandler;
 use Psalm\Internal\Fork\InitScannerTask;
 use Psalm\Internal\Fork\Pool;
@@ -1121,24 +1122,29 @@ final class Scanner
 
     public function scanAPath(string $file_path): void
     {
-        if (Perf\Collector::$enabled) {
-            $deep = isset($this->files_to_deep_scan[$file_path]);
-            $perf_start = Perf\Collector::fileStart();
-            // what it stays at if the file is not scanned at all
-            Perf\Collector::setScan('cold', 0);
-            $this->scanFile($file_path, $this->config->getFiletypeScanners(), $deep);
-            Perf\Collector::scanEnd(
-                $file_path,
-                $this->config->shortenFileName($file_path),
-                $perf_start,
-                $deep,
-            );
-        } else {
-            $this->scanFile(
-                $file_path,
-                $this->config->getFiletypeScanners(),
-                isset($this->files_to_deep_scan[$file_path]),
-            );
+        try {
+            if (Perf\Collector::$enabled) {
+                $deep = isset($this->files_to_deep_scan[$file_path]);
+                $perf_start = Perf\Collector::fileStart();
+                // what it stays at if the file is not scanned at all
+                Perf\Collector::setScan('cold', 0);
+                $this->scanFile($file_path, $this->config->getFiletypeScanners(), $deep);
+                Perf\Collector::scanEnd(
+                    $file_path,
+                    $this->config->shortenFileName($file_path),
+                    $perf_start,
+                    $deep,
+                );
+            } else {
+                $this->scanFile(
+                    $file_path,
+                    $this->config->getFiletypeScanners(),
+                    isset($this->files_to_deep_scan[$file_path]),
+                );
+            }
+        } catch (Throwable $e) {
+            CrashContext::recordFile($e, 'scanning', $file_path);
+            throw $e;
         }
     }
 }

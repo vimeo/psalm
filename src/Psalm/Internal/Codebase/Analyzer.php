@@ -13,6 +13,7 @@ use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\Crash\CrashContext;
 use Psalm\Internal\FileChangedDuringRunException;
 use Psalm\Internal\FileManipulation\ClassDocblockManipulator;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
@@ -1597,7 +1598,12 @@ final class Analyzer
 
         $perf_start = Perf\Collector::$enabled ? Perf\Collector::fileStart() : null;
 
-        $file_analyzer->analyze();
+        try {
+            $file_analyzer->analyze();
+        } catch (Throwable $e) {
+            CrashContext::recordFile($e, 'analysing', $file_path);
+            throw $e;
+        }
         $file_analyzer->context = null;
         $file_analyzer->clearSourceBeforeDestruction();
         unset($file_analyzer);

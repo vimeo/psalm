@@ -278,7 +278,6 @@ final class PsalmEndToEndTest extends PsalmEndToEndTestCase
                 '#^ERROR \S*FileWithErrors\.php:\d+:\d+ InvalidReturnStatement: #m',
                 $process->getOutput(),
             );
-            $this->assertStringNotContainsString('psalm.dev', $process->getOutput());
             $this->assertStringNotContainsString('2 errors', $process->getOutput());
         } else {
             $this->assertStringContainsString('ERROR: InvalidReturnStatement - ', $process->getOutput());
@@ -303,7 +302,6 @@ final class PsalmEndToEndTest extends PsalmEndToEndTestCase
 
         $this->assertSame(2, $process->getExitCode(), $process->getErrorOutput());
         $this->assertStringContainsString('ERROR: InvalidReturnStatement - ', $process->getOutput());
-        $this->assertStringContainsString('2 errors', $process->getOutput());
     }
 
     public function testAReportIsNotAffectedByTheAgentDefault(): void

@@ -43,8 +43,12 @@ vendor/bin/psalm --no-progress --output-format=compact src/Foo.php src/Bar.php
   `--no-taint-analysis` speeds up these runs; the final run goes without it.
 - Exit code `0`: no issues. `2`: issues found. `1`: Psalm itself failed (bad config, crash): read the
   message, it says nothing about the code. Judge a run by its exit code, read straight after the command:
-  `compact` and `count` print nothing both on success and when PHP crashes, and a pipe such as `| tail`
-  reports its own exit code instead.
+  `count` prints nothing on success, `compact` prints nothing too unless Psalm detects an AI agent (then it
+  prints `0 issues`), both print nothing when PHP crashes, and a pipe such as `| tail` reports its own exit
+  code instead.
+- Run by an agent, `compact` (and `console`) end with a result line (`3 issues`), then, when there are
+  fixable issues, `[*] 2 fixable with --alter --issues=<types> (add --dry-run to preview)`. A `[*]` after an
+  issue type marks an issue `--alter` can fix.
 - Many issues: `--report=psalm.json` writes a JSON report next to the normal output, then
   `php scripts/summary.php psalm.json` prints counts per type and file; `--type=…`, `--file=…`,
   `--changed` narrow it down (see `--help`).

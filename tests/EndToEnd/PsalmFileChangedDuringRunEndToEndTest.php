@@ -225,14 +225,18 @@ final class PsalmFileChangedDuringRunEndToEndTest extends PsalmEndToEndTestCase
         }
 
         $this->assertStringStartsWith(
-            PHP_EOL . 'Psalm crashed on src/C3.php' . PHP_EOL . 'LogicException: plugin boom' . PHP_EOL
+            PHP_EOL . 'Psalm crashed on src/C3.php in a plugin (AfterFileAnalysisInterface, Repro\CrashOnC3)' . PHP_EOL
+                . 'LogicException: plugin boom' . PHP_EOL
                 . '  at plugins/plugin.php:',
             $result['STDERR'],
         );
         $this->assertSame(1, substr_count($result['STDERR'], 'LogicException: plugin boom'));
         $this->assertStringNotContainsString('Revolt', $result['STDERR']);
         $this->assertStringNotContainsString('which changed', $result['STDERR']);
-        $this->assertStringEndsWith('crashed due to an uncaught Throwable)' . PHP_EOL, $result['STDERR']);
+        $this->assertStringEndsWith(
+            'crashed due to an uncaught Throwable)' . PHP_EOL . 'Report it to the authors of the plugin' . PHP_EOL,
+            $result['STDERR'],
+        );
     }
 
     /**
@@ -276,7 +280,8 @@ final class PsalmFileChangedDuringRunEndToEndTest extends PsalmEndToEndTestCase
                 ...$extra_args,
             ],
             self::$tmpDir,
-            self::agentEnvVarsToUnset(),
+            // no crash-*.txt in the temporary directory
+            ['PSALM_CRASH_REPORT' => '0'] + self::agentEnvVarsToUnset(),
         );
         $process->run();
 
