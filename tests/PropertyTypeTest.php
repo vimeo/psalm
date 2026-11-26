@@ -2798,6 +2798,19 @@ final class PropertyTypeTest extends TestCase
                     '$c===' => 'int',
                 ],
             ],
+            'variablePropertyNameThatIsNotAnIdentifier' => [
+                'code' => '<?php
+                    $o = new stdClass();
+                    $o->a = [1];
+                    $o->{"a[0]"} = "x";
+                    $v = $o->a[0];
+                    $w = $o->{"a[0]"};',
+                'assertions' => [
+                    '$v===' => '1',
+                    '$w===' => 'mixed',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
             'goodArrayProperties' => [
                 'code' => '<?php
                     interface I1 {}

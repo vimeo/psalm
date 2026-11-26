@@ -254,7 +254,12 @@ final class ExpressionIdentifier
 
             if ($source instanceof StatementsAnalyzer
                 && ($stmt_name_type = $source->node_data->getType($stmt->name))
-                && $stmt_name_type->isSingleStringLiteral()) {
+                && $stmt_name_type->isSingleStringLiteral()
+                && preg_match(
+                    '/^[a-zA-Z_\x80-\xff][a-zA-Z0-9_\x80-\xff]*$/D',
+                    $stmt_name_type->getSingleStringLiteral()->value,
+                )
+            ) {
                 return $object_id . '->' . $stmt_name_type->getSingleStringLiteral()->value;
             }
 
