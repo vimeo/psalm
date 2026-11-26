@@ -856,11 +856,14 @@ final class MethodCallPurityAnalyzer
             );
         }
 
+        $this_property_mutations = $method_storage->this_property_mutations
+            ?? self::getBuiltinPropertyMutations($method_storage, $class_storage, $callee_capabilities);
+
         if (!$config->remember_property_assignments_after_call
             && ($method_capabilities & (Capabilities::WRITE_PROPS | Capabilities::WRITE_THIS_PROPS)) !== 0
         ) {
             $context->removeMutableObjectVars(false, $method_capabilities);
-        } elseif ($method_storage->this_property_mutations) {
+        } elseif ($this_property_mutations !== null && $this_property_mutations !== []) {
             if (!$config->remember_property_assignments_after_call) {
                 // the method cannot write properties here, but may still write static ones
                 $context->removeMutableObjectVars(false, $method_capabilities);
@@ -878,7 +881,7 @@ final class MethodCallPurityAnalyzer
                         $codebase,
                         $lhs_var_id,
                         $class_storage,
-                        $method_storage->this_property_mutations,
+                        $this_property_mutations,
                     )
                     : [],
             );
@@ -891,6 +894,7 @@ final class MethodCallPurityAnalyzer
                     $result,
                     $lhs_var_id,
                     $method_storage,
+                    $this_property_mutations,
                     $class_storage,
                     $class_template_params,
                 );
@@ -915,15 +919,45 @@ final class MethodCallPurityAnalyzer
         }
 
         if ($context->inside_conditional && $lhs_var_id !== null) {
-            foreach ($method_storage->this_property_mutations ?? [] as $name => $_) {
+            foreach ($this_property_mutations ?? [] as $name => $_) {
                 $context->assigned_var_ids[$lhs_var_id . '->' . $name] ??= 0;
             }
         }
     }
 
     /**
+     * A builtin has no body telling which properties of its receiver it writes: one that may write them may write
+     * any, as the engine does those of an XMLReader when it reads
+     *
+     * @param CapabilitySet $callee_capabilities
+     * @return ?array<string, true>
+     * @psalm-mutation-free
+     */
+    private static function getBuiltinPropertyMutations(
+        MethodStorage $method_storage,
+        ClassLikeStorage $class_storage,
+        int $callee_capabilities,
+    ): ?array {
+        if (!$method_storage->builtin
+            || $method_storage->is_static
+            || ($callee_capabilities & Capabilities::WRITE_THIS_PROPS) === 0
+        ) {
+            return null;
+        }
+
+        $mutations = [];
+
+        foreach ($class_storage->declaring_property_ids as $name => $_) {
+            $mutations[$name] = true;
+        }
+
+        return $mutations;
+    }
+
+    /**
      * Resets what is known of the properties of the receiver the method writes, and of what they hold
      *
+     * @param array<string, bool> $this_property_mutations
      * @param array<string, array<string, Union>> $class_template_params
      */
     private static function resetWrittenProperties(
@@ -932,10 +966,11 @@ final class MethodCallPurityAnalyzer
         AtomicMethodCallAnalysisResult $result,
         string $lhs_var_id,
         MethodStorage $method_storage,
+        array $this_property_mutations,
         ClassLikeStorage $class_storage,
         array $class_template_params,
     ): void {
-        foreach ($method_storage->this_property_mutations ?? [] as $name => $writes_property) {
+        foreach ($this_property_mutations as $name => $writes_property) {
             $mutation_var_id = $lhs_var_id . '->' . $name;
             $item_mutations = $method_storage->this_property_item_mutations[$name] ?? [];
 

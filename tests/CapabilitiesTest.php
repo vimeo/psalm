@@ -3520,6 +3520,35 @@ final class CapabilitiesTest extends TestCase
                         return $copy;
                     }',
             ],
+            'aBuiltinMethodMayWriteAnyPropertyOfItsReceiver' => [
+                'code' => '<?php
+                    final class ShopReader {
+                        public function __construct(private XMLReader $reader) {}
+
+                        public function readShop(XMLReader $other): void {
+                            if ($this->reader->name !== "shop" || $other->name !== "shop") {
+                                throw new UnexpectedValueException("not a shop");
+                            }
+
+                            $this->reader->read();
+
+                            $name = $this->reader->name;
+                            /** @psalm-check-type-exact $name = string */;
+                            $otherName = $other->name;
+                            /** @psalm-check-type-exact $otherName = "shop" */;
+
+                            do {
+                                if ($this->reader->name === "offers") {
+                                    continue;
+                                }
+                            } while ($this->reader->read() && $this->reader->name !== "shop");
+
+                            if ($this->reader->name !== "shop") {
+                                throw new UnexpectedValueException("should be the end of the shop");
+                            }
+                        }
+                    }',
+            ],
             'anElementOfAnArrayAccessPropertyIsWrittenByItsOffsetMethodsOnly' => [
                 'code' => '<?php
                     /** @implements ArrayAccess<string, int> */
