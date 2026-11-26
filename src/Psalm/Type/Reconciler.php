@@ -612,8 +612,12 @@ class Reconciler
                     self::adjustTObjectWithPropertiesType($key_parts, $existing_types, $changed_var_ids, $result_type);
                 }
 
+                $array_value_type = $has_inverted_isset
+                    ? self::getPossiblyUnsetArrayValue($key_parts, $existing_types, $before_adjustment, $result_type)
+                    : $result_type;
+
                 if (str_ends_with($key, ']')
-                    && !$has_inverted_isset
+                    && $array_value_type !== null
                     && !$has_inverted_key_exists
                     && !$has_empty
                     && !$is_equality
@@ -622,7 +626,7 @@ class Reconciler
                         $key_parts,
                         $existing_types,
                         $changed_var_ids,
-                        $result_type,
+                        $array_value_type,
                     );
                 } elseif ($key !== '$this') {
                     foreach ($existing_types as $new_key => $_) {
@@ -2509,6 +2513,56 @@ class Reconciler
         }
 
         return true;
+    }
+
+    /**
+     * Where isset() is negated, an offset of an array variable is not set, is null, or holds what the other
+     * alternatives of the clause say: the array shape gets it as an optional offset. Returns null where this
+     * tells nothing about the shape.
+     *
+     * @param  list<string>          $key_parts
+     * @param  array<string, Union>  $existing_types
+     */
+    private static function getPossiblyUnsetArrayValue(
+        array $key_parts,
+        array $existing_types,
+        ?Union $before_adjustment,
+        Union $result_type,
+    ): ?Union {
+        if (count($key_parts) !== 4 || !isset($existing_types[$key_parts[0]])) {
+            return null;
+        }
+
+        // a list that has an offset has all the offsets before it, a list that may not have it says nothing
+        foreach ($existing_types[$key_parts[0]]->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TKeyedArray && $atomic_type->is_list) {
+                return null;
+            }
+        }
+
+        if ($before_adjustment === null) {
+            return null;
+        }
+
+        // an offset that can hold null may be null where isset() is false, also when it is optional (the reconciled
+        // type then reads it as not set); one that can't is not set there
+        if ($before_adjustment->isNullable() || $before_adjustment->hasMixed()) {
+            $result_type = Type::combineUnionTypes($result_type, Type::getNull());
+        } elseif ($result_type->isNullable()) {
+            $builder = $result_type->getBuilder()->removeType('null');
+
+            if ($builder->isUnionEmpty()) {
+                return null;
+            }
+
+            $result_type = $builder->freeze();
+        }
+
+        if ($result_type->isNever()) {
+            return null;
+        }
+
+        return $result_type->setPossiblyUndefined(true);
     }
 
     /**

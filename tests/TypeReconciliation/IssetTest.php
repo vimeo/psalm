@@ -148,6 +148,105 @@ final class IssetTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'negatedIssetAlternativeAddsOptionalOffset' => [
+                'code' => '<?php
+                    function getArray(): array {
+                        return [];
+                    }
+
+                    $bar = getArray();
+
+                    if (!isset($bar["test"]) || !is_string($bar["test"])) {
+                        throw new LogicException();
+                    }
+
+                    if (isset($bar["optional"]) && !is_string($bar["optional"])) {
+                        throw new LogicException();
+                    }',
+                'assertions' => [
+                    '$bar===' => 'array{optional?: null|string, test: string, ...<array-key, mixed>}',
+                ],
+            ],
+            'negatedIssetAlternativeNarrowsOptionalMixedOffset' => [
+                'code' => '<?php
+                    /** @return array{test: string, optional?: mixed} */
+                    function getArray(): array {
+                        return ["test" => "a"];
+                    }
+
+                    $bar = getArray();
+
+                    if (isset($bar["optional"]) && !is_string($bar["optional"])) {
+                        throw new LogicException();
+                    }',
+                'assertions' => [
+                    '$bar===' => 'array{optional?: null|string, test: string}',
+                ],
+            ],
+            'negatedIssetAlternativeNarrowsOptionalNonNullableOffset' => [
+                'code' => '<?php
+                    /** @return array{k?: int|string} */
+                    function getArray(): array {
+                        return [];
+                    }
+
+                    $a = getArray();
+
+                    if (isset($a["k"]) && is_int($a["k"])) {
+                        throw new LogicException();
+                    }',
+                'assertions' => [
+                    '$a===' => 'array{k?: string}',
+                ],
+            ],
+            'negatedIssetKeepsNonNullableArrayValues' => [
+                'code' => '<?php
+                    /** @return array<string, int> */
+                    function getArray(): array {
+                        return [];
+                    }
+
+                    $a = getArray();
+
+                    if (isset($a["k"])) {
+                        throw new LogicException();
+                    }',
+                'assertions' => [
+                    '$a===' => 'array<string, int>',
+                ],
+            ],
+            'negatedIssetKeepsListOffsets' => [
+                'code' => '<?php
+                    /** @return list<int|string|null> */
+                    function getList(): array {
+                        return [];
+                    }
+
+                    $l = getList();
+
+                    if (isset($l[3]) && is_int($l[3])) {
+                        throw new LogicException();
+                    }',
+                'assertions' => [
+                    '$l===' => 'list<int|null|string>',
+                ],
+            ],
+            'negatedIssetKeepsNestedOffsets' => [
+                'code' => '<?php
+                    /** @return array<string, array<string, mixed>> */
+                    function getArray(): array {
+                        return [];
+                    }
+
+                    $a = getArray();
+
+                    if (isset($a["x"]["k"]) && !is_string($a["x"]["k"])) {
+                        throw new LogicException();
+                    }',
+                'assertions' => [
+                    '$a===' => 'array<string, array<string, mixed>>',
+                ],
+            ],
             'nullCoalesceOnAnyExpression' => [
                 'code' => '<?php
                     final class S {
