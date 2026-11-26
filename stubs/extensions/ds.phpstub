@@ -53,6 +53,12 @@ interface Collection extends IteratorAggregate, Countable, JsonSerializable
      * @psalm-mutation-free
      */
     public function count(): int;
+
+    /**
+     * @return array<TKey, TValue>
+     * @psalm-mutation-free
+     */
+    public function jsonSerialize(): array;
 }
 
 /**
@@ -171,6 +177,40 @@ final class Deque implements Sequence
      * @psalm-mutation-free
      */
     public function get(int $index)
+    {
+    }
+
+    /**
+     * @param int $offset
+     * @psalm-mutation-free
+     */
+    public function offsetExists($offset): bool
+    {
+    }
+
+    /**
+     * @param int $offset
+     * @return TValue
+     * @throws \OutOfRangeException
+     * @psalm-mutation-free
+     */
+    public function offsetGet($offset)
+    {
+    }
+
+    /**
+     * @param int|null $offset
+     * @param TValue $value
+     * @throws \OutOfRangeException
+     */
+    public function offsetSet($offset, $value): void
+    {
+    }
+
+    /**
+     * @param int $offset
+     */
+    public function offsetUnset($offset): void
     {
     }
 
@@ -507,6 +547,39 @@ final class Map implements Collection, ArrayAccess
     }
 
     /**
+     * @param TKey $offset
+     * @psalm-mutation-free
+     */
+    public function offsetExists($offset): bool
+    {
+    }
+
+    /**
+     * @param TKey $offset
+     * @return TValue
+     * @throws OutOfBoundsException
+     * @psalm-mutation-free
+     */
+    public function offsetGet($offset)
+    {
+    }
+
+    /**
+     * @param TKey $offset
+     * @param TValue $value
+     */
+    public function offsetSet($offset, $value): void
+    {
+    }
+
+    /**
+     * @param TKey $offset
+     */
+    public function offsetUnset($offset): void
+    {
+    }
+
+    /**
      * @return Set<TKey>
      * @psalm-mutation-free
      */
@@ -789,6 +862,32 @@ interface Sequence extends Collection, ArrayAccess
     public function get(int $index);
 
     /**
+     * @param int $offset
+     * @psalm-mutation-free
+     */
+    public function offsetExists($offset): bool;
+
+    /**
+     * @param int $offset
+     * @return TValue
+     * @throws \OutOfRangeException
+     * @psalm-mutation-free
+     */
+    public function offsetGet($offset);
+
+    /**
+     * @param int|null $offset
+     * @param TValue $value
+     * @throws \OutOfRangeException
+     */
+    public function offsetSet($offset, $value): void;
+
+    /**
+     * @param int $offset
+     */
+    public function offsetUnset($offset): void;
+
+    /**
      * @param TValue ...$values
      * @throws \OutOfRangeException
      */
@@ -1016,6 +1115,40 @@ final class Vector implements Sequence
      * @psalm-mutation-free
      */
     public function get(int $index)
+    {
+    }
+
+    /**
+     * @param int $offset
+     * @psalm-mutation-free
+     */
+    public function offsetExists($offset): bool
+    {
+    }
+
+    /**
+     * @param int $offset
+     * @return TValue
+     * @throws \OutOfRangeException
+     * @psalm-mutation-free
+     */
+    public function offsetGet($offset)
+    {
+    }
+
+    /**
+     * @param int|null $offset
+     * @param TValue $value
+     * @throws \OutOfRangeException
+     */
+    public function offsetSet($offset, $value): void
+    {
+    }
+
+    /**
+     * @param int $offset
+     */
+    public function offsetUnset($offset): void
     {
     }
 
@@ -1293,6 +1426,39 @@ final class Set implements Collection, ArrayAccess
     }
 
     /**
+     * @param never $offset
+     * @psalm-mutation-free
+     */
+    public function offsetExists($offset): bool
+    {
+    }
+
+    /**
+     * @param int $offset
+     * @return TValue
+     * @throws \OutOfRangeException
+     * @psalm-mutation-free
+     */
+    public function offsetGet($offset)
+    {
+    }
+
+    /**
+     * @param null $offset
+     * @param TValue $value
+     */
+    public function offsetSet($offset, $value): void
+    {
+    }
+
+    /**
+     * @param never $offset
+     */
+    public function offsetUnset($offset): void
+    {
+    }
+
+    /**
      * @template TValue2
      * @param Set<TValue2> $set
      * @return Set<TValue&TValue2>
@@ -1489,6 +1655,38 @@ final class Stack implements Collection, ArrayAccess
     public function push(...$values): void
     {
     }
+
+    /**
+     * @param never $offset
+     * @psalm-mutation-free
+     */
+    public function offsetExists($offset): bool
+    {
+    }
+
+    /**
+     * @param never $offset
+     * @return never
+     * @psalm-mutation-free
+     */
+    public function offsetGet($offset)
+    {
+    }
+
+    /**
+     * @param null $offset
+     * @param TValue $value
+     */
+    public function offsetSet($offset, $value): void
+    {
+    }
+
+    /**
+     * @param never $offset
+     */
+    public function offsetUnset($offset): void
+    {
+    }
 }
 
 /**
@@ -1580,6 +1778,38 @@ final class Queue implements Collection, ArrayAccess
      * @param TValue ...$values
      */
     public function push(...$values): void
+    {
+    }
+
+    /**
+     * @param never $offset
+     * @psalm-mutation-free
+     */
+    public function offsetExists($offset): bool
+    {
+    }
+
+    /**
+     * @param never $offset
+     * @return never
+     * @psalm-mutation-free
+     */
+    public function offsetGet($offset)
+    {
+    }
+
+    /**
+     * @param null $offset
+     * @param TValue $value
+     */
+    public function offsetSet($offset, $value): void
+    {
+    }
+
+    /**
+     * @param never $offset
+     */
+    public function offsetUnset($offset): void
     {
     }
 }

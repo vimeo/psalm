@@ -1600,6 +1600,68 @@ final class PluginTest extends DeferredAnalyzerTestCase
         $this->analyzeFile($file_path, new Context());
     }
 
+    public function testFunctionParamsProviderReturningNullKeepsCallMapParams(): void
+    {
+        $this->expectExceptionMessageMatches('/^InvalidArgument - .*somefile\.php:2:24 - Argument 1 of strlen expects string,/');
+        $this->expectException(CodeException::class);
+
+        $this->analyzeWithNullFunctionParamsPlugin(
+            '<?php
+                strlen([]);',
+        );
+    }
+
+    public function testFunctionParamsProviderReturningNullKeepsDeclaredParams(): void
+    {
+        $this->expectExceptionMessageMatches('/^InvalidScalarArgument - .*somefile\.php:3:36 - Argument 1 of nullParamsFunction expects int,/');
+        $this->expectException(CodeException::class);
+
+        $this->analyzeWithNullFunctionParamsPlugin(
+            '<?php
+                function nullParamsFunction(int $i): void {}
+                nullParamsFunction("x");',
+        );
+    }
+
+    public function testFunctionParamsProviderReturningNullKeepsCallMapOverloadOfTheArguments(): void
+    {
+        $this->analyzeWithNullFunctionParamsPlugin(
+            '<?php
+                echo strtr("abc", ["a" => "x"]);
+                echo strtr("abc", "a", "x");',
+        );
+    }
+
+    private function analyzeWithNullFunctionParamsPlugin(string $code): void
+    {
+        require_once __DIR__ . '/Plugin/NullFunctionParamsPlugin.php';
+
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                    <plugins>
+                        <pluginClass class="Psalm\\Test\\Config\\Plugin\\NullFunctionParamsPlugin" />
+                    </plugins>
+                </psalm>',
+            ),
+        );
+
+        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile($file_path, $code);
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
     public function testAfterAnalysisHooks(): void
     {
         require_once __DIR__ . '/Plugin/AfterAnalysisPlugin.php';

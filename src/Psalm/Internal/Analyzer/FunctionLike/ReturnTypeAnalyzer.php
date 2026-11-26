@@ -200,6 +200,21 @@ final class ReturnTypeAnalyzer
 
         $cased_method_id = $function_like_analyzer->getCorrectlyCasedMethodId();
 
+        // a docblock type the signature rules out is reported by checkReturnType(): the body is checked against what
+        // PHP enforces
+        if ($return_type
+            && $function_like_storage
+            && $function_like_storage->signature_return_type
+            && self::isDocblockReturnTypeRejected(
+                $codebase,
+                $function_like_storage,
+                $fq_class_name ?? $source->getFQCLN(),
+                $function instanceof Closure || $function instanceof ArrowFunction,
+            )
+        ) {
+            $return_type = $function_like_storage->signature_return_type;
+        }
+
         if (!$function->getStmts() &&
             (
                 $function instanceof ClassMethod &&
@@ -1124,17 +1139,7 @@ final class ReturnTypeAnalyzer
             }
         }
 
-        $union_comparison_result = new TypeComparisonResult();
-
-        if (!UnionTypeComparator::isContainedBy(
-            $codebase,
-            $fleshed_out_return_type,
-            $fleshed_out_signature_type,
-            false,
-            false,
-            $union_comparison_result,
-        ) && !$union_comparison_result->type_coerced_from_mixed
-        ) {
+        if (!self::isContainedBySignatureType($codebase, $fleshed_out_return_type, $fleshed_out_signature_type)) {
             if ($codebase->alter_code
                 && isset($project_analyzer->getIssuesToFix()['MismatchingDocblockReturnType'])
             ) {
@@ -1148,7 +1153,7 @@ final class ReturnTypeAnalyzer
                 return null;
             }
 
-            if (IssueBuffer::accepts(
+            IssueBuffer::maybeAdd(
                 new MismatchingDocblockReturnType(
                     'Docblock has incorrect return type \'' . $storage->return_type->getId() .
                         '\', should be \'' . $storage->signature_return_type->getId() . '\'',
@@ -1156,12 +1161,101 @@ final class ReturnTypeAnalyzer
                 ),
                 $storage->suppressed_issues,
                 true,
-            )) {
-                return false;
-            }
+            );
         }
 
         return null;
+    }
+
+    /**
+     * Whether the docblock return type of a function-like is ruled out by its signature type, which is reported as a
+     * MismatchingDocblockReturnType: the docblock type is then rejected and the signature type is the declared one.
+     * That is only where checkReturnType() reports it: not for a closure or an arrow function.
+     */
+    public static function isDocblockReturnTypeRejected(
+        Codebase $codebase,
+        FunctionLikeStorage $storage,
+        ?string $self_class,
+        bool $is_closure,
+    ): bool {
+        if ($is_closure
+            || !$storage->return_type
+            || !$storage->return_type_location
+            || !$storage->signature_return_type
+            || $storage->signature_return_type === $storage->return_type
+        ) {
+            return false;
+        }
+
+        $classlike_storage = $self_class !== null ? $codebase->classlike_storage_provider->get($self_class) : null;
+        $parent_class = $classlike_storage?->parent_class;
+
+        $signature_type = TypeExpander::expandUnion(
+            $codebase,
+            $storage->signature_return_type,
+            $classlike_storage->name ?? null,
+            $classlike_storage->name ?? null,
+            $parent_class,
+        );
+
+        try {
+            $return_type = TypeExpander::expandUnion(
+                $codebase,
+                $storage->return_type,
+                $classlike_storage->name ?? null,
+                $classlike_storage->name ?? null,
+                $parent_class,
+                true,
+                true,
+                false,
+                false,
+                false,
+                true,
+            );
+        } catch (UnresolvableConstantException) {
+            return false;
+        }
+
+        if ($classlike_storage && $self_class !== null && $storage->cased_name !== null) {
+            $class_template_params = ClassTemplateParamCollector::collect(
+                $codebase,
+                $classlike_storage,
+                $classlike_storage,
+                strtolower($storage->cased_name),
+                new TNamedObject($self_class),
+                true,
+            );
+
+            if ($class_template_params !== null && $class_template_params !== []) {
+                $return_type = TemplateStandinTypeReplacer::replace(
+                    $return_type,
+                    new TemplateResult($class_template_params, []),
+                    $codebase,
+                    null,
+                    null,
+                    null,
+                );
+            }
+        }
+
+        return !self::isContainedBySignatureType($codebase, $return_type, $signature_type);
+    }
+
+    private static function isContainedBySignatureType(
+        Codebase $codebase,
+        Union $return_type,
+        Union $signature_type,
+    ): bool {
+        $union_comparison_result = new TypeComparisonResult();
+
+        return UnionTypeComparator::isContainedBy(
+            $codebase,
+            $return_type,
+            $signature_type,
+            false,
+            false,
+            $union_comparison_result,
+        ) || $union_comparison_result->type_coerced_from_mixed;
     }
 
     /**

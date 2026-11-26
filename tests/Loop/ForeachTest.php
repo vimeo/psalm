@@ -246,6 +246,31 @@ final class ForeachTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'breakTwoDoesNotRedefineAfterTheInnerLoop' => [
+                'code' => '<?php
+                    /** @return list<int> */
+                    function ints(): array {
+                        return [1];
+                    }
+
+                    $v = 1;
+                    $after_inner = 1;
+
+                    foreach (ints() as $_) {
+                        foreach (ints() as $_) {
+                            $v = "s";
+                            break 2;
+                        }
+
+                        $after_inner = $v;
+                    }
+
+                    $after_outer = $v;',
+                'assertions' => [
+                    '$after_inner===' => '1',
+                    '$after_outer===' => "'s'|1",
+                ],
+            ],
             'mongodbCursorInterfaceWithoutTypeArgumentsYieldsDocuments' => [
                 'code' => '<?php
                     function rows(MongoDB\Driver\CursorInterface $cursor): void {
