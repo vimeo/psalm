@@ -29,6 +29,7 @@ use function count;
 use function in_array;
 use function is_array;
 use function spl_object_id;
+use function str_starts_with;
 
 /**
  * @internal
@@ -117,9 +118,9 @@ final class DoAnalyzer
 
         $cond_clauses = $while_clauses;
 
-        // a clause under a property of a mixed variable says nothing, but its negation is not true either
+        // a clause on an offset or property of a mixed variable says nothing, but its negation is not true either
         $while_clauses = array_map(
-            static fn(Clause $c): Clause => $c->forgetPropertiesOfMixedVars(
+            static fn(Clause $c): Clause => $c->forgetItemsOfMixedVars(
                 array_diff_key($mixed_vars, $c->possibilities),
                 $cond_id,
             ),
@@ -192,13 +193,13 @@ final class DoAnalyzer
             LoopAnalyzer::addVarsWrittenByTheExitingCondition($context, $loop_scope);
         }
 
-        // the loop is left when the condition is false: what it asserted under a property of a mixed variable,
+        // the loop is left when the condition is false: what it asserted of an offset or property of a mixed variable,
         // whose negation is not known, doesn't hold after it (what the body assigned to it does)
         foreach ($cond_clauses as $cond_clause) {
             foreach ($cond_clause->possibilities as $key => $_) {
                 if (!isset($negated_while_types[$key])
                     && !isset($inner_loop_context->assigned_var_ids[$key])
-                    && self::isUnderAPropertyOfMixedVar($key, $mixed_vars)
+                    && self::isItemOfMixedVar($key, $mixed_vars)
                 ) {
                     $context->remove($key);
                 }
@@ -234,10 +235,10 @@ final class DoAnalyzer
      * @param array<string, bool> $mixed_vars
      * @psalm-pure
      */
-    private static function isUnderAPropertyOfMixedVar(string $key, array $mixed_vars): bool
+    private static function isItemOfMixedVar(string $key, array $mixed_vars): bool
     {
         foreach ($mixed_vars as $mixed_var_id => $_) {
-            if (Clause::isUnderAPropertyOf($key, $mixed_var_id)) {
+            if (str_starts_with($key, $mixed_var_id . '[') || str_starts_with($key, $mixed_var_id . '->')) {
                 return true;
             }
         }

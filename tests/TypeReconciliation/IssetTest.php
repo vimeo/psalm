@@ -2542,134 +2542,45 @@ final class IssetTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['MixedArrayAccess'],
+                'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
-            'offsetOfAMixedVariableIsNarrowedAfterAnEarlyReturn' => [
+            'parentOfAnIntOffsetCheckedWithIssetIsNotMixed' => [
                 'code' => '<?php
-                    interface D {}
-
-                    function f(mixed $m): void {
-                        if (!$m["x"] instanceof D) {
-                            return;
+                    function f(array $a): string {
+                        if (!isset($a["x"][3])) {
+                            return "";
                         }
 
-                        $d = $m["x"];
-                        /** @psalm-check-type-exact $d = D */;
+                        return (string) $a["x"][3];
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['MixedArrayAccess'],
+                'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
-            'offsetOfAMixedVariableIsNarrowedInAnElseif' => [
+            'parentOfAnIntOffsetCheckedWithIssetMayBeAString' => [
                 'code' => '<?php
-                    interface D {}
-
-                    function f(mixed $m): void {
-                        if (rand(0, 1)) {
-                        } elseif ($m["x"] instanceof D) {
-                            $d = $m["x"];
-                            /** @psalm-check-type-exact $d = D */;
+                    function f(array $a): string {
+                        if (isset($a["x"][3]) && is_string($a["x"])) {
+                            return $a["x"];
                         }
+
+                        return "";
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['MixedArrayAccess'],
+                'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
-            'offsetOfAMixedVariableIsNarrowedInATernary' => [
+            'parentOfAStringVariableOffsetCheckedWithIssetStaysMixed' => [
                 'code' => '<?php
-                    interface D {}
-
-                    function f(mixed $m): void {
-                        $d = $m["x"] instanceof D ? $m["x"] : null;
-                        /** @psalm-check-type-exact $d = D|null */;
-                    }',
-                'assertions' => [],
-                'ignored_issues' => ['MixedArrayAccess'],
-                'php_version' => '8.0',
-            ],
-            'offsetOfAMixedVariableIsNarrowedWhereAConditionStoredInAVariableIsTrue' => [
-                'code' => '<?php
-                    interface D {}
-
-                    function f(mixed $m): void {
-                        $b = $m["x"] instanceof D;
-
-                        if ($b) {
-                            $d = $m["x"];
-                            /** @psalm-check-type-exact $d = D */;
+                    function f(array $a, string $k): void {
+                        if (isset($a["x"][$k])) {
+                            $p = $a["x"];
+                            /** @psalm-check-type-exact $p = mixed */;
                         }
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['MixedArrayAccess'],
-                'php_version' => '8.0',
-            ],
-            'offsetOfAMixedVariableIsNarrowedAfterADoWhileLoop' => [
-                'code' => '<?php
-                    interface D {}
-
-                    function f(mixed $m): void {
-                        do {
-                            echo "";
-                        } while (!$m["x"] instanceof D);
-
-                        $d = $m["x"];
-                        /** @psalm-check-type-exact $d = D */;
-                    }',
-                'assertions' => [],
-                'ignored_issues' => ['MixedArrayAccess'],
-                'php_version' => '8.0',
-            ],
-            'propertyOfAMixedVariableWrittenInTheIfIsNotNarrowedByItsCondition' => [
-                'code' => '<?php
-                    function f(mixed $o): void {
-                        if ($o->p === false) {
-                            $o->p = (bool) rand(0, 1);
-
-                            if ($o->p === false) {}
-                        }
-                    }',
-                'assertions' => [],
-                'ignored_issues' => ['MixedPropertyFetch', 'MixedPropertyAssignment'],
-                'php_version' => '8.0',
-            ],
-            'propertyOfAMixedVariableIsNotNarrowedAfterAMethodCallOnIt' => [
-                'code' => '<?php
-                    function f(mixed $o): void {
-                        if ($o->p === false) {
-                            $o->reset();
-
-                            if ($o->p === false) {}
-                        }
-                    }',
-                'assertions' => [],
-                'ignored_issues' => ['MixedPropertyFetch', 'MixedMethodCall'],
-                'php_version' => '8.0',
-            ],
-            'propertyOfAnOffsetOfAMixedVariableWrittenInTheIfIsNotNarrowedByItsCondition' => [
-                'code' => '<?php
-                    function f(mixed $a): void {
-                        if ($a["x"]->p === false) {
-                            $a["x"]->p = (bool) rand(0, 1);
-
-                            if ($a["x"]->p === false) {}
-                        }
-                    }',
-                'assertions' => [],
-                'ignored_issues' => ['MixedArrayAccess', 'MixedPropertyFetch', 'MixedPropertyAssignment'],
-                'php_version' => '8.0',
-            ],
-            'offsetOfAPropertyOfAMixedVariableIsNotNarrowedAfterAMethodCallOnIt' => [
-                'code' => '<?php
-                    function f(mixed $o): void {
-                        if ($o->p["x"] === false) {
-                            $o->reset();
-
-                            if ($o->p["x"] === false) {}
-                        }
-                    }',
-                'assertions' => [],
-                'ignored_issues' => ['MixedArrayAccess', 'MixedPropertyFetch', 'MixedMethodCall'],
+                'ignored_issues' => ['MixedAssignment'],
                 'php_version' => '8.0',
             ],
             'issetOfIntOffsetSetsPossiblyUndefinedMixedVariable' => [

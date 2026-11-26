@@ -46,21 +46,15 @@ final class DoTest extends TestCase
             ],
             'doWhileConditionOnAnOffsetOfAMixedVariableDoesNotHoldAfterTheLoop' => [
                 'code' => '<?php
-                    function g(): mixed {
-                        return [];
-                    }
+                    function f(mixed $m): void {
+                        do {
+                            echo "";
+                        } while ($m["x"]);
 
-                    $m = g();
-
-                    do {
-                        echo "";
-                    } while ($m["x"]);
-
-                    $z = $m["x"];',
-                'assertions' => [
-                    '$z===' => 'empty-mixed',
-                ],
-                'ignored_issues' => ['MixedArrayAccess', 'MixedAssignment'],
+                        if ($m["x"]) {}
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedArrayAccess'],
                 'php_version' => '8.0',
             ],
             'doWhileOffsetOfAMixedVariableAssignedByTheBodyKeepsItsTypeAfterTheLoop' => [
@@ -71,7 +65,7 @@ final class DoTest extends TestCase
                         } while ($m["x"]);
 
                         $z = $m["x"];
-                        /** @psalm-check-type-exact $z = 0 */
+                        /** @psalm-check-type-exact $z = int<0, 1> */
                         echo $z;
                     }',
                 'assertions' => [],

@@ -16,6 +16,14 @@ use UnexpectedValueException;
 final class HasIntOrStringArrayAccess extends Assertion
 {
     use UnserializeMemoryUsageSuppressionTrait;
+
+    /**
+     * @param bool $int_key whether the key is an int, which a string also has a character at
+     */
+    public function __construct(public readonly bool $int_key = false)
+    {
+    }
+
     /**
      * @psalm-pure
      */
@@ -30,7 +38,7 @@ final class HasIntOrStringArrayAccess extends Assertion
      */
     public function __toString(): string
     {
-        return 'has-string-or-int-array-access';
+        return $this->int_key ? 'has-int-array-access' : 'has-string-or-int-array-access';
     }
 
     /**

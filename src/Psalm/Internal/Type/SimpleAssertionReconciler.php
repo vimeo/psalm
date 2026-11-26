@@ -2470,7 +2470,7 @@ final class SimpleAssertionReconciler extends Reconciler
      * @param Reconciler::RECONCILIATION_* $failed_reconciliation
      */
     private static function reconcileIntArrayAccess(
-        Assertion $assertion,
+        HasIntOrStringArrayAccess $assertion,
         Codebase $codebase,
         Union $existing_var_type,
         ?string $key,
@@ -2485,7 +2485,14 @@ final class SimpleAssertionReconciler extends Reconciler
         $existing_var_atomic_types = $existing_var_type->getAtomicTypes();
 
         if ($existing_var_type->hasMixed()) {
-            return Type::getMixed();
+            // with a key that may be a string, a string would report an invalid offset where it is read
+            return $assertion->int_key
+                ? new Union([
+                    new TNonEmptyArray([Type::getArrayKey(), Type::getMixed()]),
+                    new TNamedObject('ArrayAccess'),
+                    new TNonEmptyString(),
+                ])
+                : Type::getMixed();
         }
 
         $array_types = [];
