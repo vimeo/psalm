@@ -114,18 +114,20 @@ final class ClassLikeStorageProvider
 
     /**
      * @param array<string, ClassLikeStorage> $more
+     * @param array<string, ClassLikeStorage> $earlier the storages held before the scanning processes started
      */
-    public function addMore(array $more): void
+    public function addMore(array $more, array $earlier, int $analysis_php_version_id): void
     {
         foreach ($more as $k => $storage) {
             if (isset(self::$storage[$k])) {
                 $duplicate_storage = self::$storage[$k];
                 $duplicate_location = $duplicate_storage->location ?? $duplicate_storage->stmt_location;
                 $location = $storage->location ?? $storage->stmt_location;
-                // a project polyfill of a native class stubbed with a newer `@since` replaces the
-                // stub (the scanner only lets it through below that version)
+                // a project polyfill of a native class stubbed with an `@since` newer than the analysed
+                // version replaces the stub, as in ClassLikeNodeScanner
                 $is_polyfill = $duplicate_storage->stubbed
                     && $duplicate_storage->since_php_version_id !== null
+                    && $analysis_php_version_id < $duplicate_storage->since_php_version_id
                     && $storage->user_defined;
 
                 if (!$is_polyfill
@@ -133,8 +135,10 @@ final class ClassLikeStorageProvider
                     && $location !== null
                     && $duplicate_location->getHash() !== $location->getHash()
                 ) {
-                    // the declaration in the smaller path wins: it is the one a single process finds first
-                    $new_is_kept = strcmp($location->file_path, $duplicate_location->file_path) < 0;
+                    // a single process keeps what it scanned before, then the declaration in the smaller path:
+                    // it takes its files in path order
+                    $new_is_kept = ($earlier[$k] ?? null) !== $duplicate_storage
+                        && strcmp($location->file_path, $duplicate_location->file_path) < 0;
                     [$kept, $kept_location, $dropped_location] = $new_is_kept
                         ? [$storage, $location, $duplicate_location]
                         : [$duplicate_storage, $duplicate_location, $location];

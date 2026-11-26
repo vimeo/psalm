@@ -571,6 +571,9 @@ final class Scanner
         if ($pool_size > 1) {
             $this->progress->debug('Forking process for scanning' . PHP_EOL);
 
+            // the workers forget these (InitScannerTask), so the merge has to keep them over a later declaration
+            $earlier_classlike_storages = ClassLikeStorageProvider::getAll();
+
             // Run scanning one file at a time, splitting the set of
             // files up among a given number of child processes.
             $pool = new Pool(
@@ -624,7 +627,11 @@ final class Scanner
                 }
 
                 $this->codebase->file_storage_provider->addMore($pool_data['file_storage']);
-                $this->codebase->classlike_storage_provider->addMore($pool_data['classlike_storage']);
+                $this->codebase->classlike_storage_provider->addMore(
+                    $pool_data['classlike_storage'],
+                    $earlier_classlike_storages,
+                    $this->codebase->analysis_php_version_id,
+                );
 
                 $this->codebase->classlikes->addThreadData($pool_data['classlikes_data']);
 
