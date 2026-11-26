@@ -14,6 +14,7 @@ use Psalm\Type\Union;
 use function array_map;
 use function array_values;
 use function assert;
+use function strtolower;
 
 /**
  * Represents a value of an array or enum.
@@ -152,6 +153,12 @@ final class TValueOf extends Atomic
                         continue;
                     }
                 }
+            } elseif ($atomic_type instanceof TNamedObject
+                && !$atomic_type instanceof TEnumCase
+                && strtolower($atomic_type->value) === 'backedenum'
+            ) {
+                // any backed enum: its cases are backed by ints or by strings
+                $value_atomics = new Union([new TInt(), new TString()]);
             } elseif ($atomic_type instanceof TNamedObject
                 && $codebase->classlike_storage_provider->has($atomic_type->value)
             ) {
