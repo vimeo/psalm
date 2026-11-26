@@ -7,6 +7,7 @@ namespace Psalm\Tests;
 use Override;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\IssueData;
+use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\IssueBuffer;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\InvalidCodeAnalysisWithIssuesTestTrait;
@@ -31,6 +32,19 @@ final class MethodCallTest extends TestCase
         );
 
         $this->analyzeFile('somefile.php', new Context());
+    }
+
+    /**
+     * Without the soap stub (the project doesn't require ext-soap), the callmap gives the signature
+     */
+    public function testSoapClientSetLocationOfTheCallMapBeforePhp81ReturnsNullWhenNoLocationWasSet(): void
+    {
+        $this->project_analyzer->setPhpVersion('8.0', 'tests');
+
+        $callables = InternalCallMapHandler::getCallablesFromCallMap('SoapClient::__setLocation');
+
+        self::assertNotNull($callables);
+        self::assertSame('null|string', $callables[0]->return_type?->getId());
     }
 
     public function testNewOfAnObjectOrAClassStringOfTheSameClassIsReportedOnce(): void
