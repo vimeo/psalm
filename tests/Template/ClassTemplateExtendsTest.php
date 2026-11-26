@@ -111,6 +111,31 @@ final class ClassTemplateExtendsTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'inheritedConstructorPassesItsTemplatedParamToAMethodOfThis' => [
+                'code' => '<?php
+                    /** @template TOptions as array<string, mixed> */
+                    abstract class Provider {
+                        protected stdClass $client;
+
+                        /** @param TOptions $options */
+                        public function __construct(array $options, stdClass $client) {
+                            $this->client = $client;
+                            $this->setOptions($options);
+                        }
+
+                        /** @param TOptions $options */
+                        public function setOptions(array $options): void {}
+                    }
+
+                    /** @extends Provider<array{timeout?: int}> */
+                    final class HttpProvider extends Provider {
+                        private int $retries = 1;
+
+                        public function getRetries(): int {
+                            return $this->retries;
+                        }
+                    }',
+            ],
             'nonTemplatedParentMethodsImplementAnInterfaceOfTheChild' => [
                 'code' => '<?php
                     interface Entity {}

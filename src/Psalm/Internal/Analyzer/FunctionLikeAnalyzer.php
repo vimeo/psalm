@@ -2433,6 +2433,34 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     }
                 }
 
+                // a method of an ancestor whose properties are collected for a subclass (an inherited constructor)
+                // has `$this` of the subclass: its params have the templates of the class as the subclass binds them,
+                // as for the calls on `$this` in its body
+                if ($context->collect_initializations
+                    && $this_object instanceof TNamedObject
+                    && $context->self !== null
+                    && strtolower($this_object->value) !== strtolower($context->self)
+                    && $codebase->classlike_storage_provider->has($context->self)
+                    && $codebase->classlike_storage_provider->has($this_object->value)
+                ) {
+                    $found_generic_params = ClassTemplateParamCollector::collect(
+                        $codebase,
+                        $codebase->classlike_storage_provider->get($context->self),
+                        $codebase->classlike_storage_provider->get($this_object->value),
+                        null,
+                        $this_object,
+                        true,
+                    );
+
+                    if ($found_generic_params !== null && $found_generic_params !== []) {
+                        $param_type = TemplateInferredTypeReplacer::replace(
+                            $param_type,
+                            new TemplateResult([], $found_generic_params),
+                            $codebase,
+                        );
+                    }
+                }
+
                 $checked_type = $param_type;
 
                 if ($inherits_docblock_type && $signature_type) {
