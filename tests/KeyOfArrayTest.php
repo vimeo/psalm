@@ -228,6 +228,24 @@ final class KeyOfArrayTest extends TestCase
                 ',
                 'error_message' => 'InvalidReturnStatement',
             ],
+            'keyOfConstantOfUndefinedClass' => [
+                'code' => '<?php
+                    /** @param key-of<Missing::FOO> $k */
+                    function f($k): void {}
+                ',
+                'error_message' => 'UndefinedDocblockClass',
+                'error_levels' => ['UnresolvableConstant'],
+            ],
+            'keyOfUndefinedClassConstant' => [
+                'code' => '<?php
+                    class A {}
+
+                    /** @param key-of<A::FOO> $k */
+                    function f($k): void {}
+                ',
+                'error_message' => 'UndefinedConstant',
+                'error_levels' => ['UnresolvableConstant'],
+            ],
         ];
     }
 }

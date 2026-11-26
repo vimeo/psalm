@@ -10,6 +10,7 @@ use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 use Psalm\Type;
 use Psalm\Type\Atomic;
+use Psalm\Type\Atomic\TCallableObject;
 use Psalm\Type\Atomic\TConditional;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralString;
@@ -126,6 +127,17 @@ final class TypeCombinationTest extends TestCase
         $this->assertSame(
             '(T is int ? string : bool)|(T is string ? int : float)',
             TypeCombiner::combine([$int_conditional, $string_conditional])->getId(),
+        );
+    }
+
+    public function testCallableObjectsWithDifferentIntersectionsAreKeptApart(): void
+    {
+        $countable = (new TCallableObject())->addIntersectionType(new TNamedObject('Countable'));
+        $traversable = (new TCallableObject())->addIntersectionType(new TNamedObject('Traversable'));
+
+        $this->assertSame(
+            'callable-object&Countable|callable-object&Traversable',
+            TypeCombiner::combine([$countable, $traversable])->getId(),
         );
     }
 

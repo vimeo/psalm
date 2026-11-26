@@ -4570,6 +4570,20 @@ final class CallableTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'callableObjectWithUndefinedParamClass' => [
+                'code' => '<?php
+                    /** @param object&callable(Missing): void $o */
+                    function f(object $o): void {}
+                ',
+                'error_message' => 'UndefinedDocblockClass',
+            ],
+            'callableObjectWithUndefinedReturnClass' => [
+                'code' => '<?php
+                    /** @param object&callable(): Missing $o */
+                    function f(object $o): void {}
+                ',
+                'error_message' => 'UndefinedDocblockClass',
+            ],
             'isCallableOnAListOfIntsIsNeverTrue' => [
                 'code' => '<?php
                     /** @param list<int> $list */
