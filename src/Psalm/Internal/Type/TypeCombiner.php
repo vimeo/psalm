@@ -429,17 +429,17 @@ final class TypeCombiner
     {
         return count($combination->value_types) === 2
             && isset($combination->value_types['never'])
-            && !$combination->named_object_types
-            && !$combination->array_type_params
-            && !$combination->builtin_type_params
-            && !$combination->object_type_params
-            && !$combination->objectlike_entries
-            && !$combination->strings
-            && !$combination->ints
-            && !$combination->floats
-            && !$combination->class_string_types
-            && !$combination->extra_types
-            && !$combination->class_string_map_names;
+            && $combination->named_object_types === []
+            && $combination->array_type_params === []
+            && $combination->builtin_type_params === []
+            && $combination->object_type_params === []
+            && $combination->objectlike_entries === []
+            && $combination->strings === []
+            && $combination->ints === []
+            && $combination->floats === []
+            && $combination->class_string_types === []
+            && $combination->extra_types === []
+            && $combination->class_string_map_names === [];
     }
 
     /**
