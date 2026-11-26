@@ -432,6 +432,15 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             );
         }
 
+        // after the arguments, which may themselves give back `$this`
+        MethodCallPurityAnalyzer::markFuncCallReturningThis(
+            $codebase,
+            $real_stmt,
+            $function_call_info->function_storage,
+            $is_first_class_callable ? [] : $stmt->getArgs(),
+            $template_result,
+        );
+
         if (!$is_first_class_callable
             && $function_call_info->function_id !== null
             && ($function_call_info->in_call_map || $function_call_info->is_stubbed)
@@ -1081,11 +1090,28 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                     strtolower($function_call_info->function_id),
                 );
 
+                if ($function_storage->overloads !== [] && !$stmt->isFirstClassCallable()) {
+                    // when no overload accepts the arguments but the real signature does, the call is the real one
+                    $selected_overload = OverloadSelector::selectOrReal(
+                        $statements_analyzer,
+                        $codebase,
+                        $args,
+                        $context,
+                        $function_storage->overloads,
+                        $function_storage,
+                    );
+
+                    if ($selected_overload !== null) {
+                        $function_call_info->function_storage = $function_storage
+                            = $function_storage->withOverload($selected_overload);
+                    }
+                }
+
                 $function_call_info->function_params = $function_call_info->function_storage->params;
 
                 if ($function_call_info->in_call_map && $function_storage->cased_name !== null) {
                     // a function imported with an alias is called by the alias: its name is the imported one
-                    $imported_name = count($function_name->getParts()) === 1
+                    $imported_name = $function_name->isUnqualified()
                         ? $statements_analyzer->getAliases()->functions[strtolower($function_name->getFirst())]
                             ?? null
                         : null;

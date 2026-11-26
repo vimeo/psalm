@@ -391,6 +391,18 @@ final class LoopAnalyzer
                     }
                 }
 
+                // a clause on what the loop writes holds where it starts, not where the next iteration does, even when
+                // the write leaves the type as it was (`mixed`)
+                foreach ($assignment_mapper->getWrittenVarIds() as $var_id => $_) {
+                    $clause_count = count($pre_loop_context->clauses);
+
+                    $pre_loop_context->removeVarFromConflictingClauses($var_id);
+
+                    if (count($pre_loop_context->clauses) !== $clause_count) {
+                        $has_changes = true;
+                    }
+                }
+
                 // a variable the body unset is gone where the next iteration starts only if the body ran:
                 // it's possibly undefined there
                 foreach ($original_parent_context->vars_in_scope as $var_id => $_) {
@@ -1813,8 +1825,8 @@ final class LoopAnalyzer
     }
 
     /**
-     * Whether `$i < 10`, `++$i <= 10`, `--$i > 0` ... holds the first time it is evaluated, as `$i` is a literal int
-     * before the loop and the other side is a literal
+     * Whether `$i < 10`, `++$i <= $n`, `--$i > 0` ... holds the first time it is evaluated, as `$i` is an int before
+     * the loop and the other side an int (or a numeric string literal) whose bounds tell
      *
      * @param array<string, Union> $init_var_types
      * @psalm-capabilities read-props
@@ -1825,12 +1837,25 @@ final class LoopAnalyzer
         array $init_var_types,
     ): bool {
         $cond_value = $statements_analyzer->node_data->getType($cond->right);
-        // a non-numeric string is compared as a string since PHP 8, and as 0 before
-        if (!$cond_value
-            || !($cond_value->isSingleIntLiteral()
-                || ($cond_value->isSingleStringLiteral() && is_numeric($cond_value->getSingleStringLiteral()->value)))
-        ) {
+        if (!$cond_value) {
             return false;
+        }
+
+        // a non-numeric string is compared as a string since PHP 8, and as 0 before
+        if ($cond_value->isSingleStringLiteral()) {
+            $value = $cond_value->getSingleStringLiteral()->value;
+
+            if (!is_numeric($value)) {
+                return false;
+            }
+
+            $right_bounds = [$value, $value];
+        } else {
+            $right_bounds = $cond_value->isInt() ? self::getIntBounds($cond_value) : null;
+
+            if ($right_bounds === null) {
+                return false;
+            }
         }
 
         $variable = $cond->left;
@@ -1846,19 +1871,27 @@ final class LoopAnalyzer
         if (!$variable instanceof PhpParser\Node\Expr\Variable
             || !is_string($variable->name)
             || !isset($init_var_types[$variable->name])
-            || !$init_var_types[$variable->name]->isSingleIntLiteral()
+            || !$init_var_types[$variable->name]->isInt()
+            || !($left_bounds = self::getIntBounds($init_var_types[$variable->name]))
         ) {
             return false;
         }
 
-        $init_value = $init_var_types[$variable->name]->getSingleIntLiteral()->value + $adjustment;
-        $cond_value = $cond_value->getSingleLiteral()->value;
+        [$left_min, $left_max] = $left_bounds;
+        [$right_min, $right_max] = $right_bounds;
+
+        $left_min = $left_min === null ? null : $left_min + $adjustment;
+        $left_max = $left_max === null ? null : $left_max + $adjustment;
 
         return match (true) {
-            $cond instanceof PhpParser\Node\Expr\BinaryOp\Smaller => $init_value < $cond_value,
-            $cond instanceof PhpParser\Node\Expr\BinaryOp\SmallerOrEqual => $init_value <= $cond_value,
-            $cond instanceof PhpParser\Node\Expr\BinaryOp\Greater => $init_value > $cond_value,
-            $cond instanceof PhpParser\Node\Expr\BinaryOp\GreaterOrEqual => $init_value >= $cond_value,
+            $cond instanceof PhpParser\Node\Expr\BinaryOp\Smaller
+                => $left_max !== null && $right_min !== null && $left_max < $right_min,
+            $cond instanceof PhpParser\Node\Expr\BinaryOp\SmallerOrEqual
+                => $left_max !== null && $right_min !== null && $left_max <= $right_min,
+            $cond instanceof PhpParser\Node\Expr\BinaryOp\Greater
+                => $left_min !== null && $right_max !== null && $left_min > $right_max,
+            $cond instanceof PhpParser\Node\Expr\BinaryOp\GreaterOrEqual
+                => $left_min !== null && $right_max !== null && $left_min >= $right_max,
             default => false,
         };
     }

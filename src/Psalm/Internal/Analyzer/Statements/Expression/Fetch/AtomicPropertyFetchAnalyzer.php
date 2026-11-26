@@ -537,6 +537,10 @@ final class AtomicPropertyFetchAnalyzer
 
         $property_storage = $declaring_class_storage->properties[$prop_name] ?? null;
 
+        $is_readonly = $property_storage !== null
+            && $property_storage->readonly
+            && !$property_storage->allow_private_mutation;
+
         if ($property_storage !== null) {
             PropertyAccessAnalyzer::checkDeprecation(
                 $statements_analyzer,
@@ -642,7 +646,12 @@ final class AtomicPropertyFetchAnalyzer
             $context,
         );
 
-        if ($class_storage->isMutationFree()) {
+        // a readonly property of an object that can't be replaced keeps its value after a call
+        if ($class_storage->isMutationFree()
+            || ($is_readonly
+                && ($stmt->var instanceof PhpParser\Node\Expr\Variable
+                    || $statements_analyzer->node_data->getType($stmt->var)?->has_mutations === false))
+        ) {
             $class_property_type = $class_property_type->setProperties([
                 'has_mutations' => false,
             ]);
@@ -1652,6 +1661,34 @@ final class AtomicPropertyFetchAnalyzer
         );
     }
 
+    /**
+     * Expands a property type for an object of $receiver_type: `self` of a property declared in a trait is the class
+     * using it, `static` is the class of the object
+     */
+    public static function expandSelfAndStatic(
+        Codebase $codebase,
+        Union $property_type,
+        ClassLikeStorage $declaring_class_storage,
+        string $appearing_class,
+        TNamedObject $receiver_type,
+        bool $receiver_is_final,
+    ): Union {
+        $self_class_storage = $declaring_class_storage->is_trait
+            ? $codebase->classlikes->getStorageFor($appearing_class) ?? $declaring_class_storage
+            : $declaring_class_storage;
+
+        return TypeExpander::expandUnion(
+            $codebase,
+            $property_type,
+            $self_class_storage->name,
+            $receiver_type,
+            $self_class_storage->parent_class,
+            true,
+            false,
+            $receiver_is_final,
+        );
+    }
+
     private static function getClassPropertyType(
         StatementsAnalyzer $statements_analyzer,
         Codebase $codebase,
@@ -1691,12 +1728,13 @@ final class AtomicPropertyFetchAnalyzer
 
             $class_property_type = Type::getMixed();
         } else {
-            $class_property_type = TypeExpander::expandUnion(
+            $class_property_type = self::expandSelfAndStatic(
                 $codebase,
                 $class_property_type,
-                $declaring_class_storage->name,
-                $declaring_class_storage->name,
-                $declaring_class_storage->parent_class,
+                $declaring_class_storage,
+                $codebase->properties->getAppearingClassForProperty($property_id, true) ?? $fq_class_name,
+                $lhs_type_part,
+                $class_storage->final,
             );
 
             if (count($template_types = $declaring_class_storage->getClassTemplateTypes()) !== 0) {

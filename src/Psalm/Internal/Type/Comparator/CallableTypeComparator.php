@@ -40,8 +40,10 @@ use function array_slice;
 use function assert;
 use function count;
 use function end;
+use function in_array;
 use function is_numeric;
 use function ltrim;
+use function str_contains;
 use function str_starts_with;
 use function strpos;
 use function strtolower;
@@ -1014,6 +1016,75 @@ final class CallableTypeComparator
             && isset(
                 $codebase->classlike_storage_provider->get($class_name)->declaring_method_ids[strtolower($method_name)],
             );
+    }
+
+    /**
+     * `["Class", "method"]` or `[$object_of_a_final_class, "method"]` with a literal method name, where the class has
+     * no such method: neither a real one, nor one from `@method`, `@mixin`, `__call` or `__callStatic`
+     */
+    public static function isLiteralPairOfNoMethod(Codebase $codebase, TKeyedArray $pair): bool
+    {
+        if (count($pair->properties) !== 2
+            || $pair->fallback_params !== null
+            || !isset($pair->properties[0], $pair->properties[1])
+            || !$pair->properties[1]->isSingleStringLiteral()
+            // `parent::method` is resolved by PHP
+            || str_contains($pair->properties[1]->getSingleStringLiteral()->value, '::')
+        ) {
+            return false;
+        }
+
+        $class_type = $pair->properties[0];
+
+        if ($class_type->isSingleStringLiteral()) {
+            $class_name_lc = strtolower($class_type->getSingleStringLiteral()->value);
+
+            // `self`, `parent` and `static` are not resolved here
+            if (in_array($class_name_lc, ['self', 'parent', 'static'], true)) {
+                return false;
+            }
+        } elseif (!$class_type->isSingle()
+            || !($object_type = $class_type->getSingleAtomic()) instanceof TNamedObject
+            || $object_type->extra_types
+            // the object can be of a subclass that declares the method
+            || !$codebase->classExists($object_type->value)
+            || !$codebase->classlike_storage_provider->get($object_type->value)->final
+        ) {
+            return false;
+        }
+
+        $method_id = self::getCallableMethodIdFromTKeyedArray($pair, $codebase);
+
+        if (!$method_id instanceof MethodIdentifier) {
+            return $method_id === 'not-callable';
+        }
+
+        if ($codebase->classlike_storage_provider->has($method_id->fq_class_name)) {
+            $storage = $codebase->classlike_storage_provider->get($method_id->fq_class_name);
+
+            if (isset($storage->pseudo_methods[$method_id->method_name])
+                || isset($storage->pseudo_static_methods[$method_id->method_name])
+                || $codebase->methodExists(new MethodIdentifier($method_id->fq_class_name, '__call'))
+                || $codebase->methodExists(new MethodIdentifier($method_id->fq_class_name, '__callstatic'))
+            ) {
+                return false;
+            }
+
+            foreach ([
+                $storage->name,
+                ...$storage->parent_classes,
+                ...$storage->used_traits,
+                ...$storage->class_implements,
+            ] as $declaring_class) {
+                if ($codebase->classlike_storage_provider->has($declaring_class)
+                    && $codebase->classlike_storage_provider->get($declaring_class)->getMixins() !== []
+                ) {
+                    return false;
+                }
+            }
+        }
+
+        return self::getCallableFromAtomic($codebase, $pair) === null;
     }
 
     /**

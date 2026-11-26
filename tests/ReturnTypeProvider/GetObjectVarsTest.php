@@ -18,6 +18,29 @@ final class GetObjectVarsTest extends TestCase
     #[Override]
     public static function providerValidCodeParse(): iterable
     {
+        yield 'resolvesTheTemplateBoundLiteralsOfAGenericObject' => [
+            'code' => '<?php
+                /** @template T */
+                final class Box {
+                    /** @var T|"d" */
+                    public mixed $v = "d";
+                    /** @param T $v */
+                    public function __construct(mixed $v) {
+                        $this->v = $v;
+                    }
+                }
+                $box = new Box(42);
+                $vars = get_object_vars($box);
+                $column = array_column([$box], "v");
+            ',
+            'assertions' => [
+                '$vars===' => 'array{v: \'d\'|42}',
+                '$column===' => 'list{\'d\'|42}',
+            ],
+            'ignored_issues' => [],
+            'php_version' => '8.0',
+        ];
+
         yield 'returnsPublicProperties' => [
             'code' => '<?php
                 final class C {
@@ -167,9 +190,7 @@ final class GetObjectVarsTest extends TestCase
 
                 $a = get_object_vars(new a("test"));',
             'assertions' => [
-                // `new a("test")` mints a type variable for T (constrainable via the
-                // public $t property); the exact `===` form reveals it in the field.
-                '$a===' => "array{t: `_0:'test'}",
+                '$a===' => "array{t: 'test'}",
             ],
         ];
 

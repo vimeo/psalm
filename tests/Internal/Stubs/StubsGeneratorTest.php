@@ -18,6 +18,7 @@ use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Atomic\TNumeric;
 use Psalm\Type\Atomic\TScalar;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Union;
@@ -61,7 +62,29 @@ final class StubsGeneratorTest extends TestCase
 
     public function testAScalarWithoutAPhpTypeIsLeftOut(): void
     {
-        self::assertNull(StubsGenerator::getParserTypeFromPsalmType(new Union([new TNamedObject('Foo'), new TArrayKey()])));
+        self::assertNull(StubsGenerator::getParserTypeFromPsalmType(new Union([new TNamedObject('Foo'), new TNumeric()])));
+    }
+
+    public function testANullableArrayKeyIsAUnionOfIntStringAndNull(): void
+    {
+        $type = StubsGenerator::getParserTypeFromPsalmType(new Union([new TArrayKey(), new TNull()]));
+
+        self::assertInstanceOf(UnionType::class, $type);
+        self::assertSame(
+            ['int', 'string', 'null'],
+            array_map(static fn(Identifier|Name|IntersectionType $part): string => $part instanceof Identifier ? $part->name : '', $type->types),
+        );
+    }
+
+    public function testAnArrayKeyInAUnionKeepsBothOfItsTypes(): void
+    {
+        $type = StubsGenerator::getParserTypeFromPsalmType(new Union([new TNamedObject('Foo'), new TArrayKey()]));
+
+        self::assertInstanceOf(UnionType::class, $type);
+        self::assertSame(
+            ['Foo', 'int', 'string'],
+            array_map(static fn(Identifier|Name|IntersectionType $part): string => $part instanceof IntersectionType ? '' : $part->toString(), $type->types),
+        );
     }
 
     public function testTheGeneratedStubKeepsTheTypeOfAScalar(): void

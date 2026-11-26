@@ -4743,6 +4743,202 @@ final class TypeAlgebraTest extends TestCase
                     '$var===' => "''|'x'",
                 ],
             ],
+            'arrayIsReplacedWhenTheConditionOnAnOffsetAlwaysHolds' => [
+                'code' => '<?php
+                    $dummy = ["test" => ""];
+
+                    $a = ["test" => null];
+
+                    if ($a["test"] === null) {
+                        $a = $dummy;
+                    }
+                    $var = $a["test"];',
+                'assertions' => [
+                    '$a===' => "array{test: ''}",
+                    '$var===' => "''",
+                ],
+            ],
+            'offsetIsStillSetWhenTheConditionOnItAlwaysHolds' => [
+                'code' => '<?php
+                    /** @param array{test: null} $a */
+                    function f(array $a): void {
+                        if ($a["test"] === null) {
+                            echo "x";
+                        }
+                        /** @psalm-check-type-exact $a = array{test: null} */
+                    }',
+            ],
+            'offsetIsStillSetWhenTheConditionOnItNeverHolds' => [
+                'code' => '<?php
+                    /** @param array{test: int} $a */
+                    function f(array $a): void {
+                        if (is_string($a["test"])) {
+                            echo "x";
+                        }
+                        /** @psalm-check-type-exact $a = array{test: int} */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['DocblockTypeContradiction'],
+            ],
+            'offsetIsWrittenWhenTheConditionOnItAlwaysHolds' => [
+                'code' => '<?php
+                    /** @param array{test: null} $a */
+                    function f(array $a): void {
+                        if ($a["test"] === null) {
+                            $a["test"] = "";
+                        }
+                        /** @psalm-check-type-exact $a = array{test: \'\'} */
+                    }',
+            ],
+            'nestedArrayIsReplacedWhenTheConditionOnItsOffsetAlwaysHolds' => [
+                'code' => '<?php
+                    /** @param array{x: array{test: null}, y: int} $a */
+                    function f(array $a): void {
+                        if ($a["x"]["test"] === null) {
+                            $a = ["x" => ["test" => ""], "y" => 1];
+                        }
+                        /** @psalm-check-type-exact $a = array{x: array{test: \'\'}, y: 1} */
+                    }',
+            ],
+            'listIsReplacedWhenTheConditionOnAnOffsetAlwaysHolds' => [
+                'code' => '<?php
+                    /** @param list{null, int} $a */
+                    function f(array $a): void {
+                        if ($a[0] === null) {
+                            $a = [1, 2];
+                        }
+                        /** @psalm-check-type-exact $a = list{1, 2} */
+                    }',
+            ],
+            'unsealedArrayIsReplacedWhenTheConditionOnAnOffsetAlwaysHolds' => [
+                'code' => '<?php
+                    /** @param array{test: null, ...<string, int>} $a */
+                    function f(array $a): void {
+                        if ($a["test"] === null) {
+                            $a = ["test" => ""];
+                        }
+                        /** @psalm-check-type-exact $a = array{test: \'\'} */
+                    }',
+            ],
+            'optionalOffsetIsKeptWhenTheConditionOnItNeverHolds' => [
+                'code' => '<?php
+                    /** @param array{test?: int, other: int} $a */
+                    function f(array $a): void {
+                        if (isset($a["test"]) && is_string($a["test"])) {
+                            return;
+                        }
+                        /** @psalm-check-type-exact $a = array{other: int, test?: int} */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['DocblockTypeContradiction'],
+            ],
+            'otherTypesOfAUnionAreKeptWhenTheArrayCannotBeTheValue' => [
+                'code' => '<?php
+                    /** @param array{test: null}|string $a */
+                    function f($a): void {
+                        if (is_array($a) && $a["test"] !== null) {
+                            /** @psalm-check-type-exact $a = never */
+                            return;
+                        }
+                        /** @psalm-check-type-exact $a = array{test: null}|string */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['DocblockTypeContradiction'],
+            ],
+            'coalescedOffsetOfAnArrayThatCannotBeIsTheDefault' => [
+                'code' => '<?php
+                    /** @param array{t: null} $a */
+                    function f(array $a): void {
+                        if ($a["t"] !== null) {
+                            $q = $a["o"] ?? "d";
+                            /** @psalm-check-type-exact $q = "d" */
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['DocblockTypeContradiction'],
+            ],
+            'coalescedOffsetOfAVariableThatCannotBeIsTheDefault' => [
+                'code' => '<?php
+                    function f(): void {
+                        $a = null;
+
+                        if ($a !== null) {
+                            $q = $a["o"] ?? "d";
+                            /** @psalm-check-type-exact $q = "d" */
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['TypeDoesNotContainType'],
+            ],
+            'emptyOffsetOfAnArrayThatCannotBeIsNotRedundant' => [
+                'code' => '<?php
+                    /** @param array{t: null} $a */
+                    function f(array $a): void {
+                        if ($a["t"] !== null) {
+                            if (empty($a["o"])) {
+                                echo "x";
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['DocblockTypeContradiction'],
+            ],
+            'listIsKeptWhenAnOffsetIsWrittenWhereItCannotBe' => [
+                'code' => '<?php
+                    /** @param list{null, int} $a */
+                    function f(array $a): void {
+                        if ($a[0] !== null) {
+                            $a[2] = 1;
+                        }
+                        /** @psalm-check-type-exact $a = list{null, int} */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['DocblockTypeContradiction'],
+            ],
+            'arrayIsKeptWhenOffsetsAreWrittenWhereItCannotBe' => [
+                'code' => '<?php
+                    /** @param array{test: null} $a */
+                    function f(array $a): void {
+                        if ($a["test"] !== null) {
+                            $a["other"] = 1;
+                            $a["x"]["y"] = 2;
+                        }
+                        /** @psalm-check-type-exact $a = array{test: null} */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['DocblockTypeContradiction'],
+            ],
+            'variableIsKeptWhenAnOffsetIsWrittenWhereItCannotBe' => [
+                'code' => '<?php
+                    /** @param array{x: int} $a */
+                    function f(array $a): void {
+                        if (!is_array($a)) {
+                            $a["y"] = 1;
+                        }
+                        /** @psalm-check-type-exact $a = array{x: int} */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['TypeDoesNotContainType'],
+            ],
+            'propertyNotInitializedYetIsInitializedByAnOffsetWrite' => [
+                'code' => '<?php
+                    final class A {
+                        /** @var array<string, int> */
+                        private array $cache;
+
+                        /** @return array<string, int> */
+                        public function get(): array {
+                            if (!isset($this->cache)) {
+                                $this->cache["a"] = 1;
+                                /** @psalm-check-type-exact $this->cache = array{a: 1} */
+                            }
+
+                            return $this->cache;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingConstructor', 'RedundantPropertyInitializationCheck'],
+            ],
             'offsetKnownFromTheConditionIsKeptWhenTheArrayIsNotReassigned' => [
                 'code' => '<?php
                     $a = ["test" => rand(0, 1) ? null : "x"];
@@ -5515,6 +5711,52 @@ final class TypeAlgebraTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'propertyNotInitializedYetIsCheckedWhenAnOffsetWriteInitializesIt' => [
+                'code' => '<?php
+                    interface EntityType {}
+                    interface ContentEntityType extends EntityType {}
+
+                    final class A {
+                        /** @var ContentEntityType[] */
+                        private $moderated = [];
+
+                        /** @param array<string, EntityType> $definitions */
+                        public function f(array $definitions): void {
+                            if (!isset($this->moderated)) {
+                                foreach ($definitions as $id => $definition) {
+                                    $this->moderated[$id] = $definition;
+                                }
+                            }
+                        }
+                    }',
+                'error_message' => 'PropertyTypeCoercion',
+                'error_levels' => ['DocblockTypeContradiction', 'RedundantPropertyInitializationCheck'],
+            ],
+            'offsetOfAnArrayThatCannotBeIsNever' => [
+                'code' => '<?php
+                    /** @param array{test: null, other: int} $a */
+                    function f(array $a): void {
+                        if ($a["test"] !== null) {
+                            $b = $a["other"];
+                            echo $b;
+                        }
+                    }',
+                'error_message' => 'NoValue',
+                'error_levels' => ['DocblockTypeContradiction'],
+            ],
+            'offsetOfAVariableThatCannotBeIsNever' => [
+                'code' => '<?php
+                    function f(): void {
+                        $a = null;
+
+                        if ($a !== null) {
+                            $b = $a["x"];
+                            echo $b;
+                        }
+                    }',
+                'error_message' => 'NoValue',
+                'error_levels' => ['TypeDoesNotContainType'],
+            ],
             'contradictionAfterAnIfThatConditionallyDefinesAVariable' => [
                 'code' => '<?php
                     function a(array $l): bool {

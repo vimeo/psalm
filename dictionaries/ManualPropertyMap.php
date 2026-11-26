@@ -4,9 +4,9 @@ namespace Psalm\Internal;
 /**
  * This file holds manually defined property maps, which are not added to the
  * official PHP docs and therefore can not be automatically updated by
- * bin/update-property-map.php.
+ * bin/stubs/update-property-map.php.
  *
- * If you change this file, please run bin/update-property-map.php to keep
+ * If you change this file, please run bin/stubs/update-property-map.php to keep
  * PropertyMap.php in sync.
  */
 
@@ -21,7 +21,7 @@ return [
     ],
     'domnode' => [
         // documented as 'DomNodeList' in doc-en/reference/dom/domnode.xml:57.
-        'childNodes' => 'DomNodeList<DomNode>'
+        'childNodes' => 'DOMNodeList<DOMNode>'
     ],
     'tidy' => [
         // documented via <xi:include> in doc-en/reference/tidy/tidy.xml:33
