@@ -278,14 +278,6 @@ final class Psalm
             exit;
         }
 
-        if (isset($options['no-taint-analysis']) && ($run_taint_analysis || isset($options['dump-taint-graph']))) {
-            fwrite(
-                STDERR,
-                '--no-taint-analysis cannot be combined with --taint-analysis or --dump-taint-graph' . PHP_EOL,
-            );
-            exit(1);
-        }
-
         $output_format = self::initOutputFormat($options);
 
         Perf\Collector::step('config');
@@ -303,10 +295,6 @@ final class Psalm
 
         if (isset($options['no-cache'])) {
             $config->cache_directory = null;
-        }
-
-        if (isset($options['no-taint-analysis'])) {
-            $config->run_taint_analysis = false;
         }
 
         $config->min_type_coverage = $min_type_coverage ?? $config->min_type_coverage;
@@ -1156,6 +1144,16 @@ final class Psalm
         bool $run_taint_analysis,
         array $options,
     ): array {
+        $skip_taint_analysis = isset($options['no-taint-analysis']);
+        if ($skip_taint_analysis && ($run_taint_analysis || isset($options['dump-taint-graph']))) {
+            fwrite(
+                STDERR,
+                '--no-taint-analysis cannot be combined with --taint-analysis, --track-tainted-input,'
+                    . ' --security-analysis or --dump-taint-graph' . PHP_EOL,
+            );
+            exit(1);
+        }
+
         $init_source_dir = null;
         if (isset($options['i'])) {
             self::generateConfig($current_dir, $args);
@@ -1181,6 +1179,10 @@ final class Psalm
                 $run_taint_analysis,
                 $options,
             );
+        }
+
+        if ($skip_taint_analysis) {
+            $config->run_taint_analysis = false;
         }
         return [$config, $init_source_dir];
     }

@@ -93,7 +93,8 @@ final class PsalmTaintAnalysisEndToEndTest extends PsalmEndToEndTestCase
 
         $this->assertSame(1, $process->getExitCode(), $process->getOutput() . $process->getErrorOutput());
         $this->assertStringContainsString(
-            '--no-taint-analysis cannot be combined with --taint-analysis or --dump-taint-graph',
+            '--no-taint-analysis cannot be combined with --taint-analysis, --track-tainted-input,'
+                . ' --security-analysis or --dump-taint-graph',
             $process->getErrorOutput(),
         );
     }
