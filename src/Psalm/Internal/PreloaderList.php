@@ -1257,6 +1257,7 @@ final class PreloaderList {
         \Psalm\Issue\IntMaskComparison::class,
         \Psalm\Issue\InterfaceInstantiation::class,
         \Psalm\Issue\InternalClass::class,
+        \Psalm\Issue\InternalFunction::class,
         \Psalm\Issue\InternalMethod::class,
         \Psalm\Issue\InternalProperty::class,
         \Psalm\Issue\InvalidArgument::class,

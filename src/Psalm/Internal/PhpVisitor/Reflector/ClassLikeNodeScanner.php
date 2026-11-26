@@ -2137,7 +2137,12 @@ final class ClassLikeNodeScanner
                 : null;
             $property_storage->suppressed_issues = $var_comment ? $var_comment->suppressed_issues : [];
             $property_storage->internal = $var_comment ? $var_comment->psalm_internal : [];
-            if (count($property_storage->internal) === 0 && $var_comment && $var_comment->internal) {
+            // the classes using a trait of the global namespace are outside it
+            if (count($property_storage->internal) === 0
+                && $var_comment
+                && $var_comment->internal
+                && !($storage->is_trait && !str_contains($fq_classlike_name, '\\'))
+            ) {
                 $property_storage->internal = [NamespaceAnalyzer::getNameSpaceRoot($fq_classlike_name)];
             }
             $property_storage->native_readonly = $storage->readonly || $stmt->isReadonly();
