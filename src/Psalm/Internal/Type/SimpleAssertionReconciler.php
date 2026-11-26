@@ -2545,7 +2545,6 @@ final class SimpleAssertionReconciler extends Reconciler
     /**
      * @param   string[]  $suppressed_issues
      * @param Reconciler::RECONCILIATION_* $failed_reconciliation
-     * @psalm-suppress ComplexMethod
      */
     private static function reconcileCallable(
         Assertion $assertion,
@@ -2594,17 +2593,13 @@ final class SimpleAssertionReconciler extends Reconciler
             ) {
                 $callable_types[] = $type;
                 $redundant = false;
-            } elseif ($type instanceof TArray) {
+            } elseif ($type instanceof TArray || $type instanceof TKeyedArray) {
                 $callable_array = self::getCallableArray($codebase, $type);
 
                 if ($callable_array !== null) {
                     $callable_types[] = $callable_array;
                 }
 
-                $redundant = false;
-            } elseif ($type instanceof TKeyedArray && count($type->properties) === 2) {
-                $type = TKeyedArray::makeCallable($type->properties);
-                $callable_types[] = $type;
                 $redundant = false;
             } elseif ($type instanceof TTemplateParam) {
                 $redundant = false;
@@ -2723,22 +2718,60 @@ final class SimpleAssertionReconciler extends Reconciler
     /**
      * The callable arrays (a class or an object, and a method name) among those of an array type, if any
      */
-    private static function getCallableArray(Codebase $codebase, TArray $type): ?TKeyedArray
+    private static function getCallableArray(Codebase $codebase, TArray|TKeyedArray $type): ?TKeyedArray
+    {
+        if ($type instanceof TArray) {
+            if (Type::intersectUnionTypes($type->type_params[0], Type::getInt(), $codebase) === null) {
+                return null;
+            }
+
+            return self::getCallableArrayOfValues($codebase, [$type->type_params[1], $type->type_params[1]]);
+        }
+
+        if (count($type->properties) === 2 && isset($type->properties[0], $type->properties[1])) {
+            return TKeyedArray::makeCallable($type->properties);
+        }
+
+        // an array is callable when it holds two elements, the first naming a class or being an object and the second
+        // a method: any other element has to be optional, and the offsets the shape lacks have to come from the
+        // fallback
+        foreach ($type->properties as $offset => $property) {
+            if ($offset !== 0 && $offset !== 1 && !$property->possibly_undefined) {
+                return null;
+            }
+        }
+
+        $fallback_value = $type->fallback_params !== null
+            && Type::intersectUnionTypes($type->fallback_params[0], Type::getInt(), $codebase) !== null
+            ? $type->fallback_params[1]
+            : null;
+
+        $first = $type->properties[0] ?? $fallback_value;
+        $second = $type->properties[1] ?? $fallback_value;
+
+        if ($first === null || $second === null) {
+            return null;
+        }
+
+        return self::getCallableArrayOfValues($codebase, [$first, $second]);
+    }
+
+    /**
+     * @param array{0: Union, 1: Union} $values
+     */
+    private static function getCallableArrayOfValues(Codebase $codebase, array $values): ?TKeyedArray
     {
         $callable_array = Atomic::create('callable-array');
         assert($callable_array instanceof TKeyedArray);
 
-        if (Type::intersectUnionTypes($type->type_params[0], Type::getInt(), $codebase) === null) {
-            return null;
-        }
-
         $properties = [];
 
         foreach ($callable_array->properties as $offset => $property) {
-            $item = Type::intersectUnionTypes($type->type_params[1], $property, $codebase)
+            $value = $offset === 0 ? $values[0] : $values[1];
+            $item = Type::intersectUnionTypes($value, $property, $codebase)
                 // e.g. a literal-string, which may be the name of a class though Psalm has no type for both
                 ?? Type::intersectUnionTypes(
-                    $type->type_params[1],
+                    $value,
                     $offset === 0
                         ? new Union([new TObject(), new TNonEmptyString()])
                         : Type::getNonEmptyString(),
