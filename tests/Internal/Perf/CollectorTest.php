@@ -42,6 +42,9 @@ final class CollectorTest extends TestCase
         parent::tearDown();
     }
 
+    /**
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
     private function advance(int $microseconds): void
     {
         $this->now_ns += $microseconds * 1_000;
