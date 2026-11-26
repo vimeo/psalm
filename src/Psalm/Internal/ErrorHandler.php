@@ -102,7 +102,7 @@ final class ErrorHandler
                 exit(1);
             }
 
-            fwrite(STDERR, "Uncaught $throwable\n");
+            fwrite(STDERR, PHP_EOL . "Uncaught $throwable\n");
             $version = defined('PSALM_VERSION') ? PSALM_VERSION : '(unknown version)';
             fwrite(STDERR, "(Psalm $version crashed due to an uncaught Throwable)\n");
             exit(1);
