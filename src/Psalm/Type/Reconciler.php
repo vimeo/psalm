@@ -67,6 +67,7 @@ use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TClassStringMap;
+use Psalm\Type\Atomic\TConditional;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TInt;
@@ -95,6 +96,7 @@ use function array_values;
 use function count;
 use function explode;
 use function implode;
+use function in_array;
 use function is_int;
 use function is_numeric;
 use function is_string;
@@ -2303,11 +2305,12 @@ class Reconciler
     }
 
     /**
-     * When $new_type_parts assert that the offset $key of an array variable has no value, as array_key_exists()
-     * or isset() negated do (one of its clauses is that assertion alone), the array, in $existing_types, holds
-     * nothing under that literal offset: its shape loses the offset where that was optional (where isset() is
-     * negated, only if the offset can't hold null), and in the taint graph it no longer holds what it held under
-     * that offset, like once that offset is unset (see UnsetAnalyzer).
+     * When $new_type_parts assert that the offset $key of an array variable or property has no value, as
+     * array_key_exists() or isset() negated do (one of its clauses is that assertion alone), the array, in
+     * $existing_types, holds nothing under that literal offset: a shape loses the offset where that was optional,
+     * and is no longer one of its types where it was required (where isset() is negated, only if the offset can't
+     * hold null), and in the taint graph it no longer holds what it held under that offset, like once that offset is
+     * unset (see UnsetAnalyzer).
      *
      * @param array<array<int, Assertion>> $new_type_parts
      * @param array<string, Union> $existing_types
@@ -2341,13 +2344,28 @@ class Reconciler
 
         $key_parts = self::breakUpPathIntoParts($key);
 
-        if (count($key_parts) !== 4 || $key_parts[1] !== '[' || $key_parts[3] !== ']') {
+        $array_key = $key_parts[count($key_parts) - 2] ?? '';
+        $base_key_parts = array_slice($key_parts, 0, -3);
+
+        // the array is a variable or a property, not an offset of another array
+        if (count($key_parts) < 4
+            || $key_parts[count($key_parts) - 3] !== '['
+            || $key_parts[count($key_parts) - 1] !== ']'
+            || in_array('[', $base_key_parts, true)
+        ) {
             return;
         }
 
-        [$base_key, , $array_key] = $key_parts;
+        $base_key = implode('', $base_key_parts);
 
         if (!isset($existing_types[$base_key])) {
+            return;
+        }
+
+        // isset() of an offset of a property read through __get() asks __isset() first, which may say it isn't set
+        if (!$is_absent
+            && self::isReadThroughMagicGetter($statements_analyzer->getCodebase(), $base_key, $existing_types)
+        ) {
             return;
         }
 
@@ -2365,15 +2383,27 @@ class Reconciler
         $shape_changed = false;
 
         foreach ($base_type->getAtomicTypes() as $atomic_type) {
+            $property = $atomic_type instanceof TKeyedArray
+                ? $atomic_type->properties[$offset->value] ?? null
+                : null;
+
+            if ($property === null || (!$is_absent && self::mayHoldNull($property))) {
+                $atomic_types[] = $atomic_type;
+
+                continue;
+            }
+
+            // a shape that always has the offset can't be the array
+            if (!$property->possibly_undefined) {
+                $shape_changed = true;
+
+                continue;
+            }
+
             // with a fallback, dropping the offset would let the fallback type stand for it
             if ($atomic_type instanceof TKeyedArray
                 && !$atomic_type->is_list
                 && !$atomic_type->fallback_params
-                && isset($atomic_type->properties[$offset->value])
-                && $atomic_type->properties[$offset->value]->possibly_undefined
-                && ($is_absent
-                    || (!$atomic_type->properties[$offset->value]->isNullable()
-                        && !$atomic_type->properties[$offset->value]->hasMixed()))
             ) {
                 $properties = $atomic_type->properties;
                 unset($properties[$offset->value]);
@@ -2389,6 +2419,9 @@ class Reconciler
 
             $atomic_types[] = $atomic_type;
         }
+
+        // where no shape can be the array, it keeps its type
+        $shape_changed = $shape_changed && $atomic_types;
 
         // the array changes only where its shape loses the offset
         if ($shape_changed) {
@@ -2430,6 +2463,28 @@ class Reconciler
                 $changed_var_ids[$base_key] = true;
             }
         }
+    }
+
+    /**
+     * A template stands for any type its bound contains, null too where the bound is mixed
+     *
+     * @psalm-pure
+     */
+    private static function mayHoldNull(Union $type): bool
+    {
+        if ($type->isNullable() || $type->hasMixed()) {
+            return true;
+        }
+
+        foreach ($type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TConditional
+                || ($atomic_type instanceof TTemplateParam && self::mayHoldNull($atomic_type->as))
+            ) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

@@ -667,6 +667,17 @@ final class ComparisonAssertionTest extends TestCase
                         }
                     }',
             ],
+            'countOfAnEmptyArrayIdenticalToAPositiveIntIsImpossible' => [
+                'code' => '<?php
+                    function f(): void {
+                        $a = [];
+                        if (count($a) === 2) {
+                            /** @psalm-check-type-exact $a = never */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['TypeDoesNotContainType'],
+            ],
             'identicalToAUnionOfClassStringsKeepsEachOfThem' => [
                 'code' => '<?php
                     final class A {}
