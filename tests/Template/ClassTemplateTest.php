@@ -7157,7 +7157,7 @@ final class ClassTemplateTest extends TestCase
                      * @template T = Missing
                      */
                     final class C {}',
-                'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:33 - Class, interface or enum named Missing does not exist',
+                'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:24 - Class, interface or enum named Missing does not exist',
             ],
             'partialGenericNextToASelfNamingDefaultChecksItsDefaults' => [
                 'code' => '<?php
@@ -8078,7 +8078,7 @@ final class ClassTemplateTest extends TestCase
                      * @template T of int = string
                      */
                     abstract class Bad {}',
-                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:36 - The default string of template T is not within its bound int',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:24 - The default string of template T is not within its bound int',
             ],
             'classTemplateDefaultUsingLaterTemplate' => [
                 'code' => '<?php
@@ -8087,7 +8087,7 @@ final class ClassTemplateTest extends TestCase
                      * @template U = int
                      */
                     abstract class Fwd {}',
-                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:36 - The default of template T uses template U, which is not declared before it',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:24 - The default of template T uses template U, which is not declared before it',
             ],
             'interfaceTemplateDefaultOutsideBoundNamingEarlierTemplate' => [
                 'code' => '<?php
@@ -8096,7 +8096,7 @@ final class ClassTemplateTest extends TestCase
                      * @template U of T = stdClass
                      */
                     interface Corr {}',
-                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:31 - The default stdClass of template U is not within its bound T:Corr as object',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:24 - The default stdClass of template U is not within its bound T:Corr as object',
             ],
             'traitTemplateDefaultUsingItself' => [
                 'code' => '<?php
@@ -8104,7 +8104,7 @@ final class ClassTemplateTest extends TestCase
                      * @template T = list<T>
                      */
                     trait SelfRef {}',
-                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:27 - The default of template T uses template T, which is not declared before it',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:24 - The default of template T uses template T, which is not declared before it',
             ],
             'partialGenericArgumentIsCheckedAgainstNestedDefault' => [
                 'code' => '<?php
