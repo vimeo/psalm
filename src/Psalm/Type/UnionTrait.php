@@ -1894,6 +1894,24 @@ trait UnionTrait
             return TaintKind::ARRAY_ONLY;
         }
 
+        // nor a BSON value: the driver stores it as that BSON type, never as a document that could hold an operator.
+        // These classes are final, unlike their interfaces, which a class of the code can implement and then be stored
+        // as the document of its properties. A regex or JavaScript code chooses what matches, and a Document or a
+        // PackedArray is a document, so those keep it.
+        if ($atomic instanceof TNamedObject) {
+            return match (strtolower($atomic->value)) {
+                'mongodb\\bson\\objectid',
+                'mongodb\\bson\\utcdatetime',
+                'mongodb\\bson\\decimal128',
+                'mongodb\\bson\\int64',
+                'mongodb\\bson\\binary',
+                'mongodb\\bson\\timestamp',
+                'mongodb\\bson\\minkey',
+                'mongodb\\bson\\maxkey' => TaintKind::ARRAY_ONLY,
+                default => 0,
+            };
+        }
+
         // an array holds what its keys and its values can hold: the keys of an array shape are written by the code
         if ($atomic instanceof TKeyedArray) {
             $taints_to_remove = $input_taints;
