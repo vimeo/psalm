@@ -42,13 +42,18 @@ use function trim;
 final class UnshippedCode
 {
     /**
-     * @param list<array{string, string}> $dev_namespaces lowercase namespace prefixes, with the directory of each
+     * @param list<array{string, string}> $namespaces lowercase namespace prefixes of autoload, with the directory of
+     *     each
+     * @param list<string> $paths
+     * @param list<array{string, string}> $dev_namespaces the same for autoload-dev
      * @param list<string> $dev_paths
      * @param list<array{non-empty-string, bool, bool, bool}> $export_ignore_rules the regex of each pattern, whether
      *     it matches the basename, whether it matches only directories, and whether it sets or unsets export-ignore
      */
     private function __construct(
         private readonly string $root,
+        private readonly array $namespaces,
+        private readonly array $paths,
         private readonly array $dev_namespaces,
         private readonly array $dev_paths,
         private readonly array $export_ignore_rules,
@@ -73,24 +78,8 @@ final class UnshippedCode
      */
     public static function fromContents(string $root, array $composer_json, string $gitattributes): self
     {
-        $dev_namespaces = [];
-        $dev_paths = [];
-
-        $autoload_dev = self::arrayAt($composer_json, 'autoload-dev');
-        foreach (['psr-4', 'psr-0'] as $standard) {
-            $namespaces = self::arrayAt($autoload_dev, $standard);
-            foreach (array_keys($namespaces) as $namespace) {
-                foreach (self::strings($namespaces[$namespace]) as $dir) {
-                    $dev_namespaces[] = [strtolower(ltrim((string) $namespace, '\\')), self::normalizePath($dir)];
-                }
-            }
-        }
-
-        foreach (['classmap', 'files'] as $kind) {
-            foreach (self::strings(self::arrayAt($autoload_dev, $kind)) as $path) {
-                $dev_paths[] = self::normalizePath($path);
-            }
-        }
+        [$namespaces, $paths] = self::readAutoload(self::arrayAt($composer_json, 'autoload'));
+        [$dev_namespaces, $dev_paths] = self::readAutoload(self::arrayAt($composer_json, 'autoload-dev'));
 
         $export_ignore_rules = [];
         foreach (preg_split('/\R/', $gitattributes) ?: [] as $line) {
@@ -133,7 +122,41 @@ final class UnshippedCode
             $export_ignore_rules[] = [self::globToRegex($pattern), $basename, $directory_only, $export_ignore];
         }
 
-        return new self(self::normalizePath($root), $dev_namespaces, $dev_paths, $export_ignore_rules);
+        return new self(
+            self::normalizePath($root),
+            $namespaces,
+            $paths,
+            $dev_namespaces,
+            $dev_paths,
+            $export_ignore_rules,
+        );
+    }
+
+    /**
+     * @return array{list<array{string, string}>, list<string>}
+     * @psalm-pure
+     */
+    private static function readAutoload(array $autoload): array
+    {
+        $namespaces = [];
+        $paths = [];
+
+        foreach (['psr-4', 'psr-0'] as $standard) {
+            $dirs = self::arrayAt($autoload, $standard);
+            foreach (array_keys($dirs) as $namespace) {
+                foreach (self::strings($dirs[$namespace]) as $dir) {
+                    $namespaces[] = [strtolower(ltrim((string) $namespace, '\\')), self::normalizePath($dir)];
+                }
+            }
+        }
+
+        foreach (['classmap', 'files'] as $kind) {
+            foreach (self::strings(self::arrayAt($autoload, $kind)) as $path) {
+                $paths[] = self::normalizePath($path);
+            }
+        }
+
+        return [$namespaces, $paths];
     }
 
     /**
@@ -149,16 +172,11 @@ final class UnshippedCode
         $relative_path = substr($file_path, strlen($this->root) + 1);
 
         $fq_class_name_lc = strtolower(ltrim($fq_class_name, '\\'));
-        foreach ($this->dev_namespaces as [$namespace, $dir]) {
-            if (str_starts_with($fq_class_name_lc, $namespace) && self::isWithin($relative_path, $dir)) {
-                return true;
-            }
-        }
-
-        foreach ($this->dev_paths as $path) {
-            if (self::isWithin($relative_path, $path)) {
-                return true;
-            }
+        // projects may map a namespace to the same directory in autoload and autoload-dev
+        if (self::loads($this->dev_namespaces, $this->dev_paths, $fq_class_name_lc, $relative_path)
+            && !self::loads($this->namespaces, $this->paths, $fq_class_name_lc, $relative_path)
+        ) {
+            return true;
         }
 
         // git archive leaves out everything in an ignored directory
@@ -170,6 +188,32 @@ final class UnshippedCode
                 $segments[$i - 1],
                 $i < $segment_count,
             )) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @param list<array{string, string}> $namespaces
+     * @param list<string> $paths
+     * @psalm-pure
+     */
+    private static function loads(
+        array $namespaces,
+        array $paths,
+        string $fq_class_name_lc,
+        string $relative_path,
+    ): bool {
+        foreach ($namespaces as [$namespace, $dir]) {
+            if (str_starts_with($fq_class_name_lc, $namespace) && self::isWithin($relative_path, $dir)) {
+                return true;
+            }
+        }
+
+        foreach ($paths as $path) {
+            if (self::isWithin($relative_path, $path)) {
                 return true;
             }
         }

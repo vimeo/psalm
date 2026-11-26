@@ -13,6 +13,10 @@ propose one and explain it.
 | `<extraFiles>` | scanned for classes and functions, never reported (e.g. a plugin directory) |
 | Composer `autoload` and `vendor/` | scanned on demand, never reported |
 
+Paths in `<projectFiles>`, `<extraFiles>`, `<ignoreFiles>` and an issue handler's `<errorLevel>` accept `*` and `**`
+(`<directory name="src/**/cache"/>`). A path that doesn't exist fails the config load unless the element has
+`allowMissingFiles="true"`.
+
 A class Psalm can't find (`UndefinedClass` for code that exists) is usually outside both: check the Composer
 autoloader (`composer dump-autoload`) or add the directory to `<extraFiles>`.
 

@@ -24,6 +24,40 @@ final class FunctionCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'strtolowerAndStrtoupperOfLiterals' => [
+                'code' => '<?php
+                    $lower = strtolower("Hello");
+                    $upper = strtoupper(rand(0, 1) ? "get" : "Post");
+                    $accented = strtolower("ÄRGER");',
+                'assertions' => [
+                    '$lower===' => "'hello'",
+                    '$upper===' => "'GET'|'POST'",
+                    '$accented===' => "'Ärger'",
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'strtolowerOfANonAsciiLiteralBeforePhp82' => [
+                'code' => '<?php
+                    $accented = strtolower("ÄRGER");',
+                'assertions' => [
+                    '$accented===' => 'non-empty-lowercase-string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'negatedArrayIsListKeepsAnArrayThatMayBeAList' => [
+                'code' => '<?php
+                    /** @param array<int, int> $a */
+                    function f(array $a): void {
+                        if (!array_is_list($a)) {
+                            /** @psalm-check-type-exact $a = array<int, int> */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'urlencodeOfANonEmptyStringIsNonEmpty' => [
                 'code' => '<?php
                     /** @param non-empty-string $input */
@@ -212,8 +246,22 @@ final class FunctionCallTest extends TestCase
                     $json = encode([1]);
                     $upper = up("x");',
                 'assertions' => [
-                    '$upper===' => 'non-falsy-string',
+                    '$upper===' => "'X'",
                 ],
+            ],
+            'fullyQualifiedCallOfAFunctionWhoseNameAnotherIsImportedAs' => [
+                'code' => '<?php
+                    namespace App;
+
+                    use function App\\encode as json_encode;
+
+                    function encode(int $value): string {
+                        return (string) $value;
+                    }
+
+                    $local = json_encode(1);
+                    $global = \\json_encode(1);
+                    $relative = namespace\\encode(1);',
             ],
             'functionCalledWithItsDeclaredCasing' => [
                 'code' => '<?php
@@ -1888,6 +1936,22 @@ final class FunctionCallTest extends TestCase
                     $a = [$foo => 15];
                     extract($a);
                     takesInt($foo);',
+            ],
+            'possiblyUndefinedVariableAfterExtractCheckedWithIsset' => [
+                'code' => '<?php
+                    function takesInt(int $_i): void {}
+
+                    /** @param array<string, mixed> $vars */
+                    function f(array $vars): void {
+                        extract($vars);
+                        if (rand(0, 1)) {
+                            $a = 1;
+                        }
+                        if (isset($a)) {
+                            takesInt($a);
+                        }
+                        takesInt($a ?? 0);
+                    }',
             ],
             'extractSkipExtr' => [
                 'code' => '<?php
@@ -3675,6 +3739,32 @@ final class FunctionCallTest extends TestCase
                 'ignored_issues' => ['DeprecatedSyntax'],
                 'php_version' => '8.0',
             ],
+            'getTypeAndGetDebugTypeAreNonFalsy' => [
+                'code' => '<?php
+                    /** @return non-empty-string */
+                    function a(mixed $x): string {
+                        $t = gettype($x);
+                        return $t;
+                    }
+                    /** @return non-falsy-string */
+                    function b(mixed $x): string {
+                        $t = gettype($x);
+                        return $t;
+                    }
+                    /** @return non-empty-string */
+                    function c(mixed $x): string {
+                        $t = get_debug_type($x);
+                        return $t;
+                    }
+                    /** @return non-falsy-string */
+                    function d(mixed $x): string {
+                        $t = get_debug_type($x);
+                        return $t;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'getTypeDoubleThenInt' => [
                 'code' => '<?php
                     function safe_float(mixed $val): bool {
@@ -4788,6 +4878,56 @@ final class FunctionCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'possiblyUndefinedVariableAfterExtractIsMixed' => [
+                'code' => '<?php
+                    function takesInt(int $_i): void {}
+
+                    /** @param array<string, mixed> $vars */
+                    function f(array $vars): void {
+                        extract($vars);
+                        if (rand(0, 1)) {
+                            $a = 1;
+                        }
+                        takesInt($a);
+                    }',
+                'error_message' => 'MixedArgument',
+            ],
+            'negatedArrayIsListOfAList' => [
+                'code' => '<?php
+                    function f(): void {
+                        $ids = [1, 2];
+                        if (!array_is_list($ids)) {
+                            echo "never";
+                        }
+                    }',
+                'error_message' => 'is always list<mixed>, so its negation can never be true',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'negatedDocblockShapeAssertionOfAShapeIsImpossible' => [
+                'code' => '<?php
+                    /** @psalm-assert-if-true array{a: int} $x */
+                    function isA(array $x): bool { return isset($x["a"]); }
+
+                    /** @param array{a: int} $x */
+                    function f(array $x): void {
+                        if (!isA($x)) {}
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'negatedDocblockArrayAssertionOfAnArrayIsImpossible' => [
+                'code' => '<?php
+                    /** @psalm-assert !array<string, int> $x */
+                    function notMap(mixed $x): void {}
+
+                    /** @param array<string, int> $x */
+                    function g(array $x): void { notMap($x); }',
+                'error_message' => 'TypeDoesNotContainType',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'getTypeSwitchFallingThroughAnImpossibleCaseOfTheSameVariable' => [
                 'code' => '<?php
                     function f(int $data): string {
@@ -4807,6 +4947,15 @@ final class FunctionCallTest extends TestCase
                     function f(string $k): void {
                         $l = strtolower($k);
                         if ($l === \'c\') {}
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+            ],
+            'strtoupperOfDocblockLiteralsKeepsFromDocblock' => [
+                'code' => '<?php
+                    /** @param \'a\'|\'b\' $k */
+                    function f(string $k): void {
+                        $u = strtoupper($k);
+                        if ($u === \'C\') {}
                     }',
                 'error_message' => 'DocblockTypeContradiction',
             ],

@@ -27,6 +27,16 @@ final class TIntMaskOf extends TInt
         return 'int-mask-of<' . $this->value->getKey() . '>';
     }
 
+    #[Override]
+    public function getId(bool $exact = true): string
+    {
+        $value = $this->value instanceof TClassConstant
+            ? 'class-constant(' . $this->value->fq_classlike_name . '::' . $this->value->const_name . ')'
+            : $this->value->getId();
+
+        return 'int-mask-of<' . $value . '>';
+    }
+
     /**
      * @param array<lowercase-string, string> $aliased_classes
      */

@@ -5467,7 +5467,7 @@ final class MethodCallTest extends TestCase
                     function f(?A $a): int {
                         return $a?->b()->optionalItems()[0]->c() ?? 0;
                     }',
-                'error_message' => 'PossiblyNullReference',
+                'error_message' => 'PossiblyUndefinedArrayOffset',
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],

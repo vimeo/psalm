@@ -2238,9 +2238,6 @@
     <ComplexMethod>
       <code><![CDATA[expandConditional]]></code>
     </ComplexMethod>
-    <InvalidArgument>
-      <code><![CDATA[$fallback_params]]></code>
-    </InvalidArgument>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[$container_class_storage->template_types]]></code>
       <code><![CDATA[$params]]></code>
@@ -2262,10 +2259,6 @@
     <InvalidArgument>
       <code><![CDATA[$class_strings]]></code>
       <code><![CDATA[$class_strings]]></code>
-      <code><![CDATA[$extra_params ?? ($sealed
-                    ? null
-                    : [$is_list ? Type::getListKey() : Type::getArrayKey(), Type::getMixed()]
-                )]]></code>
     </InvalidArgument>
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[$const_name]]></code>
@@ -2897,12 +2890,6 @@
       <code><![CDATA[#[Override]]]></code>
     </ImmutableDependency>
   </file>
-  <file src="src/Psalm/Type/Atomic/TCallableString.php">
-    <ImmutableDependency>
-      <code><![CDATA[#[Override]]]></code>
-      <code><![CDATA[#[Override]]]></code>
-    </ImmutableDependency>
-  </file>
   <file src="src/Psalm/Type/Atomic/TClassString.php">
     <ImmutableDependency>
       <code><![CDATA[#[Override]]]></code>
@@ -3128,8 +3115,6 @@
       <code><![CDATA[self|TArray]]></code>
     </InvalidReturnType>
     <PossiblyUndefinedIntArrayOffset>
-      <code><![CDATA[$fallback_params[1]]]></code>
-      <code><![CDATA[$fallback_params[1]]]></code>
       <code><![CDATA[$this->properties[0]]]></code>
     </PossiblyUndefinedIntArrayOffset>
   </file>
@@ -3146,10 +3131,6 @@
     <ImmutableDependency>
       <code><![CDATA[#[Override]]]></code>
     </ImmutableDependency>
-    <InvalidOperand>
-      <code><![CDATA[$this->value]]></code>
-      <code><![CDATA[$this->value]]></code>
-    </InvalidOperand>
   </file>
   <file src="src/Psalm/Type/Atomic/TLiteralInt.php">
     <ImmutableDependency>

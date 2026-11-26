@@ -3,6 +3,132 @@ namespace {
     const FILTER_THROW_ON_FAILURE = 268435456;
     const FILTER_FLAG_GLOBAL_RANGE = 536870912;
 
+    /**
+     * @var string
+     */
+    const PHP_BUILD_DATE = '';
+
+    /**
+     * @var string
+     */
+    const PHP_BUILD_PROVIDER = '';
+
+    /**
+     * @var string
+     */
+    const ZEND_VM_KIND = '';
+
+    const CURLFOLLOW_ALL = 1;
+    const CURLFOLLOW_FIRSTONLY = 3;
+    const CURLFOLLOW_OBEYCODE = 2;
+    const CURLINFO_CONN_ID = 6291520;
+    const CURLINFO_HTTPAUTH_USED = 2097221;
+    const CURLINFO_PROXYAUTH_USED = 2097222;
+    const CURLINFO_QUEUE_TIME_T = 6291521;
+    const CURLINFO_USED_PROXY = 2097218;
+    const CURLOPT_INFILESIZE_LARGE = 30115;
+    const CURLOPT_SSL_SIGNATURE_ALGORITHMS = 10328;
+    const OPENSSL_PKCS1_PSS_PADDING = 6;
+    const PKCS7_CRLFEOL = 2048;
+    const PKCS7_NOCRL = 8192;
+    const PKCS7_NOSMIMECAP = 512;
+    const PKCS7_NO_DUAL_CONTENT = 65536;
+
+    /**
+     * @var int
+     */
+    const POSIX_SC_OPEN_MAX = 0;
+
+    /**
+     * @var int
+     */
+    const AF_PACKET = 0;
+
+    /**
+     * @var int
+     */
+    const ETH_P_ALL = 0;
+
+    /**
+     * @var int
+     */
+    const ETH_P_IP = 0;
+
+    /**
+     * @var int
+     */
+    const ETH_P_IPV6 = 0;
+
+    /**
+     * @var int
+     */
+    const ETH_P_LOOP = 0;
+
+    const IPPROTO_ICMP = 1;
+    const IPPROTO_ICMPV6 = 58;
+
+    /**
+     * @var int
+     */
+    const IP_BINDANY = 0;
+
+    const SHUT_RD = 0;
+    const SHUT_RDWR = 2;
+    const SHUT_WR = 1;
+
+    /**
+     * @var int
+     */
+    const SO_BUSY_POLL = 0;
+
+    /**
+     * @var int
+     */
+    const TCP_BBR_ALGORITHM = 0;
+
+    /**
+     * @var int
+     */
+    const TCP_FUNCTION_ALIAS = 0;
+
+    /**
+     * @var int
+     */
+    const TCP_FUNCTION_BLK = 0;
+
+    /**
+     * @var int
+     */
+    const TCP_REUSPORT_LB_NUMA = 0;
+
+    /**
+     * @var int
+     */
+    const TCP_REUSPORT_LB_NUMA_CURDOM = 0;
+
+    /**
+     * @var int
+     */
+    const TCP_REUSPORT_LB_NUMA_NODOM = 0;
+
+    /**
+     * @var int
+     */
+    const UDP_SEGMENT = 0;
+
+    const IMAGETYPE_HEIF = 20;
+    const IMAGETYPE_SVG = 21;
+
+    /**
+     * @var int
+     */
+    const T_PIPE = 0;
+
+    /**
+     * @var int
+     */
+    const T_VOID_CAST = 0;
+
     final class Closure {
         /**
          * @psalm-pure
