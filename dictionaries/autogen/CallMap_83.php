@@ -52118,64 +52118,71 @@ return array (
   ),
   'ssh2_auth_agent' => 
   array (
-    -1 => 'bool',
+    0 => 'mixed',
+    -2 => 'none',
     'session' => 'mixed',
-    'username' => 'string',
+    'username' => 'mixed',
   ),
   'ssh2_auth_hostbased_file' => 
   array (
-    -1 => 'bool',
+    0 => 'mixed',
+    -2 => 'none',
     'session' => 'mixed',
-    'username' => 'string',
-    'hostname' => 'string',
-    'pubkeyfile' => 'string',
-    'privkeyfile' => 'string',
-    'passphrase=' => 'null|string',
-    'local_username=' => 'null|string',
+    'username' => 'mixed',
+    'hostname' => 'mixed',
+    'pubkeyfile' => 'mixed',
+    'privkeyfile' => 'mixed',
+    'passphrase=' => 'mixed',
+    'local_username=' => 'mixed',
   ),
   'ssh2_auth_none' => 
   array (
-    -1 => 'bool',
+    0 => 'mixed',
+    -2 => 'none',
     'session' => 'mixed',
-    'username' => 'string',
+    'username' => 'mixed',
   ),
   'ssh2_auth_password' => 
   array (
-    -1 => 'bool',
+    0 => 'mixed',
+    -2 => 'none',
     'session' => 'mixed',
-    'username' => 'string',
-    'password' => 'string',
+    'username' => 'mixed',
+    'password' => 'mixed',
   ),
   'ssh2_auth_pubkey' => 
   array (
-    -1 => 'bool',
+    0 => 'mixed',
+    -2 => 'none',
     'session' => 'mixed',
-    'username' => 'string',
-    'pubkey' => 'string',
-    'privkey' => 'string',
-    'passphrase=' => 'null|string',
+    'username' => 'mixed',
+    'pubkey' => 'mixed',
+    'privkey' => 'mixed',
+    'passphrase=' => 'mixed',
   ),
   'ssh2_auth_pubkey_file' => 
   array (
-    -1 => 'bool',
+    0 => 'mixed',
+    -2 => 'none',
     'session' => 'mixed',
-    'username' => 'string',
-    'pubkeyfile' => 'string',
-    'privkeyfile' => 'string',
-    'passphrase=' => 'null|string',
+    'username' => 'mixed',
+    'pubkeyfile' => 'mixed',
+    'privkeyfile' => 'mixed',
+    'passphrase=' => 'mixed',
   ),
   'ssh2_connect' => 
   array (
     0 => 'mixed',
     -2 => 'none',
-    'host' => 'string',
-    'port=' => 'int',
-    'methods=' => 'array<array-key, mixed>|null',
-    'callbacks=' => 'array<array-key, mixed>|null',
+    'host' => 'mixed',
+    'port=' => 'mixed',
+    'methods=' => 'mixed',
+    'callbacks=' => 'mixed',
   ),
   'ssh2_disconnect' => 
   array (
-    -1 => 'bool',
+    0 => 'mixed',
+    -2 => 'none',
     'session' => 'mixed',
   ),
   'ssh2_exec' => 
@@ -52183,74 +52190,86 @@ return array (
     0 => 'mixed',
     -2 => 'none',
     'session' => 'mixed',
-    'command' => 'string',
-    'pty=' => 'null|string',
-    'env=' => 'array<array-key, mixed>|null',
-    'width=' => 'int',
-    'height=' => 'int',
-    'width_height_type=' => 'int',
+    'command' => 'mixed',
+    'pty=' => 'mixed',
+    'env=' => 'mixed',
+    'width=' => 'mixed',
+    'height=' => 'mixed',
+    'width_height_type=' => 'mixed',
   ),
   'ssh2_fetch_stream' => 
   array (
     0 => 'mixed',
     -2 => 'none',
     'channel' => 'mixed',
-    'streamid' => 'int',
+    'streamid' => 'mixed',
   ),
   'ssh2_fingerprint' => 
   array (
     0 => 'mixed',
     -2 => 'none',
     'session' => 'mixed',
-    'flags=' => 'int',
+    'flags=' => 'mixed',
   ),
   'ssh2_forward_accept' => 
   array (
     0 => 'mixed',
     -2 => 'none',
     'listener' => 'mixed',
-    '&host=' => 'null|string',
-    '&port=' => 'int|null',
+    '&host=' => 'mixed',
+    'port=' => 'mixed',
   ),
   'ssh2_forward_listen' => 
   array (
     0 => 'mixed',
     -2 => 'none',
     'session' => 'mixed',
-    'port' => 'int',
-    'host=' => 'string',
-    'max_connections=' => 'int',
+    'port' => 'mixed',
+    'host=' => 'mixed',
+    'max_connections=' => 'mixed',
   ),
   'ssh2_hostkey' => 
   array (
-    -1 => 'array<array-key, mixed>|false',
+    0 => 'mixed',
+    -2 => 'none',
     'session' => 'mixed',
   ),
   'ssh2_keepalive_config' => 
   array (
-    -1 => 'void',
+    0 => 'mixed',
+    -2 => 'none',
     'session' => 'mixed',
-    'want_reply' => 'bool',
-    'interval' => 'int',
+    'want_reply' => 'mixed',
+    'interval' => 'mixed',
   ),
   'ssh2_keepalive_send' => 
   array (
-    -1 => 'false|int',
+    0 => 'mixed',
+    -2 => 'none',
     'session' => 'mixed',
   ),
   'ssh2_methods_negotiated' => 
   array (
-    -1 => 'array<array-key, mixed>',
+    0 => 'mixed',
+    -2 => 'none',
     'session' => 'mixed',
+  ),
+  'ssh2_poll' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    '&polldes' => 'mixed',
+    'timeout=' => 'mixed',
   ),
   'ssh2_publickey_add' => 
   array (
-    -1 => 'bool',
+    0 => 'mixed',
+    -2 => 'none',
     'pkey' => 'mixed',
-    'algoname' => 'string',
-    'blob' => 'string',
-    'overwrite=' => 'bool',
-    'attributes=' => 'array<array-key, mixed>|null',
+    'algoname' => 'mixed',
+    'blob' => 'mixed',
+    'overwrite=' => 'mixed',
+    'attributes=' => 'mixed',
   ),
   'ssh2_publickey_init' => 
   array (
@@ -52266,43 +52285,49 @@ return array (
   ),
   'ssh2_publickey_remove' => 
   array (
-    -1 => 'bool',
+    0 => 'mixed',
+    -2 => 'none',
     'pkey' => 'mixed',
-    'algoname' => 'string',
-    'blob' => 'string',
+    'algoname' => 'mixed',
+    'blob' => 'mixed',
   ),
   'ssh2_scp_recv' => 
   array (
-    -1 => 'bool',
+    0 => 'mixed',
+    -2 => 'none',
     'session' => 'mixed',
-    'remote_file' => 'string',
-    'local_file' => 'string',
+    'remote_file' => 'mixed',
+    'local_file' => 'mixed',
   ),
   'ssh2_scp_send' => 
   array (
-    -1 => 'bool',
+    0 => 'mixed',
+    -2 => 'none',
     'session' => 'mixed',
-    'local_file' => 'string',
-    'remote_file' => 'string',
-    'create_mode=' => 'int',
+    'local_file' => 'mixed',
+    'remote_file' => 'mixed',
+    'create_mode=' => 'mixed',
   ),
   'ssh2_send_eof' => 
   array (
-    -1 => 'bool',
+    0 => 'mixed',
+    -2 => 'none',
     'channel' => 'mixed',
   ),
   'ssh2_send_signal' => 
   array (
-    -1 => 'bool',
+    0 => 'mixed',
+    -2 => 'none',
     'channel' => 'mixed',
-    'signal' => 'string',
+    'signal' => 'mixed',
   ),
   'ssh2_set_timeout' => 
   array (
-    -1 => 'void',
+    0 => 'mixed',
+    -2 => 'none',
     'session' => 'mixed',
-    'seconds' => 'int',
-    'microseconds=' => 'int',
+    'seconds' => 'mixed',
+    'microseconds=' => 'mixed',
   ),
   'ssh2_sftp' => 
   array (
@@ -52312,98 +52337,105 @@ return array (
   ),
   'ssh2_sftp_chmod' => 
   array (
-    -1 => 'bool',
+    0 => 'mixed',
+    -2 => 'none',
     'sftp' => 'mixed',
-    'filename' => 'string',
-    'mode' => 'int',
+    'filename' => 'mixed',
+    'mode' => 'mixed',
   ),
   'ssh2_sftp_lstat' => 
   array (
     0 => 'mixed',
     -2 => 'none',
     'sftp' => 'mixed',
-    'path' => 'string',
+    'path' => 'mixed',
   ),
   'ssh2_sftp_mkdir' => 
   array (
-    -1 => 'bool',
+    0 => 'mixed',
+    -2 => 'none',
     'sftp' => 'mixed',
-    'dirname' => 'string',
-    'mode=' => 'int',
-    'recursive=' => 'bool',
+    'dirname' => 'mixed',
+    'mode=' => 'mixed',
+    'recursive=' => 'mixed',
   ),
   'ssh2_sftp_readlink' => 
   array (
     0 => 'mixed',
     -2 => 'none',
     'sftp' => 'mixed',
-    'link' => 'string',
+    'link' => 'mixed',
   ),
   'ssh2_sftp_realpath' => 
   array (
     0 => 'mixed',
     -2 => 'none',
     'sftp' => 'mixed',
-    'filename' => 'string',
+    'filename' => 'mixed',
   ),
   'ssh2_sftp_rename' => 
   array (
-    -1 => 'bool',
+    0 => 'mixed',
+    -2 => 'none',
     'sftp' => 'mixed',
-    'from' => 'string',
-    'to' => 'string',
+    'from' => 'mixed',
+    'to' => 'mixed',
   ),
   'ssh2_sftp_rmdir' => 
   array (
-    -1 => 'bool',
+    0 => 'mixed',
+    -2 => 'none',
     'sftp' => 'mixed',
-    'dirname' => 'string',
+    'dirname' => 'mixed',
   ),
   'ssh2_sftp_stat' => 
   array (
     0 => 'mixed',
     -2 => 'none',
     'sftp' => 'mixed',
-    'path' => 'string',
+    'path' => 'mixed',
   ),
   'ssh2_sftp_symlink' => 
   array (
-    -1 => 'bool',
+    0 => 'mixed',
+    -2 => 'none',
     'sftp' => 'mixed',
-    'target' => 'string',
-    'link' => 'string',
+    'target' => 'mixed',
+    'link' => 'mixed',
   ),
   'ssh2_sftp_unlink' => 
   array (
-    -1 => 'bool',
+    0 => 'mixed',
+    -2 => 'none',
     'sftp' => 'mixed',
-    'filename' => 'string',
+    'filename' => 'mixed',
   ),
   'ssh2_shell' => 
   array (
     0 => 'mixed',
     -2 => 'none',
     'session' => 'mixed',
-    'termtype=' => 'string',
-    'env=' => 'array<array-key, mixed>|null',
-    'width=' => 'int',
-    'height=' => 'int',
-    'width_height_type=' => 'int',
+    'termtype=' => 'mixed',
+    'env=' => 'mixed',
+    'width=' => 'mixed',
+    'height=' => 'mixed',
+    'width_height_type=' => 'mixed',
   ),
   'ssh2_shell_resize' => 
   array (
-    -1 => 'bool',
+    0 => 'mixed',
+    -2 => 'none',
     'session' => 'mixed',
-    'width' => 'int',
-    'height' => 'int',
+    'width' => 'mixed',
+    'height' => 'mixed',
   ),
   'ssh2_tunnel' => 
   array (
     0 => 'mixed',
     -2 => 'none',
     'session' => 'mixed',
-    'host' => 'string',
-    'port' => 'int',
+    'host' => 'mixed',
+    'port' => 'mixed',
   ),
   'stat' => 
   array (

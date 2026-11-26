@@ -58174,6 +58174,8 @@ return array (
   array (
     0 => 'false|resource',
     'listener' => 'resource',
+    '&host=' => 'mixed',
+    'port=' => 'mixed',
   ),
   'ssh2_forward_listen' => 
   array (
