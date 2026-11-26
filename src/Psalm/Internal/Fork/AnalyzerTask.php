@@ -10,6 +10,8 @@ use Amp\Sync\Channel;
 use Override;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Codebase\Analyzer;
+use Psalm\Internal\Crash\CrashContext;
+use Throwable;
 
 /**
  * @internal
@@ -28,6 +30,11 @@ final class AnalyzerTask implements Task
     public function run(Channel $channel, Cancellation $cancellation): int
     {
         $pa = ProjectAnalyzer::getInstance();
-        return Analyzer::analysisWorker($pa->getConfig(), $pa->progress, $this->file);
+
+        try {
+            return Analyzer::analysisWorker($pa->getConfig(), $pa->progress, $this->file);
+        } catch (Throwable $e) {
+            throw CrashContext::forParent($e);
+        }
     }
 }

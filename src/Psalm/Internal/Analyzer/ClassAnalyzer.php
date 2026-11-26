@@ -16,6 +16,7 @@ use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\DocComment;
+use Psalm\Exception\CircularReferenceException;
 use Psalm\Exception\DocblockParseException;
 use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\FunctionLike\ReturnTypeAnalyzer;
@@ -37,6 +38,8 @@ use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Internal\TypeVisitor\TypeChecker;
+use Psalm\Issue\CircularReference;
 use Psalm\Issue\DeprecatedClass;
 use Psalm\Issue\DeprecatedInterface;
 use Psalm\Issue\DeprecatedTrait;
@@ -51,10 +54,12 @@ use Psalm\Issue\InternalClass;
 use Psalm\Issue\InvalidEnumCaseValue;
 use Psalm\Issue\InvalidExtendClass;
 use Psalm\Issue\InvalidInterfaceImplementation;
+use Psalm\Issue\InvalidOverride;
 use Psalm\Issue\InvalidTraversableImplementation;
 use Psalm\Issue\MethodSignatureMismatch;
 use Psalm\Issue\MismatchingDocblockPropertyType;
 use Psalm\Issue\MissingConstructor;
+use Psalm\Issue\MissingOverrideAttribute;
 use Psalm\Issue\MissingPropertyType;
 use Psalm\Issue\MutableDependency;
 use Psalm\Issue\NoEnumProperties;
@@ -67,6 +72,7 @@ use Psalm\Issue\PropertyNotSetInConstructor;
 use Psalm\Issue\ReservedWord;
 use Psalm\Issue\UndefinedClass;
 use Psalm\Issue\UndefinedInterface;
+use Psalm\Issue\UndefinedMethod;
 use Psalm\Issue\UndefinedTrait;
 use Psalm\Issue\UnimplementedAbstractMethod;
 use Psalm\Issue\UnimplementedInterfaceMethod;
@@ -90,6 +96,7 @@ use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\MethodStorage;
 use Psalm\Storage\PropertyStorage;
+use Psalm\Storage\TemplateVariance;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TGenericObject;
@@ -121,6 +128,7 @@ use function str_replace;
 use function strpos;
 use function strtolower;
 use function substr;
+use function substr_count;
 
 /**
  * @internal
@@ -129,6 +137,37 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
 {
     /** @var array<string, true> */
     private static array $anonymous_classes_in_analysis = [];
+    /**
+     * @psalm-capabilities read-props
+     */
+    private static function overridesAParentProperty(
+        ClassLikeStorage $storage,
+        string $property_name,
+        Codebase $codebase,
+    ): bool {
+        foreach ($storage->overridden_property_ids[$property_name] ?? [] as $overridden_property_id) {
+            [$guide_class_name] = explode('::$', $overridden_property_id);
+            $guide_property_storage = $codebase->classlike_storage_provider->get($guide_class_name)
+                ->properties[$property_name] ?? null;
+
+            if ($guide_property_storage !== null
+                && $guide_property_storage->visibility !== ClassLikeAnalyzer::VISIBILITY_PRIVATE
+            ) {
+                return true;
+            }
+        }
+
+        foreach ([...$storage->parent_classes, ...$storage->class_implements] as $ancestor) {
+            $inherited = $codebase->classlikes->getStorageFor($ancestor)?->properties[$property_name] ?? null;
+
+            if ($inherited !== null && $inherited->visibility !== ClassLikeAnalyzer::VISIBILITY_PRIVATE) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     /** Set on the call of the constructor that stands for it when the initialization of properties is checked */
     public const FAKE_CONSTRUCTOR_CALL_ATTRIBUTE = 'fake_constructor_call';
 
@@ -434,31 +473,8 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
             return;
         }
 
-        if (!$storage->abstract) {
-            foreach ($storage->declaring_method_ids as $declaring_method_id) {
-                $method_storage = $codebase->methods->getStorage($declaring_method_id);
-
-                $declaring_class_name = $declaring_method_id->fq_class_name;
-                $method_name_lc = $declaring_method_id->method_name;
-
-                if ($method_storage->abstract) {
-                    if (IssueBuffer::accepts(
-                        new UnimplementedAbstractMethod(
-                            'Method ' . $method_name_lc . ' is not defined on class ' .
-                            $this->fq_class_name . ', defined abstract in ' . $declaring_class_name,
-                            new CodeLocation(
-                                $this,
-                                $class->name ?? $class,
-                                $class_context->include_location,
-                                true,
-                            ),
-                        ),
-                        $storage->suppressed_issues + $this->getSuppressedIssues(),
-                    )) {
-                        return;
-                    }
-                }
-            }
+        if (!$this->checkUnimplementedAbstractMethods($class_context)) {
+            return;
         }
 
         AttributesAnalyzer::analyze(
@@ -725,6 +741,59 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
         }
     }
 
+    private static function checkOverrideAttributeOfProperty(
+        StatementsSource $statements_source,
+        ClassLikeStorage $storage,
+        PropertyStorage $property_storage,
+        string $property_name,
+    ): void {
+        $codebase = $statements_source->getCodebase();
+
+        $attributes = $property_storage->attributes;
+
+        // the attributes of a promoted property are written on the param of the constructor
+        if ($property_storage->is_promoted) {
+            foreach ($storage->methods['__construct']->params ?? [] as $param) {
+                if ($param->name === $property_name) {
+                    $attributes = [...$attributes, ...$param->attributes];
+                }
+            }
+        }
+
+        foreach ($attributes as $attribute) {
+            if ($attribute->fq_class_name === 'Override') {
+                return;
+            }
+        }
+
+        if ($property_storage->location === null
+            || !self::overridesAParentProperty($storage, $property_name, $codebase)
+        ) {
+            return;
+        }
+
+        IssueBuffer::maybeAdd(
+            new MissingOverrideAttribute(
+                'Property ' . $storage->name . '::$' . $property_name . ' should have the "Override" attribute',
+                $property_storage->location,
+            ),
+            $property_storage->suppressed_issues ?: $storage->suppressed_issues,
+            true,
+        );
+
+        // a statement declaring several properties would give the attribute to all of them
+        if ($codebase->alter_code
+            && $property_storage->stmt_location !== null
+            && substr_count($property_storage->stmt_location->getSnippet(), '$') === 1
+            && isset(ProjectAnalyzer::getInstance()->getIssuesToFix()['MissingOverrideAttribute'])
+        ) {
+            $idx = $property_storage->stmt_location->getSelectionBounds()[0];
+            FileManipulationBuffer::add($property_storage->stmt_location->file_path, [
+                new FileManipulation($idx, $idx, "#[\\Override]\n", true),
+            ]);
+        }
+    }
+
     public static function addContextProperties(
         StatementsSource $statements_source,
         ClassLikeStorage $storage,
@@ -758,6 +827,34 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                     ),
                     $property_storage->suppressed_issues,
                 );
+            }
+
+            // PHP 8.5: a property that overrides a property of a parent class needs #[\Override]
+            if ($property_class_name === $fq_class_name
+                && $codebase->analysis_php_version_id >= 8_05_00
+                && $codebase->config->ensure_override_attribute
+                && $property_storage->location
+            ) {
+                self::checkOverrideAttributeOfProperty($statements_source, $storage, $property_storage, $property_name);
+            }
+
+            // PHP 8.5: #[\Override] on a property needs a property of the same name that isn't private in a parent
+            // class or an interface; a property of a trait is checked in the class using it
+            if (explode('::$', $appearing_property_id)[0] === $fq_class_name
+                && $codebase->analysis_php_version_id >= 8_05_00
+                && !self::overridesAParentProperty($storage, $property_name, $codebase)
+            ) {
+                foreach ($property_storage->attributes as $attribute) {
+                    if ($attribute->fq_class_name === 'Override') {
+                        IssueBuffer::maybeAdd(
+                            new InvalidOverride(
+                                'Property $' . $property_name . ' does not match any parent property',
+                                $attribute->name_location,
+                            ),
+                            [...$property_storage->suppressed_issues, ...$storage->suppressed_issues],
+                        );
+                    }
+                }
             }
 
             if (isset($storage->overridden_property_ids[$property_name])) {
@@ -1080,14 +1177,20 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 }
 
                 if (!$property_storage->inherited_type) {
-                    /** @psalm-suppress UnusedMethodCall This call actually has the side effect of creating issues */
-                    $fleshed_out_type->check(
+                    (new TypeChecker(
                         $statements_source,
                         $property_type_location,
                         $storage->suppressed_issues + $statements_source->getSuppressedIssues() + $suppressed,
                         [],
                         false,
-                    );
+                        false,
+                        // a property of a parent class is checked there, one of a trait in the class that uses it
+                        $property_class_storage === $storage || $property_class_storage->is_trait
+                            ? self::getPropertyTypePosition($storage, $property_storage)
+                            : null,
+                        null,
+                        true,
+                    ))->check($fleshed_out_type);
                 }
 
                 if ($property_storage->signature_type) {
@@ -1152,7 +1255,11 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 // declares it
                 $class_context->vars_in_scope['static::$' . $property_name] = $fleshed_out_type;
             } else {
-                $class_context->vars_in_scope['$this->' . $property_name] = $fleshed_out_type;
+                // a readonly property keeps its value after a call
+                $class_context->vars_in_scope['$this->' . $property_name] = $property_storage->readonly
+                    && !$property_storage->allow_private_mutation
+                    ? $fleshed_out_type->setProperties(['has_mutations' => false])
+                    : $fleshed_out_type;
             }
         }
 
@@ -1618,6 +1725,23 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
         }
 
         if (!$storage->abstract && $uninitialized_typed_properties) {
+            // a stub that leaves out the constructor keeps the real one, whose body isn't analysed: what it
+            // initializes is unknown
+            if (isset($storage->declaring_method_ids['__construct'])) {
+                $constructor_class_storage = $classlike_storage_provider->get(
+                    $storage->declaring_method_ids['__construct']->fq_class_name,
+                );
+                $constructor_storage = $constructor_class_storage->methods['__construct'] ?? null;
+
+                if ($constructor_class_storage->stubbed
+                    && $constructor_storage !== null
+                    && !$constructor_storage->stubbed
+                    && $constructor_storage->location !== null
+                ) {
+                    return;
+                }
+            }
+
             foreach ($uninitialized_typed_properties as $id => $uninitialized_property) {
                 if ($uninitialized_property->location) {
                     IssueBuffer::maybeAdd(
@@ -1635,6 +1759,68 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
     }
 
     /**
+     * Reports an alias or a precedence rule of a trait use for a method none of the traits it names has, which PHP
+     * refuses
+     */
+    private function checkTraitAdaptations(
+        Aliases $aliases,
+        PhpParser\Node\Stmt\TraitUse $stmt,
+        ClassLikeStorage $storage,
+        ?TraitAnalyzer $previous_trait_analyzer,
+    ): void {
+        $codebase = $this->getCodebase();
+
+        foreach ($stmt->adaptations as $adaptation) {
+            $trait_names = $adaptation->trait ? [$adaptation->trait] : $stmt->traits;
+            $method_name = strtolower($adaptation->method->name);
+
+            $has_method = false;
+            $has_missing_trait = false;
+
+            foreach ($trait_names as $trait_name) {
+                $fq_trait_name = strtolower($codebase->classlikes->getUnAliasedName(
+                    self::getFQCLNFromNameObject($trait_name, $aliases),
+                ));
+
+                if (!$codebase->classlike_storage_provider->has($fq_trait_name)) {
+                    $has_missing_trait = true;
+                } elseif (isset($codebase->classlike_storage_provider->get($fq_trait_name)
+                    ->declaring_method_ids[$method_name])
+                ) {
+                    $has_method = true;
+                }
+            }
+
+            // a trait that doesn't exist is reported where it is used, and may have had the method
+            if ($has_method || $has_missing_trait) {
+                continue;
+            }
+
+            $method_id = ($adaptation->trait
+                ? self::getFQCLNFromNameObject($adaptation->trait, $aliases) . '::'
+                : '') . $adaptation->method->name;
+
+            if ($adaptation instanceof PhpParser\Node\Stmt\TraitUseAdaptation\Precedence) {
+                $message = 'A precedence rule was defined for ' . $method_id . ' but this method does not exist';
+            } elseif ($adaptation instanceof PhpParser\Node\Stmt\TraitUseAdaptation\Alias && $adaptation->newName) {
+                $message = 'An alias was defined for ' . $method_id . ' but this method does not exist';
+            } else {
+                $message = 'The modifiers of the trait method ' . $method_id . '() are changed, but this method does'
+                    . ' not exist';
+            }
+
+            IssueBuffer::maybeAdd(
+                new UndefinedMethod(
+                    $message,
+                    new CodeLocation($previous_trait_analyzer ?? $this, $adaptation->method),
+                    $method_id,
+                ),
+                $storage->suppressed_issues + $this->getSuppressedIssues(),
+            );
+        }
+    }
+
+    /**
      * @return false|null
      */
     private function analyzeTraitUse(
@@ -1648,6 +1834,8 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
         ?TraitAnalyzer $previous_trait_analyzer = null,
     ): ?bool {
         $codebase = $this->getCodebase();
+
+        $this->checkTraitAdaptations($aliases, $stmt, $storage, $previous_trait_analyzer);
 
         $previous_context_include_location = $class_context->include_location;
 
@@ -2235,6 +2423,29 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
     }
 
     /**
+     * The position of the type of a property of a class with contravariant templates: one that only the class
+     * writes hands its value out (an output position), any other one also takes values (an invariant one). A
+     * private property is in neither, as a constructor's parameters.
+     *
+     * @psalm-mutation-free
+     */
+    private static function getPropertyTypePosition(
+        ClassLikeStorage $class_storage,
+        PropertyStorage $property_storage,
+    ): ?TemplateVariance {
+        if ($class_storage->template_contravariants === null
+            || $property_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE
+        ) {
+            return null;
+        }
+
+        return $property_storage->readonly
+            || $property_storage->set_visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE
+                ? TemplateVariance::Covariant
+                : TemplateVariance::Invariant;
+    }
+
+    /**
      * @psalm-mutation-free
      */
     public static function getThisObjectType(
@@ -2455,6 +2666,48 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
         );
     }
 
+    private function checkUnimplementedAbstractMethods(Context $class_context): bool
+    {
+        $storage = $this->storage;
+
+        if ($storage->abstract) {
+            return true;
+        }
+
+        $codebase = $this->getCodebase();
+        $class = $this->class;
+
+        foreach ($storage->declaring_method_ids as $declaring_method_id) {
+            $method_storage = $codebase->methods->getStorage($declaring_method_id);
+
+            $declaring_class_name = $declaring_method_id->fq_class_name;
+            $method_name_lc = $declaring_method_id->method_name;
+
+            // a class only gets a method declared by an interface from a stubbed class leaving it out, which
+            // implements it
+            if ($method_storage->abstract
+                && !$codebase->classlike_storage_provider->get($declaring_class_name)->is_interface
+                && IssueBuffer::accepts(
+                    new UnimplementedAbstractMethod(
+                        'Method ' . $method_name_lc . ' is not defined on class ' .
+                        $this->fq_class_name . ', defined abstract in ' . $declaring_class_name,
+                        new CodeLocation(
+                            $this,
+                            $class->name ?? $class,
+                            $class_context->include_location,
+                            true,
+                        ),
+                    ),
+                    $storage->suppressed_issues + $this->getSuppressedIssues(),
+                )
+            ) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     /**
      * @param PhpParser\Node\Stmt\Class_|PhpParser\Node\Stmt\Enum_ $class
      */
@@ -2495,6 +2748,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 $interface_location,
                 $class_context,
                 $this->getSuppressedIssues(),
+                new ClassLikeNameOptions(required_at_runtime: true),
             ) === false) {
                 return false;
             }
@@ -2807,6 +3061,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
             $parent_reference_location,
             $class_context,
             $storage->suppressed_issues + $this->getSuppressedIssues(),
+            new ClassLikeNameOptions(required_at_runtime: true),
         ) === false) {
             return;
         }
@@ -2964,8 +3219,20 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
         $storage = $this->storage;
 
         $seen_values = [];
-        foreach ($storage->enum_cases as $case_storage) {
-            $case_value = $case_storage->getValue($this->getCodebase()->classlikes);
+        foreach ($storage->enum_cases as $case_name => $case_storage) {
+            try {
+                $case_value = $case_storage->resolveValue($this->getCodebase()->classlikes);
+            } catch (CircularReferenceException) {
+                IssueBuffer::maybeAdd(
+                    new CircularReference(
+                        'Enum case ' . $storage->name . '::' . $case_name . ' contains a circular reference',
+                        $case_storage->stmt_location,
+                    ),
+                );
+
+                continue;
+            }
+
             if ($case_value !== null && $storage->enum_type === null) {
                 IssueBuffer::maybeAdd(
                     new InvalidEnumCaseValue(

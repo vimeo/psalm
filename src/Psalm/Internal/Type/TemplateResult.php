@@ -44,6 +44,21 @@ final class TemplateResult
      */
     public bool $readonly = false;
 
+    /** Declared return type of the callable whose arguments are being inferred. */
+    public ?Union $conditional_return_context = null;
+
+    /**
+     * The bindings are the type arguments of the receiver of a call, which replace the templates of the declared
+     * parameter types, even in code of the receiver's class. The argument types stay rigid.
+     */
+    public bool $of_receiver = false;
+
+    /**
+     * The class a `new` expression constructs: its templates stand for the new object's type arguments, even in
+     * code of that class, where they are otherwise the types of the object the code runs for
+     */
+    public ?string $constructed_class = null;
+
     /**
      * @var list<Union>
      */
@@ -92,6 +107,17 @@ final class TemplateResult
                 $this->lower_bounds[$key1][$key2] = [new TemplateBound($bound)];
             }
         }
+    }
+
+    /**
+     * Whether the bindings are those of another object than the one code of $class runs for: the receiver of a
+     * call or the object a `new` of $class constructs
+     *
+     * @psalm-mutation-free
+     */
+    public function isForAnotherObject(string $class): bool
+    {
+        return $this->of_receiver || $this->constructed_class === $class;
     }
 
     /**

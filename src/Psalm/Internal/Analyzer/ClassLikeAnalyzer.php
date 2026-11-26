@@ -42,6 +42,7 @@ use Psalm\StatementsSource;
 use Psalm\Storage\Capabilities;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\PropertyStorage;
+use Psalm\Storage\TemplateVariance;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TTemplateParam;
@@ -176,7 +177,12 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
             if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod
                 && strtolower($stmt->name->name) === strtolower($method_name)
             ) {
+                // the method runs under the strict_types of its own file, the code of the caller under its own
+                $strict_types = $context->strict_types;
+
                 (new MethodAnalyzer($stmt, $this))->analyze($context, new NodeDataProvider(), null, true);
+
+                $context->strict_types = $strict_types;
 
                 return;
             }
@@ -199,6 +205,9 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
             new MethodIdentifier($context->self ?: $this->fq_class_name, strtolower($method_name)),
         );
         $actual_method_name = $called_method_id !== null ? $called_method_id->method_name : $method_name;
+
+        // the method runs under the strict_types of its own file, the code of the caller under its own
+        $strict_types = $context->strict_types;
 
         // what the caller established about its own variables says nothing about the method's
         $context->clauses = [];
@@ -228,6 +237,8 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
                 );
             }
         }
+
+        $context->strict_types = $strict_types;
     }
 
     /**
@@ -582,6 +593,17 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
             }
         }
 
+        if ($check_classes && $options->required_at_runtime && !$class_storage->user_defined) {
+            ExtensionRequirementAnalyzer::check(
+                $codebase,
+                $class_storage->name,
+                true,
+                $code_location,
+                $options->context ?? $context,
+                $suppressed_issues,
+            );
+        }
+
         foreach ($class_storage->invalid_dependencies as $dependency_class_name => $_) {
             // if the implemented/extended class is stubbed, it may not yet have
             // been hydrated
@@ -594,7 +616,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
                     $fq_class_name . ' depends on class or interface '
                         . $dependency_class_name . ' that does not exist',
                     $code_location,
-                    $fq_class_name,
+                    $dependency_class_name,
                 ),
                 $suppressed_issues,
             )) {
@@ -942,7 +964,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
             $suppressed_issues,
         );
 
-        // a `@method` is never analysed: its parameters are what a real method's are for the covariant templates
+        // a `@method` is never analysed: its parameters are in the position of a real method's
         foreach ($storage->getDeclaredPseudoMethods() as $pseudo_method) {
             foreach ($pseudo_method->params as $param) {
                 if ($param->type && $param->type_location) {
@@ -950,8 +972,8 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
                         $source,
                         $param->type_location,
                         $suppressed_issues,
-                        prevent_template_covariance: true,
-                        covariance_only: true,
+                        position: TemplateVariance::Contravariant,
+                        positions_only: true,
                     ))->check($param->type);
                 }
             }
@@ -1141,22 +1163,35 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
                         final: $storage->final,
                     );
 
-                    if (isset($parent_storage->template_covariants[$i])
-                        && !$parent_storage->template_covariants[$i]
-                    ) {
+                    if (isset($parent_storage->template_covariants[$i])) {
+                        $parent_variance = $parent_storage->getTemplateVariance($i);
+
                         foreach ($extended_type->getAtomicTypes() as $t) {
-                            if ($t instanceof TTemplateParam
-                                && $storage->template_types
-                                && $storage->template_covariants
-                                && ($local_offset
+                            if (!$t instanceof TTemplateParam
+                                || $storage->template_types === null
+                                || ($local_offset
                                     = array_search($t->param_name, array_keys($storage->template_types), true))
-                                    !== false
-                                && !empty($storage->template_covariants[$local_offset])
+                                    === false
                             ) {
+                                continue;
+                            }
+
+                            $variance = $storage->getTemplateVariance($local_offset);
+
+                            if ($variance !== TemplateVariance::Invariant && $variance !== $parent_variance) {
                                 IssueBuffer::maybeAdd(
                                     new InvalidTemplateParam(
-                                        'Cannot extend an invariant template param ' . $template_name
-                                            . ' into a covariant context',
+                                        'Cannot extend '
+                                            . match ($parent_variance) {
+                                                TemplateVariance::Invariant => 'an invariant',
+                                                TemplateVariance::Covariant => 'a covariant',
+                                                TemplateVariance::Contravariant => 'a contravariant',
+                                            }
+                                            . ' template param ' . $template_name . ' into a '
+                                            . ($variance === TemplateVariance::Covariant
+                                                ? 'covariant'
+                                                : 'contravariant')
+                                            . ' context',
                                         $code_location,
                                     ),
                                     $storage->suppressed_issues + $this->getSuppressedIssues(),

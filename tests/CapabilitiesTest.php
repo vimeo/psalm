@@ -837,6 +837,7 @@ final class CapabilitiesTest extends TestCase
                     PHP,
                 'assertions' => [],
                 'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'callsWritingNothingKeepGetterResults' => [
                 'code' => <<<'PHP'
@@ -1277,6 +1278,44 @@ final class CapabilitiesTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'dateTimeConstructorsOnlyNeedTime' => [
+                'code' => '<?php
+                    /** @psalm-capabilities time */
+                    function tomorrow(): DateTimeImmutable {
+                        return new DateTimeImmutable("tomorrow");
+                    }
+
+                    /** @psalm-capabilities time */
+                    function mutableNow(): DateTime {
+                        return new DateTime();
+                    }
+
+                    final class MyDate extends DateTimeImmutable {}
+
+                    /** @psalm-capabilities time */
+                    function inherited(): MyDate {
+                        return new MyDate();
+                    }
+
+                    final class MyDate2 extends DateTimeImmutable {
+                        /** @psalm-capabilities time */
+                        public function __construct() {
+                            parent::__construct("now");
+                        }
+                    }
+
+                    /** @psalm-capabilities time */
+                    function nextDay(): DateTimeImmutable {
+                        return (new DateTimeImmutable())->add(new DateInterval("P1D"));
+                    }',
+            ],
+            'dateIntervalConstructorIsPure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function interval(): DateInterval {
+                        return new DateInterval("P1D");
+                    }',
+            ],
             'datesOfAGivenTimestampArePure' => [
                 'code' => '<?php
                     /** @psalm-pure */
@@ -1522,6 +1561,42 @@ final class CapabilitiesTest extends TestCase
                             && max($some_names) !== min($some_names[0], $some_names[0]);
                     }',
             ],
+            'noToStringInArrayMultisortWithAnOrderChosenAtRuntime' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param list<Name> $names
+                     */
+                    function f(array $names, bool $desc): array {
+                        $order = $desc ? SORT_DESC : SORT_ASC;
+                        array_multisort($names, $order);
+
+                        return $names;
+                    }',
+            ],
+            'noToStringOfValuesArrayMultisortAndStrtrDoNotCompareAsStrings' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param list<Name> $names
+                     * @param list<int> $ints
+                     * @param array{string, list<int>} $args
+                     */
+                    function f(array $names, array $ints, array $args, string $s): string {
+                        array_multisort($names, SORT_DESC, SORT_NUMERIC);
+                        array_multisort($ints, SORT_STRING, $names);
+
+                        return strtr($s, "a", "b") . implode(...$args);
+                    }',
+            ],
             'noToStringOfCallbackInArrayDiffUassoc' => [
                 'code' => '<?php
                     final class Comparer {
@@ -1617,6 +1692,9 @@ final class CapabilitiesTest extends TestCase
                     function withDefault(Options $o = new Options()): int {
                         return $o->n;
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'globalStateMayBeReadAndFreshObjectsMutated' => [
                 'code' => '<?php
@@ -1714,6 +1792,95 @@ final class CapabilitiesTest extends TestCase
                             return $b;
                         };
                         return $f();
+                    }',
+            ],
+            'callingAClosureWritingThisForgetsItsProperties' => [
+                'code' => '<?php
+                    final class Holder {
+                        public int $limit = 10;
+                    }
+
+                    final class Strategy {
+                        private int $limit = 10;
+
+                        public function run(int $n, Holder $holder): void {
+                            $decrement = function (int $by): void {
+                                $this->limit -= $by;
+                            };
+
+                            if ($this->limit <= 0 || $holder->limit <= 0) {
+                                return;
+                            }
+
+                            $decrement($n);
+
+                            $limit = $this->limit;
+                            /** @psalm-check-type-exact $limit = int */;
+                            $holderLimit = $holder->limit;
+                            /** @psalm-check-type-exact $holderLimit = int<1, max> */;
+                        }
+
+                        public function runAtOnce(int $n): void {
+                            if ($this->limit <= 0) {
+                                return;
+                            }
+
+                            (function (int $by): void {
+                                $this->limit -= $by;
+                            })($n);
+
+                            $limit = $this->limit;
+                            /** @psalm-check-type-exact $limit = int */;
+                        }
+                    }',
+            ],
+            'callingAStaticClosureWritingByRefCapturesKeepsThisProperties' => [
+                'code' => '<?php
+                    final class Writer {
+                        /** @var resource|null */
+                        private $lock = null;
+
+                        /** @param resource $lock */
+                        public function run($lock): int {
+                            $this->lock = $lock;
+                            $total = 0;
+
+                            $add = static function (int $n) use (&$total): void {
+                                $total += $n;
+                            };
+                            $append = static function (int $n) use ($add): void {
+                                $add($n);
+                            };
+
+                            $add(1);
+                            $append(2);
+
+                            $lock = $this->lock;
+                            /** @psalm-check-type-exact $lock = resource */;
+
+                            return $total;
+                        }
+                    }',
+            ],
+            'callingAClosureReadingThisKeepsItsProperties' => [
+                'code' => '<?php
+                    final class Strategy {
+                        private int $limit = 10;
+
+                        public function run(): void {
+                            $read = function (): int {
+                                return $this->limit;
+                            };
+
+                            if ($this->limit <= 0) {
+                                return;
+                            }
+
+                            $read();
+
+                            $limit = $this->limit;
+                            /** @psalm-check-type-exact $limit = int<1, max> */;
+                        }
                     }',
             ],
             'closureMayWriteTheObjectsItCapturedFromTheScopeCreatingThem' => [
@@ -2023,6 +2190,9 @@ final class CapabilitiesTest extends TestCase
                             return $total;
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'closureWritingByRefParamNeedsWriteRefsFromTheEnclosingScope' => [
                 'code' => '<?php
@@ -2677,6 +2847,312 @@ final class CapabilitiesTest extends TestCase
                         public function incTwice(): self {
                             $this->inc()->inc()->n = 0;
                             return $this->inc()->inc();
+                        }
+                    }',
+            ],
+            'ternaryOrMatchWhoseEveryBranchReturnsThisIsThis' => [
+                'code' => '<?php
+                    final class Counter {
+                        public int $n = 0;
+
+                        /**
+                         * @return $this
+                         * @psalm-external-mutation-free
+                         */
+                        public function inc(): static {
+                            $this->n++;
+                            return $this;
+                        }
+
+                        /** @return $this */
+                        public function ping(string $u): static {
+                            echo $u;
+                            return $this;
+                        }
+
+                        /** @return $this */
+                        public function pingIf(bool $v): static {
+                            return $v ? $this->ping("") : $this;
+                        }
+
+                        /** @return $this */
+                        public function incOrFail(bool $v): static {
+                            return $v ? $this->inc() : throw new RuntimeException();
+                        }
+
+                        /** @return $this */
+                        public function incShort(): static {
+                            return $this->inc() ?: $this;
+                        }
+
+                        /** @return $this */
+                        public function incBy(int $by, bool $v): static {
+                            return match ($by) {
+                                0 => $this,
+                                1 => $this->inc(),
+                                2 => $v ? $this->inc()->inc() : $this->ping(""),
+                                default => throw new InvalidArgumentException(),
+                            };
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RedundantConditionGivenDocblockType'],
+                'php_version' => '8.0',
+            ],
+            'ternaryOfThisAsReceiverOnlyMutatesThis' => [
+                'code' => '<?php
+                    final class Counter {
+                        public int $n = 0;
+
+                        /**
+                         * @return $this
+                         * @psalm-external-mutation-free
+                         */
+                        public function inc(): static {
+                            $this->n++;
+                            return $this;
+                        }
+
+                        /** @psalm-external-mutation-free */
+                        public function incIfThenInc(bool $v): void {
+                            ($v ? $this->inc() : $this)->inc();
+                        }
+                    }',
+            ],
+            'functionGivingBackItsThisArgumentReturnsThis' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T $value
+                     * @param (callable(T): mixed)|null $callback
+                     * @return T
+                     */
+                    function tap($value, $callback = null) {
+                        if ($callback !== null) {
+                            $callback($value);
+                        }
+                        return $value;
+                    }
+
+                    final class A {
+                        /** @return $this */
+                        public function configure() {
+                            return tap($this, function (self $_a): void {});
+                        }
+                    }',
+            ],
+            'functionGivingBackItsNamedThisArgumentReturnsThis' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T $value
+                     * @param (callable(T): mixed)|null $callback
+                     * @return T
+                     */
+                    function tap($value, $callback = null) {
+                        if ($callback !== null) {
+                            $callback($value);
+                        }
+                        return $value;
+                    }
+
+                    final class A {
+                        /** @return $this */
+                        public function configure(): static {
+                            return tap(callback: null, value: $this);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'functionWithAConditionalReturnGivingBackItsThisArgumentReturnsThis' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class HigherOrderTapProxy {
+                        /** @var T */
+                        public $target;
+
+                        /** @param T $target */
+                        public function __construct($target) {
+                            $this->target = $target;
+                        }
+                    }
+
+                    /**
+                     * @template TValue
+                     * @param TValue $value
+                     * @param (callable(TValue): mixed)|null $callback
+                     * @return ($callback is null ? HigherOrderTapProxy<TValue> : TValue)
+                     */
+                    function tap($value, $callback = null) {
+                        if ($callback === null) {
+                            return new HigherOrderTapProxy($value);
+                        }
+                        $callback($value);
+                        return $value;
+                    }
+
+                    final class Request {
+                        /** @return $this */
+                        public function merge(): static {
+                            return tap($this, function (Request $_request): void {});
+                        }
+                    }',
+            ],
+            'functionWithAConditionalReturnSelectingItsThisArgumentReturnsThis' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @template U
+                     * @param T $a
+                     * @param U $b
+                     * @return ($first is true ? T : U)
+                     */
+                    function choose(bool $first, $a, $b) {
+                        return $first ? $a : $b;
+                    }
+
+                    final class Counter {
+                        /** @return $this */
+                        public function self(): static {
+                            return choose(true, $this, clone $this);
+                        }
+                    }',
+            ],
+            'functionGivingBackItsFluentThisArgumentReturnsThis' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T $value
+                     * @return T
+                     */
+                    function same($value) {
+                        return $value;
+                    }
+
+                    final class A {
+                        /** @return $this */
+                        public function a(): static {
+                            return $this;
+                        }
+
+                        /** @return $this */
+                        public function b(): static {
+                            return same($this->a());
+                        }
+                    }',
+            ],
+            'staticMethodGivingBackItsThisArgumentReturnsThis' => [
+                'code' => '<?php
+                    final class Helper {
+                        /**
+                         * @template T
+                         * @param T $value
+                         * @return T
+                         */
+                        public static function same($value) {
+                            return $value;
+                        }
+                    }
+
+                    final class A {
+                        /** @return $this */
+                        public function configure(): static {
+                            return Helper::same($this);
+                        }
+                    }',
+            ],
+            'methodGivingBackItsThisArgumentReturnsThis' => [
+                'code' => '<?php
+                    final class Helper {
+                        /**
+                         * @template T
+                         * @param T $value
+                         * @return T
+                         */
+                        public function same($value) {
+                            return $value;
+                        }
+                    }
+
+                    final class A {
+                        private Helper $helper;
+
+                        public function __construct() {
+                            $this->helper = new Helper();
+                        }
+
+                        /** @return $this */
+                        public function configure(): static {
+                            return $this->helper->same($this);
+                        }
+                    }',
+            ],
+            'assigningToAPropertyOfACallGivingBackItsThisArgumentOnlyMutatesThis' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T $value
+                     * @return T
+                     * @psalm-pure
+                     */
+                    function same($value) {
+                        return $value;
+                    }
+
+                    final class Counter {
+                        public int $n = 0;
+
+                        /** @psalm-external-mutation-free */
+                        public function reset(): void {
+                            same($this)->n = 0;
+                        }
+                    }',
+            ],
+            'assigningToAPropertyOfATernaryOfThisOnlyMutatesThis' => [
+                'code' => '<?php
+                    final class Counter {
+                        public int $n = 0;
+
+                        /**
+                         * @return $this
+                         * @psalm-external-mutation-free
+                         */
+                        public function inc(): static {
+                            $this->n++;
+                            return $this;
+                        }
+
+                        /** @psalm-external-mutation-free */
+                        public function resetIf(bool $v): void {
+                            ($v ? $this->inc() : $this)->n = 0;
+                        }
+                    }',
+            ],
+            'changingAnArrayPropertyOfATernaryOfThisOnlyMutatesThis' => [
+                'code' => '<?php
+                    final class Counter {
+                        /** @var list<int> */
+                        public array $a = [];
+
+                        /**
+                         * @return $this
+                         * @psalm-external-mutation-free
+                         */
+                        public function add(): static {
+                            $this->a[] = 0;
+                            return $this;
+                        }
+
+                        /** @psalm-external-mutation-free */
+                        public function addIf(bool $v): void {
+                            ($v ? $this->add() : $this)->a[] = 1;
+                        }
+
+                        /** @psalm-external-mutation-free */
+                        public function sortIf(bool $v): void {
+                            sort(($v ? $this->add() : $this)->a);
                         }
                     }',
             ],
@@ -3747,6 +4223,8 @@ final class CapabilitiesTest extends TestCase
                     }
                     PHP,
                 'error_message' => 'NullableReturnStatement',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'magicOwnerGetterMayReadMutatedState' => [
                 'code' => <<<'PHP'
@@ -3777,6 +4255,8 @@ final class CapabilitiesTest extends TestCase
                     }
                     PHP,
                 'error_message' => 'NullableReturnStatement',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'inheritedSetterCanDispatchToSubclassPropertyHook' => [
                 'code' => <<<'PHP'
@@ -3895,6 +4375,8 @@ final class CapabilitiesTest extends TestCase
                         return $owner->getChild();
                     }',
                 'error_message' => 'NullableReturnStatement',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'getterReadingMoreThanItsPropertyMustBeForgotten' => [
                 'code' => '<?php
@@ -3917,6 +4399,8 @@ final class CapabilitiesTest extends TestCase
                         return $owner->getChild();
                     }',
                 'error_message' => 'NullableReturnStatement',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'getterOnWhatTheReceiverHoldsMustBeForgotten' => [
                 'code' => '<?php
@@ -4020,6 +4504,8 @@ final class CapabilitiesTest extends TestCase
                         return $owner->getChild();
                     }',
                 'error_message' => 'NullableReturnStatement',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'overriddenMethodWritingNothingMustNotKeepGetter' => [
                 'code' => '<?php
@@ -4210,6 +4696,8 @@ final class CapabilitiesTest extends TestCase
                         return $owner->getChild();
                     }',
                 'error_message' => 'NullableReturnStatement',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'inheritedGetterOfAPropertyRedeclaredWithAHookMustBeForgotten' => [
                 'code' => '<?php
@@ -5843,6 +6331,34 @@ final class CapabilitiesTest extends TestCase
                     }',
                 'error_message' => 'ImpureMethodCall',
             ],
+            'impureToStringOfATemplateIntersectedWithStringableInACast' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T&Stringable $n
+                     * @psalm-pure
+                     */
+                    function cast($n): string {
+                        return (string) $n;
+                    }',
+                'error_message' => 'possibly-mutating method Stringable::__toString',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'impureToStringOfATemplateIntersectedWithStringableInALooseComparison' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T&Stringable $n
+                     * @psalm-pure
+                     */
+                    function compare($n): bool {
+                        return $n == "x";
+                    }',
+                'error_message' => 'possibly-mutating method Stringable::__toString',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'impureToStringInStrval' => [
                 'code' => '<?php
                     final class Name {
@@ -5867,6 +6383,88 @@ final class CapabilitiesTest extends TestCase
                      */
                     function f(array $names): string {
                         return implode(",", $names);
+                    }',
+                'error_message' => 'possibly-mutating method Name::__toString',
+            ],
+            'impureToStringInStrtrReplacements' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /** @psalm-pure */
+                    function f(Name $name): string {
+                        return strtr("abc", ["a" => $name]);
+                    }',
+                'error_message' => 'possibly-mutating method Name::__toString',
+            ],
+            'impureToStringInArrayMultisortWithAnOrderOrStringFlagsChosenAtRuntime' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param list<Name> $names
+                     */
+                    function f(array $names, bool $b): array {
+                        $flag = $b ? SORT_DESC : SORT_STRING;
+                        array_multisort($names, $flag);
+
+                        return $names;
+                    }',
+                'error_message' => 'possibly-mutating method Name::__toString',
+            ],
+            'impureToStringInArrayMultisortWithFlagsNotKnown' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param list<Name> $names
+                     */
+                    function f(array $names, int $n): array {
+                        $flag = $n + 1;
+                        array_multisort($names, $flag);
+
+                        return $names;
+                    }',
+                'error_message' => 'possibly-mutating method Name::__toString',
+                'error_levels' => ['ImpureFunctionCall'],
+            ],
+            'impureToStringInArrayMultisortWithStringFlags' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param list<int> $ints
+                     * @param list<Name> $names
+                     */
+                    function f(array $ints, array $names): array {
+                        array_multisort($ints, $names, SORT_DESC, SORT_STRING);
+
+                        return $names;
+                    }',
+                'error_message' => 'possibly-mutating method Name::__toString',
+            ],
+            'impureToStringInUnpackedImplodeArguments' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param array{string, list<Name>} $args
+                     */
+                    function f(array $args): string {
+                        return implode(...$args);
                     }',
                 'error_message' => 'possibly-mutating method Name::__toString',
             ],
@@ -7400,6 +7998,262 @@ final class CapabilitiesTest extends TestCase
                     }',
                 'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:36 - The declared return type \'$this\' for Copying::inc requires returning $this, but this may return another object',
             ],
+            'ternaryWithABranchNotReturningThisIsNotThis' => [
+                'code' => '<?php
+                    final class Counter {
+                        /** @return $this */
+                        public function copyIf(bool $v): static {
+                            return $v ? $this : clone $this;
+                        }
+                    }',
+                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:36 - The declared return type \'$this\' for Counter::copyIf requires returning $this, but this may return another object',
+            ],
+            'shortTernaryWithAConditionNotReturningThisIsNotThis' => [
+                'code' => '<?php
+                    final class Counter {
+                        /** @return $this */
+                        public function otherOrThis(?self $other): static {
+                            return $other ?: $this;
+                        }
+                    }',
+                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:36 - The declared return type \'$this\' for Counter::otherOrThis requires returning $this, but this may return another object',
+            ],
+            'matchWithAnArmNotReturningThisIsNotThis' => [
+                'code' => '<?php
+                    final class Counter {
+                        /** @return $this */
+                        public function copyIf(int $v): static {
+                            return match ($v) {
+                                0 => $this,
+                                default => clone $this,
+                            };
+                        }
+                    }',
+                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:36 - The declared return type \'$this\' for Counter::copyIf requires returning $this, but this may return another object',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'functionGivingBackAnArgumentThatIsNotThisIsNotThis' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T $value
+                     * @return T
+                     */
+                    function same($value) {
+                        return $value;
+                    }
+
+                    final class Counter {
+                        /** @return $this */
+                        public function copy(): static {
+                            return same(clone $this);
+                        }
+                    }',
+                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:14:36 - The declared return type \'$this\' for Counter::copy requires returning $this, but this may return another object',
+            ],
+            'functionGivingBackOneOfTwoArgumentsIsNotThis' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T $a
+                     * @param T $b
+                     * @return T
+                     */
+                    function either($a, $b) {
+                        return rand(0, 1) ? $a : $b;
+                    }
+
+                    final class Counter {
+                        /** @return $this */
+                        public function copyMaybe(): static {
+                            return either($this, clone $this);
+                        }
+                    }',
+                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:15:36 - The declared return type \'$this\' for Counter::copyMaybe requires returning $this, but this may return another object',
+            ],
+            'functionGivingBackWhatItsCallbackReturnsIsNotThis' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T $value
+                     * @param callable(): T $make
+                     * @return T
+                     */
+                    function orMake($value, callable $make) {
+                        return rand(0, 1) ? $value : $make();
+                    }
+
+                    final class Counter {
+                        /** @return $this */
+                        public function copyMaybe(): static {
+                            return orMake($this, fn() => clone $this);
+                        }
+                    }',
+                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:15:36 - The declared return type \'$this\' for Counter::copyMaybe requires returning $this, but this may return another object',
+            ],
+            'methodGivingBackAClassTemplateIsNotThis' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /** @var T */
+                        private $value;
+
+                        /** @param T $value */
+                        public function __construct($value) {
+                            $this->value = $value;
+                        }
+
+                        /**
+                         * @param T $_other
+                         * @return T
+                         */
+                        public function get($_other) {
+                            return $this->value;
+                        }
+                    }
+
+                    final class Counter {
+                        /** @return $this */
+                        public function copy(): static {
+                            return (new Box(clone $this))->get($this);
+                        }
+                    }',
+                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:24:36 - The declared return type \'$this\' for Counter::copy requires returning $this, but this may return another object',
+            ],
+            'functionWithAConditionalReturnSelectingAnotherArgumentIsNotThis' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @template U
+                     * @param T $a
+                     * @param U $b
+                     * @return ($first is true ? T : U)
+                     */
+                    function choose(bool $first, $a, $b) {
+                        return $first ? $a : $b;
+                    }
+
+                    final class Counter {
+                        /** @return $this */
+                        public function copy(): static {
+                            return choose(false, $this, clone $this);
+                        }
+                    }',
+                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:16:36 - The declared return type \'$this\' for Counter::copy requires returning $this, but this may return another object',
+            ],
+            'staticCallOnSeveralClassesGivingBackThisOnlyInOneIsNotThis' => [
+                'code' => '<?php
+                    final class Fresh {
+                        /** @param mixed $_value */
+                        public static function get($_value): Counter {
+                            return new Counter();
+                        }
+                    }
+
+                    final class Same {
+                        /**
+                         * @template T
+                         * @param T $value
+                         * @return T
+                         */
+                        public static function get($value) {
+                            return $value;
+                        }
+                    }
+
+                    final class Counter {
+                        /**
+                         * @param class-string<Fresh>|class-string<Same> $helper
+                         * @return $this
+                         */
+                        public function via(string $helper): static {
+                            return $helper::get($this);
+                        }
+                    }',
+                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:26:36 - The declared return type \'$this\' for Counter::via requires returning $this, but this may return another object',
+            ],
+            'functionGivingBackANamedVariadicArgumentIsNotThis' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T $first
+                     * @param T ...$rest
+                     * @return T
+                     */
+                    function pick($first, ...$rest) {
+                        return $rest ? $rest[array_key_last($rest)] : $first;
+                    }
+
+                    final class Counter {
+                        /** @return $this */
+                        public function copyMaybe(): static {
+                            return pick($this, $this, other: clone $this);
+                        }
+                    }',
+                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:15:36 - The declared return type \'$this\' for Counter::copyMaybe requires returning $this, but this may return another object',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'assigningToAPropertyOfATernaryOfThisWritesThisProps' => [
+                'code' => '<?php
+                    final class Counter {
+                        public int $n = 0;
+
+                        /** @psalm-mutation-free */
+                        public function reset(bool $v): void {
+                            ($v ? $this : $this)->n = 0;
+                        }
+                    }',
+                'error_message' => 'ImpurePropertyAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:29 - The context is read-props but property assignment requires write-this-props',
+            ],
+            'appendingToAPropertyOfATernaryOfThisWritesThisProps' => [
+                'code' => '<?php
+                    final class Counter {
+                        /** @var list<int> */
+                        public array $a = [];
+
+                        /** @psalm-mutation-free */
+                        public function add(bool $v): void {
+                            ($v ? $this : $this)->a[] = 0;
+                        }
+                    }',
+                'error_message' => 'ImpurePropertyAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:29 - The context is read-props but property assignment requires write-this-props',
+            ],
+            'passingAPropertyOfATernaryOfThisByReferenceWritesThisProps' => [
+                'code' => '<?php
+                    final class Counter {
+                        /** @var list<int> */
+                        public array $a = [];
+
+                        /** @psalm-mutation-free */
+                        public function sortIt(bool $v): void {
+                            sort(($v ? $this : $this)->a);
+                        }
+                    }',
+                'error_message' => 'ImpureFunctionCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:29 - The context is read-props but function call on sort requires write-this-props',
+            ],
+            'callingAMutatingMethodOnATernaryOfThisWritesThisProps' => [
+                'code' => '<?php
+                    final class Counter {
+                        public int $n = 0;
+
+                        /**
+                         * @return $this
+                         * @psalm-external-mutation-free
+                         */
+                        public function inc(): static {
+                            $this->n++;
+                            return $this;
+                        }
+
+                        /** @psalm-mutation-free */
+                        public function incIf(bool $v): void {
+                            ($v ? $this : $this)->inc();
+                        }
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:16:29 - The context is read-props but method Counter::inc requires write-this-props',
+            ],
             'purityArgumentsGoInBrackets' => [
                 'code' => '<?php
                     /** @param Traversable<int, int, pure> $t */
@@ -7485,6 +8339,8 @@ final class CapabilitiesTest extends TestCase
                         $box->get()->inner->items[] = 5;
                     }',
                 'error_message' => 'ImpurePropertyAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:18:25 - The context is read-props but property assignment requires write-props',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'appendingToAPropertyOfAnotherObjectFromThisWritesProps' => [
                 'code' => '<?php
@@ -7507,6 +8363,8 @@ final class CapabilitiesTest extends TestCase
                         }
                     }',
                 'error_message' => 'ImpurePropertyAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:17:29 - The context is read-props|write-this-props|write-refs but property assignment requires write-props',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'unsettingAnElementOfAPropertyOfACallResultWritesProps' => [
                 'code' => '<?php
@@ -7897,6 +8755,8 @@ final class CapabilitiesTest extends TestCase
                         }
                     }',
                 'error_message' => 'ImpurePropertyFetch - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:36 - The context is write-this-props but accessing a property on a mutable object requires read-props',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'pureFunctionCannotReadNestedPropertiesOfAContractedParameter' => [
                 'code' => '<?php
@@ -7915,6 +8775,8 @@ final class CapabilitiesTest extends TestCase
                         return $holder->counter->n;
                     }',
                 'error_message' => 'ImpurePropertyFetch',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'objectWhoseConstructorStoresItInGlobalStateIsNotFresh' => [
                 'code' => '<?php
@@ -8085,6 +8947,22 @@ final class CapabilitiesTest extends TestCase
                         return new Linked($sink);
                     }',
                 'error_message' => 'constructor Linked::__construct requires',
+            ],
+            'dateTimeImmutableConstructorRequiresTime' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function make(): DateTimeImmutable {
+                        return new DateTimeImmutable();
+                    }',
+                'error_message' => 'constructor DateTimeImmutable::__construct requires time',
+            ],
+            'dateTimeConstructorRequiresTime' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function make(): DateTime {
+                        return new DateTime("2020-01-01");
+                    }',
+                'error_message' => 'constructor DateTime::__construct requires time',
             ],
             'inheritedTrivialConstructorRunsTheSetHookOfARedeclaredProperty' => [
                 'code' => '<?php
@@ -9016,6 +9894,8 @@ final class CapabilitiesTest extends TestCase
 
     public function testPureClassMethodCallsAreRememberedLikeImmutableOnes(): void
     {
+        $this->project_analyzer->setPhpVersion('8.0', 'tests');
+
         // without this setting, only the results of the mutation-free methods of immutable
         // classes are remembered: a pure class, which cannot have state at all, is one
         Config::getInstance()->remember_property_assignments_after_call = false;

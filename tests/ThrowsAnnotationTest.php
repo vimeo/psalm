@@ -339,6 +339,8 @@ final class ThrowsAnnotationTest extends TestCase
 
     public function testGenericThrowableClassAsThrows(): void
     {
+        $this->project_analyzer->setPhpVersion('8.0', 'tests');
+
         Config::getInstance()->check_for_throws_docblock = true;
 
         $this->addFile(

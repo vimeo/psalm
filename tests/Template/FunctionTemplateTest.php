@@ -111,6 +111,367 @@ final class FunctionTemplateTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'classStringOrTemplateIsBoundToTheClassOfAClassString' => [
+                'code' => '<?php
+                    final class Foo {}
+
+                    /**
+                     * @template T
+                     * @param class-string<T>|T $m
+                     * @return list<T>
+                     */
+                    function g(mixed $m): array { return []; }
+
+                    /** @var Foo|class-string<Foo> $u */
+                    $u = new Foo();
+
+                    $literal = g(Foo::class);
+                    $union = g($u);
+                    $object = g(new Foo());',
+                'assertions' => [
+                    '$literal===' => 'list<Foo>',
+                    '$union===' => 'list<Foo>',
+                    '$object===' => 'list<Foo>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'classStringAndTemplateParamsAreBoundByBothArguments' => [
+                'code' => '<?php
+                    final class Foo {}
+                    final class Bar {}
+
+                    /**
+                     * @template T
+                     * @param class-string<T> $c
+                     * @param T $o
+                     * @return list<T>
+                     */
+                    function g(string $c, mixed $o): array { return []; }
+
+                    /**
+                     * @template T
+                     * @param class-string<T>|T $a
+                     * @param class-string<T>|T $b
+                     * @return list<T>
+                     */
+                    function h(mixed $a, mixed $b): array { return []; }
+
+                    $r = g(Foo::class, new Bar());
+                    $s = h(Foo::class, new Bar());',
+                'assertions' => [
+                    '$r===' => 'list<Bar|Foo>',
+                    '$s===' => 'list<Bar|Foo>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'classStringOfAnotherTemplateLeavesTheClassStringToTheTemplate' => [
+                'code' => '<?php
+                    final class Foo {}
+
+                    /**
+                     * @template T
+                     * @template U of object
+                     * @param class-string<U>|T $x
+                     * @return T
+                     */
+                    function two(mixed $x): mixed { throw new Exception(); }
+
+                    /**
+                     * @template T of string
+                     * @template U of object
+                     * @param class-string<U>|T $x
+                     * @return array{T, U}
+                     */
+                    function twos(string $x): array { throw new Exception(); }
+
+                    $t = two(Foo::class);
+                    $tu = twos(Foo::class);',
+                'assertions' => [
+                    '$t===' => 'Foo::class',
+                    '$tu===' => 'list{Foo::class, Foo}',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'classStringOrObjectTemplateKeepsTheObjectOfTheArgument' => [
+                'code' => '<?php
+                    final class Foo {}
+                    final class Bar {}
+
+                    /**
+                     * @template T as object
+                     * @param class-string<T>|T $m
+                     * @return T
+                     */
+                    function o(mixed $m): object { throw new Exception(); }
+
+                    /** @var class-string<Foo>|Bar $classOrObject */
+                    $classOrObject = new Bar();
+
+                    $r = o($classOrObject);',
+                'assertions' => [
+                    '$r===' => 'Bar|Foo',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'paramOutOfATemplateIsTheTypeOfTheArgumentBindingIt' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T $value
+                     * @param-out T $var
+                     */
+                    function set_value(mixed &$var, mixed $value): void {
+                        $var = $value;
+                    }
+
+                    function example(): int {
+                        set_value($a, 100);
+                        set_value($b, 123);
+
+                        return $a + $b;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'templateBoundNamingATemplateDeclaredAfterIt' => [
+                'code' => '<?php
+                    /** @template-covariant TValue */
+                    interface Box {
+                        /** @return TValue */
+                        public function get();
+                    }
+
+                    /** @implements Box<int> */
+                    final class IntBox implements Box {
+                        public function get(): int {
+                            return 1;
+                        }
+                    }
+
+                    final class Store {
+                        /**
+                         * @template TBox of Box<TValue>
+                         * @template TValue
+                         * @param class-string<TBox> $type
+                         * @return list<TValue>
+                         */
+                        public function get(string $type): array {
+                            return [];
+                        }
+                    }
+
+                    /**
+                     * @template TBox of Box<TValue>
+                     * @template TValue of int
+                     * @param TBox $box
+                     * @return TValue
+                     */
+                    function valueOf(Box $box) {
+                        return $box->get();
+                    }
+
+                    $list = (new Store())->get(IntBox::class);
+                    $value = valueOf(new IntBox());',
+                'assertions' => [
+                    '$list===' => 'list<int>',
+                    '$value===' => 'int',
+                ],
+            ],
+            'templateBoundNamingATemplateDeclaredBeforeAndAfterIt' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /** @param T $v */
+                        public function __construct(private mixed $v) {}
+
+                        /** @return T */
+                        public function get(): mixed {
+                            return $this->v;
+                        }
+                    }
+
+                    function takesInt(int $i): void {}
+
+                    /**
+                     * @template TB of Box<TC>
+                     * @template TC of int
+                     * @template TD of Box<TB>
+                     * @param TD $d
+                     */
+                    function dep(Box $d): void {
+                        takesInt($d->get()->get());
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'templateBoundNamingALaterTemplateWithABoundOfItsOwn' => [
+                'code' => '<?php
+                    /** @template-covariant TValue */
+                    interface Box {
+                        /** @return TValue */
+                        public function get();
+                    }
+
+                    function takesInt(int $i): void {}
+
+                    /**
+                     * @template TBox of Box<TValue>
+                     * @template TValue of int
+                     * @param TBox $box
+                     */
+                    function forwardOrder(Box $box): void {
+                        takesInt($box->get());
+                    }
+
+                    /**
+                     * @template TValue of int
+                     * @template TBox of Box<TValue>
+                     * @param TBox $box
+                     */
+                    function declaredOrder(Box $box): void {
+                        takesInt($box->get());
+                    }
+
+                    /**
+                     * @template TA of Box<TB>
+                     * @template TB of Box<TC>
+                     * @template TC of int
+                     * @param TA $a
+                     */
+                    function chain(Box $a): void {
+                        takesInt($a->get()->get());
+                    }
+
+                    /**
+                     * @template TA of Box<TB>
+                     * @template TB of Box<TA>
+                     * @param TA $a
+                     */
+                    function cycle(Box $a): void {
+                        $a->get();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'templateBoundNamingAnEarlierTemplateWithAForwardBound' => [
+                'code' => '<?php
+                    /** @template-covariant TValue */
+                    interface Box {
+                        /** @return TValue */
+                        public function get();
+                    }
+
+                    function takesInt(int $i): void {}
+
+                    /**
+                     * @template TB of Box<TC>
+                     * @template TC of int
+                     * @template TD of Box<TB>
+                     * @param TD $d
+                     */
+                    function dep(Box $d): void {
+                        takesInt($d->get()->get());
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'isStringOfATemplateBoundedByNumericNarrowsItToANumericString' => [
+                'code' => '<?php
+                    /**
+                     * @template T of numeric
+                     * @param T $n
+                     * @return T
+                     */
+                    function keepString($n) {
+                        if (is_string($n)) {
+                            /** @var numeric-string */
+                            $s = $n;
+                            echo $s;
+                        }
+                        return $n;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'typeCheckOfATemplateBoundedByScalarTypesCanHold' => [
+                'code' => '<?php
+                    /**
+                     * @template T of bool|int|float|string
+                     * @param T $i
+                     */
+                    function isBool(bool|int|float|string $i): bool {
+                        return is_bool($i);
+                    }
+
+                    /**
+                     * @template T of bool|int|float|string
+                     * @param T $i
+                     */
+                    function isInt(bool|int|float|string $i): bool {
+                        return is_int($i);
+                    }
+
+                    /**
+                     * @template T of numeric
+                     * @param T $i
+                     */
+                    function isIntOfNumeric(int|float|string $i): bool {
+                        return is_int($i);
+                    }
+
+                    /**
+                     * @template T of array-key
+                     * @param T $i
+                     */
+                    function isNumericOfArrayKey(int|string $i): bool {
+                        return is_numeric($i);
+                    }
+
+                    /**
+                     * @template T of array-key
+                     * @param T $i
+                     */
+                    function isScalarOfArrayKey(int|string $i): bool {
+                        return is_scalar($i);
+                    }
+
+                    /**
+                     * @template T of int<0, 10>
+                     * @param T $i
+                     */
+                    function isNumericOfIntRange(int $i): bool {
+                        return is_numeric($i);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'isCallableLeavesOutATemplateOfAClassWithoutInvoke' => [
+                'code' => '<?php
+                    /**
+                     * @template E of Exception
+                     * @param E|(callable():E)|null $exception
+                     */
+                    function fail(callable|Exception|null $exception = null): never {
+                        if (is_callable($exception)) {
+                            $exception = $exception();
+                        }
+
+                        throw $exception ?? new RuntimeException("No value");
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'closureOfATemplateWithANullDefaultOfTheSameTemplate' => [
                 'code' => '<?php
                     /** @template T */
@@ -3407,6 +3768,152 @@ final class FunctionTemplateTest extends TestCase
                 ],
                 'ignored_issues' => ['ArgumentTypeCoercion', 'PossiblyInvalidArgument', 'InvalidScalarArgument'],
             ],
+            'callableOfATemplateOfTheCallerKeepsItsUpperBound' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param callable(T): void $cb
+                     * @return T
+                     */
+                    function fromCallback(callable $cb) { throw new Exception(); }
+
+                    /**
+                     * @template U of string
+                     * @param U $u
+                     */
+                    function g($u): void {
+                        /** @param U $x */
+                        $f = function ($x): void {};
+                        $r = fromCallback($f);
+                        takesString($r);
+                    }
+
+                    function takesString(string $s): void {}',
+                'assertions' => [],
+                'ignored_issues' => ['UnusedParam', 'UnusedClosureParam'],
+                'php_version' => '8.2',
+            ],
+            'templateArgumentWithNoPartOfTheBoundIsNotNarrowedToTheBoundPartsItContains' => [
+                'code' => '<?php
+                    /**
+                     * @template T of (callable(string): mixed)|null
+                     * @param T $f
+                     * @return T
+                     */
+                    function take($f) {
+                        return $f;
+                    }
+
+                    /**
+                     * @template S of (callable(int): mixed)|null
+                     * @param S $f
+                     * @return callable(string): mixed
+                     */
+                    function forward($f): callable {
+                        $taken = take($f);
+                        return $taken ?? static fn(string $s): int => 1;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['InvalidScalarArgument'],
+                'php_version' => '8.0',
+            ],
+            'templateBoundByArgumentWithNoPartOfTheBoundKeepsTheBoundPartsItContains' => [
+                'code' => '<?php
+                    /**
+                     * @template T of non-empty-string|array
+                     * @param T $value
+                     * @return T
+                     */
+                    function nonEmptyStringOrArray($value) {
+                        return $value;
+                    }
+
+                    /** @return scalar */
+                    function scalarValue() {
+                        return "";
+                    }
+
+                    function stringValue(): string {
+                        return "";
+                    }
+
+                    function intValue(): int {
+                        return 0;
+                    }
+
+                    $from_scalar = substr_replace(scalarValue(), "x", 0, 1);
+                    $from_string = nonEmptyStringOrArray(stringValue());
+                    $from_int = nonEmptyStringOrArray(intValue());',
+                'assertions' => [
+                    '$from_scalar===' => 'string',
+                    '$from_string===' => 'non-empty-string',
+                    '$from_int===' => 'array<array-key, mixed>|non-empty-string',
+                ],
+                'ignored_issues' => ['ArgumentTypeCoercion', 'InvalidScalarArgument'],
+            ],
+            'templateUpperBoundByCallableParamWithNoPartOfTheBoundKeepsTheBoundPartsItContains' => [
+                'code' => '<?php
+                    /**
+                     * @template T of non-empty-string|array
+                     * @param callable(T): void $callback
+                     * @return T
+                     */
+                    function fromCallback(callable $callback) {
+                        throw new Exception();
+                    }
+
+                    $value = fromCallback(function (string $s): void {});',
+                'assertions' => [
+                    '$value===' => 'non-empty-string',
+                ],
+            ],
+            'callableParamWithoutTheTypeArgumentsOfAGenericBoundDoesNotBindIt' => [
+                'code' => '<?php
+                    function f(string $dir_path): void {
+                        $iterator = new RecursiveDirectoryIterator($dir_path);
+                        $iterator = new RecursiveCallbackFilterIterator(
+                            $iterator,
+                            static function (mixed $current, mixed $_, RecursiveIterator $iterator): bool {
+                                return true;
+                            },
+                        );
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['UnusedVariable'],
+                'php_version' => '8.0',
+            ],
+            'callableParamTypedWithATemplateOfTheCallerRecordsAnUpperBound' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param callable(T): void $cb
+                     * @return T
+                     */
+                    function fromCallback(callable $cb) {
+                        throw new Exception();
+                    }
+
+                    /**
+                     * @template U of string
+                     * @param U $u
+                     * @return U
+                     */
+                    function g($u) {
+                        /** @param U $x */
+                        $f = function ($x): void {};
+                        return fromCallback($f);
+                    }
+
+                    /** @template V of string */
+                    final class C {
+                        /** @return V */
+                        public function get() {
+                            /** @param V $x */
+                            $f = function ($x): void {};
+                            return fromCallback($f);
+                        }
+                    }',
+            ],
             'templateUpperBoundByCallableParamOnlyCoercedToTheBoundKeepsTheBoundPartsItContains' => [
                 'code' => '<?php
                     /**
@@ -3458,6 +3965,180 @@ final class FunctionTemplateTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'templateBoundedByNumericCanBeIdenticalToAString' => [
+                'code' => '<?php
+                    /**
+                     * @template T of numeric
+                     * @param T $t
+                     */
+                    function f($t, string $s): void {
+                        if ($t === $s) {
+                            takesNumericString($t);
+                        }
+                    }
+
+                    /** @param numeric-string $s */
+                    function takesNumericString(string $s): void {}',
+            ],
+            'templateBoundIsNarrowedByAnIdenticalValueOfTheOtherSide' => [
+                'code' => '<?php
+                    /** @param positive-int $i */
+                    function takesPositiveInt(int $i): void {}
+                    /** @param list<string> $l */
+                    function takesListOfStrings(array $l): void {}
+                    /** @param numeric-string $s */
+                    function takesNumericString(string $s): void {}
+
+                    /**
+                     * @template T of positive-int
+                     * @param T $t
+                     */
+                    function e1($t, int $i): void {
+                        if ($i === $t) {
+                            takesPositiveInt($i);
+                        }
+                    }
+
+                    /**
+                     * @template T of list<string>
+                     * @param T $t
+                     */
+                    function e2($t, array $a): void {
+                        if ($a === $t) {
+                            takesListOfStrings($a);
+                        }
+                    }
+
+                    /**
+                     * @template T of numeric
+                     * @param T $t
+                     */
+                    function e3($t, string $s): void {
+                        if ($t === $s) {
+                            takesNumericString($s);
+                        }
+                    }
+
+                    /**
+                     * @template T of numeric
+                     * @param T $t
+                     */
+                    function e4($t): void {
+                        if (is_string($t)) {
+                            takesNumericString($t);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'closureReturningNullStillBindsATemplateOfTheCalledFunction' => [
+                'code' => '<?php
+                    /**
+                     * @template X
+                     * @param callable(): X $f
+                     * @return X
+                     */
+                    function produce(callable $f) {
+                        return $f();
+                    }
+
+                    function maybe(): ?int {
+                        return null;
+                    }
+
+                    $a = produce(fn() => null);
+                    $b = produce(maybe(...));
+                    $c = array_map(fn(int $i) => null, [1, 2]);',
+                'assertions' => [
+                    '$a===' => 'null',
+                    '$b===' => 'int|null',
+                    '$c===' => 'list{null, null}',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'returnedClosureReturningNullAcceptedWhereTheTemplateAllowsNull' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @template TNullable of ?int
+                     */
+                    final class Box {
+                        /** @param T $value */
+                        public function __construct(private $value) {}
+
+                        /** @return Closure(): (T|null) */
+                        public function orNull(): Closure {
+                            return fn() => null;
+                        }
+
+                        /** @return Closure(): TNullable */
+                        public function nullableBound(): Closure {
+                            return fn() => null;
+                        }
+
+                        /** @return Closure(): ?string */
+                        public function nullableString(): Closure {
+                            return fn() => null;
+                        }
+
+                        /** @return Closure(): T */
+                        public function value(): Closure {
+                            return fn() => $this->value;
+                        }
+
+                        /** @return Closure(): Closure(): T */
+                        public function nested(): Closure {
+                            return fn() => fn() => $this->value;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'nullAcceptedAsTheDefaultOfATemplateParameterAndComparedWithIt' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T $x
+                     * @return T|int
+                     */
+                    function orZero($x = null) {
+                        return $x === null ? 0 : $x;
+                    }',
+            ],
+            'closureReturningNullAcceptedWhereTheFunctionTemplateAllowsNull' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @template TNullable of ?int
+                     * @param T $x
+                     * @param TNullable $y
+                     */
+                    function f($x, $y): void {
+                        /** @param callable(): (T|null) $f */
+                        $orNull = function (callable $f): void {};
+                        $orNull(fn() => null);
+                        $orNull(fn() => rand(0, 1) ? $x : null);
+
+                        /** @param callable(): TNullable $f */
+                        $nullableBound = function (callable $f): void {};
+                        $nullableBound(fn() => null);
+
+                        /** @param callable(): mixed $f */
+                        $anything = function (callable $f): void {};
+                        $anything(fn() => null);
+
+                        /** @param callable(): void $f */
+                        $noResult = function (callable $f): void {};
+                        $noResult(fn() => null);
+
+                        /** @param Closure(): T $f */
+                        $same = function (Closure $f): void {};
+                        $same(fn() => $x);
+                    }',
+            ],
         ];
     }
 
@@ -3468,6 +4149,272 @@ final class FunctionTemplateTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'classStringAndInvariantParamsOfDifferentClassesAreIncompatible' => [
+                'code' => '<?php
+                    final class A {}
+                    final class B {}
+
+                    /** @template T */
+                    final class Box {}
+
+                    /**
+                     * @template T
+                     * @param class-string<T> $class
+                     * @param Box<T> $box
+                     */
+                    function inv(string $class, Box $box): void {}
+
+                    /** @var Box<A> $box */
+                    $box = new Box();
+                    inv(B::class, $box);',
+                'error_message' => 'InvalidArgument',
+            ],
+            'callableOfATemplateOfTheCallerStillChecksItsArgument' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param list<T> $xs
+                     * @param callable(T): void $cb
+                     */
+                    function each(array $xs, callable $cb): void {}
+
+                    /**
+                     * @template U of string
+                     * @param U $u
+                     */
+                    function g($u): void {
+                        /** @param U $x */
+                        $f = function ($x): void {};
+                        each([1, 2], $f);
+                    }',
+                'error_message' => 'InvalidScalarArgument',
+                'error_levels' => ['UnusedParam', 'UnusedClosureParam'],
+                'php_version' => '8.2',
+            ],
+            'callableOfAListOfATemplateOfTheCallerStillChecksItsArgument' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param list<T> $xs
+                     * @param callable(T): void $cb
+                     */
+                    function each(array $xs, callable $cb): void {}
+
+                    /**
+                     * @template U of string
+                     * @param U $u
+                     */
+                    function g($u): void {
+                        /** @param list<U> $x */
+                        $f2 = function (array $x): void {};
+                        each([[1]], $f2);
+                    }',
+                'error_message' => 'InvalidScalarArgument',
+                'error_levels' => ['UnusedParam', 'UnusedClosureParam'],
+                'php_version' => '8.2',
+            ],
+            'callableParamTypedWithATemplateOfTheCallerIsCheckedAgainstTheArgument' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param list<T> $xs
+                     * @param callable(T): void $cb
+                     */
+                    function eachOf(array $xs, callable $cb): void {}
+
+                    /**
+                     * @template U of string
+                     * @param U $u
+                     */
+                    function g($u): void {
+                        /** @param U $x */
+                        $f = function ($x): void {};
+                        eachOf([1, 2], $f);
+                    }',
+                'error_message' => 'InvalidScalarArgument',
+            ],
+            'callableParamTypedWithAListOfATemplateOfTheCallerIsCheckedAgainstTheArgument' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param list<T> $xs
+                     * @param callable(T): void $cb
+                     */
+                    function eachOf(array $xs, callable $cb): void {}
+
+                    /**
+                     * @template U of string
+                     * @param U $u
+                     */
+                    function g($u): void {
+                        /** @param list<U> $x */
+                        $f = function (array $x): void {};
+                        eachOf([[1]], $f);
+                    }',
+                'error_message' => 'InvalidScalarArgument',
+            ],
+            'typeCheckOfATemplateWhoseBoundCantHoldTheTypeIsStillAContradiction' => [
+                'code' => '<?php
+                    /**
+                     * @template T of string
+                     * @param T $s
+                     */
+                    function f($s): void {
+                        if (is_int($s)) {
+                            echo $s;
+                        }
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'isCallableOfATemplateOfAClassWithoutInvoke' => [
+                'code' => '<?php
+                    /**
+                     * @template E of Exception
+                     * @param E $exception
+                     */
+                    function check($exception): void {
+                        if (is_callable($exception)) {
+                            echo "never";
+                        }
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+            ],
+            'returnedClosureReturningNullForClosureReturningAClassTemplate' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /** @return Closure(): T */
+                        public function empty(): Closure {
+                            return fn() => null;
+                        }
+                    }',
+                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:36',
+            ],
+            'returnedClosureReturningNullForCallableReturningAFunctionTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template K
+                     * @param K $key
+                     * @return callable(): K
+                     */
+                    function lazy($key): callable {
+                        return function () {
+                            return null;
+                        };
+                    }',
+                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:32',
+            ],
+            'nullInAListOfAFunctionTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T $x
+                     * @return list<T>
+                     */
+                    function listOfNull($x): array {
+                        return [null];
+                    }',
+                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:32',
+            ],
+            'returnedClosureYieldingNullForGeneratorOfAClassTemplate' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /** @return Closure(): Generator<int, T> */
+                        public function values(): Closure {
+                            return function () {
+                                yield null;
+                            };
+                        }
+                    }',
+                'error_message' => 'InvalidReturnType - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:36',
+            ],
+            'returnedClosureReturningNullInAnIterableOfAClassTemplate' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /** @return Closure(): iterable<T> */
+                        public function values(): Closure {
+                            return fn() => [null];
+                        }
+                    }',
+                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:44',
+            ],
+            'closureReturningNullForCallableReturningAFunctionTemplate' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Source {
+                        /** @param callable(): T $f */
+                        public function __construct(private $f) {}
+
+                        /** @param callable(): T $f */
+                        public function replace(callable $f): void {
+                            $this->f = $f;
+                        }
+
+                        /** @return T */
+                        public function get(): mixed {
+                            return ($this->f)();
+                        }
+                    }
+
+                    /**
+                     * @template X
+                     * @param Source<X> $s
+                     */
+                    function reset_(Source $s): void {
+                        $s->replace(fn() => null);
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:23:37',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'closureReturningNullForCallableReturningAClassTemplate' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Source {
+                        /** @param callable(): T $f */
+                        public function replace(callable $f): void {}
+
+                        public function clear(): void {
+                            $this->replace(fn() => null);
+                        }
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:44',
+            ],
+            'closurePossiblyReturningNullForCallableReturningAFunctionTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T $x
+                     * @param callable(callable(): T): void $use
+                     */
+                    function f($x, callable $use): void {
+                        $use(fn() => rand(0, 1) ? $x : null);
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:30',
+            ],
+            'functionReturningNullForCallableReturningAFunctionTemplate' => [
+                'code' => '<?php
+                    /** @return null */
+                    function nothing() {
+                        return null;
+                    }
+
+                    /**
+                     * @template T
+                     * @param callable(callable(): T): void $use
+                     */
+                    function f(callable $use): void {
+                        $use(nothing(...));
+                        $use(\'nothing\');
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:12:30',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'methodTemplateBoundStillReportsTheClassStringOfANonFinalClassThatWasExcluded' => [
                 'code' => '<?php
                     interface StampInterface {}
@@ -4397,6 +5344,19 @@ final class FunctionTemplateTest extends TestCase
 
                     (new Garage)->find(Countable::class);',
                 'error_message' => 'InvalidArgument',
+            ],
+            'templateBoundedByIntCannotBeIdenticalToAString' => [
+                'code' => '<?php
+                    /**
+                     * @template T of int
+                     * @param T $t
+                     */
+                    function f($t, string $s): void {
+                        if ($t === $s) {
+                            echo "never";
+                        }
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
             ],
         ];
     }

@@ -514,7 +514,7 @@ final class TaintStore
         }
 
         if ($expr instanceof FuncCall && $expr->name instanceof Name && !$expr->isFirstClassCallable()) {
-            $function = $expr->name->toLowerString();
+            $function = self::getCalledFunctionId($statements_analyzer, $expr->name);
             if ($function === 'sprintf') {
                 return self::getKnownStartOfSprintf($statements_analyzer, $expr->getArgs());
             }
@@ -523,7 +523,7 @@ final class TaintStore
                 return self::getKnownStartOfImplode($statements_analyzer, $expr->getArgs());
             }
 
-            return self::getKnownStartOfFunctionCall($statements_analyzer, $expr->name);
+            return self::getKnownStartOfFunctionCall($statements_analyzer, $function);
         }
 
         // a list of names: what they all start with
@@ -790,37 +790,57 @@ final class TaintStore
 
     /**
      * What the function of the project called returns starts with, as the scan recorded it (see StringStartScanner)
+     *
+     * @param non-empty-lowercase-string $function_id
      */
-    private static function getKnownStartOfFunctionCall(StatementsAnalyzer $statements_analyzer, Name $name): ?string
-    {
+    private static function getKnownStartOfFunctionCall(
+        StatementsAnalyzer $statements_analyzer,
+        string $function_id,
+    ): ?string {
         $codebase = $statements_analyzer->getCodebase();
-        $declaring_function_ids = $codebase->file_storage_provider->get($statements_analyzer->getRootFilePath())
-            ->declaring_function_ids;
 
-        // those declared in the files the file includes, and those registered globally (autoloaded files, ...)
-        $has_storage = static fn(string $function_id): bool => isset($declaring_function_ids[$function_id])
-            || $codebase->functions->hasStubbedFunction($function_id);
-
-        $function_id = strtolower(
-            $name instanceof FullyQualified
-                ? $name->toString()
-                : $codebase->functions->getFullyQualifiedFunctionNameFromString(
-                    $name->toString(),
-                    $statements_analyzer,
-                ),
-        );
-
-        // a function not found in the namespace is the global one
-        if (!$has_storage($function_id) && !$name instanceof FullyQualified) {
-            $function_id = strtolower($name->toString());
-        }
-
-        return $has_storage($function_id)
+        return self::hasFunctionStorage($statements_analyzer, $function_id)
             ? StringStartScanner::getFunctionStart(
                 $codebase,
                 $codebase->functions->getStorage($statements_analyzer, $function_id),
             )
             : null;
+    }
+
+    /**
+     * The lowercase id of the function a call of $name calls: the function of the namespace, or the global one if the
+     * namespace has none
+     *
+     * @return non-empty-lowercase-string
+     */
+    public static function getCalledFunctionId(StatementsAnalyzer $statements_analyzer, Name $name): string
+    {
+        if ($name instanceof FullyQualified) {
+            return strtolower($name->toString());
+        }
+
+        $function_id = strtolower(
+            $statements_analyzer->getCodebase()->functions->getFullyQualifiedFunctionNameFromString(
+                $name->toString(),
+                $statements_analyzer,
+            ),
+        );
+
+        return self::hasFunctionStorage($statements_analyzer, $function_id)
+            ? $function_id
+            : strtolower($name->toString());
+    }
+
+    /**
+     * Whether the function is declared in the files the file includes, or registered globally (autoloaded files, ...)
+     */
+    private static function hasFunctionStorage(StatementsAnalyzer $statements_analyzer, string $function_id): bool
+    {
+        $codebase = $statements_analyzer->getCodebase();
+
+        return isset($codebase->file_storage_provider->get($statements_analyzer->getRootFilePath())
+                ->declaring_function_ids[$function_id])
+            || $codebase->functions->hasStubbedFunction($function_id);
     }
 
     /**

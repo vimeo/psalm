@@ -746,6 +746,127 @@ final class BinaryOperationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'secondArrayUnionKeepsTheRestOfTheArrayForTheOtherKey' => [
+                'code' => '<?php
+                    /** @var array<string, int> $arr */
+                    $arr = [];
+                    $arr += ["a" => "x"];
+                    $arr += ["b" => "y"];',
+                'assertions' => [
+                    '$arr===' => 'array{a: \'x\'|int, b: \'y\'|int, ...<string, int>}',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'unionOfAClassStringKeyedArrayAndAShapeMayHaveTheKey' => [
+                'code' => '<?php
+                    /** @param array<class-string, int> $arr */
+                    function a(array $arr): void {
+                        $r = $arr + [Exception::class => "x"];
+                        /** @psalm-check-type-exact $r = array{Exception::class: \'x\'|int, ...<class-string, int>} */;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'unionOfAShapeWithAnOptionalClassStringKeyAndAnArrayMayHaveTheKey' => [
+                'code' => '<?php
+                    /** @param array{Exception::class?: string} $shape */
+                    function c(array $shape): void {}
+
+                    /**
+                     * @param array{Exception::class?: string} $shape
+                     * @param array<class-string, int> $arr
+                     */
+                    function d(array $shape, array $arr): void {
+                        $r = $shape + $arr;
+                        /** @psalm-check-type-exact $r = array{Exception::class?: int|string, ...<class-string, int>} */;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'unionOfAnArrayAndAShapeHasTheKeysOfTheShape' => [
+                'code' => '<?php
+                    /** @return array<string, int> */
+                    function counts(): array {
+                        return [];
+                    }
+
+                    $withDefault = counts() + ["total" => 0];
+                    $maybeDefault = counts() + (rand(0, 1) ? ["total" => 0] : []);
+                    $options = [];
+                    /** @var array<array-key, mixed> $options */
+                    $options += ["debug" => false];',
+                'assertions' => [
+                    '$withDefault===' => 'array{total: int, ...<string, int>}',
+                    '$maybeDefault===' => 'array{total?: int, ...<string, int>}',
+                    '$options===' => 'array{debug: false|mixed, ...<array-key, mixed>}',
+                ],
+            ],
+            'unionOfAShapeAndAnArrayTakesValuesOnlyUnderKeysTheArrayMayHave' => [
+                'code' => '<?php
+                    /** @var list{list<string>, string} $pair */
+                    $pair = [[], ""];
+                    /** @var array<string, object> $named */
+                    $named = [];
+                    /** @var array<int, int> $numbered */
+                    $numbered = [];
+                    /** @var array{0?: string, a?: string} $optional */
+                    $optional = [];
+                    $a = $named + $pair;
+                    $b = $numbered + $pair;
+                    $c = $optional + $named;
+                    $d = $optional + $numbered;',
+                'assertions' => [
+                    '$a===' => 'array{0: list<string>, 1: string, ...<string, object>}',
+                    '$b===' => 'array{0: int|list<string>, 1: int|string, ...<int, int>}',
+                    '$c===' => 'array{0?: string, a?: object|string, ...<string, object>}',
+                    '$d===' => 'array{0?: int|string, a?: string, ...<int, int>}',
+                ],
+            ],
+            'unionOfAShapeAndAnArrayKeepsTheKeysOfTheShape' => [
+                'code' => '<?php
+                    /** @return array<string, int> */
+                    function extra(): array {
+                        return [];
+                    }
+
+                    $row = ["id" => "a", "name" => "b"] + extra();
+                    $id = $row["id"];
+                    /** @var array{id?: string} $partial */
+                    $merged = $partial + extra();
+                    /** @var list<int> $ints */
+                    $list = $ints + extra();
+                    $byClass = [Exception::class => 1] + extra();
+                    $fromClass = extra() + [Exception::class => 1];',
+                'assertions' => [
+                    '$row===' => 'array{id: \'a\', name: \'b\', ...<string, int>}',
+                    '$id===' => '\'a\'',
+                    '$merged===' => 'array{id?: int|string, ...<string, int>}',
+                    '$list===' => 'array<int<0, max>|string, int>',
+                    '$byClass===' => 'array{Exception::class: 1, ...<string, int>}',
+                    '$fromClass===' => 'array{Exception::class: int, ...<string, int>}',
+                ],
+            ],
+            'powOfIntsWithAnExponentThatMayBeNegativeIsAFloatOrInt' => [
+                'code' => '<?php
+                    /** @var int $base */
+                    $base = 2;
+                    /** @var int $exponent */
+                    $exponent = 3;
+
+                    $variable = $base ** $exponent;
+                    $literalBase = 2 ** $exponent;
+                    $literalExponent = $base ** 2;
+                    $negativeExponent = $base ** -1;',
+                'assertions' => [
+                    '$variable===' => 'float|int',
+                    '$literalBase===' => 'float|int',
+                    '$literalExponent===' => 'int',
+                    '$negativeExponent===' => 'float',
+                ],
+            ],
             'comparisonNarrowsTheBoundOfATemplateInTheTypeOfTheVariable' => [
                 'code' => '<?php
                     /** @param int<1, max> $n */
@@ -2719,7 +2840,7 @@ final class BinaryOperationTest extends TestCase
                     $a = -(1 << 63);
                     PHP,
                 'assertions' => [
-                    '$a===' => 'float(9.2233720368548E+18)',
+                    '$a===' => 'float(9.223372036854776E+18)',
                 ],
             ],
             'bitwiseOperationsOfIntRanges' => [
@@ -2745,6 +2866,61 @@ final class BinaryOperationTest extends TestCase
                     '$negativeOr===' => 'int',
                     '$negativeShift===' => 'int',
                     '$negativeShiftBy===' => 'int',
+                ],
+            ],
+            'bitwiseAndWithANonNegativeOperandIsBoundedByIt' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function getInt(): int {
+                        return 1;
+                    }
+                    $i = getInt();
+                    $low = $i & 0x0F;
+                    $lowLeft = 0x0F & $i;
+                    $zero = $i & 0;
+                    $negativeRange = rand(-5, 3) & 6;
+                    /** @var int<0, max> $u */
+                    $u = 5;
+                    $unbounded = $i & $u;
+                    $negative = $i & -1;
+                    $mixedSigns = $i & rand(-5, 3);
+                    $byRange = $i & rand(0, 7);
+                    PHP,
+                'assertions' => [
+                    '$low===' => 'int<0, 15>',
+                    '$lowLeft===' => 'int<0, 15>',
+                    '$zero===' => '0',
+                    '$negativeRange===' => 'int<0, 6>',
+                    '$unbounded===' => 'int<0, max>',
+                    '$negative===' => 'int',
+                    '$mixedSigns===' => 'int',
+                    '$byRange===' => 'int<0, 7>',
+                ],
+            ],
+            'bitwiseAndMaskedOperandsMultiplicationOverflow' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function getInt(): int {
+                        return 1;
+                    }
+                    $i = getInt();
+                    $j = getInt();
+                    $r = ($i & 0xFFFFFFFF) * ($j & 0xFFFFFFFF);
+                    $byLiteral = ($i & 0xFFFFFFFFFFFF) * 1000000;
+                    $fits = ($i & 0xFF) * ($j & 0xFF);
+                    /** @var int<-4294967295, 4294967295> $s */
+                    $s = 1;
+                    $bothSigns = $s * ($j & 0xFFFFFFFF);
+                    /** @var int<-4294967295, 1> $n */
+                    $n = 1;
+                    $onlyMinOverflows = $n * ($j & 0xFFFFFFFF);
+                    PHP,
+                'assertions' => [
+                    '$r===' => 'int<0, max>',
+                    '$byLiteral===' => 'int<0, max>',
+                    '$fits===' => 'int<0, 65025>',
+                    '$bothSigns===' => 'int',
+                    '$onlyMinOverflows===' => 'int<min, 4294967295>',
                 ],
             ],
             'bitwiseOperationsOfUnboundedIntRanges' => [
@@ -3136,6 +3312,30 @@ final class BinaryOperationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'possiblyNullOperandShowsTheRefinedType' => [
+                'code' => '<?php
+                    /** @param non-empty-string|null $p */
+                    function f(?string $p): string {
+                        return $p . "x";
+                    }',
+                'error_message' => 'PossiblyNullOperand - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:32 - Cannot concatenate with a possibly null non-empty-string|null',
+            ],
+            'unionOfATemplateKeyedArrayAndAShapeMayHaveTheKey' => [
+                'code' => '<?php
+                    function takesInt(int $i): void {}
+
+                    /**
+                     * @template K of array-key
+                     * @param array<K, int> $arr
+                     */
+                    function b(array $arr): void {
+                        $r = $arr + ["a" => "x"];
+                        takesInt($r["a"]);
+                    }',
+                'error_message' => 'InvalidScalarArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:34 - Argument 1 of takesInt expects int, but \'x\'|int provided',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'offsetOfAVariableAssignedInTheRightOperandOfAndIsForgottenAfterTheIf' => [
                 'code' => '<?php
                     /** @return array{a?: int} */

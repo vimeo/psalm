@@ -11,6 +11,19 @@ use OutOfRangeException;
 use Traversable;
 use UnderflowException;
 
+interface Hashable
+{
+    /**
+     * @param mixed $obj
+     */
+    public function equals($obj): bool;
+
+    /**
+     * @return mixed
+     */
+    public function hash();
+}
+
 /**
  * @template-covariant TKey
  * @template-covariant TValue
@@ -40,6 +53,12 @@ interface Collection extends IteratorAggregate, Countable, JsonSerializable
      * @psalm-mutation-free
      */
     public function count(): int;
+
+    /**
+     * @return array<TKey, TValue>
+     * @psalm-mutation-free
+     */
+    public function jsonSerialize(): array;
 }
 
 /**
@@ -162,6 +181,40 @@ final class Deque implements Sequence
     }
 
     /**
+     * @param int $offset
+     * @psalm-mutation-free
+     */
+    public function offsetExists($offset): bool
+    {
+    }
+
+    /**
+     * @param int $offset
+     * @return TValue
+     * @throws \OutOfRangeException
+     * @psalm-mutation-free
+     */
+    public function offsetGet($offset)
+    {
+    }
+
+    /**
+     * @param int|null $offset
+     * @param TValue $value
+     * @throws \OutOfRangeException
+     */
+    public function offsetSet($offset, $value): void
+    {
+    }
+
+    /**
+     * @param int $offset
+     */
+    public function offsetUnset($offset): void
+    {
+    }
+
+    /**
      * @psalm-mutation-free
      */
     public function join(?string $glue = null): string
@@ -260,6 +313,56 @@ final class Deque implements Sequence
      * @psalm-purity-from-template P
      */
     public function sorted(callable $comparator = null): Deque
+    {
+    }
+
+    /**
+     * @psalm-purity-template P
+     * @param callable[P](TValue): TValue $callback
+     * @psalm-capabilities read-props|write-this-props
+     * @psalm-purity-from-template P
+     */
+    public function apply(callable $callback): void
+    {
+    }
+
+    /**
+     * @param TValue ...$values
+     * @throws \OutOfRangeException
+     */
+    public function insert(int $index, ...$values): void
+    {
+    }
+
+    /**
+     * @param TValue ...$values
+     */
+    public function push(...$values): void
+    {
+    }
+
+    /**
+     * @param TValue $value
+     * @throws \OutOfRangeException
+     */
+    public function set(int $index, $value): void
+    {
+    }
+
+    /**
+     * @psalm-purity-template P
+     * @param (callable[P](TValue, TValue): int)|null $comparator
+     * @psalm-capabilities read-props|write-this-props
+     * @psalm-purity-from-template P
+     */
+    public function sort(callable $comparator = null): void
+    {
+    }
+
+    /**
+     * @param TValue ...$values
+     */
+    public function unshift(...$values): void
     {
     }
 }
@@ -440,6 +543,39 @@ final class Map implements Collection, ArrayAccess
      * @psalm-mutation-free
      */
     public function get($key, $default = null)
+    {
+    }
+
+    /**
+     * @param TKey $offset
+     * @psalm-mutation-free
+     */
+    public function offsetExists($offset): bool
+    {
+    }
+
+    /**
+     * @param TKey $offset
+     * @return TValue
+     * @throws OutOfBoundsException
+     * @psalm-mutation-free
+     */
+    public function offsetGet($offset)
+    {
+    }
+
+    /**
+     * @param TKey $offset
+     * @param TValue $value
+     */
+    public function offsetSet($offset, $value): void
+    {
+    }
+
+    /**
+     * @param TKey $offset
+     */
+    public function offsetUnset($offset): void
     {
     }
 
@@ -726,6 +862,32 @@ interface Sequence extends Collection, ArrayAccess
     public function get(int $index);
 
     /**
+     * @param int $offset
+     * @psalm-mutation-free
+     */
+    public function offsetExists($offset): bool;
+
+    /**
+     * @param int $offset
+     * @return TValue
+     * @throws \OutOfRangeException
+     * @psalm-mutation-free
+     */
+    public function offsetGet($offset);
+
+    /**
+     * @param int|null $offset
+     * @param TValue $value
+     * @throws \OutOfRangeException
+     */
+    public function offsetSet($offset, $value): void;
+
+    /**
+     * @param int $offset
+     */
+    public function offsetUnset($offset): void;
+
+    /**
      * @param TValue ...$values
      * @throws \OutOfRangeException
      */
@@ -957,6 +1119,40 @@ final class Vector implements Sequence
     }
 
     /**
+     * @param int $offset
+     * @psalm-mutation-free
+     */
+    public function offsetExists($offset): bool
+    {
+    }
+
+    /**
+     * @param int $offset
+     * @return TValue
+     * @throws \OutOfRangeException
+     * @psalm-mutation-free
+     */
+    public function offsetGet($offset)
+    {
+    }
+
+    /**
+     * @param int|null $offset
+     * @param TValue $value
+     * @throws \OutOfRangeException
+     */
+    public function offsetSet($offset, $value): void
+    {
+    }
+
+    /**
+     * @param int $offset
+     */
+    public function offsetUnset($offset): void
+    {
+    }
+
+    /**
      * @psalm-mutation-free
      */
     public function join(?string $glue = null): string
@@ -1055,6 +1251,56 @@ final class Vector implements Sequence
      * @psalm-purity-from-template P
      */
     public function sorted(callable $comparator = null): Vector
+    {
+    }
+
+    /**
+     * @psalm-purity-template P
+     * @param callable[P](TValue): TValue $callback
+     * @psalm-capabilities read-props|write-this-props
+     * @psalm-purity-from-template P
+     */
+    public function apply(callable $callback): void
+    {
+    }
+
+    /**
+     * @param TValue ...$values
+     * @throws \OutOfRangeException
+     */
+    public function insert(int $index, ...$values): void
+    {
+    }
+
+    /**
+     * @param TValue ...$values
+     */
+    public function push(...$values): void
+    {
+    }
+
+    /**
+     * @param TValue $value
+     * @throws \OutOfRangeException
+     */
+    public function set(int $index, $value): void
+    {
+    }
+
+    /**
+     * @psalm-purity-template P
+     * @param (callable[P](TValue, TValue): int)|null $comparator
+     * @psalm-capabilities read-props|write-this-props
+     * @psalm-purity-from-template P
+     */
+    public function sort(callable $comparator = null): void
+    {
+    }
+
+    /**
+     * @param TValue ...$values
+     */
+    public function unshift(...$values): void
     {
     }
 }
@@ -1176,6 +1422,39 @@ final class Set implements Collection, ArrayAccess
      * @psalm-mutation-free
      */
     public function get(int $index)
+    {
+    }
+
+    /**
+     * @param never $offset
+     * @psalm-mutation-free
+     */
+    public function offsetExists($offset): bool
+    {
+    }
+
+    /**
+     * @param int $offset
+     * @return TValue
+     * @throws \OutOfRangeException
+     * @psalm-mutation-free
+     */
+    public function offsetGet($offset)
+    {
+    }
+
+    /**
+     * @param null $offset
+     * @param TValue $value
+     */
+    public function offsetSet($offset, $value): void
+    {
+    }
+
+    /**
+     * @param never $offset
+     */
+    public function offsetUnset($offset): void
     {
     }
 
@@ -1376,6 +1655,38 @@ final class Stack implements Collection, ArrayAccess
     public function push(...$values): void
     {
     }
+
+    /**
+     * @param never $offset
+     * @psalm-mutation-free
+     */
+    public function offsetExists($offset): bool
+    {
+    }
+
+    /**
+     * @param never $offset
+     * @return never
+     * @psalm-mutation-free
+     */
+    public function offsetGet($offset)
+    {
+    }
+
+    /**
+     * @param null $offset
+     * @param TValue $value
+     */
+    public function offsetSet($offset, $value): void
+    {
+    }
+
+    /**
+     * @param never $offset
+     */
+    public function offsetUnset($offset): void
+    {
+    }
 }
 
 /**
@@ -1467,6 +1778,38 @@ final class Queue implements Collection, ArrayAccess
      * @param TValue ...$values
      */
     public function push(...$values): void
+    {
+    }
+
+    /**
+     * @param never $offset
+     * @psalm-mutation-free
+     */
+    public function offsetExists($offset): bool
+    {
+    }
+
+    /**
+     * @param never $offset
+     * @return never
+     * @psalm-mutation-free
+     */
+    public function offsetGet($offset)
+    {
+    }
+
+    /**
+     * @param null $offset
+     * @param TValue $value
+     */
+    public function offsetSet($offset, $value): void
+    {
+    }
+
+    /**
+     * @param never $offset
+     */
+    public function offsetUnset($offset): void
     {
     }
 }

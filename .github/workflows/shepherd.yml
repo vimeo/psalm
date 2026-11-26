@@ -9,14 +9,15 @@ on:
 permissions:
   contents: read
 
-# A new push to a pull request cancels its previous run; pushes to branches always run to the end.
+# A new push to a pull request or a branch cancels its previous run: the newest commit's run tests the older ones too.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v6

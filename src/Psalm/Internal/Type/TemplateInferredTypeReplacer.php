@@ -49,7 +49,6 @@ use function array_filter;
 use function array_merge;
 use function array_shift;
 use function array_values;
-use function assert;
 use function str_starts_with;
 use function strtolower;
 
@@ -124,13 +123,13 @@ final class TemplateInferredTypeReplacer
                     && !empty($inferred_lower_bounds[$atomic_type->offset_param_name])
                 ) {
                     $array_template_type
-                        = TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
+                        = TemplateStandinTypeReplacer::getReadTypeFromBounds(
                             $inferred_lower_bounds[$atomic_type->array_param_name][$atomic_type->defining_class],
                             $codebase,
                         );
 
                     $offset_template_type
-                        = TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
+                        = TemplateStandinTypeReplacer::getReadTypeFromBounds(
                             array_values($inferred_lower_bounds[$atomic_type->offset_param_name])[0],
                             $codebase,
                         );
@@ -178,15 +177,15 @@ final class TemplateInferredTypeReplacer
                     $new_types[] = $new_type;
                 }
             } elseif ($atomic_type instanceof TTemplatePropertiesOf) {
-                $new_type = self::replaceTemplatePropertiesOf(
+                $properties_of_types = self::replaceTemplatePropertiesOf(
                     $codebase,
                     $atomic_type,
                     $inferred_lower_bounds,
                 );
 
-                if ($new_type) {
+                if ($properties_of_types) {
                     $should_set = false;
-                    $new_types[] = $new_type;
+                    $new_types = [...$new_types, ...$properties_of_types];
                 }
             } elseif ($atomic_type instanceof TIntersection) {
                 $intersected_types = [];
@@ -255,7 +254,7 @@ final class TemplateInferredTypeReplacer
         array $inferred_lower_bounds,
     ): array {
         $template_type = isset($inferred_lower_bounds[$atomic_type->param_name][$atomic_type->defining_class])
-            ? TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
+            ? TemplateStandinTypeReplacer::getReadTypeFromBounds(
                 $inferred_lower_bounds[$atomic_type->param_name][$atomic_type->defining_class],
                 $codebase,
             )
@@ -469,11 +468,11 @@ final class TemplateInferredTypeReplacer
                             $atomic_template_type->extra_types,
                         ));
                     } elseif ($atomic_template_type instanceof TObject) {
-                        $first_atomic_type = array_shift($atomic_type->extra_types);
-                        assert($first_atomic_type !== null);
+                        $extra_types = $atomic_type->extra_types;
+                        $first_atomic_type = array_shift($extra_types);
 
-                        if ($atomic_type->extra_types) {
-                            $first_atomic_type = $first_atomic_type->setIntersectionTypes($atomic_type->extra_types);
+                        if ($extra_types) {
+                            $first_atomic_type = $first_atomic_type->setIntersectionTypes($extra_types);
                         }
 
                         $types []= $first_atomic_type;
@@ -499,8 +498,12 @@ final class TemplateInferredTypeReplacer
                             if (isset($classlike_storage->template_extended_params[$defining_class])) {
                                 $param_map = $classlike_storage->template_extended_params[$defining_class];
 
-                                if (isset($param_map[$key])) {
-                                    $template_name = (string) $param_map[$key];
+                                $mapped_template = isset($param_map[$key]) && $param_map[$key]->isSingle()
+                                    ? $param_map[$key]->getSingleAtomic()
+                                    : null;
+
+                                if ($mapped_template instanceof TTemplateParam) {
+                                    $template_name = $mapped_template->param_name;
                                     if (isset($inferred_lower_bounds[$template_name][$template_class])) {
                                         $template_type
                                             = TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
@@ -534,7 +537,7 @@ final class TemplateInferredTypeReplacer
             return null;
         }
 
-        $template_type = TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
+        $template_type = TemplateStandinTypeReplacer::getReadTypeFromBounds(
             $inferred_lower_bounds[$atomic_type->param_name][$atomic_type->defining_class],
             $codebase,
         );
@@ -555,32 +558,41 @@ final class TemplateInferredTypeReplacer
     }
 
     /**
+     * The properties of each class the template stands for: `properties-of<A|B>` is
+     * `properties-of<A>|properties-of<B>`
+     *
      * @param array<string, array<string, non-empty-list<TemplateBound>>> $inferred_lower_bounds
+     * @return list<TPropertiesOf>
      * @psalm-external-mutation-free
      */
     private static function replaceTemplatePropertiesOf(
         ?Codebase $codebase,
         TTemplatePropertiesOf $atomic_type,
         array $inferred_lower_bounds,
-    ): ?Atomic {
+    ): array {
         if (!isset($inferred_lower_bounds[$atomic_type->param_name][$atomic_type->defining_class])) {
-            return null;
+            return [];
         }
 
-        $template_type = TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
+        $template_type = TemplateStandinTypeReplacer::getReadTypeFromBounds(
             $inferred_lower_bounds[$atomic_type->param_name][$atomic_type->defining_class],
             $codebase,
         );
 
-        $classlike_type = $template_type->getSingleAtomic();
-        if (!$classlike_type instanceof TNamedObject) {
-            return null;
+        $properties_of_types = [];
+
+        foreach ($template_type->getAtomicTypes() as $classlike_type) {
+            if (!$classlike_type instanceof TNamedObject) {
+                return [];
+            }
+
+            $properties_of_types[] = new TPropertiesOf(
+                $classlike_type,
+                $atomic_type->visibility_filter,
+            );
         }
 
-        return new TPropertiesOf(
-            $classlike_type,
-            $atomic_type->visibility_filter,
-        );
+        return $properties_of_types;
     }
 
     /**
@@ -626,6 +638,8 @@ final class TemplateInferredTypeReplacer
 
         $if_template_type = null;
         $else_template_type = null;
+        $has_overlapping_candidate = false;
+        $has_unresolved_branch = false;
 
         $as_type = $atomic_type->as_type;
         $conditional_type = $atomic_type->conditional_type;
@@ -673,7 +687,7 @@ final class TemplateInferredTypeReplacer
                 )
                     && !$comparison_result->to_string_cast
                     && (!$candidate_atomic_type instanceof TInt
-                        || $conditional_type->getId() !== 'float')
+                        || !$conditional_type->isFloat())
                 ) {
                     $matching_if_types[] = $candidate_atomic_type;
 
@@ -697,8 +711,11 @@ final class TemplateInferredTypeReplacer
                     continue;
                 }
 
-                // only a candidate that can't be of the condition is decidably in the else branch
-                if (self::isDisjoint($codebase, $candidate_atomic_type, $conditional_type)) {
+                // only a candidate that can't be of the condition is decidably in the else branch; one that only
+                // fails it through mixed type params, e.g. a Traversable for an iterable<int, int>, can be of it
+                if ((!$comparison_result->type_coerced_from_mixed || $candidate_atomic_type instanceof TMixed)
+                    && self::isDisjoint($codebase, $candidate_atomic_type, $conditional_type)
+                ) {
                     continue;
                 }
 
@@ -728,14 +745,20 @@ final class TemplateInferredTypeReplacer
                     false,
                     false,
                 )) {
+                    $has_overlapping_candidate = true;
                     $matching_if_types = [...$matching_if_types, ...array_values($if_part->getAtomicTypes())];
                 } else {
                     $is_decidable = false;
                 }
             }
 
-            $if_candidate_type = $matching_if_types && $is_decidable ? new Union($matching_if_types) : null;
-            $else_candidate_type = $matching_else_types && $is_decidable ? new Union($matching_else_types) : null;
+            // combined: a candidate and a part of another one, as array and callable-array, can share a key
+            $if_candidate_type = $matching_if_types && $is_decidable
+                ? TypeCombiner::combine($matching_if_types, $codebase)
+                : null;
+            $else_candidate_type = $matching_else_types && $is_decidable
+                ? TypeCombiner::combine($matching_else_types, $codebase)
+                : null;
 
             if ($if_candidate_type) {
                 $if_template_type = self::replaceConditionalBranch(
@@ -747,6 +770,7 @@ final class TemplateInferredTypeReplacer
                 );
             }
 
+            $else_comparison_result = new TypeComparisonResult();
             if ($else_candidate_type
                 && ($subject_type !== null
                     || UnionTypeComparator::isContainedBy(
@@ -755,7 +779,7 @@ final class TemplateInferredTypeReplacer
                         $as_type,
                         false,
                         false,
-                        null,
+                        $else_comparison_result,
                         false,
                         false,
                     ))
@@ -767,10 +791,17 @@ final class TemplateInferredTypeReplacer
                     $else_type,
                     $else_candidate_type,
                 );
+            } elseif ($else_candidate_type
+                && ($else_candidate_type->hasTemplateOrStatic() || $else_comparison_result->type_coerced_from_mixed)
+            ) {
+                $has_unresolved_branch = true;
             }
         }
 
-        if (!$if_template_type && !$else_template_type) {
+        if ((!$if_template_type && !$else_template_type)
+            // Failure to refine an unresolved generic is not proof that its branch is impossible.
+            || ($has_overlapping_candidate && $has_unresolved_branch)
+        ) {
             $if_type = self::replace(
                 $if_type,
                 $template_result,

@@ -8,7 +8,6 @@ use PhpParser;
 use PhpParser\Node\Expr\StaticCall;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
-use Psalm\Config;
 use Psalm\Context;
 use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\ClassAnalyzer;
@@ -17,8 +16,10 @@ use Psalm\Internal\Analyzer\Statements\Expression\Call\CallPurityResolver;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallProhibitionAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallPurityAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallReturnTypeFetcher;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\NewAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\NoDiscardAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\OverloadSelector;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\StaticCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\GlobalStateAnalyzer;
@@ -28,8 +29,6 @@ use Psalm\Internal\Codebase\AssertionsFromInheritanceResolver;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
-use Psalm\Internal\Type\TemplateBound;
-use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\Type\TypeVariableTracker;
@@ -38,11 +37,10 @@ use Psalm\Issue\AbstractMethodCall;
 use Psalm\Issue\ImpureMethodCall;
 use Psalm\Issue\UnusedMethodCall;
 use Psalm\IssueBuffer;
-use Psalm\Plugin\EventHandler\Event\AfterMethodCallAnalysisEvent;
 use Psalm\Storage\Capabilities;
 use Psalm\Storage\ClassLikeStorage;
+use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\MethodStorage;
-use Psalm\Storage\Possibilities;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TNamedObject;
@@ -51,7 +49,6 @@ use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
-use function array_map;
 use function count;
 use function explode;
 use function in_array;
@@ -86,7 +83,6 @@ final class ExistingAtomicStaticCallAnalyzer
         $fq_class_name = $method_id->fq_class_name;
 
         $codebase = $statements_analyzer->getCodebase();
-        $config = $codebase->config;
 
         MethodCallProhibitionAnalyzer::analyze(
             $statements_analyzer,
@@ -174,6 +170,21 @@ final class ExistingAtomicStaticCallAnalyzer
             $template_result->lower_bounds += $inferred_template_result->lower_bounds;
         }
 
+        $method_storage = $codebase->methods->getUserMethodStorage($method_id);
+
+        $overload = null;
+
+        if ($method_storage && $method_storage->overloads !== [] && !$stmt->isFirstClassCallable()) {
+            $overload = OverloadSelector::selectOrReal(
+                $statements_analyzer,
+                $codebase,
+                $args,
+                $context,
+                $method_storage->overloads,
+                $method_storage,
+            );
+        }
+
         // a static call naming a class does not forward the late static binding: `static` is that class
         $static_is_called_class = $stmt->class instanceof PhpParser\Node\Name
             && !in_array(strtolower($stmt->class->getFirst()), ['self', 'static', 'parent'], true)
@@ -181,9 +192,8 @@ final class ExistingAtomicStaticCallAnalyzer
                 ?->is_static;
 
         // the arguments, the hints of closure params and the conditionals of the return type are read with `static` of
-        // the call only when it is that class: forwarding calls and template classes keep `static` as declared, and so
-        // does a call in a trait, whose closures every class using it shares
-        if ($static_is_called_class && !CallAnalyzer::isInTrait($statements_analyzer)) {
+        // the call only when it is that class: forwarding calls and template classes keep `static` as declared
+        if ($static_is_called_class) {
             $template_result->static_class_type = $method_id->fq_class_name;
             $template_result->static_class_is_final = true;
         }
@@ -196,6 +206,7 @@ final class ExistingAtomicStaticCallAnalyzer
             new CodeLocation($statements_analyzer->getSource(), $stmt),
             $statements_analyzer,
             $static_is_called_class,
+            $overload,
         ) === false) {
             return;
         }
@@ -287,11 +298,9 @@ final class ExistingAtomicStaticCallAnalyzer
                 $context,
                 $fq_class_name,
                 $class_storage,
-                $config,
+                $overload,
             );
         }
-
-        $method_storage = $codebase->methods->getUserMethodStorage($method_id);
 
         if ($method_storage) {
             if ($method_storage->abstract
@@ -324,6 +333,7 @@ final class ExistingAtomicStaticCallAnalyzer
                 $stmt,
                 $method_id,
                 $method_storage,
+                $template_result,
             );
 
             // what the purity templates of the method are bound to here
@@ -432,16 +442,6 @@ final class ExistingAtomicStaticCallAnalyzer
                 );
             }
 
-            $assertionsResolver = new AssertionsFromInheritanceResolver($codebase);
-            $assertions = $assertionsResolver->resolve(
-                $method_storage,
-                $class_storage,
-            );
-
-            // `self` in the assertions of a method of a trait is the class using the trait, where it appears
-            $trait_self_class = $codebase->methods->getAppearingMethodId($method_id)?->fq_class_name
-                ?? $class_storage->name;
-
             // `static` in the called method: the class named by the call, or the caller's when the call forwards it
             $assertion_static_class = $static_is_called_class
                 ? $fq_class_name
@@ -450,88 +450,49 @@ final class ExistingAtomicStaticCallAnalyzer
                     ? 'static'
                     : null);
 
-            if ($assertions) {
-                CallAnalyzer::applyAssertionsToContext(
-                    $stmt_name,
-                    null,
-                    CallAnalyzer::resolveStaticPropertyAssertionClasses(
-                        CallAnalyzer::getAssertionsOnArgs(
-                            $assertions,
-                            $method_storage,
-                            $stmt->getArgs(),
-                            $statements_analyzer->node_data,
-                            $context->strict_types,
-                        ),
-                        $codebase,
-                        $context,
-                        $trait_self_class,
-                        $assertion_static_class,
-                        $fq_class_name,
-                    ),
-                    $stmt->getArgs(),
-                    $template_result,
-                    $context,
-                    $statements_analyzer,
-                    null,
-                    $trait_self_class,
+            // what `static` is in the types of the assertions: late static when it may be a subclass of the class
+            if ($lhs_type_part instanceof TTemplateParam) {
+                $assertion_static_type = $lhs_type_part;
+            } elseif ($lhs_type_part instanceof TTemplateParamClass) {
+                $assertion_static_type = self::getTemplateParamOfClass($lhs_type_part);
+            } elseif ($assertion_static_class === 'static' && $context->self !== null) {
+                $self_storage = $codebase->classlike_storage_provider->get($context->self);
+                $assertion_static_type = ClassAnalyzer::getThisObjectType($self_storage, $context->self)
+                    ->setIsStatic(!$self_storage->final);
+            } else {
+                $assertion_static_type = new TNamedObject(
+                    $fq_class_name,
+                    !$static_is_called_class && !$class_storage->final,
                 );
             }
 
-            $if_true_assertions = $assertionsResolver->resolveIfTrue($method_storage, $class_storage);
+            // an instance method of the caller's class or of an ancestor, called statically from an instance method,
+            // is called on `$this`
+            $assertion_this_var_id = !$method_storage->is_static
+                && isset($context->vars_in_scope['$this'])
+                && $context->self !== null
+                && (strtolower($context->self) === strtolower($fq_class_name)
+                    || $codebase->classExtendsOrImplements($context->self, $fq_class_name))
+                ? '$this'
+                : null;
 
-            if ($if_true_assertions) {
-                $statements_analyzer->node_data->setIfTrueAssertions(
-                    $stmt,
-                    array_map(
-                        static fn(Possibilities $assertion): Possibilities => CallAnalyzer::resolveTraitSelf(
-                            $assertion->getUntemplatedCopy($template_result, null, $codebase),
-                            $trait_self_class,
-                        ),
-                        CallAnalyzer::resolveStaticPropertyAssertionClasses(
-                            CallAnalyzer::getAssertionsOnArgs(
-                                $if_true_assertions,
-                                $method_storage,
-                                $stmt->getArgs(),
-                                $statements_analyzer->node_data,
-                                $context->strict_types,
-                            ),
-                            $codebase,
-                            $context,
-                            $trait_self_class,
-                            $assertion_static_class,
-                            $fq_class_name,
-                        ),
-                    ),
-                );
-            }
-
-            $if_false_assertions = $assertionsResolver->resolveIfFalse($method_storage, $class_storage);
-
-            if ($if_false_assertions) {
-                $statements_analyzer->node_data->setIfFalseAssertions(
-                    $stmt,
-                    array_map(
-                        static fn(Possibilities $assertion): Possibilities => CallAnalyzer::resolveTraitSelf(
-                            $assertion->getUntemplatedCopy($template_result, null, $codebase),
-                            $trait_self_class,
-                        ),
-                        CallAnalyzer::resolveStaticPropertyAssertionClasses(
-                            CallAnalyzer::getAssertionsOnArgs(
-                                $if_false_assertions,
-                                $method_storage,
-                                $stmt->getArgs(),
-                                $statements_analyzer->node_data,
-                                $context->strict_types,
-                            ),
-                            $codebase,
-                            $context,
-                            $trait_self_class,
-                            $assertion_static_class,
-                            $fq_class_name,
-                        ),
-                    ),
-                );
-            }
+            CallAnalyzer::applyMethodAssertions(
+                $statements_analyzer,
+                $stmt,
+                $stmt_name,
+                $stmt->getArgs(),
+                $method_id,
+                $method_storage,
+                $class_storage,
+                $template_result,
+                $context,
+                $fq_class_name,
+                $assertion_this_var_id,
+                $assertion_this_var_id,
+                $assertion_static_class,
+                $assertion_static_type,
+                $assertion_static_type,
+            );
         } elseif (!$stmt->isFirstClassCallable()) {
             // a builtin method known from reflection only: it may do what its reflected storage says,
             // which is anything but for the few known to be pure, as for instance calls
@@ -606,32 +567,13 @@ final class ExistingAtomicStaticCallAnalyzer
             $return_type_candidate = TypeVariableTracker::resolveTypeVariables($return_type_candidate, $codebase);
         }
 
-        if ($config->eventDispatcher->hasAfterMethodCallAnalysisHandlers()) {
-            $file_manipulations = [];
-
-            $appearing_method_id = $codebase->methods->getAppearingMethodId($method_id);
-
-            if ($appearing_method_id !== null && $declaring_method_id) {
-                $event = new AfterMethodCallAnalysisEvent(
-                    $stmt,
-                    (string) $method_id,
-                    (string) $appearing_method_id,
-                    (string) $declaring_method_id,
-                    $context,
-                    $statements_analyzer,
-                    $codebase,
-                    $file_manipulations,
-                    $return_type_candidate,
-                );
-                $config->eventDispatcher->dispatchAfterMethodCallAnalysis($event);
-                $file_manipulations = $event->getFileReplacements();
-                $return_type_candidate = $event->getReturnTypeCandidate();
-            }
-
-            if ($file_manipulations) {
-                FileManipulationBuffer::add($statements_analyzer->getFilePath(), $file_manipulations);
-            }
-        }
+        $return_type_candidate = CallAnalyzer::dispatchAfterMethodCallAnalysis(
+            $statements_analyzer,
+            $stmt,
+            $method_id,
+            $context,
+            $return_type_candidate,
+        );
 
         $return_type_candidate ??= Type::getMixed();
 
@@ -702,7 +644,7 @@ final class ExistingAtomicStaticCallAnalyzer
         Context $context,
         string $fq_class_name,
         ClassLikeStorage $class_storage,
-        Config $config,
+        ?FunctionLikeStorage $overload = null,
     ): ?Union {
         $return_type_candidate = $codebase->methods->getMethodReturnType(
             $codebase,
@@ -712,28 +654,9 @@ final class ExistingAtomicStaticCallAnalyzer
             $args,
         );
 
+        $return_type_candidate = $overload->return_type ?? $return_type_candidate;
+
         if ($return_type_candidate) {
-            if ($template_result->template_types) {
-                $bindable_template_types = $return_type_candidate->getTemplateTypes();
-
-                foreach ($bindable_template_types as $template_type) {
-                    if (!isset(
-                        $template_result->lower_bounds
-                        [$template_type->param_name]
-                        [$template_type->defining_class],
-                    )) {
-                        $template_result->lower_bounds[$template_type->param_name]
-                            = self::resolveTemplateResultLowerBound(
-                                $codebase,
-                                $stmt,
-                                $class_storage,
-                                $method_id,
-                                $template_type,
-                            );
-                    }
-                }
-            }
-
             [$static_type, $final] = self::getStaticClassType(
                 $codebase,
                 $stmt,
@@ -744,21 +667,14 @@ final class ExistingAtomicStaticCallAnalyzer
                 $return_type_candidate,
             );
 
-            if ($template_result->lower_bounds) {
-                $return_type_candidate = TypeExpander::expandUnion(
-                    $codebase,
-                    $return_type_candidate,
-                    null,
-                    null,
-                    null,
-                );
-
-                $return_type_candidate = TemplateInferredTypeReplacer::replace(
-                    $return_type_candidate,
-                    $template_result,
-                    $codebase,
-                );
-            }
+            $return_type_candidate = MethodCallReturnTypeFetcher::replaceTemplateTypes(
+                $return_type_candidate,
+                $template_result,
+                $method_id,
+                count($stmt->getArgs()),
+                $codebase,
+                $class_storage,
+            );
 
             $return_type_candidate = TypeExpander::expandUnion(
                 $codebase,
@@ -771,42 +687,30 @@ final class ExistingAtomicStaticCallAnalyzer
                 $final,
             );
 
-            $secondary_return_type_location = null;
-
-            $return_type_location = $codebase->methods->getMethodReturnTypeLocation(
+            MethodCallReturnTypeFetcher::checkExternallyDefinedReturnType(
+                $statements_analyzer,
+                $stmt,
+                $context,
                 $method_id,
-                $secondary_return_type_location,
+                $return_type_candidate,
             );
-
-            if ($secondary_return_type_location) {
-                $return_type_location = $secondary_return_type_location;
-            }
-
-            // only check the type locally if it's defined externally, reporting its issues at one call
-            if ($return_type_location && !$config->isInProjectDirs($return_type_location->file_path)) {
-                $issue_group = IssueBuffer::setIssueGroup(
-                    $return_type_location->file_path . ':' . $return_type_location->raw_file_start,
-                );
-
-                try {
-                    /** @psalm-suppress UnusedMethodCall Actually generates issues */
-                    $return_type_candidate->check(
-                        $statements_analyzer,
-                        new CodeLocation($statements_analyzer, $stmt),
-                        $statements_analyzer->getSuppressedIssues(),
-                        $context->phantom_classes,
-                        true,
-                        false,
-                        false,
-                        $context,
-                    );
-                } finally {
-                    IssueBuffer::setIssueGroup($issue_group);
-                }
-            }
         }
 
         return $return_type_candidate;
+    }
+
+    /**
+     * The template a `class-string<T>` names
+     *
+     * @psalm-pure
+     */
+    private static function getTemplateParamOfClass(TTemplateParamClass $class_string): TTemplateParam
+    {
+        return new TTemplateParam(
+            $class_string->param_name,
+            $class_string->as_type ? new Union([$class_string->as_type]) : Type::getObject(),
+            $class_string->defining_class,
+        );
     }
 
     /**
@@ -829,13 +733,7 @@ final class ExistingAtomicStaticCallAnalyzer
         if ($lhs_type_part instanceof TTemplateParam) {
             $static_type = $lhs_type_part;
         } elseif ($lhs_type_part instanceof TTemplateParamClass) {
-            $static_type = new TTemplateParam(
-                $lhs_type_part->param_name,
-                $lhs_type_part->as_type
-                    ? new Union([$lhs_type_part->as_type])
-                    : Type::getObject(),
-                $lhs_type_part->defining_class,
-            );
+            $static_type = self::getTemplateParamOfClass($lhs_type_part);
         } elseif ($stmt->class instanceof PhpParser\Node\Name
             && count($stmt->class->getParts()) === 1
             && in_array(strtolower($stmt->class->getFirst()), ['self', 'static', 'parent'], true)
@@ -936,71 +834,6 @@ final class ExistingAtomicStaticCallAnalyzer
         $visitor = new ContainsStaticVisitor;
         $visitor->traverse($type);
         return $visitor->matches();
-    }
-
-    /**
-     * @return non-empty-array<string,non-empty-list<TemplateBound>>
-     * @psalm-mutation-free
-     */
-    private static function resolveTemplateResultLowerBound(
-        Codebase $codebase,
-        StaticCall $stmt,
-        ClassLikeStorage $class_storage,
-        MethodIdentifier $method_id,
-        TTemplateParam $template_type,
-    ): array {
-        if ($template_type->param_name === 'TFunctionArgCount') {
-            return [
-                'fn-' . $method_id->method_name => [
-                    new TemplateBound(
-                        Type::getInt(false, count($stmt->getArgs())),
-                    ),
-                ],
-            ];
-        }
-
-        if ($template_type->param_name === 'TPhpMajorVersion') {
-            return [
-                'fn-' . $method_id->method_name => [
-                    new TemplateBound(
-                        Type::getInt(false, $codebase->getMajorAnalysisPhpVersion()),
-                    ),
-                ],
-            ];
-        }
-
-        if ($template_type->param_name === 'TPhpVersionId') {
-            return [
-                'fn-' . $method_id->method_name => [
-                    new TemplateBound(
-                        Type::getInt(
-                            false,
-                            $codebase->analysis_php_version_id,
-                        ),
-                    ),
-                ],
-            ];
-        }
-
-        if (isset(
-            $class_storage->template_extended_params[$template_type->defining_class][$template_type->param_name],
-        )) {
-            $extended_param_type = $class_storage->template_extended_params[
-                $template_type->defining_class
-            ][$template_type->param_name];
-
-            return [
-                ($template_type->defining_class) => [
-                    new TemplateBound($extended_param_type),
-                ],
-            ];
-        }
-
-        return [
-            ($template_type->defining_class) => [
-                new TemplateBound(Type::getNever()),
-            ],
-        ];
     }
 
     /**

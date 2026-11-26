@@ -448,7 +448,8 @@ function array_fill_keys(array $keys, $value): array
  * @param non-empty-string $pattern
  * @param array<TKey, string> $array
  * @param 0|1 $flags 1=PREG_GREP_INVERT
- * @return array<TKey, string>
+ * @return array<TKey, string>|false
+ * @psalm-ignore-falsable-return
  * @psalm-flow ($array) -> return
  */
 function preg_grep($pattern, array $array, $flags = 0)
@@ -949,12 +950,20 @@ function array_sum(array $array) {}
 /**
  * @param array $array
  *
+ * The product of booleans is whether they are all true, as 1 or 0
+ *
  * @return (
- *     $array is array<int>
- *     ? int
- *     : ($array is array<float>
- *         ? float
- *         : float|int
+ *     $array is array<true>
+ *     ? 1
+ *     : ($array is array<bool>
+ *         ? 0|1
+ *         : ($array is array<int>
+ *             ? int
+ *             : ($array is array<float>
+ *                 ? float
+ *                 : float|int
+ *             )
+ *         )
  *     )
  * )
  */
@@ -983,9 +992,11 @@ function array_product(array $array) {}
 function filter_var(mixed $value, int $filter = FILTER_DEFAULT, array|int $options = 0): mixed {}
 
 /**
+ * The attributes of an allowed tag pass through, so only stripping every tag escapes html
+ *
  * @psalm-pure
  *
- * @psalm-taint-escape html
+ * @psalm-taint-escape ($allowed_tags is null ? "html" : null)
  * @psalm-flow ($string) -> return
  */
 function strip_tags(string $string, ?string $allowed_tags = null) : string {}
@@ -1055,6 +1066,8 @@ function htmlspecialchars_decode(string $string, ?int $flags = null) : string {}
  * @psalm-taint-escape html_attribute
  * @psalm-taint-escape url_scheme
  * @psalm-flow ($string) -> return
+ *
+ * @return ($string is non-empty-string ? non-empty-string : string)
  */
 function urlencode(string $string) : string {}
 
@@ -1068,8 +1081,28 @@ function urlencode(string $string) : string {}
  * @psalm-taint-escape html_attribute
  * @psalm-taint-escape url_scheme
  * @psalm-flow ($string) -> return
+ *
+ * @return ($string is non-empty-string ? non-empty-string : string)
  */
 function rawurlencode(string $string) : string {}
+
+/**
+ * @psalm-pure
+ *
+ * @psalm-flow ($string) -> return
+ *
+ * @return ($string is non-empty-string ? non-empty-string : string)
+ */
+function urldecode(string $string) : string {}
+
+/**
+ * @psalm-pure
+ *
+ * @psalm-flow ($string) -> return
+ *
+ * @return ($string is non-empty-string ? non-empty-string : string)
+ */
+function rawurldecode(string $string) : string {}
 
 /**
  * @psalm-pure
@@ -1552,12 +1585,15 @@ function printf(string $format, ...$values) {}
 function vprintf(string $format, array $values) {}
 
 /**
+ * A local path, which isn't the URL of a server
+ *
  * @psalm-pure
  *
  * @return string|false
  * @psalm-ignore-falsable-return
  *
  * @psalm-flow ($path) -> return
+ * @psalm-taint-escape ssrf
  */
 function realpath(string $path) {}
 
@@ -1733,6 +1769,10 @@ function ldap_escape(string $value, string $ignore = "", int $flags = 0) : strin
  *
  * @param int<1, 2147483647> $depth
  * @return mixed
+ *
+ * A JSON string can hold any character as an escape sequence: the taints escapes of the JSON text removed are given
+ * back in a plugin
+ *
  * @psalm-flow ($json) -(unserialization)-> return
  */
 function json_decode(string $json, ?bool $associative = null, int $depth = 512, int $flags = 0) {}

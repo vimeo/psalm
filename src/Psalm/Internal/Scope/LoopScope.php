@@ -11,6 +11,7 @@ use Psalm\Type\Union;
 
 use function array_intersect_key;
 use function max;
+use function str_contains;
 
 /**
  * @internal
@@ -78,6 +79,13 @@ final class LoopScope
     public array $possibly_redefined_loop_parent_vars = [];
 
     /**
+     * The references where a break leaves the loop: one that a break rebound is not bound as before after the loop
+     *
+     * @var list<array<string, string>>
+     */
+    public array $references_in_scope_at_breaks = [];
+
+    /**
      * @var array<string, Union>
      */
     public array $possibly_defined_loop_parent_vars = [];
@@ -96,6 +104,14 @@ final class LoopScope
      * @var array<string, Union>|null
      */
     public ?array $vars_at_breaks = null;
+
+    /**
+     * The properties and offsets known before the loop that a break out of it no longer knows (their object or array
+     * was assigned): they aren't known after the loop either
+     *
+     * @var array<string, true>
+     */
+    public array $forgotten_at_breaks = [];
 
     /**
      * Whether a break leaves a `try` of the loop body that has a `finally`, which changes the variables after the break
@@ -163,6 +179,14 @@ final class LoopScope
 
         $this->addParentRemoveVarsAtJump($context);
         $this->vars_at_breaks = self::addVarsAtJump($this->vars_at_breaks, $context->vars_in_scope);
+
+        foreach ($this->loop_parent_context->vars_in_scope as $var_id => $_) {
+            if (!isset($context->vars_in_scope[$var_id])
+                && (str_contains($var_id, '->') || str_contains($var_id, '['))
+            ) {
+                $this->forgotten_at_breaks[$var_id] = true;
+            }
+        }
     }
 
     /**

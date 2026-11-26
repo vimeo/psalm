@@ -12,18 +12,27 @@ use Psalm\Exception\TypeParseTreeException;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Type\TypeArgumentProjection;
 use Psalm\Type;
+use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TClassConstant;
+use Psalm\Type\Atomic\TConditional;
 use Psalm\Type\Atomic\TGenericObject;
+use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TIntRange;
+use Psalm\Type\Atomic\TIntersection;
+use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
+use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TTemplateKeyOf;
+use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 use ReflectionFunction;
 use ReflectionParameter;
 use Stringable;
 use Traversable;
 
+use function array_keys;
 use function array_map;
 use function function_exists;
 use function mb_substr;
@@ -68,12 +77,12 @@ final class TypeParseTest extends TestCase
 
     public function testThisIntersection(): void
     {
-        $this->assertSame('Foo', (string) Type::parseString('$this&Foo'));
+        $this->assertSame('Foo&static', (string) Type::parseString('$this&Foo'));
     }
 
     public function testThisIntersectionInsideGenericParam(): void
     {
-        $this->assertSame('B<Foo>', (string) Type::parseString('B<$this&Foo>'));
+        $this->assertSame('B<Foo&static>', (string) Type::parseString('B<$this&Foo>'));
     }
 
     public function testThisUnionInsideGenericParam(): void
@@ -150,7 +159,7 @@ final class TypeParseTest extends TestCase
 
     public function testLiteralStringIdDoesNotUseEscapesPhpDoesNotHave(): void
     {
-        $this->assertSame("'\\007\\010\\177'", (new TLiteralString("\x07\x08\x7f"))->getId());
+        $this->assertSame('"\\007\\010\\177"', (new TLiteralString("\x07\x08\x7f"))->getId());
     }
 
     public function testLiteralStringIdKeepsAnEscapedBackslashBeforeAOrB(): void
@@ -160,7 +169,60 @@ final class TypeParseTest extends TestCase
 
     public function testLiteralStringIdKeepsTheEscapesPhpHas(): void
     {
-        $this->assertSame("'\\n\\t\\r\\f\\v\\033\\000'", (new TLiteralString("\n\t\r\f\v\e\0"))->getId());
+        $this->assertSame('"\\n\\t\\r\\f\\v\\033\\000"', (new TLiteralString("\n\t\r\f\v\e\0"))->getId());
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     * @psalm-pure
+     */
+    public static function literalStringProvider(): iterable
+    {
+        yield 'single quote' => ["it's"];
+        yield 'double quote' => ['a"b'];
+        yield 'both quotes' => ['a"b\'c'];
+        yield 'newline' => ["a\nb"];
+        yield 'escape' => ["\x07\x1b"];
+        yield 'end of docblock' => ['a*/b'];
+        yield 'backslash' => ['a\\'];
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     * @psalm-pure
+     */
+    public static function unterminatedLiteralProvider(): iterable
+    {
+        yield 'no closing quote' => ["'foo"];
+        yield 'other closing quote' => ['"foo\''];
+        yield 'escaped closing quote' => ["'foo\\'"];
+        yield 'lone quote' => ['"'];
+        yield 'unterminated key' => ['array{"a: int}'];
+    }
+
+    #[DataProvider('unterminatedLiteralProvider')]
+    public function testUnterminatedStringLiteralIsInvalid(string $type): void
+    {
+        $this->expectException(TypeParseTreeException::class);
+        Type::parseString($type);
+    }
+
+    #[DataProvider('literalStringProvider')]
+    public function testLiteralStringReadsBackFromItsIdAndDocblockText(string $value): void
+    {
+        $type = new TLiteralString($value);
+
+        $from_id = Type::parseString($type->getId())->getSingleAtomic();
+        $this->assertInstanceOf(TLiteralString::class, $from_id);
+        $this->assertSame($value, $from_id->value);
+
+        $docblock_text = $type->toNamespacedString(null, [], null, false);
+        $this->assertStringNotContainsString('*/', $docblock_text);
+        $this->assertStringNotContainsString("\n", $docblock_text);
+
+        $from_docblock_text = Type::parseString($docblock_text)->getSingleAtomic();
+        $this->assertInstanceOf(TLiteralString::class, $from_docblock_text);
+        $this->assertSame($value, $from_docblock_text->value);
     }
 
     public function testGenericWithTrailingComma(): void
@@ -774,8 +836,33 @@ final class TypeParseTest extends TestCase
 
     public function testTKeyedArrayWithQuotedKeys(): void
     {
-        $this->assertSame('array{\'\\"\': int, \'\\\'\': string}', (string) Type::parseString('array{\'"\': int, \'\\\'\': string}'));
-        $this->assertSame('array{\'\\"\': int, \'\\\'\': string}', (string) Type::parseString('array{"\\"": int, "\\\'": string}'));
+        $this->assertSame('array{\'"\': int, \'\\\'\': string}', (string) Type::parseString('array{\'"\': int, \'\\\'\': string}'));
+        // `\'` is no escape in a double-quoted string: the key holds the backslash too
+        $this->assertSame(
+            'array{\'"\': int, \'\\\\\\\'\': string}',
+            (string) Type::parseString('array{"\\"": int, "\\\'": string}'),
+        );
+    }
+
+    public function testTKeyedArrayKeysRoundTrip(): void
+    {
+        $keys = ['"', "a\nb", "a\r\nb", "nul\0", 'Foo\\Bar', "it's", "tab\there", "\x7f", "\e\f\v", "\$x\n", "\\\n\"", "\0001", 'end\\', "end\\\n", "x\\'y", "a,b: {c}|d", "\xc3\xa9\n", '$x', '\\n'];
+
+        foreach ($keys as $key) {
+            $printed = TKeyedArray::make([$key => Type::getInt()])->getId();
+            $type = Type::parseString($printed)->getSingleAtomic();
+
+            $this->assertInstanceOf(TKeyedArray::class, $type);
+            $this->assertSame([$key], array_keys($type->properties), $printed);
+        }
+    }
+
+    public function testTKeyedArrayWithEscapeSequencesInKeys(): void
+    {
+        $type = Type::parseString('array{"a\\r\\nb": int, \'c\\nd\': string}')->getSingleAtomic();
+
+        $this->assertInstanceOf(TKeyedArray::class, $type);
+        $this->assertSame(["a\r\nb", 'c\\nd'], array_keys($type->properties));
     }
 
     public function testTKeyedArrayWithClassConstantValueType(): void
@@ -1200,7 +1287,7 @@ final class TypeParseTest extends TestCase
     public function testConditionalTypeOnTypeDependingOnTemplate(): void
     {
         $this->assertSame(
-            '(value-of<T> is string ? string : int)',
+            '(value-of<T: as array<array-key, mixed>> is string ? string : int)',
             (string) Type::parseString(
                 '(value-of<T> is string ? string : int)',
                 null,
@@ -1212,7 +1299,7 @@ final class TypeParseTest extends TestCase
     public function testNegatedConditionalTypeOnTypeDependingOnTemplate(): void
     {
         $this->assertSame(
-            '(value-of<T> is string ? int : string)',
+            '(value-of<T: as array<array-key, mixed>> is string ? int : string)',
             (string) Type::parseString(
                 '(value-of<T> is not string ? string : int)',
                 null,
@@ -1533,10 +1620,34 @@ final class TypeParseTest extends TestCase
         );
     }
 
+    public function testKeyOfGenericObjectReadsLiteralArgumentsAsTheirType(): void
+    {
+        $this->assertSame(
+            'Foo<int|string>',
+            Type::parseString('Foo<5|6|"a"|"b"|non-empty-string>')->getSingleAtomic()->getKey(),
+        );
+        $this->assertSame(
+            'Foo<float, array>&Bar<5>',
+            Type::parseString('Foo<1.5|2.5, array{a: int}>&Bar<5>')->getSingleAtomic()->getKey(),
+        );
+    }
+
+    public function testKeyOfConditionalNamesItsSubject(): void
+    {
+        $this->assertSame(
+            'TConditional<value-of<T: as array<array-key, mixed>> is string ? string : int>',
+            Type::parseString(
+                '(value-of<T> is string ? string : int)',
+                null,
+                ['T' => ['' => Type::getArray()]],
+            )->getSingleAtomic()->getKey(),
+        );
+    }
+
     public function testValueOfTemplate(): void
     {
         $this->assertSame(
-            'value-of<T>',
+            'value-of<T: as array<array-key, mixed>>',
             (string)Type::parseString('value-of<T>', null, ['T' => ['' => Type::getArray()]]),
         );
     }
@@ -2027,6 +2138,30 @@ final class TypeParseTest extends TestCase
         self::assertTrue($type->equals(Type::parseString($type->toNamespacedString(null, [], null, false))));
     }
 
+    public function testArrayOfUnionWithAQuotedBracketIsParenthesisedInPhpdoc(): void
+    {
+        $type = Type::parseString("array<value-of<array{'<': int}>|z>");
+        self::assertSame("(value-of<array{'<': int}>|z)[]", $type->toNamespacedString(null, [], null, true));
+    }
+
+    public function testArrayOfUnionWrittenAsOneTypeIsNotParenthesisedInPhpdoc(): void
+    {
+        $type = new Union([new TArray([
+            Type::getArrayKey(),
+            new Union([new TInt(), new TIntRange(0, 5)]),
+        ])]);
+        self::assertSame('int[]', $type->toNamespacedString(null, [], null, true));
+    }
+
+    public function testIntersectionParenthesisesAUnionTemplateBoundInPhpdoc(): void
+    {
+        $type = new Union([new TIntersection([
+            new Union([new TTemplateParam('T', Type::parseString('Ns\A|Ns\B'), 'fn-foo')]),
+            new Union([new TNamedObject('Ns\Foo')]),
+        ])]);
+        self::assertSame('(A|B)&Foo', $type->toNamespacedString('Ns', [], null, true));
+    }
+
     public function testInterfaceStringKeepsItsKindInNamespacedString(): void
     {
         $type = Type::parseString('interface-string');
@@ -2190,5 +2325,165 @@ final class TypeParseTest extends TestCase
             'The * type argument is only for the type arguments of a class, not of ' . $generic,
         );
         Type::parseString($string);
+    }
+
+    public function testShapesKeepTheirTypesInNamespacedString(): void
+    {
+        foreach ([
+            'array{a: int, ...<string, string>}',
+            'list{int, ...<string>}',
+            'array{a: int, b?: string}',
+            'list{0: int, 1?: string}',
+            'list{int, string}',
+            'list<int>',
+            'non-empty-list<int>',
+        ] as $type_string) {
+            $type = Type::parseString($type_string);
+            self::assertSame($type_string, $type->toNamespacedString(null, [], null, false));
+            self::assertTrue($type->equals(Type::parseString($type->toNamespacedString(null, [], null, false))));
+        }
+
+        $type = Type::parseString('array{a: Ns\Foo, ...<string, Ns\Bar>}');
+        self::assertSame(
+            'array{a: \Ns\Foo, ...<string, \Ns\Bar>}',
+            $type->toNamespacedString(null, [], null, false),
+        );
+        self::assertSame('array{a: Foo, ...<string, Bar>}', $type->toNamespacedString('Ns', [], null, false));
+    }
+
+    /**
+     * @return iterable<string, array{string, int, ?string, bool}>
+     * @psalm-pure
+     */
+    public static function nativeIntersectionProvider(): iterable
+    {
+        yield 'classes before PHP 8.1' => ['Ns\Foo&Other\Bar', 8_00_00, '\Other\Bar', false];
+        yield 'classes' => ['Ns\Foo&Other\Bar', 8_01_00, 'Foo&\Other\Bar', true];
+        yield 'Closure before PHP 8.1' => ['Closure&Ns\Foo', 7_04_00, 'Foo', false];
+        yield 'Closure' => ['Closure&Ns\Foo', 8_01_00, '\Closure&Foo', true];
+        yield 'generic class' => ['Ns\Foo<int>&Countable', 8_01_00, 'Foo&\Countable', false];
+        yield 'callable' => ['Ns\Foo&callable(int):void', 8_01_00, 'Foo', false];
+        yield 'object shape' => ['Ns\Foo&object{a: int}', 8_01_00, 'Foo', false];
+        yield 'iterable member' => ['Ns\Foo&iterable', 8_01_00, 'Foo', false];
+        yield 'iterable' => ['iterable&Ns\Foo', 8_01_00, 'iterable', false];
+        yield 'nullable before PHP 8.2' => ['(Ns\Foo&Countable)|null', 8_01_00, null, false];
+        yield 'nullable' => ['(Ns\Foo&Countable)|null', 8_02_00, '(Foo&\Countable)|null', true];
+        yield 'union' => ['(Ns\Foo&Countable)|Other\Bar', 8_02_00, '(Foo&\Countable)|\Other\Bar', true];
+    }
+
+    #[DataProvider('nativeIntersectionProvider')]
+    public function testNativeIntersection(
+        string $string,
+        int $php_version_id,
+        ?string $php_type,
+        bool $fully_expressed,
+    ): void {
+        $type = Type::parseString($string);
+
+        self::assertSame($php_type, $type->toPhpString('Ns', [], null, $php_version_id));
+        self::assertSame($fully_expressed, $type->canBeFullyExpressedInPhp($php_version_id));
+    }
+
+    public function testUnionDeclaresNoRedundantIntersection(): void
+    {
+        $countable = ['Countable' => new TNamedObject('Countable')];
+        $same_native_intersection = new Union([
+            new TGenericObject('Ns\Foo', [Type::getInt()], false, false, $countable),
+            new TGenericObject('Ns\Foo', [Type::getString()], false, false, $countable),
+        ]);
+        $class_and_its_intersection = new Union([
+            new TNamedObject('Ns\Foo', false, false, $countable),
+            new TNamedObject('Ns\Foo'),
+        ]);
+        $same_classes = new Union([
+            new TNamedObject('Ns\Foo', false, false, $countable),
+            new TNamedObject('Countable', false, false, ['Ns\Foo' => new TNamedObject('Ns\Foo')]),
+        ]);
+
+        self::assertSame('Foo&\Countable', $same_native_intersection->toPhpString('Ns', [], null, 8_02_00));
+        self::assertSame('Foo', $class_and_its_intersection->toPhpString('Ns', [], null, 8_02_00));
+        self::assertSame('Foo&\Countable', $same_classes->toPhpString('Ns', [], null, 8_02_00));
+    }
+
+    public function testStaticGenericObjectIsDeclaredSelfBeforePhp8(): void
+    {
+        $type = new Union([new TGenericObject('Ns\Foo', [Type::getInt()], false, true)]);
+
+        self::assertSame('self', $type->toPhpString('Ns', [], 'Ns\Foo', 7_04_00));
+        self::assertSame('static', $type->toPhpString('Ns', [], 'Ns\Foo', 8_00_00));
+    }
+
+    public function testConditionalKeepsItsTypesInNamespacedString(): void
+    {
+        $conditional = new TConditional(
+            'T',
+            'fn-f',
+            Type::getMixed(),
+            Type::getTrue(),
+            new Union([new TNamedObject('Ns\Foo')]),
+            Type::getString(),
+        );
+        $type = new Union([TKeyedArray::make(['a' => Type::getInt()], null, [Type::getString(), new Union([$conditional])])]);
+
+        self::assertSame(
+            'array{a: int, ...<string, (T is true ? Foo : string)>}',
+            $type->toNamespacedString('Ns', [], null, false),
+        );
+    }
+
+    /**
+     * @return iterable<string, array{string, int, ?string, bool}>
+     * @psalm-pure
+     */
+    public static function nativeTypeProvider(): iterable
+    {
+        yield 'mixed|null' => ['mixed|null', 8_00_00, 'mixed', true];
+        yield 'mixed|false' => ['mixed|false', 8_00_00, 'mixed', true];
+        yield 'mixed|null before PHP 8' => ['mixed|null', 7_04_00, null, false];
+        yield 'non-empty-mixed' => ['non-empty-mixed', 8_00_00, 'mixed', false];
+        yield 'non-empty-mixed|null' => ['non-empty-mixed|null', 8_00_00, 'mixed', false];
+        yield 'non-empty-string' => ['non-empty-string', 8_00_00, 'string', false];
+        yield 'non-falsy-string' => ['non-falsy-string', 8_00_00, 'string', false];
+        yield 'non-empty-array' => ['non-empty-array', 8_00_00, 'array', false];
+        yield 'array' => ['array', 8_00_00, 'array', true];
+        yield 'pure-callable' => ['pure-callable', 8_00_00, 'callable', false];
+        yield 'callable' => ['callable', 8_00_00, 'callable', true];
+        yield 'properties-of' => ['properties-of<stdClass>', 8_00_00, 'array', false];
+        yield 'int before PHP 7' => ['int', 5_06_00, null, false];
+        yield 'class before PHP 7' => ['Exception', 5_06_00, null, false];
+        yield 'void before PHP 7.1' => ['void', 7_00_00, null, false];
+        yield 'iterable before PHP 7.1' => ['iterable', 7_00_00, null, false];
+        yield 'nullable before PHP 7.1' => ['?int', 7_00_00, null, false];
+        yield 'object before PHP 7.2' => ['object', 7_01_00, null, false];
+        yield 'object shape before PHP 7.2' => ['object{a: int}', 7_01_00, null, false];
+        yield 'object shape' => ['object{a: int}', 7_02_00, 'object', false];
+        yield 'array-key before PHP 8' => ['array-key', 7_04_00, null, false];
+        yield 'array-key' => ['array-key', 8_00_00, 'int|string', true];
+        yield 'nullable array-key' => ['array-key|null', 8_00_00, 'int|string|null', true];
+        yield 'array-key and string' => ['array-key|string', 8_00_00, 'int|string', true];
+        yield 'key-of' => ['key-of<array{a: int}>', 8_00_00, null, false];
+        yield 'true before PHP 8.2' => ['true', 8_01_00, 'bool', false];
+        yield 'true' => ['true', 8_02_00, 'true', true];
+        yield 'false before PHP 8.2' => ['false', 8_01_00, 'bool', false];
+        yield 'false' => ['false', 8_02_00, 'false', true];
+        yield 'null before PHP 8.2' => ['null', 8_01_00, null, false];
+        yield 'null' => ['null', 8_02_00, 'null', true];
+        yield 'nullable true before PHP 8.2' => ['true|null', 8_01_00, 'bool|null', false];
+        yield 'nullable true' => ['true|null', 8_02_00, 'true|null', true];
+        yield 'nullable false' => ['false|null', 8_02_00, 'false|null', true];
+        yield 'string|true before PHP 8.2' => ['string|true', 8_01_00, 'string|bool', false];
+        yield 'string|true' => ['string|true', 8_02_00, 'string|true', true];
+        yield 'string|false' => ['string|false', 8_02_00, 'string|false', true];
+        yield 'string|false before PHP 8.2' => ['string|false', 8_00_00, 'string|false', true];
+        yield 'nullable false before PHP 8.2' => ['false|null', 8_01_00, 'bool|null', false];
+    }
+
+    #[DataProvider('nativeTypeProvider')]
+    public function testNativeType(string $string, int $php_version_id, ?string $php_type, bool $fully_expressed): void
+    {
+        $type = Type::parseString($string);
+
+        self::assertSame($php_type, $type->toPhpString(null, [], null, $php_version_id));
+        self::assertSame($fully_expressed, $type->canBeFullyExpressedInPhp($php_version_id));
     }
 }

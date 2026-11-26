@@ -23,6 +23,124 @@ final class ForTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'forFromAnIntBelowEveryValueOfTheEndIsEntered' => [
+                'code' => '<?php
+                    /**
+                     * @param int<1, max> $size
+                     * @return non-empty-list<int>
+                     */
+                    function reproduce(int $size): array {
+                        $result = [];
+                        for ($i = 1; $i <= $size; $i++) {
+                            $result[] = $i;
+                        }
+
+                        return $result;
+                    }
+
+                    /** @param int<min, 9> $n */
+                    function countDown(int $n): int {
+                        for ($i = 10; $i > $n; $i--) {
+                            $last = $i;
+                        }
+
+                        return $last;
+                    }
+
+                    /** @param non-empty-list<int> $a */
+                    function lastItem(array $a): int {
+                        for ($i = 0; $i < count($a); $i++) {
+                            $item = $a[$i];
+                        }
+
+                        return $item;
+                    }',
+            ],
+            'varAssignedRightOfAndInTheConditionIsDefinedInTheBodyAndStep' => [
+                'code' => '<?php
+                    function f(string $s): void {
+                        for ($i = 0; $i < 9 && false !== $j = strpos($s, ":"); $i = $j) {
+                            echo $j;
+                        }
+                    }',
+            ],
+            'varAssignedRightOfAndInTheLastOfTheCommaSeparatedConditionsIsDefinedInTheBody' => [
+                'code' => '<?php
+                    function f(string $s): void {
+                        for ($i = 0; $k = $i, $i < 9 && false !== $j = strpos($s, ":", $k); $i = $j + 1) {
+                            echo $j;
+                        }
+                    }',
+            ],
+            'operandOfTheAndOfTheConditionNarrowsTheNextOnes' => [
+                'code' => '<?php
+                    function g(): ?string {
+                        return rand(0, 1) ? "abcd" : null;
+                    }
+                    for ($x = g(); $x !== null && strlen($x) > 3 && $x[0] === "a"; $x = g()) {
+                        echo $x;
+                    }',
+            ],
+            'varAssignedAndNarrowedInTheConditionIsNotRedundantlyNarrowedAgain' => [
+                'code' => '<?php
+                    function f(bool $b, int $n): void {
+                        for (; $b && ($x = rand(0, 1) ? "a" : null) !== null && strlen($x) > $n;) {
+                            echo $x;
+                        }
+                    }',
+            ],
+            'clauseOfTheLeftOperandOfTheAndOfTheConditionHoldsInTheBody' => [
+                'code' => '<?php
+                    function f(?string $a, ?string $b, bool $more): void {
+                        for (; ($a !== null || $b !== null) && $more;) {
+                            if ($a === null) {
+                                echo strlen($b);
+                            }
+                            $more = (bool) rand(0, 1);
+                        }
+                    }',
+            ],
+            'varUnsetBeforeContinueAndAssignedByThePostExpressionStaysDefined' => [
+                'code' => '<?php
+                    function f(): int {
+                        $x = 0;
+                        for ($i = 0; $i < 3; $i++, $x = 1) {
+                            if ($i) {
+                                unset($x);
+                                continue;
+                            }
+                        }
+                        return $x;
+                    }',
+            ],
+            'forWithoutAConditionIsOnlyLeftByABreak' => [
+                'code' => '<?php
+                    function withInit(): string {
+                        for ($i = 0;; $i++) {
+                            echo $i;
+
+                            if (rand(0, 1)) {
+                                $x = "s";
+                                break;
+                            }
+                        }
+
+                        return $x;
+                    }
+
+                    function withATrueCondition(): string {
+                        for ($i = 0; true; $i++) {
+                            echo $i;
+
+                            if (rand(0, 1)) {
+                                $x = "s";
+                                break;
+                            }
+                        }
+
+                        return $x;
+                    }',
+            ],
             'forCounterIncrementedThroughAReferenceIsWidened' => [
                 'code' => <<<'PHP'
                     <?php
@@ -581,6 +699,105 @@ final class ForTest extends TestCase
                     '$z===' => '1|2',
                 ],
             ],
+            'countClauseOnMixedPropertyAppendedToInNestedLoop' => [
+                'code' => '<?php
+                    final class Features {
+                        public $props = [];
+                    }
+
+                    final class Parser {
+                        public $features;
+
+                        public function __construct() {
+                            $this->features = new Features();
+                        }
+
+                        private function other(): void {
+                            $this->features->props = [];
+                        }
+
+                        public function parse(int $n, int $m): void {
+                            $this->other();
+                            for ($i = 0; $i < $n; ++$i) {
+                                if ($i >= 32 || count($this->features->props) >= 32) {
+                                    break;
+                                }
+                                for ($j = 0; $j < $m; ++$j) {
+                                    if ($j >= 32 || count($this->features->props) >= 32) {
+                                        break;
+                                    }
+                                    $c = count($this->features->props);
+                                    $this->features->props[$c] = $j;
+                                }
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingPropertyType', 'MixedPropertyAssignment', 'MixedPropertyFetch', 'MixedArgument', 'MixedArrayAssignment'],
+            ],
+            'countClauseOnMixedVariableWrittenInNestedLoop' => [
+                'code' => '<?php
+                    /** @param mixed $props */
+                    function f($props, int $n, int $m): void {
+                        for ($i = 0; $i < $n; ++$i) {
+                            if (count($props) >= 32) {
+                                break;
+                            }
+                            for ($j = 0; $j < $m; ++$j) {
+                                if (count($props) >= 32) {
+                                    break;
+                                }
+                                $c = count($props);
+                                $props[$c] = $j;
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedArgument', 'MixedArrayAssignment'],
+            ],
+            'countClauseOnMixedVariableWrittenThroughReferenceInNestedLoop' => [
+                'code' => '<?php
+                    /** @param mixed $props */
+                    function f($props, int $n, int $m): void {
+                        for ($i = 0; $i < $n; ++$i) {
+                            if (count($props) >= 32) {
+                                break;
+                            }
+                            for ($j = 0; $j < $m; ++$j) {
+                                if (count($props) >= 32) {
+                                    break;
+                                }
+                                $r = &$props;
+                                $c = count($r);
+                                $r[$c] = $j;
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedArgument', 'MixedArrayAssignment'],
+            ],
+            'countClauseOnMixedVariableWrittenInClosureUsingItByReference' => [
+                'code' => '<?php
+                    /** @param mixed $props */
+                    function f($props, int $n, int $m): void {
+                        for ($i = 0; $i < $n; ++$i) {
+                            if (count($props) >= 32) {
+                                break;
+                            }
+                            for ($j = 0; $j < $m; ++$j) {
+                                if (count($props) >= 32) {
+                                    break;
+                                }
+                                $f = function () use (&$props, $j): void {
+                                    $props[] = $j;
+                                };
+                                $f();
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedArgument', 'MixedArrayAssignment'],
+            ],
         ];
     }
 
@@ -591,6 +808,79 @@ final class ForTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'forToAnEndItsStartMayExceedMayNotBeEntered' => [
+                'code' => '<?php
+                    /**
+                     * @param int<0, max> $size
+                     * @return non-empty-list<int>
+                     */
+                    function reproduce(int $size): array {
+                        $result = [];
+                        for ($i = 1; $i <= $size; $i++) {
+                            $result[] = $i;
+                        }
+
+                        return $result;
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
+            'forToAnEndTheBodyLowersMayNotBeEntered' => [
+                'code' => '<?php
+                    function f(): int {
+                        $n = 1;
+                        for ($i = 0; $i < $n; $i++) {
+                            $n = 0;
+                            $x = 1;
+                        }
+
+                        return $x;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'varAssignedRightOfAndInTheConditionIsPossiblyUndefinedAfterTheLoop' => [
+                'code' => '<?php
+                    function f(string $s, bool $b): void {
+                        for (; $b && false !== $j = strpos($s, ":");) {
+                            echo $j;
+                        }
+                        echo $j;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:30',
+            ],
+            'operandOfTheAndOfTheConditionIsRiskyTruthyFalsy' => [
+                'code' => '<?php
+                    function f(string $s): void {
+                        for ($i = 0; $i < 9 && ($j = strpos($s, ":")); $i++) {
+                            echo $j;
+                        }
+                    }',
+                'error_message' => 'RiskyTruthyFalsyComparison - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:49',
+            ],
+            'varAssignedRightOfAndInACommaSeparatedConditionBeforeTheLastIsPossiblyUndefinedInTheBody' => [
+                'code' => '<?php
+                    function f(string $s, bool $b): void {
+                        for ($i = 0; $b && false !== $j = strpos($s, ":"), $i < 3; $i++) {
+                            echo $j;
+                        }
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:34',
+            ],
+            'varAssignedInTheBodyIsPossiblyUndefinedAfterALoopWhoseLastConditionIsAnAnd' => [
+                'code' => '<?php
+                    function f(bool $a, bool $b): void {
+                        for (; true, $a && $b;) {
+                            $x = 1;
+                            break;
+                        }
+                        echo $x;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:30',
+            ],
+            'classCheckedMissingOnTheLeftOfAndInTheConditionIsUndefinedOnTheRight' => [
+                'code' => '<?php
+                    for (; class_exists(Optional::class) === false && Optional::available();) {}',
+                'error_message' => 'UndefinedClass',
+            ],
             'forBreakBeforeDefinitionAndBreakAfter' => [
                 'code' => '<?php
                     for ($i = 0; $i < 4; $i++) {
@@ -693,6 +983,98 @@ final class ForTest extends TestCase
 
                     echo $i * $j;',
                 'error_message' => 'PossiblyUndefinedGlobalVariable',
+            ],
+            'countClauseOnMixedVariableNotWrittenInNestedLoop' => [
+                'code' => '<?php
+                    /** @param mixed $props */
+                    function f($props, int $n, int $m): void {
+                        for ($i = 0; $i < $n; ++$i) {
+                            if (count($props) >= 32) {
+                                break;
+                            }
+                            for ($j = 0; $j < $m; ++$j) {
+                                if (count($props) >= 32) {
+                                    break;
+                                }
+                                echo $j;
+                            }
+                        }
+                    }',
+                'error_message' => 'ParadoxicalCondition',
+                'error_levels' => ['MixedArgument'],
+            ],
+            'countClauseOnMixedVariableWrittenInClosureUsingItByValue' => [
+                'code' => '<?php
+                    /** @param mixed $props */
+                    function f($props, int $n, int $m): void {
+                        for ($i = 0; $i < $n; ++$i) {
+                            if (count($props) >= 32) {
+                                break;
+                            }
+                            for ($j = 0; $j < $m; ++$j) {
+                                if (count($props) >= 32) {
+                                    break;
+                                }
+                                $f = function () use ($props, $j): void {
+                                    $props[] = $j;
+                                };
+                                $f();
+                            }
+                        }
+                    }',
+                'error_message' => 'ParadoxicalCondition',
+                'error_levels' => ['MixedArgument', 'MixedArrayAssignment'],
+            ],
+            'countClauseOnMixedVariableWrittenInArrowFunction' => [
+                'code' => '<?php
+                    /** @param mixed $props */
+                    function f($props, int $n, int $m): void {
+                        for ($i = 0; $i < $n; ++$i) {
+                            if (count($props) >= 32) {
+                                break;
+                            }
+                            for ($j = 0; $j < $m; ++$j) {
+                                if (count($props) >= 32) {
+                                    break;
+                                }
+                                $f = fn(): int => $props[] = $j;
+                                $f();
+                            }
+                        }
+                    }',
+                'error_message' => 'ParadoxicalCondition',
+                'error_levels' => ['MixedArgument', 'MixedArrayAssignment'],
+            ],
+            'countClauseOnMixedPropertyWrittenByAnonymousClassMethodToItsOwnProperty' => [
+                'code' => '<?php
+                    final class A {
+                        /** @var mixed */
+                        public $props = [];
+
+                        public function f(int $n, int $m): void {
+                            for ($i = 0; $i < $n; ++$i) {
+                                if (count($this->props) >= 32) {
+                                    break;
+                                }
+                                for ($j = 0; $j < $m; ++$j) {
+                                    if (count($this->props) >= 32) {
+                                        break;
+                                    }
+                                    $o = new class {
+                                        /** @var mixed */
+                                        public $props = [];
+
+                                        public function add(): void {
+                                            $this->props[] = 1;
+                                        }
+                                    };
+                                    $o->add();
+                                }
+                            }
+                        }
+                    }',
+                'error_message' => 'ParadoxicalCondition',
+                'error_levels' => ['MixedArgument', 'MixedArrayAssignment'],
             ],
             'forPossiblyNotEnteredVarAssignedBeforeContinue' => [
                 'code' => '<?php

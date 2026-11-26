@@ -9,6 +9,7 @@ use PHPUnit\Framework\Attributes\RequiresPhpExtension;
 use Psalm\Tests\Config\Plugin\ReportableFilePlugin;
 use Symfony\Component\Process\Process;
 
+use function array_column;
 use function assert;
 use function basename;
 use function file_exists;
@@ -17,6 +18,7 @@ use function file_put_contents;
 use function json_decode;
 use function mkdir;
 use function preg_replace;
+use function realpath;
 use function sort;
 use function str_contains;
 use function str_replace;
@@ -26,6 +28,7 @@ use function tempnam;
 use function unlink;
 use function var_export;
 
+use const DIRECTORY_SEPARATOR;
 use const JSON_THROW_ON_ERROR;
 use const PHP_BINARY;
 use const PHP_EOL;
@@ -76,6 +79,36 @@ final class PsalmEndToEndTest extends PsalmEndToEndTestCase
         $this->assertStringContainsString('Could not find any composer autoloaders', $analysis->getErrorOutput());
     }
 
+    public function testExplainIgnoresTheProjectInTheCurrentDirectory(): void
+    {
+        $project_dir = tempnam(sys_get_temp_dir(), 'PsalmEndToEndExplain_');
+        assert($project_dir !== false);
+        unlink($project_dir);
+        mkdir($project_dir . '/vendor', 0777, true);
+
+        try {
+            file_put_contents($project_dir . '/composer.json', '{');
+            file_put_contents($project_dir . '/vendor/autoload.php', '<?php echo "project autoloader"; exit(3);');
+
+            $known = self::newProcess([PHP_BINARY, $this->psalm, '--explain=83'], $project_dir, self::agentEnvVarsToUnset());
+            $known->run();
+            $unknown = self::newProcess(
+                [PHP_BINARY, $this->psalm, '--explain=NotAnIssue'],
+                $project_dir,
+                self::agentEnvVarsToUnset(),
+            );
+            $unknown->run();
+        } finally {
+            self::recursiveRemoveDirectory($project_dir);
+        }
+
+        $this->assertSame(0, $known->getExitCode(), $known->getErrorOutput());
+        $this->assertStringStartsWith('# PossiblyNullReference', $known->getOutput());
+        $this->assertSame(1, $unknown->getExitCode());
+        $this->assertSame('', $unknown->getOutput());
+        $this->assertStringContainsString('Unknown issue: NotAnIssue', $unknown->getErrorOutput());
+    }
+
     public function testInit(): void
     {
         $this->assertStringContainsString(
@@ -114,6 +147,47 @@ final class PsalmEndToEndTest extends PsalmEndToEndTestCase
         $this->assertStringNotContainsString('Uncaught', $process->getErrorOutput());
     }
 
+    public function testEmptyComposerJsonIsAValidProject(): void
+    {
+        $project_dir = tempnam(sys_get_temp_dir(), 'PsalmEndToEndEmptyComposerJson_');
+        assert($project_dir !== false);
+        unlink($project_dir);
+        mkdir($project_dir);
+
+        try {
+            file_put_contents($project_dir . '/composer.json', '{}');
+            mkdir($project_dir . '/vendor');
+            file_put_contents($project_dir . '/vendor/autoload.php', "<?php\n");
+
+            $init = self::newProcess([PHP_BINARY, $this->psalm, '--init'], $project_dir, self::agentEnvVarsToUnset());
+            $init->run();
+
+            mkdir($project_dir . '/src');
+            file_put_contents($project_dir . '/src/a.php', "<?php\necho strlen('a');\n");
+            file_put_contents(
+                $project_dir . '/psalm.xml',
+                '<?xml version="1.0"?><psalm><projectFiles><directory name="src"/></projectFiles></psalm>',
+            );
+
+            $analysis = self::newProcess(
+                [PHP_BINARY, $this->psalm, '--no-cache', '--no-progress'],
+                $project_dir,
+                self::agentEnvVarsToUnset(),
+            );
+            $analysis->run();
+        } finally {
+            self::recursiveRemoveDirectory($project_dir);
+        }
+
+        $this->assertStringNotContainsString('Invalid composer.json', $init->getErrorOutput());
+        $this->assertStringContainsString(
+            'Could not located any PSR-0 or PSR-4-compatible paths',
+            $init->getErrorOutput(),
+        );
+        $this->assertSame(0, $analysis->getExitCode(), $analysis->getOutput() . $analysis->getErrorOutput());
+        $this->assertStringContainsString('No errors found!', $analysis->getOutput());
+    }
+
     /**
      * @param list<string> $args
      */
@@ -143,6 +217,35 @@ final class PsalmEndToEndTest extends PsalmEndToEndTestCase
         yield 'review after the report' => [['report.json', '--review', 'code']];
     }
 
+    /**
+     * @param list<string> $args
+     */
+    #[DataProvider('provideConfigPathsThatAreNotFiles')]
+    public function testAConfigPathThatIsNotAFileIsReportedWithoutACrash(array $args, string $expected_suffix): void
+    {
+        $process = self::newProcess([PHP_BINARY, $this->psalm, ...$args], self::$tmpDir, self::agentEnvVarsToUnset());
+        $process->run();
+
+        $output = $process->getOutput() . $process->getErrorOutput();
+        $this->assertSame(1, $process->getExitCode(), $output);
+        $this->assertStringContainsString(
+            'Cannot read the config file ' . (string) realpath(self::$tmpDir) . $expected_suffix,
+            $process->getErrorOutput(),
+        );
+        $this->assertStringNotContainsString('Uncaught', $output);
+        $this->assertStringNotContainsString('crashed', $output);
+    }
+
+    /**
+     * @return iterable<string, array{list<string>, string}>
+     * @psalm-pure
+     */
+    public static function provideConfigPathsThatAreNotFiles(): iterable
+    {
+        yield 'a directory' => [['-c', 'src'], DIRECTORY_SEPARATOR . 'src'];
+        yield 'an empty path' => [['-c', ''], ''];
+    }
+
     public function testPsalm(): void
     {
         $this->runPsalmInit(1);
@@ -159,6 +262,166 @@ final class PsalmEndToEndTest extends PsalmEndToEndTestCase
         $this->assertStringContainsString('InvalidReturnStatement', $result['STDOUT']);
         $this->assertStringContainsString('2 errors', $result['STDOUT']);
         $this->assertSame(2, $result['CODE']);
+    }
+
+    /**
+     * @param array<string, string|false> $env
+     */
+    #[DataProvider('provideDefaultOutputFormats')]
+    public function testTheOutputFormatOnStdoutWithoutTheFlag(array $env, bool $is_compact): void
+    {
+        $process = $this->runPsalmWithoutAnOutputFormat([], $env);
+
+        $this->assertSame(2, $process->getExitCode(), $process->getErrorOutput());
+        if ($is_compact) {
+            $this->assertMatchesRegularExpression(
+                '#^ERROR \S*FileWithErrors\.php:\d+:\d+ InvalidReturnStatement: #m',
+                $process->getOutput(),
+            );
+            $this->assertStringNotContainsString('2 errors', $process->getOutput());
+        } else {
+            $this->assertStringContainsString('ERROR: InvalidReturnStatement - ', $process->getOutput());
+            $this->assertStringContainsString('2 errors', $process->getOutput());
+        }
+    }
+
+    /**
+     * @return iterable<string, array{array<string, string|false>, bool}>
+     * @psalm-pure
+     */
+    public static function provideDefaultOutputFormats(): iterable
+    {
+        yield 'no agent' => [[], false];
+        yield 'agent' => [['CLAUDECODE' => '1'], true];
+        yield 'agent in GitHub Actions' => [['CLAUDECODE' => '1', 'GITHUB_ACTIONS' => 'true'], true];
+    }
+
+    public function testAnExplicitOutputFormatBeatsTheAgentDefault(): void
+    {
+        $process = $this->runPsalmWithoutAnOutputFormat(['--output-format=console'], ['CLAUDECODE' => '1']);
+
+        $this->assertSame(2, $process->getExitCode(), $process->getErrorOutput());
+        $this->assertStringContainsString('ERROR: InvalidReturnStatement - ', $process->getOutput());
+    }
+
+    public function testAReportIsNotAffectedByTheAgentDefault(): void
+    {
+        $report = self::$tmpDir . '/report.json';
+
+        try {
+            $process = $this->runPsalmWithoutAnOutputFormat(['--report=' . $report], ['CLAUDECODE' => '1']);
+
+            $this->assertSame(2, $process->getExitCode(), $process->getErrorOutput());
+            $this->assertMatchesRegularExpression('#^ERROR \S*FileWithErrors\.php:\d+:\d+ #m', $process->getOutput());
+            $this->assertFileExists($report);
+            $issues = json_decode((string) file_get_contents($report), true, 512, JSON_THROW_ON_ERROR);
+            $this->assertIsArray($issues);
+            $this->assertContains('InvalidReturnStatement', array_column($issues, 'type'));
+        } finally {
+            @unlink($report);
+        }
+    }
+
+    /**
+     * @param list<string> $args
+     * @param array<string, string|false> $env
+     */
+    #[DataProvider('provideRunsWithoutAConfig')]
+    public function testTheInitHintOfAMissingConfigIsPrintedUnderAnAgent(
+        array $args,
+        array $env,
+        bool $hint_is_printed,
+    ): void {
+        // self::$tmpDir has a composer project but, between tests, no psalm.xml
+        $process = $this->runPsalmInTheProject(
+            ['--no-cache', ...$args],
+            [
+                'CI' => false,
+                'GITHUB_ACTIONS' => false,
+                'GITHUB_WORKFLOW' => false,
+                'TERMINAL_EMULATOR' => false,
+                ...$env,
+            ],
+        );
+
+        $this->assertSame(1, $process->getExitCode(), $process->getOutput() . $process->getErrorOutput());
+        if ($hint_is_printed) {
+            $this->assertStringContainsString('psalm --init', $process->getErrorOutput());
+        } else {
+            $this->assertStringNotContainsString('psalm --init', $process->getErrorOutput());
+        }
+    }
+
+    /**
+     * @return iterable<string, array{list<string>, array<string, string|false>, bool}>
+     * @psalm-pure
+     */
+    public static function provideRunsWithoutAConfig(): iterable
+    {
+        yield 'agent with the default format' => [[], ['CLAUDECODE' => '1'], true];
+        yield 'no agent with an explicit compact format' => [['--output-format=compact'], [], false];
+    }
+
+    /**
+     * @param list<string> $args
+     * @param array<string, string|false> $env
+     */
+    private function runPsalmWithoutAnOutputFormat(array $args, array $env): Process
+    {
+        $this->runPsalmInit(1);
+        $psalmXml = file_get_contents(self::$tmpDir . '/psalm.xml');
+        $psalmXml = str_replace('<psalm', '<psalm runTaintAnalysis="false"', (string) $psalmXml);
+        file_put_contents(self::$tmpDir . '/psalm.xml', $psalmXml);
+
+        // Whatever CI or IDE the tests run in must not pick the format
+        $no_guesses = [
+            'CI' => false,
+            'GITHUB_ACTIONS' => false,
+            'GITHUB_WORKFLOW' => false,
+            'TERMINAL_EMULATOR' => false,
+        ];
+
+        return $this->runPsalmInTheProject(['--no-cache', '--monochrome', ...$args], [...$no_guesses, ...$env]);
+    }
+
+    public function testStatisticsOfANonConsoleFormatGoToStderr(): void
+    {
+        $this->runPsalmInit(1);
+        $psalmXml = file_get_contents(self::$tmpDir . '/psalm.xml');
+        $psalmXml = str_replace('<psalm', '<psalm runTaintAnalysis="false"', (string) $psalmXml);
+        file_put_contents(self::$tmpDir . '/psalm.xml', $psalmXml);
+
+        /** @param list<string> $args */
+        $run = function (array $args): Process {
+            $process = self::newProcess(
+                [PHP_BINARY, $this->psalm, '-c=' . self::$tmpDir . '/psalm.xml', '--no-cache', '--output-format=json', ...$args],
+                null,
+                self::agentEnvVarsToUnset(),
+            );
+            $process->run();
+            $this->assertSame(2, $process->getExitCode(), $process->getErrorOutput());
+
+            return $process;
+        };
+
+        $plain = $run([]);
+        $with_stats = $run(['--stats', '--debug-performance']);
+
+        $this->assertNotNull(json_decode($with_stats->getOutput(), true));
+        $this->assertSame($plain->getOutput(), $with_stats->getOutput());
+        $this->assertStringContainsString('Checks took', $with_stats->getErrorOutput());
+        $this->assertStringContainsString('Psalm was able to infer types for', $with_stats->getErrorOutput());
+        $this->assertStringContainsString("-----------------\n", $with_stats->getErrorOutput());
+        $this->assertStringContainsString("\nPerformance\n", $with_stats->getErrorOutput());
+        $this->assertStringNotContainsString("\e[", $with_stats->getErrorOutput());
+        $this->assertStringContainsString('Checks took', $plain->getErrorOutput());
+        $this->assertStringNotContainsString("-----------------\n", $plain->getErrorOutput());
+        $this->assertStringNotContainsString('Performance', $plain->getErrorOutput());
+
+        $quiet = $run(['--no-progress', '--stats', '--debug-performance']);
+
+        $this->assertSame($plain->getOutput(), $quiet->getOutput());
+        $this->assertSame('', $quiet->getErrorOutput());
     }
 
     // Psalm forks its workers only with these extensions (never on Windows)
@@ -391,6 +654,26 @@ final class PsalmEndToEndTest extends PsalmEndToEndTestCase
         $this->assertSame('', $process->getErrorOutput());
     }
 
+    public function testRefactorHelpListsMonochromeOnceAndRejectsTheUnusedFileOption(): void
+    {
+        $help = self::newProcess([PHP_BINARY, $this->psalmRefactor, '--help'], self::$tmpDir, self::agentEnvVarsToUnset());
+        $help->run();
+
+        $this->assertSame(0, $help->getExitCode(), $help->getErrorOutput());
+        $this->assertSame(1, substr_count($help->getOutput(), '-m, --monochrome'));
+        $this->assertDoesNotMatchRegularExpression('/^\s*-m\s*$/m', $help->getOutput());
+
+        $file = self::newProcess(
+            [PHP_BINARY, $this->psalmRefactor, '-f', 'src/Foo.php', '--help'],
+            self::$tmpDir,
+            self::agentEnvVarsToUnset(),
+        );
+        $file->run();
+
+        $this->assertSame(1, $file->getExitCode());
+        $this->assertStringContainsString('Unrecognised argument "-f"', $file->getErrorOutput());
+    }
+
     public function testRefactorAcceptsMemoryLimitAndUseIniDefaultsOptions(): void
     {
         $process = self::newProcess(
@@ -483,6 +766,47 @@ final class PsalmEndToEndTest extends PsalmEndToEndTestCase
 
             $this->assertSame('64M', file_get_contents($memory_limit_file));
             $this->assertStringContainsString('Could not locate root directory', $process->getErrorOutput());
+        } finally {
+            unlink($prepend_file);
+            if (file_exists($memory_limit_file)) {
+                unlink($memory_limit_file);
+            }
+        }
+    }
+
+    public function testPsalterHonoursUseIniDefaults(): void
+    {
+        $memory_limit_file = self::$tmpDir . '/psalter-ini-defaults-memory-limit.txt';
+        $prepend_file = self::$tmpDir . '/psalter-ini-defaults-prepend.php';
+        file_put_contents(
+            $prepend_file,
+            "<?php\nregister_shutdown_function(static function (): void {\n"
+                . "    file_put_contents(\n"
+                . "        " . var_export($memory_limit_file, true) . ", (string) ini_get('memory_limit')\n"
+                . "    );\n"
+                . "});\n",
+        );
+
+        try {
+            $process = self::newProcess(
+                [
+                    PHP_BINARY,
+                    '-d',
+                    'memory_limit=64M',
+                    '-d',
+                    'auto_prepend_file=' . $prepend_file,
+                    $this->psalter,
+                    '--use-ini-defaults',
+                    '--issues=all',
+                    '--root=missing-project',
+                ],
+                self::$tmpDir,
+                self::agentEnvVarsToUnset(),
+            );
+            $process->run();
+
+            $this->assertStringContainsString('Could not locate root directory', $process->getErrorOutput());
+            $this->assertSame('64M', file_get_contents($memory_limit_file));
         } finally {
             unlink($prepend_file);
             if (file_exists($memory_limit_file)) {
@@ -689,6 +1013,58 @@ final class PsalmEndToEndTest extends PsalmEndToEndTestCase
         // like for issues, so that a following step can upload the report
         yield 'in GitHub Actions' => [['GITHUB_WORKFLOW' => 'CI'], 0];
         yield 'elsewhere' => [['GITHUB_WORKFLOW' => false], 2];
+    }
+
+    /**
+     * @return iterable<string, array{array<string, string>, list<string>, bool}>
+     * @psalm-pure
+     */
+    public static function provideProgressUnderAnAgentAndCi(): iterable
+    {
+        yield 'CI only' => [['CI' => 'true'], [], true];
+        yield 'agent only' => [['CLAUDECODE' => '1'], [], false];
+        yield 'agent and CI: the agent wins' => [['CLAUDECODE' => '1', 'CI' => 'true'], [], false];
+        yield 'agent and CI with --long-progress' => [
+            ['CLAUDECODE' => '1', 'CI' => 'true'],
+            ['--long-progress'],
+            true,
+        ];
+        yield 'CI only with --no-progress' => [['CI' => 'true'], ['--no-progress'], false];
+    }
+
+    /**
+     * @param array<string, string> $env
+     * @param list<string> $args
+     */
+    #[DataProvider('provideProgressUnderAnAgentAndCi')]
+    public function testAnAgentMarkerBeatsCiForTheProgress(array $env, array $args, bool $has_breadcrumbs): void
+    {
+        file_put_contents(
+            self::$tmpDir . '/psalm.xml',
+            '<?xml version="1.0"?>
+            <psalm errorLevel="8" findUnusedCode="false">
+                <projectFiles><directory name="src"/></projectFiles>
+            </psalm>',
+        );
+
+        $unset_ci = [];
+        foreach (['TRAVIS', 'CIRCLECI', 'APPVEYOR', 'JENKINS_URL', 'SCRUTINIZER', 'GITLAB_CI', 'CI', 'GITHUB_WORKFLOW', 'DRONE'] as $name) {
+            $unset_ci[$name] = false;
+        }
+
+        $process = self::newProcess(
+            [PHP_BINARY, $this->psalm, '--no-cache', '--output-format=compact', ...$args],
+            self::$tmpDir,
+            [...self::agentEnvVarsToUnset(), ...$unset_ci, ...$env],
+        );
+        $process->run();
+
+        $this->assertSame(2, $process->getExitCode(), $process->getOutput() . $process->getErrorOutput());
+        if ($has_breadcrumbs) {
+            $this->assertStringContainsString('Scanning files', $process->getErrorOutput());
+        } else {
+            $this->assertStringNotContainsString('Scanning files', $process->getErrorOutput());
+        }
     }
 
     /**

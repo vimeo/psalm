@@ -246,6 +246,15 @@ return [
         'w' => 'integer',
         'wtimeout' => 'integer',
     ],
+    'mongodb\\driver\\exception\\bulkwritecommandexception' => [
+        'errorReply' => 'MongoDB\\BSON\\Document|null',
+        'partialResult' => 'MongoDB\\Driver\\BulkWriteCommandResult|null',
+        'writeConcernErrors' => 'array',
+        'writeErrors' => 'array',
+    ],
+    'mongodb\\driver\\exception\\bulkwriteexception' => [
+        'writeResult' => 'MongoDB\\Driver\\WriteResult',
+    ],
     'mongodb\\driver\\exception\\commandexception' => [
         'resultDocument' => 'object',
     ],
@@ -254,6 +263,127 @@ return [
     ],
     'mongodb\\driver\\exception\\writeexception' => [
         'writeResult' => 'MongoDB\\Driver\\WriteResult',
+    ],
+    'mongodb\\driver\\monitoring\\commandfailedevent' => [
+        'commandName' => 'string',
+        'databaseName' => 'string',
+        'duration' => 'int',
+        'error' => 'Exception',
+        'host' => 'string',
+        'operationId' => 'string',
+        'port' => 'int',
+        'reply' => 'object',
+        'requestId' => 'string',
+        'serverConnectionId' => 'int|null',
+        'serviceId' => 'MongoDB\\BSON\\ObjectId|null',
+    ],
+    'mongodb\\driver\\monitoring\\commandstartedevent' => [
+        'command' => 'object',
+        'commandName' => 'string',
+        'databaseName' => 'string',
+        'host' => 'string',
+        'operationId' => 'string',
+        'port' => 'int',
+        'requestId' => 'string',
+        'serverConnectionId' => 'int|null',
+        'serviceId' => 'MongoDB\\BSON\\ObjectId|null',
+    ],
+    'mongodb\\driver\\monitoring\\commandsucceededevent' => [
+        'commandName' => 'string',
+        'databaseName' => 'string',
+        'duration' => 'int',
+        'host' => 'string',
+        'operationId' => 'string',
+        'port' => 'int',
+        'reply' => 'object',
+        'requestId' => 'string',
+        'serverConnectionId' => 'int|null',
+        'serviceId' => 'MongoDB\\BSON\\ObjectId|null',
+    ],
+    'mongodb\\driver\\monitoring\\serverchangedevent' => [
+        'host' => 'string',
+        'newDescription' => 'MongoDB\\Driver\\ServerDescription',
+        'port' => 'int',
+        'previousDescription' => 'MongoDB\\Driver\\ServerDescription',
+        'topologyId' => 'MongoDB\\BSON\\ObjectId',
+    ],
+    'mongodb\\driver\\monitoring\\serverclosedevent' => [
+        'host' => 'string',
+        'port' => 'int',
+        'topologyId' => 'MongoDB\\BSON\\ObjectId',
+    ],
+    'mongodb\\driver\\monitoring\\serverheartbeatfailedevent' => [
+        'awaited' => 'bool',
+        'duration' => 'int',
+        'error' => 'Exception',
+        'host' => 'string',
+        'port' => 'int',
+    ],
+    'mongodb\\driver\\monitoring\\serverheartbeatstartedevent' => [
+        'awaited' => 'bool',
+        'host' => 'string',
+        'port' => 'int',
+    ],
+    'mongodb\\driver\\monitoring\\serverheartbeatsucceededevent' => [
+        'awaited' => 'bool',
+        'duration' => 'int',
+        'host' => 'string',
+        'port' => 'int',
+        'reply' => 'object',
+    ],
+    'mongodb\\driver\\monitoring\\serveropeningevent' => [
+        'host' => 'string',
+        'port' => 'int',
+        'topologyId' => 'MongoDB\\BSON\\ObjectId',
+    ],
+    'mongodb\\driver\\monitoring\\topologychangedevent' => [
+        'newDescription' => 'MongoDB\\Driver\\TopologyDescription',
+        'previousDescription' => 'MongoDB\\Driver\\TopologyDescription',
+        'topologyId' => 'MongoDB\\BSON\\ObjectId',
+    ],
+    'mongodb\\driver\\monitoring\\topologyclosedevent' => [
+        'topologyId' => 'MongoDB\\BSON\\ObjectId',
+    ],
+    'mongodb\\driver\\monitoring\\topologyopeningevent' => [
+        'topologyId' => 'MongoDB\\BSON\\ObjectId',
+    ],
+    'mongodb\\driver\\readconcern' => [
+        'level' => 'string|null',
+    ],
+    'mongodb\\driver\\readpreference' => [
+        'hedge' => 'object|null',
+        'maxStalenessSeconds' => 'int',
+        'mode' => 'string',
+        'tags' => 'array|null',
+    ],
+    'mongodb\\driver\\writeconcern' => [
+        'j' => 'bool|null',
+        'w' => 'string|int|null',
+        'wtimeout' => 'int',
+    ],
+    'mongodb\\driver\\writeconcernerror' => [
+        'code' => 'int',
+        'info' => 'object|null',
+        'message' => 'string',
+    ],
+    'mongodb\\driver\\writeerror' => [
+        'code' => 'int',
+        'index' => 'int',
+        'info' => 'object|null',
+        'message' => 'string',
+    ],
+    'mongodb\\driver\\writeresult' => [
+        'deletedCount' => 'int|null',
+        'errorReplies' => 'array',
+        'insertedCount' => 'int|null',
+        'matchedCount' => 'int|null',
+        'modifiedCount' => 'int|null',
+        'server' => 'MongoDB\\Driver\\Server',
+        'upsertedCount' => 'int|null',
+        'upsertedIds' => 'array',
+        'writeConcern' => 'MongoDB\\Driver\\WriteConcern|null',
+        'writeConcernError' => 'MongoDB\\Driver\\WriteConcernError|null',
+        'writeErrors' => 'array',
     ],
     'mongoid' => [
         'id' => 'string',
@@ -373,7 +503,7 @@ return [
         'stream' => 'resource|null',
     ],
     'phpparser\\node\\expr\\array_' => [
-        'items' => 'array<int, PhpParser\\Node\\Expr\\ArrayItem>',
+        'items' => 'array<int, PhpParser\\Node\\ArrayItem>',
     ],
     'phpparser\\node\\expr\\arrowfunction' => [
         'params' => 'list<PhpParser\\Node\\Param>',
@@ -382,16 +512,13 @@ return [
         'params' => 'list<PhpParser\\Node\\Param>',
     ],
     'phpparser\\node\\expr\\list_' => [
-        'items' => 'array<int, PhpParser\\Node\\Expr\\ArrayItem|null>',
+        'items' => 'array<int, PhpParser\\Node\\ArrayItem|null>',
     ],
     'phpparser\\node\\expr\\shellexec' => [
-        'parts' => 'list<PhpParser\\Node\\Expr>',
+        'parts' => 'list<PhpParser\\Node\\Expr|PhpParser\\Node\\InterpolatedStringPart>',
     ],
     'phpparser\\node\\matcharm' => [
-        'conds' => 'null|non-empty-list<PhpParser\\Node\\Expr>',
-    ],
-    'phpparser\\node\\name' => [
-        'parts' => 'non-empty-list<non-empty-string>',
+        'conds' => 'null|list<PhpParser\\Node\\Expr>',
     ],
     'phpparser\\node\\stmt\\case_' => [
         'stmts' => 'list<PhpParser\\Node\\Stmt>',

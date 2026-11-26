@@ -8,10 +8,13 @@ use InvalidArgumentException;
 use PhpParser;
 use Psalm\Codebase;
 use Psalm\Config;
+use Psalm\Exception\CodeException;
 use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\Crash\CrashContext;
+use Psalm\Internal\FileChangedDuringRunException;
 use Psalm\Internal\FileManipulation\ClassDocblockManipulator;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\FileManipulation\FunctionDocblockManipulator;
@@ -21,7 +24,9 @@ use Psalm\Internal\Fork\AnalyzerTask;
 use Psalm\Internal\Fork\InitAnalyzerTask;
 use Psalm\Internal\Fork\Pool;
 use Psalm\Internal\Fork\ShutdownAnalyzerTask;
+use Psalm\Internal\Fork\TaskCrashedException;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Perf;
 use Psalm\Internal\Provider\FileProvider;
 use Psalm\Internal\Provider\FileStorageProvider;
 use Psalm\Internal\Provider\StatementsProvider;
@@ -32,6 +37,7 @@ use Psalm\Storage\Capabilities;
 use Psalm\Type;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Union;
+use Throwable;
 use UnexpectedValueException;
 
 use function Amp\Future\await;
@@ -58,6 +64,7 @@ use function substr;
 use function usort;
 
 use const PATHINFO_EXTENSION;
+use const PHP_EOL;
 use const PHP_INT_MAX;
 
 /**
@@ -74,7 +81,6 @@ use const PHP_INT_MAX;
  *      fixable_issue_counts: array<string, int>,
  *      mixed_counts: array<string, array{0: int, 1: int}>,
  *      mixed_member_names: array<string, array<string, bool>>,
- *      function_timings: array<string, float>,
  *      file_manipulations: array<string, FileManipulation[]>,
  *      method_dependencies: array<string, array<string,bool>>,
  *      method_param_uses: array<string, array<int, array<string, bool>>>,
@@ -88,6 +94,7 @@ use const PHP_INT_MAX;
  *      function_docblock_manipulators: array<string, array<int, FunctionDocblockManipulator>>,
  *      mutable_classes: array<string, CapabilitySet>,
  *      issue_handlers: array{type: string, index: int, count: int}[],
+ *      perf?: WorkerPerf,
  * }
  */
 
@@ -96,6 +103,7 @@ use const PHP_INT_MAX;
  *
  * @internal
  * @psalm-import-type CapabilitySet from Capabilities
+ * @psalm-import-type WorkerPerf from Perf\Collector
  */
 final class Analyzer
 {
@@ -112,13 +120,6 @@ final class Analyzer
      * @var array<string, array<string, bool>>
      */
     private array $mixed_member_names = [];
-
-    /**
-     * Used to store debug performance data
-     *
-     * @var array<string, float>
-     */
-    private array $function_timings = [];
 
     /**
      * We analyze more files than we necessarily report errors in
@@ -238,15 +239,50 @@ final class Analyzer
         return isset($this->files_with_analysis_results[$file_path]);
     }
 
+    /**
+     * A file of the project, or analysed: its class declarations are not alternatives to those of a dependency
+     *
+     * @psalm-mutation-free
+     */
+    public function isOwnCodeFile(string $file_path): bool
+    {
+        return isset($this->files_with_analysis_results[$file_path]) || $this->config->isInProjectDirs($file_path);
+    }
+
     public function analyzeFiles(
         ProjectAnalyzer $project_analyzer,
         int $pool_size,
         bool $alter_code,
         bool $consolidate_analyzed_data = false,
     ): void {
-        $this->loadCachedResults($project_analyzer);
+        Perf\Collector::stage('analysis.setup');
 
         $codebase = $project_analyzer->getCodebase();
+
+        $scanned = $codebase->scanner->getScannedFiles();
+        $changed_files = [];
+
+        // a file that was gone when its scan came, and is back, is analysed against a codebase without it, whether
+        // it is a file to analyse or one that a file to analyse depends on
+        foreach ($this->files_to_analyze + $codebase->scanner->getVanishedFiles() as $file_path => $_) {
+            if (!isset($scanned[$file_path])
+                && $this->file_provider->fileExists($file_path)
+                && !$this->file_provider->isDirectory($file_path)
+            ) {
+                $changed_files[] = $this->config->shortenFileName($file_path);
+            }
+        }
+
+        if ($changed_files) {
+            throw new FileChangedDuringRunException(
+                count($changed_files) === 1
+                    ? $changed_files[0] . ' changed while Psalm was running. Run Psalm again.'
+                    : 'These files changed while Psalm was running. Run Psalm again.'
+                        . PHP_EOL . '  ' . implode(PHP_EOL . '  ', $changed_files),
+            );
+        }
+
+        $this->loadCachedResults($project_analyzer);
 
         if ($alter_code) {
             $project_analyzer->interpretRefactors();
@@ -257,21 +293,29 @@ final class Analyzer
             $this->file_provider->fileExists(...),
         );
 
+        Perf\Collector::stage('analysis.files');
         $this->doAnalysis($project_analyzer, $pool_size);
 
         $scanned_files = $codebase->scanner->getScannedFiles();
 
         if ($codebase->taint_flow_graph) {
+            Perf\Collector::stage('taint');
             $codebase->taint_flow_graph->connectSinksAndSources($codebase->progress);
         }
 
+        Perf\Collector::stage('analysis.finish');
+        Perf\Collector::step('mutation_levels');
         MutationLevelResolver::resolve($project_analyzer);
 
         $this->progress->finish();
 
+        Perf\Collector::step('unused_code');
+
         if ($consolidate_analyzed_data) {
             $project_analyzer->consolidateAnalyzedData();
         }
+
+        Perf\Collector::step('reference_cache.write');
 
         foreach (IssueBuffer::getAllIssuesData() as $file_path => $file_issues) {
             $codebase->file_reference_provider->clearExistingIssuesForFile($file_path);
@@ -285,6 +329,8 @@ final class Analyzer
         $codebase->file_reference_provider->setFileMaps($this->getFileMaps());
         $codebase->file_reference_provider->setTypeCoverage($this->mixed_counts);
         $codebase->file_reference_provider->updateReferenceCache($codebase, $scanned_files);
+
+        Perf\Collector::step('unused_suppressions');
 
         if ($codebase->track_unused_suppressions) {
             IssueBuffer::processUnusedSuppressions($codebase->file_provider);
@@ -337,13 +383,23 @@ final class Analyzer
             $this->progress->debug('Forking analysis' . "\n");
 
             // Wait for all tasks to complete and collect the results.
+            Perf\Collector::poolStart('analysis', count($this->files_to_analyze));
             await($pool->runAll(new InitAnalyzerTask));
-            $pool->run($this->files_to_analyze, AnalyzerTask::class, $task_done_closure);
+            Perf\Collector::poolStep('init_us');
+            try {
+                $pool->run($this->files_to_analyze, AnalyzerTask::class, $task_done_closure);
+            } catch (TaskCrashedException $e) {
+                $this->throwUnlessFileChanged($codebase, $e);
+            }
+            Perf\Collector::poolStep('run_us');
+            Perf\Collector::stage('analysis.merge');
             $this->progress->debug('Collecting forked analysis results' . "\n");
             $this->progress->startPhase(Phase::MERGING_THREAD_RESULTS);
             $this->progress->expand($pool->threads);
 
             foreach ($pool->runAllThenKill(new ShutdownAnalyzerTask) as $pool_data) {
+                Perf\Collector::addWorkerData($pool_data['perf'] ?? null);
+
                 IssueBuffer::addIssues($pool_data['issues']);
                 IssueBuffer::addFixableIssues($pool_data['fixable_issue_counts']);
 
@@ -371,7 +427,6 @@ final class Analyzer
                 $this->addMixedMemberNames(
                     $pool_data['mixed_member_names'],
                 );
-                $this->function_timings += $pool_data['function_timings'];
 
                 foreach ($pool_data['mutable_classes'] as $class => $capabilities) {
                     $this->addMutableClass($class, $capabilities);
@@ -417,12 +472,43 @@ final class Analyzer
                 }
 
                 $this->progress->taskDone(0);
+
+                Perf\Collector::mergeDone();
             }
+
+            Perf\Collector::poolEnd();
         } else {
             foreach ($this->files_to_analyze as $file_path => $_) {
-                $task_done_closure(self::analysisWorker($this->config, $this->progress, $file_path));
+                try {
+                    $task_done_closure(self::analysisWorker($this->config, $this->progress, $file_path));
+                } catch (CodeException $e) {
+                    // an issue that throwExceptionOnError raises is a result, not a crash
+                    throw $e;
+                } catch (Throwable $e) {
+                    $this->throwUnlessFileChanged($codebase, TaskCrashedException::inProcess($file_path, $e));
+                }
             }
         }
+    }
+
+    /**
+     * A file that differs from the one that was scanned is analysed against storage built from the scanned contents,
+     * which can crash the analysis. The crash is then reported as that change: the likely cause, not a proven one.
+     */
+    private function throwUnlessFileChanged(Codebase $codebase, TaskCrashedException $crash): never
+    {
+        if (!$codebase->scanner->changedSinceScan($crash->path)) {
+            throw $crash;
+        }
+
+        $this->progress->debug($crash->getMessage() . PHP_EOL);
+
+        throw new FileChangedDuringRunException(
+            'Psalm crashed on ' . $this->config->shortenFileName($crash->path)
+                . ', which changed while Psalm was running. Run Psalm again (--debug shows the crash).',
+            0,
+            $crash,
+        );
     }
 
     public function loadCachedResults(ProjectAnalyzer $project_analyzer): void
@@ -757,8 +843,9 @@ final class Analyzer
             }
         }
 
+        // a file with no analysed method left is analysed in full, and replaces its maps, but only if it is analysed
         foreach ($this->reference_map as $file_path => $reference_map) {
-            if (!isset($this->analyzed_methods[$file_path])) {
+            if (!isset($this->analyzed_methods[$file_path]) && isset($this->files_to_analyze[$file_path])) {
                 unset($this->reference_map[$file_path]);
                 continue;
             }
@@ -794,7 +881,7 @@ final class Analyzer
         }
 
         foreach ($this->type_map as $file_path => $type_map) {
-            if (!isset($this->analyzed_methods[$file_path])) {
+            if (!isset($this->analyzed_methods[$file_path]) && isset($this->files_to_analyze[$file_path])) {
                 unset($this->type_map[$file_path]);
                 continue;
             }
@@ -830,7 +917,7 @@ final class Analyzer
         }
 
         foreach ($this->argument_map as $file_path => $argument_map) {
-            if (!isset($this->analyzed_methods[$file_path])) {
+            if (!isset($this->analyzed_methods[$file_path]) && isset($this->files_to_analyze[$file_path])) {
                 unset($this->argument_map[$file_path]);
                 continue;
             }
@@ -984,22 +1071,6 @@ final class Analyzer
         }
 
         return array_intersect_key($this->mixed_counts, $all_deep_scanned_files);
-    }
-
-    /**
-     * @return array<string, float>
-     */
-    public function getFunctionTimings(): array
-    {
-        return $this->function_timings;
-    }
-
-    /**
-     * @psalm-external-mutation-free
-     */
-    public function addFunctionTiming(string $function_id, float $time_per_node): void
-    {
-        $this->function_timings[$function_id] = $time_per_node;
     }
 
     public function addNodeType(
@@ -1172,6 +1243,18 @@ final class Analyzer
     public function getChangedFilesCount(): int
     {
         return count($this->changed_files);
+    }
+
+    /**
+     * How many files the run reports on, the unchanged ones of a diff run included
+     *
+     * @internal
+     * @return int<0, max>
+     * @psalm-mutation-free
+     */
+    public function getFileCountWithAnalysisResults(): int
+    {
+        return count($this->files_with_analysis_results);
     }
 
     /**
@@ -1523,13 +1606,29 @@ final class Analyzer
 
         $progress->debug('Analyzing ' . $file_analyzer->getFilePath() . "\n");
 
-        $file_analyzer->analyze();
+        $perf_start = Perf\Collector::$enabled ? Perf\Collector::fileStart() : null;
+
+        try {
+            $file_analyzer->analyze();
+        } catch (Throwable $e) {
+            CrashContext::recordFile($e, 'analysing', $file_path);
+            throw $e;
+        }
         $file_analyzer->context = null;
         $file_analyzer->clearSourceBeforeDestruction();
         unset($file_analyzer);
 
         $has_error = false;
         $has_info = false;
+
+        if ($perf_start !== null) {
+            Perf\Collector::analysisEnd(
+                $file_path,
+                $file_name,
+                $perf_start,
+                count(IssueBuffer::getIssuesDataForFile($file_path)),
+            );
+        }
 
         foreach (IssueBuffer::getIssuesDataForFile($file_path) as $issue) {
             switch ($issue->severity) {

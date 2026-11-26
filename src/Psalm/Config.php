@@ -42,8 +42,9 @@ use Psalm\Internal\Fork\IgbinarySerializer;
 use Psalm\Internal\GzipSerializer;
 use Psalm\Internal\IncludeCollector;
 use Psalm\Internal\Lz4Serializer;
+use Psalm\Internal\Perf;
 use Psalm\Internal\Provider\AddRemoveTaints\HtmlFunctionTainter;
-use Psalm\Internal\Provider\AddRemoveTaints\JsonEncodeTainter;
+use Psalm\Internal\Provider\AddRemoveTaints\JsonFunctionTainter;
 use Psalm\Internal\Scanner\FileScanner;
 use Psalm\Internal\ZstdSerializer;
 use Psalm\Issue\ArgumentIssue;
@@ -78,6 +79,7 @@ use stdClass;
 use function array_any;
 use function array_column;
 use function array_filter;
+use function array_is_list;
 use function array_key_exists;
 use function array_keys;
 use function array_merge;
@@ -115,6 +117,7 @@ use function is_a;
 use function is_array;
 use function is_dir;
 use function is_file;
+use function is_readable;
 use function is_resource;
 use function is_string;
 use function is_writable;
@@ -204,7 +207,6 @@ final class Config
     private const FIRST_PARTY_PLUGINS = [
         'phpunit/phpunit' => 'Psalm\PhpUnitPlugin\Plugin',
         'mockery/mockery' => 'Psalm\MockeryPlugin\Plugin',
-        'symfony/framework-bundle' => 'Psalm\SymfonyPsalmPlugin\Plugin',
         'laravel/framework' => 'Psalm\LaravelPlugin\Plugin',
         'orchestra/testbench' => 'Psalm\LaravelPlugin\Plugin',
         'doctrine/orm' => 'Weirdan\DoctrinePsalmPlugin\Plugin',
@@ -637,6 +639,22 @@ final class Config
     public ?int $scan_threads = null;
 
     /**
+     * The extensions the project declares, by their Composer name without `ext-` (`mbstring`, `zend-opcache`): those
+     * composer.json requires (also for development) or suggests, those its installed packages provide or replace
+     * (polyfills), and those `<enableExtensions>` lists. Null without a composer.json, which turns off
+     * MissingExtensionRequirement.
+     *
+     * @var array<string, true>|null
+     */
+    public ?array $declared_extensions = null;
+
+    /**
+     * The lowest PHP version the `php` requirement of composer.json allows, as an id (`70300`), or null when it doesn't
+     * constrain it. An extension only needs no declaration if every PHP version from this one on builds it in.
+     */
+    public ?int $lowest_composer_php_version_id = null;
+
+    /**
      * A list of php extensions supported by Psalm.
      * Where key - extension name (without ext- prefix), value - whether to load extension’s stub.
      * Values:
@@ -667,6 +685,7 @@ final class Config
         "mysqli" => null,
         "openssl" => null,
         "pdo" => null,
+        "pgsql" => null,
         "protobuf" => null,
         "random" => null,
         "rdkafka" => null,
@@ -829,6 +848,10 @@ final class Config
      */
     public static function loadFromXMLFile(string $file_path, string $current_dir): Config
     {
+        if (!is_file($file_path) || !is_readable($file_path)) {
+            throw new ConfigException('Cannot read the config file ' . $file_path);
+        }
+
         $file_contents = file_get_contents($file_path);
 
         $base_dir = dirname($file_path);
@@ -1142,9 +1165,78 @@ final class Config
     }
 
     /**
+     * @param array<array-key, mixed> $composer_json
+     * @return array<string, true>
+     */
+    private static function getDeclaredExtensions(array $composer_json, string $base_dir): array
+    {
+        $declarations = [];
+        foreach (['require', 'require-dev', 'suggest', 'provide', 'replace'] as $key) {
+            if (isset($composer_json[$key]) && is_array($composer_json[$key])) {
+                $declarations[] = $composer_json[$key];
+            }
+        }
+
+        $vendor_dir = 'vendor';
+        if (isset($composer_json['config'])
+            && is_array($composer_json['config'])
+            && isset($composer_json['config']['vendor-dir'])
+            && is_string($composer_json['config']['vendor-dir'])
+        ) {
+            $vendor_dir = $composer_json['config']['vendor-dir'];
+        }
+
+        // the polyfills installed provide the extensions they replace
+        $installed_path = $base_dir . DIRECTORY_SEPARATOR . $vendor_dir . DIRECTORY_SEPARATOR . 'composer'
+            . DIRECTORY_SEPARATOR . 'installed.json';
+        foreach ([$installed_path, Composer::getLockFilePath($base_dir)] as $path) {
+            if (!is_file($path)) {
+                continue;
+            }
+
+            $installed = json_decode((string) file_get_contents($path), true);
+            if (!is_array($installed)) {
+                continue;
+            }
+
+            $packages = [];
+            if (isset($installed['packages']) && is_array($installed['packages'])) {
+                $packages = $installed['packages'];
+                if (isset($installed['packages-dev']) && is_array($installed['packages-dev'])) {
+                    $packages = [...$packages, ...$installed['packages-dev']];
+                }
+            } elseif (array_is_list($installed)) {
+                // the installed.json of Composer 1
+                $packages = $installed;
+            }
+
+            foreach (array_filter($packages, is_array(...)) as $package) {
+                foreach (['provide', 'replace'] as $key) {
+                    if (isset($package[$key]) && is_array($package[$key])) {
+                        $declarations[] = $package[$key];
+                    }
+                }
+            }
+
+            break;
+        }
+
+        $extensions = [];
+        foreach ($declarations as $declaration) {
+            foreach (array_keys($declaration) as $name) {
+                $name = strtolower((string) $name);
+                if (str_starts_with($name, 'ext-')) {
+                    $extensions[substr($name, 4)] = true;
+                }
+            }
+        }
+
+        return $extensions;
+    }
+
+    /**
      * @param non-empty-string $file_contents
      * @psalm-suppress MixedAssignment
-     * @psalm-suppress MixedPropertyFetch
      * @throws ConfigException
      */
     private static function fromXmlAndPaths(
@@ -1265,12 +1357,25 @@ final class Config
             }
         }
 
+        if ($composer_json !== null) {
+            $config->declared_extensions = self::getDeclaredExtensions($composer_json, $config->base_dir);
+
+            $lowest_php_version = self::getLowestPhpVersion($composer_json);
+            if ($lowest_php_version !== null) {
+                $config->lowest_composer_php_version_id = (int) substr($lowest_php_version, 0, 1) * 10_000
+                    + (int) substr($lowest_php_version, 2) * 100;
+            }
+        }
+
         if (isset($config_xml->enableExtensions) && isset($config_xml->enableExtensions->extension)) {
             foreach ($config_xml->enableExtensions->extension as $extension) {
                 assert(isset($extension["name"]));
                 $extensionName = (string) $extension["name"];
                 assert(array_key_exists($extensionName, $config->php_extensions));
                 $config->php_extensions[$extensionName] = true;
+                if ($config->declared_extensions !== null) {
+                    $config->declared_extensions[strtolower($extensionName)] = true;
+                }
             }
         }
 
@@ -1560,14 +1665,12 @@ final class Config
         }
 
         if (isset($config_xml->mockClasses) && isset($config_xml->mockClasses->class)) {
-            /** @var SimpleXMLElement $mock_class */
             foreach ($config_xml->mockClasses->class as $mock_class) {
                 $config->mock_classes[] = strtolower((string)$mock_class['name']);
             }
         }
 
         if (isset($config_xml->universalObjectCrates) && isset($config_xml->universalObjectCrates->class)) {
-            /** @var SimpleXMLElement $universal_object_crate */
             foreach ($config_xml->universalObjectCrates->class as $universal_object_crate) {
                 $classString = (string) $universal_object_crate['name'];
                 $config->addUniversalObjectCrate($classString);
@@ -1598,21 +1701,18 @@ final class Config
         }
 
         if (isset($config_xml->unsuppressibleIssues) && isset($config_xml->unsuppressibleIssues->issue)) {
-            /** @var SimpleXMLElement $unsuppressible_issue */
             foreach ($config_xml->unsuppressibleIssues->issue as $unsuppressible_issue) {
                 $config->addUnsuppressibleIssue((string) $unsuppressible_issue['name']);
             }
         }
 
         if (isset($config_xml->forbiddenFunctions) && isset($config_xml->forbiddenFunctions->function)) {
-            /** @var SimpleXMLElement $forbidden_function */
             foreach ($config_xml->forbiddenFunctions->function as $forbidden_function) {
                 $config->forbidden_functions[strtolower((string) $forbidden_function['name'])] = true;
             }
         }
 
         if (isset($config_xml->forbiddenConstants) && isset($config_xml->forbiddenConstants->constant)) {
-            /** @var SimpleXMLElement $forbidden_function */
             foreach ($config_xml->forbiddenConstants->constant as $forbidden_function) {
                 $config->forbidden_constants[(string) $forbidden_function['name']] = true;
             }
@@ -1699,7 +1799,7 @@ final class Config
 
             foreach (['require', 'require-dev'] as $section) {
                 foreach ($composer_json[$section] ?? [] as $package => $_) {
-                    $plugin_class_name = self::FIRST_PARTY_PLUGINS[strtolower((string) $package)] ?? null;
+                    $plugin_class_name = self::getFirstPartyPluginClass(strtolower((string) $package));
                     if ($plugin_class_name !== null) {
                         $library_plugin_classes[] = $plugin_class_name;
                     }
@@ -1744,7 +1844,6 @@ final class Config
         }
 
         if (isset($config_xml->globals) && isset($config_xml->globals->var)) {
-            /** @var SimpleXMLElement $var */
             foreach ($config_xml->globals->var as $var) {
                 $config->globals['$' . (string) $var['name']] = (string) $var['type'];
             }
@@ -1760,6 +1859,21 @@ final class Config
         }
 
         return $config;
+    }
+
+    /**
+     * The first-party plugin of a library composer.json requires (see loadLibraryPlugins): that of any Symfony
+     * package but the polyfills, which libraries require without using Symfony
+     *
+     * @psalm-pure
+     */
+    private static function getFirstPartyPluginClass(string $package): ?string
+    {
+        if (str_starts_with($package, 'symfony/') && !str_starts_with($package, 'symfony/polyfill-')) {
+            return 'Psalm\SymfonyPsalmPlugin\Plugin';
+        }
+
+        return self::FIRST_PARTY_PLUGINS[$package] ?? null;
     }
 
     /**
@@ -2119,7 +2233,12 @@ final class Config
             }
 
             try {
+                $perf_start = Perf\Collector::$enabled ? Perf\Collector::nowNs() : 0;
                 $plugin($socket, $plugin_config);
+
+                if ($perf_start !== 0) {
+                    Perf\Collector::pluginInit($plugin_class_name, $perf_start);
+                }
             } catch (Throwable $t) {
                 throw new ConfigException(
                     'Failed to invoke plugin ' . $plugin_class_name,
@@ -2157,18 +2276,27 @@ final class Config
 
         foreach ($this->plugin_paths as $path) {
             try {
+                $perf_start = Perf\Collector::$enabled ? Perf\Collector::nowNs() : 0;
                 $plugin = new FileBasedPluginAdapter($path, $this, $codebase);
                 $plugin($socket);
+
+                if ($perf_start !== 0) {
+                    $declared = array_values(ClassLikeAnalyzer::getClassesForFile(
+                        $codebase,
+                        str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $path),
+                    ));
+                    Perf\Collector::pluginInit($declared[0] ?? $path, $perf_start);
+                }
             } catch (Throwable $e) {
                 throw new ConfigException('Failed to load plugin ' . $path, 0, $e);
             }
         }
 
         new HtmlFunctionTainter();
-        new JsonEncodeTainter();
+        new JsonFunctionTainter();
 
         $socket->registerHooksFromClass(HtmlFunctionTainter::class);
-        $socket->registerHooksFromClass(JsonEncodeTainter::class);
+        $socket->registerHooksFromClass(JsonFunctionTainter::class);
     }
 
     private function loadPlugin(ProjectAnalyzer $projectAnalyzer, string $pluginClassName): PluginInterface
@@ -2537,18 +2665,14 @@ final class Config
             }
         }
 
-        if (!$this->report_info && $reporting_level === self::REPORT_INFO) {
-            $reporting_level = self::REPORT_SUPPRESS;
-        }
-
         $parent_issue_type = self::getParentIssueType($issue_type);
 
         if ($parent_issue_type && $reporting_level === self::REPORT_ERROR) {
-            $parent_reporting_level = $this->getReportingLevelForFile($parent_issue_type, $e->getFilePath());
+            $reporting_level = $this->getReportingLevelForFile($parent_issue_type, $e->getFilePath());
+        }
 
-            if ($parent_reporting_level !== $reporting_level) {
-                return $parent_reporting_level;
-            }
+        if (!$this->report_info && $reporting_level === self::REPORT_INFO) {
+            $reporting_level = self::REPORT_SUPPRESS;
         }
 
         return $reporting_level;
@@ -2749,7 +2873,6 @@ final class Config
                 // so we should also check reporting levels for the symbol in global scope
                 $root_function_id = (string) preg_replace('/.*\\\/', '', $function_id);
                 if ($root_function_id !== $function_id) {
-                    /** @psalm-suppress PossiblyUndefinedStringArrayOffset https://github.com/vimeo/psalm/issues/7656 */
                     $level = $this->issue_handlers[$issue_type]->getReportingLevelForFunction($root_function_id);
                 }
             }
@@ -2944,7 +3067,7 @@ final class Config
 
         $codebase->register_stub_files = true;
 
-        $codebase->scanFiles();
+        $codebase->scanFiles(1, 'scan.stubs');
 
         $codebase->register_stub_files = false;
 
@@ -2988,7 +3111,7 @@ final class Config
         }
 
         if ($library_stubs !== []) {
-            $codebase->scanFiles();
+            $codebase->scanFiles(1, 'scan.stubs');
         }
 
         $codebase->register_stub_files = true;
@@ -3031,6 +3154,10 @@ final class Config
             $this->internal_stubs[] = $stubsDir . 'Php82.phpstub';
             $this->internal_stubs[] = $stubsDir . 'Php82Functions.phpstub';
             $this->php_extensions['random'] = true; // random is a part of the PHP core starting from PHP 8.2
+        }
+
+        if ($codebase->analysis_php_version_id >= 8_03_00) {
+            $this->internal_stubs[] = $stubsDir . 'Php83.phpstub';
         }
 
         if ($codebase->analysis_php_version_id >= 8_04_00) {
@@ -3096,7 +3223,7 @@ final class Config
 
         $progress->debug('Registering stub files' . "\n");
 
-        $codebase->scanFiles();
+        $codebase->scanFiles(1, 'scan.stubs');
 
         $progress->debug('Finished registering stub files' . "\n");
 
@@ -3476,6 +3603,42 @@ final class Config
     }
 
     /**
+     * The Composer packages of the project and of Psalm's own installation, the project's first, with absolute
+     * install paths
+     *
+     * @internal
+     * @return list<array{
+     *     name: string,
+     *     version: ?string,
+     *     install_path: string,
+     *     issues: ?string,
+     *     source: ?string,
+     *     plugin_class: ?string
+     * }>
+     */
+    public function getInstalledPackages(): array
+    {
+        $packages = [];
+        foreach ([$this->getProjectInstalledJsonPath(), self::getPsalmInstalledJsonPath()] as $installed_path) {
+            foreach (self::readInstalledPackages($installed_path) as $package) {
+                $key = strtolower($package['name']);
+                if ($package['install_path'] !== null && !isset($packages[$key])) {
+                    $packages[$key] = [
+                        'name' => $package['name'],
+                        'version' => $package['version'],
+                        'install_path' => Path::makeAbsolute($package['install_path'], dirname($installed_path)),
+                        'issues' => $package['issues'],
+                        'source' => $package['source'],
+                        'plugin_class' => $package['plugin_class'],
+                    ];
+                }
+            }
+        }
+
+        return array_values($packages);
+    }
+
+    /**
      * The packages of an installed.json
      *
      * @return list<array{
@@ -3483,7 +3646,10 @@ final class Config
      *     install_path: ?string,
      *     require: list<array-key>,
      *     replace: list<array-key>,
-     *     plugin_class: ?string
+     *     plugin_class: ?string,
+     *     version: ?string,
+     *     issues: ?string,
+     *     source: ?string
      * }>
      */
     private static function readInstalledPackages(string $installed_path): array
@@ -3512,6 +3678,19 @@ final class Config
                         && is_array($package['extra']['psalm'])
                         && is_string($package['extra']['psalm']['pluginClass'])
                             ? $package['extra']['psalm']['pluginClass']
+                            : null,
+                    'version' => isset($package['version']) && is_string($package['version'])
+                        ? $package['version']
+                        : null,
+                    'issues' => isset($package['support']['issues'])
+                        && is_array($package['support'])
+                        && is_string($package['support']['issues'])
+                            ? $package['support']['issues']
+                            : null,
+                    'source' => isset($package['source']['url'])
+                        && is_array($package['source'])
+                        && is_string($package['source']['url'])
+                            ? $package['source']['url']
                             : null,
                 ];
             }
@@ -3823,6 +4002,16 @@ final class Config
         $this->preloaded_stub_files[$stub_file] = $stub_file;
     }
 
+    /**
+     * The stub files whose classes are loaded before the project is scanned (`preloadClasses="true"`)
+     *
+     * @return array<string, string>
+     */
+    public function getPreloadedStubFiles(): array
+    {
+        return $this->preloaded_stub_files;
+    }
+
     public function getPhpVersion(): ?string
     {
         return $this->getPhpVersionFromConfig() ?? $this->getPHPVersionFromComposerJson();
@@ -3842,8 +4031,53 @@ final class Config
     }
 
     /**
+     * The lowest PHP version (`8.2`) the `php` requirement of a composer.json allows
+     *
+     * @param array<array-key, mixed> $composer_json
      * @psalm-suppress MixedAssignment
      * @psalm-suppress MixedArrayAccess
+     */
+    private static function getLowestPhpVersion(array $composer_json): ?string
+    {
+        // php-64bit is the platform package of a 64-bit php: it constrains the version just as well
+        $php_version = $composer_json['require']['php'] ?? $composer_json['require']['php-64bit'] ?? null;
+
+        if (is_string($php_version)) {
+            $version_parser = new VersionParser();
+
+            $constraint = $version_parser->parseConstraints($php_version);
+            $php_versions = [
+                '5.4',
+                '5.5',
+                '5.6',
+                '7.0',
+                '7.1',
+                '7.2',
+                '7.3',
+                '7.4',
+                '8.0',
+                '8.1',
+                '8.2',
+                '8.3',
+                '8.4',
+                '8.5',
+                '8.6',
+            ];
+
+            foreach ($php_versions as $candidate) {
+                if ($constraint->matches(new Constraint('<=', "$candidate.0.0-dev"))
+                    || $constraint->matches(new Constraint('<=', "$candidate.999"))
+                ) {
+                    return $candidate;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @psalm-suppress MixedAssignment
      */
     public function getPHPVersionFromComposerJson(): ?string
     {
@@ -3858,42 +4092,11 @@ final class Config
                 $composer_json = null;
             }
 
-            if (!$composer_json) {
+            if (!is_array($composer_json)) {
                 throw new UnexpectedValueException('Invalid composer.json at ' . $composer_json_path);
             }
-            // php-64bit is the platform package of a 64-bit php: it constrains the version just as well
-            $php_version = $composer_json['require']['php'] ?? $composer_json['require']['php-64bit'] ?? null;
 
-            if (is_string($php_version)) {
-                $version_parser = new VersionParser();
-
-                $constraint = $version_parser->parseConstraints($php_version);
-                $php_versions = [
-                    '5.4',
-                    '5.5',
-                    '5.6',
-                    '7.0',
-                    '7.1',
-                    '7.2',
-                    '7.3',
-                    '7.4',
-                    '8.0',
-                    '8.1',
-                    '8.2',
-                    '8.3',
-                    '8.4',
-                    '8.5',
-                    '8.6',
-                ];
-
-                foreach ($php_versions as $candidate) {
-                    if ($constraint->matches(new Constraint('<=', "$candidate.0.0-dev"))
-                        || $constraint->matches(new Constraint('<=', "$candidate.999"))
-                    ) {
-                        return $candidate;
-                    }
-                }
-            }
+            return self::getLowestPhpVersion($composer_json);
         }
 
         return null;

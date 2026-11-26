@@ -18,12 +18,14 @@ use Psalm\Storage\Capabilities;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TConditional;
 use Psalm\Type\Atomic\TEnumCase;
+use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TGlobalConstant;
 use Psalm\Type\Atomic\TInt;
@@ -39,8 +41,10 @@ use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TPropertiesOf;
+use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateValueOf;
@@ -127,7 +131,7 @@ final class TypeExpander
 
         // combining can still simplify the parts, e.g. drop a subclass of another class of the union
         if (!$changed && count($new_return_type_parts) > 1) {
-            $fleshed_out_type = TypeCombiner::combine($new_return_type_parts, $codebase);
+            $fleshed_out_type = TypeCombiner::combineKeepingNeverBoundVariables($new_return_type_parts, $codebase);
             $changed = $fleshed_out_type->getAtomicTypes() !== $return_type->getAtomicTypes();
         }
 
@@ -148,7 +152,7 @@ final class TypeExpander
             ]);
         }
 
-        $fleshed_out_type ??= TypeCombiner::combine(
+        $fleshed_out_type ??= TypeCombiner::combineKeepingNeverBoundVariables(
             $new_return_type_parts,
             $codebase,
         );
@@ -335,6 +339,8 @@ final class TypeExpander
             }
 
             if ($return_type instanceof TNamedObject) {
+                $is_receiver = false;
+
                 $return_type = self::expandNamedObject(
                     $codebase,
                     $return_type,
@@ -343,7 +349,14 @@ final class TypeExpander
                     $parent_class,
                     $final,
                     $expand_generic,
+                    $is_receiver,
                 );
+
+                // the receiver is expanded already, and expanding its type arguments with itself again never ends
+                // when one of them is bound by `static`
+                if ($is_receiver) {
+                    return [$return_type];
+                }
             }
         }
 
@@ -389,6 +402,17 @@ final class TypeExpander
 
             if ($expand_templates) {
                 return array_values($new_as_type->getAtomicTypes());
+            }
+
+            // `T as (T as X)`, from a `static` bound read on a receiver typed T, is `T as X`
+            $bound = $new_as_type->getSingleAtomic();
+            if ($new_as_type->isSingle()
+                && $bound instanceof TTemplateParam
+                && $bound->param_name === $return_type->param_name
+                && $bound->defining_class === $return_type->defining_class
+                && !$return_type->extra_types
+            ) {
+                return [$bound];
             }
 
             $return_type = $return_type->replaceAs($new_as_type);
@@ -603,11 +627,28 @@ final class TypeExpander
             $potential_ints = [];
 
             foreach ($new_value_types as $new_value_type) {
+                // a wildcard like `self::FLAG_*` may also match constants that are not flags
+                if ($new_value_type instanceof TString
+                    || $new_value_type instanceof TFloat
+                    || $new_value_type instanceof TBool
+                    || $new_value_type instanceof TNull
+                    || $new_value_type instanceof TArray
+                    || $new_value_type instanceof TKeyedArray
+                    || $new_value_type instanceof TNamedObject
+                    || $new_value_type instanceof TObject
+                ) {
+                    continue;
+                }
+
                 if (!$new_value_type instanceof TLiteralInt) {
                     return [new TInt()];
                 }
 
                 $potential_ints[] = $new_value_type->value;
+            }
+
+            if ($potential_ints === []) {
+                return [new TInt()];
             }
 
             return TypeParser::getComputedIntsFromMask($potential_ints);
@@ -695,7 +736,10 @@ final class TypeExpander
                 );
             }
 
-            /** @psalm-suppress InvalidArgument Psalm bug */
+            /**
+             * @psalm-suppress InvalidArgument Psalm bug
+             * @psalm-suppress ArgumentTypeCoercion Psalm bug
+             */
             $return_type = $return_type instanceof TGenericObject
                 ? $return_type->setHeldTypes($type_params)
                 : $return_type->setTypeParams($type_params);
@@ -894,6 +938,7 @@ final class TypeExpander
         ?string $parent_class,
         bool $final = false,
         bool &$expand_generic = false,
+        bool &$is_receiver = false,
     ): TNamedObject|TTemplateParam {
         // a static type is resolved to the called class below, with its own type arguments
         if ($expand_generic
@@ -948,32 +993,57 @@ final class TypeExpander
                     $is_static_resolved,
                 );
             } else {
+                $generic_receiver = $static_class_type instanceof TTemplateParam
+                    ? self::getGenericBound($static_class_type)
+                    : $static_class_type;
+
+                // a template receiver is its bound with the other type arguments: `C` only stands for itself
                 if ($return_type instanceof TGenericObject
-                    && $static_class_type instanceof TGenericObject
+                    && $generic_receiver instanceof TGenericObject
+                    && ($generic_receiver === $static_class_type
+                        || !self::haveSameTypeParams($return_type, $generic_receiver))
                 ) {
+                    $receiver_storage = $codebase->classlike_storage_provider->has($generic_receiver->value)
+                        ? $codebase->classlike_storage_provider->get($generic_receiver->value)
+                        : null;
+
+                    // a template bound by a final class can only be that class
+                    if ($generic_receiver !== $static_class_type && $receiver_storage?->final) {
+                        $is_static = $return_type->is_static;
+                        $is_static_resolved = null;
+                    }
+
                     $return_type = $return_type->setValueIsStatic(
-                        $static_class_type->value,
+                        $generic_receiver->value,
                         $is_static,
                         $is_static_resolved,
                     );
 
-                    if ($codebase->classlike_storage_provider->has($static_class_type->value)) {
+                    if ($receiver_storage !== null) {
                         $type_params = PurityArguments::trim(
                             $return_type->type_params,
-                            $codebase->classlike_storage_provider->get($static_class_type->value),
+                            $receiver_storage,
                         );
 
                         if ($type_params !== [] && count($type_params) !== count($return_type->type_params)) {
                             $return_type = $return_type->setTypeParams($type_params);
                         }
                     }
+
+                    $return_type = $return_type->setIntersectionTypes(array_merge(
+                        $return_type->extra_types,
+                        $generic_receiver->extra_types,
+                        $static_class_type->extra_types,
+                    ));
                 } elseif ($static_class_type instanceof TNamedObject) {
                     $return_type = $static_class_type->setIsStatic(
                         $is_static,
                         $is_static_resolved,
                     );
+                    $is_receiver = true;
                 } else {
                     $return_type = $static_class_type;
+                    $is_receiver = true;
                 }
             }
         } elseif ($return_type->is_static
@@ -987,6 +1057,7 @@ final class TypeExpander
             $return_type = $static_class_type->setIntersectionTypes(
                 array_merge($return_type->extra_types, $static_class_type->extra_types),
             )->setIsStatic(!$final, true);
+            $is_receiver = true;
         } elseif ($return_type->is_static && !$return_type->is_static_resolved
             && ($static_class_type instanceof TNamedObject
                 || $static_class_type instanceof TTemplateParam)
@@ -1032,6 +1103,16 @@ final class TypeExpander
                 $static_class_type,
                 false,
             );
+        } elseif ($return_type->is_static
+            && is_string($static_class_type)
+            && $final
+            && $self_class !== null
+            && $codebase->classImplements($self_class, $return_type->value)
+        ) {
+            // the interface stays next to the class, it holds the type arguments of `I<int>&static`
+            $return_type = $return_type
+                ->setIsStatic(false)
+                ->addIntersectionType(new TNamedObject($static_class_type));
         } elseif ($self_class && $return_type_lc === 'self') {
             $return_type = $return_type->setValue($self_class);
         } elseif ($parent_class && $return_type_lc === 'parent') {
@@ -1042,6 +1123,35 @@ final class TypeExpander
         }
 
         return $return_type;
+    }
+
+    /**
+     * @psalm-pure
+     */
+    private static function getGenericBound(TTemplateParam $template): ?TGenericObject
+    {
+        $bound_types = $template->as->getAtomicTypes();
+        $bound = reset($bound_types);
+
+        return count($bound_types) === 1 && $bound instanceof TGenericObject ? $bound : null;
+    }
+
+    /**
+     * @psalm-pure
+     */
+    private static function haveSameTypeParams(TGenericObject $a, TGenericObject $b): bool
+    {
+        if (count($a->type_params) !== count($b->type_params)) {
+            return false;
+        }
+
+        foreach ($a->type_params as $offset => $type_param) {
+            if ($type_param->getId() !== $b->type_params[$offset]->getId()) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**
@@ -1210,7 +1320,7 @@ final class TypeExpander
 
             if ($assertion
                 && $return_type->subject_type === null
-                && $return_type->param_name === (string) $return_type->if_type
+                && self::isTheConditionalTemplate($return_type, $return_type->if_type)
             ) {
                 $if_conditional_return_type = TypeCombiner::combine(
                     $if_conditional_return_types,
@@ -1231,7 +1341,7 @@ final class TypeExpander
 
             if ($assertion
                 && $return_type->subject_type === null
-                && $return_type->param_name === (string) $return_type->else_type
+                && self::isTheConditionalTemplate($return_type, $return_type->else_type)
             ) {
                 $else_conditional_return_type = TypeCombiner::combine(
                     $else_conditional_return_types,
@@ -1328,6 +1438,24 @@ final class TypeExpander
             ),
         );
         return [$return_type];
+    }
+
+    /**
+     * Whether a branch of the conditional is its template itself, as `T` in `(T is list ? T : null)`
+     *
+     * @psalm-pure
+     */
+    private static function isTheConditionalTemplate(TConditional $conditional, Union $branch): bool
+    {
+        if (!$branch->isSingle()) {
+            return false;
+        }
+
+        $atomic = $branch->getSingleAtomic();
+
+        return $atomic instanceof TTemplateParam
+            && $atomic->param_name === $conditional->param_name
+            && $atomic->defining_class === $conditional->defining_class;
     }
 
     /**

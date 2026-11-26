@@ -110,6 +110,7 @@ class SomePlugin implements \Psalm\Plugin\EventHandler\AfterStatementAnalysisInt
 - `PropertyExistenceProviderInterface` - can be used to override Psalm's builtin property existence checks for one or more classes.
 - `PropertyTypeProviderInterface` - can be used to override Psalm's builtin property type lookup for one or more classes.
 - `PropertyVisibilityProviderInterface` - can be used to override Psalm's builtin property visibility checks for one or more classes.
+- `AddCallTaintsInterface` and `RemoveCallTaintsInterface` - can be used to add or remove the taints of an argument going into a call, or of what a call returns, from the function-like called and the argument's offset and type (see [Wiring calls into the taint graph](#wiring-calls-into-the-taint-graph)).
 - `DynamicFunctionStorageProviderInterface` - can be used to override signature for one or more functions. It means you can define variadic param list. Infer return type by input args. Define function templates. Also check out `Psalm\Plugin\DynamicFunctionStorage` to find out what api it brings for you to change function's definition.
 
 Here are a couple of example plugins:
@@ -129,6 +130,77 @@ You can also specify an absolute path to your plugin:
     <plugins>
         <plugin filename="/path/to/SomePlugin.php" />
     </plugins>
+```
+
+### Wiring calls into the taint graph
+
+`Codebase::addTaintedCall()` makes taint analysis follow a call PHP code doesn't make (a template calling a function,
+a configuration naming a method), wired as Psalm wires a PHP call of it. It returns the node of what the call returns
+(null without taint analysis). A plugin providing the return type of `call_through('function_name', ...$args)`:
+
+```php
+$node = $codebase->addTaintedCall(
+    'show',                     // 'ns\function_name' or 'Class::method'
+    $argument_nodes,            // list<list<DataFlowNode>>: the nodes of each argument, by position
+    $argument_types,            // array<int, Union>: the types of the arguments, by position
+    $event->getCodeLocation(),
+    $source,                    // nothing is wired while its taints aren't tracked
+);
+
+return $node === null ? $type : $type->addParentNodes([$node->id => $node]);
+```
+
+```php
+function show(string $s): void {
+    echo $s; // TaintedHtml
+}
+
+/** @psalm-taint-sink ($kind is "sql" ? "sql" : null) $value */
+function query(string $kind, string $value): void {}
+
+/** @psalm-taint-escape ($escape is true ? "html" : null) */
+function maybe_escape(string $s, bool $escape): string {
+    return $s;
+}
+
+/** @psalm-taint-specialize */
+function specialized(string $s): string {
+    return $s;
+}
+
+call_through("show", (string) $_GET["a"]);
+call_through("query", "sql", (string) $_GET["b"]);                // TaintedSql
+call_through("query", "other", (string) $_GET["c"]);              // no issue
+echo call_through("maybe_escape", (string) $_GET["d"], false);    // TaintedHtml
+echo call_through("maybe_escape", (string) $_GET["e"], true);     // TaintedTextWithQuotes, no TaintedHtml
+call_through("specialized", (string) $_GET["f"]);
+echo call_through("specialized", "safe");                         // no issue
+```
+
+Not wired: the overrides of a method (wire a call of each), by-reference parameters, callables given to callable
+parameters, and keyed stores (`@psalm-flow ($value) -> Store::$data[$key]`).
+
+`AddCallTaintsInterface` and `RemoveCallTaintsInterface` handlers add or remove the taints of an argument going into a
+call, or of what a call returns. Unlike `AddRemoveTaintsEvent`, their `AddRemoveCallTaintsEvent` has no expression: it
+gives the function-like called, the argument offset (null for what the call returns), its type and a location. Psalm
+dispatches it for PHP calls and for `addTaintedCall()` alike:
+
+```php
+public static function removeCallTaints(AddRemoveCallTaintsEvent $event): int
+{
+    return strtolower($event->getFunctionId()) === 'clean' && $event->getArgumentOffset() === 0
+        ? TaintKind::INPUT_HTML
+        : 0;
+}
+```
+
+```php
+function clean(string $s): string {
+    return $s;
+}
+
+echo clean((string) $_GET["g"]);                     // TaintedTextWithQuotes, no TaintedHtml
+echo call_through("clean", (string) $_GET["h"]);     // TaintedTextWithQuotes, no TaintedHtml
 ```
 
 ### Using Xdebug

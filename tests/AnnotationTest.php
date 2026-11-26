@@ -5,11 +5,17 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Override;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
+use Psalm\Internal\Analyzer\IssueData;
+use Psalm\IssueBuffer;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+
+use function array_column;
+use function array_map;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -24,6 +30,73 @@ final class AnnotationTest extends TestCase
         parent::setUp();
         $codebase = $this->project_analyzer->getCodebase();
         $codebase->reportUnusedVariables();
+    }
+
+    #[DataProvider('providerVariableTagWithoutType')]
+    public function testVariableTagWithoutTypeIsAMisplacedVariable(string $code): void
+    {
+        $this->addFile('somefile.php', $code);
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('Misplaced variable');
+
+        $this->withErrorsThrown(fn() => $this->analyzeFile('somefile.php', new Context()));
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     * @psalm-pure
+     */
+    public static function providerVariableTagWithoutType(): iterable
+    {
+        yield 'property' => [
+            '<?php
+                /**
+                 * @property
+                 *        $p
+                 */
+                final class A {}',
+        ];
+        yield 'propertyRead' => [
+            '<?php
+                /**
+                 * @property-read
+                 *        $p
+                 */
+                final class A {}',
+        ];
+        yield 'global' => [
+            '<?php
+                /**
+                 * @global
+                 *        $g
+                 */
+                function f(): void {}',
+        ];
+        yield 'param' => [
+            '<?php
+                /**
+                 * @param
+                 *        $p
+                 */
+                function f(int $p): void {}',
+        ];
+        yield 'paramOut' => [
+            '<?php
+                /**
+                 * @param-out
+                 *        $p
+                 */
+                function f(?int &$p): void {}',
+        ];
+        yield 'paramClosureThis' => [
+            '<?php
+                /**
+                 * @param-closure-this
+                 *        $c
+                 */
+                function f(Closure $c): void {}',
+        ];
     }
 
     public function testLessSpecificImplementedReturnTypeWithDocblockOnMultipleLines(): void
@@ -123,6 +196,179 @@ final class AnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
+    public function testBodyIsAnalyzedAfterMismatchingDocblockReturnType(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @return iterable<string> */
+                function foo(): array {
+                    echo $undefined;
+                    return [];
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        self::assertSame(
+            ['MismatchingDocblockReturnType', 'UndefinedVariable', 'MixedArgument'],
+            array_column(IssueBuffer::getIssuesDataForFile($file_path), 'type'),
+        );
+    }
+
+    public function testReturnOfAFunctionWithAMismatchingDocblockIsCheckedAgainstTheSignature(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @return int */
+                function matches(): string {
+                    return "a";
+                }
+
+                /** @return int */
+                function differs(): string {
+                    return 5;
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        self::assertSame(
+            [
+                ['MismatchingDocblockReturnType', 2],
+                ['MismatchingDocblockReturnType', 7],
+                ['InvalidReturnStatement', 9],
+                ['InvalidReturnType', 7],
+            ],
+            array_map(
+                static fn(IssueData $issue): array => [$issue->type, $issue->line_from],
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
+        );
+        self::assertStringContainsString(
+            "does not match the declared return type 'string'",
+            IssueBuffer::getIssuesDataForFile($file_path)[2]->message,
+        );
+    }
+
+    public function testReturnOfAMethodWithAMismatchingDocblockIsCheckedAgainstTheSignature(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                class A {
+                    /** @return int */
+                    public function run(): string {
+                        return "x";
+                    }
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        self::assertSame(
+            ['MismatchingDocblockReturnType'],
+            array_column(IssueBuffer::getIssuesDataForFile($file_path), 'type'),
+        );
+    }
+
+    public function testReturnOfAClosureWithAMismatchingDocblockIsCheckedAgainstItsDocblock(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                $c = /** @return int */ function (): string {
+                    return "a";
+                };
+
+                $d = /** @return int */ fn(): string => "a";
+
+                echo $c() . $d();',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        self::assertSame(
+            [
+                ['InvalidReturnStatement', 3],
+                ['InvalidReturnType', 2],
+                ['InvalidReturnStatement', 6],
+                ['InvalidReturnType', 6],
+            ],
+            array_map(
+                static fn(IssueData $issue): array => [$issue->type, $issue->line_from],
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
+        );
+    }
+
+    public function testValidDocblockReturnTypeContainedBySignatureIsStillChecked(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @return numeric */
+                function f(mixed $v): int|float|string {
+                    return "abc";
+                }',
+        );
+
+        $this->project_analyzer->setPhpVersion('8.0', 'tests');
+        $this->analyzeFile($file_path, new Context());
+
+        self::assertContains(
+            'InvalidReturnStatement',
+            array_column(IssueBuffer::getIssuesDataForFile($file_path), 'type'),
+        );
+    }
+
+    public function testMethodBodyIsAnalyzedAfterMismatchingDocblockReturnType(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                class A {
+                    /** @return iterable<string> */
+                    public function foo(): array {
+                        echo $this->missing();
+                        return [];
+                    }
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        self::assertSame(
+            ['MismatchingDocblockReturnType', 'UndefinedMethod', 'MixedArgument'],
+            array_column(IssueBuffer::getIssuesDataForFile($file_path), 'type'),
+        );
+    }
+
     public function testInvalidParamDefault(): void
     {
         $this->expectException(CodeException::class);
@@ -184,6 +430,70 @@ final class AnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'invalidInlineDocblockIsSuppressedByTheFunction' => [
+                'code' => '<?php
+                    /** @psalm-suppress InvalidDocblock */
+                    function assign(): int {
+                        /** @var array< */
+                        $a = 1;
+                        return $a;
+                    }
+
+                    /**
+                     * @param list<int> $list
+                     * @psalm-suppress InvalidDocblock
+                     */
+                    function iterate(array $list): void {
+                        /** @var array< $v */
+                        foreach ($list as $v) {
+                            echo $v;
+                        }
+                    }
+
+                    /** @psalm-suppress InvalidDocblock */
+                    function returned(): int {
+                        $r = 1;
+                        /** @var array< $r */
+                        return $r;
+                    }
+
+                    /** @psalm-suppress InvalidDocblock */
+                    function yielded(): Generator {
+                        /** @var array< $r */
+                        yield 1;
+                    }
+
+                    /** @psalm-suppress InvalidDocblock */
+                    function reference(): int {
+                        $b = 1;
+                        /** @var int */
+                        $a = &$b;
+                        return $a;
+                    }
+
+                    /** @psalm-suppress InvalidDocblock */
+                    function statement(): void {
+                        /** @var array< $q */
+                        echo 1;
+                    }
+
+                    /**
+                     * @param list<int> $list
+                     * @psalm-suppress InvalidDocblock
+                     * @psalm-suppress MissingDocblockType
+                     */
+                    function misplacedVariable(array $list): int {
+                        /** @var $a int */
+                        $a = 1;
+                        /** @var $v int */
+                        foreach ($list as $v) {
+                            echo $v;
+                        }
+                        /** @var $q int */
+                        echo 1;
+                        return $a;
+                    }',
+            ],
             'callableParamsWithTheSameInnerParameterNameAreNotDuplicated' => [
                 'code' => '<?php
                     /**
@@ -1767,7 +2077,7 @@ final class AnnotationTest extends TestCase
                 'code' => '<?php
                     $_arr = ["foo\\bar\nbaz" => "literal"];',
                 'assertions' => [
-                    '$_arr' => 'array{\'foo\\\\bar\nbaz\': string}',
+                    '$_arr' => 'array{"foo\\\\bar\nbaz": string}',
                 ],
             ],
             'doubleSpaceBeforeAt' => [
@@ -1832,6 +2142,26 @@ final class AnnotationTest extends TestCase
                         public const OPEN = 1;
                         public const MODIFIED = 2;
                         public const NEW = 4;
+                    }
+
+                    /**
+                     * @param int-mask-of<FileFlag::*> $flags
+                     */
+                    function takesFlags(int $flags) : void {
+                        echo $flags;
+                    }
+
+                    takesFlags(FileFlag::MODIFIED | FileFlag::NEW);',
+            ],
+            'intMaskOfClassWildcardIgnoresConstantsThatAreNotIntegers' => [
+                'code' => '<?php
+                    final class FileFlag {
+                        public const OPEN = 1;
+                        public const MODIFIED = 2;
+                        public const NEW = 4;
+                        public const NAME = "flags";
+                        public const RATIO = 1.5;
+                        public const NOTHING = null;
                     }
 
                     /**
@@ -1925,6 +2255,9 @@ final class AnnotationTest extends TestCase
 
                     new UserRole(new stdClass(), new stdClass());
                     ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'promotedPropertiesDocumentationForPropertyAndSignature' => [
                 'code' => '<?php
@@ -1938,6 +2271,9 @@ final class AnnotationTest extends TestCase
                         ) {
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'globalDocBlock' => [
                 'code' => '<?php
@@ -2277,6 +2613,59 @@ final class AnnotationTest extends TestCase
                         return $foo;
                     }',
             ],
+            'typeAndVariableLinesOfEachTag' => [
+                'code' => '<?php
+                    /**
+                     * @property int $a
+                     * @property-read string &$b
+                     */
+                    final class A {
+                        public function __get(string $name) {
+                            return null;
+                        }
+                    }
+
+                    /**
+                     * @param int ...$xs
+                     * @return list<int>
+                     */
+                    function variadic(...$xs): array {
+                        return array_values($xs);
+                    }
+
+                    /**
+                     * @param int &$x
+                     * @param-out string $x
+                     */
+                    function byRef(&$x): int {
+                        $old = $x;
+                        $x = "a";
+                        return $old;
+                    }
+
+                    /**
+                     * @global float $g
+                     */
+                    function readGlobal(): float {
+                        global $g;
+                        return $g;
+                    }
+
+                    $o = new A();
+                    $pa = $o->a;
+                    $pb = $o->b;
+                    $xs = variadic(1, 2);
+                    $r = 1;
+                    $old = byRef($r);',
+                'assertions' => [
+                    '$pa===' => 'int',
+                    '$pb===' => 'string',
+                    '$xs===' => 'list<int>',
+                    '$r===' => 'string',
+                    '$old===' => 'int',
+                ],
+                'ignored_issues' => ['UnusedVariable'],
+            ],
             'fileLevelVarDocblockBeforeAUseStatement' => [
                 'code' => '<?php
                     /**
@@ -2344,6 +2733,14 @@ final class AnnotationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'invalidArrayKeyTypeIsShownWhole' => [
+                'code' => '<?php
+                    /**
+                     * @param array<list<int>, string> $a
+                     */
+                    function foo(array $a): void {}',
+                'error_message' => 'Invalid array key type list<int> in docblock for foo',
+            ],
             'duplicatedCallableParamTagsAreStillReported' => [
                 'code' => '<?php
                     /**
@@ -2486,6 +2883,62 @@ final class AnnotationTest extends TestCase
                     }',
                 'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:14:27 - '
                     . 'Argument 1 of Foo\f expects 0|4, but 1 provided',
+            ],
+            'intMaskOfClassWildcardMatchingAnEnumConstantStillChecksTheArgument' => [
+                'code' => '<?php
+                    enum E { case X; }
+
+                    final class A {
+                        public const F_ONE = 1;
+                        public const F_TWO = 2;
+                        public const F_ENUM = E::X;
+
+                        /** @param int-mask-of<self::F_*> $a */
+                        public static function a(int $a): void {
+                            echo $a;
+                        }
+                    }
+
+                    A::a(1234);',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'intMaskOfClassWildcardMatchingAnArrayConstantStillChecksTheArgument' => [
+                'code' => '<?php
+                    final class A {
+                        public const F_ONE = 1;
+                        public const F_TWO = 2;
+                        public const F_LIST = [];
+
+                        /** @param int-mask-of<self::F_*> $a */
+                        public static function a(int $a): void {
+                            echo $a;
+                        }
+                    }
+
+                    A::a(1234);',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'intMaskOfClassWildcardMatchingAStringConstantStillChecksTheArgument' => [
+                'code' => '<?php
+                    final class FileFlag {
+                        public const OPEN = 1;
+                        public const MODIFIED = 2;
+                        public const NEW = 4;
+                        public const MISTAKE = "string";
+                    }
+
+                    /** @param int-mask-of<FileFlag::*> $flags */
+                    function takesFlags(int $flags): void {
+                        echo $flags;
+                    }
+
+                    takesFlags(1234);',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:14:32 - '
+                    . 'Argument 1 of takesFlags expects 0|1|2|3|4|5|6|7, but 1234 provided',
             ],
             'intMaskOfANonIntegerConstantOfTheNamespace' => [
                 'code' => '<?php
@@ -2650,6 +3103,14 @@ final class AnnotationTest extends TestCase
                         global $bar;
                     }',
                 'error_message' => 'InvalidClass',
+            ],
+            'globalWithoutName' => [
+                'code' => '<?php
+                    /**
+                     * @global int
+                     */
+                    function f(): void {}',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:21 - Badly-formatted @global in docblock for f',
             ],
             'globalDocblockUndefinedClass' => [
                 'code' => '<?php
@@ -3346,6 +3807,8 @@ final class AnnotationTest extends TestCase
                     new UserRole("a");
                     ',
                 'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'promotedPropertiesDocumentationFailsWhenSendingBadTypeAgainstProperty' => [
                 'code' => '<?php
@@ -3361,6 +3824,8 @@ final class AnnotationTest extends TestCase
                     new UserRole("a");
                     ',
                 'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'promotedPropertyDuplicateDoc' => [
                 'code' => '<?php
@@ -3375,6 +3840,8 @@ final class AnnotationTest extends TestCase
                     }
                     ',
                 'error_message' => 'InvalidDocblock',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'promotedPropertyWithParamDocblockAndSignatureType' => [
                 'code' => '<?php
@@ -3393,6 +3860,8 @@ final class AnnotationTest extends TestCase
 
                     echo $a->licenseType;',
                 'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'malformedConditionalReturnTypeDoesNotCrash' => [
                 'code' => '<?php

@@ -14,12 +14,15 @@ use Psalm\Storage\Assertion;
 use Psalm\Storage\Assertion\IsClassNotEqual;
 use Psalm\Storage\Assertion\IsNotCountable;
 use Psalm\Storage\Assertion\IsNotIdentical;
+use Psalm\Storage\Assertion\IsNotLooselyEqual;
 use Psalm\Storage\Assertion\IsNotType;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TEnumCase;
+use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TInt;
@@ -35,14 +38,17 @@ use Psalm\Type\Atomic\TNonEmptyNonspecificLiteralString;
 use Psalm\Type\Atomic\TNonEmptyString;
 use Psalm\Type\Atomic\TNonFalsyString;
 use Psalm\Type\Atomic\TNonspecificLiteralString;
+use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTraitString;
+use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
 
 use function array_filter;
 use function count;
+use function is_nan;
 use function strtolower;
 
 /**
@@ -88,6 +94,13 @@ final class NegatedAssertionReconciler extends Reconciler
                 return $existing_var_type;
             }
 
+            // not identical to one of the values an operand may have, the value may still be any of them
+            if (($assertion instanceof IsNotIdentical || $assertion instanceof IsNotLooselyEqual)
+                && $assertion->comparand !== null
+            ) {
+                return $existing_var_type;
+            }
+
             return self::handleLiteralNegatedEquality(
                 $statements_analyzer,
                 $assertion,
@@ -125,7 +138,9 @@ final class NegatedAssertionReconciler extends Reconciler
 
         if (($assertion instanceof IsNotType
                 && $assertion_type instanceof TIterable
-                && $assertion_type->type_params[1]->isMixed())
+                && $assertion_type->type_params[1]->isMixed()
+                // an array is not an instance of the intersected types
+                && !$assertion_type->extra_types)
             || $assertion instanceof IsNotCountable
         ) {
             $existing_var_type->removeType('array');
@@ -210,16 +225,37 @@ final class NegatedAssertionReconciler extends Reconciler
         ) {
             // do nothing
         } elseif ($assertion instanceof IsClassNotEqual) {
-            // do nothing
+            // an object of a final class is of exactly that class: one whose class isn't that one is not of it
+            $codebase = $statements_analyzer->getCodebase();
+
+            if (!$existing_var_type->isSingle()
+                && $codebase->classlike_storage_provider->has($assertion->type)
+                && $codebase->classlike_storage_provider->get($assertion->type)->final
+            ) {
+                foreach ($existing_var_type->getAtomicTypes() as $key_type => $existing_atomic_type) {
+                    if ($existing_atomic_type instanceof TNamedObject
+                        && strtolower($existing_atomic_type->value) === strtolower($assertion->type)
+                    ) {
+                        $existing_var_type->removeType($key_type);
+                    }
+                }
+            }
         } elseif (($assertion_type instanceof TClassString || $assertion_type instanceof TTraitString)
             && $assertion_type->is_loaded
         ) {
             // do nothing
         } elseif ($existing_var_type->isArray()
-            && ($assertion->getAtomicType() instanceof TArray
-                || $assertion->getAtomicType() instanceof TKeyedArray)
+            && ($assertion_type instanceof TArray || $assertion_type instanceof TKeyedArray)
         ) {
-            // an array that isn't of the asserted array type is of the existing one
+            // an array that isn't of the asserted array type is of the existing one, but not of a part the asserted
+            // type holds whole (`!array_is_list()` of a list)
+            if (!$is_equality) {
+                foreach ($existing_var_type->getAtomicTypes() as $part_key => $existing_array_part) {
+                    if (AtomicTypeComparator::isContainedBy($codebase, $existing_array_part, $assertion_type)) {
+                        $existing_var_type->removeType($part_key);
+                    }
+                }
+            }
         } elseif (!$is_equality) {
             $assertion_type = $assertion->getAtomicType();
 
@@ -233,7 +269,9 @@ final class NegatedAssertionReconciler extends Reconciler
 
             $is_direct_hit = $assertion_type
                 && (!$same_key_type
-                    || $same_key_type::class === $assertion_type::class
+                    // the key of an iterable leaves out its intersected types
+                    || ($same_key_type::class === $assertion_type::class
+                        && !($assertion_type instanceof TIterable && $assertion_type->extra_types))
                     || AtomicTypeComparator::isContainedBy($codebase, $same_key_type, $assertion_type))
                 && (!$late_static_assertion || self::isLateStatic($same_key_type))
                 && $existing_var_type->removeType($assertion_type->getKey());
@@ -242,7 +280,8 @@ final class NegatedAssertionReconciler extends Reconciler
             if ($assertion_type) {
                 // an object that is Traversable is iterable, with the same key and value types
                 $object_assertion_type = $assertion_type instanceof TIterable
-                    ? new TGenericObject('Traversable', $assertion_type->type_params)
+                    ? (new TGenericObject('Traversable', $assertion_type->type_params))
+                        ->setIntersectionTypes($assertion_type->extra_types)
                     : $assertion_type;
 
                 if ($object_assertion_type instanceof TNamedObject) {
@@ -455,6 +494,22 @@ final class NegatedAssertionReconciler extends Reconciler
                 if ($existing_var_type->getLiteralStrings()) {
                     $did_match_literal_type = true;
 
+                    // PHP compares two numeric strings by their numbers: `"1" == "01"`
+                    $php_version_id = $statements_analyzer->getCodebase()->analysis_php_version_id;
+
+                    if ($assertion instanceof IsNotLooselyEqual
+                        && AssertionReconciler::isNumericString($assertion_type->value, $php_version_id)
+                    ) {
+                        foreach ($existing_var_type->getLiteralStrings() as $literal_key => $literal_string) {
+                            if (AssertionReconciler::isNumericString($literal_string->value, $php_version_id)
+                                && $literal_string->value == $assertion_type->value
+                            ) {
+                                $existing_var_type->removeType($literal_key);
+                                $redundant = false;
+                            }
+                        }
+                    }
+
                     if ($existing_var_type->removeType($assertion_type->getKey())
                         || UnionTypeComparator::canExpressionTypesBeIdentical(
                             $statements_analyzer->getCodebase(),
@@ -490,7 +545,10 @@ final class NegatedAssertionReconciler extends Reconciler
                 if ($existing_var_type->getLiteralFloats()) {
                     $did_match_literal_type = true;
 
-                    if ($existing_var_type->removeType($assertion_type->getKey())) {
+                    // `NAN` is equal to no value, itself included
+                    if (!is_nan($assertion_type->value)
+                        && $existing_var_type->removeType($assertion_type->getKey())
+                    ) {
                         $redundant = false;
                     }
                 }
@@ -535,11 +593,38 @@ final class NegatedAssertionReconciler extends Reconciler
             }
         }
 
+        $removed_bool_or_null = false;
+
+        if ($assertion instanceof IsNotLooselyEqual && !$assertion_type instanceof TEnumCase) {
+            foreach ($existing_var_type->getAtomicTypes() as $atomic_key => $atomic_type) {
+                if (!$atomic_type instanceof TBool && !$atomic_type instanceof TNull) {
+                    continue;
+                }
+
+                $loosely_equal = AssertionReconciler::getLooselyEqualBoolsAndNull($assertion_type, [$atomic_type]);
+
+                if ($loosely_equal === []) {
+                    continue;
+                }
+
+                $existing_var_type->removeType($atomic_key);
+                $redundant = false;
+                $removed_bool_or_null = true;
+
+                if ($atomic_type::class === TBool::class) {
+                    $existing_var_type->addType($loosely_equal[0] instanceof TTrue ? new TFalse() : new TTrue());
+                }
+            }
+        }
+
         $existing_var_type = $existing_var_type->freeze();
 
+        $always_equal = $removed_bool_or_null && $existing_var_type->isUnionEmpty();
+
         if ($key && $code_location) {
-            if ($did_match_literal_type
-                && ($redundant || count($existing_var_atomic_types) === 1)
+            if (($did_match_literal_type
+                    && ($redundant || count($existing_var_atomic_types) === 1))
+                || $always_equal
             ) {
                 self::triggerIssueForImpossible(
                     $existing_var_type,
@@ -575,7 +660,7 @@ final class NegatedAssertionReconciler extends Reconciler
             }
         }
 
-        return $existing_var_type;
+        return $always_equal ? Type::getNever() : $existing_var_type;
     }
 
     /**

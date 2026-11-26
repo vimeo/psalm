@@ -40,8 +40,10 @@ use function array_slice;
 use function assert;
 use function count;
 use function end;
+use function in_array;
 use function is_numeric;
 use function ltrim;
+use function str_contains;
 use function str_starts_with;
 use function strpos;
 use function strtolower;
@@ -823,10 +825,11 @@ final class CallableTypeComparator
         } elseif ($input_type_part instanceof TNamedObject
             && $input_type_part->value === 'Closure'
         ) {
-            return new TCallable();
+            return new TClosure();
         } elseif ($input_type_part instanceof TNamedObject
             && ($invokable = self::getInvokeMember($codebase, $input_type_part)) !== null
-            && $codebase->classExists($invokable->value, null, $context)
+            && ($codebase->classExists($invokable->value, null, $context)
+                || $codebase->classlikes->enumExists($invokable->value))
         ) {
             $invoke_id = new MethodIdentifier(
                 $invokable->value,
@@ -1016,12 +1019,107 @@ final class CallableTypeComparator
     }
 
     /**
+     * `["Class", "method"]` or `[$object_of_a_final_class, "method"]` with a literal method name, where the class has
+     * no such method: neither a real one, nor one from `@method`, `@mixin`, `__call` or `__callStatic`
+     */
+    public static function isLiteralPairOfNoMethod(Codebase $codebase, TKeyedArray $pair): bool
+    {
+        if (count($pair->properties) !== 2
+            || $pair->fallback_params !== null
+            || !isset($pair->properties[0], $pair->properties[1])
+            || !$pair->properties[1]->isSingleStringLiteral()
+            // `parent::method` is resolved by PHP
+            || str_contains($pair->properties[1]->getSingleStringLiteral()->value, '::')
+        ) {
+            return false;
+        }
+
+        $class_type = $pair->properties[0];
+
+        if ($class_type->isSingleStringLiteral()) {
+            $class_name_lc = strtolower($class_type->getSingleStringLiteral()->value);
+
+            // `self`, `parent` and `static` are not resolved here
+            if (in_array($class_name_lc, ['self', 'parent', 'static'], true)) {
+                return false;
+            }
+        } elseif (!$class_type->isSingle()
+            || !($object_type = $class_type->getSingleAtomic()) instanceof TNamedObject
+            || $object_type->extra_types
+            // the object can be of a subclass that declares the method
+            || !$codebase->classExists($object_type->value)
+            || !$codebase->classlike_storage_provider->get($object_type->value)->final
+        ) {
+            return false;
+        }
+
+        $method_id = self::getCallableMethodIdFromTKeyedArray($pair, $codebase);
+
+        if (!$method_id instanceof MethodIdentifier) {
+            return $method_id === 'not-callable';
+        }
+
+        if ($codebase->classlike_storage_provider->has($method_id->fq_class_name)) {
+            $storage = $codebase->classlike_storage_provider->get($method_id->fq_class_name);
+
+            if (isset($storage->pseudo_methods[$method_id->method_name])
+                || isset($storage->pseudo_static_methods[$method_id->method_name])
+                || $codebase->methodExists(new MethodIdentifier($method_id->fq_class_name, '__call'))
+                || $codebase->methodExists(new MethodIdentifier($method_id->fq_class_name, '__callstatic'))
+            ) {
+                return false;
+            }
+
+            foreach ([
+                $storage->name,
+                ...$storage->parent_classes,
+                ...$storage->used_traits,
+                ...$storage->class_implements,
+            ] as $declaring_class) {
+                if ($codebase->classlike_storage_provider->has($declaring_class)
+                    && $codebase->classlike_storage_provider->get($declaring_class)->getMixins() !== []
+                ) {
+                    return false;
+                }
+            }
+        }
+
+        return self::getCallableFromAtomic($codebase, $pair) === null;
+    }
+
+    /**
+     * The classes of an intersection, through template bounds and nested intersections
+     *
+     * @param array<Atomic> $types
+     * @return list<string>
+     * @psalm-pure
+     */
+    public static function getIntersectionClassNames(array $types): array
+    {
+        $class_names = [];
+
+        foreach ($types as $type) {
+            if ($type instanceof TTemplateParam) {
+                $class_names = [...$class_names, ...self::getIntersectionClassNames($type->as->getAtomicTypes())];
+            } elseif ($type instanceof TNamedObject) {
+                $class_names[] = $type->value;
+            } else {
+                continue;
+            }
+
+            $class_names = [...$class_names, ...self::getIntersectionClassNames($type->extra_types)];
+        }
+
+        return $class_names;
+    }
+
+    /**
      * The member of an object type whose `__invoke` it has: the type itself, or else the first class of those it is
      * intersected with
      */
     public static function getInvokeMember(Codebase $codebase, TNamedObject $object): ?TNamedObject
     {
-        if ($codebase->classOrInterfaceExists($object->value)
+        if ($codebase->classOrInterfaceOrEnumExists($object->value)
             && $codebase->methodExists(new MethodIdentifier($object->value, '__invoke'))
         ) {
             return $object;
@@ -1029,7 +1127,7 @@ final class CallableTypeComparator
 
         foreach ($object->getIntersectionTypes() as $member) {
             if ($member instanceof TNamedObject
-                && $codebase->classExists($member->value)
+                && ($codebase->classExists($member->value) || $codebase->classlikes->enumExists($member->value))
                 && $codebase->methodExists(new MethodIdentifier($member->value, '__invoke'))
             ) {
                 return $member;
@@ -1119,11 +1217,9 @@ final class CallableTypeComparator
 
                     // of an intersection, the method is the one of the type that has it
                     if ($codebase && !self::classHasMethod($codebase, $class_name, $method_name)) {
-                        foreach ($lhs_atomic_type->getIntersectionTypes() as $intersection_type) {
-                            if ($intersection_type instanceof TNamedObject
-                                && self::classHasMethod($codebase, $intersection_type->value, $method_name)
-                            ) {
-                                $class_name = $intersection_type->value;
+                        foreach (self::getIntersectionClassNames([$lhs_atomic_type]) as $intersection_class) {
+                            if (self::classHasMethod($codebase, $intersection_class, $method_name)) {
+                                $class_name = $intersection_class;
                                 break;
                             }
                         }
@@ -1136,6 +1232,17 @@ final class CallableTypeComparator
                             $class_name = $lhs_template_atomic_type->value;
                         } elseif ($lhs_template_atomic_type instanceof TClassString) {
                             $class_name = $lhs_template_atomic_type->as;
+                        }
+                    }
+
+                    if ($codebase
+                        && ($class_name === null || !self::classHasMethod($codebase, $class_name, $method_name))
+                    ) {
+                        foreach (self::getIntersectionClassNames([$lhs_atomic_type]) as $intersection_class) {
+                            if (self::classHasMethod($codebase, $intersection_class, $method_name)) {
+                                $class_name = $intersection_class;
+                                break;
+                            }
                         }
                     }
                 } elseif ($lhs_atomic_type instanceof TClassString

@@ -19,8 +19,8 @@ use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Codebase\ReferenceMapGenerator;
 use Psalm\Internal\Composer;
 use Psalm\Internal\ErrorHandler;
-use Psalm\Internal\Fork\PsalmRestarter;
 use Psalm\Internal\IncludeCollector;
+use Psalm\Internal\Perf;
 use Psalm\Internal\Preloader;
 use Psalm\Internal\Provider\ClassLikeStorageCacheProvider;
 use Psalm\Internal\Provider\FileProvider;
@@ -54,6 +54,7 @@ use function chdir;
 use function count;
 use function ctype_digit;
 use function defined;
+use function dirname;
 use function extension_loaded;
 use function file_exists;
 use function file_get_contents;
@@ -62,9 +63,9 @@ use function function_exists;
 use function fwrite;
 use function gc_collect_cycles;
 use function gc_disable;
-use function getcwd;
 use function getenv;
 use function implode;
+use function in_array;
 use function ini_get;
 use function is_array;
 use function is_dir;
@@ -79,11 +80,11 @@ use function opcache_get_status;
 use function parse_url;
 use function preg_match;
 use function preg_replace;
-use function realpath;
 use function setlocale;
 use function sort;
 use function str_starts_with;
 use function strlen;
+use function strval;
 use function substr;
 use function trim;
 use function wordwrap;
@@ -105,6 +106,7 @@ require_once __DIR__ . '/../IncludeCollector.php';
 require_once __DIR__ . '/../../IssueBuffer.php';
 require_once __DIR__ . '/../../Report.php';
 require_once __DIR__ . '/IdeDetector.php';
+require_once __DIR__ . '/../Perf/Collector.php';
 
 /**
  * @internal
@@ -128,10 +130,12 @@ final class Psalm
         'config:',
         'debug',
         'debug-by-line',
-        'debug-performance',
+        'debug-performance::',
+        'profile::',
         'debug-emitted-issues',
         'diff',
         'disable-extension:',
+        'explain:',
         'find-dead-code::',
         'find-unused-code::',
         'find-unused-variables',
@@ -179,6 +183,7 @@ final class Psalm
         'pretty-print', // used for JSON reports
         'track-tainted-input',
         'taint-analysis',
+        'no-taint-analysis',
         'security-analysis',
         'dump-taint-graph:',
         'find-unused-psalm-suppress',
@@ -187,7 +192,6 @@ final class Psalm
 
     /**
      * @param array<int,string> $argv
-     * @psalm-suppress ComplexMethod Maybe some of the option handling could be moved to its own function...
      */
     public static function run(array $argv): void
     {
@@ -202,6 +206,7 @@ final class Psalm
 
         // get options from command line
         $options = CliUtils::getOptions($args, self::SHORT_OPTIONS, self::LONG_OPTIONS);
+        $given_option_names = array_map(strval(...), array_keys($options));
 
         // debug CI environment
         if (!array_key_exists('debug', $options)
@@ -215,11 +220,20 @@ final class Psalm
 
         CliUtils::rejectUnrecognisedOptions($args, self::SHORT_OPTIONS, self::LONG_OPTIONS);
 
+        self::startPerformanceCollector($options, $given_option_names);
+
         $min_type_coverage = self::parseMinTypeCoverageOption($options);
 
         CliUtils::setMemoryLimit($options);
 
-        self::syncShortOptions($options);
+        CliUtils::syncShortOptions($options, [
+            'help' => 'h',
+            'version' => 'v',
+            'init' => 'i',
+            'monochrome' => 'm',
+            'config' => 'c',
+            'root' => 'r',
+        ]);
 
         if (isset($options['c']) && is_array($options['c'])) {
             fwrite(STDERR, 'Too many config files provided' . PHP_EOL);
@@ -237,7 +251,13 @@ final class Psalm
             exit;
         }
 
-        $current_dir = self::getCurrentDir($options);
+        if (array_key_exists('explain', $options)) {
+            // the docs belong to Psalm, so only its own autoloader: not the composer.json or vendor/ of the cwd
+            CliUtils::requireAutoloaders(dirname(__DIR__, 4), false, 'vendor', false);
+            self::explainIssue($options['explain']);
+        }
+
+        $current_dir = CliUtils::getCurrentDir($options);
 
         if (array_key_exists('init-ci', $options)) {
             self::generateCiConfig($current_dir);
@@ -252,17 +272,12 @@ final class Psalm
         IssueBuffer::captureServer($_SERVER);
 
         $include_collector = new IncludeCollector();
-        $autoloaders = $include_collector->runAndCollect(
-            // we ignore the FQN because of a hack in scoper.inc that needs full path
-            // phpcs:ignore SlevomatCodingStandard.Namespaces.ReferenceUsedNamesOnly.ReferenceViaFullyQualifiedName
-            /** @return list<ClassLoader> */
-            static fn(): array =>
-                CliUtils::requireAutoloaders(
-                    $current_dir,
-                    isset($options['r']),
-                    $vendor_dir,
-                    !array_key_exists('v', $options),
-                ),
+        $autoloaders = CliUtils::loadAutoloaders(
+            $include_collector,
+            $current_dir,
+            isset($options['r']),
+            $vendor_dir,
+            !array_key_exists('v', $options),
         );
 
         $run_taint_analysis = ProjectBootstrap::shouldRunTaintAnalysis($options);
@@ -273,6 +288,8 @@ final class Psalm
         }
 
         $output_format = self::initOutputFormat($options);
+
+        Perf\Collector::step('config');
 
         [$config, $init_source_dir] = self::initConfig(
             $current_dir,
@@ -293,11 +310,7 @@ final class Psalm
 
         $config->setIncludeCollector($include_collector);
 
-        $in_ci = CliUtils::runningInCI();        // disable progressbar on CI
-
-        if ($in_ci) {
-            $options['long-progress'] = true;
-        }
+        $in_ci = CliUtils::runningInCI();
 
         $threads = self::getThreads($options, $config, false);
         $scanThreads = self::getThreads($options, $config, true);
@@ -305,6 +318,7 @@ final class Psalm
         $progress = self::initProgress($options, $config, $in_ci);
 
         $force_jit = $config->force_jit || isset($options['force-jit']);
+        Perf\Collector::step('restart.check');
         self::restart($options, $force_jit, $threads, $scanThreads, $progress);
 
         // after the restart: the process that restarts would print them too
@@ -385,6 +399,7 @@ final class Psalm
             self::clearGlobalCache($config);
         }
 
+        Perf\Collector::step('providers');
         $providers = ProjectBootstrap::initProviders($options, $config, $current_dir);
 
         $stdout_report_options = self::initStdoutReportOptions($options, $show_info, $output_format, $in_ci);
@@ -429,6 +444,8 @@ final class Psalm
             $project_analyzer->checkPaths($paths_to_check);
         }
 
+        Perf\Collector::stage('post');
+
         if ($find_references_to) {
             $project_analyzer->findReferencesTo($find_references_to);
         }
@@ -443,6 +460,9 @@ final class Psalm
             self::generateStubs($options, $providers, $project_analyzer);
         }
 
+        Perf\Collector::stage('report');
+        Perf\Collector::step('baseline');
+
         if (!isset($options['i'])) {
             IssueBuffer::finish(
                 $project_analyzer,
@@ -454,6 +474,41 @@ final class Psalm
         } else {
             self::autoGenerateConfig($project_analyzer, $current_dir, $init_source_dir, $vendor_dir);
         }
+    }
+
+    /**
+     * @param list<string> $given_option_names
+     */
+    private static function startPerformanceCollector(array $options, array $given_option_names): void
+    {
+        if (isset($options['debug-performance'])) {
+            if (isset($options['profile'])) {
+                fwrite(STDERR, 'Only one of --debug-performance and --profile can be given' . PHP_EOL);
+                exit(1);
+            }
+
+            $name = 'debug-performance';
+            /** @var list<string>|string|false $path type guaranteed by argument to getopt() */
+            $path = $options['debug-performance'];
+        } elseif (isset($options['profile'])) {
+            $name = 'profile';
+            /** @var list<string>|string|false $path type guaranteed by argument to getopt() */
+            $path = $options['profile'];
+        } else {
+            return;
+        }
+
+        if (is_array($path)) {
+            fwrite(STDERR, 'Only one --' . $name . ' path can be given' . PHP_EOL);
+            exit(1);
+        }
+
+        if ($path === '') {
+            fwrite(STDERR, '--' . $name . '= needs a path: use --' . $name . '=PATH or no value' . PHP_EOL);
+            exit(1);
+        }
+
+        Perf\Collector::start(is_string($path) ? $path : null, $given_option_names);
     }
 
     /** @return int<1, max> */
@@ -542,7 +597,7 @@ final class Psalm
     }
 
     /**
-     * @psalm-capabilities read-globals
+     * @psalm-capabilities read-globals|io
      */
     private static function initOutputFormat(array $options): string
     {
@@ -553,10 +608,16 @@ final class Psalm
 
     /**
      * @return Report::TYPE_*
-     * @psalm-capabilities read-globals
+     * @psalm-capabilities read-globals|io
      */
-    private static function findDefaultOutputFormat(): string
+    public static function findDefaultOutputFormat(): string
     {
+        // An AI agent beats the PhpStorm and GitHub Actions guesses: those are guesses about the terminal,
+        // the agent is the one reading the output.
+        if (CliUtils::runningUnderAiAgent()) {
+            return Report::TYPE_COMPACT;
+        }
+
         if (IdeDetector::detect() === IdeDetector::IDE_PHPSTORM) {
             return Report::TYPE_PHP_STORM;
         }
@@ -689,17 +750,9 @@ final class Psalm
 
         $show_info = self::initShowInfo($options);
 
-        // CI takes precedence over AI detection: persistent CI logs still want
-        // per-phase breadcrumbs for humans reviewing the build. Agents that
-        // need the CI log quieted can pass --no-progress explicitly.
-        $no_progress = isset($options['no-progress'])
-            || (!$in_ci
-                && !isset($options['long-progress'])
-                && CliUtils::runningUnderAiAgent());
-
         if ($debug) {
             $progress = new DebugProgress();
-        } elseif ($no_progress) {
+        } elseif (CliUtils::progressIsSuppressed($options)) {
             $progress = new VoidProgress();
         } else {
             $show_errors = !$config->error_baseline || isset($options['ignore-baseline']);
@@ -922,6 +975,9 @@ final class Psalm
         $stdout_report_options->show_snippet = !isset($options['show-snippet']) || $options['show-snippet'] !== "false";
         $stdout_report_options->pretty = isset($options['pretty-print']) && $options['pretty-print'] !== "false";
         $stdout_report_options->in_ci = $in_ci;
+        // only the console and compact reports have an agent form
+        $stdout_report_options->agent_output = CliUtils::runningUnderAiAgent()
+            && in_array($output_format, [Report::TYPE_CONSOLE, Report::TYPE_COMPACT], true);
 
         return $stdout_report_options;
     }
@@ -965,33 +1021,6 @@ final class Psalm
         exit;
     }
 
-    private static function getCurrentDir(array $options): string
-    {
-        $cwd = getcwd();
-        if (false === $cwd) {
-            fwrite(STDERR, 'Cannot get current working directory' . PHP_EOL);
-            exit(1);
-        }
-
-        $current_dir = $cwd;
-
-        if (isset($options['r']) && is_string($options['r'])) {
-            $root_path = realpath($options['r']);
-
-            if ($root_path === false) {
-                fwrite(
-                    STDERR,
-                    'Could not locate root directory ' . $current_dir . DIRECTORY_SEPARATOR . $options['r'] . PHP_EOL,
-                );
-                exit(1);
-            }
-
-            $current_dir = $root_path;
-        }
-
-        return $current_dir;
-    }
-
     private static function restart(
         array $options,
         bool $force_jit,
@@ -999,7 +1028,8 @@ final class Psalm
         int $scanThreads,
         Progress $progress,
     ): void {
-        $ini_handler = new PsalmRestarter('PSALM');
+        // grpc is only disabled below when it would break forked workers
+        $ini_handler = CliUtils::createRestarter('PSALM', false);
         $ini_handler->enableJit = $force_jit;
 
         if (isset($options['disable-extension'])) {
@@ -1027,15 +1057,6 @@ final class Psalm
                 . ' (https://github.com/grpc/grpc/issues/20250#issuecomment-531321945)',
             );
         }
-
-        $ini_handler->disableExtensions([
-            'uopz',
-            // extensions that are incompatible with JIT (they are also usually make Psalm slow)
-            'pcov',
-            'blackfire',
-            // Issues w/ parallel forking
-            'uv',
-        ]);
 
         // If Xdebug is enabled, restart without it
         $ini_handler->check();
@@ -1082,7 +1103,25 @@ final class Psalm
             }
         }
 
+        Perf\Collector::step('preload');
         Preloader::preload($progress, $hasJit);
+    }
+
+    private static function explainIssue(mixed $query): never
+    {
+        $docs = is_string($query) ? IssueDocs::read($query) : null;
+
+        if ($docs === null) {
+            fwrite(
+                STDERR,
+                'Unknown issue: ' . (is_string($query) ? $query : '')
+                    . '. See https://psalm.dev/docs/running_psalm/issues/' . PHP_EOL,
+            );
+            exit(1);
+        }
+
+        echo $docs;
+        exit;
     }
 
     /** @param array<int, string> $argv */
@@ -1120,38 +1159,6 @@ final class Psalm
     }
 
     /**
-     * @param array<string, false|list<mixed>|string> $options
-     * @param-out array<string, false|list<mixed>|string> $options
-     * @psalm-capabilities write-refs|read-props
-     */
-    private static function syncShortOptions(array &$options): void
-    {
-        if (array_key_exists('help', $options)) {
-            $options['h'] = false;
-        }
-
-        if (array_key_exists('version', $options)) {
-            $options['v'] = false;
-        }
-
-        if (array_key_exists('init', $options)) {
-            $options['i'] = false;
-        }
-
-        if (array_key_exists('monochrome', $options)) {
-            $options['m'] = false;
-        }
-
-        if (isset($options['config'])) {
-            $options['c'] = $options['config'];
-        }
-
-        if (isset($options['root'])) {
-            $options['r'] = $options['root'];
-        }
-    }
-
-    /**
      * @param array<int, string> $args
      * @param list<ClassLoader> $autoloaders
      * @return array{Config,?string}
@@ -1166,6 +1173,16 @@ final class Psalm
         bool $run_taint_analysis,
         array $options,
     ): array {
+        $skip_taint_analysis = isset($options['no-taint-analysis']);
+        if ($skip_taint_analysis && ($run_taint_analysis || isset($options['dump-taint-graph']))) {
+            fwrite(
+                STDERR,
+                '--no-taint-analysis cannot be combined with --taint-analysis, --track-tainted-input,'
+                    . ' --security-analysis or --dump-taint-graph' . PHP_EOL,
+            );
+            exit(1);
+        }
+
         $init_source_dir = null;
         if (isset($options['i'])) {
             self::generateConfig($current_dir, $args);
@@ -1191,6 +1208,10 @@ final class Psalm
                 $run_taint_analysis,
                 $options,
             );
+        }
+
+        if ($skip_taint_analysis) {
+            $config->run_taint_analysis = false;
         }
         return [$config, $init_source_dir];
     }
@@ -1404,6 +1425,10 @@ final class Psalm
             --taint-analysis, --track-tainted-input, --security-analysis
                 Run Psalm in taint analysis mode – see https://psalm.dev/docs/security_analysis for more info
 
+            --no-taint-analysis
+                Skip taint analysis for this run, even if runTaintAnalysis is true. Some type issues
+                are only reported with taint analysis on, so finish with a run without this flag.
+
             --dump-taint-graph=OUTPUT_PATH
                 Output the taint graph using the DOT language – requires --taint-analysis
 
@@ -1438,7 +1463,8 @@ final class Psalm
                 FORCE_COLOR set to a non-empty value forces colors on instead.
 
             --output-format=console
-                Changes the output format.
+                Changes the output format. Defaults to console, to compact when an AI coding agent is
+                driving the shell.
                 Available formats:
                     $outputFormats
 
@@ -1447,12 +1473,13 @@ final class Psalm
 
             --no-progress
                 Disable the progress indicator.
-                Auto-enabled when an AI coding agent is driving the shell
-                (CI always keeps its phase breadcrumbs).
+                Auto-enabled when an AI coding agent is driving the shell,
+                even if CI is set too.
 
             --long-progress
                 Use a progress indicator suitable for Continuous Integration logs.
                 Auto-enabled in CI and when stderr is not attached to a terminal.
+                Also brings the progress back under an AI coding agent.
 
             --stats
                 Shows a breakdown of Psalm’s ability to infer types in the codebase
@@ -1500,6 +1527,11 @@ final class Psalm
             -h, --help
                 Display this help message
 
+            --explain=ISSUE
+                Print the documentation of an issue: what it means, an example and how to fix it.
+                ISSUE is an issue type (PossiblyNullReference), a shortcode (83) or a link (https://psalm.dev/083).
+                Needs no config file. Exits with 1 when the issue is unknown.
+
             -v, --version
                 Display the Psalm version
 
@@ -1517,8 +1549,13 @@ final class Psalm
             --debug-by-line
                 Debug information on a line-by-line level
 
-            --debug-performance
-                Show performance information
+            --debug-performance[=PATH]
+                Print where the time and memory went: stages, slowest files, hottest statements and functions.
+                With =PATH, also write all of it as a JSON performance profile to PATH. The path needs the `=`: after a space it is
+                a file to analyse. Debug output (--debug) distorts the timings.
+
+            --profile[=PATH]
+                Alias of --debug-performance.
 
             --debug-emitted-issues
                 Print a php backtrace to stderr when emitting issues.

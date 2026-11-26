@@ -9,6 +9,8 @@ use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Internal\Codebase\ClassConstantByWildcardResolver;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
+use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
 use Psalm\Internal\Type\Comparator\CallableTypeComparator;
 use Psalm\Storage\Assertion;
 use Psalm\Storage\Assertion\Any;
@@ -42,6 +44,9 @@ use Psalm\Type\Atomic\TCallableObject;
 use Psalm\Type\Atomic\TCallableString;
 use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TClassString;
+use Psalm\Type\Atomic\TDependentGetClass;
+use Psalm\Type\Atomic\TDependentGetDebugType;
+use Psalm\Type\Atomic\TDependentGetType;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
@@ -74,6 +79,7 @@ use Psalm\Type\Atomic\TResource;
 use Psalm\Type\Atomic\TScalar;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Atomic\TTraitString;
 use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Atomic\TValueOf;
 use Psalm\Type\MutableUnion;
@@ -90,6 +96,7 @@ use function count;
 use function explode;
 use function in_array;
 use function is_int;
+use function is_numeric;
 use function ksort;
 use function strlen;
 use function strpos;
@@ -119,6 +126,18 @@ final class SimpleAssertionReconciler extends Reconciler
         int &$failed_reconciliation = Reconciler::RECONCILIATION_OK,
         bool $inside_loop = false,
     ): ?Union {
+        if ($assertion instanceof IsLooselyEqual
+            && ($loose_type = self::reconcileLooseEqualityKeptParts(
+                $assertion,
+                $codebase,
+                $existing_var_type,
+                $negated,
+                $inside_loop,
+            )) !== false
+        ) {
+            return $loose_type;
+        }
+
         $reconciled_type = self::reconcileAssertion(
             $assertion,
             $codebase,
@@ -262,6 +281,14 @@ final class SimpleAssertionReconciler extends Reconciler
             );
         }
 
+        // a value that cannot be has no item either (a loop's first passes may not know its type yet)
+        if (($assertion instanceof HasStringArrayAccess || $assertion instanceof HasIntOrStringArrayAccess)
+            && $existing_var_type->isNever()
+            && !$inside_loop
+        ) {
+            return $existing_var_type;
+        }
+
         if ($assertion instanceof HasStringArrayAccess) {
             return self::reconcileStringArrayAccess(
                 $assertion,
@@ -389,6 +416,7 @@ final class SimpleAssertionReconciler extends Reconciler
         ) {
             return self::reconcileIterable(
                 $assertion,
+                $assertion_type,
                 $codebase,
                 $existing_var_type,
                 $key,
@@ -529,16 +557,12 @@ final class SimpleAssertionReconciler extends Reconciler
             );
         }
 
-        if ($assertion_type instanceof TFloat) {
-            if ($existing_var_type->from_calculation
-                && $existing_var_type->hasInt()
-            ) {
-                return Type::getFloat();
-            }
-
-            if ($assertion instanceof IsLooselyEqual && $existing_var_type->isString()) {
-                return Type::getNumericString();
-            }
+        if ($assertion_type instanceof TFloat
+            && !$assertion instanceof IsLooselyEqual
+            && $existing_var_type->from_calculation
+            && $existing_var_type->hasInt()
+        ) {
+            return Type::getFloat();
         }
 
         if ($assertion_type instanceof TClassConstant) {
@@ -1073,10 +1097,34 @@ final class SimpleAssertionReconciler extends Reconciler
             } elseif ($type instanceof TScalar || $type instanceof TArrayKey) {
                 $string_types[] = new TString;
                 $redundant = false;
+            } elseif ($type instanceof TTemplateParam && $assertion instanceof IsLooselyEqual) {
+                $bound_failed_reconciliation = Reconciler::RECONCILIATION_OK;
+                $as = self::reconcileString(
+                    $assertion,
+                    $type->as,
+                    null,
+                    false,
+                    null,
+                    $suppressed_issues,
+                    $bound_failed_reconciliation,
+                    $is_equality,
+                );
+
+                if (!$as->isNever()) {
+                    $string_types[] = $type->replaceAs($as);
+                }
+
+                $redundant = false;
             } elseif ($type instanceof TTemplateParam) {
                 $bound = self::getTemplateBound($type);
 
-                if ($bound->hasString() || $bound->hasMixed() || $bound->hasScalar()) {
+                // a bound a string can be of: `numeric` and `array-key` include numeric strings
+                if ($bound->hasString()
+                    || $bound->hasMixed()
+                    || $bound->hasScalar()
+                    || $bound->hasNumeric()
+                    || $bound->hasArrayKey()
+                ) {
                     $type = $type->replaceAs(self::reconcileString(
                         $assertion,
                         $type->as,
@@ -1155,16 +1203,31 @@ final class SimpleAssertionReconciler extends Reconciler
                 if ($existing_var_type->from_calculation) {
                     $redundant = false;
                 }
-            } elseif ($type instanceof TNumeric) {
-                $int_types[] = new TInt;
+            } elseif ($type instanceof TNumeric || $type instanceof TScalar || $type instanceof TArrayKey) {
+                // a non-strict comparison with an int juggles the types: `"1" == 1`, `1.0 == 1`
+                $int_types[] = $assertion instanceof IsLooselyEqual ? $type : new TInt;
                 $redundant = false;
-            } elseif ($type instanceof TScalar || $type instanceof TArrayKey) {
-                $int_types[] = new TInt;
+            } elseif ($type instanceof TTemplateParam && $assertion instanceof IsLooselyEqual) {
+                $bound_failed_reconciliation = Reconciler::RECONCILIATION_OK;
+                $as = self::reconcileInt(
+                    $assertion,
+                    $type->as,
+                    null,
+                    false,
+                    null,
+                    $suppressed_issues,
+                    $bound_failed_reconciliation,
+                );
+
+                if (!$as->isNever()) {
+                    $int_types[] = $type->replaceAs($as);
+                }
+
                 $redundant = false;
             } elseif ($type instanceof TTemplateParam) {
                 $bound = self::getTemplateBound($type);
 
-                if ($bound->hasInt() || $bound->hasMixed()) {
+                if ($bound->hasInt() || $bound->hasMixed() || $bound->hasScalar() || $bound->hasNumeric()) {
                     $type = $type->replaceAs(self::reconcileInt(
                         $assertion,
                         $type->as,
@@ -1180,7 +1243,18 @@ final class SimpleAssertionReconciler extends Reconciler
 
                 $redundant = false;
             } elseif ($type instanceof TString && $assertion instanceof IsLooselyEqual) {
-                $int_types[] = new TNumericString();
+                $numeric_type = self::getLooselyEqualJuggledAtomic($type, new TInt());
+
+                if ($numeric_type) {
+                    $int_types[] = $numeric_type;
+                }
+
+                $redundant = false;
+            } elseif ($assertion instanceof IsLooselyEqual
+                && ($type instanceof TFloat || $type instanceof TBool || $type instanceof TNull)
+            ) {
+                // a non-strict comparison with an int juggles the types: `1.0 == 1`, `false == 0`, `null == 0`
+                $int_types[] = $type;
                 $redundant = false;
             } else {
                 $redundant = false;
@@ -1190,7 +1264,9 @@ final class SimpleAssertionReconciler extends Reconciler
         return self::finishReconciliation(
             $int_types ? new Union($int_types) : null,
             $redundant,
-            $assertion instanceof IsType,
+            // strings that are never numeric can't be loosely equal to an int
+            $assertion instanceof IsType
+                || ($assertion instanceof IsLooselyEqual && !$int_types && $existing_var_type->isString()),
             false,
             $existing_var_type,
             $old_var_type_string,
@@ -1217,6 +1293,11 @@ final class SimpleAssertionReconciler extends Reconciler
         int &$failed_reconciliation,
         bool $is_equality,
     ): Union {
+        // every value is loosely equal to true or to false
+        if ($assertion instanceof IsLooselyEqual) {
+            return $existing_var_type;
+        }
+
         if ($existing_var_type->hasMixed()) {
             return Type::getBool();
         }
@@ -1237,7 +1318,7 @@ final class SimpleAssertionReconciler extends Reconciler
             } elseif ($type instanceof TTemplateParam) {
                 $bound = self::getTemplateBound($type);
 
-                if ($bound->hasBool() || $bound->hasMixed()) {
+                if ($bound->hasBool() || $bound->hasMixed() || $bound->hasScalar()) {
                     $type = $type->replaceAs(self::reconcileBool(
                         $assertion,
                         $type->as,
@@ -1381,7 +1462,7 @@ final class SimpleAssertionReconciler extends Reconciler
             } elseif ($type instanceof TTemplateParam) {
                 $bound = self::getTemplateBound($type);
 
-                if ($bound->hasScalarType() || $bound->hasMixed()) {
+                if (self::hasScalarAtomic($bound) || $bound->hasMixed()) {
                     $type = $type->replaceAs(self::reconcileScalar(
                         $assertion,
                         $type->as,
@@ -1476,7 +1557,7 @@ final class SimpleAssertionReconciler extends Reconciler
             } elseif ($type instanceof TTemplateParam) {
                 $bound = self::getTemplateBound($type);
 
-                if ($bound->hasScalarType() || $bound->hasMixed()) {
+                if (self::hasScalarAtomic($bound) || $bound->hasMixed()) {
                     $type = $type->replaceAs(self::reconcileNumeric(
                         $assertion,
                         $type->as,
@@ -1709,10 +1790,32 @@ final class SimpleAssertionReconciler extends Reconciler
             } elseif ($type instanceof TObject) {
                 $iterable_types[] = new TNamedObject('Countable');
                 $redundant = false;
-            } elseif ($type instanceof TNamedObject || $type instanceof TIterable) {
+            } elseif ($type instanceof TNamedObject) {
                 $countable = new TNamedObject('Countable');
                 $type = $type->addIntersectionType($countable);
                 $iterable_types[] = $type;
+                $redundant = false;
+            } elseif (($parts = AtomicParts::split($type, new TIterable(), $codebase)) !== null) {
+                // e.g. the countable iterables are the arrays and the Countable Traversable objects, and as with
+                // is_iterable() the countable callables are the callable-arrays
+                // (a `callable-object&Countable` would lose its `Countable`)
+                $parts_failed_reconciliation = Reconciler::RECONCILIATION_OK;
+                $countable_parts = self::reconcileCountable(
+                    $assertion,
+                    $codebase,
+                    new Union($parts),
+                    null,
+                    $negated,
+                    null,
+                    $suppressed_issues,
+                    $parts_failed_reconciliation,
+                    $is_equality,
+                );
+
+                if (!$countable_parts->isNever()) {
+                    $iterable_types = [...$iterable_types, ...array_values($countable_parts->getAtomicTypes())];
+                }
+
                 $redundant = false;
             } else {
                 $redundant = false;
@@ -1720,7 +1823,7 @@ final class SimpleAssertionReconciler extends Reconciler
         }
 
         return self::finishReconciliation(
-            $iterable_types ? new Union($iterable_types) : null,
+            $iterable_types ? TypeCombiner::combine($iterable_types) : null,
             $redundant,
             !$is_equality,
             false,
@@ -1741,6 +1844,7 @@ final class SimpleAssertionReconciler extends Reconciler
      */
     private static function reconcileIterable(
         Assertion $assertion,
+        TIterable $assertion_type,
         Codebase $codebase,
         Union $existing_var_type,
         ?string $key,
@@ -1755,7 +1859,7 @@ final class SimpleAssertionReconciler extends Reconciler
         $existing_var_atomic_types = $existing_var_type->getAtomicTypes();
 
         if ($existing_var_type->hasMixed() || $existing_var_type->hasTemplate()) {
-            return new Union([new TIterable]);
+            return new Union([$assertion_type]);
         }
 
         $iterable_types = [];
@@ -1772,6 +1876,7 @@ final class SimpleAssertionReconciler extends Reconciler
                 $parts_failed_reconciliation = Reconciler::RECONCILIATION_OK;
                 $iterable_parts = self::reconcileIterable(
                     $assertion,
+                    $assertion_type,
                     $codebase,
                     new Union($parts),
                     null,
@@ -1792,8 +1897,37 @@ final class SimpleAssertionReconciler extends Reconciler
             }
         }
 
+        if ($assertion_type->extra_types) {
+            $intersected_types = [];
+
+            foreach ($iterable_types as $type) {
+                foreach ($assertion_type->extra_types as $extra_type) {
+                    if (AtomicTypeComparator::isContainedBy($codebase, $type, $extra_type)) {
+                        continue;
+                    }
+
+                    $redundant = false;
+
+                    if (!$type instanceof TNamedObject
+                        && !$type instanceof TIterable
+                        && !$type instanceof TTemplateParam
+                        && !$type instanceof TObjectWithProperties
+                    ) {
+                        // an array is not an object, so it cannot be an instance of the intersected types
+                        continue 2;
+                    }
+
+                    $type = $type->addIntersectionType($extra_type);
+                }
+
+                $intersected_types[] = $type;
+            }
+
+            $iterable_types = $intersected_types;
+        }
+
         return self::finishReconciliation(
-            $iterable_types ? new Union($iterable_types) : null,
+            $iterable_types ? TypeCombiner::combine($iterable_types) : null,
             $redundant,
             !$is_equality,
             false,
@@ -1838,7 +1972,7 @@ final class SimpleAssertionReconciler extends Reconciler
                     $existing_var_type->getId(),
                     $key,
                     $assertion,
-                    true,
+                    $negated,
                     $negated,
                     $code_location,
                     $suppressed_issues,
@@ -2336,7 +2470,7 @@ final class SimpleAssertionReconciler extends Reconciler
      * @param Reconciler::RECONCILIATION_* $failed_reconciliation
      */
     private static function reconcileIntArrayAccess(
-        Assertion $assertion,
+        HasIntOrStringArrayAccess $assertion,
         Codebase $codebase,
         Union $existing_var_type,
         ?string $key,
@@ -2351,7 +2485,14 @@ final class SimpleAssertionReconciler extends Reconciler
         $existing_var_atomic_types = $existing_var_type->getAtomicTypes();
 
         if ($existing_var_type->hasMixed()) {
-            return Type::getMixed();
+            // a string only has characters at int offsets: with a key that may be a string, the parent stays mixed
+            return $assertion->int_key
+                ? new Union([
+                    new TNonEmptyArray([Type::getArrayKey(), Type::getMixed()]),
+                    new TNamedObject('ArrayAccess'),
+                    new TNonEmptyString(),
+                ])
+                : Type::getMixed();
         }
 
         $array_types = [];
@@ -2360,6 +2501,15 @@ final class SimpleAssertionReconciler extends Reconciler
             if ($type->isArrayAccessibleWithIntOrStringKey($codebase)) {
                 if ($type::class === TArray::class) {
                     $array_types[] = new TNonEmptyArray($type->type_params);
+                } elseif ($type::class === TString::class) {
+                    // a string with a character at an offset has one
+                    $array_types[] = new TNonEmptyString();
+                } elseif ($type::class === TLowercaseString::class) {
+                    $array_types[] = new TNonEmptyLowercaseString();
+                } elseif ($type::class === TNonspecificLiteralString::class) {
+                    $array_types[] = new TNonEmptyNonspecificLiteralString();
+                } elseif ($type instanceof TLiteralString && $type->value === '') {
+                    continue;
                 } else {
                     $array_types[] = $type;
                 }
@@ -2395,6 +2545,7 @@ final class SimpleAssertionReconciler extends Reconciler
     /**
      * @param   string[]  $suppressed_issues
      * @param Reconciler::RECONCILIATION_* $failed_reconciliation
+     * @psalm-suppress ComplexMethod
      */
     private static function reconcileCallable(
         Assertion $assertion,
@@ -2426,7 +2577,8 @@ final class SimpleAssertionReconciler extends Reconciler
                 $redundant = false;
             } elseif ($type instanceof TNamedObject
                 && ($invoke_member = CallableTypeComparator::getInvokeMember($codebase, $type)) !== null
-                && $codebase->classExists($invoke_member->value)
+                && ($codebase->classExists($invoke_member->value)
+                    || $codebase->classlikes->enumExists($invoke_member->value))
             ) {
                 $callable_types[] = $type;
             } elseif ($type instanceof TString
@@ -2455,25 +2607,21 @@ final class SimpleAssertionReconciler extends Reconciler
                 $callable_types[] = $type;
                 $redundant = false;
             } elseif ($type instanceof TTemplateParam) {
-                $bound = self::getTemplateBound($type);
-
-                if ($bound->hasCallableType() || $bound->hasMixed()) {
-                    $type = $type->replaceAs(self::reconcileCallable(
-                        $assertion,
-                        $codebase,
-                        $type->as,
-                        null,
-                        $negated,
-                        null,
-                        $suppressed_issues,
-                        $failed_reconciliation,
-                        $is_equality,
-                    ));
-                }
-
                 $redundant = false;
 
-                $callable_types[] = $type;
+                $callable_template = self::reconcileCallableTemplate(
+                    $assertion,
+                    $codebase,
+                    $type,
+                    $negated,
+                    $suppressed_issues,
+                    $failed_reconciliation,
+                    $is_equality,
+                );
+
+                if ($callable_template !== null) {
+                    $callable_types[] = $callable_template;
+                }
             } elseif (($parts = AtomicParts::split($type, new TCallable(), $codebase)) !== null) {
                 // e.g. the callable scalars are the callable-strings
                 $parts_failed_reconciliation = Reconciler::RECONCILIATION_OK;
@@ -2520,6 +2668,56 @@ final class SimpleAssertionReconciler extends Reconciler
             $suppressed_issues,
             $failed_reconciliation,
         );
+    }
+
+    /**
+     * The template narrowed to its callable values, null when its bound can't be callable (an object without
+     * __invoke()), as the bound itself isn't
+     *
+     * @param string[] $suppressed_issues
+     * @param Reconciler::RECONCILIATION_* $failed_reconciliation
+     */
+    private static function reconcileCallableTemplate(
+        Assertion $assertion,
+        Codebase $codebase,
+        TTemplateParam $type,
+        bool $negated,
+        array $suppressed_issues,
+        int &$failed_reconciliation,
+        bool $is_equality,
+    ): ?TTemplateParam {
+        $bound = self::getTemplateBound($type);
+        $bound_failed_reconciliation = Reconciler::RECONCILIATION_OK;
+
+        if (self::reconcileCallable(
+            $assertion,
+            $codebase,
+            $bound,
+            null,
+            $negated,
+            null,
+            $suppressed_issues,
+            $bound_failed_reconciliation,
+            $is_equality,
+        )->isNever()) {
+            return null;
+        }
+
+        if ($bound->hasCallableType() || $bound->hasMixed()) {
+            return $type->replaceAs(self::reconcileCallable(
+                $assertion,
+                $codebase,
+                $type->as,
+                null,
+                $negated,
+                null,
+                $suppressed_issues,
+                $failed_reconciliation,
+                $is_equality,
+            ));
+        }
+
+        return $type;
     }
 
     /**
@@ -2838,12 +3036,7 @@ final class SimpleAssertionReconciler extends Reconciler
             // For value-of<MyBackedEnum>, the assertion is meant to return *ANY* value of *ANY* enum case
             if ($enum_case_to_assert === null) {
                 foreach ($class_storage->enum_cases as $enum_case) {
-                    $enum_value = $enum_case->getValue($codebase->classlikes);
-                    assert(
-                        $enum_value !== null,
-                        'Verified enum type above, value can not contain `null` anymore.',
-                    );
-                    $reconciled_types[] = $enum_value;
+                    $reconciled_types[] = $enum_case->getValue($codebase->classlikes) ?? new TMixed();
                 }
 
                 continue;
@@ -2854,9 +3047,7 @@ final class SimpleAssertionReconciler extends Reconciler
                 return null;
             }
 
-            $enum_value = $enum_case->getValue($codebase->classlikes);
-            assert($enum_value !== null, 'Verified enum type above, value can not contain `null` anymore.');
-            $reconciled_types[] = $enum_value;
+            $reconciled_types[] = $enum_case->getValue($codebase->classlikes) ?? new TMixed();
         }
 
         if ($reconciled_types === []) {
@@ -2884,6 +3075,226 @@ final class SimpleAssertionReconciler extends Reconciler
         $class_storage = $codebase->classlike_storage_provider->get($type->value);
 
         return !$class_storage->final;
+    }
+
+    /**
+     * Whether a type holds a scalar of some kind (`scalar`, `array-key`, `int<0, 10>`, ...)
+     *
+     * @psalm-pure
+     */
+    private static function hasScalarAtomic(Union $type): bool
+    {
+        foreach ($type->getAtomicTypes() as $atomic) {
+            if ($atomic instanceof Scalar) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * A loose comparison keeps the bools, as every value is loosely equal to true or to false, and against a string the
+     * objects that convert to one, whatever the reconciliation of the other parts gives.
+     * Returns false when there are no such parts, and null when the other parts are left to AssertionReconciler.
+     */
+    private static function reconcileLooseEqualityKeptParts(
+        IsLooselyEqual $assertion,
+        Codebase $codebase,
+        Union $existing_var_type,
+        bool $negated,
+        bool $inside_loop,
+    ): Union|false|null {
+        $assertion_type = $assertion->getAtomicType();
+
+        if ($assertion_type instanceof TBool) {
+            return false;
+        }
+
+        $kept_types = [];
+        $other_types = [];
+
+        foreach ($existing_var_type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TBool
+                || ($assertion_type instanceof TString && self::canBeStringableObject($codebase, $atomic_type))
+            ) {
+                $kept_types[] = $atomic_type;
+            } elseif ($atomic_type instanceof TTemplateParam
+                && ($as = self::reconcileLooseEqualityKeptParts(
+                    $assertion,
+                    $codebase,
+                    $atomic_type->as,
+                    $negated,
+                    $inside_loop,
+                )) instanceof Union
+            ) {
+                if (!$as->isNever()) {
+                    $kept_types[] = $atomic_type->replaceAs($as);
+                }
+            } else {
+                $other_types[] = $atomic_type;
+            }
+        }
+
+        if (!$kept_types) {
+            return false;
+        }
+
+        if (!$other_types) {
+            return $existing_var_type;
+        }
+
+        $other_failed_reconciliation = Reconciler::RECONCILIATION_OK;
+        $other_type = self::reconcile(
+            $assertion,
+            $codebase,
+            new Union($other_types),
+            null,
+            $negated,
+            null,
+            [],
+            $other_failed_reconciliation,
+            $inside_loop,
+        );
+
+        if ($other_type === null) {
+            return null;
+        }
+
+        return new Union($other_type->isNever()
+            ? $kept_types
+            : [...$kept_types, ...array_values($other_type->getAtomicTypes())]);
+    }
+
+    /**
+     * Whether a value of the type can be an object with a __toString(), loosely equal to a string
+     */
+    public static function canBeStringableObject(Codebase $codebase, Atomic $type): bool
+    {
+        if ($type::class === TObject::class) {
+            return true;
+        }
+
+        if (!$type instanceof TNamedObject) {
+            return false;
+        }
+
+        // the __toString() of an intersection can come from any of its parts
+        foreach ([$type, ...$type->extra_types] as $part) {
+            if ($part instanceof TNamedObject
+                && $codebase->classOrInterfaceExists($part->value)
+                && $codebase->methodExists(new MethodIdentifier($part->value, '__tostring'))
+            ) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * The part of a type that can be loosely equal to a value of another kind (`1.0 == 1`, `"1" == 1.0`,
+     * `true == "a"`, `false == []`): null when both are of the same kind or aren't juggled, false when no value of it
+     * can be equal
+     *
+     * @psalm-pure
+     */
+    public static function getLooselyEqualJuggledAtomic(
+        Atomic $existing_type_part,
+        Atomic $new_type_part,
+    ): Atomic|false|null {
+        // every value is loosely equal to true or to false
+        if ($existing_type_part instanceof TBool) {
+            return $new_type_part instanceof TBool ? null : $existing_type_part;
+        }
+
+        if ($new_type_part instanceof TString) {
+            if ($existing_type_part instanceof TString) {
+                return null;
+            }
+
+            $can_be_numeric = self::canBeNumericString($new_type_part);
+
+            if ($existing_type_part instanceof TScalar) {
+                return $existing_type_part;
+            }
+
+            if ($existing_type_part instanceof TNull) {
+                // null is only equal to ""
+                return $can_be_numeric
+                    && !$new_type_part instanceof TNonEmptyString
+                    && !$new_type_part instanceof TNonEmptyNonspecificLiteralString
+                        ? $existing_type_part
+                        : false;
+            }
+
+            if ($existing_type_part instanceof TInt
+                || $existing_type_part instanceof TFloat
+                || $existing_type_part instanceof TNumeric
+            ) {
+                return $can_be_numeric ? $existing_type_part : false;
+            }
+
+            if ($existing_type_part instanceof TArrayKey && $can_be_numeric) {
+                return $existing_type_part;
+            }
+
+            return null;
+        }
+
+        if (!$new_type_part instanceof TInt && !$new_type_part instanceof TFloat) {
+            return null;
+        }
+
+        if ($new_type_part instanceof TInt
+            ? $existing_type_part instanceof TInt
+            : $existing_type_part instanceof TFloat
+        ) {
+            return null;
+        }
+
+        if ($existing_type_part instanceof TString) {
+            if ($existing_type_part instanceof TLiteralString) {
+                return is_numeric($existing_type_part->value) ? $existing_type_part : false;
+            }
+
+            if ($existing_type_part instanceof TNumericString) {
+                return $existing_type_part;
+            }
+
+            return self::canBeNumericString($existing_type_part) ? new TNumericString() : false;
+        }
+
+        if ($existing_type_part instanceof TNull) {
+            // null is only equal to 0
+            return !$new_type_part instanceof TIntRange || $new_type_part->contains(0) ? $existing_type_part : false;
+        }
+
+        if ($existing_type_part instanceof TInt
+            || $existing_type_part instanceof TFloat
+            || $existing_type_part instanceof TNumeric
+            || $existing_type_part instanceof TScalar
+            || $existing_type_part instanceof TArrayKey
+        ) {
+            return $existing_type_part;
+        }
+
+        return null;
+    }
+
+    /**
+     * Class names, callable names and gettype() results are never numeric
+     *
+     * @psalm-pure
+     */
+    private static function canBeNumericString(TString $type): bool
+    {
+        return !$type instanceof TClassString
+            && !$type instanceof TCallableString
+            && !$type instanceof TTraitString
+            && !$type instanceof TDependentGetClass
+            && !$type instanceof TDependentGetType
+            && !$type instanceof TDependentGetDebugType;
     }
 
     /**

@@ -8,6 +8,9 @@ use Override;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psalm\Internal\CliUtils;
+use Psalm\Progress\DebugProgress;
+use Psalm\Progress\LongProgress;
+use Psalm\Progress\VoidProgress;
 use Psalm\Tests\EndToEnd\PsalmRunnerTrait;
 
 use function array_keys;
@@ -184,6 +187,25 @@ final class CliUtilsTest extends TestCase
         self::assertEquals($expected, $result);
     }
 
+    public function testSyncShortOptionsCopiesGivenLongOptionsOntoTheirShortAliases(): void
+    {
+        $options = ['help' => false, 'config' => 'psalm.xml', 'root' => ['a', 'b'], 'c' => 'ignored.xml'];
+
+        CliUtils::syncShortOptions($options, ['help' => 'h', 'monochrome' => 'm', 'config' => 'c', 'root' => 'r']);
+
+        self::assertSame(
+            [
+                'help' => false,
+                'config' => 'psalm.xml',
+                'root' => ['a', 'b'],
+                'c' => 'psalm.xml',
+                'h' => false,
+                'r' => ['a', 'b'],
+            ],
+            $options,
+        );
+    }
+
     public function testUseColorWithoutAnyEnvironmentHintFollowsTheTtyRule(): void
     {
         $this->withEnv([], static function (): void {
@@ -240,6 +262,93 @@ final class CliUtilsTest extends TestCase
         $this->withEnv(['TERM' => 'dumb'], static function (): void {
             self::assertFalse(CliUtils::useColor([], false));
             self::assertFalse(CliUtils::useColor([], true));
+        });
+    }
+
+    /**
+     * @return iterable<string, array{array<string, string>, bool, array<string, false>, bool}>
+     * @psalm-pure
+     */
+    public static function provideProgressSuppression(): iterable
+    {
+        yield 'neither agent nor CI' => [[], false, [], false];
+        yield 'CI only keeps the breadcrumbs' => [[], true, [], false];
+        yield 'agent only' => [['CLAUDECODE' => '1'], false, [], true];
+        yield 'agent and CI: the agent wins' => [['CLAUDECODE' => '1'], true, [], true];
+        yield 'agent and CI with --long-progress' => [['CLAUDECODE' => '1'], true, ['long-progress' => false], false];
+        yield 'agent only with --long-progress' => [['CLAUDECODE' => '1'], false, ['long-progress' => false], false];
+        yield 'CI only with --no-progress' => [[], true, ['no-progress' => false], true];
+        yield 'agent and CI with both flags: --no-progress wins' => [
+            ['CLAUDECODE' => '1'],
+            true,
+            ['long-progress' => false, 'no-progress' => false],
+            true,
+        ];
+    }
+
+    /**
+     * @param array<string, string> $env
+     * @param array<string, false> $options
+     */
+    #[DataProvider('provideProgressSuppression')]
+    public function testProgressSuppressionPrefersAnAgentMarkerOverCi(
+        array $env,
+        bool $in_ci,
+        array $options,
+        bool $suppressed,
+    ): void {
+        $this->withEnv($env, function () use ($in_ci, $options, $suppressed): void {
+            $this->withCi($in_ci, static function () use ($in_ci, $options, $suppressed): void {
+                self::assertSame($in_ci, CliUtils::runningInCI());
+                self::assertSame($suppressed, CliUtils::progressIsSuppressed($options));
+            });
+        });
+    }
+
+    /**
+     * The alter commands (psalter, psalm-refactor) have no --long-progress
+     *
+     * @return iterable<string, array{array<string, string>, bool, array<string, false>, bool}>
+     * @psalm-pure
+     */
+    public static function provideAlterProgress(): iterable
+    {
+        yield 'CI only keeps the breadcrumbs' => [[], true, [], false];
+        yield 'agent only' => [['CLAUDECODE' => '1'], false, [], true];
+        yield 'agent and CI: the agent wins' => [['CLAUDECODE' => '1'], true, [], true];
+        yield 'CI only with --no-progress' => [[], true, ['no-progress' => false], true];
+    }
+
+    /**
+     * @param array<string, string> $env
+     * @param array<string, false> $options
+     */
+    #[DataProvider('provideAlterProgress')]
+    public function testAlterProgressPrefersAnAgentMarkerOverCi(
+        array $env,
+        bool $in_ci,
+        array $options,
+        bool $suppressed,
+    ): void {
+        $this->withEnv($env, function () use ($in_ci, $options, $suppressed): void {
+            $this->withCi($in_ci, static function () use ($in_ci, $options, $suppressed): void {
+                $progress = CliUtils::getAlterProgress($options, $in_ci);
+
+                if ($suppressed) {
+                    self::assertInstanceOf(VoidProgress::class, $progress);
+                } else {
+                    self::assertInstanceOf(LongProgress::class, $progress);
+                }
+            });
+        });
+    }
+
+    public function testDebugKeepsItsProgressUnderAnAgentInCi(): void
+    {
+        $this->withEnv(['CLAUDECODE' => '1'], function (): void {
+            $this->withCi(true, static function (): void {
+                self::assertInstanceOf(DebugProgress::class, CliUtils::getAlterProgress(['debug' => false], true));
+            });
         });
     }
 
@@ -322,6 +431,31 @@ final class CliUtilsTest extends TestCase
         }
     }
 
+    #[DataProvider('provideMissingRootDirectories')]
+    public function testRootDirectoryNotFoundMessage(string $root, string $shown): void
+    {
+        self::assertSame(
+            'Could not locate root directory ' . $shown,
+            CliUtils::getRootDirectoryNotFoundMessage('C:\project', $root),
+        );
+    }
+
+    /**
+     * @return iterable<string, array{string, string}>
+     * @psalm-pure
+     */
+    public static function provideMissingRootDirectories(): iterable
+    {
+        yield 'a path from the root' => ['/does-not-exist', '/does-not-exist'];
+        yield 'a relative path' => ['does-not-exist', 'C:\project' . DIRECTORY_SEPARATOR . 'does-not-exist'];
+        yield 'a drive path' => ['D:\does-not-exist', 'D:\does-not-exist'];
+        yield 'a drive path with a slash' => ['D:/does-not-exist', 'D:/does-not-exist'];
+
+        if (DIRECTORY_SEPARATOR === '\\') {
+            yield 'a backslash path from the root of the drive' => ['\does-not-exist', '\does-not-exist'];
+        }
+    }
+
     /**
      * Runs $test with a clean color/agent environment plus $env, then restores the previous one.
      *
@@ -348,6 +482,39 @@ final class CliUtilsTest extends TestCase
         } finally {
             foreach ($saved as $name => $value) {
                 putenv($value === false ? $name : $name . '=' . $value);
+            }
+        }
+    }
+
+    /**
+     * Runs $test as if on CI or not, whatever the developer shell exports, then restores the previous state.
+     *
+     * @param callable(): void $test
+     */
+    private function withCi(bool $ci, callable $test): void
+    {
+        // the variables CliUtils::runningInCI() looks at
+        $names = ['TRAVIS', 'CIRCLECI', 'APPVEYOR', 'JENKINS_URL', 'SCRUTINIZER', 'GITLAB_CI', 'CI', 'GITHUB_WORKFLOW', 'DRONE'];
+
+        $saved = [];
+        foreach ($names as $name) {
+            $saved[$name] = $_SERVER[$name] ?? null;
+            unset($_SERVER[$name]);
+        }
+
+        try {
+            if ($ci) {
+                $_SERVER['CI'] = 'true';
+            }
+
+            $test();
+        } finally {
+            foreach ($saved as $name => $value) {
+                if ($value === null) {
+                    unset($_SERVER[$name]);
+                } else {
+                    $_SERVER[$name] = $value;
+                }
             }
         }
     }

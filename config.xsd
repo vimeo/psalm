@@ -110,6 +110,7 @@
             <xs:element name="file" minOccurs="0" maxOccurs="unbounded" type="NameAttributeType" />
             <xs:element name="ignoreFiles" minOccurs="0" maxOccurs="1" type="IgnoreFilesType" />
         </xs:choice>
+        <xs:attribute name="allowMissingFiles" type="xs:string" />
         <xs:anyAttribute processContents="skip" />
     </xs:complexType>
 
@@ -258,7 +259,7 @@
             <xs:element name="CallableByReferenceMismatch" type="ArgumentIssueHandlerType" minOccurs="0" />
             <xs:element name="CheckType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="CircularReference" type="IssueHandlerType" minOccurs="0" />
-            <xs:element name="ClassMustBeFinal" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="ClassMustBeFinal" type="ClassIssueHandlerType" minOccurs="0" />
             <xs:element name="CliOnlyCall" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="CliOnlyInstancesUnguarded" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ComplexFunction" type="IssueHandlerType" minOccurs="0" />
@@ -316,6 +317,7 @@
             <xs:element name="InsecureCookie" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InterfaceInstantiation" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InternalClass" type="ClassIssueHandlerType" minOccurs="0" />
+            <xs:element name="InternalFunction" type="FunctionIssueHandlerType" minOccurs="0" />
             <xs:element name="InternalMethod" type="MethodIssueHandlerType" minOccurs="0" />
             <xs:element name="InternalProperty" type="PropertyIssueHandlerType" minOccurs="0" />
             <xs:element name="IntMaskComparison" type="IssueHandlerType" minOccurs="0" />
@@ -351,7 +353,7 @@
             <xs:element name="InvalidParent" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidPassByReference" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidPropertyAssignment" type="IssueHandlerType" minOccurs="0" />
-            <xs:element name="InvalidPropertyAssignmentValue" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="InvalidPropertyAssignmentValue" type="PropertyIssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidPropertyFetch" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidReturnStatement" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidReturnType" type="IssueHandlerType" minOccurs="0" />
@@ -380,7 +382,8 @@
             <xs:element name="MissingClosureParamType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MissingClosureReturnType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MissingConstructor" type="IssueHandlerType" minOccurs="0" />
-            <xs:element name="MissingDependency" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="MissingDependency" type="ClassIssueHandlerType" minOccurs="0" />
+            <xs:element name="MissingExtensionRequirement" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MissingDocblockType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MissingFile" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MissingInterfaceImmutableAnnotation" type="IssueHandlerType" minOccurs="0" />
@@ -499,7 +502,7 @@
             <xs:element name="RedundantPropertyInitializationCheck" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ReferenceConstraintViolation" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ReferenceReusedFromConfusingScope" type="IssueHandlerType" minOccurs="0" />
-            <xs:element name="ReservedWord" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="ReservedWord" type="ClassIssueHandlerType" minOccurs="0" />
             <xs:element name="RiskyCast" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="RiskyTruthyFalsyComparison" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="StringIncrement" type="IssueHandlerType" minOccurs="0" />
@@ -605,6 +608,7 @@
                     </xs:choice>
 
                     <xs:attribute name="type" type="ErrorLevelType" use="required" />
+                    <xs:attribute name="allowMissingFiles" type="xs:string" />
                     <xs:anyAttribute processContents="skip" />
                 </xs:complexType>
             </xs:element>
@@ -624,6 +628,7 @@
                     </xs:choice>
 
                     <xs:attribute name="type" type="ErrorLevelType" use="required" />
+                    <xs:attribute name="allowMissingFiles" type="xs:string" />
                     <xs:anyAttribute processContents="skip"/>
                 </xs:complexType>
             </xs:element>
@@ -645,6 +650,7 @@
                     </xs:choice>
 
                     <xs:attribute name="type" type="ErrorLevelType" use="required" />
+                    <xs:attribute name="allowMissingFiles" type="xs:string" />
                     <xs:anyAttribute processContents="skip" />
                 </xs:complexType>
             </xs:element>
@@ -665,6 +671,7 @@
                     </xs:choice>
 
                     <xs:attribute name="type" type="ErrorLevelType" use="required" />
+                    <xs:attribute name="allowMissingFiles" type="xs:string" />
                     <xs:anyAttribute processContents="skip" />
                 </xs:complexType>
             </xs:element>
@@ -685,6 +692,7 @@
                     </xs:choice>
 
                     <xs:attribute name="type" type="ErrorLevelType" use="required" />
+                    <xs:attribute name="allowMissingFiles" type="xs:string" />
                     <xs:anyAttribute processContents="skip" />
                 </xs:complexType>
             </xs:element>
@@ -705,6 +713,7 @@
                     </xs:choice>
 
                     <xs:attribute name="type" type="ErrorLevelType" use="required" />
+                    <xs:attribute name="allowMissingFiles" type="xs:string" />
                     <xs:anyAttribute processContents="skip" />
                 </xs:complexType>
             </xs:element>
@@ -725,6 +734,7 @@
                     </xs:choice>
 
                     <xs:attribute name="type" type="ErrorLevelType" use="required" />
+                    <xs:attribute name="allowMissingFiles" type="xs:string" />
                     <xs:anyAttribute processContents="skip" />
                 </xs:complexType>
             </xs:element>
@@ -745,6 +755,8 @@
                     </xs:choice>
 
                     <xs:attribute name="type" type="ErrorLevelType" use="required" />
+                    <xs:attribute name="allowMissingFiles" type="xs:string" />
+                    <xs:anyAttribute processContents="skip" />
                 </xs:complexType>
             </xs:element>
         </xs:sequence>
@@ -763,6 +775,7 @@
                     </xs:choice>
 
                     <xs:attribute name="type" type="ErrorLevelType" use="required" />
+                    <xs:attribute name="allowMissingFiles" type="xs:string" />
                     <xs:anyAttribute processContents="skip" />
                 </xs:complexType>
             </xs:element>
@@ -858,6 +871,7 @@
             <xs:enumeration value="mysqli"/>
             <xs:enumeration value="openssl"/>
             <xs:enumeration value="pdo"/>
+            <xs:enumeration value="pgsql"/>
             <xs:enumeration value="protobuf"/>
             <xs:enumeration value="random"/>
             <xs:enumeration value="rdkafka"/>

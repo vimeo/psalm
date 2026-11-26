@@ -21,6 +21,60 @@ final class CastTest extends TestCase
     #[Override]
     public static function providerValidCodeParse(): iterable
     {
+        yield 'templateBoundedByAClassAndIntersectedWithStringableCastsToString' => [
+            'code' => '<?php
+                interface Foo {}
+
+                /**
+                 * @template T as Foo
+                 * @param T&Stringable $n
+                 */
+                function cast($n): string {
+                    return (string) $n;
+                }',
+            'assertions' => [],
+            'ignored_issues' => [],
+            'php_version' => '8.0',
+        ];
+
+        yield 'templateBoundedByObjectAndIntersectedWithStringableCastsToString' => [
+            'code' => '<?php
+                /**
+                 * @template T as object
+                 * @param T&Stringable $n
+                 */
+                function cast($n): string {
+                    return (string) $n;
+                }',
+            'assertions' => [],
+            'ignored_issues' => [],
+            'php_version' => '8.0',
+        ];
+
+        yield 'intCastOfStringNotRepresentableAsInt' => [
+            'code' => '<?php
+                $a = (int) "1e999";
+                $b = (int) "9223372036854775807";
+                $c = (int) "1e3";
+                $d = (float) "1e999";',
+            'assertions' => [
+                '$a===' => 'int',
+                '$b===' => '9223372036854775807',
+                '$c===' => '1000',
+                '$d===' => 'float(INF)',
+            ],
+        ];
+
+        yield 'arithmeticOnDigitStringOutsideIntRangeIsFloat' => [
+            'code' => '<?php
+                $a = "99999999999999999999" + 1;
+                $b = "9223372036854775807" - 1;',
+            'assertions' => [
+                '$a===' => 'float',
+                '$b===' => 'int',
+            ],
+        ];
+
         yield 'castOfAnIntersectionToStringIsWhatTheNarrowestToStringReturns' => [
             'code' => '<?php
                 interface PlainString {
@@ -466,6 +520,9 @@ final class CastTest extends TestCase
                     /** @psalm-check-type-exact $twice = string */
                 }
             ',
+            'assertions' => [],
+            'ignored_issues' => [],
+            'php_version' => '8.0',
         ];
         yield 'interpolationWithClassStringUnionStaysNonEmpty' => [
             'code' => '<?php
@@ -549,6 +606,34 @@ final class CastTest extends TestCase
     #[Override]
     public static function providerInvalidCodeParse(): iterable
     {
+        yield 'redundantCastNamesTheCastOperator' => [
+            'code' => '<?php
+                function f(int $i): int {
+                    return (int) $i;
+                }',
+            'error_message' => 'Redundant cast (int) applied to int',
+        ];
+
+        yield 'redundantCastShowsTheRefinedType' => [
+            'code' => '<?php
+                function f(string $s): string {
+                    if ($s === "") {
+                        return "";
+                    }
+                    return (string) $s;
+                }',
+            'error_message' => 'Redundant cast (string) applied to non-empty-string',
+        ];
+
+        yield 'redundantCastGivenDocblockTypeShowsTheRefinedType' => [
+            'code' => '<?php
+                /** @param non-empty-string $s */
+                function f($s): string {
+                    return (string) $s;
+                }',
+            'error_message' => 'Redundant cast (string) applied to non-empty-string given docblock-provided type',
+        ];
+
         yield 'unsetCastIsRemovedInPhpEight' => [
             'code' => '<?php
                 $foo = 1;

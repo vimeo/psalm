@@ -28,6 +28,25 @@ final class InternalAnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'instancePropertyReadAsStaticIsOnlyUndefined' => [
+                'code' => '<?php
+                    namespace A\B {
+                        class Foo {
+                            /** @psalm-internal A\B */
+                            public ?int $foo = null;
+                        }
+                    }
+
+                    namespace A\C {
+                        function f(): void {
+                            if (\A\B\Foo::$foo !== null) {
+                                echo \A\B\Foo::$foo;
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['UndefinedPropertyFetch'],
+            ],
             'psalmInternalMethodCalledFromFunctionInSameNamespace' => [
                 'code' => '<?php
                     namespace A\B {
@@ -724,6 +743,9 @@ final class InternalAnnotationTest extends TestCase
                     }
                 };
                 PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'internalSymbolsUsedFromFunctionAndTopLevelCodeInSameNamespace' => [
                 'code' => '<?php
@@ -879,6 +901,67 @@ final class InternalAnnotationTest extends TestCase
                     namespace Other {
                         /** @psalm-scope-this \A\View */
                         echo \A\Inner::C;
+                    }',
+            ],
+            'internalFunctionCalledFromSameRootNamespace' => [
+                'code' => '<?php
+                    namespace A {
+                        /** @internal */
+                        function foo(): void {}
+
+                        foo();
+                    }
+
+                    namespace A\B {
+                        function f(): void {
+                            \A\foo();
+                        }
+
+                        final class C {
+                            public function run(): void {
+                                \A\foo();
+                            }
+                        }
+                    }',
+            ],
+            'psalmInternalFunctionCalledFromItsNamespace' => [
+                'code' => '<?php
+                    namespace A {
+                        /**
+                         * @internal
+                         * @psalm-internal A\B
+                         */
+                        function foo(): void {}
+                    }
+
+                    namespace A\B\C {
+                        \A\foo();
+                    }',
+            ],
+            'internalFunctionOfGlobalNamespaceIsNotRestricted' => [
+                'code' => '<?php
+                    namespace {
+                        /** @internal */
+                        function foo(): void {}
+                    }
+
+                    namespace B {
+                        \foo();
+                    }',
+            ],
+            'internalPropertyOfGlobalTraitUsedByItsClass' => [
+                'code' => '<?php
+                    trait T {
+                        /** @internal */
+                        public int $p = 0;
+                    }
+
+                    final class C {
+                        use T;
+
+                        public function other(): int {
+                            return $this->p;
+                        }
                     }',
             ],
         ];
@@ -1385,6 +1468,70 @@ final class InternalAnnotationTest extends TestCase
                     }',
                 'error_message' => 'A\B\Foo::$foo is internal to A\B',
             ],
+            'psalmInternalStaticPropertyGet' => [
+                'code' => '<?php
+                    namespace A\B {
+                        class Foo {
+                            /** @psalm-internal A\B */
+                            public static ?int $foo = null;
+                        }
+                    }
+
+                    namespace A\C {
+                        echo \A\B\Foo::$foo;
+                    }',
+                'error_message' => 'InternalProperty - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:30 - A\B\Foo::$foo is internal to A\B',
+            ],
+            'psalmInternalStaticPropertySet' => [
+                'code' => '<?php
+                    namespace A\B {
+                        class Foo {
+                            /** @psalm-internal A\B */
+                            public static ?int $foo = null;
+                        }
+                    }
+
+                    namespace A\C {
+                        \A\B\Foo::$foo = 5;
+                    }',
+                'error_message' => 'InternalProperty - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:25 - A\B\Foo::$foo is internal to A\B',
+            ],
+            'psalmInternalPropertyGetAfterNarrowing' => [
+                'code' => '<?php
+                    namespace A\B {
+                        class Foo {
+                            /** @psalm-internal A\B */
+                            public ?int $foo = null;
+                        }
+                    }
+
+                    namespace A\C {
+                        function f(\A\B\Foo $o): void {
+                            /** @psalm-suppress InternalProperty */
+                            assert($o->foo !== null);
+                            echo $o->foo;
+                        }
+                    }',
+                'error_message' => 'InternalProperty - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:34 - A\B\Foo::$foo is internal to A\B',
+            ],
+            'psalmInternalStaticPropertyGetAfterNarrowing' => [
+                'code' => '<?php
+                    namespace A\B {
+                        class Foo {
+                            /** @psalm-internal A\B */
+                            public static ?int $foo = null;
+                        }
+                    }
+
+                    namespace A\C {
+                        function f(): void {
+                            /** @psalm-suppress InternalProperty */
+                            assert(\A\B\Foo::$foo !== null);
+                            echo \A\B\Foo::$foo;
+                        }
+                    }',
+                'error_message' => 'InternalProperty - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:34 - A\B\Foo::$foo is internal to A\B',
+            ],
             'psalmInternalClassMissingNamespace' => [
                     'code' => '<?php
 
@@ -1764,6 +1911,88 @@ final class InternalAnnotationTest extends TestCase
                         }
                     }',
                 'error_message' => 'A\Inner is internal to A but called from Other\T::t',
+            ],
+            'internalFunctionCalledFromTopLevelCode' => [
+                'code' => '<?php
+                    namespace A {
+                        /** @internal */
+                        function foo(): void {}
+                    }
+
+                    namespace Other {
+                        \A\foo();
+                    }',
+                'error_message' => 'InternalFunction - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:25 - The function a\foo is internal to A but called from Other',
+            ],
+            'internalFunctionCalledFromRootNamespace' => [
+                'code' => '<?php
+                    namespace A {
+                        /** @internal */
+                        function foo(): void {}
+                    }
+
+                    namespace {
+                        \A\foo();
+                    }',
+                'error_message' => 'The function a\foo is internal to A but called from root namespace',
+            ],
+            'internalFunctionCalledFromFunction' => [
+                'code' => '<?php
+                    namespace A {
+                        /** @internal */
+                        function foo(): void {}
+                    }
+
+                    namespace Other {
+                        function f(): void {
+                            \A\foo();
+                        }
+                    }',
+                'error_message' => 'The function a\foo is internal to A but called from Other\f',
+            ],
+            'internalFunctionCalledFromMethod' => [
+                'code' => '<?php
+                    namespace A {
+                        /** @internal */
+                        function foo(): void {}
+                    }
+
+                    namespace Other {
+                        final class C {
+                            public function run(): void {
+                                \A\foo();
+                            }
+                        }
+                    }',
+                'error_message' => 'The function a\foo is internal to A but called from Other\C::run',
+            ],
+            'internalFunctionCalledThroughCallableString' => [
+                'code' => '<?php
+                    namespace A {
+                        /** @internal */
+                        function foo(): void {}
+                    }
+
+                    namespace Other {
+                        $f = "A\\\\foo";
+                        $f();
+                    }',
+                'error_message' => 'The function a\foo is internal to A but called from Other',
+            ],
+            'psalmInternalFunctionCalledFromParentNamespace' => [
+                'code' => '<?php
+                    namespace A {
+                        /**
+                         * @internal
+                         * @psalm-internal A\B
+                         */
+                        function foo(): void {}
+
+                        function f(): void {
+                            foo();
+                        }
+                    }',
+                'error_message' => 'The function a\foo is internal to A\B but called from A\f',
             ],
         ];
     }

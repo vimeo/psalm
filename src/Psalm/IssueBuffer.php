@@ -12,6 +12,8 @@ use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\BaselineMatcher;
 use Psalm\Internal\ExecutionEnvironment\BuildInfoCollector;
 use Psalm\Internal\ExecutionEnvironment\GitInfoCollector;
+use Psalm\Internal\Perf;
+use Psalm\Internal\Perf\DumpWriter;
 use Psalm\Internal\Provider\FileProvider;
 use Psalm\Issue\CodeIssue;
 use Psalm\Issue\ConfigIssue;
@@ -52,7 +54,6 @@ use function array_search;
 use function array_splice;
 use function array_sum;
 use function array_values;
-use function arsort;
 use function debug_print_backtrace;
 use function dirname;
 use function explode;
@@ -157,6 +158,9 @@ final class IssueBuffer
 
     /** How many issues accepts() was given, suppressed ones included */
     private static int $accepted_issue_count = 0;
+
+    /** @var array<string, int<1, max>> */
+    private static array $baselined_issue_counts = [];
 
     /**
      * This will add an issue to be emitted if it's not suppressed and return if it has been added
@@ -401,7 +405,10 @@ final class IssueBuffer
 
         if ($reporting_level === Config::REPORT_INFO) {
             if (($is_tainted || !self::alreadyEmitted($emitted_key))
-                && self::addIssueData($e->getFilePath(), $e->toIssueData(IssueData::SEVERITY_INFO))
+                && self::addIssueData(
+                    $e->getFilePath(),
+                    self::toIssueData($e, IssueData::SEVERITY_INFO, $is_fixable),
+                )
             ) {
                 if ($is_fixable) {
                     self::addFixableIssue($issue_type);
@@ -429,7 +436,10 @@ final class IssueBuffer
         }
 
         if (($is_tainted || !self::alreadyEmitted($emitted_key))
-            && self::addIssueData($e->getFilePath(), $e->toIssueData(IssueData::SEVERITY_ERROR))
+            && self::addIssueData(
+                $e->getFilePath(),
+                self::toIssueData($e, IssueData::SEVERITY_ERROR, $is_fixable),
+            )
         ) {
             ++self::$error_count;
 
@@ -439,6 +449,17 @@ final class IssueBuffer
         }
 
         return true;
+    }
+
+    /**
+     * @param IssueData::SEVERITY_* $severity
+     */
+    private static function toIssueData(CodeIssue $e, string $severity, bool $is_fixable): IssueData
+    {
+        $issue_data = $e->toIssueData($severity);
+        $issue_data->is_fixable = $is_fixable;
+
+        return $issue_data;
     }
 
     /**
@@ -611,6 +632,18 @@ final class IssueBuffer
     }
 
     /**
+     * How many issues the baseline covered in the last finish(), by issue type, sorted by type
+     *
+     * @internal
+     * @return array<string, int<1, max>>
+     * @psalm-capabilities read-globals
+     */
+    public static function getBaselinedIssueCounts(): array
+    {
+        return self::$baselined_issue_counts;
+    }
+
+    /**
      * @return array<string, int>
      * @psalm-external-mutation-free
      */
@@ -742,6 +775,27 @@ final class IssueBuffer
     }
 
     /**
+     * Marks an issue that was already added as fixable, for a fix that is only known after the analysis, such as a
+     * parameter type inferred from the calls of its method. It is done before the issues are cached.
+     *
+     * @internal
+     */
+    public static function markIssueFixable(string $issue_type, ?CodeLocation $location): void
+    {
+        if ($location === null) {
+            return;
+        }
+
+        [$from, $to] = $location->getSelectionBounds();
+
+        foreach (self::$issues_data[$location->file_path] ?? [] as $issue_data) {
+            if ($issue_data->type === $issue_type && $issue_data->from === $from && $issue_data->to === $to) {
+                $issue_data->is_fixable = true;
+            }
+        }
+    }
+
+    /**
      * @param  array<string,array<string,array{o:int, s:array<int, string>}>>  $issue_baseline
      */
     public static function finish(
@@ -787,9 +841,12 @@ final class IssueBuffer
                 self::$issues_data[$file_path] = $file_issues;
             }
 
-            // make a copy so what gets saved in cache is unaffected by baseline
+            // a copy for the issues added below, but its IssueData objects are the buffer's, so the baseline
+            // changes their severity there too; the issue cache is already written (Analyzer::analyzeFiles())
             $issues_data = self::$issues_data;
         }
+
+        $baselined_issue_counts = [];
 
         if (!empty($issue_baseline)) {
             // Set severity for issues in baseline to INFO
@@ -803,6 +860,8 @@ final class IssueBuffer
                         $issue_data->selected_text,
                     )) {
                         $issue_data->severity = IssueData::SEVERITY_INFO;
+                        $baselined_issue_counts[$issue_data->type]
+                            = ($baselined_issue_counts[$issue_data->type] ?? 0) + 1;
                     }
 
                     $issues_data[$file_path][$key] = $issue_data;
@@ -882,6 +941,8 @@ final class IssueBuffer
             }
         }
 
+        Perf\Collector::step('output');
+
         // The report is written to the terminal, not into a web page, so it goes to STDOUT rather than through echo.
         fwrite(
             STDOUT,
@@ -902,6 +963,11 @@ final class IssueBuffer
             }
         }
 
+
+        ksort($baselined_issue_counts);
+        self::$baselined_issue_counts = $baselined_issue_counts;
+
+        Perf\Collector::step('plugins.after_analysis');
 
         if ($codebase->config->eventDispatcher->after_analysis) {
             $source_control_info = null;
@@ -925,6 +991,8 @@ final class IssueBuffer
             $codebase->config->eventDispatcher->dispatchAfterAnalysis($event);
         }
 
+        Perf\Collector::step('report_files');
+
         foreach ($project_analyzer->generated_report_options as $report_options) {
             if (!$report_options->output_path) {
                 throw new UnexpectedValueException('Output path should not be null here');
@@ -944,18 +1012,36 @@ final class IssueBuffer
             );
         }
 
+        Perf\Collector::step('summary');
+
         $prints_to_console = in_array(
             $project_analyzer->stdout_report_options->format,
             [Report::TYPE_CONSOLE, Report::TYPE_PHP_STORM, Report::TYPE_GITHUB_ACTIONS],
         );
+        $prints_performance_summary = false;
+        $performance_summary_to_stderr = false;
+        $printed_peak_bytes = null;
 
         if ($prints_to_console && $codebase->alter_code && !$error_count) {
-            self::printAlterSummary(
+            $printed_peak_bytes = self::printAlterSummary(
                 $codebase->analyzer->getChangedFilesCount(),
                 $project_analyzer->dry_run,
                 $project_analyzer->stdout_report_options->use_color,
                 $start_time,
             );
+        } elseif ($project_analyzer->stdout_report_options->agent_output) {
+            self::printAgentFooter($issues_data, $project_analyzer->stdout_report_options, $error_count, $info_count);
+
+            // no timing, memory or type coverage: the explicitly requested statistics print as in the console report
+            if ($start_time && $add_stats) {
+                echo '-----------------' . "\n";
+                echo $codebase->analyzer->getNonMixedStats();
+                echo "\n";
+            }
+
+            $prints_performance_summary = $start_time > 0 && Perf\Collector::$enabled;
+
+            self::printUnusedIssueHandlerNotice($codebase, $is_full);
         } elseif ($prints_to_console) {
             echo str_repeat('-', 30) . "\n";
 
@@ -1003,7 +1089,7 @@ final class IssueBuffer
             echo str_repeat('-', 30) . "\n" . "\n";
 
             if ($start_time) {
-                self::printTiming($start_time);
+                $printed_peak_bytes = self::printTiming($start_time);
 
                 $analysis_summary = $codebase->analyzer->getTypeInferenceSummary($codebase);
                 echo $analysis_summary . "\n";
@@ -1014,38 +1100,27 @@ final class IssueBuffer
                     echo "\n";
                 }
 
-                if ($project_analyzer->debug_performance) {
-                    echo '-----------------' . "\n";
-                    echo 'Slow-to-analyze functions' . "\n";
-                    echo '-----------------' . "\n\n";
-
-                    $function_timings = $codebase->analyzer->getFunctionTimings();
-
-                    arsort($function_timings);
-
-                    $i = 0;
-
-                    foreach ($function_timings as $function_id => $time) {
-                        if (++$i > 10) {
-                            break;
-                        }
-
-                        echo $function_id . ': ' . round(1_000 * $time, 2) . 'ms per node' . "\n";
-                    }
-
-                    echo "\n";
-                }
+                $prints_performance_summary = Perf\Collector::$enabled;
             }
 
-            if ($codebase->config->find_unused_issue_handler_suppression && (!$is_full || $codebase->diff_run)) {
-                fwrite(
-                    STDERR,
-                    PHP_EOL . 'To whom it may concern: Psalm cannot detect unused issue handler suppressions when'
-                    . PHP_EOL . 'analyzing individual files and folders or running in diff mode. Run on the full'
-                    . PHP_EOL . 'project with diff mode off to enable unused issue handler detection.' . PHP_EOL,
-                );
+            self::printUnusedIssueHandlerNotice($codebase, $is_full);
+        } elseif ($start_time) {
+            // the report is the output of the other formats: the statistics go to stderr, as plain text
+            $printed_peak_bytes = memory_get_peak_usage();
+
+            $statistics = self::timingLine($start_time, $printed_peak_bytes)
+                . $codebase->analyzer->getTypeInferenceSummary($codebase) . "\n";
+
+            if ($add_stats) {
+                $statistics .= '-----------------' . "\n" . $codebase->analyzer->getNonMixedStats() . "\n";
             }
+
+            $project_analyzer->progress->write($statistics);
+            $prints_performance_summary = Perf\Collector::$enabled;
+            $performance_summary_to_stderr = true;
         }
+
+        Perf\Collector::step('cache.write');
 
         if ($is_full && $start_time) {
             $project_analyzer->finish($start_time, PSALM_VERSION);
@@ -1069,6 +1144,17 @@ final class IssueBuffer
             fwrite(STDERR, $type_coverage_message . PHP_EOL);
         }
 
+        // after everything that takes time, so that the report stage and the totals cover the whole run
+        $performance = Perf\Collector::finish($error_count, $info_count, $printed_peak_bytes);
+        if ($performance !== null) {
+            DumpWriter::emit(
+                $performance,
+                $project_analyzer,
+                $prints_performance_summary,
+                $performance_summary_to_stderr,
+            );
+        }
+
         // a taint analysis run in GitHub Actions that writes a SARIF report exits successfully, so that a following
         // step can upload the report; every other combination exits with an error when issues were found or the
         // type coverage is below the minimum
@@ -1086,6 +1172,72 @@ final class IssueBuffer
             && $codebase->analyzer->getChangedFilesCount() > 0
         ) {
             exit(2);
+        }
+    }
+
+    private static function printUnusedIssueHandlerNotice(Codebase $codebase, bool $is_full): void
+    {
+        if ($codebase->config->find_unused_issue_handler_suppression && (!$is_full || $codebase->diff_run)) {
+            fwrite(
+                STDERR,
+                PHP_EOL . 'To whom it may concern: Psalm cannot detect unused issue handler suppressions when'
+                . PHP_EOL . 'analyzing individual files and folders or running in diff mode. Run on the full'
+                . PHP_EOL . 'project with diff mode off to enable unused issue handler detection.' . PHP_EOL,
+            );
+        }
+    }
+
+    /**
+     * What the console and compact reports end with for an AI coding agent: the result line, the fixable line
+     * and the docs line, each at most once
+     *
+     * @param array<string, array<int, IssueData>> $issues_data
+     */
+    private static function printAgentFooter(
+        array $issues_data,
+        ReportOptions $report_options,
+        int $error_count,
+        int $info_count,
+    ): void {
+        $show_info = $report_options->show_info;
+        $printed_count = $error_count + ($show_info ? $info_count : 0);
+
+        $result = $printed_count . ($printed_count === 1 ? ' issue' : ' issues');
+
+        if (!$show_info && $info_count > 0) {
+            $result .= ', ' . $info_count . ($info_count === 1 ? ' info issue' : ' info issues')
+                . ' hidden (--show-info=true shows them)';
+        }
+
+        echo $result . "\n";
+
+        // the issues the report marks with [*], not the fixable counts, which also cover the hidden ones
+        $fixable_issue_counts = [];
+
+        if ($report_options->show_suggestions) {
+            foreach ($issues_data as $file_issues) {
+                foreach ($file_issues as $issue_data) {
+                    if (!$issue_data->is_fixable
+                        || (!$show_info && $issue_data->severity === IssueData::SEVERITY_INFO)
+                    ) {
+                        continue;
+                    }
+
+                    $fixable_issue_counts[$issue_data->type] = ($fixable_issue_counts[$issue_data->type] ?? 0) + 1;
+                }
+            }
+        }
+
+        if ($fixable_issue_counts) {
+            ksort($fixable_issue_counts);
+
+            echo '[*] ' . array_sum($fixable_issue_counts) . ' fixable with --alter --issues='
+                . implode(',', array_keys($fixable_issue_counts)) . ' (add --dry-run to preview)' . "\n";
+        }
+
+        if ($printed_count > 0) {
+            echo 'Explain an issue: psalm --explain=<IssueType>, '
+                . 'or https://psalm.dev/docs/running_psalm/issues/<IssueType>.md' . "\n";
         }
     }
 
@@ -1140,7 +1292,7 @@ final class IssueBuffer
         bool $dry_run,
         bool $use_color,
         float $start_time,
-    ): void {
+    ): ?int {
         if ($changed_files_count === 0) {
             $message = 'No changes';
         } else {
@@ -1152,15 +1304,25 @@ final class IssueBuffer
         self::printResultBlock($message, $use_color);
         echo str_repeat('-', 30) . "\n\n";
 
-        if ($start_time) {
-            self::printTiming($start_time);
-        }
+        return $start_time ? self::printTiming($start_time) : null;
     }
 
-    private static function printTiming(float $start_time): void
+    /**
+     * @return int the memory peak it printed
+     */
+    private static function printTiming(float $start_time): int
     {
-        echo 'Checks took ' . number_format(microtime(true) - $start_time, 2) . ' seconds';
-        echo ' and used ' . number_format(memory_get_peak_usage() / (1_024 * 1_024), 3) . 'MB of memory' . "\n";
+        $peak_bytes = memory_get_peak_usage();
+
+        echo self::timingLine($start_time, $peak_bytes);
+
+        return $peak_bytes;
+    }
+
+    private static function timingLine(float $start_time, int $peak_bytes): string
+    {
+        return 'Checks took ' . number_format(microtime(true) - $start_time, 2) . ' seconds'
+            . ' and used ' . number_format($peak_bytes / (1_024 * 1_024), 3) . 'MB of memory' . "\n";
     }
 
     public static function printSuccessMessage(ProjectAnalyzer $project_analyzer): void

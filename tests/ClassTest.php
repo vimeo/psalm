@@ -15,6 +15,7 @@ use function array_any;
 use function array_column;
 use function array_filter;
 use function array_values;
+use function getcwd;
 use function str_contains;
 
 use const DIRECTORY_SEPARATOR;
@@ -23,6 +24,38 @@ final class ClassTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
+
+    public function testParamNamedAsInAProjectAncestorMismatchesAnAncestorOutsideTheProject(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $this->project_analyzer->getConfig()->allow_named_arg_calls = false;
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $outside_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'vendor' . DIRECTORY_SEPARATOR . 'outside.php';
+
+        $this->addFile($outside_path, '<?php
+            interface B {
+                public function foo(string $b): void;
+            }');
+        $this->addFile($file_path, '<?php
+            abstract class A {
+                public function foo(string $a): void {}
+            }
+
+            final class KeepsA extends A implements B {
+                public function foo(string $a): void {}
+            }');
+
+        $codebase = $this->project_analyzer->getCodebase();
+        $codebase->scanner->addFilesToShallowScan([$outside_path => $outside_path]);
+
+        $this->analyzeFile($file_path, new Context());
+
+        $this->assertSame(
+            ['ParamNameMismatch'],
+            array_column(IssueBuffer::getIssuesDataForFile($file_path), 'type'),
+        );
+    }
 
     public function testAnUndefinedClassOfTheSameNativeAndDocblockTypeIsReportedOnce(): void
     {
@@ -159,6 +192,24 @@ final class ClassTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'paramNamedAsInOneOfTwoConflictingAncestors' => [
+                'code' => '<?php
+                    class A {
+                        public function foo(string $a): void {}
+                    }
+
+                    interface B {
+                        public function foo(string $b): void;
+                    }
+
+                    final class KeepsTheNameOfTheParent extends A implements B {
+                        public function foo(string $a): void {}
+                    }
+
+                    final class KeepsTheNameOfTheInterface extends A implements B {
+                        public function foo(string $b): void {}
+                    }',
+            ],
             'aLazyGhostInitializerPassedByNameOrToReflectionObject' => [
                 'code' => '<?php
                     final class Example {
@@ -217,6 +268,9 @@ final class ClassTest extends TestCase
                         $b = new $class(1);
                         return new $class(val: 1, name: "a");
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'classStringNewOfAnIntersectionKeepsTheIntersection' => [
                 'code' => '<?php
@@ -244,6 +298,8 @@ final class ClassTest extends TestCase
                 'assertions' => [
                     '$x===' => 'A&I',
                 ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'classStringNewOfAnAbstractClassIsNotAnAbstractInstantiation' => [
                 'code' => '<?php
@@ -260,6 +316,9 @@ final class ClassTest extends TestCase
                     function f(string $class): A {
                         return new $class(1);
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'classStringNewOfGenericClassKeepsTheTemplateArguments' => [
                 'code' => '<?php
@@ -279,6 +338,9 @@ final class ClassTest extends TestCase
                     function f(string $class): Box {
                         return new $class(1);
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'instanceofIterableDoesNotNarrowTheVariable' => [
                 'code' => <<<'PHP'
@@ -326,6 +388,31 @@ final class ClassTest extends TestCase
                     /** @param class-string<Item> $class */
                     function instantiate(string $class): Item {
                         return new $class();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'newStaticWithAnArgumentNarrowedAtANestedOffsetCheckedWithIsset' => [
+                'code' => '<?php
+                    interface D {}
+
+                    interface I {
+                        public function __construct(D $dep);
+                    }
+
+                    class T implements I {
+                        public function __construct(protected D $dep) {}
+
+                        public static function create(array $config, int $mode): ?static {
+                            if (isset($config["dependency"][$mode])) {
+                                if ($config["dependency"][$mode] instanceof D) {
+                                    return new static($config["dependency"][$mode]);
+                                }
+                            }
+
+                            return null;
+                        }
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],
@@ -382,6 +469,9 @@ final class ClassTest extends TestCase
                     }
 
                     $child = new Child("name", 5);',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'consistentConstructorClassKeepsTheConstructorOfItsParent' => [
                 'code' => '<?php
@@ -1366,6 +1456,45 @@ final class ClassTest extends TestCase
                         Missing\C::run();
                     }',
             ],
+            'classExistsCoversTheCodeAfterAnIfChainOnlyReachedThroughTheBlocksWhereTheClassExists' => [
+                'code' => '<?php
+                    function elseIfFallsThrough(bool $f): void {
+                        if ($f) {
+                            return;
+                        } elseif (class_exists(Missing\A::class)) {
+                            echo 1;
+                        } else {
+                            return;
+                        }
+
+                        Missing\A::run();
+                    }
+
+                    function nestedEarlyReturn(): void {
+                        if (class_exists(Missing\A::class)) {
+                            if (!class_exists(Missing\B::class)) {
+                                return;
+                            }
+                        } else {
+                            return;
+                        }
+
+                        Missing\A::run();
+                        Missing\B::run();
+                    }
+
+                    function bothBlocksFallThrough(bool $f): void {
+                        if ($f && class_exists(Missing\A::class)) {
+                            echo 1;
+                        } elseif (class_exists(Missing\A::class)) {
+                            echo 2;
+                        } else {
+                            return;
+                        }
+
+                        Missing\A::run();
+                    }',
+            ],
             'classExistsCoversTheIfAndElseIfBody' => [
                 'code' => '<?php
                     function foo(): void {
@@ -1896,6 +2025,37 @@ final class ClassTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'paramNamedAsInNoneOfTwoConflictingAncestors' => [
+                'code' => '<?php
+                    class A {
+                        public function foo(string $a): void {}
+                    }
+
+                    interface B {
+                        public function foo(string $b): void;
+                    }
+
+                    final class M extends A implements B {
+                        public function foo(string $c): void {}
+                    }',
+                'error_message' => 'ParamNameMismatch',
+            ],
+            'paramNamedAsInAnAncestorWithoutNamedArgumentsStillMismatchesTheOther' => [
+                'code' => '<?php
+                    class X {
+                        /** @no-named-arguments */
+                        public function foo(string $a): void {}
+                    }
+
+                    interface B {
+                        public function foo(string $b): void;
+                    }
+
+                    final class KeepsX extends X implements B {
+                        public function foo(string $a): void {}
+                    }',
+                'error_message' => 'expecting $b as defined by B::foo',
+            ],
             'classExistsDoesNotCoverTheCodeAfterTheIf' => [
                 'code' => '<?php
                     function foo(): void {
@@ -1979,6 +2139,75 @@ final class ClassTest extends TestCase
                     }',
                 'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:25',
             ],
+            'classExistsInOnlyOneOfTheBlocksThatFallThroughDoesNotCoverTheCodeAfterTheIf' => [
+                'code' => '<?php
+                    function foo(bool $flag): void {
+                        if (class_exists(Missing\Thing::class)) {
+                            echo 1;
+                        } elseif ($flag) {
+                            echo 2;
+                        } else {
+                            return;
+                        }
+
+                        Missing\Thing::run();
+                    }',
+                'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:25',
+            ],
+            'classExistsDoesNotCoverItsElse' => [
+                'code' => '<?php
+                    function foo(bool $flag): void {
+                        if (class_exists(Missing\Thing::class)) {
+                            echo 1;
+                        } elseif ($flag) {
+                            echo 2;
+                        } else {
+                            Missing\Thing::run();
+                        }
+                    }',
+                'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:29',
+            ],
+            'classExistsDoesNotCoverThePlainElse' => [
+                'code' => '<?php
+                    function foo(): void {
+                        if (class_exists(Missing\Thing::class)) {
+                            echo 1;
+                        } else {
+                            Missing\Thing::run();
+                        }
+                    }',
+                'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:29',
+            ],
+            'classExistsOfAnElseIfDoesNotCoverTheBlocksAfterIt' => [
+                'code' => '<?php
+                    function twoElseIfs(bool $f, bool $g): void {
+                        if ($f) {
+                            return;
+                        } elseif (class_exists(Missing\A::class)) {
+                            echo 1;
+                        } elseif ($g) {
+                            echo 2;
+                        } else {
+                            return;
+                        }
+
+                        Missing\A::run();
+                    }',
+                'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:25',
+            ],
+            'classExistsOfAnElseIfDoesNotCoverItsElse' => [
+                'code' => '<?php
+                    function elseIfThenElse(bool $f): void {
+                        if ($f) {
+                            echo 1;
+                        } elseif (class_exists(Missing\G::class)) {
+                            echo 2;
+                        } else {
+                            Missing\G::run();
+                        }
+                    }',
+                'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:29',
+            ],
             'classExistsDoesNotCoverTheCodeAfterTheIfInAMethod' => [
                 'code' => '<?php
                     final class C {
@@ -2009,6 +2238,8 @@ final class ClassTest extends TestCase
                         return new $class();
                     }',
                 'error_message' => 'TooFewArguments',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'classStringNewOfAClassWithoutConsistentConstructorOnlyReportsTheUnsafeInstantiation' => [
                 'code' => '<?php
@@ -2023,6 +2254,8 @@ final class ClassTest extends TestCase
                         return new $class("x");
                     }',
                 'error_message' => 'UnsafeInstantiation',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'classStringNewWithTooManyArguments' => [
                 'code' => '<?php
@@ -2040,6 +2273,8 @@ final class ClassTest extends TestCase
                         return new $class(1, 2);
                     }',
                 'error_message' => 'TooManyArguments',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'classStringNewWithWrongArgumentType' => [
                 'code' => '<?php
@@ -2057,6 +2292,8 @@ final class ClassTest extends TestCase
                         return new $class("x");
                     }',
                 'error_message' => 'InvalidScalarArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'instanceofIterableIsReportedOnlyAsAReservedWord' => [
                 'code' => '<?php
@@ -2154,6 +2391,74 @@ final class ClassTest extends TestCase
                         Really::something();
                     }',
                 'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:25',
+            ],
+            'methodOfAClassDeclaredConditionallyInANamespaceIsAnalyzed' => [
+                'code' => '<?php
+                    namespace Foo;
+
+                    if (!class_exists(C::class)) {
+                        final class C {
+                            public function m(): string {
+                                return 1;
+                            }
+                        }
+                    }',
+                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:40',
+            ],
+            'methodOfAnInterfaceDeclaredConditionallyInANamespaceIsAnalyzed' => [
+                'code' => '<?php
+                    namespace Foo;
+
+                    if (!interface_exists(I::class)) {
+                        interface I {
+                            /** @return Missing */
+                            public function m(): string;
+                        }
+                    }',
+                'error_message' => 'UndefinedDocblockClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:41',
+            ],
+            'methodOfAnEnumDeclaredConditionallyInANamespaceIsAnalyzed' => [
+                'code' => '<?php
+                    namespace Foo;
+
+                    if (!enum_exists(E::class)) {
+                        enum E: string {
+                            case A = "a";
+
+                            public function m(): string {
+                                return 1;
+                            }
+                        }
+                    }',
+                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:40',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'methodOfAClassDeclaredInAFunctionOfANamespaceIsAnalyzed' => [
+                'code' => '<?php
+                    namespace Foo;
+
+                    function f(): void {
+                        final class C {
+                            public function m(): string {
+                                return 1;
+                            }
+                        }
+                    }',
+                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:40',
+            ],
+            'methodOfAClassDeclaredConditionallyInABracedNamespaceIsAnalyzed' => [
+                'code' => '<?php
+                    namespace Foo {
+                        if (!class_exists(C::class)) {
+                            final class C {
+                                public function m(): string {
+                                    return 1;
+                                }
+                            }
+                        }
+                    }',
+                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:44',
             ],
             'newStaticOfAClassImplementingAnInterfaceWithoutAConstructor' => [
                 'code' => '<?php
@@ -2273,6 +2578,8 @@ final class ClassTest extends TestCase
 
                     $child = new Child(true);',
                 'error_message' => 'InvalidScalarArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'consistentConstructorClassWithoutAParentConstructorTakesNoArguments' => [
                 'code' => '<?php
@@ -2899,6 +3206,18 @@ final class ClassTest extends TestCase
                     <?php
                     /**
                      * @psalm-inheritors FooClass|BarClass
+                     */
+                    class BaseClass {}
+                    class BazClass extends BaseClass {} // this is an error
+                    PHP,
+                'error_message' => 'InheritorViolation',
+                'error_levels' => [],
+            ],
+            'classCannotExtendIfNotInInheritorsUsingPhpstanSealed' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @phpstan-sealed FooClass|BarClass
                      */
                     class BaseClass {}
                     class BazClass extends BaseClass {} // this is an error

@@ -61,6 +61,136 @@ final class NullsafeAnalyzer
     }
 
     /**
+     * Analyzes a call that a nullsafe operator before it in the chain can short-circuit (`$a?->b->c($a->d)`): PHP
+     * skips the whole chain, the arguments of the call included, when the receiver of the nullsafe operator is null,
+     * so the chain is analyzed as `$a === null ? null : $a->b->c($a->d)`. Only a receiver that is a variable or a
+     * property, which reading twice doesn't change, is handled. Returns null when the call is no such chain.
+     *
+     * @param PhpParser\Node\Expr\MethodCall|PhpParser\Node\Expr\NullsafeMethodCall $stmt
+     */
+    public static function analyzeShortCircuitedCall(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr $stmt,
+        Context $context,
+    ): ?bool {
+        if ($stmt->isFirstClassCallable() || !$stmt->getArgs()) {
+            return null;
+        }
+
+        // the nullsafe operator closest to the start of the chain
+        $nullsafe = null;
+
+        $link = $stmt->var;
+
+        while ($link instanceof PhpParser\Node\Expr\MethodCall
+            || $link instanceof PhpParser\Node\Expr\PropertyFetch
+            || $link instanceof PhpParser\Node\Expr\NullsafeMethodCall
+            || $link instanceof PhpParser\Node\Expr\NullsafePropertyFetch
+            || $link instanceof PhpParser\Node\Expr\ArrayDimFetch
+        ) {
+            if ($link instanceof PhpParser\Node\Expr\NullsafeMethodCall
+                || $link instanceof PhpParser\Node\Expr\NullsafePropertyFetch
+            ) {
+                $nullsafe = $link;
+            }
+
+            $link = $link->var;
+        }
+
+        if ($nullsafe === null) {
+            return null;
+        }
+
+        $receiver_id = ExpressionIdentifier::getExtendedVarId(
+            $nullsafe->var,
+            $statements_analyzer->getFQCLN(),
+            $statements_analyzer,
+        );
+
+        if ($receiver_id === null) {
+            return null;
+        }
+
+        $receiver_type = $context->vars_in_scope[$receiver_id] ?? null;
+
+        // a property not read yet is analysed to get its type
+        if ($receiver_type === null && !$nullsafe->var instanceof PhpParser\Node\Expr\Variable) {
+            $was_inside_general_use = $context->inside_general_use;
+
+            $context->inside_general_use = true;
+            ExpressionAnalyzer::analyze($statements_analyzer, $nullsafe->var, $context);
+            $context->inside_general_use = $was_inside_general_use;
+
+            $receiver_type = $statements_analyzer->node_data->getType($nullsafe->var);
+        }
+
+        if (!$receiver_type?->isNullable()) {
+            return null;
+        }
+
+        $ternary = new VirtualTernary(
+            new VirtualIdentical(
+                $nullsafe->var,
+                new VirtualConstFetch(new VirtualName('null'), $nullsafe->var->getAttributes()),
+                $nullsafe->var->getAttributes(),
+            ),
+            new VirtualConstFetch(new VirtualName('null'), $nullsafe->var->getAttributes()),
+            self::replaceLink($stmt, $nullsafe),
+            $stmt->getAttributes(),
+        );
+
+        if (!ExpressionAnalyzer::analyze($statements_analyzer, $ternary, $context)) {
+            return false;
+        }
+
+        $statements_analyzer->node_data->setType(
+            $stmt,
+            $statements_analyzer->node_data->getType($ternary) ?? Type::getMixed(),
+        );
+
+        // the call is null when the receiver is, and otherwise as the chain without the nullsafe operator is, whose
+        // own later `?->` short-circuits the whole chain as well
+        $chain_state = NullsafeChainState::of($ternary->else);
+
+        if ($chain_state === NullsafeChainState::None) {
+            $chain_state = NullsafeChainState::ShortCircuit->afterLink(
+                $statements_analyzer->node_data->getType($ternary->else),
+            );
+        }
+
+        $chain_state->markOn($stmt);
+
+        return true;
+    }
+
+    /**
+     * The chain with the nullsafe operator replaced by a plain one
+     *
+     * @param PhpParser\Node\Expr\NullsafeMethodCall|PhpParser\Node\Expr\NullsafePropertyFetch $nullsafe
+     */
+    private static function replaceLink(PhpParser\Node\Expr $link, PhpParser\Node\Expr $nullsafe): PhpParser\Node\Expr
+    {
+        if ($link === $nullsafe) {
+            return $nullsafe instanceof PhpParser\Node\Expr\NullsafeMethodCall
+                ? new VirtualMethodCall($nullsafe->var, $nullsafe->name, $nullsafe->args, $nullsafe->getAttributes())
+                : new VirtualPropertyFetch($nullsafe->var, $nullsafe->name, $nullsafe->getAttributes());
+        }
+
+        $new_link = clone $link;
+
+        if ($new_link instanceof PhpParser\Node\Expr\MethodCall
+            || $new_link instanceof PhpParser\Node\Expr\PropertyFetch
+            || $new_link instanceof PhpParser\Node\Expr\NullsafeMethodCall
+            || $new_link instanceof PhpParser\Node\Expr\NullsafePropertyFetch
+            || $new_link instanceof PhpParser\Node\Expr\ArrayDimFetch
+        ) {
+            $new_link->var = self::replaceLink($new_link->var, $nullsafe);
+        }
+
+        return $new_link;
+    }
+
+    /**
      * @param PhpParser\Node\Expr\NullsafePropertyFetch|PhpParser\Node\Expr\NullsafeMethodCall $stmt
      */
     public static function analyze(
@@ -138,10 +268,12 @@ final class NullsafeAnalyzer
                 $stmt->getAttributes(),
             );
         } else {
+            $method_call = new VirtualMethodCall($tmp_var, $stmt->name, $stmt->args, $stmt->getAttributes());
+
             $ternary = new VirtualTernary(
                 $null_comparison,
                 $null_value2,
-                new VirtualMethodCall($tmp_var, $stmt->name, $stmt->args, $stmt->getAttributes()),
+                $method_call,
                 $stmt->getAttributes(),
             );
         }
@@ -170,7 +302,20 @@ final class NullsafeAnalyzer
             $call_type = $statements_analyzer->node_data->getType($fetch);
         }
 
+        // what the method asserts when it returns true holds where the nullsafe call is truthy (not where it is falsy:
+        // the receiver may be null)
+        $if_true_assertions = isset($method_call)
+            ? $statements_analyzer->node_data->getIfTrueAssertions($method_call)
+            : null;
+
         $statements_analyzer->node_data = $old_node_data;
+
+        if ($stmt instanceof PhpParser\Node\Expr\NullsafeMethodCall
+            && $if_true_assertions !== null
+            && $if_true_assertions !== []
+        ) {
+            $statements_analyzer->node_data->setIfTrueAssertions($stmt, $if_true_assertions);
+        }
 
         // a non-null receiver never short-circuits: the null branch is dead
         if ($call_type

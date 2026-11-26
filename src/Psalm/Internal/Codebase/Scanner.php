@@ -7,11 +7,13 @@ namespace Psalm\Internal\Codebase;
 use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\IssueData;
+use Psalm\Internal\Crash\CrashContext;
 use Psalm\Internal\ErrorHandler;
 use Psalm\Internal\Fork\InitScannerTask;
 use Psalm\Internal\Fork\Pool;
 use Psalm\Internal\Fork\ScannerTask;
 use Psalm\Internal\Fork\ShutdownScannerTask;
+use Psalm\Internal\Perf;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\FileProvider;
 use Psalm\Internal\Provider\FileReferenceProvider;
@@ -26,6 +28,7 @@ use Psalm\Storage\FunctionStorage;
 use Psalm\Type;
 use Psalm\Type\Union;
 use ReflectionClass;
+use RuntimeException;
 use Throwable;
 use UnexpectedValueException;
 
@@ -41,12 +44,14 @@ use function enum_exists;
 use function error_reporting;
 use function explode;
 use function file_exists;
+use function hash;
 use function interface_exists;
 use function ksort;
 use function ltrim;
 use function min;
 use function realpath;
 use function str_ends_with;
+use function strlen;
 use function strtolower;
 use function substr;
 use function trait_exists;
@@ -65,7 +70,9 @@ use const SORT_STRING;
  *     array<string, string>,
  *     array<string, bool>,
  *     array<string, bool>,
- *     array<string, bool>
+ *     array<string, bool>,
+ *     array<string, string>,
+ *     array<string, true>
  * }
  *
  * @psalm-type  PoolData = array{
@@ -82,7 +89,8 @@ use const SORT_STRING;
  *     taint_data: ?TaintFlowGraph,
  *     global_constants: array<string, Union>,
  *     unresolved_global_constants: array<string, UnresolvedConstantComponent>,
- *     global_functions: array<lowercase-string, FunctionStorage>
+ *     global_functions: array<lowercase-string, FunctionStorage>,
+ *     perf?: WorkerPerf,
  * }
  */
 
@@ -91,6 +99,7 @@ use const SORT_STRING;
  *
  * Contains methods that aid in the scanning of Psalm's codebase
  * @psalm-import-type ClassLikesThreadData from ClassLikes
+ * @psalm-import-type WorkerPerf from Perf\Collector
  */
 final class Scanner
 {
@@ -136,6 +145,20 @@ final class Scanner
      * @var array<string, bool>
      */
     private array $scanned_files = [];
+
+    /**
+     * The xxh128 hash of the contents of each deep-scanned file, as scanned
+     *
+     * @var array<string, string>
+     */
+    private array $scanned_file_hashes = [];
+
+    /**
+     * The files that were queued for the scan and gone when their turn came
+     *
+     * @var array<string, true>
+     */
+    private array $vanished_files = [];
 
     /**
      * The deep-scanned files whose classes queueFilesOfInheritedMethods() went through => true
@@ -257,7 +280,7 @@ final class Scanner
      */
     public function removeFile(string $file_path): void
     {
-        unset($this->scanned_files[$file_path]);
+        unset($this->scanned_files[$file_path], $this->scanned_file_hashes[$file_path]);
     }
 
     /**
@@ -534,7 +557,8 @@ final class Scanner
         }
 
         // Each scanning process takes its files in path order, so the declaration of a class it keeps is the
-        // one in the smallest path; the pool's merge then picks the smallest path among the processes.
+        // one in the smallest path; the pool's merge then picks the smallest path among the processes, unless
+        // the class was already held before the pool.
         // Stub files keep the order they are registered in: a later stub refines an earlier one.
         if (!$this->codebase->register_stub_files) {
             ksort($files_to_scan, SORT_STRING);
@@ -549,6 +573,9 @@ final class Scanner
         if ($pool_size > 1) {
             $this->progress->debug('Forking process for scanning' . PHP_EOL);
 
+            // the workers forget these (InitScannerTask), so the merge has to keep them over a later declaration
+            $earlier_classlike_storages = ClassLikeStorageProvider::getAll();
+
             // Run scanning one file at a time, splitting the set of
             // files up among a given number of child processes.
             $pool = new Pool(
@@ -557,7 +584,9 @@ final class Scanner
                 $this->progress,
             );
 
+            Perf\Collector::poolStart('scan', $file_count);
             await($pool->runAll(new InitScannerTask));
+            Perf\Collector::poolStep('init_us');
             $pool->run(
                 $files_to_scan,
                 ScannerTask::class,
@@ -569,11 +598,15 @@ final class Scanner
                 fn(string $taint_type): array => $this->codebase->registerTaintFromWorker($taint_type),
             );
 
+            Perf\Collector::poolStep('run_us');
+
             // Wait for all tasks to complete and collect the results.
             $forked_pool_data = $pool->runAll(new ShutdownScannerTask);
 
             foreach ($forked_pool_data as $pool_data) {
                 $pool_data = $pool_data->await();
+
+                Perf\Collector::addWorkerData($pool_data['perf'] ?? null);
 
                 IssueBuffer::addIssues($pool_data['issues']);
 
@@ -596,7 +629,11 @@ final class Scanner
                 }
 
                 $this->codebase->file_storage_provider->addMore($pool_data['file_storage']);
-                $this->codebase->classlike_storage_provider->addMore($pool_data['classlike_storage']);
+                $this->codebase->classlike_storage_provider->addMore(
+                    $pool_data['classlike_storage'],
+                    $earlier_classlike_storages,
+                    $this->codebase->analysis_php_version_id,
+                );
 
                 $this->codebase->classlikes->addThreadData($pool_data['classlikes_data']);
 
@@ -605,7 +642,13 @@ final class Scanner
                 $this->codebase->addGlobalConstantTypes($pool_data['global_constants']);
                 $this->codebase->addUnresolvedGlobalConstants($pool_data['unresolved_global_constants']);
                 $this->codebase->functions->addGlobalFunctions($pool_data['global_functions']);
+
+                Perf\Collector::mergeDone();
             }
+
+            // the workers are reaped when the pool goes, and their CPU time is the pool's
+            unset($pool, $forked_pool_data, $pool_data);
+            Perf\Collector::poolEnd();
         } else {
             foreach ($files_to_scan as $file_path => $_) {
                 $this->scanAPath($file_path);
@@ -692,8 +735,11 @@ final class Scanner
             throw new UnexpectedValueException('Should not be rescanning ' . $file_path);
         }
 
-        if (!$this->file_provider->fileExists($file_path) && $this->config->mustBeIgnored($file_path)) {
-            // this should not happen, but might if the file was temporary
+        if (!$this->file_provider->fileExists($file_path)) {
+            // deleted since it was queued, as shouldScan() skips a file that doesn't exist; if it is back by the
+            // analysis, Analyzer::analyzeFiles() reports it
+            $this->vanished_files[$file_path] = true;
+
             return;
         }
 
@@ -701,11 +747,19 @@ final class Scanner
 
         $from_cache = $this->file_storage_provider->has($file_path, $file_contents);
 
+        if (Perf\Collector::$enabled) {
+            Perf\Collector::setScan($from_cache ? 'reused' : 'cold', strlen($file_contents));
+        }
+
         if (!$from_cache) {
             $this->file_storage_provider->create($file_path);
         }
 
         $this->scanned_files[$file_path] = $will_analyze;
+
+        if ($will_analyze) {
+            $this->scanned_file_hashes[$file_path] = hash('xxh128', $file_contents);
+        }
 
         $file_storage = $this->file_storage_provider->get($file_path);
 
@@ -729,6 +783,11 @@ final class Scanner
                     }
 
                     $from_cache = false;
+
+                    if (Perf\Collector::$enabled) {
+                        Perf\Collector::setScan('reused_then_rescanned', strlen($file_contents));
+                    }
+
                     $file_storage = $this->file_storage_provider->create($file_path);
 
                     $file_scanner->scan(
@@ -845,6 +904,42 @@ final class Scanner
     }
 
     /**
+     * The files that were queued for the scan and gone when their turn came
+     *
+     * @return array<string, true>
+     * @psalm-mutation-free
+     */
+    public function getVanishedFiles(): array
+    {
+        return $this->vanished_files;
+    }
+
+    /**
+     * Whether a file differs from the one that was scanned: it was not scanned, or its contents are not the ones
+     * that were, or can't be read now. Never throws, as it runs while a crash is being reported.
+     */
+    public function changedSinceScan(string $file_path): bool
+    {
+        if (!isset($this->scanned_files[$file_path])) {
+            return true;
+        }
+
+        $hash = $this->scanned_file_hashes[$file_path] ?? null;
+
+        if ($hash === null) {
+            return false;
+        }
+
+        try {
+            return $hash !== $this->file_provider->getContentsHash($file_path);
+        } catch (RuntimeException) {
+            // a file that is gone, or a directory, makes getContentsHash() throw, and a warning raised by an
+            // unreadable one is turned into an exception by ErrorHandler
+            return true;
+        }
+    }
+
+    /**
      * Checks whether a class exists, and if it does then records what file it's in
      * for later checking
      */
@@ -958,6 +1053,8 @@ final class Scanner
             $this->deep_scanned_classlike_files,
             $this->scanned_files,
             $this->reflected_classlikes_lc,
+            $this->scanned_file_hashes,
+            $this->vanished_files,
         ];
     }
 
@@ -977,6 +1074,8 @@ final class Scanner
             $deep_scanned_classlike_files,
             $scanned_files,
             $reflected_classlikes_lc,
+            $scanned_file_hashes,
+            $vanished_files,
         ] = $thread_data;
 
         $this->files_to_scan = array_merge($files_to_scan, $this->files_to_scan);
@@ -1009,6 +1108,8 @@ final class Scanner
             $this->scanned_files[$file_path] = $deep || ($this->scanned_files[$file_path] ?? false);
         }
         $this->reflected_classlikes_lc = array_merge($reflected_classlikes_lc, $this->reflected_classlikes_lc);
+        $this->scanned_file_hashes = array_merge($scanned_file_hashes, $this->scanned_file_hashes);
+        $this->vanished_files = array_merge($vanished_files, $this->vanished_files);
     }
 
     /**
@@ -1021,10 +1122,29 @@ final class Scanner
 
     public function scanAPath(string $file_path): void
     {
-        $this->scanFile(
-            $file_path,
-            $this->config->getFiletypeScanners(),
-            isset($this->files_to_deep_scan[$file_path]),
-        );
+        try {
+            if (Perf\Collector::$enabled) {
+                $deep = isset($this->files_to_deep_scan[$file_path]);
+                $perf_start = Perf\Collector::fileStart();
+                // what it stays at if the file is not scanned at all
+                Perf\Collector::setScan('cold', 0);
+                $this->scanFile($file_path, $this->config->getFiletypeScanners(), $deep);
+                Perf\Collector::scanEnd(
+                    $file_path,
+                    $this->config->shortenFileName($file_path),
+                    $perf_start,
+                    $deep,
+                );
+            } else {
+                $this->scanFile(
+                    $file_path,
+                    $this->config->getFiletypeScanners(),
+                    isset($this->files_to_deep_scan[$file_path]),
+                );
+            }
+        } catch (Throwable $e) {
+            CrashContext::recordFile($e, 'scanning', $file_path);
+            throw $e;
+        }
     }
 }

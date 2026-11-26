@@ -15,7 +15,9 @@ use Amp\Parallel\Worker\ContextWorkerFactory;
 use Amp\Parallel\Worker\ContextWorkerPool;
 use Amp\Parallel\Worker\Execution;
 use Amp\Parallel\Worker\Task;
+use Amp\Parallel\Worker\TaskFailureThrowable;
 use Amp\Parallel\Worker\Worker;
+use Amp\Parallel\Worker\WorkerException;
 use Amp\Parallel\Worker\WorkerPool;
 use Amp\Serialization\NativeSerializer;
 use Amp\Serialization\Serializer;
@@ -25,6 +27,8 @@ use Closure;
 use Generator;
 use Override;
 use Psalm\Config;
+use Psalm\Internal\Crash\CrashContext;
+use Psalm\Internal\Perf;
 use Psalm\Progress\Progress;
 use Revolt\EventLoop;
 use Revolt\EventLoop\Driver\StreamSelectDriver;
@@ -41,6 +45,7 @@ use function file_get_contents;
 use function gc_collect_cycles;
 use function is_file;
 use function ksort;
+use function strlen;
 use function unlink;
 
 use const PHP_EOL;
@@ -145,42 +150,78 @@ final class Pool
 
         $cnt = 0;
 
+        // Fork the missing workers before submitting anything. A worker forked while tasks run inherits the
+        // parent's event loop, reads of the other workers' channels included, and can take their results.
+        $workers = [];
+        while ($this->pool->getWorkerCount() < $this->threads) {
+            $workers []= $this->pool->getWorker();
+        }
+        unset($workers);
+
+        // When a worker dies, amphp fails its task and then throws from the event loop while it closes the worker.
+        // That would end submit() or await() before the failed task says which file the worker died on.
+        $uncaught = null;
+        $previous_error_handler = EventLoop::getErrorHandler();
+        EventLoop::setErrorHandler(static function (Throwable $e) use (&$uncaught): void {
+            $uncaught ??= $e;
+        });
+
+        $submit_failure = null;
         $results = [];
-        foreach ($process_task_data_iterator as $file) {
-            $execution = $this->pool->submit(new $main_task($file));
-            // a task that fails says which file it was given: the trace of the worker cuts the path short
-            $results []= $f = $execution->getFuture()->catch(
-                static function (Throwable $e) use ($file): never {
-                    throw new RuntimeException('Psalm crashed processing ' . $file . ': ' . $e->getMessage(), 0, $e);
-                },
-            );
-            if ($message_handler !== null) {
-                $results []= $this->pumpMessages($execution, $f, $message_handler);
-            }
-            if ($task_done_closure) {
-                $results []= $f->map($task_done_closure);
-            }
-            // once per task: repeating it every few seconds would bury the rest of the output
-            $id = EventLoop::delay($this->timeLimit, function () use ($file): void {
-                $this->progress->warning(
-                    Config::getInstance()->shortenFileName($file)
-                    . " is taking over {$this->timeLimit}s to process (--debug-by-line shows the line it is on)",
-                );
-            });
-            $results []= $f->finally(static function () use ($id): void {
-                EventLoop::cancel($id);
-            });
-            $results []= $f->map(function () use (&$cnt, $total): void {
-                $cnt++;
-                if (!($cnt % 10)) {
-                    $percent = (int) (($cnt*100) / $total);
-                    $this->progress->debug("Processing tasks: $cnt/$total ($percent%)...".PHP_EOL);
+
+        try {
+            foreach ($process_task_data_iterator as $file) {
+                try {
+                    $execution = $this->pool->submit(new $main_task($file));
+                } catch (WorkerException $e) {
+                    // it was handed a worker that has died; the task it was running fails below
+                    $submit_failure = $e;
+                    break;
                 }
-            });
+
+                // a task that fails says which file it was given: the trace of the worker cuts the path short
+                $results []= $f = $execution->getFuture()->catch(
+                    static function (Throwable $e) use ($file, $main_task): never {
+                        throw $e instanceof TaskFailureThrowable
+                            ? TaskCrashedException::inWorker($file, CrashContext::fromWorker($e), $main_task)
+                            : TaskCrashedException::workerLost($file, $e);
+                    },
+                );
+                if ($message_handler !== null) {
+                    $results []= $this->pumpMessages($execution, $f, $message_handler);
+                }
+                if ($task_done_closure) {
+                    $results []= $f->map($task_done_closure);
+                }
+                // once per task: repeating it every few seconds would bury the rest of the output
+                $id = EventLoop::delay($this->timeLimit, function () use ($file): void {
+                    $this->progress->warning(
+                        Config::getInstance()->shortenFileName($file)
+                        . " is taking over {$this->timeLimit}s to process (--debug-by-line shows the line it is on)",
+                    );
+                });
+                $results []= $f->finally(static function () use ($id): void {
+                    EventLoop::cancel($id);
+                });
+                $results []= $f->map(function () use (&$cnt, $total): void {
+                    $cnt++;
+                    if (!($cnt % 10)) {
+                        $percent = (int) (($cnt*100) / $total);
+                        $this->progress->debug("Processing tasks: $cnt/$total ($percent%)...".PHP_EOL);
+                    }
+                });
+            }
+
+            // awaiting subscribes to every derived future too, so a failure is not reported again when they're
+            // destroyed
+            await($results);
+        } finally {
+            EventLoop::setErrorHandler($previous_error_handler);
         }
 
-        // awaiting subscribes to every derived future too, so a failure is not reported again when they're destroyed
-        await($results);
+        if ($uncaught !== null || $submit_failure !== null) {
+            throw $uncaught ?? $submit_failure;
+        }
     }
 
     /**
@@ -279,6 +320,8 @@ final class Pool
                 if ($serialized === false) {
                     throw new RuntimeException("Could not read the worker result from $path");
                 }
+
+                Perf\Collector::payload(strlen($serialized));
 
                 /** @var T */
                 $result = $serializer->unserialize($serialized);

@@ -16,6 +16,7 @@ use Psalm\Exception\UnpopulatedClasslikeException;
 use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\Analyzer\Statements\ReturnAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\FileManipulation\ClassDocblockManipulator;
 use Psalm\Internal\FileManipulation\CodeMigration;
@@ -708,6 +709,16 @@ final class ClassLikes
     {
         $this->classlike_aliases_map[strtolower($alias_name)] = $fq_class_name;
         $this->existing_classlike_aliases[$alias_name] = true;
+    }
+
+    /**
+     * Whether class_alias() gives a class the name
+     *
+     * @psalm-mutation-free
+     */
+    public function isClassAlias(string $name): bool
+    {
+        return isset($this->classlike_aliases_map[strtolower($name)]);
     }
 
     /** @psalm-mutation-free */
@@ -2396,7 +2407,9 @@ final class ClassLikes
                     && !$method_storage->return_type->isVoid()
                     && !$method_storage->return_type->isNever()
                     && $method_id->method_name !== '__tostring'
-                    && ($method_storage->is_static || !$method_storage->probably_fluent)
+                    && ($method_storage->is_static
+                        || !($method_storage->probably_fluent
+                            || ReturnAnalyzer::mustReturnThis($codebase, $method_storage, $method_id)))
                 ) {
                     $method_return_referenced = $codebase->code_use_graph->isUsed(
                         CodeUseGraph::functionLikeReturnNode(strtolower((string) $method_id)),
@@ -2604,6 +2617,10 @@ final class ClassLikes
                                 }
                             } else {
                                 IssueBuffer::addFixableIssue('MissingParamType');
+                                IssueBuffer::markIssueFixable(
+                                    'MissingParamType',
+                                    $method_storage->params[$offset]->location,
+                                );
                             }
                         }
                     }
@@ -3040,8 +3057,11 @@ final class ClassLikes
                 }
             }
 
+            // a subclass may give the constant another value, of its docblock or native type
             $constant_type = $late_static_binding
-                ? $constant_storage->type
+                ? ($constant_storage->type?->from_docblock
+                    ? $constant_storage->type
+                    : $constant_storage->signature_type ?? $constant_storage->type)
                 : ($constant_storage->inferred_type ?? null);
 
             if ($constant_type === null) {
