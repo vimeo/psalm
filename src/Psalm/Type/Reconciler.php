@@ -613,7 +613,7 @@ class Reconciler
                 }
 
                 $array_value_type = $has_inverted_isset
-                    ? self::getPossiblyUnsetArrayValue($key_parts, $existing_types, $before_adjustment, $result_type)
+                    ? self::getPossiblyUnsetArrayValue($key_parts, $existing_types, $result_type)
                     : $result_type;
 
                 if (str_ends_with($key, ']')
@@ -2516,9 +2516,9 @@ class Reconciler
     }
 
     /**
-     * Where isset() is negated, an offset of an array variable is not set, is null, or holds what the other
-     * alternatives of the clause say: the array shape gets it as an optional offset. Returns null where this
-     * tells nothing about the shape.
+     * Where isset() is negated, an offset of an array is not set, is null, or holds what the other alternatives of
+     * the clause say: the array gets that type for it, optional where the offset may be missing. Returns null where
+     * this tells nothing about the array.
      *
      * @param  list<string>          $key_parts
      * @param  array<string, Union>  $existing_types
@@ -2526,30 +2526,65 @@ class Reconciler
     private static function getPossiblyUnsetArrayValue(
         array $key_parts,
         array $existing_types,
-        ?Union $before_adjustment,
         Union $result_type,
     ): ?Union {
-        if (count($key_parts) !== 4 || !isset($existing_types[$key_parts[0]])) {
+        $array_key = $key_parts[count($key_parts) - 2];
+        $base_key = implode('', array_slice($key_parts, 0, -3));
+
+        // the base of a nested offset may be missing too where isset() is false
+        if (str_ends_with($base_key, ']') || !isset($existing_types[$base_key])) {
             return null;
         }
 
-        // a list that has an offset has all the offsets before it, a list that may not have it says nothing
-        foreach ($existing_types[$key_parts[0]]->getAtomicTypes() as $atomic_type) {
-            if ($atomic_type instanceof TKeyedArray && $atomic_type->is_list) {
-                return null;
-            }
+        if ($array_key[0] === '\'' || $array_key[0] === '"') {
+            $offset = ExpressionIdentifier::unquoteOffset($array_key);
+        } elseif (preg_match('/^-?[0-9]+$/', $array_key) === 1) {
+            $offset = (int) $array_key;
+        } else {
+            return null;
         }
 
-        if ($before_adjustment === null) {
+        $offset_type = null;
+        $possibly_undefined = false;
+
+        foreach ($existing_types[$base_key]->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TKeyedArray) {
+                // a list that has an offset has all the offsets before it, a list that may not have it says nothing
+                if ($atomic_type->is_list) {
+                    return null;
+                }
+
+                if (isset($atomic_type->properties[$offset])) {
+                    $value_type = $atomic_type->properties[$offset];
+                    $possibly_undefined = $possibly_undefined || $value_type->possibly_undefined;
+                } elseif ($atomic_type->fallback_params) {
+                    $value_type = $atomic_type->fallback_params[1];
+                    $possibly_undefined = true;
+                } else {
+                    $possibly_undefined = true;
+                    continue;
+                }
+            } elseif ($atomic_type instanceof TArray) {
+                $value_type = $atomic_type->type_params[1];
+                $possibly_undefined = true;
+            } else {
+                continue;
+            }
+
+            $offset_type = $offset_type ? Type::combineUnionTypes($offset_type, $value_type) : $value_type;
+        }
+
+        if ($offset_type === null) {
             return null;
         }
 
         // an offset that can hold null may be null where isset() is false, also when it is optional (the reconciled
         // type then reads it as not set); one that can't is not set there
-        if ($before_adjustment->isNullable() || $before_adjustment->hasMixed()) {
+        if ($offset_type->isNullable() || $offset_type->hasMixed()) {
             $result_type = Type::combineUnionTypes($result_type, Type::getNull());
         } elseif ($result_type->isNullable()) {
-            $builder = $result_type->getBuilder()->removeType('null');
+            $builder = $result_type->getBuilder();
+            $builder->removeType('null');
 
             if ($builder->isUnionEmpty()) {
                 return null;
@@ -2562,7 +2597,7 @@ class Reconciler
             return null;
         }
 
-        return $result_type->setPossiblyUndefined(true);
+        return $result_type->setPossiblyUndefined($possibly_undefined);
     }
 
     /**

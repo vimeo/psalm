@@ -199,6 +199,75 @@ final class IssetTest extends TestCase
                     '$a===' => 'array{k?: string}',
                 ],
             ],
+            'negatedIssetAlternativeKeepsRequiredOffset' => [
+                'code' => '<?php
+                    /** @return array{k: int|string} */
+                    function getArray(): array {
+                        return ["k" => 1];
+                    }
+
+                    $a = getArray();
+
+                    if (isset($a["k"]) && is_int($a["k"])) {
+                        throw new LogicException();
+                    }',
+                'assertions' => [
+                    '$a===' => 'array{k: string}',
+                ],
+            ],
+            'negatedIssetKeepsRequiredNullableOffset' => [
+                'code' => '<?php
+                    /** @return array{k: int|null} */
+                    function getArray(): array {
+                        return ["k" => 1];
+                    }
+
+                    $a = getArray();
+
+                    if (isset($a["k"])) {
+                        throw new LogicException();
+                    }',
+                'assertions' => [
+                    '$a===' => 'array{k: null}',
+                ],
+            ],
+            'negatedIssetAlternativeAddsNonNullableGenericOffset' => [
+                'code' => '<?php
+                    /** @return array<string, int|string> */
+                    function getArray(): array {
+                        return [];
+                    }
+
+                    /** @param array<string, int|string> $a */
+                    function takesArray(array $a): void {}
+
+                    $a = getArray();
+
+                    if (isset($a["k"]) && is_int($a["k"])) {
+                        throw new LogicException();
+                    }
+
+                    takesArray($a);',
+                'assertions' => [
+                    '$a===' => 'array{k?: string, ...<string, int|string>}',
+                ],
+            ],
+            'negatedIssetAlternativeOnPropertyOffset' => [
+                'code' => '<?php
+                    final class C {
+                        /** @var array{k?: int|string} */
+                        public array $q = [];
+
+                        /** @return array{k?: string} */
+                        public function f(): array {
+                            if (isset($this->q["k"]) && is_int($this->q["k"])) {
+                                throw new LogicException();
+                            }
+
+                            return $this->q;
+                        }
+                    }',
+            ],
             'negatedIssetKeepsNonNullableArrayValues' => [
                 'code' => '<?php
                     /** @return array<string, int> */
