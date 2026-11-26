@@ -277,6 +277,72 @@ final class UnusedCodeTest extends TestCase
         $this->assertSame(4, $issue->line_from);
     }
 
+    public function testAFixableIssueOfALoopBodyStaysFixable(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                function int(): int {
+                    return 1;
+                }
+
+                /** @param list<int> $ints */
+                function f(array $ints): void {
+                    foreach ($ints as $_) {
+                        /** @var int $a */
+                        $a = int();
+                        echo $a;
+                    }
+                }
+            ',
+        );
+        $this->analyzeFile($file_path, new Context(), false);
+        $this->project_analyzer->consolidateAnalyzedData();
+
+        $issue = IssueBuffer::getIssuesDataForFile($file_path)[0];
+        $this->assertSame('UnnecessaryVarAnnotation', $issue->type);
+        $this->assertTrue($issue->is_fixable);
+        $this->assertSame(['UnnecessaryVarAnnotation' => 1], IssueBuffer::getFixableIssues());
+    }
+
+    public function testAFixableIssueOfTheBodyOfALoopOverNeverStaysFixable(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                function int(): int {
+                    return 1;
+                }
+
+                /** @return list<never> */
+                function nothing(): array {
+                    return [];
+                }
+
+                function f(): void {
+                    foreach (nothing() as $item) {
+                        /** @var int $a */
+                        $a = int();
+                        echo $a, count($item);
+                    }
+                }
+            ',
+        );
+        $this->analyzeFile($file_path, new Context(), false);
+        $this->project_analyzer->consolidateAnalyzedData();
+
+        $issue = IssueBuffer::getIssuesDataForFile($file_path)[0];
+        $this->assertSame('UnnecessaryVarAnnotation', $issue->type);
+        $this->assertTrue($issue->is_fixable);
+        $this->assertSame(['UnnecessaryVarAnnotation' => 1], IssueBuffer::getFixableIssues());
+    }
+
     public function testTheArgumentsOfACallOfAMissingClassAreNotAnalysed(): void
     {
         $this->project_analyzer->getConfig()->throw_exception = false;
