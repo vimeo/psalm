@@ -3916,6 +3916,101 @@ final class ClassTemplateExtendsTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'returnStaticArgumentsProjectedOnAStaticCallWithoutArguments' => [
+                'code' => '<?php
+                    /**
+                     * @template TA
+                     * @template TB
+                     */
+                    abstract class Base {
+                        /** @return static<TA, int> */
+                        public static function make(): static {
+                            throw new \Exception();
+                        }
+                    }
+
+                    /**
+                     * @template TZ
+                     * @template TA2
+                     * @template TB2
+                     * @extends Base<TA2, TB2>
+                     */
+                    abstract class Prefixed extends Base {}
+
+                    /** @extends Base<string, bool> */
+                    abstract class Plain extends Base {}
+
+                    $r = Prefixed::make();',
+                'assertions' => [
+                    '$r===' => 'Prefixed<mixed, mixed, int>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'returnStaticArgumentsProjectedOnAStaticCallOfAnObject' => [
+                'code' => '<?php
+                    /**
+                     * @template TA
+                     * @template TB
+                     */
+                    abstract class Base {
+                        /** @return static<TA, int> */
+                        public static function make(): static {
+                            throw new \Exception();
+                        }
+                    }
+
+                    /**
+                     * @template TZ
+                     * @template TA2
+                     * @template TB2
+                     * @extends Base<TA2, TB2>
+                     */
+                    abstract class Prefixed extends Base {}
+
+                    /** @extends Base<string, bool> */
+                    abstract class Plain extends Base {}
+
+                    /** @var Prefixed<float, string, bool> $p */
+                    $p = null;
+                    $r = $p::make();',
+                'assertions' => [
+                    '$r===' => 'Prefixed<float, string, int>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'returnStaticArgumentsDroppedOnAStaticCallOfAClassWithoutTemplates' => [
+                'code' => '<?php
+                    /**
+                     * @template TA
+                     * @template TB
+                     */
+                    abstract class Base {
+                        /** @return static<TA, int> */
+                        public static function make(): static {
+                            throw new \Exception();
+                        }
+                    }
+
+                    /**
+                     * @template TZ
+                     * @template TA2
+                     * @template TB2
+                     * @extends Base<TA2, TB2>
+                     */
+                    abstract class Prefixed extends Base {}
+
+                    /** @extends Base<string, bool> */
+                    abstract class Plain extends Base {}
+
+                    $r = Plain::make();',
+                'assertions' => [
+                    '$r===' => 'Plain',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'returnStaticArgumentsProjectedFromATraitThroughExtends' => [
                 'code' => '<?php
                     /**
@@ -4053,6 +4148,41 @@ final class ClassTemplateExtendsTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.0',
+            ],
+            'staticArgumentsProjectedOnFirstClassCallables' => [
+                'code' => '<?php
+                    /**
+                     * @template TA
+                     * @template TB
+                     */
+                    abstract class Base {
+                        /** @return static<TA, int> */
+                        abstract public function withIntB(): static;
+
+                        /** @return static<TA, int> */
+                        public static function make(): static {
+                            throw new \Exception();
+                        }
+                    }
+
+                    /**
+                     * @template TZ
+                     * @template TA2
+                     * @template TB2
+                     * @extends Base<TA2, TB2>
+                     */
+                    abstract class Prefixed extends Base {}
+
+                    /** @var Prefixed<float, string, bool> $p */
+                    $p = null;
+                    $static = Prefixed::make(...);
+                    $instance = $p->withIntB(...);',
+                'assertions' => [
+                    '$static===' => 'Closure[impure]():Prefixed<mixed, mixed, int>',
+                    '$instance===' => 'Closure[impure]():Prefixed<float, string, int>&static',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
             'staticArgumentsProjectedThroughImplements' => [
                 'code' => '<?php
@@ -4510,6 +4640,277 @@ final class ClassTemplateExtendsTest extends TestCase
                     '$r===' => 'Grand&static',
                 ],
                 'ignored_issues' => [],
+            ],
+            'staticArgumentsLeftOutTakeTheTemplateDefaults' => [
+                'code' => '<?php
+                    /**
+                     * @template A
+                     * @template B
+                     */
+                    class Base {
+                        /** @return static<A, int> */
+                        public static function make(): static {
+                            throw new \Exception();
+                        }
+                    }
+
+                    /**
+                     * @template X
+                     * @template Y
+                     * @template Z = string
+                     * @psalm-purity-template P(pure)
+                     * @extends Base<Y, X>
+                     */
+                    class Sub extends Base {}
+
+                    /** @var Sub<bool, string, float> $s */
+                    $s = new Sub();
+                    $named = Sub::make();
+                    $instance = $s->make();',
+                'assertions' => [
+                    '$named===' => 'Sub<int, mixed, string>',
+                    '$instance===' => 'Sub<int, string, float>&static',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'staticArgumentsProjectedOnAClassStringAndABareReceiver' => [
+                'code' => '<?php
+                    /**
+                     * @template A
+                     * @template B
+                     */
+                    class Base {
+                        /** @return static<A, int> */
+                        public static function make(): static {
+                            throw new \Exception();
+                        }
+                    }
+
+                    /**
+                     * @template X
+                     * @template Y
+                     * @template Z
+                     * @psalm-purity-template P
+                     * @extends Base<Y, X>
+                     */
+                    class Sub extends Base {}
+
+                    /** @var class-string<Sub[io]<bool, string, float>> $class */
+                    $class = Sub::class;
+                    $call = $class::make();
+                    $callable = $class::make(...);
+
+                    function bare(Sub $bare): void {
+                        $r = $bare->make();
+                        /** @psalm-check-type-exact $r = Sub<int, mixed, mixed>&static */
+                        echo "";
+                    }',
+                'assertions' => [
+                    '$call===' => 'Sub[io]<int, string, float>',
+                    '$callable===' => 'Closure[impure]():Sub[io]<int, string, float>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'staticOnAClassStringOfATemplateWithAGenericBoundIsTheTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template TA
+                     * @template TB
+                     */
+                    abstract class Base {
+                        public static function create(): static {
+                            throw new \Exception();
+                        }
+                    }
+
+                    /**
+                     * @template TX
+                     * @template TY
+                     * @extends Base<TY, TX>
+                     */
+                    abstract class Swapped extends Base {}
+
+                    /**
+                     * @template T of Swapped<int, string>
+                     * @param class-string<T> $c
+                     * @return T
+                     */
+                    function create(string $c): Swapped {
+                        return $c::create();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'staticOnACallableOfAClassStringOfATemplateWithAGenericBoundIsTheTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template TA
+                     * @template TB
+                     */
+                    abstract class Base {
+                        public static function create(): static {
+                            throw new \Exception();
+                        }
+                    }
+
+                    /**
+                     * @template TX
+                     * @template TY
+                     * @extends Base<TY, TX>
+                     */
+                    abstract class Swapped extends Base {}
+
+                    /**
+                     * @template T of Swapped<int, string>
+                     * @param class-string<T> $c
+                     * @return Closure(): T
+                     */
+                    function creator(string $c): Closure {
+                        return $c::create(...);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'staticAssertedThroughAClassStringOfATemplateWithAGenericBoundIsTheTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template TA
+                     * @template TB
+                     */
+                    abstract class Base {
+                        /** @psalm-assert-if-true static $x */
+                        public static function isOne(mixed $x): bool {
+                            return true;
+                        }
+                    }
+
+                    /**
+                     * @template TX
+                     * @template TY
+                     * @extends Base<TY, TX>
+                     */
+                    abstract class Swapped extends Base {}
+
+                    /**
+                     * @template T of Swapped<int, string>
+                     * @param class-string<T> $c
+                     */
+                    function check(string $c, mixed $x): void {
+                        if ($c::isOne($x)) {
+                            /** @psalm-check-type-exact $x = T */
+                            echo "";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'staticArgumentsOfAParamOutProjectedOnAStaticFirstClassCallable' => [
+                'code' => '<?php
+                    /** @template A */
+                    class Base {
+                        /** @param-out static<int> $out */
+                        public static function emit(mixed &$out): void {
+                            throw new \Exception();
+                        }
+                    }
+
+                    /**
+                     * @template X
+                     * @template Z = string
+                     * @extends Base<X>
+                     */
+                    class Sub extends Base {}
+
+                    $callback = Sub::emit(...);
+                    $out = null;
+                    $callback($out);',
+                'assertions' => [
+                    '$out===' => 'Sub<int, string>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'staticArgumentsProjectedOnCallablesAndPseudoMethodsNamingAClass' => [
+                'code' => '<?php
+                    /**
+                     * @template TA
+                     * @template TB
+                     * @method static static<int, string> magic()
+                     */
+                    abstract class Base {
+                        /** @return static<int, string> */
+                        public static function make(): static {
+                            throw new \Exception();
+                        }
+
+                        /** @param list<mixed> $args */
+                        public static function __callStatic(string $name, array $args): mixed {
+                            return null;
+                        }
+                    }
+
+                    /**
+                     * @template TZ
+                     * @template TA2
+                     * @template TB2
+                     * @extends Base<TA2, TB2>
+                     */
+                    abstract class Prefixed extends Base {}
+
+                    /**
+                     * @template R
+                     * @param callable(): R $c
+                     * @return R
+                     */
+                    function call(callable $c) {
+                        return $c();
+                    }
+
+                    $array = call([Prefixed::class, "make"]);
+                    $string = call("Prefixed::make");
+                    $magic = Prefixed::magic();',
+                'assertions' => [
+                    '$array===' => 'Prefixed<mixed, int, string>',
+                    '$string===' => 'Prefixed<mixed, int, string>',
+                    '$magic===' => 'Prefixed<mixed, int, string>&static',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'staticArgumentsOnAStaticCallOfAnObjectLeavePlainStaticAsTheClass' => [
+                'code' => '<?php
+                    /**
+                     * @template TA
+                     * @template TB
+                     */
+                    abstract class Base {
+                        /** @return array{plain: static, generic: static<TA, int>} */
+                        public static function shape(): array {
+                            throw new \Exception();
+                        }
+                    }
+
+                    /**
+                     * @template TZ
+                     * @template TA2
+                     * @template TB2
+                     * @extends Base<TA2, TB2>
+                     */
+                    abstract class Prefixed extends Base {}
+
+                    /** @var Prefixed<float, string, bool> $p */
+                    $p = null;
+                    $shape = $p::shape();',
+                'assertions' => [
+                    '$shape===' => 'array{generic: Prefixed<float, string, int>, plain: Prefixed}',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'staticArgumentsProjectedInConditionalAssertions' => [
                 'code' => '<?php

@@ -1195,7 +1195,12 @@ final class AtomicStaticCallAnalyzer
 
         if ($pseudo_method_storage->return_type) {
             $return_type_candidate = MethodCallReturnTypeFetcher::replaceTemplateTypes(
-                $pseudo_method_storage->return_type,
+                TypeExpander::projectStaticArgumentsByName(
+                    $codebase,
+                    $pseudo_method_storage->return_type,
+                    $static_fq_class_name,
+                    ExistingAtomicStaticCallAnalyzer::getReceiver($lhs_type_part),
+                ),
                 $template_result,
                 $method_id,
                 count($args),
@@ -1325,6 +1330,7 @@ final class AtomicStaticCallAnalyzer
         ?TemplateResult $inferred_template_result,
     ): Union {
         $codebase = $statements_analyzer->getCodebase();
+        $lhs_type_part = ExistingAtomicStaticCallAnalyzer::getReceiver($lhs_type_part);
 
         [$static_type, $final] = ExistingAtomicStaticCallAnalyzer::getStaticClassType(
             $codebase,
@@ -1335,6 +1341,8 @@ final class AtomicStaticCallAnalyzer
             $class_storage,
             $closure,
         );
+
+        $closure = TypeExpander::projectStaticArgumentsByName($codebase, $closure, $static_type, $lhs_type_part);
 
         $found_generic_params = ExistingAtomicStaticCallAnalyzer::collectClassTemplateParams(
             $statements_analyzer,

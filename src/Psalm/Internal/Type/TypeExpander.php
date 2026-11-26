@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Type;
 
+use Override;
 use Psalm\Codebase;
 use Psalm\Exception\CircularReferenceException;
 use Psalm\Exception\TypeParseTreeException;
@@ -54,6 +55,8 @@ use Psalm\Type\Atomic\TTypeAlias;
 use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Atomic\TValueOf;
 use Psalm\Type\Atomic\TVoid;
+use Psalm\Type\MutableTypeVisitor;
+use Psalm\Type\TypeNode;
 use Psalm\Type\Union;
 use ReflectionProperty;
 
@@ -73,6 +76,7 @@ use function count;
 use function end;
 use function is_string;
 use function reset;
+use function str_contains;
 use function strtolower;
 
 /**
@@ -997,7 +1001,7 @@ final class TypeExpander
                 : $static_class_type;
 
             // the arguments of `static<...>` are for the templates of the class it is written in. A class name is a
-            // declaration of that class
+            // declaration of that class: a call naming one projects first, see projectStaticArgumentsByName()
             $projected_type = $return_type instanceof TGenericObject
                 && $return_type->getStaticDeclaringClass() !== null
                 && $generic_receiver !== null
@@ -1148,6 +1152,64 @@ final class TypeExpander
         }
 
         return $return_type;
+    }
+
+    /**
+     * $type with the arguments of its `static<...>` for the templates of the class $static_class_type names, for a call
+     * that resolves `static` to a class by name (in expandNamedObject(), a class name is a declaration). The templates
+     * `static<...>` gives no argument to take those of $receiver, the object of that class the call is on, else their
+     * defaults or bounds.
+     *
+     * @template T of Union|Atomic
+     * @param T $type
+     * @return T
+     */
+    public static function projectStaticArgumentsByName(
+        Codebase $codebase,
+        Union|Atomic $type,
+        string|TNamedObject|TTemplateParam|null $static_class_type,
+        ?Atomic $receiver = null,
+    ): Union|Atomic {
+        // `static<...>` written in a class that the named class extends
+        if (!is_string($static_class_type)
+            || !$codebase->classlike_storage_provider->has($static_class_type)
+            || ($codebase->classlike_storage_provider->get($static_class_type)->template_extended_params ?? []) === []
+        ) {
+            return $type;
+        }
+
+        // the id of a closure leaves out the types its parameters are given back (`@param-out`)
+        if ($type instanceof Union) {
+            $id = $type->getId();
+
+            if (!str_contains($id, 'static<') && !str_contains($id, 'static[')) {
+                return $type;
+            }
+        }
+
+        $receiver = $receiver instanceof TGenericObject
+            && strtolower($receiver->value) === strtolower($static_class_type)
+            ? $receiver
+            : new TNamedObject($static_class_type);
+
+        (new class ($codebase, $receiver) extends MutableTypeVisitor {
+            public function __construct(private readonly Codebase $codebase, private readonly TNamedObject $receiver)
+            {
+            }
+
+            /** @psalm-capabilities read-props|write-this-props|write-props|write-refs */
+            #[Override]
+            protected function enterNode(TypeNode &$type): ?int
+            {
+                if ($type instanceof TGenericObject && $type->getStaticDeclaringClass() !== null) {
+                    $type = TypeExpander::projectStaticArguments($this->codebase, $type, $this->receiver) ?? $type;
+                }
+
+                return null;
+            }
+        })->traverse($type);
+
+        return $type;
     }
 
     /**

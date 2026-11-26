@@ -348,6 +348,38 @@ final class StarProjectionTest extends TestCase
                 'ignored_issues' => ['DeprecatedSyntax'],
                 'php_version' => '8.0',
             ],
+            'starProjectionOfAClassStringReceiverKeepsTheStarOfAStaticCall' => [
+                'code' => '<?php
+                    /**
+                     * @template A
+                     * @template B
+                     */
+                    class Base {
+                        /** @return static<A, int> */
+                        public static function make(): static {
+                            throw new \Exception();
+                        }
+                    }
+
+                    /**
+                     * @template Z
+                     * @template X
+                     * @template Y
+                     * @extends Base<Y, X>
+                     */
+                    class Sub extends Base {}
+
+                    /** @var class-string<Sub<float, bool, *>> $c */
+                    $c = Sub::class;
+                    $call = $c::make();
+                    $callable = $c::make(...);',
+                'assertions' => [
+                    '$call===' => 'Sub<float, int, *>',
+                    '$callable===' => 'Closure[impure]():Sub<float, int, *>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'starProjectionReadsAnIntersectionExtendsArgument' => [
                 'code' => '<?php
                     /** @template T */
