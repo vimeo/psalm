@@ -32,6 +32,8 @@ final class FunctionCallInfo
      */
     public ?array $function_params = null;
 
+    public bool $function_params_from_provider = false;
+
     public ?FunctionLikeStorage $function_storage = null;
 
     public ?PhpParser\Node\Name $new_function_name = null;
