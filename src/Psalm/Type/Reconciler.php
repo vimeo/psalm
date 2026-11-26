@@ -209,6 +209,9 @@ class Reconciler
 
         $codebase = $statements_analyzer->getCodebase();
 
+        /** @var array<string, bool> whether each mixed value narrowed for an int offset was mixed from a loop isset */
+        $mixed_narrowed_by_int_offset = [];
+
         foreach ($new_types as $key => $new_type_parts) {
             // a class constant is what it is, but the one of `static` depends on the called class
             if (strpos($key, '::')
@@ -272,20 +275,28 @@ class Reconciler
 
             $has_object_array_access = false;
 
-            $result_type = $existing_types[$key] ?? self::getValueForKey(
-                $codebase,
-                $key,
-                $existing_types,
-                $new_types,
-                $code_location,
-                $has_isset,
-                $has_inverted_isset,
-                $has_inverted_key_exists,
-                $has_empty,
-                $inside_loop,
-                $has_object_array_access,
-                $statements_analyzer,
-            );
+            $parent_key = $did_type_exist ? null : self::getParentOffsetKey($key);
+
+            if ($parent_key !== null && isset($mixed_narrowed_by_int_offset[$parent_key])) {
+                // a mixed value only narrowed for having an int offset may be a string, but its item is as unknown
+                // as before: it isn't taken to be a character of that string, which no further offset is valid on
+                $result_type = Type::getMixed($inside_loop && $mixed_narrowed_by_int_offset[$parent_key]);
+            } else {
+                $result_type = $existing_types[$key] ?? self::getValueForKey(
+                    $codebase,
+                    $key,
+                    $existing_types,
+                    $new_types,
+                    $code_location,
+                    $has_isset,
+                    $has_inverted_isset,
+                    $has_inverted_key_exists,
+                    $has_empty,
+                    $inside_loop,
+                    $has_object_array_access,
+                    $statements_analyzer,
+                );
+            }
 
             // the remembered result of a function call that this context never made (the call was in the
             // condition of an `if`): nothing is known to refine
@@ -691,6 +702,16 @@ class Reconciler
             // a variable that was not set before is still possibly undefined where it is asserted not to be set
             if (!$did_type_exist && $has_inverted_isset && count($key_parts) === 1 && $key[0] === '$') {
                 $result_type = $result_type->setPossiblyUndefined(true);
+            }
+
+            if ($before_adjustment?->isMixed()
+                && !$result_type->isMixed()
+                && self::hasOnlyIntOffsetAccessAssertions($new_type_parts)
+            ) {
+                // what the item of the mixed value would be, as getValueForKey() gives it
+                $mixed_before_adjustment = $before_adjustment->getSingleAtomic();
+                $mixed_narrowed_by_int_offset[$key] = $mixed_before_adjustment instanceof TMixed
+                    && $mixed_before_adjustment->from_loop_isset;
             }
 
             if (!$has_object_array_access) {
@@ -1371,6 +1392,44 @@ class Reconciler
         }
 
         return true;
+    }
+
+    /**
+     * The key of the value whose offset the key is (`$a['x']` for `$a['x'][$p]`)
+     */
+    private static function getParentOffsetKey(string $key): ?string
+    {
+        $key_parts = self::breakUpPathIntoParts($key);
+        $count = count($key_parts);
+
+        if ($count < 4 || $key_parts[$count - 1] !== ']' || $key_parts[$count - 3] !== '[') {
+            return null;
+        }
+
+        return implode('', array_slice($key_parts, 0, -3));
+    }
+
+    /**
+     * Whether the assertions only say that the value has an int offset, which narrows a mixed value to the array, the
+     * ArrayAccess or the string it may be
+     *
+     * @param array<array-key, array<array-key, Assertion>> $new_type_parts
+     */
+    private static function hasOnlyIntOffsetAccessAssertions(array $new_type_parts): bool
+    {
+        $has_int_offset = false;
+
+        foreach ($new_type_parts as $new_type_part_parts) {
+            foreach ($new_type_part_parts as $new_type_part_part) {
+                if (!$new_type_part_part instanceof HasIntOrStringArrayAccess) {
+                    return false;
+                }
+
+                $has_int_offset = $has_int_offset || $new_type_part_part->int_key;
+            }
+        }
+
+        return $has_int_offset;
     }
 
     /**

@@ -2930,6 +2930,45 @@ final class IssetTest extends TestCase
                 'ignored_issues' => ['MixedArrayAccess', 'MixedPropertyFetch'],
                 'php_version' => '8.0',
             ],
+            'appendUnderAnIntOffsetCheckedWithIssetIsWrittenWithoutIssue' => [
+                'code' => '<?php
+                    function f(array $a, int $p): array {
+                        if (isset($a["x"][$p])) {
+                            $a["x"][$p][] = 1;
+                        }
+
+                        return $a;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedArrayAssignment'],
+                'php_version' => '8.0',
+            ],
+            'offsetUnderAnIntOffsetCheckedWithIssetIsWrittenWithoutIssue' => [
+                'code' => '<?php
+                    function f(array $a): array {
+                        if (isset($a["x"][0])) {
+                            $a["x"][0]["y"] = 1;
+                        }
+
+                        return $a;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedArrayAssignment'],
+                'php_version' => '8.0',
+            ],
+            'offsetUnderAnIntOffsetCheckedWithIssetIsReadWithoutIssue' => [
+                'code' => '<?php
+                    function f(array $a, int $p): string {
+                        if (isset($a["x"][$p])) {
+                            return (string) $a["x"][$p]["y"];
+                        }
+
+                        return "";
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedArrayAccess'],
+                'php_version' => '8.0',
+            ],
             'parentOfAStringVariableOffsetCheckedWithIssetStaysMixed' => [
                 'code' => '<?php
                     function f(array $a, string $k): void {
@@ -3203,6 +3242,18 @@ final class IssetTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'appendUnderAnIntOffsetOfADeclaredStringCheckedWithIssetIsReported' => [
+                'code' => '<?php
+                    /** @param array{x: non-empty-array|non-empty-string|ArrayAccess} $a */
+                    function f(array $a, int $p): void {
+                        if (isset($a["x"][$p])) {
+                            $a["x"][$p][] = 1;
+                        }
+                    }',
+                'error_message' => 'PossiblyInvalidArrayOffset',
+                'error_levels' => ['MixedArrayAssignment'],
+                'php_version' => '8.0',
+            ],
             'coalesceOnANullsafeCallKeepsArgumentIssues' => [
                 'code' => '<?php
                     final class R {
