@@ -43,7 +43,7 @@ class TArrayKey extends Scalar
         ?string $this_class,
         int $analysis_php_version_id,
     ): ?string {
-        return null;
+        return $analysis_php_version_id >= 8_00_00 ? 'int|string' : null;
     }
 
     /**
@@ -52,7 +52,7 @@ class TArrayKey extends Scalar
     #[Override]
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
-        return false;
+        return $analysis_php_version_id >= 8_00_00;
     }
 
     /**

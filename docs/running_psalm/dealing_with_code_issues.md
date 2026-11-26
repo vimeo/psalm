@@ -35,6 +35,12 @@ Some issue types allow the use of `referencedMethod`, `referencedClass` or `refe
       <file name="some_bad_file.php" />  <!-- all InvalidReturnType issues in this file are suppressed -->
     </errorLevel>
   </InvalidReturnType>
+  <InvalidGlobal>
+    <errorLevel type="suppress" allowMissingFiles="true"> <!-- paths that do not exist are skipped -->
+      <directory name="src/**/views" /> <!-- every views directory under src, at any depth -->
+      <directory name="src/**/templates" />
+    </errorLevel>
+  </InvalidGlobal>
   <UndefinedMethod>
     <errorLevel type="suppress">
       <referencedMethod name="Bar\Bat::bar" /> <!-- not supported for all types of errors -->
@@ -59,6 +65,8 @@ Some issue types allow the use of `referencedMethod`, `referencedClass` or `refe
   <PluginIssue name="IssueNameEmittedByPlugin" errorLevel="info" /> <!-- this is a special case to handle issues emitted by plugins -->
 </issueHandlers>
 ```
+
+`<directory>` and `<file>` paths accept the same `*` and `**` patterns and `allowMissingFiles` attribute as [`<projectFiles>`](configuration.md#projectfiles).
 
 ### Docblock suppression
 
@@ -91,7 +99,7 @@ function (int $a) : string {
 
 If you wish to suppress all issues, you can use `@psalm-suppress all` instead of multiple annotations.
 
-The issues listed in [`<unsuppressibleIssues>`](configuration.md#unsuppressibleissues) can't be suppressed, neither this way nor with `<issueHandlers>` or a baseline.
+The issues listed in [`<unsuppressibleIssues>`](configuration.md#unsuppressibleissues) can't be suppressed, neither this way nor with `<issueHandlers>` or a baseline: `<issue name="SecurityIssue" />` there keeps every security issue reported.
 
 ## Using a baseline file
 

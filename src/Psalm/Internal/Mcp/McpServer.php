@@ -12,7 +12,7 @@ use Amp\CancelledException;
 use Amp\DeferredCancellation;
 use Amp\Future;
 use JsonException;
-use Psalm\Config\IssueHandler;
+use Psalm\Internal\Cli\IssueDocs;
 use Psalm\Internal\CliUtils;
 use Revolt\EventLoop;
 use Revolt\EventLoop\Driver\StreamSelectDriver;
@@ -26,19 +26,13 @@ use function array_key_exists;
 use function array_map;
 use function array_pop;
 use function array_values;
-use function class_exists;
-use function constant;
-use function defined;
-use function dirname;
 use function explode;
 use function fflush;
 use function fgets;
-use function file_get_contents;
 use function fwrite;
 use function in_array;
 use function is_array;
 use function is_bool;
-use function is_file;
 use function is_int;
 use function is_string;
 use function json_decode;
@@ -373,42 +367,8 @@ final class McpServer
      */
     public static function explain(string $query): string
     {
-        $query = trim($query);
-        $type = $query;
-
-        if (preg_match('~^(?:https?://psalm\.dev/)?0*(\d+)$~', $query, $matches) === 1 && isset($matches[1])) {
-            $shortcode = (int) $matches[1];
-            $type = null;
-
-            foreach (IssueHandler::getAllIssueTypes() as $issue_type) {
-                $constant = 'Psalm\\Issue\\' . $issue_type . '::SHORTCODE';
-                if (class_exists('Psalm\\Issue\\' . $issue_type)
-                    && defined($constant)
-                    && constant($constant) === $shortcode
-                ) {
-                    $type = $issue_type;
-                    break;
-                }
-            }
-
-            if ($type === null) {
-                throw new ToolError('No issue type has the shortcode ' . $shortcode . '.');
-            }
-        }
-
-        $doc = null;
-
-        // a name, so that the path stays in the issues directory
-        if (preg_match('/^\w+$/', $type) === 1) {
-            $doc = dirname(__DIR__, 4) . '/docs/running_psalm/issues/' . $type . '.md';
-        }
-
-        if ($doc === null || !is_file($doc)) {
-            throw new ToolError('`' . $query . '` is not an issue type. Pass the type that Psalm reports, such as'
-                . ' `PossiblyNullReference`, or its shortcode.');
-        }
-
-        return (string) file_get_contents($doc);
+        return IssueDocs::read($query) ?? throw new ToolError('`' . trim($query) . '` is not an issue type. Pass'
+            . ' the type that Psalm reports, such as `PossiblyNullReference`, or its shortcode.');
     }
 
     /**

@@ -992,9 +992,11 @@ function array_product(array $array) {}
 function filter_var(mixed $value, int $filter = FILTER_DEFAULT, array|int $options = 0): mixed {}
 
 /**
+ * The attributes of an allowed tag pass through, so only stripping every tag escapes html
+ *
  * @psalm-pure
  *
- * @psalm-taint-escape html
+ * @psalm-taint-escape ($allowed_tags is null ? "html" : null)
  * @psalm-flow ($string) -> return
  */
 function strip_tags(string $string, ?string $allowed_tags = null) : string {}

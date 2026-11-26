@@ -111,6 +111,112 @@ final class FunctionTemplateTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'classStringOrTemplateIsBoundToTheClassOfAClassString' => [
+                'code' => '<?php
+                    final class Foo {}
+
+                    /**
+                     * @template T
+                     * @param class-string<T>|T $m
+                     * @return list<T>
+                     */
+                    function g(mixed $m): array { return []; }
+
+                    /** @var Foo|class-string<Foo> $u */
+                    $u = new Foo();
+
+                    $literal = g(Foo::class);
+                    $union = g($u);
+                    $object = g(new Foo());',
+                'assertions' => [
+                    '$literal===' => 'list<Foo>',
+                    '$union===' => 'list<Foo>',
+                    '$object===' => 'list<Foo>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'classStringAndTemplateParamsAreBoundByBothArguments' => [
+                'code' => '<?php
+                    final class Foo {}
+                    final class Bar {}
+
+                    /**
+                     * @template T
+                     * @param class-string<T> $c
+                     * @param T $o
+                     * @return list<T>
+                     */
+                    function g(string $c, mixed $o): array { return []; }
+
+                    /**
+                     * @template T
+                     * @param class-string<T>|T $a
+                     * @param class-string<T>|T $b
+                     * @return list<T>
+                     */
+                    function h(mixed $a, mixed $b): array { return []; }
+
+                    $r = g(Foo::class, new Bar());
+                    $s = h(Foo::class, new Bar());',
+                'assertions' => [
+                    '$r===' => 'list<Bar|Foo>',
+                    '$s===' => 'list<Bar|Foo>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'classStringOfAnotherTemplateLeavesTheClassStringToTheTemplate' => [
+                'code' => '<?php
+                    final class Foo {}
+
+                    /**
+                     * @template T
+                     * @template U of object
+                     * @param class-string<U>|T $x
+                     * @return T
+                     */
+                    function two(mixed $x): mixed { throw new Exception(); }
+
+                    /**
+                     * @template T of string
+                     * @template U of object
+                     * @param class-string<U>|T $x
+                     * @return array{T, U}
+                     */
+                    function twos(string $x): array { throw new Exception(); }
+
+                    $t = two(Foo::class);
+                    $tu = twos(Foo::class);',
+                'assertions' => [
+                    '$t===' => 'Foo::class',
+                    '$tu===' => 'list{Foo::class, Foo}',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'classStringOrObjectTemplateKeepsTheObjectOfTheArgument' => [
+                'code' => '<?php
+                    final class Foo {}
+                    final class Bar {}
+
+                    /**
+                     * @template T as object
+                     * @param class-string<T>|T $m
+                     * @return T
+                     */
+                    function o(mixed $m): object { throw new Exception(); }
+
+                    /** @var class-string<Foo>|Bar $classOrObject */
+                    $classOrObject = new Bar();
+
+                    $r = o($classOrObject);',
+                'assertions' => [
+                    '$r===' => 'Bar|Foo',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'paramOutOfATemplateIsTheTypeOfTheArgumentBindingIt' => [
                 'code' => '<?php
                     /**
@@ -4040,6 +4146,26 @@ final class FunctionTemplateTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'classStringAndInvariantParamsOfDifferentClassesAreIncompatible' => [
+                'code' => '<?php
+                    final class A {}
+                    final class B {}
+
+                    /** @template T */
+                    final class Box {}
+
+                    /**
+                     * @template T
+                     * @param class-string<T> $class
+                     * @param Box<T> $box
+                     */
+                    function inv(string $class, Box $box): void {}
+
+                    /** @var Box<A> $box */
+                    $box = new Box();
+                    inv(B::class, $box);',
+                'error_message' => 'InvalidArgument',
+            ],
             'callableOfATemplateOfTheCallerStillChecksItsArgument' => [
                 'code' => '<?php
                     /**

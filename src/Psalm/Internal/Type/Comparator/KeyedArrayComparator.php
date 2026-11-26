@@ -9,6 +9,7 @@ use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Type;
 use Psalm\Type\Atomic;
+use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TNamedObject;
@@ -46,17 +47,11 @@ final class KeyedArrayComparator
         $container_sealed = $container_type_part instanceof TKeyedArray
             && $container_type_part->fallback_params === null;
 
-        if ($container_sealed
-            && $input_type_part instanceof TKeyedArray
-            && $input_type_part->fallback_params !== null
-        ) {
-            return false;
-        }
-
         if ($container_type_part instanceof TKeyedArray
             && $container_type_part->is_list
             && $input_type_part instanceof TKeyedArray
             && !$input_type_part->is_list
+            && !($container_sealed && $input_type_part->fallback_params !== null)
         ) {
             if ($atomic_comparison_result) {
                 $atomic_comparison_result->type_coerced = true;
@@ -84,16 +79,25 @@ final class KeyedArrayComparator
                 continue;
             }
 
-            if ($input_properties[$key]->possibly_undefined
+            $input_property_type = $input_properties[$key];
+            unset($input_properties[$key]);
+
+            if ($input_property_type->possibly_undefined
                 && !$container_property_type->possibly_undefined
             ) {
+                // the key may be missing, but its value, when set, must still fit
                 $all_types_contain = false;
+
+                self::isPartContainedBy(
+                    $codebase,
+                    $input_property_type->setPossiblyUndefined(false),
+                    $container_property_type,
+                    $allow_interface_equality,
+                    $atomic_comparison_result,
+                );
 
                 continue;
             }
-
-            $input_property_type = $input_properties[$key];
-            unset($input_properties[$key]);
 
             if (!self::isPartContainedBy(
                 $codebase,
@@ -111,6 +115,27 @@ final class KeyedArrayComparator
                 $atomic_comparison_result->missing_shape_fields = array_keys($input_properties);
             }
             return false;
+        }
+
+        // the keys an unsealed input may hold beyond those it declares fit a sealed container as an array<K, V> would
+        if ($container_sealed
+            && $input_type_part instanceof TKeyedArray
+            && $input_type_part->fallback_params !== null
+        ) {
+            $fallback_comparison = new TypeComparisonResult();
+
+            if (!ArrayTypeComparator::isContainedBy(
+                $codebase,
+                new TArray($input_type_part->fallback_params),
+                $container_type_part,
+                $allow_interface_equality,
+                $fallback_comparison,
+            )) {
+                $all_types_contain = false;
+                $atomic_comparison_result?->mergeFailedPart($fallback_comparison);
+            }
+
+            $atomic_comparison_result?->addTypeVariableBounds($fallback_comparison);
         }
 
         // check remaining $input_properties against container's fallback_params

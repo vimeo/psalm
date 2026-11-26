@@ -2063,9 +2063,10 @@ final class TaintTest extends TestCase
      */
     public function testKeyWritesDontMakeAStateOfEveryKeyAtEveryNodeAfterThem(): void
     {
+        // without the forgetting, 1500 writes take about 390 MB, and 160 MB with it
         $writes = implode('', array_map(
             static fn(int $i): string => "    \$form['k$i'] = \$value;\n",
-            range(1, 4000),
+            range(1, 1500),
         ));
 
         $this->testConfig->throw_exception = false;
@@ -2077,7 +2078,7 @@ final class TaintTest extends TestCase
             . "/** @psalm-taint-specialize */\n"
             . "function build(string \$value, mixed \$form): void {\n"
             . $writes
-            . "    echo \$form['k4000'];\n"
+            . "    echo \$form['k1500'];\n"
             . "}\n"
             . "build((string) \$_GET['q'], []);\n",
         );
@@ -2099,7 +2100,7 @@ final class TaintTest extends TestCase
         ));
 
         self::assertSame(['TaintedHtml', 'TaintedTextWithQuotes'], $taint_issue_types);
-        self::assertLessThan(768 * 1024 * 1024, $memory_used);
+        self::assertLessThan(256 * 1024 * 1024, $memory_used);
     }
 
     /**
@@ -3470,6 +3471,60 @@ final class TaintTest extends TestCase
                         $receiver->go("", ...["", (string) $_GET["x"]]);
                         $receiver->go(...["sink" => "", "other" => (string) $_GET["x"]]);
                     }',
+            ],
+            'guardAnUnpackedElementTakesNoTaintOfAnotherElement' => [
+                'code' => '<?php // --taint-analysis
+                    function safe(): string {
+                        return "safe";
+                    }
+
+                    function f(string $first, string $second): void {
+                        echo $first;
+                    }
+
+                    f(...[safe(), (string) $_GET["x"]]);',
+            ],
+            'guardAnOverrideParameterTakesNoTaintOfAnotherUnpackedElement' => [
+                'code' => '<?php // --taint-analysis
+                    function safe(): string {
+                        return "safe";
+                    }
+
+                    class Base {
+                        public function go(string ...$rest): void {}
+                    }
+
+                    class Child extends Base {
+                        /** @psalm-suppress ParamNameMismatch */
+                        #[\Override]
+                        public function go(string $first = "", string ...$rest): void {
+                            echo $first;
+                        }
+                    }
+
+                    function viaParent(Base $receiver): void {
+                        $receiver->go(...[safe(), (string) $_GET["x"]]);
+                    }
+
+                    (new Child())->go(...[safe(), (string) $_GET["x"]]);',
+            ],
+            'guardAnInheritedSinkTakesNoTaintOfAnotherUnpackedElement' => [
+                'code' => '<?php // --taint-analysis
+                    function safe(): string {
+                        return "safe";
+                    }
+
+                    interface I {
+                        /** @psalm-taint-sink shell $command */
+                        public function run(string $label, string $command): void;
+                    }
+
+                    final class Runner implements I {
+                        #[\Override]
+                        public function run(string $label, string $command): void {}
+                    }
+
+                    (new Runner())->run(...[(string) $_GET["x"], safe()]);',
             ],
             'taintSourceUnderAKeyOfTheReturnOnly' => [
                 'code' => '<?php // --taint-analysis
@@ -10945,6 +11000,25 @@ final class TaintTest extends TestCase
 
                     v("", "", k: (string) $_GET["x"]);',
                 'error_message' => 'TaintedHtml',
+            ],
+            'taintTheParameterOfItsOwnUnpackedElement' => [
+                'code' => '<?php // --taint-analysis
+                    function safe(): string {
+                        return "safe";
+                    }
+
+                    interface I {
+                        /** @psalm-taint-sink shell $command */
+                        public function run(string $label, string $command): void;
+                    }
+
+                    final class Runner implements I {
+                        #[\Override]
+                        public function run(string $label, string $command): void {}
+                    }
+
+                    (new Runner())->run(...[safe(), (string) $_GET["x"]]);',
+                'error_message' => 'TaintedShell',
             ],
             'taintTheVariadicWithASecondUnpackedArgument' => [
                 'code' => '<?php // --taint-analysis
@@ -19451,6 +19525,28 @@ final class TaintTest extends TestCase
                 'code' => '<?php
                     exec(escapeshellcmd("curl " . (string) $_GET["x"]));',
                 'error_message' => 'TaintedShell',
+            ],
+            'taintHtmlThroughStripTagsKeepingSomeTags' => [
+                'code' => '<?php
+                    echo strip_tags((string) $_GET["x"], "<a>");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintHtmlThroughStripTagsKeepingSomeTagsGivenAsAnArray' => [
+                'code' => '<?php
+                    echo strip_tags((string) $_GET["x"], ["a"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'stripTagsWithNullAllowedTagsStillEscapesHtml' => [
+                'code' => '<?php
+                    echo strip_tags((string) $_GET["x"], null);',
+                'error_message' => 'TaintedTextWithQuotes',
+            ],
+            'taintHtmlThroughStripTagsWithUnknownAllowedTags' => [
+                'code' => '<?php
+                    function f(?string $t): void {
+                        echo strip_tags((string) $_GET["x"], $t);
+                    }',
+                'error_message' => 'TaintedHtml',
             ],
             'taintThroughBuiltinStaticMethod' => [
                 'code' => '<?php
