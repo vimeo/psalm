@@ -480,7 +480,11 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 $declaring_class_name = $declaring_method_id->fq_class_name;
                 $method_name_lc = $declaring_method_id->method_name;
 
-                if ($method_storage->abstract) {
+                // a class only gets a method declared by an interface from a stubbed class leaving it out, which
+                // implements it
+                if ($method_storage->abstract
+                    && !$codebase->classlike_storage_provider->get($declaring_class_name)->is_interface
+                ) {
                     if (IssueBuffer::accepts(
                         new UnimplementedAbstractMethod(
                             'Method ' . $method_name_lc . ' is not defined on class ' .
