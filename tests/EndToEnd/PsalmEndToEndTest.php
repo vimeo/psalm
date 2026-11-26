@@ -79,21 +79,31 @@ final class PsalmEndToEndTest extends PsalmEndToEndTestCase
         $this->assertStringContainsString('Could not find any composer autoloaders', $analysis->getErrorOutput());
     }
 
-    public function testExplainNeedsNoConfig(): void
+    public function testExplainIgnoresTheProjectInTheCurrentDirectory(): void
     {
-        $known = self::newProcess([PHP_BINARY, $this->psalm, '--explain=83'], self::$tmpDir, self::agentEnvVarsToUnset());
-        $known->run();
+        $project_dir = tempnam(sys_get_temp_dir(), 'PsalmEndToEndExplain_');
+        assert($project_dir !== false);
+        unlink($project_dir);
+        mkdir($project_dir . '/vendor', 0777, true);
+
+        try {
+            file_put_contents($project_dir . '/composer.json', '{');
+            file_put_contents($project_dir . '/vendor/autoload.php', '<?php echo "project autoloader"; exit(3);');
+
+            $known = self::newProcess([PHP_BINARY, $this->psalm, '--explain=83'], $project_dir, self::agentEnvVarsToUnset());
+            $known->run();
+            $unknown = self::newProcess(
+                [PHP_BINARY, $this->psalm, '--explain=NotAnIssue'],
+                $project_dir,
+                self::agentEnvVarsToUnset(),
+            );
+            $unknown->run();
+        } finally {
+            self::recursiveRemoveDirectory($project_dir);
+        }
 
         $this->assertSame(0, $known->getExitCode(), $known->getErrorOutput());
         $this->assertStringStartsWith('# PossiblyNullReference', $known->getOutput());
-
-        $unknown = self::newProcess(
-            [PHP_BINARY, $this->psalm, '--explain=NotAnIssue'],
-            self::$tmpDir,
-            self::agentEnvVarsToUnset(),
-        );
-        $unknown->run();
-
         $this->assertSame(1, $unknown->getExitCode());
         $this->assertSame('', $unknown->getOutput());
         $this->assertStringContainsString('Unknown issue: NotAnIssue', $unknown->getErrorOutput());

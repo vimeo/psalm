@@ -54,6 +54,7 @@ use function chdir;
 use function count;
 use function ctype_digit;
 use function defined;
+use function dirname;
 use function extension_loaded;
 use function file_exists;
 use function file_get_contents;
@@ -248,6 +249,12 @@ final class Psalm
             exit;
         }
 
+        if (array_key_exists('explain', $options)) {
+            // the docs belong to Psalm, so only its own autoloader: not the composer.json or vendor/ of the cwd
+            CliUtils::requireAutoloaders(dirname(__DIR__, 4), false, 'vendor', false);
+            self::explainIssue($options['explain']);
+        }
+
         $current_dir = CliUtils::getCurrentDir($options);
 
         if (array_key_exists('init-ci', $options)) {
@@ -268,7 +275,7 @@ final class Psalm
             $current_dir,
             isset($options['r']),
             $vendor_dir,
-            !array_key_exists('v', $options) && !array_key_exists('explain', $options),
+            !array_key_exists('v', $options),
         );
 
         $run_taint_analysis = ProjectBootstrap::shouldRunTaintAnalysis($options);
@@ -276,10 +283,6 @@ final class Psalm
         if (array_key_exists('v', $options)) {
             echo 'Psalm ' . PSALM_VERSION . PHP_EOL;
             exit;
-        }
-
-        if (array_key_exists('explain', $options)) {
-            self::explainIssue($options['explain']);
         }
 
         $output_format = self::initOutputFormat($options);
