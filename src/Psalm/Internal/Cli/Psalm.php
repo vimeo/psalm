@@ -182,6 +182,7 @@ final class Psalm
         'pretty-print', // used for JSON reports
         'track-tainted-input',
         'taint-analysis',
+        'no-taint-analysis',
         'security-analysis',
         'dump-taint-graph:',
         'find-unused-psalm-suppress',
@@ -1168,6 +1169,16 @@ final class Psalm
         bool $run_taint_analysis,
         array $options,
     ): array {
+        $skip_taint_analysis = isset($options['no-taint-analysis']);
+        if ($skip_taint_analysis && ($run_taint_analysis || isset($options['dump-taint-graph']))) {
+            fwrite(
+                STDERR,
+                '--no-taint-analysis cannot be combined with --taint-analysis, --track-tainted-input,'
+                    . ' --security-analysis or --dump-taint-graph' . PHP_EOL,
+            );
+            exit(1);
+        }
+
         $init_source_dir = null;
         if (isset($options['i'])) {
             self::generateConfig($current_dir, $args);
@@ -1193,6 +1204,10 @@ final class Psalm
                 $run_taint_analysis,
                 $options,
             );
+        }
+
+        if ($skip_taint_analysis) {
+            $config->run_taint_analysis = false;
         }
         return [$config, $init_source_dir];
     }
@@ -1405,6 +1420,10 @@ final class Psalm
 
             --taint-analysis, --track-tainted-input, --security-analysis
                 Run Psalm in taint analysis mode – see https://psalm.dev/docs/security_analysis for more info
+
+            --no-taint-analysis
+                Skip taint analysis for this run, even if runTaintAnalysis is true. Some type issues
+                are only reported with taint analysis on, so finish with a run without this flag.
 
             --dump-taint-graph=OUTPUT_PATH
                 Output the taint graph using the DOT language – requires --taint-analysis

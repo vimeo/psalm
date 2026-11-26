@@ -40,6 +40,7 @@ vendor/bin/psalm --no-progress --output-format=compact src/Foo.php src/Bar.php
 
 - A run on single files is for iterating: only a full run reports unused code (`UnusedClass`,
   `PossiblyUnusedMethod`, …) and taint paths that cross files.
+  `--no-taint-analysis` speeds up these runs; the final run goes without it.
 - Exit code `0`: no issues. `2`: issues found. `1`: Psalm itself failed (bad config, crash): read the
   message, it says nothing about the code. Judge a run by its exit code, read straight after the command:
   `compact` and `count` print nothing both on success and when PHP crashes, and a pipe such as `| tail`
