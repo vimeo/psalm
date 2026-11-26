@@ -7,6 +7,7 @@ namespace Psalm\Storage;
 use Psalm\Codebase;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
+use Psalm\Internal\Type\TypeExpander;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TNamedObject;
@@ -88,7 +89,7 @@ final class Possibilities
      * The asserted type with `static` replaced by the class the method is called on, keeping its type arguments and
      * the types the assertion intersects it with (`static&Marker`)
      *
-     * @psalm-capabilities read-props
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     private static function resolveStatic(Atomic $asserted_type, Atomic $static_type, ?Codebase $codebase): Atomic
     {
@@ -98,20 +99,26 @@ final class Possibilities
             return $asserted_type;
         }
 
+        // a receiver with type arguments keeps them for a `static<...>` that records no class it is written in
         if ($asserted_type instanceof TGenericObject
             && $static_type instanceof TNamedObject
-            && !$static_type instanceof TGenericObject
+            && (!$static_type instanceof TGenericObject || $asserted_type->getStaticDeclaringClass() !== null)
             && $codebase !== null
             && $codebase->classlike_storage_provider->has($static_type->value)
             && $codebase->classlike_storage_provider->get($static_type->value)->template_types !== null
         ) {
-            $static_type = new TGenericObject(
-                $static_type->value,
-                $asserted_type->type_params,
-                false,
-                $static_type->is_static,
-                $static_type->extra_types,
-            );
+            $projected_type = TypeExpander::projectStaticArguments($codebase, $asserted_type, $static_type)
+                ?? ($static_type instanceof TGenericObject ? null : $asserted_type);
+
+            if ($projected_type instanceof TGenericObject) {
+                $static_type = (new TGenericObject(
+                    $static_type->value,
+                    $projected_type->type_params,
+                    false,
+                    $static_type->is_static,
+                    $static_type->extra_types,
+                ))->setProjections($projected_type->getProjections());
+            }
         }
 
         if (!$static_type instanceof TNamedObject && !$static_type instanceof TTemplateParam) {

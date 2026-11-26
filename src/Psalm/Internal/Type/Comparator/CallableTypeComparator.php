@@ -425,7 +425,7 @@ final class CallableTypeComparator
             if ($method_storage->return_type) {
                 $converted_return_type = TypeExpander::expandUnion(
                     $codebase,
-                    $method_storage->return_type,
+                    TypeExpander::projectStaticArgumentsByName($codebase, $method_storage->return_type, $method_fqcln),
                     // `self` is the class the method appears in: the one using the trait, for a trait method
                     ($codebase->methods->getAppearingMethodId($method_id) ?? $declaring_method_id)->fq_class_name,
                     $method_fqcln,
@@ -634,7 +634,7 @@ final class CallableTypeComparator
     ): Union {
         return TypeExpander::expandUnion(
             $codebase,
-            $type,
+            TypeExpander::projectStaticArgumentsByName($codebase, $type, $static_class),
             $self_class,
             $static_class,
             $parent_class,
@@ -875,7 +875,11 @@ final class CallableTypeComparator
                     if ($method_storage->return_type) {
                         $converted_return_type = TypeExpander::expandUnion(
                             $codebase,
-                            $method_storage->return_type,
+                            TypeExpander::projectStaticArgumentsByName(
+                                $codebase,
+                                $method_storage->return_type,
+                                $method_fqcln,
+                            ),
                             $method_fqcln,
                             $method_fqcln,
                             null,

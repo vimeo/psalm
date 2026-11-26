@@ -253,6 +253,102 @@ final class PurityTemplateTest extends TestCase
                         return $box;
                     }',
             ],
+            'staticPurityArgumentsFromAnImportedAliasProjectedThroughExtends' => [
+                'code' => '<?php
+                    /** @psalm-type Effect = io */
+                    final class Effects {}
+
+                    /**
+                     * @psalm-import-type Effect from Effects
+                     * @template T
+                     * @psalm-purity-template P
+                     * @psalm-purity-template Q
+                     */
+                    class Base {
+                        /** @return static[Effect, pure]<T> */
+                        public function withAlias(): static {
+                            throw new \Exception();
+                        }
+                    }
+
+                    /**
+                     * @template U
+                     * @psalm-purity-template X
+                     * @psalm-purity-template Y
+                     * @extends Base[Y, X]<U>
+                     */
+                    class Sub extends Base {}
+
+                    /** @var Sub[pure, pure]<int> $s */
+                    $s = new Sub();
+                    $r = $s->withAlias();',
+                'assertions' => [
+                    '$r===' => 'Sub[pure, io]<int>&static',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'staticPurityArgumentsProjectedThroughExtends' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @psalm-purity-template P
+                     * @psalm-purity-template Q
+                     */
+                    class Base {
+                        /** @return static[io, pure]<T> */
+                        public function m(): static {
+                            throw new \Exception();
+                        }
+                    }
+
+                    /**
+                     * @template U
+                     * @psalm-purity-template X
+                     * @psalm-purity-template Y
+                     * @extends Base[Y, X]<U>
+                     */
+                    class C extends Base {}
+
+                    /** @var C[pure, pure]<int> $c */
+                    $c = new C();
+                    $r = $c->m();',
+                'assertions' => [
+                    '$r===' => 'C[pure, io]<int>&static',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'staticPurityArgumentsProjectedOnAClassWithMoreTypeTemplates' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @psalm-purity-template C
+                     */
+                    class Base {
+                        /** @return static[io]<T> */
+                        public function m(): static {
+                            throw new \Exception();
+                        }
+                    }
+
+                    /**
+                     * @template Z
+                     * @template U
+                     * @psalm-purity-template P
+                     * @extends Base[P]<U>
+                     */
+                    class Prefixed extends Base {}
+
+                    /** @var Prefixed[pure]<string, int> $p */
+                    $p = new Prefixed();
+                    $r = $p->m();',
+                'assertions' => [
+                    '$r===' => 'Prefixed[io]<string, int>&static',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'pureClosureKeepsFunctionPure' => [
                 'code' => '<?php
                     /**

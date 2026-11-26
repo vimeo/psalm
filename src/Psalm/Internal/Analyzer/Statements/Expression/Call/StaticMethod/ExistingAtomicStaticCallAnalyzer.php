@@ -43,6 +43,8 @@ use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic;
+use Psalm\Type\Atomic\TClassString;
+use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
@@ -81,6 +83,7 @@ final class ExistingAtomicStaticCallAnalyzer
         ?TemplateResult $inferred_template_result = null,
     ): void {
         $fq_class_name = $method_id->fq_class_name;
+        $lhs_type_part = self::getReceiver($lhs_type_part);
 
         $codebase = $statements_analyzer->getCodebase();
 
@@ -668,7 +671,12 @@ final class ExistingAtomicStaticCallAnalyzer
             );
 
             $return_type_candidate = MethodCallReturnTypeFetcher::replaceTemplateTypes(
-                $return_type_candidate,
+                TypeExpander::projectStaticArgumentsByName(
+                    $codebase,
+                    $return_type_candidate,
+                    $static_type,
+                    $lhs_type_part,
+                ),
                 $template_result,
                 $method_id,
                 count($stmt->getArgs()),
@@ -767,6 +775,21 @@ final class ExistingAtomicStaticCallAnalyzer
     }
 
     /**
+     * A `class-string<C<...>>` is called on as an object of `C<...>`: its type arguments bind the templates. A
+     * `class-string<T>` stays the template, which `static` is, unless $bind_templates.
+     *
+     * @psalm-pure
+     */
+    public static function getReceiver(Atomic $lhs_type_part, bool $bind_templates = false): Atomic
+    {
+        return $lhs_type_part instanceof TClassString
+            && ($bind_templates || !$lhs_type_part instanceof TTemplateParamClass)
+            && $lhs_type_part->as_type instanceof TGenericObject
+            ? $lhs_type_part->as_type
+            : $lhs_type_part;
+    }
+
+    /**
      * The class templates of the method $stmt calls, bound to what the class it is called on and, for `parent::`,
      * the class it is called from extend them with
      *
@@ -787,7 +810,7 @@ final class ExistingAtomicStaticCallAnalyzer
             $declaring_class_storage,
             $class_storage,
             $method_id->method_name,
-            $lhs_type_part,
+            self::getReceiver($lhs_type_part, true),
             !$statements_analyzer->isStatic() && $method_id->fq_class_name === $context->self,
         );
 

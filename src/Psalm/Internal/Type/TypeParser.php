@@ -902,14 +902,22 @@ final class TypeParser
             );
         }
 
+        $static_declaring_class = strtolower($generic_type_value) === 'static'
+            ? self::getTemplatedClass($template_type_map)
+            : null;
+
         if ($purity_params !== []) {
-            return self::getTypeWithPurityArguments(
+            $type = self::getTypeWithPurityArguments(
                 $generic_type_value,
                 $generic_params,
                 $purity_params,
                 $star_params,
                 $from_docblock,
             );
+
+            return $type instanceof TGenericObject
+                ? $type->setStaticDeclaringClass($static_declaring_class)
+                : $type;
         }
 
         if (($generic_type_value === 'array'
@@ -1404,7 +1412,31 @@ final class TypeParser
         }
 
         return (new TGenericObject($generic_type_value, $generic_params, false, false, [], $from_docblock))
-            ->setProjections(self::getStarProjections($generic_params, $star_params));
+            ->setProjections(self::getStarProjections($generic_params, $star_params))
+            ->setStaticDeclaringClass($static_declaring_class);
+    }
+
+    /**
+     * The class whose templates are in scope, which is the one a `static<...>` is written in: its type arguments
+     * are for the templates of that class, as a template is of the class that defines it
+     *
+     * @param array<string, array<string, Union>> $template_type_map
+     * @psalm-pure
+     */
+    private static function getTemplatedClass(array $template_type_map): ?string
+    {
+        foreach ($template_type_map as $defining_classes) {
+            $defining_class = array_key_first($defining_classes);
+
+            if ($defining_class !== null
+                && $defining_class !== 'class-string-map'
+                && !str_starts_with($defining_class, 'fn-')
+            ) {
+                return $defining_class;
+            }
+        }
+
+        return null;
     }
 
     /**

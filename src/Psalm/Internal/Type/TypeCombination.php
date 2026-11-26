@@ -62,6 +62,13 @@ final class TypeCombination
     /** @var array<string, bool> */
     public array $object_static_resolved = [];
 
+    /**
+     * The classes the `static<...>` combined under a key are written in, '' for one that records none
+     *
+     * @var array<string, array<string, true>>
+     */
+    public array $object_static_declaring_classes = [];
+
     /** @var array<int, bool>|null */
     public ?array $array_counts = [];
 
