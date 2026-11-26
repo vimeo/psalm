@@ -58,6 +58,7 @@ vendor/bin/psalm --no-progress --output-format=compact src/Foo.php src/Bar.php
   [references/taint.md](references/taint.md)) and unsafe calls (`WeakHash`, `InsecureCookie`, …, fixed as
   `--explain` says).
 - After changing `psalm.xml`, stubs or `composer.json`, add `--no-cache` once.
+- Running Psalm after every edit through an agent hook: [references/hooks.md](references/hooks.md).
 - Other output formats (`count`, `json-summary`, `by-issue-level`), cache and threads, `--stats`,
   `--show-info`, `--find-references-to`: [references/cli.md](references/cli.md).
 

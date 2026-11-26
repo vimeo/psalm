@@ -124,6 +124,92 @@ Entries written by later runs are stored as separate files again, so consolidate
 With `ext-zstd` the consolidated cache is compressed with a dictionary made from its entries, which makes it about a third smaller than the separate entries.
 With another compressor it takes more disk space than the separate files, because each entry stays compressed on its own.
 
+## Running Psalm from agent hooks
+
+A [Claude Code hook](https://code.claude.com/docs/en/hooks) can run Psalm after every file the agent edits and hand the issues back to it, so it fixes them in the same turn. Add a `PostToolUse` hook to `.claude/settings.json` (shared with the team; `.claude/settings.local.json` stays on your machine):
+
+```json
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/psalm.sh",
+            "args": [],
+            "timeout": 120
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+Claude Code sends the event as JSON on stdin. For `Edit` and `Write` the edited file is `tool_input.file_path`. Save the script as `.claude/hooks/psalm.sh` and make it executable with `chmod +x .claude/hooks/psalm.sh` (it needs `jq` on the `PATH`):
+
+```bash
+#!/bin/bash
+# .claude/hooks/psalm.sh
+file=$(jq -r '.tool_input.file_path // empty')
+
+case "$file" in
+  *.php) ;;
+  *) exit 0 ;;
+esac
+[ -f "$file" ] || exit 0
+
+cd "$CLAUDE_PROJECT_DIR" || exit 1
+output=$(vendor/bin/psalm --no-progress --output-format=compact "$file" 2>&1)
+status=$?
+
+case "$status" in
+  0) exit 0 ;;
+  2) printf '%s\n' "$output" >&2; exit 2 ;;
+  *) printf 'Psalm failed (exit %s): %s\n' "$status" "$output" >&2; exit 1 ;;
+esac
+```
+
+The script passes Psalm's [exit status](#exit-status) on to Claude Code:
+
+| Psalm | Hook | Effect |
+| ----- | ---- | ------ |
+| `0`, no issues | `0` | Nothing happens. |
+| `2`, issues found | `2` | Claude Code shows the hook's stderr (the issues) to the agent. The edit has already happened, so this is feedback, not a block. |
+| `1`, Psalm itself failed (bad config, crash) | `1` | A non-blocking error: Claude Code shows a hook error notice with the message and carries on. The message says nothing about the edited code. |
+
+Hooks that exit with any code other than `0` or `2` are non-blocking, which is why a broken Psalm setup doesn't stall the agent.
+
+To check every changed PHP file after an edit, not just the edited one, use this script instead (it doesn't read the hook JSON):
+
+```bash
+#!/bin/bash
+cd "$CLAUDE_PROJECT_DIR" || exit 1
+
+files=()
+while IFS= read -r changed; do
+  files+=("$changed")
+done < <({ git diff --name-only --diff-filter=ACMR HEAD -- '*.php'; git ls-files --others --exclude-standard -- '*.php'; })
+[ "${#files[@]}" -eq 0 ] && exit 0
+
+output=$(vendor/bin/psalm --no-progress --output-format=compact "${files[@]}" 2>&1)
+status=$?
+
+case "$status" in
+  0) exit 0 ;;
+  2) printf '%s\n' "$output" >&2; exit 2 ;;
+  *) printf 'Psalm failed (exit %s): %s\n' "$status" "$output" >&2; exit 1 ;;
+esac
+```
+
+This assumes the Claude Code project root is the root of the git repository.
+
+A run on single files is for iterating. It can't report unused code (`UnusedClass`, `PossiblyUnusedMethod`, ...) or taint paths that cross files, because those need the whole project. Keep the full `./vendor/bin/psalm` run as the gate before the agent finishes, in CI and locally.
+
+A `PostToolUse` hook on `Edit|Write` doesn't fire when a `Bash` command rewrites a file.
+
 ## Reviewing issues in your IDE of choice
 
 Psalm now offers a `psalm-review` tool which allows you to manually review issues one by one in your favorite IDE.  
