@@ -322,7 +322,7 @@ final class PsalmEndToEndTest extends PsalmEndToEndTestCase
             'TERMINAL_EMULATOR' => false,
         ];
 
-        return $this->runPsalmInTheProject(['--no-cache', ...$args], [...$no_guesses, ...$env]);
+        return $this->runPsalmInTheProject(['--no-cache', '--monochrome', ...$args], [...$no_guesses, ...$env]);
     }
 
     public function testStatisticsOfANonConsoleFormatGoToStderr(): void
