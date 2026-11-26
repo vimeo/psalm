@@ -6142,6 +6142,20 @@ final class FunctionCallTest extends TestCase
                     function foo($i): void {}',
                 'error_message' => 'ParadoxicalCondition',
             ],
+            'assignmentOfConditionalVoidOrNeverReturn' => [
+                'code' => '<?php
+                    /**
+                     * @return ($ok is true ? void : never)
+                     */
+                    function check(bool $ok) {
+                        if (!$ok) {
+                            exit(1);
+                        }
+                    }
+
+                    $a = check((bool) rand(0, 1));',
+                'error_message' => 'AssignmentToVoid',
+            ],
             'varExportAssignmentToVoid' => [
                 'code' => '<?php
                     $a = var_export(["a"]);',
