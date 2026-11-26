@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Psalm\Tests\Template;
 
 use Override;
+use Psalm\Context;
+use Psalm\IssueBuffer;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
@@ -13,6 +15,54 @@ final class ConditionalReturnTypeTest extends TestCase
 {
     use ValidCodeAnalysisTestTrait;
     use InvalidCodeAnalysisTestTrait;
+
+    public function testEveryUnknownClassOfAConditionalReturnTypeIsReported(): void
+    {
+        $this->testConfig->throw_exception = false;
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile(
+            $file_path,
+            <<<'PHP'
+                <?php
+                /**
+                 * @param int|float $n
+                 * @return ($n is INF ? 'a' : ($n is NAN ? 'b' : string))
+                 */
+                function twoCondDoc($n) { return 'a'; }
+
+                /**
+                 * @param int|float $n
+                 * @return ($n is MissA ? MissBranch : string)
+                 */
+                function condAndBranchDoc($n) { throw new RuntimeException(); }
+
+                /**
+                 * @param int|float $n
+                 * @return ($n is INF ? 'a' : ($n is NAN ? 'b' : string))
+                 */
+                function twoCondSig($n): string { return 'a'; }
+                PHP,
+        );
+        $this->analyzeFile($file_path, new Context());
+
+        $issues = [];
+        foreach (IssueBuffer::getIssuesDataForFile($file_path) as $issue) {
+            $issues[] = $issue->line_from . ':' . $issue->type . ':' . $issue->message;
+        }
+
+        $this->assertSame(
+            [
+                '4:UndefinedDocblockClass:Docblock-defined class, interface or enum named INF does not exist',
+                '4:UndefinedDocblockClass:Docblock-defined class, interface or enum named NAN does not exist',
+                '10:UndefinedDocblockClass:Docblock-defined class, interface or enum named MissA does not exist',
+                '10:UndefinedDocblockClass:Docblock-defined class, interface or enum named MissBranch does not exist',
+                '16:UndefinedDocblockClass:Docblock-defined class, interface or enum named INF does not exist',
+                '16:UndefinedDocblockClass:Docblock-defined class, interface or enum named NAN does not exist',
+            ],
+            $issues,
+        );
+    }
 
     /**
      * @psalm-pure
@@ -2640,6 +2690,56 @@ final class ConditionalReturnTypeTest extends TestCase
                     }',
                 'ignored_issues' => ['InvalidArgument'],
             ],
+            'conditionalElseBranchTemplateIsTheRestOfItsBound' => [
+                'code' => '<?php
+                    /**
+                     * @template TKey as array-key
+                     * @template TValue
+                     * @template T as array<TKey, TValue>|Iterator<TKey, TValue>
+                     * @param T $in
+                     * @return (T is array<TKey, TValue> ? array<TKey, TValue> : LimitIterator<TKey, TValue, T>)
+                     */
+                    function limit(iterable $in): array|LimitIterator {
+                        return is_array($in) ? $in : new LimitIterator($in);
+                    }
+
+                    $array = limit(["a", "b"]);
+                    $iterator = limit(new ArrayIterator([1, 2]));',
+                'assertions' => [
+                    '$array' => 'array<int<0, 1>, string>',
+                    '$iterator' => 'LimitIterator<int<0, 1>, int, ArrayIterator[pure]<int<0, 1>, int>>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'conditionalElseBranchTemplateIsNarrowedWithoutANativeReturnType' => [
+                'code' => '<?php
+                    /** @template T of int */
+                    final class Foo {}
+
+                    /**
+                     * @template T of int|string
+                     * @param T $in
+                     * @return (T is string ? T : Foo<T>)
+                     */
+                    function bar($in) {
+                        throw new RuntimeException();
+                    }',
+            ],
+            'conditionalTrueBranchTemplateIsNarrowedWithoutANativeReturnType' => [
+                'code' => '<?php
+                    /** @template T of string */
+                    final class Foo {}
+
+                    /**
+                     * @template T of int|string
+                     * @param T $in
+                     * @return (T is string ? Foo<T> : T)
+                     */
+                    function bar($in) {
+                        throw new RuntimeException();
+                    }',
+            ],
             'conditionalTrueBranchTemplateTakesTheBoundOfItsCondition' => [
                 'code' => '<?php
                     interface Animal {}
@@ -3566,6 +3666,82 @@ final class ConditionalReturnTypeTest extends TestCase
                     }',
                 'error_message' => 'Method QueryBuilder::extra does not exist',
                 'error_levels' => ['InvalidArgument'],
+            ],
+            'conditionalElseBranchTemplateIsStillCheckedAgainstTheRestOfItsBound' => [
+                'code' => '<?php
+                    /** @template T of int */
+                    final class IntBox {}
+
+                    /**
+                     * @template T of int|string|float
+                     * @param T $value
+                     * @return (T is float ? string : IntBox<T>)
+                     */
+                    function box($value): string|IntBox {
+                        throw new RuntimeException();
+                    }',
+                'error_message' => 'InvalidTemplateParam',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'conditionTypeOfADocblockOnlyConditionalReturnIsChecked' => [
+                'code' => '<?php
+                    /**
+                     * @param int|float $n
+                     * @return ($n is INF ? \'a\' : string)
+                     */
+                    function docOnly($n) {
+                        return \'a\';
+                    }',
+                'error_message' => 'UndefinedDocblockClass',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'conditionTypeOfAConditionalReturnWithANativeReturnTypeIsChecked' => [
+                'code' => '<?php
+                    /**
+                     * @return ($n is INF ? \'a\' : string)
+                     */
+                    function withSig(int|float $n): string {
+                        return \'a\';
+                    }',
+                'error_message' => 'UndefinedDocblockClass',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'conditionalElseBranchKeepsABoundMemberContainedOnlyByAStringCast' => [
+                'code' => '<?php
+                    /** @template T of int */
+                    final class IntBox {}
+
+                    /**
+                     * @template T of Stringable|int
+                     * @param T $value
+                     * @return (T is string ? string : IntBox<T>)
+                     */
+                    function box($value): string|IntBox {
+                        throw new RuntimeException();
+                    }',
+                'error_message' => 'InvalidTemplateParam',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'conditionalElseBranchKeepsAnIntBoundMemberOfAFloatCondition' => [
+                'code' => '<?php
+                    /** @template T of string */
+                    final class StrBox {}
+
+                    /**
+                     * @template T of int|string
+                     * @param T $value
+                     * @return (T is float ? string : StrBox<T>)
+                     */
+                    function box2($value): string|StrBox {
+                        throw new RuntimeException();
+                    }',
+                'error_message' => 'InvalidTemplateParam',
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
             'conditionalElseBranchTemplateKeepsItsBound' => [
                 'code' => '<?php
