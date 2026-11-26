@@ -194,10 +194,12 @@ final class UnusedAssignmentRemover
         }
 
         // `$x ??= f()` only calls f() when $x is null: keep that check as `$x ?? f()`
-        if ($keep_coalesce_guard && is_array($token_list[$iter])) {
+        $operator = $token_list[$iter] ?? null;
+
+        if ($keep_coalesce_guard && is_array($operator)) {
             return new FileManipulation(
                 $var_start_loc + $offset_count,
-                $var_start_loc + $offset_count + strlen($token_list[$iter][1]),
+                $var_start_loc + $offset_count + strlen($operator[1]),
                 '??',
                 false,
             );
