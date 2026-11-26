@@ -84,6 +84,13 @@ final class TaintFlowGraph extends DataFlowGraph
     public const ARRAY_CONVERSION_SUFFIX = '-of-array';
 
     /**
+     * The start of the foreach marker (see TaintFlowResolution::scopeSlot()) of the name of a property read or set
+     * by name through `@psalm-flow`, a variable not known exactly (see ReceiverPropertyTaints::getNameMarker()):
+     * the value read under it is put back under it as an element of a foreach loop is, by a write under the name.
+     */
+    public const NAME_MARKER_PREFIX = 'name ';
+
+    /**
      * The separator DataFlowNode uses to build a specialized node id from its
      * unspecialized base id and specialization key (see DataFlowNode::make()).
      */

@@ -395,11 +395,19 @@ final class TaintFlowResolution
 
     /**
      * Foreach loop marker => [path of its file, start and end of its function (or of the loop outside of
-     * any), start and end of the loop, start of its body]
+     * any), start and end of the loop, start of its body, whether it is the marker of a name (see
+     * TaintFlowGraph::NAME_MARKER_PREFIX)]
      *
-     * @var array<string, array{string, int, int, int, int, int}>
+     * @var array<string, array{string, int, int, int, int, int, bool}>
      */
     private array $foreach_markers = [];
+
+    /**
+     * File path => whether it is in the project (see scopeSlot())
+     *
+     * @var array<string, bool>
+     */
+    private array $project_file_paths = [];
 
     /**
      * Open assignments key => path type => the open assignments after taking an edge of that type, IGNORED
@@ -1753,7 +1761,10 @@ final class TaintFlowResolution
      * may be kept: in a node without a location (a property, ...), in a variable of the body of the loop, which
      * the next iterations see, or in the function of the loop out of the loop, the function being called again
      * through its parameters and left through its return value. In the body walk of a specialized call, only
-     * the first is known.
+     * the first is known. The value of a property read under a name (see TaintFlowGraph::NAME_MARKER_PREFIX) is
+     * that of the name in the body of its function, and in the files outside the project, whose functions psalm
+     * doesn't analyze the bodies of: what a call gives their nodes they give back to it. Anywhere else it may be
+     * kept for another call of the function (in a generator, ...).
      *
      * @psalm-external-mutation-free
      */
@@ -1765,17 +1776,22 @@ final class TaintFlowResolution
             $scoped_slot = $slot === self::INHERITED_SLOT ? self::BLOCKED_SLOT : self::NO_SLOT;
         } elseif ($slot >= 0) {
             $foreach_marker = $this->slots[$slot][0];
-            [$file_path, $function_start, $function_end, $start, $end, $body_start]
+            [$file_path, $function_start, $function_end, $start, $end, $body_start, $of_name]
                 = $this->foreach_markers[$foreach_marker] ??= self::parseForeachMarker($foreach_marker);
 
             [$raw_file_start, $raw_file_end] = $this->table->getRawBounds($row);
 
-            $scoped_slot = $this->table->getFilePath($row) === $file_path
+            $node_file_path = $this->table->getFilePath($row) ?? '';
+
+            $scoped_slot = ($node_file_path === $file_path
                 && $raw_file_start >= $function_start
                 && $raw_file_end <= $function_end
-                && ($raw_file_start < $start
+                ? $raw_file_start < $start
                     || $raw_file_end > $end
-                    || ($raw_file_start >= $body_start && str_starts_with($this->table->getLabel($row), '$')))
+                    || ($raw_file_start >= $body_start && str_starts_with($this->table->getLabel($row), '$'))
+                : $of_name
+                    && ($this->project_file_paths[$node_file_path]
+                        ??= $this->config->isInProjectDirs($node_file_path)))
                 ? self::NO_SLOT
                 : $slot;
         } else {
@@ -1792,11 +1808,16 @@ final class TaintFlowResolution
     }
 
     /**
-     * @return array{string, int, int, int, int, int}
+     * @return array{string, int, int, int, int, int, bool}
      * @psalm-pure
      */
     private static function parseForeachMarker(string $foreach_marker): array
     {
+        $of_name = str_starts_with($foreach_marker, TaintFlowGraph::NAME_MARKER_PREFIX);
+        if ($of_name) {
+            $foreach_marker = substr($foreach_marker, (int) strpos($foreach_marker, '|') + 1);
+        }
+
         $parts = explode(':', $foreach_marker, 6);
 
         return [
@@ -1806,6 +1827,7 @@ final class TaintFlowResolution
             (int) ($parts[2] ?? 0),
             (int) ($parts[3] ?? 0),
             (int) ($parts[4] ?? 0),
+            $of_name,
         ];
     }
 
