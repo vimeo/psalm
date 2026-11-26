@@ -840,7 +840,11 @@ final class SimpleAssertionReconciler extends Reconciler
             $array_atomic_type = $existing_var_type->getArray();
             $redundant = true;
 
-            if ($array_atomic_type instanceof TArray) {
+            if ($array_atomic_type instanceof TArray && $array_atomic_type->isEmptyArray()) {
+                // Impossible
+                $existing_var_type->removeType('array');
+                $redundant = false;
+            } elseif ($array_atomic_type instanceof TArray) {
                 if (!$array_atomic_type instanceof TNonEmptyArray
                     || $array_atomic_type->count !== $assertion->count
                 ) {
@@ -2144,6 +2148,11 @@ final class SimpleAssertionReconciler extends Reconciler
                 if ($atomic_assertion_type instanceof TNonEmptyArray) {
                     if (!$type instanceof TNonEmptyArray) {
                         $redundant = false;
+                    }
+
+                    // an empty array is never non-empty
+                    if ($type->isEmptyArray()) {
+                        continue;
                     }
 
                     $array_types[] = new TNonEmptyArray(
