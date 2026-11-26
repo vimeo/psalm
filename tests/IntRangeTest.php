@@ -34,6 +34,81 @@ final class IntRangeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'comparisonAndItsNegationNarrowAlike' => [
+                'code' => '<?php
+                    /**
+                     * @param int<0, 10>|null $a
+                     * @param int|false $b
+                     * @param 3|7|12 $c
+                     */
+                    function scope(?int $a, int|false $b, int $c): void {
+                        if ($a > 4) {
+                            /** @psalm-check-type-exact $a = int<5, 10> */;
+                        } else {
+                            /** @psalm-check-type-exact $a = int<0, 4>|null */;
+                        }
+                        if (!($a <= 4)) {
+                            /** @psalm-check-type-exact $a = int<5, 10> */;
+                        }
+                        if ($a < 5) {
+                            /** @psalm-check-type-exact $a = int<0, 4>|null */;
+                        } else {
+                            /** @psalm-check-type-exact $a = int<5, 10> */;
+                        }
+                        if (!($a >= 5)) {
+                            /** @psalm-check-type-exact $a = int<0, 4>|null */;
+                        }
+                        if ($b >= 1) {
+                            /** @psalm-check-type-exact $b = int<1, max> */;
+                        } else {
+                            /** @psalm-check-type-exact $b = false|int<min, 0> */;
+                        }
+                        if ($c > 3 && $c < 12) {
+                            /** @psalm-check-type-exact $c = 7 */;
+                        } else {
+                            /** @psalm-check-type-exact $c = 12|3 */;
+                        }
+                    }
+
+                    /**
+                     * @template T of int<0, 10>
+                     * @param T $n
+                     * @return int<5, 10>
+                     */
+                    function above(int $n): int {
+                        return $n > 4 ? $n : 5;
+                    }
+
+                    /**
+                     * @template T of int<0, 10>
+                     * @param T $n
+                     * @return int<0, 4>
+                     */
+                    function notAbove(int $n): int {
+                        return $n > 4 ? 0 : $n;
+                    }
+
+                    /**
+                     * @template T of int<0, 10>
+                     * @param T $n
+                     * @return int<0, 4>
+                     */
+                    function below(int $n): int {
+                        return $n < 5 ? $n : 0;
+                    }
+
+                    /**
+                     * @template T of int<0, 10>
+                     * @param T $n
+                     * @return int<5, 10>
+                     */
+                    function notBelow(int $n): int {
+                        return $n < 5 ? 5 : $n;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'comparisonsNarrowTheRangeNextToItsBounds' => [
                 'code' => '<?php
                     /**
@@ -332,21 +407,48 @@ final class IntRangeTest extends TestCase
                     '$k===' => 'mixed',
                     '$l===' => 'int',
                     '$m===' => 'int<0, max>',
-                    '$n===' => 'int<min, 0>',
+                    '$n===' => 'int<0, max>',
                     '$o===' => 'mixed',
                     '$p===' => 'int',
                     '$q===' => 'mixed',
                     '$r===' => 'int<0, 2>',
-                    '$s===' => 'int<-2, 0>',
+                    '$s===' => 'int<0, 2>',
                     '$t===' => 'mixed',
                     '$u===' => 'int<-2, 0>',
-                    '$v===' => 'int<2, 0>',
+                    '$v===' => 'int<-2, 0>',
                     '$w===' => 'mixed',
                     '$x===' => 'int<0, 2>',
-                    '$y===' => 'int<-2, 0>',
+                    '$y===' => 'int<0, 2>',
                     '$z===' => 'mixed',
                     '$aa===' => 'int<-2, 2>',
                     '$ab===' => 'int<-2, 2>',
+                ],
+            ],
+            'modWithANegativeDivisorTakesTheSignOfTheDividend' => [
+                'code' => '<?php
+                    /** @var int<0, max> $positive */
+                    $positive = 7;
+                    /** @var int<min, 0> $negative */
+                    $negative = -7;
+                    /** @var int<-9, 9> $mixed */
+                    $mixed = 1;
+                    /** @var int<min, -3> $negativeRange */
+                    $negativeRange = -5;
+                    $anything = rand();
+
+                    $a = $positive % -5;
+                    $b = $negative % -5;
+                    $c = $mixed % -5;
+                    $d = $anything % -5;
+                    $e = $positive % $negativeRange;
+                    $f = $negative % $negativeRange;',
+                'assertions' => [
+                    '$a===' => 'int<0, 4>',
+                    '$b===' => 'int<-4, 0>',
+                    '$c===' => 'int<-4, 4>',
+                    '$d===' => 'int<-4, 4>',
+                    '$e===' => 'int<0, max>',
+                    '$f===' => 'int<min, 0>',
                 ],
             ],
             'pow' => [
@@ -466,6 +568,161 @@ final class IntRangeTest extends TestCase
                     '$z===' => 'int<-4, 4>',
                 ],
             ],
+            'multiplicationOfMixedSignsWithUnboundedSide' => [
+                'code' => '<?php
+                    /** @return int<min, -1> */
+                    function a(): int { return -1; }
+                    /** @return int<0, 5> */
+                    function b(): int { return 0; }
+                    /** @return int<-5, -1> */
+                    function c(): int { return -1; }
+                    /** @return int<0, max> */
+                    function d(): int { return 0; }
+
+                    $x = a() * b();
+                    $y = c() * d();
+                    ',
+                'assertions' => [
+                    '$x===' => 'int<min, 0>',
+                    '$y===' => 'int<min, 0>',
+                ],
+            ],
+            'multiplicationOfOverflowingBounds' => [
+                'code' => '<?php
+                    /** @return int<4611686018427387904, 4611686018427387905> */
+                    function getHuge(): int { return 4611686018427387904; }
+                    /** @return int<-5, 4611686018427387904> */
+                    function getUpToHuge(): int { return 0; }
+                    /** @return int<2, 3> */
+                    function getSmall(): int { return 2; }
+                    /** @return int<3074457345618258602, 3074457345618258603> */
+                    function getThirdOfMax(): int { return 3074457345618258602; }
+
+                    $a = getHuge() * getSmall();
+                    $b = getUpToHuge() * getSmall();
+                    $c = getThirdOfMax() * 3;
+                    ',
+                'assertions' => [
+                    '$a===' => 'int',
+                    '$b===' => 'int<-15, max>',
+                    '$c===' => 'int<9223372036854775806, max>',
+                ],
+            ],
+            'multiplicationWithAnUnboundedSideMayOverflowToFloat' => [
+                'code' => '<?php
+                    /** @return int<min, 1> */
+                    function getUpToOne(): int { return 1; }
+                    /** @return int<-2, 0> */
+                    function getSmallNonPositive(): int { return 0; }
+                    /** @return positive-int */
+                    function getPositive(): int { return 1; }
+
+                    function f(): int {
+                        $p = getUpToOne() * getSmallNonPositive();
+                        if (is_float($p)) {
+                            return 0;
+                        }
+                        return $p;
+                    }
+
+                    function g(): int {
+                        $p = getPositive() * getPositive();
+                        if (is_float($p)) {
+                            return 0;
+                        }
+                        return $p;
+                    }',
+            ],
+            'multiplicationSignMatrix' => [
+                'code' => '<?php
+                    /** @return int<0, 0> */
+                    function getZero(): int { return 0; }
+                    /** @return int<-3, 4> */
+                    function getMixed(): int { return 0; }
+                    /** @return positive-int */
+                    function getPos(): int { return 1; }
+                    /** @return negative-int */
+                    function getNeg(): int { return -1; }
+                    /** @return int<0, max> */
+                    function getNonNeg(): int { return 0; }
+                    /** @return int<min, 0> */
+                    function getNonPos(): int { return 0; }
+                    /** @return int<2, 5> */
+                    function getPosFinite(): int { return 2; }
+                    /** @return int<-5, -2> */
+                    function getNegFinite(): int { return -2; }
+
+                    $zero = getZero();
+                    $mixed = getMixed();
+                    $pos = getPos();
+                    $neg = getNeg();
+                    $nonNeg = getNonNeg();
+                    $nonPos = getNonPos();
+                    $posFinite = getPosFinite();
+                    $negFinite = getNegFinite();
+
+                    $posPos = $pos * $pos;
+                    $posPosFinite = $pos * $posFinite;
+                    $posNeg = $pos * $neg;
+                    $posNegFinite = $pos * $negFinite;
+                    $negNeg = $neg * $neg;
+                    $negNegFinite = $neg * $negFinite;
+                    $negPosFinite = $neg * $posFinite;
+                    $posFiniteNegFinite = $posFinite * $negFinite;
+                    $negFiniteNegFinite = $negFinite * $negFinite;
+                    $nonNegNeg = $nonNeg * $neg;
+                    $negNonNeg = $neg * $nonNeg;
+                    $nonPosNonNeg = $nonPos * $nonNeg;
+                    $nonNegNonNeg = $nonNeg * $nonNeg;
+                    $nonPosNonPos = $nonPos * $nonPos;
+                    $nonPosPos = $nonPos * $pos;
+                    $nonPosNeg = $nonPos * $neg;
+                    $zeroPos = $zero * $pos;
+                    $zeroNeg = $zero * $neg;
+                    $zeroMixed = $zero * $mixed;
+                    $mixedPos = $mixed * $pos;
+                    $mixedPosFinite = $mixed * $posFinite;
+                    $mixedNegFinite = $mixed * $negFinite;
+                    $mixedMixed = $mixed * $mixed;
+                    $posLiteral = $pos * 3;
+                    $negNegativeLiteral = $neg * -3;
+                    $nonNegNegativeLiteral = $nonNeg * -3;
+                    $negativeLiteralNonNeg = -3 * $nonNeg;
+                    $nonPosLiteral = $nonPos * 3;
+                    $negZeroLiteral = $neg * 0;
+                    ',
+                'assertions' => [
+                    '$posPos===' => 'int<1, max>',
+                    '$posPosFinite===' => 'int<2, max>',
+                    '$posNeg===' => 'int<min, -1>',
+                    '$posNegFinite===' => 'int<min, -2>',
+                    '$negNeg===' => 'int<1, max>',
+                    '$negNegFinite===' => 'int<2, max>',
+                    '$negPosFinite===' => 'int<min, -2>',
+                    '$posFiniteNegFinite===' => 'int<-25, -4>',
+                    '$negFiniteNegFinite===' => 'int<4, 25>',
+                    '$nonNegNeg===' => 'int<min, 0>',
+                    '$negNonNeg===' => 'int<min, 0>',
+                    '$nonPosNonNeg===' => 'int<min, 0>',
+                    '$nonNegNonNeg===' => 'int<0, max>',
+                    '$nonPosNonPos===' => 'int<0, max>',
+                    '$nonPosPos===' => 'int<min, 0>',
+                    '$nonPosNeg===' => 'int<0, max>',
+                    '$zeroPos===' => 'int<0, 0>',
+                    '$zeroNeg===' => 'int<0, 0>',
+                    '$zeroMixed===' => 'int<0, 0>',
+                    '$mixedPos===' => 'int',
+                    '$mixedPosFinite===' => 'int<-15, 20>',
+                    '$mixedNegFinite===' => 'int<-20, 15>',
+                    '$mixedMixed===' => 'int<-12, 16>',
+                    '$posLiteral===' => 'int<3, max>',
+                    '$negNegativeLiteral===' => 'int<3, max>',
+                    '$nonNegNegativeLiteral===' => 'int<min, 0>',
+                    '$negativeLiteralNonNeg===' => 'int<min, 0>',
+                    '$nonPosLiteral===' => 'int<min, 0>',
+                    '$negZeroLiteral===' => 'int<0, 0>',
+                ],
+            ],
             'intLoopPositive' => [
                 'code' => '<?php
                     for($i = 0; $i < 10; $i++){
@@ -543,7 +800,7 @@ final class IntRangeTest extends TestCase
                         $c = 1;
                     }',
                 'assertions' => [
-                    '$a===' => 'int<-1, 3>',
+                    '$a===' => 'int<-1, 2>',
                     '$b===' => 'int<-1, 3>',
                     '$c===' => 'int<0, 7>',
                 ],
@@ -954,7 +1211,7 @@ final class IntRangeTest extends TestCase
                     ',
                 'assertions' => [
                     '$d===' => 'int',
-                    '$e===' => 'int',
+                    '$e===' => 'int<0, max>',
                     '$f===' => 'int',
                     '$g===' => 'int',
                     '$h===' => 'int',
@@ -1190,7 +1447,7 @@ final class IntRangeTest extends TestCase
                     $_arr[1] = $int;
                     $_arr[$int] = 2;',
                 'assertions' => [
-                    '$_arr===' => 'non-empty-array<int<0, max>, int<0, max>>',
+                    '$_arr===' => 'array{1: int<1, max>, ...<int<0, max>, int<0, max>>}',
                 ],
             ],
             'nonNegativeIntCombinedWithIntRange' => [
@@ -1204,7 +1461,7 @@ final class IntRangeTest extends TestCase
                     $_arr[1] = $int;
                     $_arr[$int] = 2;',
                 'assertions' => [
-                    '$_arr===' => 'non-empty-array<int<0, max>, int<0, max>>',
+                    '$_arr===' => 'array{0: 0|2, 1: int<0, max>, ...<int<0, max>, int<0, max>>}',
                 ],
             ],
             'negativeIntCombinedWithIntRange' => [
@@ -1217,7 +1474,7 @@ final class IntRangeTest extends TestCase
                     $_arr[-1] = $int;
                     $_arr[$int] = -2;',
                 'assertions' => [
-                    '$_arr===' => 'non-empty-array<int<min, -1>, int<min, -1>>',
+                    '$_arr===' => 'array{-1: int<min, -1>, ...<int<min, -1>, int<min, -1>>}',
                 ],
             ],
             'nonPositiveIntCombinedWithIntRange' => [
@@ -1231,7 +1488,7 @@ final class IntRangeTest extends TestCase
                     $_arr[-1] = $int;
                     $_arr[$int] = -2;',
                 'assertions' => [
-                    '$_arr===' => 'non-empty-array<int<min, 0>, int<min, 0>>',
+                    '$_arr===' => 'array{-1: int<min, 0>, 0: -2|0, ...<int<min, 0>, int<min, 0>>}',
                 ],
             ],
             'noErrorPushingBigShapeIntoConstant' => [

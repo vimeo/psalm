@@ -309,6 +309,468 @@ final class ConstantTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'lateStaticBoundConstantsKeepTheirDeclaredTypes' => [
+                'code' => '<?php
+                    class Service {
+                        public const int NATIVE = 10;
+                        public const int|string NATIVE_UNION = 10;
+                        /** @var positive-int */
+                        public const int DOCBLOCK = 5;
+
+                        public function viaStatic(): void {
+                            $x = static::NATIVE;
+                            /** @psalm-check-type-exact $x = int */
+                            echo $x;
+                        }
+                    }
+
+                    function service(): Service {
+                        return new Service();
+                    }
+
+                    $object = service();
+                    $native = $object::NATIVE;
+                    $native_union = $object::NATIVE_UNION;
+                    $docblock = $object::DOCBLOCK;',
+                'assertions' => [
+                    '$native===' => 'int',
+                    '$native_union===' => 'int|string',
+                    '$docblock===' => 'int<1, max>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'narrowedStaticConstantKeepsItsNativeTypeAfterAnEarlierCondition' => [
+                'code' => '<?php
+                    class Native {
+                        public const int SIZE = 10;
+
+                        public function b(): int {
+                            if (static::SIZE === 20) {
+                                return 1;
+                            }
+
+                            if (static::SIZE === 30) {
+                                return 3;
+                            }
+
+                            return 0;
+                        }
+                    }
+
+                    class NativeChild extends Native {
+                        public const int SIZE = 30;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'narrowedStaticConstantKeepsItsDocblockTypeAfterAnEarlierCondition' => [
+                'code' => '<?php
+                    class Documented {
+                        /** @var int */
+                        public const SIZE = 10;
+
+                        public function b(): int {
+                            if (static::SIZE === 20) {
+                                return 1;
+                            }
+
+                            if (static::SIZE === 30) {
+                                return 3;
+                            }
+
+                            return 0;
+                        }
+                    }
+
+                    class DocumentedChild extends Documented {
+                        public const SIZE = 30;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'narrowedStaticConstantHasItsDeclaredTypeAfterAnEarlierCondition' => [
+                'code' => '<?php
+                    class Native {
+                        public const int SIZE = 10;
+
+                        public function b(): int {
+                            if (static::SIZE === 20) {
+                                return 1;
+                            }
+
+                            $size = static::SIZE;
+                            /** @psalm-check-type-exact $size = int */;
+
+                            return $size;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'staticConstantInATraitAllowsTheValueOfASubclass' => [
+                'code' => '<?php
+                    trait T {
+                        public function size(): int {
+                            if (static::SIZE === 20) {
+                                return 1;
+                            }
+                            return 0;
+                        }
+                    }
+
+                    class Base {
+                        use T;
+                        public const int SIZE = 10;
+                    }
+
+                    class Child extends Base {
+                        public const int SIZE = 20;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'staticConstantInATraitUsedByAFinalAndANonFinalClassAllowsAnOverride' => [
+                'code' => '<?php
+                    trait T {
+                        public function size(): int {
+                            if (static::SIZE === 20) {
+                                return 1;
+                            }
+                            return 0;
+                        }
+                    }
+
+                    final class Closed {
+                        use T;
+                        public const int SIZE = 10;
+                    }
+
+                    class Open {
+                        use T;
+                        public const int SIZE = 10;
+                    }
+
+                    class Child extends Open {
+                        public const int SIZE = 20;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'untypedStaticConstantInATraitUsedByAFinalAndANonFinalClassAllowsAnOverride' => [
+                'code' => '<?php
+                    trait T {
+                        public function size(): int {
+                            if (static::SIZE === 20) {
+                                return 1;
+                            }
+                            return 0;
+                        }
+                    }
+
+                    final class Closed {
+                        use T;
+                        public const SIZE = 10;
+                    }
+
+                    class Open {
+                        use T;
+                        public const SIZE = 10;
+                    }',
+            ],
+            'selfConstantInATraitUsedByAFinalAndANonFinalClassKeepsTheirValues' => [
+                'code' => '<?php
+                    trait T {
+                        public function size(): int {
+                            $size = self::SIZE;
+                            /** @psalm-check-type-exact $size = 10|11 */
+                            return $size;
+                        }
+                    }
+
+                    final class Closed {
+                        use T;
+                        public const int SIZE = 10;
+                    }
+
+                    class Open {
+                        use T;
+                        public const int SIZE = 11;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'staticConstantInATraitOfAnAbstractClassHasItsNativeType' => [
+                'code' => '<?php
+                    trait T {
+                        public function size(): int {
+                            $size = static::SIZE;
+                            /** @psalm-check-type-exact $size = int */
+                            return $size;
+                        }
+                    }
+
+                    abstract class Base {
+                        use T;
+                        public const int SIZE = 10;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'lateStaticBoundConstantHasItsNativeType' => [
+                'code' => '<?php
+                    abstract class Service {
+                        public const int PAGE_SIZE = 10;
+                        public const UNTYPED = 10;
+                    }
+
+                    final class UserService extends Service {
+                        public const int PAGE_SIZE = 20;
+                    }
+
+                    function pageSize(Service $service): int {
+                        return $service::PAGE_SIZE;
+                    }
+
+                    /** @return int */
+                    function untyped(Service $service) {
+                        /** @psalm-suppress MixedReturnStatement */
+                        return $service::UNTYPED;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingClassConstType'],
+                'php_version' => '8.3',
+            ],
+            'constantOfANullableObjectCheckedForNullIsTheConstantOfItsClass' => [
+                'code' => '<?php
+                    final class A {
+                        public const NAME = "a";
+                    }
+
+                    /** @var A|null $a */
+                    $a = rand(0, 1) ? new A() : null;
+                    $name = $a === null ? "" : $a::NAME;',
+                'assertions' => [
+                    '$name===' => "''|'a'",
+                ],
+            ],
+            'constantOfAnObjectOfSeveralClassesIsTheConstantOfEach' => [
+                'code' => '<?php
+                    final class A {
+                        const NAME = 10;
+                    }
+
+                    final class D {
+                        const NAME = "x";
+                    }
+
+                    function object(): A|D {
+                        return new A();
+                    }
+
+                    $object = object();
+                    $name = $object::NAME;',
+                'assertions' => [
+                    '$name===' => '\'x\'|10',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'constantOfAnObjectWithAnUnknownClassIsNotTheConstantOfTheOthers' => [
+                'code' => '<?php
+                    final class A {
+                        const NAME = 10;
+                    }
+
+                    /** @return Missing */
+                    function missing() {
+                        throw new Exception();
+                    }
+
+                    $object = rand(0, 1) ? new A() : missing();
+                    $name = $object::NAME;',
+                'assertions' => [
+                    '$name===' => 'mixed',
+                ],
+                'ignored_issues' => ['UndefinedDocblockClass', 'MixedAssignment', 'InvalidReturnType', 'InvalidReturnStatement'],
+                'php_version' => '8.0',
+            ],
+            'importedConstantShadowsAPhpConstantInAParameterDefault' => [
+                'code' => '<?php
+                    namespace One {
+                        const VALUE = 10;
+                    }
+
+                    namespace Lib {
+                        use const One\VALUE as JSON_THROW_ON_ERROR;
+
+                        /**
+                         * @template T
+                         * @param T $v
+                         * @return T
+                         */
+                        function f($v = JSON_THROW_ON_ERROR) {
+                            return $v;
+                        }
+
+                        /** @return 10 */
+                        function check(): int {
+                            return f();
+                        }
+                    }',
+            ],
+            'namespaceConstantShadowsAPhpConstantInAClassConstant' => [
+                'code' => '<?php
+                    namespace Lib {
+                        const JSON_THROW_ON_ERROR = 7;
+
+                        final class C {
+                            const X = JSON_THROW_ON_ERROR;
+                        }
+
+                        $a = C::X;
+                    }',
+                'assertions' => [
+                    '$a===' => '7',
+                ],
+            ],
+            'namespaceConstantShadowsAPhpConstantInAParamDefault' => [
+                'code' => '<?php
+                    namespace Lib {
+                        const JSON_THROW_ON_ERROR = 7;
+
+                        /**
+                         * @template T
+                         * @param T $v
+                         * @return T
+                         */
+                        function f($v = JSON_THROW_ON_ERROR) {
+                            return $v;
+                        }
+
+                        /** @return 7 */
+                        function check(): int {
+                            return f();
+                        }
+                    }',
+            ],
+            'importedConstantShadowsAPhpConstantInAClassConstant' => [
+                'code' => '<?php
+                    namespace One {
+                        const VALUE = 10;
+                    }
+
+                    namespace Lib {
+                        use const One\VALUE as JSON_THROW_ON_ERROR;
+
+                        final class C {
+                            const X = JSON_THROW_ON_ERROR;
+                        }
+
+                        $a = C::X;
+                    }',
+                'assertions' => [
+                    '$a===' => '10',
+                ],
+            ],
+            'overrideNarrowingTheNativeTypeOfTheParentConstant' => [
+                'code' => '<?php
+                    class A {
+                        public const int|string X = 1;
+                    }
+                    final class B extends A {
+                        public const int X = 2;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'dynamicFetchWithLiteralNames' => [
+                'code' => '<?php
+                    final class C {
+                        public const A = 1;
+                        public const B = "b";
+                    }
+                    enum E {
+                        case One;
+                    }
+                    $name = "A";
+                    $a = C::{$name};
+                    $either = C::{rand(0, 1) ? "A" : "B"};
+                    $c = new C();
+                    $b = $c::{"B"};
+                    $case = E::{"One"};
+                    $class = "class";
+                    $className = C::{$class};',
+                'assertions' => [
+                    '$a===' => '1',
+                    '$either===' => "'b'|1",
+                    '$b===' => "'b'",
+                    '$case===' => 'enum(E::One)',
+                    '$className===' => 'C::class',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'dynamicFetchOfTheClassNameOfStatic' => [
+                'code' => '<?php
+                    class A {
+                        public function f(A $o): void {
+                            $static = static::{"class"};
+                            $this_class = $this::{"class"};
+                            $o_class = $o::{"class"};
+                            /** @psalm-check-type-exact $static = class-string<A&static> */
+                            /** @psalm-check-type-exact $this_class = class-string<A&static> */
+                            /** @psalm-check-type-exact $o_class = class-string<A> */
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'dynamicFetchOfLiteralNamesOneOfThemMissing' => [
+                'code' => '<?php
+                    final class C {
+                        public const A = 1;
+                    }
+                    $value = C::{rand(0, 1) ? "A" : "Z"};',
+                'assertions' => [
+                    '$value===' => 'mixed',
+                ],
+                'ignored_issues' => ['UndefinedConstant', 'MixedAssignment'],
+                'php_version' => '8.3',
+            ],
+            'overrideKeepingTheNativeTypeOfTheParentConstant' => [
+                'code' => '<?php
+                    interface HasVersion {
+                        public const string VERSION = "1";
+                    }
+
+                    class Base implements HasVersion {
+                        public const string VERSION = "2";
+                        public const int LIMIT = 10;
+                    }
+
+                    final class Child extends Base {
+                        public const string VERSION = "3";
+                        public const int LIMIT = 20;
+                    }
+
+                    $limit = Child::LIMIT;
+                ',
+                'assertions' => [
+                    '$limit===' => '20',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
             'staticConstantMapOffsetWithANullDefaultOfDestructuredValues' => [
                 'code' => '<?php
                     class Handler
@@ -1530,6 +1992,47 @@ final class ConstantTest extends TestCase
                     A::foo(1);
                     A::foo(2);
                     A::foo(3);',
+            ],
+            'intMaskWithSuppressedUndefinedGlobalConstantInPropertyType' => [
+                'code' => '<?php
+                    namespace App;
+
+                    final class Holder {
+                        /**
+                         * @psalm-suppress UndefinedConstant
+                         * @psalm-suppress InvalidPropertyAssignmentValue
+                         * @var int-mask<NO_SUCH_CONSTANT>
+                         */
+                        public int $flags = 0;
+                    }',
+            ],
+            'intMaskWithSuppressedUndefinedGlobalConstantInMethodParamType' => [
+                'code' => '<?php
+                    namespace App;
+
+                    final class Encoder {
+                        /**
+                         * @psalm-suppress UndefinedConstant
+                         * @param int-mask<NO_SUCH_CONSTANT> $flags
+                         */
+                        public function encode(int $flags): void {}
+                    }',
+            ],
+            'suppressedUndefinedClassConstantInPropertyType' => [
+                'code' => '<?php
+                    namespace App;
+
+                    final class Holder {
+                        /**
+                         * @psalm-suppress UndefinedConstant
+                         * @psalm-suppress InvalidPropertyAssignmentValue
+                         * @var self::NO_SUCH
+                         */
+                        public mixed $flag = 0;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
             ],
             'globalConstantWildcard' => [
                 'code' => '<?php
@@ -2784,6 +3287,22 @@ final class ConstantTest extends TestCase
                     }
                 ',
             ],
+            'constantInheritedThroughParentClassAndInterfaceIsNotAmbiguous' => [
+                'code' => <<<'PHP'
+                    <?php
+                    interface NodeInterface {
+                        public const KEY = 'key';
+                    }
+
+                    interface FieldInterface extends NodeInterface {}
+                    interface RootInterface extends NodeInterface {}
+                    interface PaginationInterface extends RootInterface {}
+
+                    abstract class Field implements FieldInterface {}
+
+                    abstract class Pagination extends Field implements PaginationInterface {}
+                    PHP,
+            ],
         ];
     }
 
@@ -2794,6 +3313,140 @@ final class ConstantTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'staticConstantInATraitOfAFinalClassKeepsItsValue' => [
+                'code' => '<?php
+                    trait T {
+                        public function size(): int {
+                            if (static::SIZE === 20) {
+                                return 1;
+                            }
+                            return 0;
+                        }
+                    }
+
+                    final class Closed {
+                        use T;
+                        public const int SIZE = 10;
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
+            'finalStaticConstantInATraitKeepsItsValue' => [
+                'code' => '<?php
+                    trait T {
+                        public function size(): int {
+                            if (static::SIZE === 20) {
+                                return 1;
+                            }
+                            return 0;
+                        }
+                    }
+
+                    class Open {
+                        use T;
+                        final public const int SIZE = 10;
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
+            'constantOfAPossiblyNullObjectIsAnUndefinedClass' => [
+                'code' => '<?php
+                    final class A {
+                        public const NAME = "a";
+                    }
+
+                    function name(?A $a): string {
+                        return $a::NAME;
+                    }',
+                'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:32 - Type null cannot be used as a class',
+            ],
+            'constantOfAnObjectOfANonFinalClassWithAnUntypedConstantIsMixed' => [
+                'code' => '<?php
+                    class A {
+                        const N = "a";
+                    }
+
+                    function concat(A $a): string {
+                        return "<" . $a::N;
+                    }',
+                'error_message' => 'MixedOperand',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'constantMissingFromOneClassOfAnObjectIsUndefined' => [
+                'code' => '<?php
+                    final class A {
+                        const NAME = 10;
+                    }
+
+                    final class B {}
+
+                    /** @param A|B $object */
+                    function name($object): int {
+                        return $object::NAME;
+                    }',
+                'error_message' => 'UndefinedConstant - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:32 - Constant B::NAME is not defined',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'overrideWideningTheNativeTypeOfTheParentConstant' => [
+                'code' => '<?php
+                    class A {
+                        public const int X = 1;
+                    }
+                    final class B extends A {
+                        public const int|string X = 2;
+                    }',
+                'error_message' => 'InvalidClassConstantType - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:49 - The native type "int|string" of B::X is not contained in the native type "int" of A::X',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
+            'overrideDroppingTheNativeTypeOfTheParentConstant' => [
+                'code' => '<?php
+                    interface I {
+                        const int X = 1;
+                    }
+                    final class B implements I {
+                        /** @var int */
+                        const X = 2;
+                    }',
+                'error_message' => 'InvalidClassConstantType - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:31 - B::X must declare a native type contained in the native type "int" of I::X',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
+            'dynamicFetchOfAMissingConstant' => [
+                'code' => '<?php
+                    final class C {
+                        public const A = 1;
+                    }
+                    $name = "Z";
+                    echo C::{$name};',
+                'error_message' => 'UndefinedConstant',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
+            'dynamicFetchWithAnEmptyName' => [
+                'code' => '<?php
+                    final class C {
+                        public const A = 1;
+                    }
+                    $name = "";
+                    echo C::{$name};',
+                'error_message' => 'UndefinedConstant - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:26 - Constant C:: is not defined',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
+            'dynamicFetchOnAMissingClass' => [
+                'code' => '<?php
+                    function f(string $name): mixed {
+                        return Missing::{$name};
+                    }',
+                'error_message' => 'UndefinedClass',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
             'constantDeclaredWithClassConstantWildcardTypeRejectsOtherValues' => [
                 'code' => '<?php
                     class Foo
@@ -3296,6 +3949,23 @@ final class ConstantTest extends TestCase
                 ',
                 'error_message' => 'AmbiguousConstantInheritance',
             ],
+            'constantInheritedThroughParentClassFromAnotherInterfaceIsAmbiguous' => [
+                'code' => <<<'PHP'
+                    <?php
+                    interface FieldInterface {
+                        public const KEY = 'field';
+                    }
+
+                    interface PaginationInterface {
+                        public const KEY = 'pagination';
+                    }
+
+                    abstract class Field implements FieldInterface {}
+
+                    abstract class Pagination extends Field implements PaginationInterface {}
+                    PHP,
+                'error_message' => 'AmbiguousConstantInheritance',
+            ],
             'overrideClassConstFromInterface' => [
                 'code' => '<?php
                     interface Foo
@@ -3348,6 +4018,35 @@ final class ConstantTest extends TestCase
                 'error_message' => "InvalidClassConstantType",
                 'error_levels' => [],
                 'php_version' => '8.1',
+            ],
+            'overrideViolatingTheNativeTypeOfTheParentConstant' => [
+                'code' => '<?php
+                    class Base {
+                        public const int LIMIT = 10;
+                    }
+
+                    final class Child extends Base {
+                        public const int|string LIMIT = "unlimited";
+                    }
+                ',
+                'error_message' => 'does not satisfy the type "int" inherited from Base::LIMIT',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
+            'overrideViolatingTheDocblockTypeOfANativelyTypedConstant' => [
+                'code' => '<?php
+                    class Base {
+                        /** @var positive-int */
+                        public const int LIMIT = 10;
+                    }
+
+                    final class Child extends Base {
+                        public const int LIMIT = -1;
+                    }
+                ',
+                'error_message' => 'InvalidClassConstantType',
+                'error_levels' => [],
+                'php_version' => '8.3',
             ],
             'overrideFinalClassConstFromExtendedClass' => [
                 'code' => '<?php

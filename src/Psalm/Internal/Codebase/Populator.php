@@ -8,6 +8,7 @@ use BackedEnum;
 use InvalidArgumentException;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Perf;
 use Psalm\Internal\PhpVisitor\Reflector\FunctionLikeDocblockScanner;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\FileReferenceProvider;
@@ -19,6 +20,7 @@ use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeAlias\ClassTypeAlias;
 use Psalm\Internal\TypeVisitor\ContainsTemplateExpressionVisitor;
+use Psalm\Internal\TypeVisitor\TypeLocalizer;
 use Psalm\Issue\CircularReference;
 use Psalm\Issue\UndefinedTrait;
 use Psalm\IssueBuffer;
@@ -43,8 +45,8 @@ use Psalm\Type\Atomic\TTypeAlias;
 use Psalm\Type\Union;
 use UnitEnum;
 
+use function array_any;
 use function array_filter;
-use function array_flip;
 use function array_intersect_key;
 use function array_keys;
 use function array_merge;
@@ -94,6 +96,7 @@ final class Populator
     public function populateCodebase(): void
     {
         $this->progress->debug('ClassLikeStorage is populating' . "\n");
+        Perf\Collector::step('populate.classlikes');
 
         // before the members of the classes inherit their internal namespaces
         $this->classlikes->markUnshippedCodeInternal();
@@ -106,6 +109,8 @@ final class Populator
 
         // a class populated before its parents were scanned is populated again, and bound again
         $this->iteration_purity_bound = [];
+
+        Perf\Collector::step('populate.methods');
 
         // every method's capabilities are known now: bind what consuming the generators they
         // return, and iterating the iterators their classes are, may do
@@ -123,11 +128,15 @@ final class Populator
 
         $this->progress->debug('FileStorage is populating' . "\n");
 
+        Perf\Collector::step('populate.files');
+
         $all_file_storage = $this->file_storage_provider->getNew();
 
         foreach ($all_file_storage as $file_storage) {
             $this->populateFileStorage($file_storage);
         }
+
+        Perf\Collector::step('populate.dependents');
 
         foreach ($this->classlike_storage_provider->getNew() as $class_storage) {
             // `+=` on the typed property would copy the whole array on every merge
@@ -232,7 +241,7 @@ final class Populator
             }
         }
 
-        return $atomic_types === [] ? null : $type->setTypes($atomic_types);
+        return $type->setTypes($atomic_types);
     }
 
     /**
@@ -774,6 +783,77 @@ final class Populator
         }
     }
 
+    /**
+     * @psalm-mutation-free
+     */
+    private static function returnTypeUsesAMethodTemplate(FunctionLikeStorage $method_storage): bool
+    {
+        if ($method_storage->return_type === null
+            || $method_storage->template_types === null
+            || $method_storage->template_types === []
+        ) {
+            return false;
+        }
+
+        return array_any(
+            $method_storage->return_type->getTemplateTypes(),
+            static fn(TTemplateParam $template): bool => isset($method_storage->template_types[$template->param_name]),
+        );
+    }
+
+    /**
+     * Whether two methods document the same return type and parameter types, so that either of them may document
+     * a method implementing both
+     */
+    private static function documentSameSignature(
+        MethodStorage $first,
+        string $first_class,
+        ?MethodStorage $second,
+        string $second_class,
+        ClassLikeStorage $implementing_class_storage,
+    ): bool {
+        if ($second === null) {
+            return false;
+        }
+
+        $extends = $implementing_class_storage->template_extended_params;
+
+        if (self::getLocalizedTypeId($first->return_type, $first_class, $extends)
+                !== self::getLocalizedTypeId($second->return_type, $second_class, $extends)
+            || count($first->params) !== count($second->params)
+        ) {
+            return false;
+        }
+
+        foreach ($first->params as $i => $param) {
+            if (self::getLocalizedTypeId($param->type, $first_class, $extends)
+                !== self::getLocalizedTypeId($second->params[$i]->type, $second_class, $extends)
+            ) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * The id of a type of a method declared in $declaring_class, as seen from a class extending it
+     *
+     * @param array<string, array<string, Union>>|null $extends
+     */
+    private static function getLocalizedTypeId(?Union $type, string $declaring_class, ?array $extends): ?string
+    {
+        if ($type === null) {
+            return null;
+        }
+
+        if ($extends !== null) {
+            (new TypeLocalizer($extends, $declaring_class))->traverse($type);
+        }
+
+        return $type->getId();
+    }
+
     private function populateOverriddenMethods(
         ClassLikeStorage $storage,
         ClassLikeStorageProvider $storage_provider,
@@ -822,6 +902,7 @@ final class Populator
                                 && (!$method_storage->throws || $method_storage->inheritdoc)
                             ) {
                                 $method_storage->throws += $interface_method_storage->throws;
+                                $method_storage->throw_intersections += $interface_method_storage->throw_intersections;
                             }
                         }
                     }
@@ -891,11 +972,15 @@ final class Populator
                         ?? $declaring_class_storage->pseudo_methods[$declaring_method_name]
                         ?? $declaring_class_storage->pseudo_static_methods[$declaring_method_name];
 
+                    // a method documenting its params takes the return type of the overridden one only when that
+                    // documents it, with no template of its own: the params of the method don't bind it
                     if (($declaring_method_storage->has_docblock_param_types
                             || $declaring_method_storage->has_docblock_return_type)
-                        && !$method_storage->has_docblock_param_types
                         && !$method_storage->has_docblock_return_type
                         && $inherited_return_type !== null
+                        && (!$method_storage->has_docblock_param_types
+                            || ($declaring_method_storage->has_docblock_return_type
+                                && !self::returnTypeUsesAMethodTemplate($declaring_method_storage)))
                     ) {
                         if (!isset($storage->documenting_method_ids[$method_name])
                             || (string) $storage->documenting_method_ids[$method_name]
@@ -918,6 +1003,15 @@ final class Populator
                                     $declaring_class,
                                     $documenting_class_storage->parent_interfaces,
                                 ) && $documenting_class_storage->is_interface
+                                    && !self::documentSameSignature(
+                                        $declaring_method_storage,
+                                        $declaring_class,
+                                        $documenting_class_storage->methods[
+                                            $storage->documenting_method_ids[$method_name]->method_name
+                                        ] ?? null,
+                                        $documenting_class_storage->name,
+                                        $storage,
+                                    )
                                 ) {
                                     unset($storage->documenting_method_ids[$method_name]);
                                     $inherited_return_type = null;
@@ -943,6 +1037,7 @@ final class Populator
                         && (!$method_storage->throws || $method_storage->inheritdoc)
                     ) {
                         $method_storage->throws += $declaring_method_storage->throws;
+                        $method_storage->throw_intersections += $declaring_method_storage->throw_intersections;
                     }
 
                     // a method without its own tag keeps the tag of the method it overrides, while a method that
@@ -1007,8 +1102,16 @@ final class Populator
 
         $this->extendTemplateParams($storage, $trait_storage, false);
 
-        $storage->pseudo_property_get_types += $trait_storage->pseudo_property_get_types;
-        $storage->pseudo_property_set_types += $trait_storage->pseudo_property_set_types;
+        $storage->pseudo_property_get_types += self::localizeInheritedTypes(
+            $storage,
+            $trait_storage,
+            $trait_storage->pseudo_property_get_types,
+        );
+        $storage->pseudo_property_set_types += self::localizeInheritedTypes(
+            $storage,
+            $trait_storage,
+            $trait_storage->pseudo_property_set_types,
+        );
 
         return $trait_storage;
     }
@@ -1061,7 +1164,28 @@ final class Populator
                     $extended_types[] = $atomic_type;
                 }
             } else {
-                $extended_types[] = $atomic_type;
+                // a template of a class in between nested in a composed argument (`@extends Base<Box<TModel>>`)
+                $nested_arguments = [];
+
+                foreach ((new Union([$atomic_type]))->getTemplateTypes() as $nested_template) {
+                    $nested_argument = $storage
+                        ->template_extended_params[$nested_template->defining_class][$nested_template->param_name]
+                            ?? null;
+
+                    if ($nested_argument) {
+                        $nested_arguments[$nested_template->param_name][$nested_template->defining_class]
+                            = $nested_argument;
+                    }
+                }
+
+                if ($nested_arguments === []) {
+                    $extended_types[] = $atomic_type;
+                } else {
+                    $extended_types[] = $atomic_type->replaceTemplateTypesWithArgTypes(
+                        new TemplateResult([], $nested_arguments),
+                        null,
+                    );
+                }
             }
         }
 
@@ -1142,14 +1266,46 @@ final class Populator
             $storage->preserve_constructor_signature = true;
         }
 
-        $storage->pseudo_property_get_types += $parent_storage->pseudo_property_get_types;
-        $storage->pseudo_property_set_types += $parent_storage->pseudo_property_set_types;
+        $storage->pseudo_property_get_types += self::localizeInheritedTypes(
+            $storage,
+            $parent_storage,
+            $parent_storage->pseudo_property_get_types,
+        );
+        $storage->pseudo_property_set_types += self::localizeInheritedTypes(
+            $storage,
+            $parent_storage,
+            $parent_storage->pseudo_property_set_types,
+        );
 
         $parent_storage->dependent_classlikes[strtolower($storage->name)] = true;
 
         $this->inheritPseudoMethods($storage, $parent_storage);
 
         $parent_storage->has_children = true;
+    }
+
+    /**
+     * The `@property` types of a generic parent or used trait, in terms of the template arguments the class gives it
+     *
+     * @param array<string, Union> $types
+     * @return array<string, Union>
+     */
+    private static function localizeInheritedTypes(
+        ClassLikeStorage $storage,
+        ClassLikeStorage $parent_storage,
+        array $types,
+    ): array {
+        if ($storage->template_extended_params === null || $storage->template_extended_params === []) {
+            return $types;
+        }
+
+        $localizer = new TypeLocalizer($storage->template_extended_params, $parent_storage->name);
+
+        foreach ($types as &$type) {
+            $localizer->traverse($type);
+        }
+
+        return $types;
     }
 
     /**
@@ -1344,11 +1500,13 @@ final class Populator
         if ($parent_storage->template_types) {
             $storage->template_extended_params[$parent_storage->name] = [];
 
-            if (isset($storage->template_extended_offsets[$parent_storage->name])) {
+            $parent_name_lc = strtolower($parent_storage->name);
+
+            if (isset($storage->template_extended_offsets[$parent_name_lc])) {
                 // the generic types written in the arguments get the defaults they leave out, as in any other use
                 $written_params = [];
 
-                foreach ($storage->template_extended_offsets[$parent_storage->name] as $written_param) {
+                foreach ($storage->template_extended_offsets[$parent_name_lc] as $written_param) {
                     $written_params[] = TemplateDefaults::fillNested(
                         $written_param,
                         $this->classlike_storage_provider,
@@ -1358,12 +1516,12 @@ final class Populator
 
                 // `@extends Foo<A>` leaving out trailing templates with a default, `@extends Foo[pure]` for a
                 // class with type templates
-                $storage->template_extended_offsets[$parent_storage->name] = PurityArguments::align(
+                $storage->template_extended_offsets[$parent_name_lc] = PurityArguments::align(
                     TemplateDefaults::fillTypeArguments($written_params, $parent_storage, null, true),
                     $parent_storage,
                 );
 
-                foreach ($storage->template_extended_offsets[$parent_storage->name] as $i => $type) {
+                foreach ($storage->template_extended_offsets[$parent_name_lc] as $i => $type) {
                     $parent_template_type_names = array_keys($parent_storage->template_types);
 
                     $mapped_name = $parent_template_type_names[$i] ?? null;
@@ -1662,19 +1820,17 @@ final class Populator
             return;
         }
 
+        // the aliases and visibility changes of `use T { ... }` are of methods only
         foreach ($trait_storage->constants as $constant_name => $class_constant_storage) {
-            $trait_alias_map_cased = array_flip($storage->trait_alias_map_cased);
-            if (isset($trait_alias_map_cased[$constant_name])) {
-                $aliased_constant_name_lc = strtolower($trait_alias_map_cased[$constant_name]);
-                $aliased_constant_name = $trait_alias_map_cased[$constant_name];
-            } else {
-                $aliased_constant_name_lc = strtolower($constant_name);
-                $aliased_constant_name = $constant_name;
+            // PHP keeps the constant of the first trait declaring it
+            if ($this->isConstantOfAnotherUsedTrait($storage, $trait_storage, $constant_name)) {
+                continue;
             }
+
             // The class's own declaration wins over the constant of the trait. A plain isset() can't tell it from
             // an inherited one: when a storage is populated again (the Populator resets `populated`), constants
             // already holds the copies of the parent and of the trait from the first run.
-            $own_location = ($storage->constants[$aliased_constant_name] ?? null)?->location;
+            $own_location = ($storage->constants[$constant_name] ?? null)?->location;
             if ($own_location !== null
                 && $storage->stmt_location !== null
                 && $own_location->file_path === $storage->stmt_location->file_path
@@ -1684,24 +1840,68 @@ final class Populator
                 continue;
             }
 
-            $visibility = $storage->trait_visibility_map[$aliased_constant_name_lc]
-                ?? $class_constant_storage->visibility;
-            $final = $storage->trait_final_map[$aliased_constant_name_lc] ?? $class_constant_storage->final;
-            $storage->constants[$aliased_constant_name] = new ClassConstantStorage(
+            $storage->constants[$constant_name] = new ClassConstantStorage(
                 $class_constant_storage->type,
                 $class_constant_storage->inferred_type,
-                $visibility,
+                $class_constant_storage->visibility,
                 $class_constant_storage->location,
                 $class_constant_storage->type_location,
                 $class_constant_storage->stmt_location,
                 $class_constant_storage->deprecated,
-                $final,
+                $class_constant_storage->final,
                 $class_constant_storage->unresolved_node,
                 $class_constant_storage->attributes,
                 $class_constant_storage->suppressed_issues,
                 $class_constant_storage->description,
+                $class_constant_storage->since_php_version_id,
+                $class_constant_storage->signature_type,
             );
         }
+    }
+
+    /**
+     * Whether the constant the class holds under $constant_name is the one of a trait it uses before $trait_storage
+     * (also when it was taken in an earlier run, which a later trait can't have left there for an earlier one)
+     *
+     * @psalm-capabilities read-props
+     */
+    private function isConstantOfAnotherUsedTrait(
+        ClassLikeStorage $storage,
+        ClassLikeStorage $trait_storage,
+        string $constant_name,
+    ): bool {
+        $location = ($storage->constants[$constant_name] ?? null)?->location;
+
+        if ($location === null) {
+            return false;
+        }
+
+        $trait_name_lc = strtolower($trait_storage->name);
+
+        foreach ($storage->used_traits as $used_trait_lc => $_) {
+            try {
+                $used_trait_storage = $this->classlike_storage_provider->get(
+                    $this->classlikes->getUnAliasedName($used_trait_lc),
+                );
+            } catch (InvalidArgumentException) {
+                continue;
+            }
+
+            if (strtolower($used_trait_storage->name) === $trait_name_lc) {
+                return false;
+            }
+
+            $used_location = ($used_trait_storage->constants[$constant_name] ?? null)?->location;
+
+            if ($used_location !== null
+                && $used_location->file_path === $location->file_path
+                && $used_location->raw_file_start === $location->raw_file_start
+            ) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

@@ -9,10 +9,11 @@ use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Config;
 use Psalm\Context;
-use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Analyzer\TraitAnalyzer;
+use Psalm\Internal\Codebase\StringContext;
+use Psalm\Internal\Codebase\TaintStore;
+use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
@@ -55,10 +56,12 @@ use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function count;
+use function in_array;
 use function preg_match;
 use function reset;
 use function strlen;
 use function strpbrk;
+use function strtolower;
 
 /**
  * @internal
@@ -70,10 +73,11 @@ final class ConcatAnalyzer
     /**
      * The taints a value can't have once appended to $prefix, if $prefix is the start of a URL fixing its origin: a
      * network scheme or `//`, a host and the `/`, `?` or `#` ending it. What follows such a prefix can only change the
-     * path, the query or the fragment of the URL, never the server it is sent to (`ssrf` taint). With a network scheme
-     * it can't make the URL a local file either (`file` taint), unlike with no scheme. After any other scheme, a
-     * stream wrapper (`php://filter/resource=`, `compress.zlib://https://`...), it can still be the URL of any server.
-     * In the query or the fragment, it can't be a `..` segment of the path either (`url_path` taint).
+     * path, the query or the fragment of the URL, never the server it is sent to (`ssrf` taint) or redirects the
+     * client to (`redirect` taint). With a network scheme it can't make the URL a local file either (`file` taint),
+     * unlike with no scheme. After any other scheme, a stream wrapper (`php://filter/resource=`,
+     * `compress.zlib://https://`...), it can still be the URL of any server. In the query or the fragment, it can't be
+     * a `..` segment of the path either (`url_path` taint).
      *
      * A path from the root (`/` followed by anything but another `/` or a backslash) is resolved against the server of
      * the base URL it is sent with, or is a local file: what follows it can't choose a server either.
@@ -83,21 +87,89 @@ final class ConcatAnalyzer
     public static function getTaintsRemovedAfterUrlOrigin(string $prefix): int
     {
         if (preg_match('~^/[^/\\\\]~', $prefix) === 1) {
-            return TaintKind::INPUT_SSRF;
-        }
-
-        if (preg_match('~^(?:(https?|ftps?):)?//[^/?#]+([/?#].*)~is', $prefix, $matches) !== 1) {
+            $removed_taints = TaintKind::INPUT_SSRF | TaintKind::INPUT_REDIRECT;
+            $after_origin = $prefix;
+        } elseif (preg_match('~^(?:(https?|ftps?):)?//[^/?#]+([/?#].*)~is', $prefix, $matches) === 1) {
+            $removed_taints = ($matches[1] ?? '') === ''
+                ? TaintKind::INPUT_SSRF | TaintKind::INPUT_REDIRECT
+                : TaintKind::INPUT_SSRF | TaintKind::INPUT_REDIRECT | TaintKind::INPUT_FILE;
+            // from the `/`, `?` or `#` ending the host
+            $after_origin = $matches[2] ?? '';
+        } else {
             return 0;
         }
 
-        $removed_taints = ($matches[1] ?? '') === ''
-            ? TaintKind::INPUT_SSRF
-            : TaintKind::INPUT_SSRF | TaintKind::INPUT_FILE;
-
-        // from the `/`, `?` or `#` ending the host
-        return strpbrk($matches[2] ?? '', '?#') === false
+        return strpbrk($after_origin, '?#') === false
             ? $removed_taints
             : $removed_taints | TaintKind::INPUT_URL_PATH;
+    }
+
+    /**
+     * Whether the left operand of the concatenation is a value in a string literal: a literal leaving a string
+     * literal open (`"[@id='" . $id`, not `"[@a='x'" . $id`), followed by a value that isn't built here from other
+     * parts, which could hold quotes of their own, and doesn't start with one. A string the concatenation is put after
+     * is assumed to leave no literal open, and a value a quote of the code is in the middle of isn't told apart.
+     */
+    public static function isQuotedOperand(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\BinaryOp\Concat $stmt,
+    ): bool {
+        $left = $stmt->left;
+
+        if (!$left instanceof PhpParser\Node\Expr\BinaryOp\Concat
+            || $left->right instanceof PhpParser\Node\Expr\BinaryOp\Concat
+            || $left->right instanceof PhpParser\Node\Scalar\InterpolatedString
+            || ($left->right instanceof PhpParser\Node\Expr\FuncCall
+                && $left->right->name instanceof PhpParser\Node\Name
+                && in_array(
+                    strtolower($left->right->name->toString()),
+                    ['sprintf', 'vsprintf', 'implode', 'join', 'str_replace', 'strtr', 'substr_replace'],
+                    true,
+                ))
+        ) {
+            return false;
+        }
+
+        $opening_type = $statements_analyzer->node_data->getType($left->left);
+        $value_type = $statements_analyzer->node_data->getType($left->right);
+
+        if (!$opening_type || !$opening_type->allStringLiterals() || !$value_type || $value_type->allStringLiterals()) {
+            return false;
+        }
+
+        foreach (self::getLiteralValues($opening_type) as $opening) {
+            if (self::getOpenLiteralQuote($opening) === null) {
+                return false;
+            }
+        }
+
+        // a value starting with a quote of its own (`$value = "' or @b=" . $id`) ends the literal
+        $start = TaintStore::getKnownStart($statements_analyzer, $left->right);
+
+        return $start === null || strpbrk($start, '\'"') === false;
+    }
+
+    /**
+     * The quote of the string literal the text leaves open, if any
+     *
+     * @psalm-pure
+     */
+    private static function getOpenLiteralQuote(string $text): ?string
+    {
+        $quote = null;
+        $length = strlen($text);
+
+        for ($offset = 0; $offset < $length; $offset++) {
+            $character = $text[$offset];
+
+            if ($quote === null && ($character === '\'' || $character === '"')) {
+                $quote = $character;
+            } elseif ($character === $quote) {
+                $quote = null;
+            }
+        }
+
+        return $quote;
     }
 
     /**
@@ -152,6 +224,63 @@ final class ConcatAnalyzer
 
         /** @var non-empty-list<Atomic> $atomics */
         return new Union($atomics);
+    }
+
+    /**
+     * Adds the sinks of position $context (see StringContext) for a value with $parent_nodes at $location, a part of
+     * the string being built, which can't carry $removed_taints
+     *
+     * @param array<string, DataFlowNode> $parent_nodes
+     */
+    public static function addPositionSinks(
+        StatementsAnalyzer $statements_analyzer,
+        StringContext $context,
+        array $parent_nodes,
+        int $removed_taints,
+        CodeLocation $location,
+    ): void {
+        $sink_taints = $context->getSinkTaints() & ~$removed_taints;
+        $graph = $statements_analyzer->getTaintFlowGraphWithSuppressed();
+
+        if ($sink_taints === 0 || $graph === null || $parent_nodes === []) {
+            return;
+        }
+
+        $sink = DataFlowNode::getForTaint(
+            (($sink_taints & TaintKind::INPUT_URL_SCHEME) !== 0 ? 'URL' : 'unquoted value')
+                . ' of attribute ' . $context->getAttribute(),
+            $location,
+            $sink_taints,
+        );
+
+        $graph->addSink($sink);
+
+        foreach ($parent_nodes as $parent_node) {
+            $graph->addPath($parent_node, $sink, 'arg', 0, $removed_taints);
+        }
+    }
+
+    /**
+     * Adds the sinks of position $context for the value of $expr, already analyzed, a part of the string being built
+     */
+    public static function addPositionSinksForExpression(
+        StatementsAnalyzer $statements_analyzer,
+        StringContext $context,
+        PhpParser\Node\Expr $expr,
+    ): void {
+        $type = $statements_analyzer->node_data->getType($expr);
+
+        if ($type === null || $context->getSinkTaints() === 0) {
+            return;
+        }
+
+        self::addPositionSinks(
+            $statements_analyzer,
+            $context,
+            $type->parent_nodes,
+            $type->getTaintsToRemove($statements_analyzer->getCodebase()->getInputTaints()),
+            new CodeLocation($statements_analyzer, $expr),
+        );
     }
 
     /**
@@ -256,71 +385,38 @@ final class ConcatAnalyzer
             $result_type = Type::getString();
 
             if ($left_type->hasMixed() || $right_type->hasMixed()) {
-                if (!$context->collect_initializations
-                    && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
-                    && (!(($parent_source = $statements_analyzer->getSource())
-                            instanceof FunctionLikeAnalyzer)
-                        || !$parent_source->getSource() instanceof TraitAnalyzer)
-                ) {
-                    $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
+                $statements_analyzer->countMixed($context, true);
+
+                [$side, $operand, $operand_type] = $left_type->hasMixed()
+                    ? ['Left', $left, $left_type]
+                    : ['Right', $right, $right_type];
+
+                $arg_location = new CodeLocation($statements_analyzer->getSource(), $operand);
+                $origin_locations = [];
+
+                if ($statements_analyzer->variable_use_graph) {
+                    foreach ($operand_type->parent_nodes as $parent_node) {
+                        $origin_locations = [
+                            ...$origin_locations,
+                            ...$statements_analyzer->variable_use_graph->getOriginLocations($parent_node),
+                        ];
+                    }
                 }
 
-                if ($left_type->hasMixed()) {
-                    $arg_location = new CodeLocation($statements_analyzer->getSource(), $left);
+                $origin_location = count($origin_locations) === 1 ? reset($origin_locations) : null;
 
-                    $origin_locations = [];
-
-                    if ($statements_analyzer->variable_use_graph) {
-                        foreach ($left_type->parent_nodes as $parent_node) {
-                            $origin_locations = [
-                                ...$origin_locations,
-                                ...$statements_analyzer->variable_use_graph->getOriginLocations($parent_node),
-                            ];
-                        }
-                    }
-
-                    $origin_location = count($origin_locations) === 1 ? reset($origin_locations) : null;
-
-                    if ($origin_location && $origin_location->getHash() === $arg_location->getHash()) {
-                        $origin_location = null;
-                    }
-
-                    IssueBuffer::maybeAdd(
-                        new MixedOperand(
-                            'Left operand cannot be mixed',
-                            $arg_location,
-                            $origin_location,
-                        ),
-                        $statements_analyzer->getSuppressedIssues(),
-                    );
-                } else {
-                    $arg_location = new CodeLocation($statements_analyzer->getSource(), $right);
-                    $origin_locations = [];
-
-                    if ($statements_analyzer->variable_use_graph) {
-                        foreach ($right_type->parent_nodes as $parent_node) {
-                            $origin_locations = [
-                                ...$origin_locations,
-                                ...$statements_analyzer->variable_use_graph->getOriginLocations($parent_node),
-                            ];
-                        }
-                    }
-
-                    $origin_location = count($origin_locations) === 1 ? reset($origin_locations) : null;
-
-                    if ($origin_location && $origin_location->getHash() === $arg_location->getHash()) {
-                        $origin_location = null;
-                    }
-
-                    IssueBuffer::maybeAdd(
-                        new MixedOperand(
-                            'Right operand cannot be mixed',
-                            $arg_location,
-                            $origin_location,
-                        ),
-                        $statements_analyzer->getSuppressedIssues(),
-                    );
+                if ($origin_location && $origin_location->getHash() === $arg_location->getHash()) {
+                    $origin_location = null;
                 }
+
+                IssueBuffer::maybeAdd(
+                    new MixedOperand(
+                        $side . ' operand cannot be mixed',
+                        $arg_location,
+                        $origin_location,
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
 
                 $result_type = self::getResultTypeFromKnownOperand($left_type->hasMixed() ? $right_type : $left_type)
                     ?? $result_type;
@@ -328,14 +424,7 @@ final class ConcatAnalyzer
                 return;
             }
 
-            if (!$context->collect_initializations
-                && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
-                && (!(($parent_source = $statements_analyzer->getSource())
-                        instanceof FunctionLikeAnalyzer)
-                    || !$parent_source->getSource() instanceof TraitAnalyzer)
-            ) {
-                $codebase->analyzer->incrementNonMixedCount($statements_analyzer->getFilePath());
-            }
+            $statements_analyzer->countMixed($context, false);
 
             self::analyzeOperand($statements_analyzer, $left, $left_type, 'Left', $context);
             self::analyzeOperand($statements_analyzer, $right, $right_type, 'Right', $context);

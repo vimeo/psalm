@@ -34,7 +34,7 @@ of the flow:
   itself. Unless the function is specialized, they are shared by all its calls, so what one caller passes in comes out
   at every other caller.
 + *Specialized* nodes (`wrap#1 specialized in …`) belong to one call only. For a function that is
-  [specialized](avoiding_false_positives.md#specializing-taints-in-functions), or that Psalm infers to be pure, the
+  [specialized](index.md#specializing-functions), or that Psalm infers to be pure, the
   taints go from the arguments of a call to its result without leaving that call, which is why the flow above ends in
   `$x` and not in the other callers of `wrap()`.
 
@@ -117,12 +117,13 @@ stubs and vendor code. With `@psalm-taint-specialize`, each call returns what it
 any object the method is called on holds flows into what every call returns.
 
 The methods of the builtin containers and iterators (`ArrayObject`, `ArrayIterator`, `SplObjectStorage`, …) and of
-`Generator` return what their object holds without annotations: `getArrayCopy()` all of it, `offsetGet('key')` what
-is stored under `'key'`, `current()` an element, `key()` a key, and `Generator::getReturn()` what the generator
-returns. Plugins that follow calls themselves (such as the method calls of a template) get the path along which a
-method returns what its object holds with `Codebase::getReceiverTaintPath()`: `=`, `arrayvalue-fetch`,
-`arrayvalue-fetch-'key'` given the types of the arguments of a call with a literal key, `arraykey-fetch` or `return`,
-or null for a method returning none of it.
+`Generator` return what their object holds without annotations: `getArrayCopy()` all of it, `offsetGet('key')` what is
+stored under `'key'`, `current()` an element, `key()` a key, and `Generator::getReturn()` what the generator returns. A
+`foreach` over an `IteratorAggregate` gives the keys and values of the iterator its `getIterator()` returns, as a call
+of `getIterator()` would (with its sources and flows). Plugins that follow calls themselves (such as the method calls of
+a template) get the path along which a method returns what its object holds with `Codebase::getReceiverTaintPath()`:
+`=`, `arrayvalue-fetch`, `arrayvalue-fetch-'key'` given the types of the arguments of a call with a literal key,
+`arraykey-fetch` or `return`, or null for a method returning none of it.
 
 ### Callable result to return value hint
 
@@ -235,6 +236,136 @@ echo Cache::get('title_1');   // no issue
   `Codebase::getTaintStoreNames()` tells for an expression, for stores whose keys an annotation can't express (a
   table named in an SQL query).
 
+### Databases
+
+A value stored in the database comes back out of it: what a query stores in a column of a table taints what the
+queries selecting that column read, wherever they are. Psalm reads the SQL of the queries run with `PDO`, `mysqli`,
+`pgsql` and `SQLite3`:
+
+- an `INSERT`, `REPLACE` or `UPDATE` stores in each column the value of its placeholder, or the part of the SQL the
+  analysis doesn't know the text of (a variable concatenated into it);
+- a `SELECT` reads each column it names into the key of that name of the rows fetched. `SELECT *` reads each
+  column of the table under its name, and any of them by position, as the order of the columns isn't known.
+
+```php
+<?php // --taint-analysis
+function store(PDO $pdo): void {
+    $statement = $pdo->prepare('INSERT INTO comments (author, body) VALUES (?, ?)');
+    $statement->execute(['admin', $_GET['body'] ?? '']);
+}
+
+function show(PDO $pdo): void {
+    $row = $pdo->query('SELECT author, body FROM comments')->fetch();
+    echo (string) $row['body'];   // TaintedHtml
+    echo (string) $row['author']; // no issue
+    echo (string) $pdo->query('SELECT name FROM users')->fetchColumn(); // no issue
+
+    $row = $pdo->query('SELECT * FROM comments')->fetch();
+    echo (string) $row['body'];   // TaintedHtml
+    echo (string) $row['author']; // no issue
+    echo (string) $row[0];        // TaintedHtml
+}
+```
+
+Where the analysis can't tell the table or the column, the query stores in, or reads from, every column it can be:
+
+```php
+<?php // --taint-analysis
+function store(PDO $pdo): void {
+    $pdo->prepare('INSERT INTO comments (author, body) VALUES (?, ?)')->execute(['admin', $_GET['body'] ?? '']);
+}
+
+function show(PDO $pdo, string $table): void {
+    echo (string) $pdo->query("SELECT name FROM $table LIMIT 1")->fetchColumn(); // TaintedHtml
+    echo (string) $pdo->query("SELECT * FROM $table LIMIT 1")->fetch()['body'];  // TaintedHtml
+    echo (string) $pdo->query("SELECT * FROM $table LIMIT 1")->fetch()['name'];  // no issue
+}
+```
+
+- A query it can't parse, a table name that isn't a literal and `INSERT INTO t VALUES (...)` without the column
+  list read or write any column. A table name that isn't a literal can be any table.
+- A column a `UNION` of `SELECT *` gives can be any column of their tables.
+- The values given to a prepared statement it can't follow back to the query that prepared it (a statement passed
+  to another function) are stored in every column of every table.
+
+Psalm reads a part of the SQL it doesn't know the text of as a value when known SQL follows it, or when it is a number:
+
+```php
+<?php // --taint-analysis
+function store(PDO $pdo, int $id): void {
+    $bio = $pdo->quote($_GET['bio'] ?? '');
+    $pdo->exec("INSERT INTO users (bio) FORMAT JSONEachRow $bio");  // ClickHouse
+    $pdo->exec("ALTER TABLE users UPDATE bio = $bio WHERE id = 1"); // ClickHouse
+    $pdo->exec("UPDATE users SET bio = $bio WHERE id = 1");
+    $pdo->exec(sprintf('UPDATE users SET bio = %s WHERE id = %d', $bio, $id));
+    $pdo->exec("UPDATE users SET bio = $bio WHERE id = $id");
+    $sql = "UPDATE users SET bio = $bio";
+    $pdo->exec("$sql WHERE id = 1");
+}
+
+function show(PDO $pdo): void {
+    echo (string) $pdo->query('SELECT bio FROM users')->fetchColumn();  // TaintedHtml
+    echo (string) $pdo->query('SELECT name FROM users')->fetchColumn(); // no issue
+}
+```
+
+A statement that ends with such a part can't be parsed, because the part can go on with it (`'', name = '...'`,
+`ON DUPLICATE KEY UPDATE ...`, another statement). Neither can a statement with such a part in a comment:
+
+```php
+<?php // --taint-analysis
+function store(PDO $pdo): void {
+    $bio = $pdo->quote($_GET['bio'] ?? '');
+    $pdo->exec("UPDATE users SET bio = $bio");                           // can't be parsed
+    $pdo->exec(sprintf('UPDATE users SET bio = %s', $bio));              // can't be parsed
+    $pdo->exec("UPDATE users SET bio = 'none' /* $bio */ WHERE id = 1"); // can't be parsed
+    $sql = "UPDATE users SET bio = $bio";
+    $pdo->exec($sql);                                                    // can't be parsed
+}
+
+function show(PDO $pdo): void {
+    echo (string) $pdo->query('SELECT name FROM users')->fetchColumn(); // TaintedHtml
+}
+```
+
+#### Your own database layer
+
+Inside a method that runs the queries it is given, Psalm doesn't know their SQL, and what a method stores through code
+Psalm doesn't analyze is lost. [Annotations](annotations.md#database-annotations) describe the queries such methods
+run: Psalm then reads the SQL at each call, and ignores the queries in their bodies:
+
+```php
+<?php // --taint-analysis
+final class Db
+{
+    public function __construct(private PDO $pdo) {}
+
+    /**
+     * @psalm-database-query $sql $params rows
+     */
+    public function all(string $sql, array $params = []): array {
+        $statement = $this->pdo->prepare($sql);
+        $statement->execute($params);
+        return $statement->fetchAll();
+    }
+
+    /**
+     * @psalm-database-insert $table $data
+     */
+    public function insert(string $table, array $data): void {
+        // runs the query with a library Psalm doesn't analyze
+    }
+}
+
+function run(Db $db): void {
+    $db->insert('users', ['name' => 'admin', 'bio' => $_GET['bio'] ?? '']);
+    foreach ($db->all('SELECT name, bio FROM users') as $user) {
+        echo (string) $user['bio'];  // TaintedHtml
+        echo (string) $user['name']; // no issue
+    }
+}
+```
+
 ### Properties set and got by name
 
 ORM models and other property bags often set and get properties by name. These annotations tell Psalm which property
@@ -292,7 +423,7 @@ function show(Model $model): void {
   `foreach ($values as $name => $value) { $model->set($name, $value); }`, sets each property to what is under its
   name in `$values`, as `($values) -> $this->{key}` does, when `$name` and `$value` are still the key and the value of
   the loop.
-+ For a class with [`@psalm-taint-specialize`](avoiding_false_positives.md#specializing-taints-in-classes), properties
++ For a class with [`@psalm-taint-specialize`](index.md#specializing-classes), properties
   are tracked per object.
 
 ### Properties held in an array property
@@ -309,7 +440,9 @@ abstract class Model
     /** @var array<string, mixed> */
     protected array $properties = [];
 
-    abstract public function __get(string $name): mixed;
+    public function __get(string $name): mixed {
+        return $this->properties[$name] ?? null;
+    }
 }
 
 /**
@@ -429,6 +562,16 @@ Plugins can add flows that annotations can't express with these `Codebase` metho
   parameter at `$offset` and of the object it runs on, for a call the code doesn't show (e.g. a framework's). Given
   the location of the call, these are the nodes of that call if Psalm tells its calls apart (see
   `@psalm-taint-specialize`); the receiver node only exists then (null otherwise).
++ `addTaintValidation($source, $call, $value, $removed_taints, $kind)`: records that the call `$call` validates
+  `$value` (a local variable, or one cast to a string) against a pattern removing `$removed_taints`
+  (`getTaintsRemovedByPattern($pattern)`). Where a condition on its result tells the validation passed, the variable
+  can't carry those taints, as long as it holds the same value: `$validator->fails()` and `passes()` for a result of
+  kind `validator`, `count($violations) > 0`, `$violations->count() === 0`, ... for one of kind `violations`. Call it
+  from `afterExpressionAnalysis()`.
++ `addTaintedCall($function, $argument_nodes, $argument_types, $call_location, $source = null)`: wires a call of a
+  function or a method from the nodes and the types of its arguments, as Psalm wires a PHP call of it (sinks,
+  conditional sinks and escapes, flows, specialization), and returns the node of what it returns. See
+  [Wiring calls into the taint graph](../running_psalm/plugins/authoring_plugins.md#wiring-calls-into-the-taint-graph).
 + `tracksTaintFlow($source)`: false when taints aren't tracked there, e.g. when `TaintedInput` is suppressed. The
   methods above then add nothing.
 

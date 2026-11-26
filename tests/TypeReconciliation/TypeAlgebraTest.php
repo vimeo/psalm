@@ -96,6 +96,615 @@ final class TypeAlgebraTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'instanceofNarrowingATemplateOfTheClassGivesItsPropertyAMorePreciseType' => [
+                'code' => '<?php
+                    interface I {
+                        public static function foo(): array;
+                    }
+
+                    function h(ReflectionClass $c): array {
+                        echo $c->name;
+                        if ($c->isSubclassOf(I::class)) {
+                            return $c->name::foo();
+                        }
+                        return [];
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'instanceofNarrowingAUnionOfClassesReadsThePropertyOfTheClassKept' => [
+                'code' => '<?php
+                    final class IntValue {
+                        public function __construct(public int $value) {}
+                    }
+
+                    final class StringValue {
+                        public function __construct(public string $value) {}
+                    }
+
+                    function f(IntValue|StringValue $v): bool {
+                        $any = $v->value;
+                        if ($v instanceof StringValue) {
+                            return ctype_digit($v->value);
+                        }
+                        return $any > 0;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'instanceofNarrowingAnObjectKeepsWhatIsKnownOfItsProperties' => [
+                'code' => '<?php
+                    class A {
+                        public ?C $value = null;
+                    }
+
+                    final class B extends A {}
+
+                    final class C {
+                        public function yay(): string {
+                            return "yay";
+                        }
+                    }
+
+                    function t(A $v): void {
+                        if ($v->value) {
+                            if ($v instanceof B && "yay" === $v->value->yay()) {
+                                echo "yay";
+                            }
+                        }
+                    }',
+            ],
+            'instanceofInANestedIfKeepsWhatIsKnownOfAProperty' => [
+                'code' => '<?php
+                    class A {
+                        public ?C $value = null;
+                    }
+                    final class B extends A {}
+                    final class C {
+                        public function yay(): string {
+                            return "yay";
+                        }
+                    }
+
+                    function nested(A $v): string {
+                        if ($v->value) {
+                            if ($v instanceof B) {
+                                return $v->value->yay();
+                            }
+                        }
+                        return "";
+                    }',
+            ],
+            'instanceofAfterAnEarlyReturnKeepsWhatIsKnownOfAProperty' => [
+                'code' => '<?php
+                    class A {
+                        public ?C $value = null;
+                    }
+                    final class B extends A {}
+                    final class C {
+                        public function yay(): string {
+                            return "yay";
+                        }
+                    }
+
+                    function early(A $v): string {
+                        if (!$v->value) {
+                            return "";
+                        }
+                        if ($v instanceof B) {
+                            return $v->value->yay();
+                        }
+                        return "";
+                    }',
+            ],
+            'instanceofAfterAnAssignmentKeepsThePropertyType' => [
+                'code' => '<?php
+                    class A {
+                        public ?C $value = null;
+                    }
+                    final class B extends A {}
+                    final class C {
+                        public function yay(): string {
+                            return "yay";
+                        }
+                    }
+
+                    function assigned(A $v): string {
+                        $v->value = new C();
+                        if ($v instanceof B) {
+                            return $v->value->yay();
+                        }
+                        return "";
+                    }',
+            ],
+            'instanceofInAnElseifKeepsWhatIsKnownOfAProperty' => [
+                'code' => '<?php
+                    class A {
+                        public ?C $value = null;
+                    }
+                    final class B extends A {}
+                    final class D extends A {}
+                    final class C {
+                        public function yay(): string {
+                            return "yay";
+                        }
+                    }
+
+                    function chain(A $v): string {
+                        if (!$v->value) {
+                            return "";
+                        }
+                        if ($v instanceof D) {
+                            return "d";
+                        } elseif ($v instanceof B) {
+                            return $v->value->yay();
+                        }
+                        return "";
+                    }',
+            ],
+            'negatedInstanceofInAnElseKeepsWhatIsKnownOfAProperty' => [
+                'code' => '<?php
+                    class A {
+                        public ?C $value = null;
+                    }
+                    final class B extends A {}
+                    final class C {
+                        public function yay(): string {
+                            return "yay";
+                        }
+                    }
+
+                    function otherwise(A $v): string {
+                        if (!$v->value) {
+                            return "";
+                        }
+                        if (!$v instanceof B) {
+                            return "";
+                        } else {
+                            return $v->value->yay();
+                        }
+                    }',
+            ],
+            'instanceofReadsThePropertyASubclassRedeclares' => [
+                'code' => '<?php
+                    final class C {
+                        public function yay(): string {
+                            return "yay";
+                        }
+                    }
+                    class A {
+                        /** @var object */
+                        public $value;
+                        public function __construct() {
+                            $this->value = new C();
+                        }
+                    }
+                    final class B extends A {
+                        /** @var C */
+                        public $value;
+                    }
+
+                    function redeclared(A $v): string {
+                        $before = $v->value;
+                        if ($v instanceof B) {
+                            return $v->value->yay();
+                        }
+                        return $before::class;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['NonInvariantDocblockPropertyType'],
+            ],
+            'instanceofForgetsTheResultOfAMethodASubclassMayOverride' => [
+                'code' => '<?php
+                    class A {
+                        /** @psalm-mutation-free */
+                        public function value(): ?string {
+                            return null;
+                        }
+                    }
+                    final class B extends A {
+                        /** @psalm-mutation-free */
+                        public function value(): string {
+                            return "b";
+                        }
+                    }
+
+                    function method(A $v): string {
+                        if ($v->value() === null && $v instanceof B) {
+                            return $v->value();
+                        }
+                        return "";
+                    }',
+            ],
+            'falsyStoredConditionThatReadsTheVariableItselfDoesNotNarrow' => [
+                'code' => '<?php
+                    final class Node {}
+
+                    function selfRef(?Node $x, bool $ok): void {
+                        $ok = $x !== null && $ok;
+                        if (!$ok) {
+                            if ($x !== null) {
+                                echo "reachable";
+                            }
+                        }
+                    }',
+            ],
+            'falsyStoredConditionNarrowsToItsNegation' => [
+                'code' => '<?php
+                    final class Node {}
+                    final class Leaf {}
+
+                    function takesNode(Node $n): void {}
+                    function takesLeaf(Leaf $l): void {}
+
+                    function earlyReturn(?Node $initial): void {
+                        $missing = $initial === null;
+                        if ($missing) {
+                            return;
+                        }
+                        takesNode($initial);
+                    }
+
+                    function negatedFlag(?Node $initial): void {
+                        $missing = $initial === null;
+                        if (!$missing) {
+                            takesNode($initial);
+                        }
+                    }
+
+                    function elseOfAnInstanceofFlag(Node|Leaf $n): void {
+                        $is_node = $n instanceof Node;
+                        if ($is_node) {
+                            takesNode($n);
+                        } else {
+                            takesLeaf($n);
+                        }
+                    }
+
+                    function orFlag(?Node $a, ?Node $b): void {
+                        $either = $a === null || $b === null;
+                        if ($either) {
+                            return;
+                        }
+                        takesNode($a);
+                        takesNode($b);
+                    }
+
+                    function andFlag(?Node $a, ?Node $b): void {
+                        $both = $a !== null && $b !== null;
+                        if (!$both) {
+                            /** @psalm-check-type-exact $a = Node|null */;
+                            return;
+                        }
+                        takesNode($a);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'stringCheckedInTheRightOperandOfAnOrKeepsTheTypeOfANullCoalescedOffset' => [
+                'code' => '<?php
+                    final class VO {
+                        public function __construct(
+                            private readonly string|null $value
+                        ) {
+                        }
+                    }
+
+                    /** @var array{key?: mixed} */
+                    $array = [];
+
+                    $value = $array[\'key\'] ?? null;
+
+                    if (
+                        ($value !== null && ! is_string($value))
+                        ||
+                        (is_string($value) && empty($value))
+                    ) {
+                        throw new \\Exception();
+                    }
+
+                    new VO($value);',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment', 'RiskyTruthyFalsyComparison'],
+                'php_version' => '8.1',
+            ],
+            'isArrayAndNotListThatDoesNotHoldKeepsTheOtherTypesOfTheUnion' => [
+                'code' => '<?php
+                    function test(array|int $value): void {
+                        if (is_array($value) && !array_is_list($value)) {
+                            return;
+                        }
+
+                        if (is_array($value)) {
+                            echo "array";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'notIdenticalKeepsNullOfBothOperandsWhereTheyDiffer' => [
+                'code' => '<?php
+                    function f(int|null $a, string|null $b): void {
+                        if ($a !== $b) {
+                            /** @psalm-check-type-exact $a = int|null */
+                            /** @psalm-check-type-exact $b = null|string */
+                        } else {
+                            /** @psalm-check-type-exact $a = int|null */
+                            /** @psalm-check-type-exact $b = null|string */
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'notIdenticalKeepsFalseOfBothOperandsWhereTheyDiffer' => [
+                'code' => '<?php
+                    function f(array|false $a, string|false $b): void {
+                        if ($a !== $b) {
+                            /** @psalm-check-type-exact $a = array<array-key, mixed>|false */
+                            /** @psalm-check-type-exact $b = false|string */
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'notIdenticalKeepsNullOfAScalarWhereTheyDiffer' => [
+                'code' => '<?php
+                    /**
+                     * @param \'int\'|\'string\' $scalar
+                     * @param \'int\'|\'string\'|null $other
+                     */
+                    function f($scalar, $other): void {
+                        if ($scalar !== $other) {
+                            /** @psalm-check-type-exact $other = \'int\'|\'string\'|null */
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'assertionOfADocblockNotIdenticalIsNotNegated' => [
+                'code' => '<?php
+                    /** @psalm-assert-if-true !=string $x */
+                    function notStr(mixed $x): bool {
+                        return !is_string($x);
+                    }
+
+                    function g(int|string|null $x): void {
+                        if (!notStr($x)) {
+                            /** @psalm-check-type-exact $x = int|null|string */
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'notIdenticalToAnArrayKeepsTheNonArrayOfTheOtherOperand' => [
+                'code' => '<?php
+                    /** @param bool|list<string> $skip */
+                    function k($skip): void {
+                        if (is_array($skip) && [\'*\'] !== $skip) {
+                        } else {
+                            /** @psalm-check-type-exact $skip = bool|list{\'*\'} */
+                        }
+
+                        if (!is_array($skip) || [\'*\'] === $skip) {
+                            /** @psalm-check-type-exact $skip = bool|list{\'*\'} */
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'notIdenticalToAListAfterArrayIsListKeepsTheArrayInTheElse' => [
+                'code' => '<?php
+                    /** @return array<string> */
+                    function g(): array {
+                        return [];
+                    }
+
+                    $x = g();
+
+                    if (array_is_list($x) && [\'*\'] !== $x) {
+                        $r = 0;
+                    } else {
+                        $r = $x;
+                    }',
+                'assertions' => [
+                    '$r===' => '0|array<array-key, string>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'notIdenticalToAListAfterIsArrayAndArrayIsListKeepsTheArrayAfterTheExit' => [
+                'code' => '<?php
+                    /** @return array<string>|false */
+                    function g() {
+                        return false;
+                    }
+
+                    $x = g();
+
+                    if (is_array($x) && array_is_list($x) && [\'*\'] !== $x) {
+                        exit;
+                    }
+
+                    $r = $x;',
+                'assertions' => [
+                    '$r===' => 'array<array-key, string>|false',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'notIdenticalKeepsTheArrayKeyOfAVariableComparedWithANullableString' => [
+                'code' => '<?php
+                    /** @param array-key $dir */
+                    function t($dir, ?string $skip): void {
+                        if ($dir !== $skip) {
+                            /** @psalm-check-type-exact $dir = array-key */
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'notIdenticalOfTwoPartiallyOverlappingUnionsKeepsBothUnions' => [
+                'code' => '<?php
+                    function h(int|string $a, string|bool $b): string {
+                        if ($a !== $b) {
+                            return "";
+                        }
+
+                        /** @psalm-check-type-exact $a = int|string */
+                        /** @psalm-check-type-exact $b = bool|string */
+                        return (string) $a;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'notIdenticalOfAnOrChainGivesTheOperandsTheTypeOfTheComparedValues' => [
+                'code' => '<?php
+                    /** @param array<string, mixed> $metadata */
+                    function check(array $metadata, string $command): string {
+                        $version = $metadata["version"] ?? null;
+                        $metadataCommand = $metadata["command"] ?? null;
+                        $reason = $metadata["reason"] ?? null;
+
+                        if ($version !== 1 || $metadataCommand !== $command || $reason !== "OK") {
+                            throw new Exception("unexpected");
+                        }
+
+                        /** @psalm-check-type-exact $version = 1 */
+                        /** @psalm-check-type-exact $metadataCommand = string */
+                        /** @psalm-check-type-exact $reason = "OK" */
+                        return $metadataCommand;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment'],
+                'php_version' => '8.1',
+            ],
+            'notIdenticalOfAFalsableValueKeepsTheNarrowingToFalse' => [
+                'code' => '<?php
+                    function eqFalse(string|false|null $a): string {
+                        if ($a === false) {
+                            /** @psalm-check-type-exact $a = false */
+                            return "no";
+                        }
+
+                        /** @psalm-check-type-exact $a = string|null */
+                        return (string) $a;
+                    }
+
+                    function sameFalsable(string|false $a, string|false $b): string {
+                        if ($a !== $b) {
+                            return "different";
+                        }
+
+                        /** @psalm-check-type-exact $a = false|string */
+                        return "same";
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'notIdenticalKeepsTheIgnoredFalseOfTheNarrowedVariable' => [
+                'code' => '<?php
+                    /** @psalm-ignore-falsable-return */
+                    function path(string $p): string|false {
+                        return $p === "" ? false : $p;
+                    }
+
+                    /** @return non-empty-string|false */
+                    function other(string $p) {
+                        return $p === "" ? false : $p;
+                    }
+
+                    function takesString(string $s): void {
+                        echo $s;
+                    }
+
+                    function f(): void {
+                        $file = path("a");
+
+                        if (other("b") !== $file) {
+                            return;
+                        }
+
+                        takesString($file);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'notIdenticalToAStringVariableThenExitingGivesTheString' => [
+                'code' => '<?php
+                    /** @param mixed $b */
+                    function f(string $a, $b): string {
+                        if ($b !== $a) {
+                            throw new Exception("not equal");
+                        }
+
+                        /** @psalm-check-type-exact $b = string */
+
+                        return $b;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'notIdenticalWithTheTypedVariableOnTheLeftGivesTheString' => [
+                'code' => '<?php
+                    /** @param mixed $b */
+                    function f(string $a, $b): string {
+                        if ($a !== $b) {
+                            throw new Exception("not equal");
+                        }
+
+                        /** @psalm-check-type-exact $b = string */
+
+                        return $b;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'notIdenticalOfTwoUnionsKeepsTheUnion' => [
+                'code' => '<?php
+                    function f(int|string $a, int|string $b): int|string {
+                        if ($a !== $b) {
+                            return 0;
+                        }
+
+                        /** @psalm-check-type-exact $a = int|string */
+                        /** @psalm-check-type-exact $b = int|string */
+
+                        return $b;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'notIdenticalElseBranchOfAnUnrelatedPairIsUnchanged' => [
+                'code' => '<?php
+                    function f(string $a, string $b): string {
+                        if ($a !== $b) {
+                            return $a;
+                        }
+
+                        /** @psalm-check-type-exact $b = string */
+
+                        return $b;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
             'aTernaryBranchKnowsTheOrOfItsCondition' => [
                 'code' => '<?php
                     final class A {
@@ -294,6 +903,61 @@ final class TypeAlgebraTest extends TestCase
                             /** @psalm-check-type-exact $b = int|null */
                             echo "in";
                         }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'matchingAnotherPatternThatRemovesTheSameTaintsIsADifferentCondition' => [
+                'code' => '<?php
+                    function f(string $value): int {
+                        if ("transparent" === $value) {
+                            return 0;
+                        }
+                        if (preg_match("/^light-dark\\((.+)\\)$/s", $value)) {
+                            return 1;
+                        }
+                        if (preg_match("/^color-mix\\((.+)\\)$/s", $value)) {
+                            return 2;
+                        }
+
+                        return 3;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'matchingTwoPatternsThatRemoveTheSameTaintsIsNotRedundant' => [
+                'code' => '<?php
+                    function f(string $v): int {
+                        if (preg_match(\'/^a\((.+)\)$/s\', $v) && preg_match(\'/^b\((.+)\)$/s\', $v)) {
+                            return 1;
+                        }
+                        return 0;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'notMatchingTwoPatternsThatRemoveTheSameTaintsIsNotRedundant' => [
+                'code' => '<?php
+                    function f(string $v): int {
+                        if (!preg_match(\'/^a\((.+)\)$/s\', $v) && !preg_match(\'/^b\((.+)\)$/s\', $v)) {
+                            return 1;
+                        }
+                        return 0;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'startingWithTwoPrefixesThatFixTheUrlSchemeIsNotRedundant' => [
+                'code' => '<?php
+                    function f(string $u): int {
+                        if (str_starts_with($u, "https://") && str_starts_with($u, "https://example.com/")) {
+                            return 1;
+                        }
+                        return 0;
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],
@@ -814,6 +1478,18 @@ final class TypeAlgebraTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.0',
+            ],
+            'aConditionReassigningAVariableComparedLooselyToZeroIsNoParadox' => [
+                'code' => '<?php
+                    function f(string $n): int {
+                        if (($h = fopen($n, "wb")) == 0) {
+                            return 1;
+                        }
+                        if (($h = fopen($n, "rb")) == 0) {
+                            return 2;
+                        }
+                        return 0;
+                    }',
             ],
             'anIfConditionAssigningAnAndKeepsTheNarrowingOfItsOperands' => [
                 'code' => '<?php
@@ -2551,10 +3227,25 @@ final class TypeAlgebraTest extends TestCase
                     }',
                 'assertions' => [],
             ],
-            'orOfAValueAnEarlierConditionExcludedAndAnotherIsNotParadoxical' => [
+            'inArrayOfLiteralsWithAValueAnEarlierConditionExcludedIsNotParadoxical' => [
                 'code' => '<?php
                     function test(string $value): int {
                         if ($value === "a") {
+                            return 1;
+                        }
+
+                        if (in_array($value, ["a", "b"], true)) {
+                            return 2;
+                        }
+
+                        return 3;
+                    }',
+                'assertions' => [],
+            ],
+            'orOfValuesOfOneVariableNoneExcludedIsNotParadoxical' => [
+                'code' => '<?php
+                    function test(string $value): int {
+                        if ($value === "c") {
                             return 1;
                         }
 
@@ -4052,6 +4743,202 @@ final class TypeAlgebraTest extends TestCase
                     '$var===' => "''|'x'",
                 ],
             ],
+            'arrayIsReplacedWhenTheConditionOnAnOffsetAlwaysHolds' => [
+                'code' => '<?php
+                    $dummy = ["test" => ""];
+
+                    $a = ["test" => null];
+
+                    if ($a["test"] === null) {
+                        $a = $dummy;
+                    }
+                    $var = $a["test"];',
+                'assertions' => [
+                    '$a===' => "array{test: ''}",
+                    '$var===' => "''",
+                ],
+            ],
+            'offsetIsStillSetWhenTheConditionOnItAlwaysHolds' => [
+                'code' => '<?php
+                    /** @param array{test: null} $a */
+                    function f(array $a): void {
+                        if ($a["test"] === null) {
+                            echo "x";
+                        }
+                        /** @psalm-check-type-exact $a = array{test: null} */
+                    }',
+            ],
+            'offsetIsStillSetWhenTheConditionOnItNeverHolds' => [
+                'code' => '<?php
+                    /** @param array{test: int} $a */
+                    function f(array $a): void {
+                        if (is_string($a["test"])) {
+                            echo "x";
+                        }
+                        /** @psalm-check-type-exact $a = array{test: int} */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['DocblockTypeContradiction'],
+            ],
+            'offsetIsWrittenWhenTheConditionOnItAlwaysHolds' => [
+                'code' => '<?php
+                    /** @param array{test: null} $a */
+                    function f(array $a): void {
+                        if ($a["test"] === null) {
+                            $a["test"] = "";
+                        }
+                        /** @psalm-check-type-exact $a = array{test: \'\'} */
+                    }',
+            ],
+            'nestedArrayIsReplacedWhenTheConditionOnItsOffsetAlwaysHolds' => [
+                'code' => '<?php
+                    /** @param array{x: array{test: null}, y: int} $a */
+                    function f(array $a): void {
+                        if ($a["x"]["test"] === null) {
+                            $a = ["x" => ["test" => ""], "y" => 1];
+                        }
+                        /** @psalm-check-type-exact $a = array{x: array{test: \'\'}, y: 1} */
+                    }',
+            ],
+            'listIsReplacedWhenTheConditionOnAnOffsetAlwaysHolds' => [
+                'code' => '<?php
+                    /** @param list{null, int} $a */
+                    function f(array $a): void {
+                        if ($a[0] === null) {
+                            $a = [1, 2];
+                        }
+                        /** @psalm-check-type-exact $a = list{1, 2} */
+                    }',
+            ],
+            'unsealedArrayIsReplacedWhenTheConditionOnAnOffsetAlwaysHolds' => [
+                'code' => '<?php
+                    /** @param array{test: null, ...<string, int>} $a */
+                    function f(array $a): void {
+                        if ($a["test"] === null) {
+                            $a = ["test" => ""];
+                        }
+                        /** @psalm-check-type-exact $a = array{test: \'\'} */
+                    }',
+            ],
+            'optionalOffsetIsKeptWhenTheConditionOnItNeverHolds' => [
+                'code' => '<?php
+                    /** @param array{test?: int, other: int} $a */
+                    function f(array $a): void {
+                        if (isset($a["test"]) && is_string($a["test"])) {
+                            return;
+                        }
+                        /** @psalm-check-type-exact $a = array{other: int, test?: int} */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['DocblockTypeContradiction'],
+            ],
+            'otherTypesOfAUnionAreKeptWhenTheArrayCannotBeTheValue' => [
+                'code' => '<?php
+                    /** @param array{test: null}|string $a */
+                    function f($a): void {
+                        if (is_array($a) && $a["test"] !== null) {
+                            /** @psalm-check-type-exact $a = never */
+                            return;
+                        }
+                        /** @psalm-check-type-exact $a = array{test: null}|string */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['DocblockTypeContradiction'],
+            ],
+            'coalescedOffsetOfAnArrayThatCannotBeIsTheDefault' => [
+                'code' => '<?php
+                    /** @param array{t: null} $a */
+                    function f(array $a): void {
+                        if ($a["t"] !== null) {
+                            $q = $a["o"] ?? "d";
+                            /** @psalm-check-type-exact $q = "d" */
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['DocblockTypeContradiction'],
+            ],
+            'coalescedOffsetOfAVariableThatCannotBeIsTheDefault' => [
+                'code' => '<?php
+                    function f(): void {
+                        $a = null;
+
+                        if ($a !== null) {
+                            $q = $a["o"] ?? "d";
+                            /** @psalm-check-type-exact $q = "d" */
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['TypeDoesNotContainType'],
+            ],
+            'emptyOffsetOfAnArrayThatCannotBeIsNotRedundant' => [
+                'code' => '<?php
+                    /** @param array{t: null} $a */
+                    function f(array $a): void {
+                        if ($a["t"] !== null) {
+                            if (empty($a["o"])) {
+                                echo "x";
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['DocblockTypeContradiction'],
+            ],
+            'listIsKeptWhenAnOffsetIsWrittenWhereItCannotBe' => [
+                'code' => '<?php
+                    /** @param list{null, int} $a */
+                    function f(array $a): void {
+                        if ($a[0] !== null) {
+                            $a[2] = 1;
+                        }
+                        /** @psalm-check-type-exact $a = list{null, int} */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['DocblockTypeContradiction'],
+            ],
+            'arrayIsKeptWhenOffsetsAreWrittenWhereItCannotBe' => [
+                'code' => '<?php
+                    /** @param array{test: null} $a */
+                    function f(array $a): void {
+                        if ($a["test"] !== null) {
+                            $a["other"] = 1;
+                            $a["x"]["y"] = 2;
+                        }
+                        /** @psalm-check-type-exact $a = array{test: null} */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['DocblockTypeContradiction'],
+            ],
+            'variableIsKeptWhenAnOffsetIsWrittenWhereItCannotBe' => [
+                'code' => '<?php
+                    /** @param array{x: int} $a */
+                    function f(array $a): void {
+                        if (!is_array($a)) {
+                            $a["y"] = 1;
+                        }
+                        /** @psalm-check-type-exact $a = array{x: int} */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['TypeDoesNotContainType'],
+            ],
+            'propertyNotInitializedYetIsInitializedByAnOffsetWrite' => [
+                'code' => '<?php
+                    final class A {
+                        /** @var array<string, int> */
+                        private array $cache;
+
+                        /** @return array<string, int> */
+                        public function get(): array {
+                            if (!isset($this->cache)) {
+                                $this->cache["a"] = 1;
+                                /** @psalm-check-type-exact $this->cache = array{a: 1} */
+                            }
+
+                            return $this->cache;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingConstructor', 'RedundantPropertyInitializationCheck'],
+            ],
             'offsetKnownFromTheConditionIsKeptWhenTheArrayIsNotReassigned' => [
                 'code' => '<?php
                     $a = ["test" => rand(0, 1) ? null : "x"];
@@ -4592,50 +5479,6 @@ final class TypeAlgebraTest extends TestCase
                         return (int) $y;
                     }',
             ],
-            'nullCheckStoredInVariableIsKeptWhenAClosureCapturingItByValueIsSpreadFromAnArray' => [
-                'code' => '<?php
-                    function run(callable ...$cs): void {
-                        foreach ($cs as $c) {
-                            $c();
-                        }
-                    }
-
-                    function f(?string $x): int {
-                        $f = function () use ($x): void {
-                            echo (string) $x;
-                        };
-                        $notNull = $x !== null;
-                        run(...[$f]);
-
-                        if ($notNull) {
-                            return strlen($x);
-                        }
-
-                        return 0;
-                    }',
-            ],
-            'nullCheckStoredInVariableIsKeptWhenAClosureCapturingAnotherVariableByReferenceIsSpreadFromAnArray' => [
-                'code' => '<?php
-                    function run(callable ...$cs): void {
-                        foreach ($cs as $c) {
-                            $c();
-                        }
-                    }
-
-                    function f(?string $x, ?string $y): int {
-                        $f = function () use (&$y): void {
-                            $y = null;
-                        };
-                        $notNull = $x !== null;
-                        run(...[$f]);
-
-                        if ($notNull) {
-                            return strlen($x);
-                        }
-
-                        return (int) $y;
-                    }',
-            ],
             'nullCheckStoredInVariableIsKeptWhenAClosureCapturingItByReferenceIsNotPassed' => [
                 'code' => '<?php
                     function run(callable $c): void {
@@ -4868,6 +5711,94 @@ final class TypeAlgebraTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'propertyNotInitializedYetIsCheckedWhenAnOffsetWriteInitializesIt' => [
+                'code' => '<?php
+                    interface EntityType {}
+                    interface ContentEntityType extends EntityType {}
+
+                    final class A {
+                        /** @var ContentEntityType[] */
+                        private $moderated = [];
+
+                        /** @param array<string, EntityType> $definitions */
+                        public function f(array $definitions): void {
+                            if (!isset($this->moderated)) {
+                                foreach ($definitions as $id => $definition) {
+                                    $this->moderated[$id] = $definition;
+                                }
+                            }
+                        }
+                    }',
+                'error_message' => 'PropertyTypeCoercion',
+                'error_levels' => ['DocblockTypeContradiction', 'RedundantPropertyInitializationCheck'],
+            ],
+            'offsetOfAnArrayThatCannotBeIsNever' => [
+                'code' => '<?php
+                    /** @param array{test: null, other: int} $a */
+                    function f(array $a): void {
+                        if ($a["test"] !== null) {
+                            $b = $a["other"];
+                            echo $b;
+                        }
+                    }',
+                'error_message' => 'NoValue',
+                'error_levels' => ['DocblockTypeContradiction'],
+            ],
+            'offsetOfAVariableThatCannotBeIsNever' => [
+                'code' => '<?php
+                    function f(): void {
+                        $a = null;
+
+                        if ($a !== null) {
+                            $b = $a["x"];
+                            echo $b;
+                        }
+                    }',
+                'error_message' => 'NoValue',
+                'error_levels' => ['TypeDoesNotContainType'],
+            ],
+            'contradictionAfterAnIfThatConditionallyDefinesAVariable' => [
+                'code' => '<?php
+                    function a(array $l): bool {
+                        if (is_array($l) && isset($l["a"])) {
+                            $after = $l["a"];
+                        }
+
+                        if (!is_array($l)) {
+                            return false;
+                        }
+
+                        return true;
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+                'error_levels' => ['RedundantCondition', 'MixedAssignment'],
+            ],
+            'contradictionAfterAnIfThatLeavesWhenItsConditionHolds' => [
+                'code' => '<?php
+                    function a(array $l, bool $b): bool {
+                        if (is_array($l) && $b) {
+                            return true;
+                        }
+
+                        if (!is_array($l)) {
+                            return false;
+                        }
+
+                        return true;
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+                'error_levels' => ['RedundantCondition'],
+            ],
+            'contradictionInAnElseIfAfterAnIfOnTheSameVariable' => [
+                'code' => '<?php
+                    function a(array $l, bool $b): void {
+                        if (is_array($l) && $b) {
+                        } elseif (!is_array($l)) {
+                        }
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+                'error_levels' => ['RedundantCondition'],
+            ],
             'aTernaryConditionReassigningAVariableDropsTheEarlierClausesOfIt' => [
                 'code' => '<?php
                     function g(): ?int {
@@ -5319,176 +6250,6 @@ final class TypeAlgebraTest extends TestCase
                     }',
                 'error_message' => 'PossiblyNullArgument',
             ],
-            'nullCheckStoredInVariableIsForgottenWhenAClosureCapturingItByReferenceIsSpreadFromAnArrayLiteral' => [
-                'code' => '<?php
-                    function run(callable ...$cs): void {
-                        foreach ($cs as $c) {
-                            $c();
-                        }
-                    }
-
-                    function f(?string $x): int {
-                        $f = function () use (&$x): void {
-                            $x = null;
-                        };
-                        $notNull = $x !== null;
-                        run(...[$f]);
-
-                        if ($notNull) {
-                            return strlen($x);
-                        }
-
-                        return 0;
-                    }',
-                'error_message' => 'PossiblyNullArgument',
-            ],
-            'nullCheckStoredInVariableIsForgottenWhenAClosureCapturingItByReferenceIsSpreadFromAVariable' => [
-                'code' => '<?php
-                    function run(callable ...$cs): void {
-                        foreach ($cs as $c) {
-                            $c();
-                        }
-                    }
-
-                    function f(?string $x): int {
-                        $f = function () use (&$x): void {
-                            $x = null;
-                        };
-                        $notNull = $x !== null;
-                        $arr = [$f];
-                        run(...$arr);
-
-                        if ($notNull) {
-                            return strlen($x);
-                        }
-
-                        return 0;
-                    }',
-                'error_message' => 'PossiblyNullArgument',
-            ],
-            'nullCheckStoredInVariableIsForgottenWhenAClosureCapturingItByReferenceIsPassedInAList' => [
-                'code' => '<?php
-                    /** @param list<callable> $cs */
-                    function runAll(array $cs): void {
-                        foreach ($cs as $c) {
-                            $c();
-                        }
-                    }
-
-                    function f(?string $x): int {
-                        $f = function () use (&$x): void {
-                            $x = null;
-                        };
-                        $notNull = $x !== null;
-                        runAll([$f]);
-
-                        if ($notNull) {
-                            return strlen($x);
-                        }
-
-                        return 0;
-                    }',
-                'error_message' => 'PossiblyNullArgument',
-            ],
-            'nullCheckStoredInVariableIsForgottenWhenAClosureCapturingItByReferenceIsPassedInAShape' => [
-                'code' => '<?php
-                    /** @param array{cb: callable} $o */
-                    function runCb(array $o): void {
-                        $o["cb"]();
-                    }
-
-                    function f(?string $x): int {
-                        $o = ["cb" => function () use (&$x): void {
-                            $x = null;
-                        }];
-                        $notNull = $x !== null;
-                        runCb($o);
-
-                        if ($notNull) {
-                            return strlen($x);
-                        }
-
-                        return 0;
-                    }',
-                'error_message' => 'PossiblyNullArgument',
-            ],
-            'nullCheckStoredInVariableIsForgottenWhenAClosureCapturingItByReferenceIsPassedInAGenericObject' => [
-                'code' => '<?php
-                    /** @template-covariant T */
-                    final class Box {
-                        /** @param T $v */
-                        public function __construct(public readonly mixed $v) {}
-                    }
-
-                    /** @param Box<callable> $b */
-                    function runBox(Box $b): void {
-                        ($b->v)();
-                    }
-
-                    function f(?string $x): int {
-                        $f = function () use (&$x): void {
-                            $x = null;
-                        };
-                        $b = new Box($f);
-                        $notNull = $x !== null;
-                        runBox($b);
-
-                        if ($notNull) {
-                            return strlen($x);
-                        }
-
-                        return 0;
-                    }',
-                'error_message' => 'PossiblyNullArgument',
-                'error_levels' => [],
-                'php_version' => '8.1',
-            ],
-            'nullCheckStoredInVariableIsForgottenWhenAClosureReturningAClosureCapturingItByReferenceIsPassed' => [
-                'code' => '<?php
-                    function runReturned(callable $c): void {
-                        $c()();
-                    }
-
-                    function f(?string $x): int {
-                        $g = function () use (&$x): void {
-                            $x = null;
-                        };
-                        $f = fn() => $g;
-                        $notNull = $x !== null;
-                        runReturned($f);
-
-                        if ($notNull) {
-                            return strlen($x);
-                        }
-
-                        return 0;
-                    }',
-                'error_message' => 'PossiblyNullArgument',
-                'error_levels' => ['MissingClosureReturnType', 'MixedFunctionCall'],
-            ],
-            'nullCheckAssignedWithACallGivenAnArrayOfAClosureCapturingItByReferenceIsForgotten' => [
-                'code' => '<?php
-                    function run(callable ...$cs): bool {
-                        foreach ($cs as $c) {
-                            $c();
-                        }
-                        return true;
-                    }
-
-                    function f(?string $x): int {
-                        $f = function () use (&$x): void {
-                            $x = null;
-                        };
-                        $r = $x !== null && run(...[$f]);
-
-                        if ($r) {
-                            return strlen($x);
-                        }
-
-                        return 0;
-                    }',
-                'error_message' => 'PossiblyNullArgument',
-            ],
             'nullCheckAssignedWithACallOfAClosureCapturingItByReferenceIsForgotten' => [
                 'code' => '<?php
                     function f(?string $x): int {
@@ -5756,7 +6517,7 @@ final class TypeAlgebraTest extends TestCase
                         }
                     }
                     PHP,
-                'error_message' => 'PossiblyNullReference',
+                'error_message' => 'NullReference - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:18',
                 'error_levels' => [],
                 'php_version' => '8.1',
             ],
@@ -5834,6 +6595,79 @@ final class TypeAlgebraTest extends TestCase
                         return 0;
                     }',
                 'error_message' => 'ParadoxicalCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:52',
+            ],
+            'deadOperandNextToAnotherValueOfTheSameVariableIsParadoxical' => [
+                'code' => '<?php
+                    function f(string $o): string {
+                        if ("term_id" === $o) {
+                            return "a";
+                        }
+
+                        if ("id" === $o || "term_id" === $o) {
+                            return "b";
+                        }
+
+                        return "c";
+                    }',
+                'error_message' => 'ParadoxicalCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:44',
+            ],
+            'deadLeftOperandNextToAnotherValueOfTheSameVariableIsParadoxical' => [
+                'code' => '<?php
+                    function f(string $o): string {
+                        if ($o === "a") {
+                            return "a";
+                        }
+
+                        if ($o === "a" || $o === "b") {
+                            return "b";
+                        }
+
+                        return "c";
+                    }',
+                'error_message' => 'ParadoxicalCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:29',
+            ],
+            'deadOperandOfTheSameVariableInAnElseIfIsParadoxical' => [
+                'code' => '<?php
+                    function f(string $o): string {
+                        if ($o === "a") {
+                            return "a";
+                        } elseif ($o === "b" || $o === "a") {
+                            return "b";
+                        }
+
+                        return "c";
+                    }',
+                'error_message' => 'ParadoxicalCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:49',
+            ],
+            'deadOperandOfAValueAnInArrayExcludedIsParadoxical' => [
+                'code' => '<?php
+                    function f(string $o): string {
+                        if (in_array($o, ["term_id", "slug"], true)) {
+                            return "a";
+                        }
+
+                        if ($o === "id" || $o === "term_id") {
+                            return "b";
+                        }
+
+                        return "c";
+                    }',
+                'error_message' => 'ParadoxicalCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:44',
+            ],
+            'deadOperandOfTheSameVariableInAChainOfOrsIsParadoxical' => [
+                'code' => '<?php
+                    function f(string $o): string {
+                        if ($o === "c") {
+                            return "a";
+                        }
+
+                        if ($o === "a" || $o === "c" || $o === "b") {
+                            return "b";
+                        }
+
+                        return "c";
+                    }',
+                'error_message' => 'ParadoxicalCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:43',
             ],
             'deadOperandNextToAnAssignmentOfAnotherVariableIsParadoxical' => [
                 'code' => '<?php
@@ -6871,6 +7705,18 @@ final class TypeAlgebraTest extends TestCase
                 'code' => '<?php
                     function f(?int $x): void {
                         if ($x) {
+                            if (!$x) {
+                                echo "never";
+                            }
+                        }
+                    }',
+                'error_message' => 'ParadoxicalCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:33',
+                'error_levels' => ['RiskyTruthyFalsyComparison'],
+            ],
+            'truthyNullableIntOnTheLeftOfAndContradictsItsNegationInTheIf' => [
+                'code' => '<?php
+                    function f(?int $x, ?int $y): void {
+                        if ($x && $y) {
                             if (!$x) {
                                 echo "never";
                             }

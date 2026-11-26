@@ -8,7 +8,7 @@ If this class is genuinely part of your public API — used from outside the ana
 See [`@api`](../../annotating_code/supported_annotations.md#api-psalm-api) for the full guidance; note that `@psalm-suppress` is not a substitute for `@api`, as it silences the report without marking the class as used.
 
 ```php
-<?php
+<?php // findUnusedCode="true"
 
 final class A {}
 final class B {}

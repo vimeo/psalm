@@ -258,7 +258,7 @@
             <xs:element name="CallableByReferenceMismatch" type="ArgumentIssueHandlerType" minOccurs="0" />
             <xs:element name="CheckType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="CircularReference" type="IssueHandlerType" minOccurs="0" />
-            <xs:element name="ClassMustBeFinal" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="ClassMustBeFinal" type="ClassIssueHandlerType" minOccurs="0" />
             <xs:element name="CliOnlyCall" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="CliOnlyInstancesUnguarded" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ComplexFunction" type="IssueHandlerType" minOccurs="0" />
@@ -274,6 +274,7 @@
             <xs:element name="DeprecatedInterface" type="ClassIssueHandlerType" minOccurs="0" />
             <xs:element name="DeprecatedMethod" type="MethodIssueHandlerType" minOccurs="0" />
             <xs:element name="DeprecatedProperty" type="PropertyIssueHandlerType" minOccurs="0" />
+            <xs:element name="DeprecatedSyntax" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="DeprecatedTrait" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="DirectConstructorCall" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="DocblockTypeContradiction" type="IssueHandlerType" minOccurs="0" />
@@ -350,7 +351,7 @@
             <xs:element name="InvalidParent" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidPassByReference" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidPropertyAssignment" type="IssueHandlerType" minOccurs="0" />
-            <xs:element name="InvalidPropertyAssignmentValue" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="InvalidPropertyAssignmentValue" type="PropertyIssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidPropertyFetch" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidReturnStatement" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidReturnType" type="IssueHandlerType" minOccurs="0" />
@@ -379,7 +380,8 @@
             <xs:element name="MissingClosureParamType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MissingClosureReturnType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MissingConstructor" type="IssueHandlerType" minOccurs="0" />
-            <xs:element name="MissingDependency" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="MissingDependency" type="ClassIssueHandlerType" minOccurs="0" />
+            <xs:element name="MissingExtensionRequirement" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MissingDocblockType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MissingFile" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MissingInterfaceImmutableAnnotation" type="IssueHandlerType" minOccurs="0" />
@@ -498,7 +500,7 @@
             <xs:element name="RedundantPropertyInitializationCheck" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ReferenceConstraintViolation" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ReferenceReusedFromConfusingScope" type="IssueHandlerType" minOccurs="0" />
-            <xs:element name="ReservedWord" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="ReservedWord" type="ClassIssueHandlerType" minOccurs="0" />
             <xs:element name="RiskyCast" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="RiskyTruthyFalsyComparison" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="StringIncrement" type="IssueHandlerType" minOccurs="0" />
@@ -510,11 +512,13 @@
             <xs:element name="TaintedFile" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedHeader" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedHtml" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="TaintedHtmlAttribute" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedInclude" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedInput" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedLdap" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedLlmPrompt" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedNosql" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="TaintedRedirect" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedShell" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedSleep" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedSql" type="IssueHandlerType" minOccurs="0" />
@@ -524,6 +528,7 @@
             <xs:element name="TaintedUnserialize" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedUrlComponent" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedUrlPath" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="TaintedUrlScheme" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedUserSecret" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedXpath" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TooFewArguments" type="ArgumentIssueHandlerType" minOccurs="0" />
@@ -585,6 +590,7 @@
             <xs:element name="WeakCipher" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="WeakHash" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="WeakRandom" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="WrongCaseFunction" type="FunctionIssueHandlerType" minOccurs="0" />
             <xs:element name="XmlExternalEntity" type="IssueHandlerType" minOccurs="0" />
         </xs:choice>
         <xs:anyAttribute processContents="skip" />
@@ -853,6 +859,8 @@
             <xs:enumeration value="mysqli"/>
             <xs:enumeration value="openssl"/>
             <xs:enumeration value="pdo"/>
+            <xs:enumeration value="pgsql"/>
+            <xs:enumeration value="protobuf"/>
             <xs:enumeration value="random"/>
             <xs:enumeration value="rdkafka"/>
             <xs:enumeration value="redis"/>

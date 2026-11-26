@@ -7,9 +7,11 @@ namespace Psalm\Internal\Algebra;
 use Override;
 use PhpParser;
 use Psalm\Codebase;
+use Psalm\Context;
 use Psalm\Exception\ComplicatedExpressionException;
 use Psalm\FileSource;
 use Psalm\Internal\Algebra;
+use Psalm\Internal\Analyzer\Statements\Expression\ArrayAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\AssertionFinder;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\NullsafeChainState;
@@ -39,8 +41,10 @@ use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
+use function array_any;
 use function array_diff_key;
 use function array_filter;
+use function array_keys;
 use function array_map;
 use function array_values;
 use function count;
@@ -95,30 +99,18 @@ final class FormulaGenerator
                 $cache,
             );
 
-            // what the left side tested of a variable that the right side assigns is about its previous value
-            $right_assigned_var_ids = self::getAssignedVarIds(
+            // what the left one tested of the previous value of a variable the right one assigns says nothing
+            // of the value that follows the assignment
+            $right_assigned_ids = self::getAssignedTargetIds(
                 $conditional->right,
                 $this_class_name,
                 self::getNodeData($source),
             );
 
-            if ($right_assigned_var_ids) {
+            if ($right_assigned_ids) {
                 $left_assertions = array_values(array_filter(
                     $left_assertions,
-                    static function (Clause $clause) use ($right_assigned_var_ids): bool {
-                        foreach ($clause->possibilities as $var_id => $_) {
-                            foreach ($right_assigned_var_ids as $assigned_var_id => $__) {
-                                if ($var_id === $assigned_var_id
-                                    || str_starts_with($var_id, $assigned_var_id . '[')
-                                    || str_starts_with($var_id, $assigned_var_id . '->')
-                                ) {
-                                    return false;
-                                }
-                            }
-                        }
-
-                        return true;
-                    },
+                    static fn(Clause $clause): bool => !self::mentionsAnyAssigned($clause, $right_assigned_ids),
                 ));
             }
 
@@ -565,7 +557,7 @@ final class FormulaGenerator
                     return [$truthy_clause];
                 }
 
-                return [
+                $clauses = [
                     $truthy_clause,
                     new Clause(
                         [$result_id => [(string) $falsy => $falsy], $receiver_id => [(string) $not_null => $not_null]],
@@ -573,6 +565,47 @@ final class FormulaGenerator
                         $creating_object_id,
                     ),
                 ];
+
+                // where the call is truthy, the method was called and returned true
+                if ($nullsafe_call === $conditional) {
+                    $custom_assertions = AssertionFinder::getCustomAssertions(
+                        $nullsafe_call,
+                        $this_class_name,
+                        $source,
+                    );
+
+                    foreach ($custom_assertions as $assertions) {
+                        // the receiver is not null where the call is truthy: said first, so that an assertion on the
+                        // receiver (`@psalm-assert-if-true =self<T> $this`) doesn't make that a redundant check
+                        if (isset($assertions[$receiver_id])) {
+                            $clauses[] = new Clause(
+                                [$receiver_id => [(string) $not_null => $not_null]],
+                                $conditional_object_id,
+                                $creating_object_id,
+                            );
+                        }
+
+                        foreach ($assertions as $var => $anded_types) {
+                            foreach ($anded_types as $orred_types) {
+                                $mapped_orred_types = [];
+                                foreach ($orred_types as $orred_type) {
+                                    $mapped_orred_types[(string) $orred_type] = $orred_type;
+                                }
+
+                                $clauses[] = new Clause(
+                                    [$var => $mapped_orred_types],
+                                    $conditional_object_id,
+                                    $creating_object_id,
+                                    false,
+                                    true,
+                                    $orred_types[0]->hasEquality(),
+                                );
+                            }
+                        }
+                    }
+                }
+
+                return $clauses;
             }
         }
 
@@ -627,6 +660,24 @@ final class FormulaGenerator
         }
 
         $truthy = new Truthy();
+
+        // with a clause of the call's own truthiness, the negation says nothing about the pseudo-variables
+        if ($conditional instanceof PhpParser\Node\Expr\FuncCall
+            && array_any(
+                $clauses,
+                static fn(Clause $clause): bool => array_any(
+                    array_keys($clause->possibilities),
+                    Context::isSymbolCheckVarId(...),
+                ),
+            )
+            && AssertionFinder::isSymbolExistsCheck($conditional, $source)
+        ) {
+            $clauses[] = new Clause(
+                [$conditional_ref => [(string) $truthy => $truthy]],
+                $conditional_object_id,
+                $creating_object_id,
+            );
+        }
 
         if (!$clauses) {
             $possibilities = [$conditional_ref => [(string) $truthy => $truthy]];
@@ -686,6 +737,33 @@ final class FormulaGenerator
 
             if (!$found) {
                 $clauses[] = $receiver_clause;
+            }
+        }
+
+        // `$x !== $a?->p` with an `$x` that can't be null is also true where `$a` is null
+        if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical) {
+            $receiver_id = self::getReceiverOfANullsafeFetchIdenticalToANonNull(
+                new VirtualIdentical($conditional->left, $conditional->right, $conditional->getAttributes()),
+                $this_class_name,
+                $source,
+            );
+
+            if ($receiver_id !== null) {
+                $null = new IsType(new TNull());
+                $clauses = array_map(
+                    static fn(Clause $clause): Clause => isset($clause->possibilities[$receiver_id])
+                        ? $clause
+                        : new Clause(
+                            [...$clause->possibilities, $receiver_id => [(string) $null => $null]],
+                            $conditional_object_id,
+                            $creating_object_id,
+                            false,
+                            $clause->reconcilable,
+                            $clause->generated,
+                            $clause->redefined_vars,
+                        ),
+                    $clauses,
+                );
             }
         }
 
@@ -1128,6 +1206,111 @@ final class FormulaGenerator
     }
 
     /**
+     * Whether the clause tests what one of the assignments writes, an item or property of it, or the array holding it
+     *
+     * @param array<string, true> $assigned_ids
+     * @psalm-pure
+     */
+    private static function mentionsAnyAssigned(Clause $clause, array $assigned_ids): bool
+    {
+        foreach ($clause->possibilities as $var => $_) {
+            foreach ($assigned_ids as $assigned_id => $_) {
+                if ($var === $assigned_id
+                    || str_starts_with($var, $assigned_id . '[')
+                    || str_starts_with($var, $assigned_id . '->')
+                    || str_starts_with($assigned_id, $var . '[')
+                ) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * What an expression assigns: `$a['x']` for `$a['x'] = 1`, and the array holding an item of an unknown
+     * offset, `$a` for `$a[$i] = 1`
+     *
+     * @return array<string, true>
+     */
+    private static function getAssignedTargetIds(
+        PhpParser\Node\Expr $expr,
+        ?string $this_class_name,
+        ?NodeDataProvider $node_data,
+    ): array {
+        $target_ids = [];
+
+        foreach (self::getWrittenExprs([$expr], false, $node_data) as $target) {
+            $exact = true;
+            $target_id = is_string($target)
+                ? $target
+                : self::getAssignedTargetId($target, $this_class_name, $exact);
+
+            if ($target_id !== null) {
+                $target_ids[$target_id] = true;
+            }
+        }
+
+        return $target_ids;
+    }
+
+    /**
+     * @param-out bool $exact
+     */
+    private static function getAssignedTargetId(
+        PhpParser\Node\Expr $target,
+        ?string $this_class_name,
+        bool &$exact,
+    ): ?string {
+        if ($target instanceof PhpParser\Node\Expr\Variable
+            || $target instanceof PhpParser\Node\Expr\StaticPropertyFetch
+        ) {
+            return ExpressionIdentifier::getVarId($target, $this_class_name);
+        }
+
+        if ($target instanceof PhpParser\Node\Expr\PropertyFetch) {
+            $object_id = self::getAssignedTargetId($target->var, $this_class_name, $exact);
+
+            if ($object_id === null || !$exact) {
+                return $object_id;
+            }
+
+            if (!$target->name instanceof PhpParser\Node\Identifier) {
+                $exact = false;
+
+                return $object_id;
+            }
+
+            return $object_id . '->' . $target->name->name;
+        }
+
+        if ($target instanceof PhpParser\Node\Expr\ArrayDimFetch) {
+            $array_id = self::getAssignedTargetId($target->var, $this_class_name, $exact);
+
+            if ($array_id === null || !$exact) {
+                return $array_id;
+            }
+
+            if (!$target->dim instanceof PhpParser\Node\Scalar\String_
+                && !$target->dim instanceof PhpParser\Node\Scalar\Int_
+            ) {
+                $exact = false;
+
+                return $array_id;
+            }
+
+            $key = ArrayAnalyzer::getLiteralArrayKeyInt($target->dim->value);
+
+            return $array_id . '[' . (
+                $key === false ? ExpressionIdentifier::quoteOffset((string) $target->dim->value) : $key
+            ) . ']';
+        }
+
+        return null;
+    }
+
+    /**
      * @psalm-capabilities read-props
      */
     private static function getNodeData(FileSource $source): ?NodeDataProvider
@@ -1485,7 +1668,7 @@ final class FormulaGenerator
         return $expr instanceof PhpParser\Node\Expr\ConstFetch && strtolower($expr->name->getFirst()) === 'null';
     }
 
-    private static function isFalsyLiteral(PhpParser\Node\Expr $expr): bool
+    public static function isFalsyLiteral(PhpParser\Node\Expr $expr): bool
     {
         return ($expr instanceof PhpParser\Node\Expr\ConstFetch
                 && in_array(strtolower($expr->name->getFirst()), ['false', 'null'], true))

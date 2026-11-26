@@ -21,6 +21,8 @@ use Psalm\Internal\Fork\AnalyzerTask;
 use Psalm\Internal\Fork\InitAnalyzerTask;
 use Psalm\Internal\Fork\Pool;
 use Psalm\Internal\Fork\ShutdownAnalyzerTask;
+use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Perf;
 use Psalm\Internal\Provider\FileProvider;
 use Psalm\Internal\Provider\FileStorageProvider;
 use Psalm\Internal\Provider\StatementsProvider;
@@ -29,6 +31,7 @@ use Psalm\Progress\Phase;
 use Psalm\Progress\Progress;
 use Psalm\Storage\Capabilities;
 use Psalm\Type;
+use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
@@ -72,7 +75,6 @@ use const PHP_INT_MAX;
  *      fixable_issue_counts: array<string, int>,
  *      mixed_counts: array<string, array{0: int, 1: int}>,
  *      mixed_member_names: array<string, array<string, bool>>,
- *      function_timings: array<string, float>,
  *      file_manipulations: array<string, FileManipulation[]>,
  *      method_dependencies: array<string, array<string,bool>>,
  *      method_param_uses: array<string, array<int, array<string, bool>>>,
@@ -86,6 +88,7 @@ use const PHP_INT_MAX;
  *      function_docblock_manipulators: array<string, array<int, FunctionDocblockManipulator>>,
  *      mutable_classes: array<string, CapabilitySet>,
  *      issue_handlers: array{type: string, index: int, count: int}[],
+ *      perf?: WorkerPerf,
  * }
  */
 
@@ -94,6 +97,7 @@ use const PHP_INT_MAX;
  *
  * @internal
  * @psalm-import-type CapabilitySet from Capabilities
+ * @psalm-import-type WorkerPerf from Perf\Collector
  */
 final class Analyzer
 {
@@ -110,13 +114,6 @@ final class Analyzer
      * @var array<string, array<string, bool>>
      */
     private array $mixed_member_names = [];
-
-    /**
-     * Used to store debug performance data
-     *
-     * @var array<string, float>
-     */
-    private array $function_timings = [];
 
     /**
      * We analyze more files than we necessarily report errors in
@@ -174,6 +171,13 @@ final class Analyzer
      * @var array<string, array<int, Union>>
      */
     public array $possible_method_param_types = [];
+
+    /**
+     * Whether usage-inferred param types are recorded for a declaring method (lowercase id)
+     *
+     * @var array<lowercase-string, bool>
+     */
+    private array $param_type_inference_targets = [];
 
     /**
      * @var array<string, CapabilitySet>
@@ -235,6 +239,8 @@ final class Analyzer
         bool $alter_code,
         bool $consolidate_analyzed_data = false,
     ): void {
+        Perf\Collector::stage('analysis.setup');
+
         $this->loadCachedResults($project_analyzer);
 
         $codebase = $project_analyzer->getCodebase();
@@ -248,21 +254,29 @@ final class Analyzer
             $this->file_provider->fileExists(...),
         );
 
+        Perf\Collector::stage('analysis.files');
         $this->doAnalysis($project_analyzer, $pool_size);
 
         $scanned_files = $codebase->scanner->getScannedFiles();
 
         if ($codebase->taint_flow_graph) {
+            Perf\Collector::stage('taint');
             $codebase->taint_flow_graph->connectSinksAndSources($codebase->progress);
         }
 
+        Perf\Collector::stage('analysis.finish');
+        Perf\Collector::step('mutation_levels');
         MutationLevelResolver::resolve($project_analyzer);
 
         $this->progress->finish();
 
+        Perf\Collector::step('unused_code');
+
         if ($consolidate_analyzed_data) {
             $project_analyzer->consolidateAnalyzedData();
         }
+
+        Perf\Collector::step('reference_cache.write');
 
         foreach (IssueBuffer::getAllIssuesData() as $file_path => $file_issues) {
             $codebase->file_reference_provider->clearExistingIssuesForFile($file_path);
@@ -276,6 +290,8 @@ final class Analyzer
         $codebase->file_reference_provider->setFileMaps($this->getFileMaps());
         $codebase->file_reference_provider->setTypeCoverage($this->mixed_counts);
         $codebase->file_reference_provider->updateReferenceCache($codebase, $scanned_files);
+
+        Perf\Collector::step('unused_suppressions');
 
         if ($codebase->track_unused_suppressions) {
             IssueBuffer::processUnusedSuppressions($codebase->file_provider);
@@ -328,13 +344,19 @@ final class Analyzer
             $this->progress->debug('Forking analysis' . "\n");
 
             // Wait for all tasks to complete and collect the results.
+            Perf\Collector::poolStart('analysis', count($this->files_to_analyze));
             await($pool->runAll(new InitAnalyzerTask));
+            Perf\Collector::poolStep('init_us');
             $pool->run($this->files_to_analyze, AnalyzerTask::class, $task_done_closure);
+            Perf\Collector::poolStep('run_us');
+            Perf\Collector::stage('analysis.merge');
             $this->progress->debug('Collecting forked analysis results' . "\n");
             $this->progress->startPhase(Phase::MERGING_THREAD_RESULTS);
             $this->progress->expand($pool->threads);
 
             foreach ($pool->runAllThenKill(new ShutdownAnalyzerTask) as $pool_data) {
+                Perf\Collector::addWorkerData($pool_data['perf'] ?? null);
+
                 IssueBuffer::addIssues($pool_data['issues']);
                 IssueBuffer::addFixableIssues($pool_data['fixable_issue_counts']);
 
@@ -362,7 +384,6 @@ final class Analyzer
                 $this->addMixedMemberNames(
                     $pool_data['mixed_member_names'],
                 );
-                $this->function_timings += $pool_data['function_timings'];
 
                 foreach ($pool_data['mutable_classes'] as $class => $capabilities) {
                     $this->addMutableClass($class, $capabilities);
@@ -387,7 +408,7 @@ final class Analyzer
                     } else {
                         foreach ($possible_param_types as $offset => $possible_param_type) {
                             $this->possible_method_param_types[$declaring_method_id][$offset]
-                                = Type::combineUnionTypes(
+                                = self::combinePossibleParamTypes(
                                     $this->possible_method_param_types[$declaring_method_id][$offset] ?? null,
                                     $possible_param_type,
                                     $codebase,
@@ -408,7 +429,11 @@ final class Analyzer
                 }
 
                 $this->progress->taskDone(0);
+
+                Perf\Collector::mergeDone();
             }
+
+            Perf\Collector::poolEnd();
         } else {
             foreach ($this->files_to_analyze as $file_path => $_) {
                 $task_done_closure(self::analysisWorker($this->config, $this->progress, $file_path));
@@ -748,8 +773,9 @@ final class Analyzer
             }
         }
 
+        // a file with no analysed method left is analysed in full, and replaces its maps, but only if it is analysed
         foreach ($this->reference_map as $file_path => $reference_map) {
-            if (!isset($this->analyzed_methods[$file_path])) {
+            if (!isset($this->analyzed_methods[$file_path]) && isset($this->files_to_analyze[$file_path])) {
                 unset($this->reference_map[$file_path]);
                 continue;
             }
@@ -785,7 +811,7 @@ final class Analyzer
         }
 
         foreach ($this->type_map as $file_path => $type_map) {
-            if (!isset($this->analyzed_methods[$file_path])) {
+            if (!isset($this->analyzed_methods[$file_path]) && isset($this->files_to_analyze[$file_path])) {
                 unset($this->type_map[$file_path]);
                 continue;
             }
@@ -821,7 +847,7 @@ final class Analyzer
         }
 
         foreach ($this->argument_map as $file_path => $argument_map) {
-            if (!isset($this->analyzed_methods[$file_path])) {
+            if (!isset($this->analyzed_methods[$file_path]) && isset($this->files_to_analyze[$file_path])) {
                 unset($this->argument_map[$file_path]);
                 continue;
             }
@@ -975,22 +1001,6 @@ final class Analyzer
         }
 
         return array_intersect_key($this->mixed_counts, $all_deep_scanned_files);
-    }
-
-    /**
-     * @return array<string, float>
-     */
-    public function getFunctionTimings(): array
-    {
-        return $this->function_timings;
-    }
-
-    /**
-     * @psalm-external-mutation-free
-     */
-    public function addFunctionTiming(string $function_id, float $time_per_node): void
-    {
-        $this->function_timings[$function_id] = $time_per_node;
     }
 
     public function addNodeType(
@@ -1163,6 +1173,18 @@ final class Analyzer
     public function getChangedFilesCount(): int
     {
         return count($this->changed_files);
+    }
+
+    /**
+     * How many files the run reports on, the unchanged ones of a diff run included
+     *
+     * @internal
+     * @return int<0, max>
+     * @psalm-mutation-free
+     */
+    public function getFileCountWithAnalysisResults(): int
+    {
+        return count($this->files_with_analysis_results);
     }
 
     /**
@@ -1378,6 +1400,90 @@ final class Analyzer
     }
 
     /**
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    public function addPossibleMethodParamType(
+        Codebase $codebase,
+        MethodIdentifier $declaring_method_id,
+        int $offset,
+        Union $type,
+    ): void {
+        $method_id_lc = strtolower((string) $declaring_method_id);
+
+        if (!($this->param_type_inference_targets[$method_id_lc]
+            ??= $this->isParamTypeInferenceTarget($codebase, $declaring_method_id))
+        ) {
+            return;
+        }
+
+        $this->possible_method_param_types[$method_id_lc][$offset] = self::combinePossibleParamTypes(
+            $this->possible_method_param_types[$method_id_lc][$offset] ?? null,
+            $type,
+            $codebase,
+        );
+    }
+
+    /**
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    private static function combinePossibleParamTypes(?Union $possible_type, Union $type, Codebase $codebase): Union
+    {
+        if ($possible_type !== null && self::holdsAbsorbingMixed($possible_type)) {
+            return $possible_type;
+        }
+
+        if (self::holdsAbsorbingMixed($type)) {
+            return Type::getMixed();
+        }
+
+        return Type::combineUnionTypes($possible_type, $type, $codebase);
+    }
+
+    /**
+     * A plain mixed stays through every later combination (TypeCombiner::scrapeTypeProperties()), so
+     * ClassLikes::findPossibleMethodParamTypes() skips the param whatever else is passed to it. Other mixed types are
+     * not proven to: a mixed from a loop isset is dropped next to other types, and a union that failed reconciliation
+     * is dropped when combined with one that did not.
+     *
+     * @psalm-pure
+     */
+    private static function holdsAbsorbingMixed(Union $type): bool
+    {
+        $mixed = $type->getAtomicTypes()['mixed'] ?? null;
+
+        return $mixed !== null
+            && $mixed::class === TMixed::class
+            && !$mixed->from_loop_isset
+            && !$type->failed_reconciliation;
+    }
+
+    /**
+     * Whether usage-inferred param types are recorded for a method. They are for every method that
+     * ClassLikes::findPossibleMethodParamTypes() can use: it visits the non-trait classes in the project directories
+     * and takes the methods those declare, if they have a location and the file is reportable. The config fixes the
+     * project directories for the whole run, in every process, while the reportable files can still grow (a plugin
+     * hook), so only the part of the reader's test that cannot change is applied here.
+     *
+     * @psalm-capabilities read-props
+     */
+    private function isParamTypeInferenceTarget(Codebase $codebase, MethodIdentifier $declaring_method_id): bool
+    {
+        try {
+            $class_storage = $codebase->classlike_storage_provider->get($declaring_method_id->fq_class_name);
+        } catch (InvalidArgumentException) {
+            return true;
+        }
+
+        $method_storage = $class_storage->methods[$declaring_method_id->method_name] ?? null;
+
+        return $method_storage === null
+            || ($method_storage->location !== null
+                && !$class_storage->is_trait
+                && $class_storage->location !== null
+                && $this->config->isInProjectDirs($class_storage->location->file_path));
+    }
+
+    /**
      * @param CapabilitySet $capabilities
      * @psalm-external-mutation-free
      */
@@ -1430,6 +1536,8 @@ final class Analyzer
 
         $progress->debug('Analyzing ' . $file_analyzer->getFilePath() . "\n");
 
+        $perf_start = Perf\Collector::$enabled ? Perf\Collector::fileStart() : null;
+
         $file_analyzer->analyze();
         $file_analyzer->context = null;
         $file_analyzer->clearSourceBeforeDestruction();
@@ -1437,6 +1545,15 @@ final class Analyzer
 
         $has_error = false;
         $has_info = false;
+
+        if ($perf_start !== null) {
+            Perf\Collector::analysisEnd(
+                $file_path,
+                $file_name,
+                $perf_start,
+                count(IssueBuffer::getIssuesDataForFile($file_path)),
+            );
+        }
 
         foreach (IssueBuffer::getIssuesDataForFile($file_path) as $issue) {
             switch ($issue->severity) {

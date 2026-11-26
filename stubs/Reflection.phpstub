@@ -201,7 +201,7 @@ class ReflectionClass implements Reflector {
      *
      * @return T
      */
-    public function newInstanceArgs(array $args): object {}
+    public function newInstanceArgs(array $args = []): object {}
 
     /**
      * @return T
@@ -284,6 +284,20 @@ class ReflectionClass implements Reflector {
      * @psalm-capabilities read-props
      */
     public function getAttributes(?string $name = null, int $flags = 0): array {}
+}
+
+/**
+ * @template-covariant T as object
+ *
+ * @extends ReflectionClass<T>
+ */
+class ReflectionObject extends ReflectionClass
+{
+    /**
+     * @param T $object
+     * @psalm-pure
+     */
+    public function __construct(object $object) {}
 }
 
 abstract class ReflectionFunctionAbstract implements Reflector
@@ -484,6 +498,12 @@ class ReflectionProperty implements Reflector
     public function isPublic(): bool {}
 
     /** @psalm-capabilities read-props */
+    public function isReadable(?string $scope, ?object $object = null): bool {}
+
+    /** @psalm-capabilities read-props */
+    public function isWritable(?string $scope, ?object $object = null): bool {}
+
+    /** @psalm-capabilities read-props */
     public function isPrivate(): bool {}
 
     /** @psalm-capabilities read-props */
@@ -650,6 +670,12 @@ class ReflectionParameter implements Reflector {
     public function isDefaultValueConstant(): bool {}
 
     public function getDefaultValueConstantName(): ?string {}
+
+    /**
+     * @return non-empty-string|false
+     * @psalm-capabilities read-props
+     */
+    public function getDocComment() {}
 }
 
 /** @psalm-immutable */

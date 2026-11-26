@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Override;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
@@ -24,6 +25,73 @@ final class AnnotationTest extends TestCase
         parent::setUp();
         $codebase = $this->project_analyzer->getCodebase();
         $codebase->reportUnusedVariables();
+    }
+
+    #[DataProvider('providerVariableTagWithoutType')]
+    public function testVariableTagWithoutTypeIsAMisplacedVariable(string $code): void
+    {
+        $this->addFile('somefile.php', $code);
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('Misplaced variable');
+
+        $this->withErrorsThrown(fn() => $this->analyzeFile('somefile.php', new Context()));
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     * @psalm-pure
+     */
+    public static function providerVariableTagWithoutType(): iterable
+    {
+        yield 'property' => [
+            '<?php
+                /**
+                 * @property
+                 *        $p
+                 */
+                final class A {}',
+        ];
+        yield 'propertyRead' => [
+            '<?php
+                /**
+                 * @property-read
+                 *        $p
+                 */
+                final class A {}',
+        ];
+        yield 'global' => [
+            '<?php
+                /**
+                 * @global
+                 *        $g
+                 */
+                function f(): void {}',
+        ];
+        yield 'param' => [
+            '<?php
+                /**
+                 * @param
+                 *        $p
+                 */
+                function f(int $p): void {}',
+        ];
+        yield 'paramOut' => [
+            '<?php
+                /**
+                 * @param-out
+                 *        $p
+                 */
+                function f(?int &$p): void {}',
+        ];
+        yield 'paramClosureThis' => [
+            '<?php
+                /**
+                 * @param-closure-this
+                 *        $c
+                 */
+                function f(Closure $c): void {}',
+        ];
     }
 
     public function testLessSpecificImplementedReturnTypeWithDocblockOnMultipleLines(): void
@@ -184,6 +252,123 @@ final class AnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'invalidInlineDocblockIsSuppressedByTheFunction' => [
+                'code' => '<?php
+                    /** @psalm-suppress InvalidDocblock */
+                    function assign(): int {
+                        /** @var array< */
+                        $a = 1;
+                        return $a;
+                    }
+
+                    /**
+                     * @param list<int> $list
+                     * @psalm-suppress InvalidDocblock
+                     */
+                    function iterate(array $list): void {
+                        /** @var array< $v */
+                        foreach ($list as $v) {
+                            echo $v;
+                        }
+                    }
+
+                    /** @psalm-suppress InvalidDocblock */
+                    function returned(): int {
+                        $r = 1;
+                        /** @var array< $r */
+                        return $r;
+                    }
+
+                    /** @psalm-suppress InvalidDocblock */
+                    function yielded(): Generator {
+                        /** @var array< $r */
+                        yield 1;
+                    }
+
+                    /** @psalm-suppress InvalidDocblock */
+                    function reference(): int {
+                        $b = 1;
+                        /** @var int */
+                        $a = &$b;
+                        return $a;
+                    }
+
+                    /** @psalm-suppress InvalidDocblock */
+                    function statement(): void {
+                        /** @var array< $q */
+                        echo 1;
+                    }
+
+                    /**
+                     * @param list<int> $list
+                     * @psalm-suppress InvalidDocblock
+                     * @psalm-suppress MissingDocblockType
+                     */
+                    function misplacedVariable(array $list): int {
+                        /** @var $a int */
+                        $a = 1;
+                        /** @var $v int */
+                        foreach ($list as $v) {
+                            echo $v;
+                        }
+                        /** @var $q int */
+                        echo 1;
+                        return $a;
+                    }',
+            ],
+            'callableParamsWithTheSameInnerParameterNameAreNotDuplicated' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param callable(int $value): list<T> $map
+                     * @param callable(int $value): bool $filter
+                     * @return list<T>
+                     */
+                    function collect(callable $map, callable $filter): array {
+                        $result = [];
+                        foreach ([1, 2, 3] as $value) {
+                            if ($filter($value)) {
+                                foreach ($map($value) as $item) {
+                                    $result[] = $item;
+                                }
+                            }
+                        }
+
+                        return $result;
+                    }
+
+                    /** @return list<string> */
+                    function labels(): array {
+                        return collect(static fn(int $value) => [(string) $value], static fn(int $value) => $value > 1);
+                    }',
+            ],
+            'suppressDocblockInFrontOfAnArgument' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-mutation-free
+                     */
+                    function describe(): void {
+                        throw new RuntimeException(
+                            /** @psalm-suppress ImpureFunctionCall the last error is part of the message */
+                            sprintf("code: %d", preg_last_error()),
+                        );
+                    }',
+            ],
+            'suppressDocblockInFrontOfAnArgumentCoversTheCheckOfTheArgument' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function take(int $i, string $s): void {
+                        echo $i, $s;
+                    }
+
+                    function f(mixed $m): void {
+                        take(/** @psalm-suppress MixedArgument */ $m, 'a');
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'scalarAndMixedKeywordTypesInNamespace' => [
                 'code' => '<?php
                     namespace N;
@@ -1369,6 +1554,8 @@ final class AnnotationTest extends TestCase
                     function foo(string $s = null) {
                         return $s;
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedSyntax'],
             ],
             'missingReturnTypeWithBadDocblockIgnoreBoth' => [
                 'code' => '<?php
@@ -1712,7 +1899,7 @@ final class AnnotationTest extends TestCase
                 'code' => '<?php
                     $_arr = ["foo\\bar\nbaz" => "literal"];',
                 'assertions' => [
-                    '$_arr' => 'array{\'foo\\\\bar\nbaz\': string}',
+                    '$_arr' => 'array{"foo\\\\bar\nbaz": string}',
                 ],
             ],
             'doubleSpaceBeforeAt' => [
@@ -1777,6 +1964,26 @@ final class AnnotationTest extends TestCase
                         public const OPEN = 1;
                         public const MODIFIED = 2;
                         public const NEW = 4;
+                    }
+
+                    /**
+                     * @param int-mask-of<FileFlag::*> $flags
+                     */
+                    function takesFlags(int $flags) : void {
+                        echo $flags;
+                    }
+
+                    takesFlags(FileFlag::MODIFIED | FileFlag::NEW);',
+            ],
+            'intMaskOfClassWildcardIgnoresConstantsThatAreNotIntegers' => [
+                'code' => '<?php
+                    final class FileFlag {
+                        public const OPEN = 1;
+                        public const MODIFIED = 2;
+                        public const NEW = 4;
+                        public const NAME = "flags";
+                        public const RATIO = 1.5;
+                        public const NOTHING = null;
                     }
 
                     /**
@@ -2156,6 +2363,22 @@ final class AnnotationTest extends TestCase
                     '$_f' => 'A|null',
                 ],
             ],
+            'phpstanParamWithStarProjectionNextToPsalmParam' => [
+                'code' => '<?php
+                    /**
+                     * @template TFirst
+                     * @template TSecond
+                     */
+                    final class Context {}
+
+                    /**
+                     * @psalm-param Context<int, string> $parent
+                     * @phpstan-param Context<*, *> $parent
+                     */
+                    function f(Context $parent): Context {
+                        return $parent;
+                    }',
+            ],
             'paramNameWithTrailingSemicolon' => [
                 'code' => '<?php
                     /**
@@ -2205,6 +2428,59 @@ final class AnnotationTest extends TestCase
 
                         return $foo;
                     }',
+            ],
+            'typeAndVariableLinesOfEachTag' => [
+                'code' => '<?php
+                    /**
+                     * @property int $a
+                     * @property-read string &$b
+                     */
+                    final class A {
+                        public function __get(string $name) {
+                            return null;
+                        }
+                    }
+
+                    /**
+                     * @param int ...$xs
+                     * @return list<int>
+                     */
+                    function variadic(...$xs): array {
+                        return array_values($xs);
+                    }
+
+                    /**
+                     * @param int &$x
+                     * @param-out string $x
+                     */
+                    function byRef(&$x): int {
+                        $old = $x;
+                        $x = "a";
+                        return $old;
+                    }
+
+                    /**
+                     * @global float $g
+                     */
+                    function readGlobal(): float {
+                        global $g;
+                        return $g;
+                    }
+
+                    $o = new A();
+                    $pa = $o->a;
+                    $pb = $o->b;
+                    $xs = variadic(1, 2);
+                    $r = 1;
+                    $old = byRef($r);',
+                'assertions' => [
+                    '$pa===' => 'int',
+                    '$pb===' => 'string',
+                    '$xs===' => 'list<int>',
+                    '$r===' => 'string',
+                    '$old===' => 'int',
+                ],
+                'ignored_issues' => ['UnusedVariable'],
             ],
             'fileLevelVarDocblockBeforeAUseStatement' => [
                 'code' => '<?php
@@ -2273,6 +2549,74 @@ final class AnnotationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'invalidArrayKeyTypeIsShownWhole' => [
+                'code' => '<?php
+                    /**
+                     * @param array<list<int>, string> $a
+                     */
+                    function foo(array $a): void {}',
+                'error_message' => 'Invalid array key type list<int> in docblock for foo',
+            ],
+            'duplicatedCallableParamTagsAreStillReported' => [
+                'code' => '<?php
+                    /**
+                     * @param callable(int $x): void $a
+                     * @param callable(int $x): void $a
+                     */
+                    function dup(callable $a): void {}',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:6:21 - Found duplicated @param or prefixed @param tag in docblock for dup',
+            ],
+            'duplicatedParamTagsOfAVariadicParamAreReported' => [
+                'code' => '<?php
+                    /**
+                     * @param int $a
+                     * @param int ...$a
+                     */
+                    function dupVariadic(int ...$a): void {}',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:6:21 - Found duplicated @param or prefixed @param tag in docblock for dupVariadic',
+            ],
+            'suppressDocblockInFrontOfAnArgumentDoesNotCoverTheNextArgumentCheck' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function take(int $i, int $j): void {
+                        echo $i, $j;
+                    }
+
+                    function f(mixed $m, mixed $n): void {
+                        take(/** @psalm-suppress MixedArgument */ $m, $n);
+                    }
+                    PHP,
+                'error_message' => 'MixedArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:51 - Argument 2 of take cannot be mixed',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'suppressDocblockInFrontOfAnArgumentOnlyCoversThatArgument' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-mutation-free
+                     */
+                    function describe(): void {
+                        echo sprintf(
+                            "%d %d",
+                            /** @psalm-suppress ImpureFunctionCall */
+                            preg_last_error(),
+                            preg_last_error(),
+                        );
+                    }',
+                'error_message' => 'ImpureFunctionCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:29',
+            ],
+            'unusedSuppressDocblockInFrontOfAnArgument' => [
+                'code' => '<?php
+                    function describe(): void {
+                        echo strlen(
+                            /** @psalm-suppress ImpureFunctionCall */
+                            "text",
+                        );
+                    }',
+                'error_message' => 'UnusedPsalmSuppress',
+            ],
             'scalarKeywordTypeWithGenericParamsInNamespace' => [
                 'code' => '<?php
                     namespace N;
@@ -2355,6 +2699,62 @@ final class AnnotationTest extends TestCase
                     }',
                 'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:14:27 - '
                     . 'Argument 1 of Foo\f expects 0|4, but 1 provided',
+            ],
+            'intMaskOfClassWildcardMatchingAnEnumConstantStillChecksTheArgument' => [
+                'code' => '<?php
+                    enum E { case X; }
+
+                    final class A {
+                        public const F_ONE = 1;
+                        public const F_TWO = 2;
+                        public const F_ENUM = E::X;
+
+                        /** @param int-mask-of<self::F_*> $a */
+                        public static function a(int $a): void {
+                            echo $a;
+                        }
+                    }
+
+                    A::a(1234);',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'intMaskOfClassWildcardMatchingAnArrayConstantStillChecksTheArgument' => [
+                'code' => '<?php
+                    final class A {
+                        public const F_ONE = 1;
+                        public const F_TWO = 2;
+                        public const F_LIST = [];
+
+                        /** @param int-mask-of<self::F_*> $a */
+                        public static function a(int $a): void {
+                            echo $a;
+                        }
+                    }
+
+                    A::a(1234);',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'intMaskOfClassWildcardMatchingAStringConstantStillChecksTheArgument' => [
+                'code' => '<?php
+                    final class FileFlag {
+                        public const OPEN = 1;
+                        public const MODIFIED = 2;
+                        public const NEW = 4;
+                        public const MISTAKE = "string";
+                    }
+
+                    /** @param int-mask-of<FileFlag::*> $flags */
+                    function takesFlags(int $flags): void {
+                        echo $flags;
+                    }
+
+                    takesFlags(1234);',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:14:32 - '
+                    . 'Argument 1 of takesFlags expects 0|1|2|3|4|5|6|7, but 1234 provided',
             ],
             'intMaskOfANonIntegerConstantOfTheNamespace' => [
                 'code' => '<?php
@@ -2519,6 +2919,14 @@ final class AnnotationTest extends TestCase
                         global $bar;
                     }',
                 'error_message' => 'InvalidClass',
+            ],
+            'globalWithoutName' => [
+                'code' => '<?php
+                    /**
+                     * @global int
+                     */
+                    function f(): void {}',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:21 - Badly-formatted @global in docblock for f',
             ],
             'globalDocblockUndefinedClass' => [
                 'code' => '<?php

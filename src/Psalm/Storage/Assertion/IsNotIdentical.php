@@ -18,9 +18,14 @@ final class IsNotIdentical extends Assertion
     use UnserializeMemoryUsageSuppressionTrait;
     /**
      * @param ?string $comparand what the value is compared with, when its type has more than one value
+     * @param bool $of_operands the assertion is on an operand of `$a !== $b`: it says nothing where the operands
+     *  differ, and where they don't, the operand has the type
      */
-    public function __construct(public readonly Atomic $type, public readonly ?string $comparand = null)
-    {
+    public function __construct(
+        public readonly Atomic $type,
+        public readonly ?string $comparand = null,
+        public readonly bool $of_operands = false,
+    ) {
     }
 
     /**
@@ -35,7 +40,7 @@ final class IsNotIdentical extends Assertion
     #[Override]
     public function getNegation(): Assertion
     {
-        return new IsIdentical($this->type, $this->comparand);
+        return new IsIdentical($this->type, $this->comparand, $this->of_operands);
     }
 
     /**
@@ -49,7 +54,7 @@ final class IsNotIdentical extends Assertion
 
     public function __toString(): string
     {
-        return '!=' . $this->type->getAssertionString()
+        return '!=' . IsType::getTypeKey($this->type)
             . ($this->comparand === null ? '' : '@' . $this->comparand);
     }
 
@@ -65,15 +70,14 @@ final class IsNotIdentical extends Assertion
     #[Override]
     public function setAtomicType(Atomic $type): self
     {
-        return new static($type, $this->comparand);
+        return new static($type, $this->comparand, $this->of_operands);
     }
 
     #[Override]
     public function isNegationOf(Assertion $assertion): bool
     {
         return $assertion instanceof IsIdentical
-            && $this->type->getId() === $assertion->type->getId()
-            && $this->type->getAssertionString() === $assertion->type->getAssertionString()
+            && IsType::getTypeKey($this->type) === IsType::getTypeKey($assertion->type)
             && $this->comparand === $assertion->comparand;
     }
 }

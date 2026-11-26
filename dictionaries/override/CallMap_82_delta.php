@@ -3,11 +3,6 @@
 return array (
   'added' => 
   array (
-    'imap_is_open' => 
-    array (
-      0 => 'bool',
-      'imap' => 'IMAP\\Connection',
-    ),
     'ini_parse_quantity' => 
     array (
       0 => 'int',
@@ -100,7 +95,7 @@ return array (
       0 => 'false|resource',
       'session' => 'resource',
       'command' => 'string',
-      'pty=' => 'bool',
+      'pty=' => 'null|string',
       'env=' => 'array<array-key, mixed>|null',
       'width=' => 'int',
       'height=' => 'int',
@@ -308,6 +303,23 @@ return array (
         'arg=' => 'mixed',
       ),
     ),
+    'dba_fetch' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|string',
+        'key' => 'array<array-key, mixed>|string',
+        'skip' => 'int',
+        'dba=' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'false|string',
+        'key' => 'array<array-key, mixed>|string',
+        'dba' => 'resource',
+        'skip=' => 'int',
+      ),
+    ),
     'dba_open' => 
     array (
       'old' => 
@@ -348,19 +360,6 @@ return array (
         'permission=' => 'int',
         'map_size=' => 'int',
         'flags=' => 'int|null',
-      ),
-    ),
-    'ds\\hashable::equals' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'obj' => 'mixed',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-        'object' => 'mixed',
       ),
     ),
     'ds\\sequence::filter' => 
@@ -569,6 +568,71 @@ return array (
         'length' => 'int<0, max>',
       ),
     ),
+    'swoole\\coroutine\\http\\client::setdata' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'data' => 'array<array-key, mixed>|string',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'data' => 'array<array-key, mixed>|string',
+        'length=' => 'int|null',
+      ),
+    ),
+    'swoole\\http\\response::sendfile' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'filename' => 'string',
+        'offset=' => 'int',
+        'length=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'filename' => 'string',
+        'offset=' => 'int',
+        'length=' => 'int',
+        'delete_file=' => 'bool',
+      ),
+    ),
+    'swoole\\server::sendfile' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'conn_fd' => 'int',
+        'filename' => 'string',
+        'offset=' => 'int',
+        'length=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'conn_fd' => 'int',
+        'filename' => 'string',
+        'offset=' => 'int',
+        'length=' => 'int',
+        'delete_file=' => 'bool',
+      ),
+    ),
+    'swoole\\server\\port::set' => 
+    array (
+      'old' => 
+      array (
+        0 => 'void',
+        'settings' => 'array<array-key, mixed>',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'settings' => 'array<array-key, mixed>',
+      ),
+    ),
     'swoole_get_local_ip' => 
     array (
       'old' => 
@@ -579,6 +643,38 @@ return array (
       array (
         0 => 'array<array-key, mixed>',
         'family=' => 'int',
+      ),
+    ),
+    'swoole_timer_after' => 
+    array (
+      'old' => 
+      array (
+        0 => 'int',
+        'ms' => 'int',
+        'callback' => 'callable[impure]',
+      ),
+      'new' => 
+      array (
+        0 => 'int',
+        'ms' => 'int',
+        'callback' => 'callable[impure]',
+        '...params=' => 'mixed',
+      ),
+    ),
+    'swoole_timer_tick' => 
+    array (
+      'old' => 
+      array (
+        0 => 'int',
+        'ms' => 'int',
+        'callback' => 'callable[impure]',
+      ),
+      'new' => 
+      array (
+        0 => 'int',
+        'ms' => 'int',
+        'callback' => 'callable[impure]',
+        '...params=' => 'mixed',
       ),
     ),
   ),

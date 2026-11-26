@@ -106,4 +106,18 @@ class ZipArchive implements Countable
     public const EM_AES_256 = 259;
     public const EM_UNKNOWN = 65535;
     public const LIBZIP_VERSION = '1.7.3';
+
+    /**
+     * Opens an archive held in memory, which closeString() returns
+     *
+     * @psalm-capabilities read-props|write-this-props
+     * @return bool|int
+     */
+    public function openString(string $data = '', int $flags = 0) {}
+
+    /**
+     * @psalm-capabilities read-props|write-this-props
+     * @return string|false
+     */
+    public function closeString() {}
 }

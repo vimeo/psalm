@@ -9,6 +9,8 @@ use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
+use const DIRECTORY_SEPARATOR;
+
 final class EmptyTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
@@ -21,6 +23,52 @@ final class EmptyTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'emptyOnRequiredKeyOfANestedShape' => [
+                'code' => '<?php
+                    /**
+                     * @param array{foo: array{bar: string}} $a
+                     */
+                    function f(array $a): bool {
+                        return empty($a["foo"]["bar"]);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'emptyOnRequiredShapeKey' => [
+                'code' => '<?php
+                    /** @param array{foo: string} $arg */
+                    function foo(array $arg): bool {
+                        return empty($arg["foo"]);
+                    }',
+            ],
+            'nonEmptyMixedMayStillBeAnyTruthyValue' => [
+                'code' => '<?php
+                    /** @var mixed $foo */
+                    if (!empty($foo)) {
+                        if ($foo === "a") {
+                            echo 1;
+                        }
+                        if ($foo === true) {
+                            echo 2;
+                        }
+                    }',
+            ],
+            'emptyMixedMayStillBeAnyFalsyValue' => [
+                'code' => '<?php
+                    /** @var mixed $foo */
+                    if (empty($foo)) {
+                        if ($foo === 0) {
+                            echo 1;
+                        }
+                        if ($foo === null) {
+                            echo 2;
+                        }
+                        if ($foo === false) {
+                            echo 3;
+                        }
+                    }',
+            ],
             'emptyOfAnOffsetWithAKeyThatMayBeAnyString' => [
                 'code' => '<?php
                     function f(string $k): void {
@@ -53,6 +101,37 @@ final class EmptyTest extends TestCase
                     }',
                 'assertions' => [],
                 'ignored_issues' => ['RiskyTruthyFalsyComparison'],
+            ],
+            'emptyOnBoolDefinedInSomeBranches' => [
+                'code' => '<?php
+                    function f(bool $c): bool {
+                        if ($c) {
+                            $distinct = true;
+                        }
+                        return empty($distinct);
+                    }',
+            ],
+            'emptyOnBoolDefinedInALoop' => [
+                'code' => '<?php
+                    /** @param list<int> $l */
+                    function f(array $l): bool {
+                        foreach ($l as $_) {
+                            $seen = true;
+                        }
+                        return !empty($seen);
+                    }',
+            ],
+            'emptyOnBoolDefinedInATry' => [
+                'code' => '<?php
+                    function g(): void {}
+                    function f(): bool {
+                        try {
+                            $done = true;
+                            g();
+                        } catch (Exception $e) {
+                        }
+                        return empty($done);
+                    }',
             ],
             'ifNotUndefinedAndEmpty' => [
                 'code' => '<?php
@@ -325,6 +404,7 @@ final class EmptyTest extends TestCase
                     }',
                 'assertions' => [],
                 'ignored_issues' => ['MixedAssignment', 'MissingParamType', 'MixedArgument', 'MixedArrayOffset', 'MixedArrayAccess'],
+                'php_version' => '8.0',
             ],
             'possiblyEmptyIterable' => [
                 'code' => '<?php
@@ -831,6 +911,115 @@ final class EmptyTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'emptyOnDefinedBool' => [
+                'code' => '<?php
+                    function f(bool $c): bool {
+                        if ($c) {
+                            $distinct = true;
+                        } else {
+                            $distinct = false;
+                        }
+                        return empty($distinct);
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'emptyOnOptionalShapeKeyIsRisky' => [
+                'code' => '<?php
+                    /** @param array{foo?: string} $arg */
+                    function foo(array $arg): bool {
+                        return empty($arg["foo"]);
+                    }',
+                'error_message' => 'RiskyTruthyFalsyComparison',
+            ],
+            'emptyOnNullableShapeKeyIsRisky' => [
+                'code' => '<?php
+                    /** @param array{foo: ?string} $arg */
+                    function foo(array $arg): bool {
+                        return empty($arg["foo"]);
+                    }',
+                'error_message' => 'RiskyTruthyFalsyComparison',
+            ],
+            'emptyOnShapeKeyOfAnArrayThatChangesInALoopIsRisky' => [
+                'code' => '<?php
+                    /**
+                     * @param array<string, string> $other
+                     */
+                    function f(string $s, array $other): void {
+                        $a = ["foo" => $s];
+
+                        foreach ([1, 2] as $_) {
+                            if (empty($a["foo"])) {
+                                echo "empty";
+                            }
+
+                            $a = $other;
+                        }
+                    }',
+                'error_message' => 'RiskyTruthyFalsyComparison',
+            ],
+            'emptyOnKeyOfUnsealedArrayIsRisky' => [
+                'code' => '<?php
+                    /** @param array<string, string> $arg */
+                    function foo(array $arg): bool {
+                        return empty($arg["foo"]);
+                    }',
+                'error_message' => 'RiskyTruthyFalsyComparison',
+            ],
+            'nonEmptyMixedIsNeverFalse' => [
+                'code' => '<?php
+                    /** @var mixed $foo */
+                    if (!empty($foo)) {
+                        if ($foo === false) {
+                            echo 1;
+                        }
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29 - '
+                    . 'non-empty-mixed does not contain false',
+            ],
+            'nonEmptyMixedIsNeverAnEmptyString' => [
+                'code' => '<?php
+                    /** @var mixed $foo */
+                    if (!empty($foo)) {
+                        if ($foo === "") {
+                            echo 1;
+                        }
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29 - '
+                    . "'' cannot be identical to non-empty-mixed",
+            ],
+            'nonEmptyMixedIsNeverNull' => [
+                'code' => '<?php
+                    /** @var mixed $foo */
+                    if (!empty($foo)) {
+                        if ($foo === null) {
+                            echo 1;
+                        }
+                    }',
+                'error_message' => 'TypeDoesNotContainNull - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29 - '
+                    . 'non-empty-mixed does not contain null',
+            ],
+            'nonEmptyMixedIsNeverInAListOfFalsyValues' => [
+                'code' => '<?php
+                    /** @var mixed $foo */
+                    if (!empty($foo)) {
+                        if (in_array($foo, [0, "", null], true)) {
+                            echo 1;
+                        }
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29 - '
+                    . 'Operand of type false is always falsy',
+            ],
+            'emptyMixedIsNeverTrue' => [
+                'code' => '<?php
+                    /** @var mixed $foo */
+                    if (empty($foo)) {
+                        if ($foo === true) {
+                            echo 1;
+                        }
+                    }',
+                'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29 - '
+                    . 'empty-mixed does not contain true',
+            ],
             'emptyOfAnOffsetWithALiteralKeyVariable' => [
                 'code' => '<?php
                     $a = ["key" => "test"];

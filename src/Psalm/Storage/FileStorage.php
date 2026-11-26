@@ -55,6 +55,13 @@ final class FileStorage
     public array $declaring_constants = [];
 
     /**
+     * The constants declared here with @deprecated or #[\Deprecated]
+     *
+     * @var array<string, true>
+     */
+    public array $deprecated_constants = [];
+
+    /**
      * The values of the constants whose types depend on classes, e.g. enum cases, resolved when they are fetched
      *
      * @var array<string, UnresolvedConstantComponent>
@@ -74,6 +81,11 @@ final class FileStorage
     public bool $has_extra_statements = false;
 
     public bool $has_visitor_issues = false;
+
+    /**
+     * Whether the file declares strict_types
+     */
+    public bool $strict_types = false;
 
     /**
      * @var list<CodeIssue>
@@ -97,6 +109,47 @@ final class FileStorage
      * @var array<string, string>
      */
     public array $classlike_aliases = [];
+
+    /**
+     * The names a class_alias() call of the file gives a class, whatever it aliases, and even in code psalm skips
+     *
+     * @var array<lowercase-string, true>
+     */
+    public array $possible_class_aliases = [];
+
+    /**
+     * Whether the file may call class_alias() with a name psalm doesn't know: an alias that isn't a literal, an
+     * unpacked argument, or class_alias as a callable
+     */
+    public bool $has_dynamic_class_alias = false;
+
+    /**
+     * The lowercase names of the global constants the `const` statements and the define() calls of the file declare,
+     * even in code psalm skips, and how many times
+     *
+     * @var array<lowercase-string, positive-int>
+     */
+    public array $declared_constants = [];
+
+    /**
+     * Whether the file may call define() with a name psalm doesn't know: a name that isn't a literal, an unpacked
+     * argument, or define as a callable
+     */
+    public bool $has_dynamic_define = false;
+
+    /**
+     * The variables of the global scope the code of the file may write from elsewhere: those it declares `global`
+     * and those it reads in `$GLOBALS`
+     *
+     * @var array<string, true>
+     */
+    public array $global_variables = [];
+
+    /**
+     * Whether the code of the file may write a variable of the global scope psalm doesn't know: `global $$name`,
+     * `$GLOBALS[$name]` or `$GLOBALS` itself
+     */
+    public bool $has_dynamic_global = false;
 
     public ?Aliases $aliases = null;
 

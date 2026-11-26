@@ -13,6 +13,7 @@ use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\DataFlow\NodeTable;
 use Psalm\Internal\DataFlow\Path;
+use Psalm\Internal\Perf;
 use Psalm\Issue\TaintedCallable;
 use Psalm\Issue\TaintedCookie;
 use Psalm\Issue\TaintedCustom;
@@ -21,10 +22,12 @@ use Psalm\Issue\TaintedExtract;
 use Psalm\Issue\TaintedFile;
 use Psalm\Issue\TaintedHeader;
 use Psalm\Issue\TaintedHtml;
+use Psalm\Issue\TaintedHtmlAttribute;
 use Psalm\Issue\TaintedInclude;
 use Psalm\Issue\TaintedLdap;
 use Psalm\Issue\TaintedLlmPrompt;
 use Psalm\Issue\TaintedNosql;
+use Psalm\Issue\TaintedRedirect;
 use Psalm\Issue\TaintedSSRF;
 use Psalm\Issue\TaintedShell;
 use Psalm\Issue\TaintedSleep;
@@ -34,6 +37,7 @@ use Psalm\Issue\TaintedTextWithQuotes;
 use Psalm\Issue\TaintedUnserialize;
 use Psalm\Issue\TaintedUrlComponent;
 use Psalm\Issue\TaintedUrlPath;
+use Psalm\Issue\TaintedUrlScheme;
 use Psalm\Issue\TaintedUserSecret;
 use Psalm\Issue\TaintedXpath;
 use Psalm\IssueBuffer;
@@ -50,6 +54,7 @@ use Psalm\Type\Union;
 use function array_flip;
 use function array_pop;
 use function array_unshift;
+use function array_values;
 use function count;
 use function end;
 use function get_object_vars;
@@ -58,6 +63,7 @@ use function ksort;
 use function min;
 use function pack;
 use function spl_object_id;
+use function str_starts_with;
 use function strcmp;
 use function strlen;
 use function strpos;
@@ -163,6 +169,48 @@ final class TaintFlowGraph extends DataFlowGraph
      * @var array<string, string>
      */
     private array $string_starts = [];
+
+    /**
+     * The ids of the nodes holding prepared statements => the nodes of those statements, which the values given to
+     * the statements' placeholders go through (see DatabaseTaints). Only used while analysing the function-like they
+     * are in, so never merged by addGraph().
+     *
+     * @var array<string, array<string, DataFlowNode>>
+     */
+    private array $database_statements = [];
+
+    /**
+     * The ids of the nodes of hosts parse_url() took from a URL (`parse_url($url, PHP_URL_HOST)`) => the id of the
+     * variable holding the URL and the ids of the nodes it held then (see UrlHosts). Only used while analysing the
+     * function-like they are in, so never merged by addGraph().
+     *
+     * @var array<string, array{string, list<string>}>
+     */
+    private array $url_hosts = [];
+
+    /**
+     * The ids of the nodes holding the result of a validation => what it validated (see TaintValidations). Only used
+     * while analysing the function-like they are in, so never merged by addGraph().
+     *
+     * @var array<string, list<array{string, list<string>, int, 'validator'|'violations'}>>
+     */
+    private array $taint_validations = [];
+
+    /**
+     * The validations each call (its file and position) is the result of, by the variable validated, which plugins
+     * record before the analysis gives the value of the call its nodes: analysing the call again replaces them
+     *
+     * @var array<string, array<string, array{string, list<string>, int, 'validator'|'violations'}>>
+     */
+    private array $taint_validations_of_calls = [];
+
+    /**
+     * The ids of the nodes holding a canonical path, which realpath() returned (see CanonicalPaths). Only used while
+     * analysing the function-like they are in, so never merged by addGraph().
+     *
+     * @var array<string, true>
+     */
+    private array $canonical_paths = [];
 
     /**
      * The ids of the nodes of variables assigned an empty array, whose items the next item assigned starts the start
@@ -597,6 +645,136 @@ final class TaintFlowGraph extends DataFlowGraph
     public function addStringStart(DataFlowNode $node, string $start): void
     {
         $this->string_starts[$node->id] = $start;
+    }
+
+    /**
+     * @param array<string, DataFlowNode> $statements
+     * @psalm-capabilities read-props|write-this-props
+     */
+    public function addDatabaseStatements(DataFlowNode $node, array $statements): void
+    {
+        $this->database_statements[$node->id] = [...$this->database_statements[$node->id] ?? [], ...$statements];
+    }
+
+    /**
+     * The prepared statements the nodes hold
+     *
+     * @param array<string, DataFlowNode> $nodes
+     * @return array<string, DataFlowNode>
+     * @psalm-mutation-free
+     */
+    public function getDatabaseStatements(array $nodes): array
+    {
+        $statements = [];
+        foreach ($nodes as $node) {
+            $statements += $this->database_statements[$node->id] ?? [];
+        }
+
+        return $statements;
+    }
+
+    /**
+     * @param array{string, list<string>} $url
+     * @psalm-capabilities read-props|write-this-props
+     */
+    public function addUrlHost(DataFlowNode $node, array $url): void
+    {
+        $this->url_hosts[$node->id] = $url;
+    }
+
+    /**
+     * The URL the nodes hold the host of: the variable and the ids of the nodes it held, if all of them hold the host
+     * of the same
+     *
+     * @param array<string, DataFlowNode> $nodes
+     * @return ?array{string, list<string>}
+     * @psalm-mutation-free
+     */
+    public function getUrlOfHost(array $nodes): ?array
+    {
+        $url = null;
+        foreach ($nodes as $node) {
+            $node_url = $this->url_hosts[$node->id] ?? null;
+            if ($node_url === null || ($url !== null && $url !== $node_url)) {
+                return null;
+            }
+
+            $url = $node_url;
+        }
+
+        return $url;
+    }
+
+    /**
+     * @param list<array{string, list<string>, int, 'validator'|'violations'}> $validations
+     * @psalm-capabilities read-props|write-this-props
+     */
+    public function addTaintValidations(DataFlowNode $node, array $validations): void
+    {
+        $this->taint_validations[$node->id] = [...$this->taint_validations[$node->id] ?? [], ...$validations];
+    }
+
+    /**
+     * @param array{string, list<string>, int, 'validator'|'violations'} $validation
+     * @psalm-capabilities read-props|write-this-props
+     */
+    public function addTaintValidationOfCall(string $call, array $validation): void
+    {
+        $this->taint_validations_of_calls[$call][$validation[0]] = $validation;
+    }
+
+    /**
+     * @return list<array{string, list<string>, int, 'validator'|'violations'}>
+     * @psalm-mutation-free
+     */
+    public function getTaintValidationsOfCall(string $call): array
+    {
+        return array_values($this->taint_validations_of_calls[$call] ?? []);
+    }
+
+    /**
+     * The validations all the nodes hold the result of
+     *
+     * @param array<string, DataFlowNode> $nodes
+     * @return list<array{string, list<string>, int, 'validator'|'violations'}>
+     * @psalm-mutation-free
+     */
+    public function getTaintValidations(array $nodes): array
+    {
+        $validations = null;
+        foreach ($nodes as $node) {
+            $node_validations = $this->taint_validations[$node->id] ?? [];
+            $validations = $validations === null ? $node_validations : ($validations === $node_validations
+                ? $validations
+                : []);
+        }
+
+        return $validations ?? [];
+    }
+
+    /**
+     * @psalm-capabilities read-props|write-this-props
+     */
+    public function addCanonicalPath(DataFlowNode $node): void
+    {
+        $this->canonical_paths[$node->id] = true;
+    }
+
+    /**
+     * Whether all the nodes hold a canonical path
+     *
+     * @param array<string, DataFlowNode> $nodes
+     * @psalm-mutation-free
+     */
+    public function areCanonicalPaths(array $nodes): bool
+    {
+        foreach ($nodes as $node) {
+            if (!isset($this->canonical_paths[$node->id])) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**
@@ -1065,6 +1243,7 @@ final class TaintFlowGraph extends DataFlowGraph
     public function connectSinksAndSources(Progress $progress): void
     {
         $progress->startPhase(Phase::TAINT_GRAPH_RESOLUTION);
+        Perf\Collector::step('taint.prepare');
 
         // the graph is dumped in the same order whichever order the analysis of the files added it in
         ksort($this->forward_edges);
@@ -1092,6 +1271,14 @@ final class TaintFlowGraph extends DataFlowGraph
                 unset($this->specializations[$k]);
             }
         } unset($map);
+
+        Perf\Collector::step('taint.resolve');
+        Perf\Collector::taint(
+            count($this->nodes),
+            count($this->sources),
+            count($this->sinks),
+            count($this->specializations),
+        );
 
         $resolution = new TaintFlowResolution(
             $this,
@@ -1142,6 +1329,8 @@ final class TaintFlowGraph extends DataFlowGraph
         // the graphs of the forked workers are merged in any order: keep the edges added the same
         ksort($this->generator_sends);
 
+        $reaching = $this->getNodesReachingGeneratorSentNodes($reverse);
+
         foreach ($this->generator_sends as $send_id => $generator_ids) {
             ksort($generator_ids);
 
@@ -1154,6 +1343,10 @@ final class TaintFlowGraph extends DataFlowGraph
             $searched = [];
 
             foreach ($generator_ids as $generator_id => $_) {
+                if (!isset($reaching[$generator_id])) {
+                    continue;
+                }
+
                 $queue[] = [$generator_id, []];
                 $visited[$generator_id . "\0"] = true;
             }
@@ -1185,6 +1378,11 @@ final class TaintFlowGraph extends DataFlowGraph
                 }
 
                 foreach ($reverse[$id] ?? [] as $from_id => $_) {
+                    // a specialization linked during the walk isn't in $reaching
+                    if (!isset($reaching[$from_id]) && !isset($reaching[self::splitSpecializedId($from_id)[0]])) {
+                        continue;
+                    }
+
                     $from_calls = $calls;
 
                     if ($specialization_key !== null && $from_id === $unspecialized_id) {
@@ -1195,17 +1393,17 @@ final class TaintFlowGraph extends DataFlowGraph
                             // too deep (recursion): any call matches
                             $from_calls = [];
                         }
-                    } else {
-                        [$from_unspecialized_id, $from_specialization_key] = self::splitSpecializedId($from_id);
+                    } elseif ($specialization_key === null
+                        && str_starts_with($from_id, $id . self::SPECIALIZATION_SEPARATOR)
+                    ) {
+                        // out of a body through the arguments of a call: the one entered, if any
+                        $from_specialization_key = substr($from_id, strlen($id . self::SPECIALIZATION_SEPARATOR));
 
-                        if ($from_unspecialized_id === $id) {
-                            // out of a body through the arguments of a call: the one entered, if any
-                            if ($from_calls && end($from_calls) !== $from_specialization_key) {
-                                continue;
-                            }
-
-                            array_pop($from_calls);
+                        if ($from_calls && end($from_calls) !== $from_specialization_key) {
+                            continue;
                         }
+
+                        array_pop($from_calls);
                     }
 
                     $state_key = $from_id . "\0" . implode("\0", $from_calls);
@@ -1228,6 +1426,56 @@ final class TaintFlowGraph extends DataFlowGraph
                 }
             }
         }
+    }
+
+    /**
+     * The nodes linkGeneratorSends() can reach a generator sent node from, walking $reverse: the ones reached from
+     * the sent nodes the other way. Its walk from any other node finds nothing, so it skips them.
+     *
+     * The links it adds during the walk go from the node sent to a generator into the node of what the generator
+     * receives, or into a specialization of it, so a node that reaches what a generator receives may reach a sent
+     * node later: those count from the start.
+     *
+     * @param array<string, array<string, true>> $reverse see getReverseEdges()
+     * @return array<string, true>
+     * @psalm-mutation-free
+     */
+    private function getNodesReachingGeneratorSentNodes(array $reverse): array
+    {
+        $reaching = [];
+        $queue = [];
+
+        foreach ($this->generator_sent_nodes as $id => $received_node) {
+            foreach ([$id, $received_node->id] as $start_id) {
+                if (!isset($reaching[$start_id])) {
+                    $reaching[$start_id] = true;
+                    $queue[] = $start_id;
+                }
+            }
+        }
+
+        while ($queue) {
+            $id = array_pop($queue);
+            $targets = $this->forward_edges[$id] ?? [];
+
+            // the specialization links go both ways in $reverse
+            foreach ($reverse[$id] ?? [] as $linked_id => $_) {
+                if (str_starts_with($linked_id, $id . self::SPECIALIZATION_SEPARATOR)
+                    || str_starts_with($id, $linked_id . self::SPECIALIZATION_SEPARATOR)
+                ) {
+                    $targets[$linked_id] = true;
+                }
+            }
+
+            foreach ($targets as $to_id => $_) {
+                if (!isset($reaching[$to_id])) {
+                    $reaching[$to_id] = true;
+                    $queue[] = $to_id;
+                }
+            }
+        }
+
+        return $reaching;
     }
 
     /**
@@ -1395,7 +1643,8 @@ final class TaintFlowGraph extends DataFlowGraph
         $max = $codebase->taint_count;
         for ($x = 0; $x < $max; $x++) {
             $t = 1 << $x;
-            if (!($taints & $t)) {
+            // both are reported as a tainted XPath query
+            if (!($taints & $t) || ($t === TaintKind::INPUT_XPATH_LITERAL && ($taints & TaintKind::INPUT_XPATH))) {
                 continue;
             }
             $issue = match ($t) {
@@ -1429,6 +1678,12 @@ final class TaintFlowGraph extends DataFlowGraph
                     $issue_trace,
                     $path,
                 ),
+                TaintKind::INPUT_SQL_UNQUOTED => new TaintedSql(
+                    'Detected tainted SQL outside of quotes',
+                    $issue_location,
+                    $issue_trace,
+                    $path,
+                ),
                 TaintKind::INPUT_NOSQL => new TaintedNosql(
                     'Detected tainted NoSQL query',
                     $issue_location,
@@ -1443,6 +1698,18 @@ final class TaintFlowGraph extends DataFlowGraph
                 ),
                 TaintKind::INPUT_HAS_QUOTES => new TaintedTextWithQuotes(
                     'Detected tainted text with possible quotes',
+                    $issue_location,
+                    $issue_trace,
+                    $path,
+                ),
+                TaintKind::INPUT_HTML_ATTRIBUTE => new TaintedHtmlAttribute(
+                    'Detected tainted unquoted attribute value',
+                    $issue_location,
+                    $issue_trace,
+                    $path,
+                ),
+                TaintKind::INPUT_URL_SCHEME => new TaintedUrlScheme(
+                    'Detected tainted URL scheme',
                     $issue_location,
                     $issue_trace,
                     $path,
@@ -1507,7 +1774,13 @@ final class TaintFlowGraph extends DataFlowGraph
                     $issue_trace,
                     $path,
                 ),
-                TaintKind::INPUT_XPATH => new TaintedXpath(
+                TaintKind::INPUT_REDIRECT => new TaintedRedirect(
+                    'Detected tainted redirect target',
+                    $issue_location,
+                    $issue_trace,
+                    $path,
+                ),
+                TaintKind::INPUT_XPATH, TaintKind::INPUT_XPATH_LITERAL => new TaintedXpath(
                     'Detected tainted xpath query',
                     $issue_location,
                     $issue_trace,

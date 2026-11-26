@@ -30,6 +30,15 @@ final class TTrue extends TBool
      * @psalm-pure
      */
     #[Override]
+    public function getId(bool $exact = true): string
+    {
+        return 'true';
+    }
+
+    /**
+     * @psalm-pure
+     */
+    #[Override]
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
         return false;

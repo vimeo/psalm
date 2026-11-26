@@ -28,6 +28,19 @@ return array (
         'timezone' => 'DateTimeZone|IntlTimeZone|null|string',
       ),
     ),
+    'dateinterval::createfromdatestring' => 
+    array (
+      'old' => 
+      array (
+        0 => 'DateInterval|false',
+        'datetime' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'DateInterval',
+        'datetime' => 'string',
+      ),
+    ),
     'gc_status' => 
     array (
       'old' => 
@@ -352,6 +365,21 @@ return array (
       array (
         0 => 'true',
         '&array' => 'array<array-key, mixed>',
+      ),
+    ),
+    'odbc_autocommit' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool|int',
+        'odbc' => 'resource',
+        'enable=' => 'bool',
+      ),
+      'new' => 
+      array (
+        0 => 'bool|int',
+        'odbc' => 'resource',
+        'enable=' => 'bool|null',
       ),
     ),
     'pg_close' => 

@@ -2,6 +2,9 @@
 
 class DateTimeImmutable implements DateTimeInterface
 {
+    /**
+     * @psalm-capabilities time
+     */
     public function __construct(string $datetime = "now", DateTimeZone $timezone = null) {}
 
     /**
@@ -23,7 +26,7 @@ class DateTimeImmutable implements DateTimeInterface
 
     /**
      * @psalm-mutation-free
-     * @return DateTimeZone
+     * @return DateTimeZone|false
      */
     public function getTimezone() {}
 

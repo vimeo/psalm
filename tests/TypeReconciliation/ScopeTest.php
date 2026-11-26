@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Tests\TypeReconciliation;
 
 use Override;
+use Psalm\Context;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
@@ -16,6 +17,32 @@ final class ScopeTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
+    public function testPsalmScopeThisWithoutAClassInAFileThatIsOnlyScanned(): void
+    {
+        $this->addFile('scanned.php', '<?php
+            /** @psalm-scope-this */
+            echo 1;');
+        $this->addFile('somefile.php', '<?php
+            echo 1;');
+
+        $this->analyzeFile('somefile.php', new Context());
+
+        $this->addToAssertionCount(1);
+    }
+
+    public function testPsalmScopeThisWithAnEmptyClassNameInAFileThatIsOnlyScanned(): void
+    {
+        $this->addFile('scanned.php', '<?php
+            /** @psalm-scope-this \ */
+            echo 1;');
+        $this->addFile('somefile.php', '<?php
+            echo 1;');
+
+        $this->analyzeFile('somefile.php', new Context());
+
+        $this->addToAssertionCount(1);
+    }
+
     /**
      * @psalm-pure
      */
@@ -23,6 +50,59 @@ final class ScopeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'variableUnsetInABranchThatDoesNotReachTheCodeAfterIsDefined' => [
+                'code' => '<?php
+                    function reassigned(bool $c): int {
+                        $x = 1;
+
+                        if ($c) {
+                            unset($x);
+                            $x = 2;
+                        }
+
+                        return $x;
+                    }
+
+                    function returns(bool $c): int {
+                        $x = 1;
+
+                        if ($c) {
+                            unset($x);
+
+                            return 0;
+                        }
+
+                        return $x;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'variableUnsetInABranchCanBeTestedWithIssetAndCoalesceAfterIt' => [
+                'code' => '<?php
+                    function viaIsset(bool $c): int {
+                        $x = 1;
+
+                        if ($c) {
+                            unset($x);
+                        }
+
+                        return isset($x) ? $x : 0;
+                    }
+
+                    function viaCoalesce(bool $c): int {
+                        $x = 1;
+
+                        if ($c) {
+                            unset($x);
+                        }
+
+                        return $x ?? 0;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'newVarInIf' => [
                 'code' => '<?php
                     if (rand(0,100) === 10) {
@@ -351,6 +431,12 @@ final class ScopeTest extends TestCase
                 ?>
                 <h1><?= $this->getMessage() ?></h1>',
             ],
+            'psalmScopeThisInTemplateIsTheOnlyReferenceToTheClass' => [
+                'code' => '<?php
+                    /** @psalm-scope-this Psalm\Tests\LanguageServer\MockProtocolStream */
+                ?>
+                <h1><?php $this->write(new Psalm\Internal\LanguageServer\Message(new AdvancedJsonRpc\Notification("a"))); ?></h1>',
+            ],
             'psalmScopeThisInTemplateFQCN' => [
                 'code' => '<?php
                     $e = new Exception(); // necessary to trick Psalm’s scanner for test
@@ -402,6 +488,36 @@ final class ScopeTest extends TestCase
                         takesA($a);
                     }',
             ],
+            'propertyUnsetInABranchKeepsItsDeclaredType' => [
+                'code' => '<?php
+                    final class A {
+                        public int $q = 1;
+
+                        /** @var array<string, int> */
+                        public array $arr = ["a" => 1];
+
+                        public function t2(bool $c): int {
+                            $this->q = 1;
+                            if ($c) {
+                                unset($this->q);
+                            }
+
+                            return $this->q;
+                        }
+
+                        public function t4(bool $c): int {
+                            $this->arr = ["a" => 1];
+                            if ($c) {
+                                unset($this->arr);
+                            }
+
+                            return count($this->arr);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
         ];
     }
 
@@ -412,6 +528,89 @@ final class ScopeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'unknownAnnotationOnAStatementIsReported' => [
+                'code' => '<?php
+                    /** @psalm-not-an-annotation */
+                    $a = 1;',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'unknownAnnotationNextToPsalmScopeThisIsReported' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-scope-this Exception
+                     * @psalm-not-an-annotation
+                     */
+                ?>
+                <h1><?= $this->getMessage() ?></h1>',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'variableUnsetInACaseThatFallsThroughIsPossiblyUndefined' => [
+                'code' => '<?php
+                    function f(int $i): int {
+                        $x = 1;
+
+                        switch ($i) {
+                            case 1:
+                                unset($x);
+                            case 2:
+                                echo 1;
+                                break;
+                        }
+
+                        return $x;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'variableUnsetInTheIfIsPossiblyUndefinedAfterIt' => [
+                'code' => '<?php
+                    function foo(): void {
+                        $x = 1;
+                        if (random_int(0, 1)) {
+                            unset($x);
+                        }
+                        echo $x;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'variableUnsetInTheElseIsPossiblyUndefinedAfterIt' => [
+                'code' => '<?php
+                    function foo(): void {
+                        $x = 1;
+                        if (random_int(0, 1)) {
+                            echo 1;
+                        } else {
+                            unset($x);
+                        }
+                        echo $x;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'variableUnsetInTheElseifIsPossiblyUndefinedAfterIt' => [
+                'code' => '<?php
+                    function foo(): void {
+                        $x = 1;
+                        if (random_int(0, 1)) {
+                            echo 1;
+                        } elseif (random_int(0, 1)) {
+                            unset($x);
+                        }
+                        echo $x;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'variableUnsetInASwitchCaseIsPossiblyUndefinedAfterIt' => [
+                'code' => '<?php
+                    function foo(): void {
+                        $x = 1;
+                        switch (random_int(0, 1)) {
+                            case 1:
+                                unset($x);
+                                break;
+                        }
+                        echo $x;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
             'possiblyUndefinedVarInIf' => [
                 'code' => '<?php
                     if (rand(0,100) === 10) {

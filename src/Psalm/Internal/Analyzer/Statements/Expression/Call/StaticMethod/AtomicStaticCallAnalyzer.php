@@ -21,9 +21,9 @@ use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollect
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallPurityAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallReturnTypeFetcher;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodVisibilityAnalyzer;
-use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MissingMethodCallHandler;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\NewAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\OverloadSelector;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\StaticCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
@@ -102,21 +102,24 @@ final class AtomicStaticCallAnalyzer
         if ($lhs_type_part instanceof TNamedObject) {
             $fq_class_name = $lhs_type_part->value;
 
-            if (!ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
-                $statements_analyzer,
-                $fq_class_name,
-                new CodeLocation($statements_analyzer, $stmt->class),
-                !$context->collect_initializations
-                    ? $context
-                    : null,
-                $statements_analyzer->getSuppressedIssues(),
-                new ClassLikeNameOptions(
-                    $stmt->class instanceof PhpParser\Node\Name
-                        && count($stmt->class->getParts()) === 1
-                        && in_array(strtolower($stmt->class->getFirst()), ['self', 'static'], true),
-                    context: $context,
-                ),
-            )) {
+            // StaticCallAnalyzer reports calling a method directly on a trait
+            if (!$statements_analyzer->getCodebase()->classlikes->traitExists($fq_class_name)
+                && !ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
+                    $statements_analyzer,
+                    $fq_class_name,
+                    new CodeLocation($statements_analyzer, $stmt->class),
+                    !$context->collect_initializations
+                        ? $context
+                        : null,
+                    $statements_analyzer->getSuppressedIssues(),
+                    new ClassLikeNameOptions(
+                        $stmt->class instanceof PhpParser\Node\Name
+                            && count($stmt->class->getParts()) === 1
+                            && in_array(strtolower($stmt->class->getFirst()), ['self', 'static'], true),
+                        context: $context,
+                    ),
+                )
+            ) {
                 return;
             }
 
@@ -241,10 +244,14 @@ final class AtomicStaticCallAnalyzer
             if ($stmt->name instanceof PhpParser\Node\Expr) {
                 $was_inside_general_use = $context->inside_general_use;
                 $context->inside_general_use = true;
+                // the name is read even in isset mode
+                $was_inside_isset = $context->inside_isset;
+                $context->inside_isset = false;
 
                 ExpressionAnalyzer::analyze($statements_analyzer, $stmt->name, $context);
 
                 $context->inside_general_use = $was_inside_general_use;
+                $context->inside_isset = $was_inside_isset;
             }
 
             if (!$context->ignore_variable_method) {
@@ -687,6 +694,9 @@ final class AtomicStaticCallAnalyzer
                 );
 
                 if ($is_dynamic_this_method) {
+                    // the forwarded instance call analyses the arguments
+                    $args_analyzed = true;
+
                     return self::forwardCallToInstanceMethod(
                         $statements_analyzer,
                         $stmt,
@@ -1053,19 +1063,23 @@ final class AtomicStaticCallAnalyzer
     ): ?bool {
         $codebase = $statements_analyzer->getCodebase();
 
-        $pseudo_method_storage = MissingMethodCallHandler::selectOverload(
-            $statements_analyzer,
-            $codebase,
-            $args,
-            $context,
-            $class_storage->pseudo_static_method_overloads[$method_id->method_name] ?? null,
-            $pseudo_method_storage,
-        );
+        $overloads = $class_storage->pseudo_static_method_overloads[$method_id->method_name] ?? null;
+
+        if ($overloads !== null) {
+            $pseudo_method_storage = OverloadSelector::select(
+                $statements_analyzer,
+                $codebase,
+                $args,
+                $context,
+                $overloads,
+            );
+        }
 
         if (!$context->isSuppressingExceptions($statements_analyzer)) {
             $context->mergeFunctionExceptions(
                 $pseudo_method_storage,
                 new CodeLocation($statements_analyzer, $stmt),
+                $statements_analyzer->getCodebase(),
             );
         }
 
@@ -1115,6 +1129,14 @@ final class AtomicStaticCallAnalyzer
         ) === false) {
             return false;
         }
+
+        ClassTemplateParamCollector::markStarBindings(
+            $template_result,
+            $codebase,
+            $static_class_storage,
+            $lhs_type_part,
+            $found_generic_params,
+        );
 
         // what `__callStatic` does (if it implements the pseudo-method), and what the purity
         // templates of the pseudo-method (`@method static int run(Closure[_](): int $f)`) are bound to
@@ -1326,6 +1348,13 @@ final class AtomicStaticCallAnalyzer
         );
 
         $template_result = new TemplateResult([], $found_generic_params ?? []);
+        ClassTemplateParamCollector::markStarBindings(
+            $template_result,
+            $codebase,
+            $class_storage,
+            $lhs_type_part,
+            $found_generic_params,
+        );
 
         if ($inferred_template_result) {
             $template_result->lower_bounds += $inferred_template_result->lower_bounds;
@@ -1431,7 +1460,23 @@ final class AtomicStaticCallAnalyzer
 
         $fake_method_call_type = $statements_analyzer->node_data->getType($fake_method_call_expr);
 
+        // a call forwarded to `$this` keeps the conditional assertions of the instance call, on `$this` too
+        $if_true_assertions = $virtual_var_name === 'this'
+            ? $statements_analyzer->node_data->getIfTrueAssertions($fake_method_call_expr)
+            : null;
+        $if_false_assertions = $virtual_var_name === 'this'
+            ? $statements_analyzer->node_data->getIfFalseAssertions($fake_method_call_expr)
+            : null;
+
         $statements_analyzer->node_data = $old_data_provider;
+
+        if ($if_true_assertions !== null) {
+            $statements_analyzer->node_data->setIfTrueAssertions($stmt, $if_true_assertions);
+        }
+
+        if ($if_false_assertions !== null) {
+            $statements_analyzer->node_data->setIfFalseAssertions($stmt, $if_false_assertions);
+        }
 
         if ($fake_method_call_type) {
             $statements_analyzer->node_data->setType($stmt, $fake_method_call_type);

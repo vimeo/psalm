@@ -42,6 +42,20 @@ final class TypeCombination
     /** @var array<string, non-empty-list<Union>> */
     public array $object_type_params = [];
 
+    /** @var array<string, array<int, TypeArgumentProjection>> */
+    public array $object_projections = [];
+
+    /**
+     * How many generic objects were combined under a key, and for each offset how many of them left the argument out:
+     * an argument is left out in the union only when every one of them left it out
+     *
+     * @var array<string, int>
+     */
+    public array $object_member_counts = [];
+
+    /** @var array<string, array<int, int>> */
+    public array $object_omitted_counts = [];
+
     /** @var array<string, bool> */
     public array $object_static = [];
 
@@ -71,14 +85,19 @@ final class TypeCombination
     public ?Union $objectlike_value_type = null;
 
     /**
-     * Whether every keyed array is unsealed, with the same fallback key type.
+     * Whether every unsealed keyed array has the same fallback key type.
      */
     public bool $objectlike_same_fallback_key = true;
 
     /**
-     * Keys that a keyed array does not declare.
+     * Whether a sealed keyed array was combined.
+     */
+    public bool $objectlike_some_sealed = false;
+
+    /**
+     * Keys that a keyed array does not declare, mapped to whether every keyed array lacking the key is unsealed.
      *
-     * @var array<string|int, true>
+     * @var array<string|int, bool>
      */
     public array $objectlike_missing_keys = [];
 
@@ -121,6 +140,8 @@ final class TypeCombination
 
     /** @var array<string, ?TNamedObject> */
     public array $class_string_map_as_types = [];
+
+    public ?Union $class_string_map_value_param = null;
 
     /**
      * @psalm-assert-if-true !null $this->objectlike_key_type
@@ -184,5 +205,27 @@ final class TypeCombination
             }
         }
         return false;
+    }
+
+    /**
+     * The projections of the generic object combined under a key: an argument left out stays so only when every
+     * object combined under the key left it out
+     *
+     * @return array<int, TypeArgumentProjection>
+     * @psalm-mutation-free
+     */
+    public function getProjections(string $key): array
+    {
+        $projections = $this->object_projections[$key] ?? [];
+
+        foreach ($projections as $offset => $projection) {
+            if ($projection === TypeArgumentProjection::Omitted
+                && ($this->object_omitted_counts[$key][$offset] ?? 0) !== ($this->object_member_counts[$key] ?? 0)
+            ) {
+                unset($projections[$offset]);
+            }
+        }
+
+        return $projections;
     }
 }

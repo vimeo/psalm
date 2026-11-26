@@ -42,7 +42,7 @@ final class ArrayChunkReturnTypeProvider implements FunctionReturnTypeProviderIn
         ) {
             $preserve_keys = isset($call_args[2])
                 && ($preserve_keys_arg_type = $statements_source->getNodeTypeProvider()->getType($call_args[2]->value))
-                && (string) $preserve_keys_arg_type !== 'false';
+                && !$preserve_keys_arg_type->isFalse();
 
             return Type::getList(
                 new Union([

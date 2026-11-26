@@ -15,8 +15,10 @@ use Stringable;
 use function array_column;
 use function array_fill_keys;
 use function array_map;
+use function array_values;
 use function count;
 use function implode;
+use function sort;
 
 /**
  * @api
@@ -42,6 +44,13 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
      * @var array<string, bool>
      */
     public array $param_lookup = [];
+
+    /**
+     * The signatures of the `@psalm-overload` tags, in the order of the docblock
+     *
+     * @var list<MethodStorage>
+     */
+    public array $overloads = [];
 
     public ?Union $return_type = null;
 
@@ -171,6 +180,44 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
      * @var array<string, CodeLocation>
      */
     public array $throw_locations = [];
+
+    /**
+     * For each thrown class, the other classes of every intersection type (`A&B`) it is part of
+     *
+     * @var array<string, list<list<string>>>
+     */
+    public array $throw_intersections = [];
+
+    /**
+     * What the function declares as `@throws`, one entry per thrown type: a class alone, or the classes of an
+     * intersection (`A&B`)
+     *
+     * @return list<list<string>>
+     * @psalm-mutation-free
+     */
+    public function getThrowGroups(): array
+    {
+        $groups = [];
+
+        foreach ($this->throws ?: [] as $exception_name => $_) {
+            if (!isset($this->throw_intersections[$exception_name])) {
+                $groups[] = [$exception_name];
+
+                continue;
+            }
+
+            foreach ($this->throw_intersections[$exception_name] as $other_members) {
+                $group = [$exception_name, ...$other_members];
+                $sorted_group = $group;
+                sort($sorted_group);
+
+                // the group is stored under each of its classes
+                $groups[implode('&', $sorted_group)] ??= $group;
+            }
+        }
+
+        return array_values($groups);
+    }
 
     public bool $has_yield = false;
 
@@ -345,6 +392,30 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
     public array $taint_store_reads = [];
 
     /**
+     * What a call of the function-like stores in the database and reads from it: `@psalm-database-query $sql $params`,
+     * ... (see DatabaseTaints), with parameters as offsets
+     *
+     * @var list<array{
+     *     0: 'query'|'prepare'|'execute'|'bind'|'insert'|'update'|'select'|'fetch',
+     *     sql?: int,
+     *     params?: int,
+     *     statement?: int,
+     *     name?: int,
+     *     key?: int,
+     *     value?: int,
+     *     values?: int,
+     *     base?: int,
+     *     table?: int,
+     *     data?: int,
+     *     from?: int,
+     *     result?: 'result'|'rows'|'value'|'column'|'any_value'|'any_column'|'value_or_row'|'none',
+     *     optional_first?: int,
+     *     readonly?: true,
+     * }>
+     */
+    public array $database_calls = [];
+
+    /**
      * The flows of arguments into a property of the object a method is called on:
      * `@psalm-flow ($value) -> $this->$name`. `name` is the offset of the parameter giving the name of the property,
      * null for any property; `params` are those whose arguments are set.
@@ -425,6 +496,50 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
     public function isExternalMutationFree(): bool
     {
         return Capabilities::allowsAnyOf(Capabilities::EXTERNAL_MUTATION_FREE, $this->capabilities);
+    }
+
+    /**
+     * This function-like called as one of its overloads: with the parameters and the return type of the overload
+     *
+     * @psalm-mutation-free
+     */
+    public function withOverload(self $overload): static
+    {
+        $variant = clone $this;
+        $variant->params = $overload->params;
+
+        $last_param = $this->params === [] ? null : $this->params[count($this->params) - 1];
+        $real_variadic = $last_param !== null && $last_param->is_variadic ? $last_param : null;
+
+        // what the real parameter at the same position declares for the arguments, not their types
+        foreach ($variant->params as $position => $overload_param) {
+            $real_param = $this->params[$position] ?? $real_variadic;
+
+            if ($real_param === null) {
+                continue;
+            }
+
+            $overload_param = clone $overload_param;
+            $overload_param->sinks |= $real_param->sinks;
+            $overload_param->value_sinks |= $real_param->value_sinks;
+            $overload_param->assert_untainted = $overload_param->assert_untainted || $real_param->assert_untainted;
+            $overload_param->by_ref = $real_param->by_ref;
+            $overload_param->out_type ??= $real_param->by_ref ? $real_param->out_type : null;
+            $overload_param->closure_this_type ??= $real_param->closure_this_type;
+
+            $variant->params[$position] = $overload_param;
+        }
+
+        $variant->param_lookup = $overload->param_lookup;
+        $variant->required_param_count = $overload->required_param_count;
+        $variant->return_type = $overload->return_type ?? $this->return_type;
+        $variant->return_type_location = $overload->return_type === null
+            ? $this->return_type_location
+            : $overload->return_type_location;
+        $variant->template_types = $overload->template_types ?? $this->template_types;
+        $variant->overloads = [];
+
+        return $variant;
     }
 
     /**

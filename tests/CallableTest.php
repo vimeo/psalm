@@ -155,6 +155,512 @@ final class CallableTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'literalArraysOfAnExistingMethodAreCallableArrays' => [
+                'code' => '<?php
+                    final class Foo {
+                        public static function bar(): void {}
+                        public function inst(): void {}
+                    }
+
+                    final class Magic {
+                        public function __call(string $name, array $args): void {}
+                        public static function __callStatic(string $name, array $args): void {}
+                    }
+
+                    /** @return callable-array{string, string} */
+                    function existingStatic(): array {
+                        return ["Foo", "bar"];
+                    }
+
+                    /** @return callable-array{Foo, string} */
+                    function existingInstance(): array {
+                        return [new Foo(), "inst"];
+                    }
+
+                    /** @return callable-array{string, string} */
+                    function magic(): array {
+                        return ["Magic", "anything"];
+                    }
+
+                    /** @return callable-array{object, string} */
+                    function magicObject(): array {
+                        return [new Magic(), "anything"];
+                    }
+
+                    class Base {
+                        public function __call(string $name, array $args): void {}
+                    }
+
+                    final class Kid extends Base {}
+
+                    /** @return callable-array{object, string} */
+                    function inheritedMagicObject(): array {
+                        return [new Kid(), "anything"];
+                    }
+
+                    /** @param callable-array{object, string} $c */
+                    function takesPair(array $c): void {}
+
+                    takesPair([new Magic(), "anything"]);
+
+                    class Open {}
+
+                    // a subclass of a class that is not final can declare the method
+                    /** @return callable-array{object, string} */
+                    function subclassMayDeclareIt(Open $o): array {
+                        return [$o, "notOnOpen"];
+                    }
+
+                    // a pair that is not a literal is not proven wrong, so it is accepted
+                    /**
+                     * @param array{string, string} $pair
+                     * @return callable-array{string, string}
+                     */
+                    function dynamic(array $pair): array {
+                        return $pair;
+                    }
+
+                    /**
+                     * @method static void pseudoStatic()
+                     * @method void pseudoInst()
+                     */
+                    final class WithMethodTag {}
+
+                    /** @return callable-array{string, string} */
+                    function pseudoStaticMethod(): array {
+                        return ["WithMethodTag", "pseudoStatic"];
+                    }
+
+                    /** @return callable-array{object, string} */
+                    function pseudoInstanceMethod(): array {
+                        return [new WithMethodTag(), "pseudoInst"];
+                    }
+
+                    final class Target {
+                        public function fromMixin(): void {}
+                    }
+
+                    /** @mixin Target */
+                    final class HasMixin {}
+
+                    /** @return callable-array{object, string} */
+                    function mixinMethod(): array {
+                        return [new HasMixin(), "fromMixin"];
+                    }
+
+                    /** @mixin Target */
+                    class ParentWithMixin {}
+
+                    final class KidOfMixin extends ParentWithMixin {}
+
+                    /** @return callable-array{object, string} */
+                    function inheritedMixinMethod(): array {
+                        return [new KidOfMixin(), "fromMixin"];
+                    }
+
+                    /** @mixin Target */
+                    trait TraitWithMixin {}
+
+                    final class UsesTraitWithMixin {
+                        use TraitWithMixin;
+                    }
+
+                    /** @return callable-array{object, string} */
+                    function mixinMethodOfATrait(): array {
+                        return [new UsesTraitWithMixin(), "fromMixin"];
+                    }
+
+                    enum MagicEnum {
+                        case A;
+                        public static function __callStatic(string $n, array $a): mixed { return 1; }
+                    }
+
+                    /** @return callable-array{string, string} */
+                    function magicOfAnEnum(): array {
+                        return ["MagicEnum", "anything"];
+                    }
+
+                    interface MagicInterface {
+                        public static function __callStatic(string $n, array $a): mixed;
+                    }
+
+                    /** @return callable-array{string, string} */
+                    function magicOfAnInterface(): array {
+                        return ["MagicInterface", "anything"];
+                    }
+
+                    /** @return callable-array{string, string} */
+                    function magicOfALeadingBackslash(): array {
+                        return ["\Magic", "anything"];
+                    }
+
+                    class ParentOfPm {
+                        public function pm(): void {}
+                    }
+
+                    final class KidOfPm extends ParentOfPm {}
+
+                    /** @return callable-array{string, string} */
+                    function methodNameWithAScope(): array {
+                        return ["KidOfPm", "parent::pm"];
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'callableOfATemplatedReturnMayBeAClosure' => [
+                'code' => '<?php
+                    /**
+                     * @template TReturn
+                     * @param (callable(mixed...): TReturn) $callable
+                     */
+                    function parallel(callable $callable): bool
+                    {
+                        if ($callable instanceof \\Closure) {
+                            return true;
+                        }
+
+                        return false;
+                    }',
+            ],
+            'callableOfThisInATraitIsTheObjectTheMethodIsCalledOn' => [
+                'code' => '<?php
+                    final class Str {
+                        /** @param callable(static): void $callback */
+                        public function __construct(?callable $callback = null) {}
+
+                        /**
+                         * @template TReturn
+                         * @param callable($this): TReturn $callback
+                         * @return TReturn
+                         */
+                        public function when(callable $callback) {
+                            return $callback($this);
+                        }
+
+                        /** @param callable(static): void $callback */
+                        public static function make(callable $callback): void {
+                            $callback(new Str());
+                        }
+
+                        public function beforeLast(string $s): self {
+                            return $this;
+                        }
+                    }
+
+                    trait CompilesEchos {
+                        public function compile(): void {
+                            (new Str())->when(function ($str) {
+                                return $str->beforeLast(";");
+                            });
+
+                            Str::make(function ($str): void {
+                                $str->beforeLast(";");
+                            });
+
+                            new Str(function ($str): void {
+                                $str->beforeLast(";");
+                            });
+                        }
+                    }
+
+                    final class Compiler {
+                        use CompilesEchos;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingClosureReturnType'],
+            ],
+            'callableArrayOnAnIntersectionWithATemplate' => [
+                'code' => '<?php
+                    interface Foo {
+                        public function bar(int $i): int;
+                    }
+
+                    /**
+                     * @template T of object
+                     * @param Foo&T $x
+                     * @return list<int>
+                     */
+                    function f($x): array {
+                        return array_map([$x, "bar"], [1]);
+                    }
+
+                    interface Baz {}
+                    interface Qux {}
+
+                    /**
+                     * @template T of Baz&Qux
+                     * @param Foo&T $x
+                     * @return list<int>
+                     */
+                    function g($x): array {
+                        return array_map([$x, "bar"], [1]);
+                    }
+
+                    /**
+                     * @param Foo&Baz $x
+                     * @return list<int>
+                     */
+                    function h($x): array {
+                        return array_map([$x, "bar"], [1]);
+                    }',
+            ],
+            'callableArrayOnAnIntersectionWithATemplateBoundToAnIntersection' => [
+                'code' => '<?php
+                    interface Foo {}
+                    interface Baz {}
+                    interface Bar {
+                        public function bar(int $i): int;
+                    }
+
+                    /**
+                     * @template T of Baz&Bar
+                     * @param Foo&T $x
+                     * @return list<int>
+                     */
+                    function f($x): array {
+                        return array_map([$x, "bar"], [1]);
+                    }',
+            ],
+            'callableArrayOnAnIntersectionWithATemplateBoundToATemplate' => [
+                'code' => '<?php
+                    interface Foo {}
+                    interface Bar {
+                        public function bar(int $i): int;
+                    }
+
+                    /**
+                     * @template U of Bar
+                     * @template T of U
+                     * @param Foo&T $x
+                     * @return list<int>
+                     */
+                    function f($x): array {
+                        return array_map([$x, "bar"], [1]);
+                    }',
+            ],
+            'callableArrayOnATemplateIntersectedWithTheClassOfTheMethod' => [
+                'code' => '<?php
+                    interface Foo {}
+                    interface Bar {
+                        public function bar(int $i): int;
+                    }
+
+                    /**
+                     * @template T of Foo
+                     * @param T&Bar $x
+                     * @return list<int>
+                     */
+                    function f($x): array {
+                        return array_map([$x, "bar"], [1]);
+                    }',
+            ],
+            'nonPublicCallbackOfANativeFunctionWrittenInAnotherCase' => [
+                'code' => '<?php
+                    final class A {
+                        private function twice(int $i): int {
+                            return $i * 2;
+                        }
+                        /** @return list<int> */
+                        public function upper(): array {
+                            return ARRAY_MAP([$this, "twice"], [1, 2]);
+                        }
+                        /** @return list<int> */
+                        public function mixed(): array {
+                            return \\Array_Map([$this, "twice"], [1, 2]);
+                        }
+                    }',
+            ],
+            'closureWithATypedParamIsACallableOfNever' => [
+                'code' => '<?php
+                    /** @param callable(never): string $callback */
+                    function takesCallable(callable $callback): void {}
+
+                    takesCallable(function (string $value): string {
+                        return strtoupper($value);
+                    });',
+            ],
+            'typedClosureParamsOfAMatchOfAResultUnion' => [
+                'code' => '<?php
+                    /**
+                     * @template TValue
+                     * @template TError
+                     */
+                    interface Result {
+                        /**
+                         * @template TReturn
+                         * @param callable(TValue): TReturn $ok_fn
+                         * @param callable(TError): TReturn $err_fn
+                         * @return TReturn
+                         */
+                        public function match(callable $ok_fn, callable $err_fn): mixed;
+                    }
+
+                    /**
+                     * @template TValue
+                     * @implements Result<TValue, never>
+                     */
+                    final class Ok implements Result {
+                        /** @param TValue $value */
+                        public function __construct(private mixed $value) {}
+
+                        public function match(callable $ok_fn, callable $err_fn): mixed {
+                            return $ok_fn($this->value);
+                        }
+                    }
+
+                    /**
+                     * @template TError
+                     * @implements Result<never, TError>
+                     */
+                    final class Err implements Result {
+                        /** @param TError $error */
+                        public function __construct(private mixed $error) {}
+
+                        public function match(callable $ok_fn, callable $err_fn): mixed {
+                            return $err_fn($this->error);
+                        }
+                    }
+
+                    /** @return Ok<int>|Err<string> */
+                    function compute(bool $success): Ok|Err {
+                        return $success ? new Ok(1) : new Err("failure");
+                    }
+
+                    function withTypedParameters(bool $success): string {
+                        return compute($success)->match(
+                            fn (int $value): string => (string) $value,
+                            fn (string $error): string => $error,
+                        );
+                    }
+
+                    function withAnUntypedOkParameter(bool $success): string {
+                        return compute($success)->match(
+                            fn ($value): string => (string) $value,
+                            fn (string $error): string => $error,
+                        );
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'callableOfThisTakesTheTemplatesOfTheObject' => [
+                'code' => '<?php
+                    /**
+                     * @template TKey of array-key
+                     * @template TValue
+                     */
+                    interface Items extends Countable {
+                        /** @param callable($this): void $callback */
+                        public function each(callable $callback): void;
+
+                        /** @param callable(static): void $callback */
+                        public function eachStatic(callable $callback): void;
+                    }
+
+                    /** @template T */
+                    final class Box {
+                        /** @param callable($this): void $callback */
+                        public function each(callable $callback): void { $callback($this); }
+
+                        /** @param callable(static): void $callback */
+                        public function eachStatic(callable $callback): void { $callback($this); }
+                    }
+
+                    /** @param Items<int, string> $items */
+                    function useItems(Items $items): void {
+                        $items->each(function ($i): void { echo count($i); });
+                        $items->eachStatic(
+                            /** @param Items<int, string> $i */
+                            function (Items $i): void { echo count($i); }
+                        );
+                    }
+
+                    /** @param Box<int> $box */
+                    function useBox(Box $box): void {
+                        $box->eachStatic(function ($_b): void {});
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'truthyCheckOfANullableCallableIsNotRisky' => [
+                'code' => '<?php
+                    function f(?callable $c): void {
+                        if ($c) {
+                            $c();
+                        }
+                    }',
+            ],
+            'callableArrayNamingAMagicMethodMatchesATypedCallable' => [
+                'code' => '<?php
+                    /**
+                     * @method int magic(string $s)
+                     */
+                    class Foo {
+                        public function __call(string $name, array $arguments): mixed {
+                            return 1;
+                        }
+                    }
+
+                    /** @param callable(string): int $c */
+                    function take(callable $c): void {
+                        $c("x");
+                    }
+
+                    take([new Foo(), "magic"]);',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'callableArrayOfAMagicMethodGuardedByMethodExists' => [
+                'code' => '<?php
+                    /**
+                     * @method void magic()
+                     */
+                    class Foo {
+                        public function __call(string $name, array $arguments): mixed {
+                            return null;
+                        }
+                    }
+
+                    function call(callable $_callable): void {}
+
+                    function test(Foo $foo): void {
+                        if (method_exists($foo, "magic")) {
+                            call([$foo, "magic"]);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'callableArrayOfAMagicMethodDeclaredByAnAnnotation' => [
+                'code' => '<?php
+                    /**
+                     * @method void magic()
+                     * @method static void staticMagic()
+                     */
+                    class Foo {
+                        public function __call(string $name, array $arguments): mixed {
+                            return null;
+                        }
+
+                        public static function __callStatic(string $name, array $arguments): mixed {
+                            return null;
+                        }
+                    }
+
+                    function call(callable $_callable): void {}
+
+                    function test(Foo $foo): void {
+                        call([$foo, "magic"]);
+                        call([Foo::class, "staticMagic"]);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'invokeInheritedGenericFirstClassCallable' => [
                 'code' => '<?php
                     class Helpers {
@@ -441,7 +947,7 @@ final class CallableTest extends TestCase
                      * @param A $a
                      * @return list{A, B}
                      */
-                    function withUnbound(mixed $a): array { return [$a, null]; }
+                    function withUnbound(mixed $a): array { throw new LogicException(); }
                     $with_unbound = withUnbound(...);
                     $unbound = $with_unbound(1);',
                 'assertions' => [
@@ -2442,6 +2948,8 @@ final class CallableTest extends TestCase
                             usort($arr, "fooBar");
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['WrongCaseFunction'],
             ],
             'closureSelf' => [
                 'code' => '<?php
@@ -2727,6 +3235,109 @@ final class CallableTest extends TestCase
                         }
                     }',
             ],
+            'finalClassForwardsItsClosureOfStaticParam' => [
+                'code' => '<?php
+                    trait HasConditions {
+                        /** @param Closure(static): mixed $callback */
+                        public function when(bool $condition, Closure $callback): static {
+                            if ($condition) {
+                                $callback($this);
+                            }
+                            return $this;
+                        }
+
+                        /** @param Closure(static): mixed $callback */
+                        public function unless(bool $condition, Closure $callback): static {
+                            return $this->when(!$condition, $callback);
+                        }
+                    }
+
+                    final class Query {
+                        use HasConditions;
+                    }',
+            ],
+            'finalClassForwardsItsCallableOfListOfStaticParamFromATrait' => [
+                'code' => '<?php
+                    trait Visits {
+                        /** @param callable(list<static>): mixed $callback */
+                        public function visit(callable $callback): void {}
+
+                        /** @param callable(list<static>): mixed $callback */
+                        public function forward(callable $callback): void {
+                            $this->visit($callback);
+                        }
+                    }
+
+                    final class Box {
+                        use Visits;
+                    }',
+            ],
+            'finalGenericClassForwardsItsClosureOfStaticParamFromATrait' => [
+                'code' => '<?php
+                    trait HasConditions {
+                        /** @param Closure(static): mixed $callback */
+                        public function when(Closure $callback): void {}
+
+                        /** @param Closure(static): mixed $callback */
+                        public function unless(Closure $callback): void {
+                            $this->when($callback);
+                        }
+                    }
+
+                    /** @template T */
+                    final class Collection {
+                        use HasConditions;
+                    }',
+            ],
+            'enumForwardsItsClosureOfStaticParamFromATrait' => [
+                'code' => '<?php
+                    trait HasConditions {
+                        /** @param Closure(static): mixed $callback */
+                        public function when(Closure $callback): void {}
+
+                        /** @param Closure(static): mixed $callback */
+                        public function unless(Closure $callback): void {
+                            $this->when($callback);
+                        }
+                    }
+
+                    enum Suit {
+                        use HasConditions;
+
+                        case Hearts;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'finalClassInstancePassedToItsStaticParam' => [
+                'code' => '<?php
+                    final class Node {
+                        /** @param static $other */
+                        public function link($other): void {}
+
+                        public function linkTo(Node $other): void {
+                            $this->link($other);
+                        }
+                    }',
+            ],
+            'docblockFinalClassForwardsItsClosureOfStaticParamFromATrait' => [
+                'code' => '<?php
+                    trait HasConditions {
+                        /** @param Closure(static): mixed $callback */
+                        public function when(Closure $callback): void {}
+
+                        /** @param Closure(static): mixed $callback */
+                        public function unless(Closure $callback): void {
+                            $this->when($callback);
+                        }
+                    }
+
+                    /** @final */
+                    class Query {
+                        use HasConditions;
+                    }',
+            ],
             'callableStaticReturn' => [
                 'code' => '<?php
                     class A {}
@@ -2857,6 +3468,63 @@ final class CallableTest extends TestCase
                         if (is_callable($setter)) {}
                     }',
             ],
+            'privateStaticCallbackByLiteralStringAndToAMethodOfTheClass' => [
+                'code' => '<?php
+                    final class Sorter {
+                        public function run(): void {
+                            $items = [3, 1];
+                            usort($items, "Sorter::compare");
+                            $this->apply([self::class, "compare"]);
+                        }
+
+                        /** @param callable(int, int): int $callback */
+                        private function apply(callable $callback): void {
+                            $callback(1, 2);
+                        }
+
+                        private static function compare(int $a, int $b): int {
+                            return $a <=> $b;
+                        }
+                    }',
+            ],
+            'privateStaticCallbackOfTheCurrentClassByClassString' => [
+                'code' => '<?php
+                    final class Sorter {
+                        /** @param list<int> $values */
+                        public function sort(array $values): array {
+                            usort($values, [self::class, "compare"]);
+                            usort($values, [static::class, "compare"]);
+                            usort($values, [Sorter::class, "compare"]);
+
+                            return array_map([self::class, "double"], $values);
+                        }
+
+                        private static function compare(int $a, int $b): int {
+                            return $a <=> $b;
+                        }
+
+                        protected static function double(int $a): int {
+                            return $a * 2;
+                        }
+                    }',
+            ],
+            'protectedStaticCallbackOfASubclassByClassStringGivenToAParentMethod' => [
+                'code' => '<?php
+                    class Command
+                    {
+                        public function setCode(callable $code): void {}
+                    }
+
+                    abstract class EndlessCommand extends Command
+                    {
+                        public function __construct()
+                        {
+                            parent::setCode([self::class, "runLoop"]);
+                        }
+
+                        protected static function runLoop(): void {}
+                    }',
+            ],
             'noExceptionOnSelfString' => [
                 'code' => '<?php
                     class Fish {
@@ -2872,6 +3540,8 @@ final class CallableTest extends TestCase
                             return -1;
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedSyntax'],
             ],
             'noFatalErrorOnClassWithSlash' => [
                 'code' => '<?php
@@ -3651,6 +4321,16 @@ final class CallableTest extends TestCase
                     '$r===' => '0|array<array-key, mixed>|callable-object',
                 ],
             ],
+            'negatedIsObjectKeepsArrayOfCallableOrArray' => [
+                'code' => '<?php
+                    /** @var object|callable|array $p */
+                    $p = $_GET["p"];
+                    $r = is_object($p) ? 0 : $p;
+                ',
+                'assertions' => [
+                    '$r===' => '0|array<array-key, mixed>|callable-string',
+                ],
+            ],
             'callableCheckAfterIsStringOnCallableOrArray' => [
                 'code' => '<?php
                     /** @param string|callable|array $param */
@@ -3681,6 +4361,168 @@ final class CallableTest extends TestCase
                         protected function runLoop(): void {}
                     }',
             ],
+            'invokableClassLaterInIntersectionIsCallable' => [
+                'code' => '<?php
+                    interface Named {}
+                    class StringHandler { public function __invoke(string $value): int { return 1; } }
+
+                    /** @param callable(string): int $callback */
+                    function takesCallback(callable $callback): void {}
+
+                    function f(Named&StringHandler $h): void {
+                        takesCallback($h);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'firstClassCallableOfAnInvokableLaterInIntersection' => [
+                'code' => '<?php
+                    interface Named {}
+                    class StringHandler { public function __invoke(string $value): int { return 1; } }
+
+                    /** @param callable(string): int $callback */
+                    function takesCallback(callable $callback): void {}
+
+                    function f(Named&StringHandler $h): void {
+                        takesCallback($h(...));
+                    }
+
+                    /** @var Named&StringHandler $h */
+                    $h = null;
+                    $closure = $h(...);
+                    $result = $h("a");',
+                'assertions' => [
+                    '$closure===' => 'Closure[impure](string):int',
+                    '$result===' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'closureFromCallableOfAnInvokableLaterInIntersection' => [
+                'code' => '<?php
+                    interface Named {}
+                    class StringHandler { public function __invoke(string $value): int { return 1; } }
+
+                    /** @param callable(string): int $callback */
+                    function takesCallback(callable $callback): void {}
+
+                    function f(Named&StringHandler $h): void {
+                        takesCallback(Closure::fromCallable($h));
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'abstractClassOfAnInvokableInterfaceIsCallable' => [
+                'code' => '<?php
+                    interface Handler { public function __invoke(string $value): int; }
+                    abstract class Base implements Handler {}
+
+                    /** @param callable(string): int $callback */
+                    function takesCallback(callable $callback): void {}
+
+                    function f(Base $base): void {
+                        takesCallback($base);
+                        takesCallback($base(...));
+                        $base("a");
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'isCallableKeepsTheObjectOfAnInvokableLaterInIntersection' => [
+                'code' => '<?php
+                    interface Named { public function name(): string; }
+                    class StringHandler { public function __invoke(string $value): int { return 1; } }
+
+                    function f(Named&StringHandler $h): string {
+                        if (is_callable($h)) {
+                            return $h->name();
+                        }
+
+                        return "";
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RedundantCondition'],
+                'php_version' => '8.1',
+            ],
+            'receiverTemplatesOfAnInvokableLaterInIntersectionAreBound' => [
+                'code' => '<?php
+                    interface Named {}
+                    /** @template T */
+                    class Box
+                    {
+                        /** @param T $value */
+                        public function __construct(private mixed $value) {}
+
+                        /** @return T */
+                        public function __invoke(string $key): mixed { return $this->value; }
+                    }
+
+                    /** @param callable(string): int $callback */
+                    function takesCallback(callable $callback): void {}
+
+                    /** @param Named&Box<int> $h */
+                    function f(Named $h): void {
+                        takesCallback($h);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'invokeOfAnInterfaceFirstInIntersectionIsNotReplacedByALaterClass' => [
+                'code' => '<?php
+                    interface Wide { public function __invoke(string|int $value): int; }
+                    class Narrow { public function __invoke(string $value): int { return 1; } }
+
+                    /** @param callable(int): int $callback */
+                    function takesCallback(callable $callback): void {}
+
+                    function f(Wide&Narrow $h): void {
+                        takesCallback($h);
+                        $closure = $h(...);
+                        $closure(1);
+                        array_map($h, [1]);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['UnusedFunctionCall'],
+                'php_version' => '8.1',
+            ],
+            'closureOfAnInvokableObjectIsAClosureParam' => [
+                'code' => '<?php
+                    class StringHandler { public function __invoke(string $value): int { return 1; } }
+
+                    /** @param Closure(string): int $closure */
+                    function takesClosure(Closure $closure): void {}
+
+                    function f(StringHandler $h): void {
+                        takesClosure($h(...));
+                        takesClosure(Closure::fromCallable($h));
+                        takesClosure(fn(string $value): int => 1);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'callableObjectIsAcceptedForAnObjectAndForTheSameSignature' => [
+                'code' => '<?php
+                    /** @param object&callable(int): string $o */
+                    function takesIntToString(object $o): void {}
+
+                    /** @param callable-object $o */
+                    function takesAny(object $o): void {}
+
+                    /** @param object&callable(int): string $c */
+                    function f(object $c): void {
+                        takesIntToString($c);
+                        takesAny($c);
+                        echo get_class($c);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
         ];
     }
 
@@ -3691,6 +4533,187 @@ final class CallableTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'literalArrayOfAnUnknownClassIsNotACallableArray' => [
+                'code' => '<?php
+                    /** @return callable-array{string, string} */
+                    function ret(): array {
+                        return ["a", "hello"];
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
+            'literalArrayOfAMissingMethodIsNotACallableArray' => [
+                'code' => '<?php
+                    final class Foo {
+                        public static function bar(): void {}
+                    }
+
+                    /** @return callable-array{string, string} */
+                    function ret(): array {
+                        return ["Foo", "nope"];
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
+            'literalArrayOfAnObjectOfAFinalClassWithoutTheMethodIsNotACallableArray' => [
+                'code' => '<?php
+                    final class Foo {
+                        public function bar(): void {}
+                    }
+
+                    /** @return callable-array{object, string} */
+                    function ret(): array {
+                        return [new Foo(), "nope"];
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
+            'callableOfStaticOfTheClassUsingATraitIsNotSharedWithOtherUsers' => [
+                'code' => '<?php
+                    trait Filters {
+                        public function run(): void {
+                            (new self())->where(function ($query): void {
+                                $query->extra();
+                            });
+                        }
+                    }
+
+                    final class EloquentBuilder {
+                        use Filters;
+
+                        /**
+                         * @param (Closure(static): mixed)|string $column
+                         * @return $this
+                         */
+                        public function where($column) {
+                            return $this;
+                        }
+
+                        public function extra(): void {}
+                    }
+
+                    final class QueryBuilder {
+                        use Filters;
+
+                        /**
+                         * @param Closure|string $column
+                         * @return $this
+                         */
+                        public function where($column) {
+                            return $this;
+                        }
+                    }',
+                'error_message' => 'Method QueryBuilder::extra does not exist',
+                'error_levels' => ['InvalidArgument'],
+            ],
+            'nonPublicCallbackOfANativeFunctionWrittenInAnotherCaseFromAnotherClass' => [
+                'code' => '<?php
+                    final class A {
+                        private function twice(int $i): int {
+                            return $i * 2;
+                        }
+                    }
+                    final class B {
+                        /** @return list<int> */
+                        public function other(A $a): array {
+                            return ARRAY_MAP([$a, "twice"], [1, 2]);
+                        }
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'callableOfStaticChecksTheTemplatesOfTheObject' => [
+                'code' => '<?php
+                    /** @template T */
+                    class Box {
+                        /** @param callable(static): void $callback */
+                        public function each(callable $callback): void { $callback($this); }
+                    }
+
+                    /** @param Box<int> $box */
+                    function useBox(Box $box): void {
+                        $box->each(
+                            /** @param Box<string> $_b */
+                            function (Box $_b): void {}
+                        );
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'truthyCheckOfACallableOrStringIsRisky' => [
+                'code' => '<?php
+                    function f(callable|string $c): void {
+                        if ($c) {
+                            echo "truthy";
+                        }
+                    }',
+                'error_message' => 'RiskyTruthyFalsyComparison',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'truthyCheckOfACallableIsRedundant' => [
+                'code' => '<?php
+                    function f(callable $c): void {
+                        if ($c) {
+                            $c();
+                        }
+                    }',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:29',
+            ],
+            'callableArrayNamingAMagicMethodMismatchesATypedCallable' => [
+                'code' => '<?php
+                    /**
+                     * @method int magic(string $s)
+                     */
+                    class Foo {
+                        public function __call(string $name, array $arguments): mixed {
+                            return 1;
+                        }
+                    }
+
+                    /** @param callable(int): void $c */
+                    function take(callable $c): void {
+                        $c(1);
+                    }
+
+                    take([new Foo(), "magic"]);',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'callableArrayOfAMethodThatIsNotDeclaredByAnAnnotation' => [
+                'code' => '<?php
+                    /**
+                     * @method void magic()
+                     * @method static void staticMagic()
+                     */
+                    class Foo {
+                        public function __call(string $name, array $arguments): mixed {
+                            return null;
+                        }
+
+                        public static function __callStatic(string $name, array $arguments): mixed {
+                            return null;
+                        }
+                    }
+
+                    function call(callable $_callable): void {}
+
+                    function test(Foo $foo): void {
+                        call([$foo, "missing"]);
+                    }',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'nonFinalClassInstancePassedToItsStaticParam' => [
+                'code' => '<?php
+                    class Node {
+                        /** @param static $other */
+                        public function link($other): void {}
+
+                        public function linkTo(Node $other): void {
+                            $this->link($other);
+                        }
+                    }',
+                'error_message' => 'ArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:41'
+                    . ' - Argument 1 of Node::link expects Node&static, but parent type Node provided',
+            ],
             'arrayCallableNamingNoClass' => [
                 'code' => '<?php
                     function call(callable $callback): void {}
@@ -3832,7 +4855,30 @@ final class CallableTest extends TestCase
 
                     where('my_url');
                     PHP,
-                'error_message' => 'InvalidScalarArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:7',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:7',
+            ],
+            'invokableObjectIsNotAClosureParam' => [
+                'code' => '<?php
+                    class StringHandler { public function __invoke(string $value): int { return 1; } }
+
+                    function takesClosure(Closure $closure): void {}
+
+                    function f(StringHandler $h): void {
+                        takesClosure($h);
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:38 - Argument 1 of takesClosure expects Closure[impure], but StringHandler provided',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'arrayCallableIsNotAClosureParam' => [
+                'code' => '<?php
+                    final class Handler { public function handle(): void {} }
+
+                    function takesClosure(Closure $closure): void {}
+
+                    takesClosure([new Handler(), "handle"]);',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:34',
+                'error_levels' => [],
             ],
             'stringNamingAFunctionOfTheWrongSignatureForACallableOrLiteralsParam' => [
                 'code' => <<<'PHP'
@@ -3918,6 +4964,87 @@ final class CallableTest extends TestCase
 
                     foo(A::class . "::barr");',
                 'error_message' => 'UndefinedMethod',
+            ],
+            'privateStaticCallbackByClassStringToAFunctionOutsideTheClass' => [
+                'code' => '<?php
+                    /** @param callable(int, int): int $callback */
+                    function apply(callable $callback): void {
+                        $callback(1, 2);
+                    }
+
+                    final class Sorter {
+                        public function run(): void {
+                            apply([self::class, "compare"]);
+                        }
+
+                        private static function compare(int $a, int $b): int {
+                            return $a <=> $b;
+                        }
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'privateStaticCallbackOfAnotherClassByClassString' => [
+                'code' => '<?php
+                    final class Other {
+                        private static function compare(int $a, int $b): int {
+                            return $a <=> $b;
+                        }
+                    }
+
+                    final class Sorter {
+                        /** @param list<int> $values */
+                        public function sort(array $values): void {
+                            usort($values, [Other::class, "compare"]);
+                        }
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'privateStaticCallbackByClassStringToANativeFunctionOutsideTheNonPublicList' => [
+                'code' => '<?php
+                    final class Sorter {
+                        public function run(): void {
+                            iterator_apply(new ArrayIterator([]), [self::class, "cleanup"]);
+                        }
+
+                        private static function cleanup(): void {}
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'privateStaticCallbackOfASubclassByClassStringGivenToAParentMethod' => [
+                'code' => '<?php
+                    class Command
+                    {
+                        public function setCode(callable $code): void {}
+                    }
+
+                    abstract class EndlessCommand extends Command
+                    {
+                        public function __construct()
+                        {
+                            parent::setCode([self::class, "runLoop"]);
+                        }
+
+                        private static function runLoop(): void {}
+                    }',
+                'error_message' => 'expects a public static callable',
+            ],
+            'protectedStaticCallbackByClassStringGivenToAnUnrelatedClassMethod' => [
+                'code' => '<?php
+                    class Other
+                    {
+                        public function take(callable $code): void {}
+                    }
+
+                    class Runner
+                    {
+                        public function __construct(private Other $other)
+                        {
+                            $this->other->take([self::class, "runLoop"]);
+                        }
+
+                        protected static function runLoop(): void {}
+                    }',
+                'error_message' => 'expects a public static callable',
             ],
             'undefinedCallableMethodArray' => [
                 'code' => '<?php
@@ -4907,6 +6034,33 @@ final class CallableTest extends TestCase
                     c("hii");',
                 'error_message' => 'InvalidArgument',
             ],
+            'nonFalsyStringIsNotCallableString' => [
+                'code' => '<?php
+                    /**
+                     * @param callable-string $c
+                     */
+                    function takesCallableString(string $c): void {}
+
+                    /**
+                     * @param non-falsy-string $s
+                     */
+                    function f(string $s): void {
+                        takesCallableString($s);
+                    }',
+                'error_message' => 'ArgumentTypeCoercion',
+            ],
+            'getTypeIsNotCallableString' => [
+                'code' => '<?php
+                    /**
+                     * @param callable-string $c
+                     */
+                    function takesCallableString(string $c): void {}
+
+                    function f(int $x): void {
+                        takesCallableString(gettype($x));
+                    }',
+                'error_message' => 'ArgumentTypeCoercion',
+            ],
             'mismatchParamTypeFromDocblock' => [
                 'code' => '<?php
                     /**
@@ -4964,7 +6118,7 @@ final class CallableTest extends TestCase
                         call_user_func($callable);
                     }
                 }',
-                'error_message' => 'DeprecatedConstant',
+                'error_message' => 'DeprecatedSyntax',
                 'error_levels' => [],
                 'php_version' => '8.2',
             ],
@@ -4989,7 +6143,7 @@ final class CallableTest extends TestCase
                         call_user_func($callable);
                     }
                 }',
-                'error_message' => 'DeprecatedConstant',
+                'error_message' => 'DeprecatedSyntax',
                 'error_levels' => [],
                 'php_version' => '8.2',
             ],
@@ -5012,7 +6166,7 @@ final class CallableTest extends TestCase
                         call_user_func($callable);
                     }
                 }',
-                'error_message' => 'DeprecatedConstant',
+                'error_message' => 'DeprecatedSyntax',
                 'error_levels' => [],
                 'php_version' => '8.2',
             ],
@@ -5035,7 +6189,7 @@ final class CallableTest extends TestCase
                         call_user_func($callable);
                     }
                 }',
-                'error_message' => 'DeprecatedConstant',
+                'error_message' => 'DeprecatedSyntax',
                 'error_levels' => [],
                 'php_version' => '8.2',
             ],
@@ -5058,7 +6212,7 @@ final class CallableTest extends TestCase
                         call_user_func($callable);
                     }
                 }',
-                'error_message' => 'DeprecatedConstant',
+                'error_message' => 'DeprecatedSyntax',
                 'error_levels' => [],
                 'php_version' => '8.2',
             ],
@@ -5154,6 +6308,7 @@ final class CallableTest extends TestCase
                     }
                 }',
                 'error_message' => 'ParentNotFound',
+                'error_levels' => ['DeprecatedSyntax'],
             ],
             'parentCallableWithoutParent' => [
                 'code' => '<?php
@@ -5171,6 +6326,7 @@ final class CallableTest extends TestCase
                     }
                 }',
                 'error_message' => 'ParentNotFound',
+                'error_levels' => ['DeprecatedSyntax'],
             ],
             'wrongCallableInUnion' => [
                 'code' => '<?php
@@ -5246,6 +6402,118 @@ final class CallableTest extends TestCase
                         usort($a, "123");
                     }',
                 'error_message' => 'InvalidArgument',
+            ],
+            'enumWithAnInvokeMethodOfAWrongParamTypeIsNotCallable' => [
+                'code' => '<?php
+                    enum Suit {
+                        case Hearts;
+                        public function __invoke(string $value): int { return 1; }
+                    }
+
+                    /** @param callable(int): int $callback */
+                    function takesIntCallback(callable $callback): void {}
+
+                    function f(Suit $suit): void {
+                        takesIntCallback($suit);
+                    }',
+                'error_message' => 'InvalidScalarArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:42',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'invokableLaterInIntersectionWithAWrongParamTypeIsNotCallable' => [
+                'code' => '<?php
+                    interface Named {}
+                    class StringHandler { public function __invoke(string $value): int { return 1; } }
+
+                    /** @param callable(int): int $callback */
+                    function takesCallback(callable $callback): void {}
+
+                    function f(Named&StringHandler $h): void {
+                        takesCallback($h);
+                    }',
+                'error_message' => 'InvalidScalarArgument',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'firstClassCallableOfAnInvokableLaterInIntersectionWithAWrongParamTypeIsNotCallable' => [
+                'code' => '<?php
+                    interface Named {}
+                    class StringHandler { public function __invoke(string $value): int { return 1; } }
+
+                    /** @param callable(int): int $callback */
+                    function takesCallback(callable $callback): void {}
+
+                    function f(Named&StringHandler $h): void {
+                        takesCallback($h(...));
+                    }',
+                'error_message' => 'InvalidScalarArgument',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'closureFromCallableOfAnInvokableLaterInIntersectionWithAWrongParamTypeIsNotCallable' => [
+                'code' => '<?php
+                    interface Named {}
+                    class StringHandler { public function __invoke(string $value): int { return 1; } }
+
+                    /** @param callable(int): int $callback */
+                    function takesCallback(callable $callback): void {}
+
+                    function f(Named&StringHandler $h): void {
+                        takesCallback(Closure::fromCallable($h));
+                    }',
+                'error_message' => 'InvalidScalarArgument',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'intersectionWithoutInvokeIsNotCallable' => [
+                'code' => '<?php
+                    interface Named {}
+                    interface Other {}
+
+                    /** @param callable(string): int $callback */
+                    function takesCallback(callable $callback): void {}
+
+                    function f(Named&Other $h): void {
+                        takesCallback($h);
+                    }',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'callableObjectIsNotAnObjectShape' => [
+                'code' => '<?php
+                    /** @param object{foo: int} $o */
+                    function takesShape(object $o): void {
+                        echo $o->foo;
+                    }
+
+                    /** @param callable-object $c */
+                    function f(object $c): void {
+                        takesShape($c);
+                    }',
+                'error_message' => 'ArgumentTypeCoercion',
+            ],
+            'callableObjectWithAnotherSignatureIsNotAccepted' => [
+                'code' => '<?php
+                    /** @param object&callable(int): string $o */
+                    function takesIntToString(object $o): void {}
+
+                    /** @param object&callable(string): int $c */
+                    function f(object $c): void {
+                        takesIntToString($c);
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'callableObjectOfUnknownSignatureIsOnlyCoercedToOneWithASignature' => [
+                'code' => '<?php
+                    /** @param object&callable(int): string $o */
+                    function takesIntToString(object $o): void {}
+
+                    /** @param callable-object $c */
+                    function f(object $c): void {
+                        takesIntToString($c);
+                    }',
+                'error_message' => 'MixedArgumentTypeCoercion',
             ],
         ];
     }

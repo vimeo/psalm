@@ -105,3 +105,39 @@ class NumberFormatter
     public const TYPE_DOUBLE = 3;
     public const TYPE_CURRENCY = 4;
 }
+
+/** @since 8.5 */
+final class IntlListFormatter
+{
+    public const TYPE_AND = 0;
+    public const TYPE_OR = 1;
+    public const TYPE_UNITS = 2;
+    public const WIDTH_WIDE = 0;
+    public const WIDTH_SHORT = 1;
+    public const WIDTH_NARROW = 2;
+
+    /**
+     * @psalm-pure
+     * @param self::TYPE_* $type
+     * @param self::WIDTH_* $width
+     */
+    public function __construct(
+        string $locale,
+        int $type = IntlListFormatter::TYPE_AND,
+        int $width = IntlListFormatter::WIDTH_WIDE
+    ) {}
+
+    /**
+     * Records the error of the call, which getErrorCode() and getErrorMessage() return
+     *
+     * @psalm-capabilities read-props|write-this-props
+     * @param array<array-key, scalar|Stringable|null> $strings
+     */
+    public function format(array $strings): string|false {}
+
+    /** @psalm-capabilities read-props */
+    public function getErrorCode(): int {}
+
+    /** @psalm-capabilities read-props */
+    public function getErrorMessage(): string {}
+}

@@ -14,8 +14,10 @@ use Psalm\Internal\Analyzer\Statements\Expression\AssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\Statements\GlobalAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\PhpDeprecations;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
+use Psalm\Issue\DeprecatedSyntax;
 use Psalm\Issue\ImpureGlobalVariable;
 use Psalm\Issue\ImpureVariable;
 use Psalm\Issue\InvalidScope;
@@ -136,7 +138,8 @@ final class VariableFetchAnalyzer
             return true;
         }
 
-        if (!$context->check_variables) {
+        // a superglobal is always defined, and what it holds is tainted whether the other variables are known or not
+        if (!$context->check_variables && !(is_string($stmt->name) && self::isSuperGlobal('$' . $stmt->name))) {
             if (is_string($stmt->name)) {
                 $var_name = '$' . $stmt->name;
 
@@ -150,7 +153,15 @@ final class VariableFetchAnalyzer
                     self::addDataFlowToVariable($statements_analyzer, $stmt, $var_name, $stmt_type, $context);
 
                     $context->vars_in_scope[$var_name] = $stmt_type;
-                    $statements_analyzer->node_data->setType($stmt, $stmt_type);
+                    // the variables aren't checked: where the variable isn't assigned, it holds a value from
+                    // elsewhere (extract(), the including scope), so it can be anything (an isset() asks about
+                    // the variable)
+                    $statements_analyzer->node_data->setType(
+                        $stmt,
+                        $stmt_type->possibly_undefined && !$context->inside_isset
+                            ? Type::getMixed()->setParentNodes($stmt_type->parent_nodes)
+                            : $stmt_type,
+                    );
                 }
             } else {
                 $statements_analyzer->node_data->setType($stmt, Type::getMixed());
@@ -162,6 +173,20 @@ final class VariableFetchAnalyzer
         if (is_string($stmt->name) && self::isSuperGlobal('$' . $stmt->name)) {
             $var_name = '$' . $stmt->name;
 
+            if ($var_name === '$http_response_header') {
+                IssueBuffer::maybeAdd(
+                    new DeprecatedSyntax(
+                        PhpDeprecations::getDeprecatedSinceMessage(
+                            'The $http_response_header variable',
+                            8_05_00,
+                            'http_get_last_response_headers()',
+                        ),
+                        new CodeLocation($statements_analyzer, $stmt),
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
+            }
+
             $statements_analyzer->signalMutation(
                 Capabilities::READ_GLOBALS,
                 $context,
@@ -172,6 +197,15 @@ final class VariableFetchAnalyzer
 
             if (isset($context->vars_in_scope[$var_name])) {
                 $type = $context->vars_in_scope[$var_name];
+
+                // assigned on some paths only: the others leave it the type it has by default
+                if ($type->possibly_undefined) {
+                    $type = Type::combineUnionTypes(
+                        $type->setPossiblyUndefined(false),
+                        self::getGlobalType($var_name, $codebase->analysis_php_version_id),
+                        $codebase,
+                    );
+                }
 
                 self::taintVariable($statements_analyzer, $context, $var_name, $type, $stmt);
 
@@ -653,6 +687,7 @@ final class VariableFetchAnalyzer
             || $var_name === '$_POST'
             || $var_name === '$_COOKIE'
             || $var_name === '$_REQUEST'
+            || $var_name === '$_ENV'
         ) {
             $taints = $codebase->getInputTaints();
         } else {
@@ -693,7 +728,8 @@ final class VariableFetchAnalyzer
     /**
      * $GLOBALS holds what the whole program writes to the global variables (see GlobalAnalyzer::getGlobalNode()).
      * The variable in scope doesn't, and neither does $GLOBALS assigned to: reading a global by its name gets
-     * what is written to that name only (see ArrayFetchAnalyzer::taintArrayFetch()).
+     * what is written to that name only (see ArrayFetchAnalyzer::taintArrayFetch()). $_SESSION holds what the
+     * whole program stores in it (see GlobalAnalyzer::getSessionNode()) besides what the variable in scope does.
      */
     private static function taintGlobals(
         StatementsAnalyzer $statements_analyzer,
@@ -701,11 +737,17 @@ final class VariableFetchAnalyzer
         Union $type,
         bool $array_assignment,
     ): Union {
-        if ($var_name !== '$GLOBALS'
+        if (($var_name !== '$GLOBALS' && $var_name !== '$_SESSION')
             || $array_assignment
             || !($graph = $statements_analyzer->getTaintFlowGraphWithSuppressed())
         ) {
             return $type;
+        }
+
+        if ($var_name === '$_SESSION') {
+            $session_node = GlobalAnalyzer::getSessionNode($graph);
+
+            return $type->addParentNodes([$session_node->id => $session_node]);
         }
 
         $globals_node = DataFlowNode::getForGlobals();

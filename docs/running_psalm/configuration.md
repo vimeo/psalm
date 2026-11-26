@@ -319,7 +319,7 @@ This is enabled by default since Psalm 6, so unused code issues are reported eve
 **For libraries only.** When `true`, unused-code detection treats every class that isn't marked `@internal` or `@psalm-internal` as if it were marked [`@api`](../annotating_code/supported_annotations.md#api-psalm-api), except for its members that are marked internal. Other checks, like `ClassMustBeFinal`, are not affected. Defaults to `false`.
 
 ```php
-<?php
+<?php // findUnusedCode="true" markAllNonInternalCodeAsApi="true"
 namespace Lib;
 
 class Client {                           // ClassMustBeFinal, but no UnusedClass
@@ -501,7 +501,7 @@ When `true`, Psalm enables these plugins without listing them in [`<plugins>`](p
 |---|---|
 | `psalm/plugin-phpunit` | `composer.json` requires `phpunit/phpunit` |
 | `psalm/plugin-mockery` | `composer.json` requires `mockery/mockery` |
-| `psalm/plugin-symfony` | `composer.json` requires `symfony/framework-bundle` |
+| `psalm/plugin-symfony` | `composer.json` requires a Symfony package (`symfony/*`) other than a polyfill |
 | `psalm/plugin-laravel` | `composer.json` requires `laravel/framework` or `orchestra/testbench` |
 | `weirdan/doctrine-psalm-plugin` | `composer.json` requires `doctrine/orm`, `doctrine/dbal`, `doctrine/collections` or `doctrine/persistence` |
 | the plugin of `webmozart/assert` (2.4 and later) | `webmozart/assert` is installed |
@@ -631,7 +631,7 @@ Whether or not to report issues only for files that were passed explicitly as ar
 ```
 The directory used to store Psalm's cache data. Psalm creates it recursively when initializing the cache.
 
-Defaults to `$XDG_CACHE_HOME/psalm`. If `$XDG_CACHE_HOME` is either not set or empty, a default equal to `$HOME/.cache/psalm` is used or `sys_get_temp_dir() . '/psalm'` when not defined.
+Defaults to `$XDG_CACHE_HOME/psalm`. If `$XDG_CACHE_HOME` is either not set or empty, `$HOME/.cache/psalm` is used (on Windows, `%HOMEDRIVE%%HOMEPATH%` is used when `$HOME` is not set). If no home directory is set, or it is not writable (for example `$HOME` is `/` or does not exist), `sys_get_temp_dir() . '/psalm'` is used.
 
 #### allowFileIncludes
 ```xml
@@ -969,7 +969,7 @@ Optional. Allows you to specify a list of constants that should emit the [`Forbi
 #### &lt;taintAnalysis&gt;
 Optional. Settings of the [security analysis](../security_analysis/index.md):
 - `<ignoreFiles>`: the files and directories whose taint paths are not reported (see
-  [Avoiding files in taint paths](../security_analysis/avoiding_false_positives.md#avoiding-files-in-taint-paths)).
+  [Ignoring files](../security_analysis/index.md#ignoring-files)).
 - `<taints>`: custom taints, which the annotations can then name without a plugin registering them. Each can be added
   to aliases of built-in taints (`input`, `tainted`, `input_except_sleep`) with `<alias>`: a taint added to `input` is
   user input, which the built-in sources give (see

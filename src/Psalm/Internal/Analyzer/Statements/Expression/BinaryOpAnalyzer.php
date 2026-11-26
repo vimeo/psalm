@@ -16,6 +16,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\PipeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\CombinedFlowGraph;
+use Psalm\Internal\Codebase\StringContext;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
@@ -40,11 +41,15 @@ use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_pop;
+use function array_values;
 use function strlen;
+use function strtolower;
 
 /**
  * @internal
@@ -132,7 +137,17 @@ final class BinaryOpAnalyzer
                 return false;
             }
         } else {
-            if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->left, $context) === false) {
+            $was_inside_negation = $context->inside_negation;
+            $context->inside_negation = $context->inside_conditional
+                && self::isCallComparedToFalse($stmt, $stmt->left, $stmt->right)
+                ? !$was_inside_negation
+                : $was_inside_negation;
+
+            $left_result = ExpressionAnalyzer::analyze($statements_analyzer, $stmt->left, $context);
+
+            $context->inside_negation = $was_inside_negation;
+
+            if ($left_result === false) {
                 return false;
             }
         }
@@ -142,7 +157,17 @@ final class BinaryOpAnalyzer
                 return false;
             }
         } else {
-            if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->right, $context) === false) {
+            $was_inside_negation = $context->inside_negation;
+            $context->inside_negation = $context->inside_conditional
+                && self::isCallComparedToFalse($stmt, $stmt->right, $stmt->left)
+                ? !$was_inside_negation
+                : $was_inside_negation;
+
+            $right_result = ExpressionAnalyzer::analyze($statements_analyzer, $stmt->right, $context);
+
+            $context->inside_negation = $was_inside_negation;
+
+            if ($right_result === false) {
                 return false;
             }
         }
@@ -561,72 +586,75 @@ final class BinaryOpAnalyzer
     ): void {
         $codebase = $statements_analyzer->getCodebase();
 
-        if ($stmt_left_type->hasString() && $stmt_right_type->hasObjectType()) {
-            foreach ($stmt_right_type->getAtomicTypes() as $atomic_type) {
-                if ($atomic_type instanceof TNamedObject) {
-                    try {
-                        $storage = $codebase->methods->getStorage(
-                            new MethodIdentifier(
-                                $atomic_type->value,
-                                '__tostring',
-                            ),
-                        );
-                    } catch (UnexpectedValueException) {
-                        continue;
-                    }
-                    $var_id = ExpressionIdentifier::getExtendedVarId(
-                        $stmt->right,
-                        $statements_analyzer->getFQCLN(),
-                        $statements_analyzer,
-                    );
+        // an object compared loosely to a string is converted with its __toString
+        foreach ([
+            [$stmt_left_type, $stmt->right, $stmt_right_type],
+            [$stmt_right_type, $stmt->left, $stmt_left_type],
+        ] as [$string_type, $object_expr, $object_type]) {
+            $objects = $string_type->hasString() ? self::getObjectsOf($object_type) : [];
 
-                    $statements_analyzer->signalMutation(
-                        $storage->capabilities,
-                        $context,
-                        'possibly-mutating method '
-                                    . $atomic_type->value . '::__toString',
-                        ImpureMethodCall::class,
-                        $stmt,
-                        null,
-                        false,
-                        $var_id === '$this' ? $storage : null,
-                    );
-                }
+            if (!$objects) {
+                continue;
             }
-        } elseif ($stmt_right_type->hasString() && $stmt_left_type->hasObjectType()) {
-            foreach ($stmt_left_type->getAtomicTypes() as $atomic_type) {
-                if ($atomic_type instanceof TNamedObject) {
-                    try {
-                        $storage = $codebase->methods->getStorage(
-                            new MethodIdentifier(
-                                $atomic_type->value,
-                                '__tostring',
-                            ),
-                        );
-                    } catch (UnexpectedValueException) {
-                        continue;
+
+            foreach ($objects as $object) {
+                try {
+                    $storage = $codebase->methods->getStorage(new MethodIdentifier($object->value, '__tostring'));
+                } catch (UnexpectedValueException) {
+                    continue;
+                }
+
+                $var_id = ExpressionIdentifier::getExtendedVarId(
+                    $object_expr,
+                    $statements_analyzer->getFQCLN(),
+                    $statements_analyzer,
+                );
+
+                $statements_analyzer->signalMutation(
+                    $storage->capabilities,
+                    $context,
+                    'possibly-mutating method ' . $object->value . '::__toString',
+                    ImpureMethodCall::class,
+                    $stmt,
+                    null,
+                    false,
+                    $var_id === '$this' ? $storage : null,
+                );
+            }
+
+            return;
+        }
+    }
+
+    /**
+     * The classes a value of $type may be an object of: those of its objects, of the types they are intersected with,
+     * and of the bounds of its templates (with what the templates are intersected with)
+     *
+     * @return list<TNamedObject>
+     * @psalm-pure
+     */
+    private static function getObjectsOf(Union $type): array
+    {
+        $objects = [];
+        $atomic_types = array_values($type->getAtomicTypes());
+
+        while ($atomic_types) {
+            $atomic_type = array_pop($atomic_types);
+
+            if ($atomic_type instanceof TTemplateParam) {
+                $atomic_types = [...$atomic_types, ...CastAnalyzer::getTemplateBoundAtomics($atomic_type)];
+            } elseif ($atomic_type instanceof TNamedObject) {
+                $objects[] = $atomic_type;
+
+                foreach ($atomic_type->extra_types as $extra_type) {
+                    if ($extra_type instanceof TNamedObject) {
+                        $objects[] = $extra_type;
                     }
-
-                    $var_id = ExpressionIdentifier::getExtendedVarId(
-                        $stmt->left,
-                        $statements_analyzer->getFQCLN(),
-                        $statements_analyzer,
-                    );
-
-                    $statements_analyzer->signalMutation(
-                        $storage->capabilities,
-                        $context,
-                        'possibly-mutating method '
-                                    . $atomic_type->value . '::__toString',
-                        ImpureMethodCall::class,
-                        $stmt,
-                        null,
-                        false,
-                        $var_id === '$this' ? $storage : null,
-                    );
                 }
             }
         }
+
+        return $objects;
     }
 
     /**
@@ -667,11 +695,32 @@ final class BinaryOpAnalyzer
         );
         $statements_analyzer->node_data->setLiteralPrefixes($stmt, $literal_prefixes);
 
+        // where the right operand is embedded: the escaping of a value only fits some positions
+        $left_context = $statements_analyzer->taint_flow_graph
+            ? StringContext::getForExpression($statements_analyzer, $stmt->left)
+            : StringContext::getUnknown();
+
+        if ($statements_analyzer->taint_flow_graph) {
+            $statements_analyzer->node_data->setStringContext(
+                $stmt,
+                $left_context->afterExpression($statements_analyzer, $stmt->right),
+            );
+        }
+
         // after the start of a URL fixing its server (the left operand's, and the right operand's own literal start
         // when the left operand is a literal), the right operand can't choose it
         $operand_removed_taints = [
-            $removed_taints,
-            $removed_taints | ConcatAnalyzer::getTaintsRemovedAfterUrlOrigins($literal_prefixes),
+            // a value in a string literal (`"[@id='" . $id . "']"`) can only change an XPath query by ending it
+            $removed_taints
+                | (
+                    $statements_analyzer->taint_flow_graph
+                    && ConcatAnalyzer::isQuotedOperand($statements_analyzer, $stmt)
+                        ? TaintKind::INPUT_XPATH
+                        : 0
+                ),
+            $removed_taints
+                | ConcatAnalyzer::getTaintsRemovedAfterUrlOrigins($literal_prefixes)
+                | $left_context->getRemovedTaints(),
         ];
 
         // an object operand is concatenated as what its __toString returns
@@ -698,8 +747,32 @@ final class BinaryOpAnalyzer
                     $operand_removed_taints[$offset],
                 );
             }
+
+            if ($offset === 1) {
+                ConcatAnalyzer::addPositionSinks(
+                    $statements_analyzer,
+                    $left_context,
+                    $operand_parent_nodes,
+                    $operand_type->getTaintsToRemove($statements_analyzer->getCodebase()->getInputTaints()),
+                    new CodeLocation($statements_analyzer, $operand),
+                );
+            }
         }
 
         return $stmt_type;
+    }
+
+    /**
+     * `false === is_int($x)` holds exactly when `!is_int($x)` does, so the call is analysed as a negated one
+     */
+    private static function isCallComparedToFalse(
+        PhpParser\Node\Expr\BinaryOp $stmt,
+        PhpParser\Node\Expr $call,
+        PhpParser\Node\Expr $other,
+    ): bool {
+        return $stmt instanceof PhpParser\Node\Expr\BinaryOp\Identical
+            && $call instanceof PhpParser\Node\Expr\FuncCall
+            && $other instanceof PhpParser\Node\Expr\ConstFetch
+            && strtolower($other->name->getLast()) === 'false';
     }
 }

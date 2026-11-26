@@ -2,7 +2,7 @@
 
 The `@psalm-taint-sink <taint-type> <param-name>` annotation allows you to define a taint sink.
 
-Any tainted value matching the given [taint type](index.md#taint-types) will be reported as an error by Psalm.
+Any tainted value matching the given [taint type](index.md#where-user-input-must-not-go) will be reported as an error by Psalm.
 
 ### Example
 
@@ -16,6 +16,46 @@ class PDOWrapper {
      * @psalm-taint-sink sql $sql
      */
     public function exec(string $sql) : void {}
+}
+```
+
+A parameter of a method implementing or overriding one with a sink is a sink too, unless it has a
+`@psalm-taint-sink` of its own:
+
+```php
+<?php
+interface Runner {
+    /** @psalm-taint-sink shell $command */
+    public function run(string $command): void;
+}
+
+final class LocalRunner implements Runner {
+    public function run(string $command): void {}
+}
+
+function deploy(LocalRunner $runner): void {
+    $runner->run((string) $_GET["command"]); // TaintedShell
+}
+```
+
+`@psalm-taint-sink none <param-name>` gives such a parameter no sink. A call through `Runner` is still reported:
+
+```php
+<?php
+interface Runner {
+    /** @psalm-taint-sink shell $command */
+    public function run(string $command): void;
+}
+
+final class EscapingRunner implements Runner {
+    /** @psalm-taint-sink none $command */
+    public function run(string $command): void {
+        exec("run " . escapeshellarg($command));
+    }
+}
+
+function deploy(EscapingRunner $runner): void {
+    $runner->run((string) $_GET["command"]); // no issue
 }
 ```
 
@@ -39,7 +79,7 @@ Here a tainted template name is not reported, a tainted template source is.
 
 ### Conditional sinks
 
-Like [conditional escapes](avoiding_false_positives.md#conditionally-escaping-tainted-input), the taint type can be a
+Like [conditional escapes](index.md#your-own-escaping-functions), the taint type can be a
 conditional type on the parameters. Each call resolves it with its arguments:
 
 ```php

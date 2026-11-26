@@ -125,6 +125,29 @@ Every purity annotation is a name for a capability set:
 `@pure`, `@phpstan-pure`, `#[Psalm\Pure]` and `#[JetBrains\PhpStorm\Pure]` mean the same as
 `@psalm-pure`; `#[Psalm\Immutable]` and `#[JetBrains\PhpStorm\Immutable]` the same as
 `@psalm-immutable`; `#[Psalm\ExternalMutationFree]` the same as `@psalm-external-mutation-free`.
+A `@psalm-capabilities` or `@psalm-impure` tag wins over `@pure`, `@phpstan-pure` and
+`#[JetBrains\PhpStorm\Pure]` on the same function or method (and a class's purity tag over
+`#[JetBrains\PhpStorm\Immutable]`), so a library can declare `pure` for other tools and
+`read-props` for Psalm:
+
+```php
+<?php
+interface Message {
+    /**
+     * @pure
+     * @psalm-capabilities read-props
+     */
+    public function body(): string;
+}
+
+final class MyMessage implements Message {
+    public function __construct(private string $body) {}
+
+    public function body(): string {
+        return $this->body; // no issue
+    }
+}
+```
 
 ### Capability aliases
 
@@ -392,7 +415,8 @@ Such a constructor needs `write-this-props` without being annotated (nothing at 
 neither `new` nor its class needs an annotation for the waiver. Any other statement makes it non-trivial:
 a call (`parent::__construct()` included), a by-reference parameter, a default value that creates an
 object or calls something, a property with hooks or one the class doesn't declare before the
-constructor, or `$this` stored anywhere. A non-trivial constructor without an annotation may do
+constructor, or `$this` stored anywhere. A constructor declared in a stub is never trivial: its body is
+not what runs. A non-trivial constructor without an annotation may do
 anything, as any unannotated method. So may a trivial constructor run for a class that redeclares one
 of the properties it assigns with a hook (PHP 8.4), or by `new static()` / `new $class()` where the
 class may be extended: the hook may do anything.
@@ -530,8 +554,11 @@ and so does writing a property of what the chain returns. `@return static` is no
 method may return another instance of the class.
 
 `@return $this` is a promise, checked like a return type: the method and every override of it may
-only return `$this`, or a call on it of another method returning its receiver; any other return is
-an [InvalidReturnStatement](../running_psalm/issues/InvalidReturnStatement.md).
+only return `$this`, a call on it of another method returning its receiver, or a call giving back
+its `$this` argument (the callee returns a template of its own that only arguments that are `$this`
+bind); any other return is an [InvalidReturnStatement](../running_psalm/issues/InvalidReturnStatement.md).
+Psalm trusts the callee's template signature here: a templated function returning a clone of its
+argument is not caught.
 
 ```php
 <?php
@@ -561,6 +588,32 @@ abstract class Query {
     /** @psalm-capabilities read-props|write-this-props */
     public function copyWhere(string $condition): static {
         return $this->copy()->where($condition); // ImpureMethodCall: The context is read-props|write-this-props but method Query::where requires write-props
+    }
+}
+```
+
+```php
+<?php
+/**
+ * @template T
+ * @param T $value
+ * @param callable(T): mixed $callback
+ * @return T
+ */
+function tap($value, callable $callback) {
+    $callback($value);
+    return $value;
+}
+
+final class Config {
+    /** @return $this */
+    public function configure(): static {
+        return tap($this, function (self $_config): void {}); // no issue
+    }
+
+    /** @return $this */
+    public function copy(): static {
+        return tap(clone $this, function (self $_config): void {}); // InvalidReturnStatement
     }
 }
 ```
@@ -1121,7 +1174,7 @@ This applies to function calls, method calls, static calls and `new`. With
 `rememberPropertyAssignmentsAfterCall="false"`, this code reports one issue:
 
 ```php
-<?php
+<?php // rememberPropertyAssignmentsAfterCall="false"
 final class Order {
     public ?int $total = null;
     public static ?string $currency = null;
@@ -1185,7 +1238,7 @@ vendor/bin/psalm --alter --issues=MissingPureAnnotation,MissingImmutableAnnotati
 ```
 
 The suggestions and
-[taint analysis](../security_analysis/avoiding_false_positives.md#specializing-taints-in-functions)
+[taint analysis](../security_analysis/index.md#specializing-functions)
 (on by default) both need the inferred purity of unannotated code, so it is computed when either is
 on. Capability checks never use it: a call is checked against what the callee declares, with or
 without the suggestions.
@@ -1209,7 +1262,7 @@ and a constructor.
 Given this code:
 
 ```php
-<?php
+<?php // suggestPurityAnnotations="true"
 function slug(string $title): string { // MissingPureAnnotation: slug could be marked @psalm-pure to aid security analysis, run with --alter --issues=MissingPureAnnotation to fix this
     return strtolower(trim($title));
 }
@@ -1246,7 +1299,7 @@ bound is left as `impure`, gets no class-level suggestion. A subclass without an
 suggested a contract on the next run, once its parent has one.
 
 ```php
-<?php
+<?php // suggestPurityAnnotations="true"
 abstract class Shape { // fine: no suggestion, as only impure covers Circle
     /** @psalm-pure */
     public function name(): string {

@@ -9,6 +9,7 @@ use PhpParser\Node\Arg;
 use PhpParser\Node\Expr;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\Statements\Expression\AssignmentAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallPurityAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Storage\Capabilities;
 use Psalm\Storage\FunctionLikeParameter;
@@ -34,6 +35,7 @@ final class ByRefArgumentAnalyzer
      * @param CapabilitySet $capabilities
      * @param array<int, FunctionLikeParameter>|null $params the callee's parameters, null when unknown
      * @param list<Arg|PhpParser\Node\VariadicPlaceholder> $args
+     * @param bool $impure_callee whether the callee is impure; the receiver adjustment can hide that from $capabilities
      * @return CapabilitySet
      */
     public static function adjustCapabilities(
@@ -42,9 +44,14 @@ final class ByRefArgumentAnalyzer
         int $capabilities,
         ?array $params,
         array $args,
+        bool $impure_callee = false,
     ): int {
-        // an impure callee may do anything, writing references it reaches some other way included
-        if (($capabilities & Capabilities::WRITE_REFS) === 0 || $capabilities === Capabilities::ALL) {
+        // an impure callee may do anything, writing references it reaches some other way included; the capabilities
+        // may already be without what a call of it costs the receiver (see $impure_callee)
+        if (($capabilities & Capabilities::WRITE_REFS) === 0
+            || $capabilities === Capabilities::ALL
+            || $impure_callee
+        ) {
             return $capabilities;
         }
 
@@ -170,17 +177,17 @@ final class ByRefArgumentAnalyzer
         }
 
         if ($root instanceof Expr\PropertyFetch) {
+            $is_this = MethodCallPurityAnalyzer::isReceiverThis($root->var);
+
             // a property of an object nobody else holds, like a fresh clone, is like a local
-            if ($statements_analyzer->node_data->isPureCompatible($root->var)) {
+            if (!$is_this && $statements_analyzer->node_data->isPureCompatible($root->var)) {
                 return Capabilities::NONE;
             }
 
             $object_type = $statements_analyzer->node_data->getType($root->var);
             $on_global_state = $object_type !== null && $object_type->from_global_state;
 
-            $capabilities = $root->var instanceof Expr\Variable && $root->var->name === 'this'
-                ? Capabilities::WRITE_THIS_PROPS
-                : Capabilities::WRITE_PROPS;
+            $capabilities = $is_this ? Capabilities::WRITE_THIS_PROPS : Capabilities::WRITE_PROPS;
 
             return $on_global_state ? $capabilities | Capabilities::WRITE_GLOBALS : $capabilities;
         }

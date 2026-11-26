@@ -42,10 +42,27 @@ final class GlobalAnalyzer
     private const VARIABLE_ID_PATTERN = '/^\$[a-zA-Z_\x80-\xff][a-zA-Z0-9_\x80-\xff]*$/D';
 
     /**
+     * Of the file being analyzed ($globals_written_by_file): a function called by name resolves to the declaration
+     * that file sees
+     *
      * @see getGlobalsWrittenBy()
      * @var ?WeakMap<FunctionLikeStorage, array<string, bool>>
      */
     private static ?WeakMap $globals_written_by = null;
+
+    /**
+     * The root and checked file paths of $globals_written_by
+     */
+    private static ?string $globals_written_by_file = null;
+
+    /**
+     * @psalm-capabilities write-globals
+     */
+    public static function clearCache(): void
+    {
+        self::$globals_written_by = null;
+        self::$globals_written_by_file = null;
+    }
 
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
@@ -297,7 +314,13 @@ final class GlobalAnalyzer
                 )
                 : $declared_type;
 
-            $context->removeVarFromConflictingClauses($var_id, $type, $statements_analyzer);
+            // the global may hold another object or array now: what is known of its properties and items is gone
+            if (isset($context->vars_in_scope[$var_id])) {
+                $context->removeDescendents($var_id, $context->vars_in_scope[$var_id], $type, $statements_analyzer);
+            } else {
+                $context->removeVarFromConflictingClauses($var_id, $type, $statements_analyzer);
+            }
+
             $context->vars_in_scope[$var_id] = self::taintGlobalRead($statements_analyzer, $context, $var_id, $type);
             $context->vars_possibly_in_scope[$var_id] = true;
         }
@@ -317,9 +340,12 @@ final class GlobalAnalyzer
             return $storage->global_variables;
         }
 
-        if (self::$globals_written_by === null) {
+        $file_key = $statements_analyzer->getRootFilePath() . "\0" . $statements_analyzer->getFilePath();
+
+        if (self::$globals_written_by === null || self::$globals_written_by_file !== $file_key) {
             /** @var WeakMap<FunctionLikeStorage, array<string, bool>> */
             self::$globals_written_by = new WeakMap();
+            self::$globals_written_by_file = $file_key;
         }
 
         $memoized = self::$globals_written_by[$storage] ?? null;
@@ -424,6 +450,17 @@ final class GlobalAnalyzer
         );
 
         return $global_node;
+    }
+
+    /**
+     * The node of what the program stores in the session (see DataFlowNode::getForSession())
+     */
+    public static function getSessionNode(TaintFlowGraph $graph): DataFlowNode
+    {
+        $session_node = DataFlowNode::getForSession();
+        $graph->addNode($session_node);
+
+        return $session_node;
     }
 
     /**

@@ -9,7 +9,6 @@ use PDOException;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
-use Psalm\Config;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
@@ -19,6 +18,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\CombinedFlowGraph;
 use Psalm\Internal\Codebase\ConditionalTaintSinks;
+use Psalm\Internal\Codebase\DatabaseTaints;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Codebase\ReceiverPropertyTaints;
 use Psalm\Internal\Codebase\TaintFlowGraph;
@@ -33,7 +33,10 @@ use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\Type\TypeVariableTracker;
 use Psalm\Internal\TypeVisitor\StaticArgumentsProjector;
 use Psalm\IssueBuffer;
+use Psalm\Plugin\EventHandler\Event\AddRemoveCallTaintsEvent;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
+use Psalm\Storage\ClassLikeStorage;
+use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic;
@@ -72,6 +75,7 @@ final class MethodCallReturnTypeFetcher
         array $args,
         AtomicMethodCallAnalysisResult $result,
         TemplateResult $template_result,
+        ?FunctionLikeStorage $overload = null,
     ): Union {
         $call_map_id = $declaring_method_id ?? $method_id;
 
@@ -236,6 +240,8 @@ final class MethodCallReturnTypeFetcher
                 $template_result,
             );
 
+            $return_type_candidate = $overload->return_type ?? $return_type_candidate;
+
             if ($return_type_candidate) {
                 if ($template_result->lower_bounds) {
                     $return_type_candidate = TypeExpander::expandUnion(
@@ -283,39 +289,13 @@ final class MethodCallReturnTypeFetcher
                     true,
                 );
 
-                $return_type_location = $codebase->methods->getMethodReturnTypeLocation(
+                self::checkExternallyDefinedReturnType(
+                    $statements_analyzer,
+                    $stmt,
+                    $context,
                     $method_id,
-                    $secondary_return_type_location,
+                    $return_type_candidate,
                 );
-
-                if ($secondary_return_type_location) {
-                    $return_type_location = $secondary_return_type_location;
-                }
-
-                $config = Config::getInstance();
-
-                // only check the type locally if it's defined externally, reporting its issues at one call
-                if ($return_type_location && !$config->isInProjectDirs($return_type_location->file_path)) {
-                    $issue_group = IssueBuffer::setIssueGroup(
-                        $return_type_location->file_path . ':' . $return_type_location->raw_file_start,
-                    );
-
-                    try {
-                        /** @psalm-suppress UnusedMethodCall Actually generates issues */
-                        $return_type_candidate->check(
-                            $statements_analyzer,
-                            new CodeLocation($statements_analyzer, $stmt),
-                            $statements_analyzer->getSuppressedIssues(),
-                            $context->phantom_classes,
-                            true,
-                            false,
-                            false,
-                            $context,
-                        );
-                    } finally {
-                        IssueBuffer::setIssueGroup($issue_group);
-                    }
-                }
             } else {
                 $result->returns_by_ref =
                     $result->returns_by_ref
@@ -361,6 +341,7 @@ final class MethodCallReturnTypeFetcher
     ): Union {
         $result_added_taints = 0;
         $result_removed_taints = 0;
+        $call_added_taints = 0;
         $taint_flow_graph = $statements_analyzer->getTaintFlowGraphWithSuppressed();
 
         // the event of taintMethodCallResult() is about the receiver; this one is about the call
@@ -375,6 +356,18 @@ final class MethodCallReturnTypeFetcher
 
             $result_added_taints = $dispatcher->dispatchAddTaints($event);
             $result_removed_taints = $dispatcher->dispatchRemoveTaints($event);
+
+            [$call_added_taints, $call_removed_taints] = $dispatcher->dispatchAddRemoveCallTaints(
+                new AddRemoveCallTaintsEvent(
+                    $statements_analyzer->getCodebase(),
+                    $cased_method_id,
+                    null,
+                    null,
+                    new CodeLocation($statements_analyzer->getSource(), $stmt),
+                ),
+            );
+            $result_added_taints |= $call_added_taints;
+            $result_removed_taints |= $call_removed_taints;
         }
 
         self::taintMethodCallResult(
@@ -390,7 +383,23 @@ final class MethodCallReturnTypeFetcher
             $template_result,
             $result_added_taints,
             $result_removed_taints,
+            $call_added_taints,
         );
+
+        // a builtin method that only the call map describes, such as one the stub of its extension leaves out when
+        // the extension isn't loaded, has no storage for taintMethodCallResult() to read from
+        if ($declaring_method_id === null && $taint_flow_graph) {
+            $return_type_candidate = DatabaseTaints::taintCall(
+                $statements_analyzer,
+                $taint_flow_graph,
+                DatabaseTaints::getSpecs((string) $method_id, null),
+                null,
+                $args,
+                new CodeLocation($statements_analyzer, $stmt->name),
+                $return_type_candidate,
+                $statements_analyzer->node_data->getType($stmt->var),
+            );
+        }
 
         // what is sent to a generator becomes the value of its yield expressions (what it gives back, see
         // YieldAnalyzer::taintGenerator(), flows as dictionaries/InternalTaintObjectFlowMap.php says)
@@ -429,12 +438,15 @@ final class MethodCallReturnTypeFetcher
     /**
      * What the method removes from its return depends on the arguments of this call: its result has a node of its own,
      * as $method_call_node may be shared with the other calls, the last call deciding for all
+     *
+     * @param list<PhpParser\Node\Arg> $args
      */
     private static function escapeReturnByArguments(
         Codebase $codebase,
         TaintFlowGraph|CombinedFlowGraph|VariableUseGraph $graph,
         MethodStorage $method_storage,
         ?TemplateResult $template_result,
+        array $args,
         MethodIdentifier $method_id,
         CodeLocation $node_location,
         DataFlowNode $method_call_node,
@@ -445,6 +457,7 @@ final class MethodCallReturnTypeFetcher
                 $codebase,
                 $method_storage,
                 $template_result,
+                $args,
             )
             : 0;
 
@@ -512,6 +525,7 @@ final class MethodCallReturnTypeFetcher
         ?TemplateResult $template_result = null,
         int $result_added_taints = 0,
         int $result_removed_taints = 0,
+        int $result_source_taints = 0,
     ): void {
         if (!($graph = $statements_analyzer->getDataFlowGraphWithSuppressed())
             || !$declaring_method_id
@@ -771,6 +785,7 @@ final class MethodCallReturnTypeFetcher
             $graph,
             $method_storage,
             $template_result,
+            $args,
             $method_id,
             $node_location,
             $method_call_node,
@@ -866,6 +881,17 @@ final class MethodCallReturnTypeFetcher
             $specialize_call ? $node_location : null,
         );
 
+        $return_type_candidate = DatabaseTaints::taintCall(
+            $statements_analyzer,
+            $taint_flow_graph,
+            DatabaseTaints::getSpecs((string) $declaring_method_id, $method_storage),
+            $method_storage,
+            $args,
+            $node_location,
+            $return_type_candidate,
+            $statements_analyzer->node_data->getType($var_expr),
+        );
+
         ConditionalTaintSinks::taintCall(
             $statements_analyzer,
             $taint_flow_graph,
@@ -905,6 +931,12 @@ final class MethodCallReturnTypeFetcher
             $return_type_candidate = $return_type_candidate->setParentNodes([
                 $call_result_node->id => $call_result_node,
             ]);
+
+            // what a handler adds to the call is there whatever the call is given
+            $result_source_taints &= ~$removed_taints;
+            if ($result_source_taints !== 0) {
+                $taint_flow_graph->addSource($call_result_node->setTaints($result_source_taints));
+            }
         }
     }
 
@@ -1132,6 +1164,7 @@ final class MethodCallReturnTypeFetcher
             || $stmt?->getAttribute(self::CALL_ARGUMENT_ATTRIBUTE) === true;
         $bounds_result = new TemplateResult([], []);
         $bounds_result->lower_bounds = $template_result->lower_bounds;
+        $bounds_result->markStarBindings($template_result->star_bindings, $template_result->star_input_bounds);
 
         // in the order they are declared in, as a bound may be another template of the method (`@template B of A`)
         foreach ($method_template_types as $template_name => $bounds) {
@@ -1186,19 +1219,75 @@ final class MethodCallReturnTypeFetcher
         );
     }
 
+    /**
+     * Checks a return type declared outside the project dirs, which isn't checked where it's declared, reporting its
+     * issues at one call only
+     */
+    public static function checkExternallyDefinedReturnType(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\MethodCall|PhpParser\Node\Expr\StaticCall $stmt,
+        Context $context,
+        MethodIdentifier $method_id,
+        Union $return_type,
+    ): void {
+        $codebase = $statements_analyzer->getCodebase();
+
+        $secondary_return_type_location = null;
+
+        $return_type_location = $codebase->methods->getMethodReturnTypeLocation(
+            $method_id,
+            $secondary_return_type_location,
+        );
+
+        if ($secondary_return_type_location) {
+            $return_type_location = $secondary_return_type_location;
+        }
+
+        if (!$return_type_location || $codebase->config->isInProjectDirs($return_type_location->file_path)) {
+            return;
+        }
+
+        $issue_group = IssueBuffer::setIssueGroup(
+            $return_type_location->file_path . ':' . $return_type_location->raw_file_start,
+        );
+
+        try {
+            /** @psalm-suppress UnusedMethodCall Actually generates issues */
+            $return_type->check(
+                $statements_analyzer,
+                new CodeLocation($statements_analyzer, $stmt),
+                $statements_analyzer->getSuppressedIssues(),
+                $context->phantom_classes,
+                true,
+                false,
+                false,
+                $context,
+            );
+        } finally {
+            IssueBuffer::setIssueGroup($issue_group);
+        }
+    }
+
+    /**
+     * @param ?ClassLikeStorage $static_call_class_storage the class a static call is made on: the templates of the
+     *                                                     called method's class are bound too, to what the class
+     *                                                     extends them with
+     */
     public static function replaceTemplateTypes(
         Union $return_type_candidate,
         TemplateResult $template_result,
         MethodIdentifier $method_id,
         int $arg_count,
         Codebase $codebase,
+        ?ClassLikeStorage $static_call_class_storage = null,
     ): Union {
         if ($template_result->template_types) {
             $bindable_template_types = $return_type_candidate->getTemplateTypes();
 
             foreach ($bindable_template_types as $template_type) {
                 // the template of a class-string-map belongs to the type, not to the call
-                if ($template_type->defining_class !== $method_id->fq_class_name
+                if (($static_call_class_storage !== null
+                        || $template_type->defining_class !== $method_id->fq_class_name)
                     && $template_type->defining_class !== 'class-string-map'
                     && !isset(
                         $template_result->lower_bounds
@@ -1206,40 +1295,13 @@ final class MethodCallReturnTypeFetcher
                             [$template_type->defining_class],
                     )
                 ) {
-                    if ($template_type->param_name === 'TFunctionArgCount') {
-                        $template_result->lower_bounds[$template_type->param_name] = [
-                            'fn-' . $method_id->method_name => [
-                                new TemplateBound(
-                                    Type::getInt(false, $arg_count),
-                                ),
-                            ],
-                        ];
-                    } elseif ($template_type->param_name === 'TPhpMajorVersion') {
-                        $template_result->lower_bounds[$template_type->param_name] = [
-                            'fn-' . $method_id->method_name => [
-                                new TemplateBound(
-                                    Type::getInt(false, $codebase->getMajorAnalysisPhpVersion()),
-                                ),
-                            ],
-                        ];
-                    } elseif ($template_type->param_name === 'TPhpVersionId') {
-                        $template_result->lower_bounds[$template_type->param_name] = [
-                            'fn-' . $method_id->method_name => [
-                                new TemplateBound(
-                                    Type::getInt(
-                                        false,
-                                        $codebase->analysis_php_version_id,
-                                    ),
-                                ),
-                            ],
-                        ];
-                    } else {
-                        $template_result->lower_bounds[$template_type->param_name] = [
-                            ($template_type->defining_class) => [
-                                new TemplateBound(Type::getNever()),
-                            ],
-                        ];
-                    }
+                    $template_result->lower_bounds[$template_type->param_name] = self::getUnboundTemplateLowerBound(
+                        $template_type,
+                        $method_id,
+                        $arg_count,
+                        $codebase,
+                        $static_call_class_storage,
+                    );
                 }
             }
         }
@@ -1261,5 +1323,38 @@ final class MethodCallReturnTypeFetcher
         }
 
         return $return_type_candidate;
+    }
+
+    /**
+     * @return non-empty-array<string, non-empty-list<TemplateBound>>
+     * @psalm-mutation-free
+     */
+    private static function getUnboundTemplateLowerBound(
+        TTemplateParam $template_type,
+        MethodIdentifier $method_id,
+        int $arg_count,
+        Codebase $codebase,
+        ?ClassLikeStorage $static_call_class_storage,
+    ): array {
+        $bound = match ($template_type->param_name) {
+            'TFunctionArgCount' => Type::getInt(false, $arg_count),
+            'TPhpMajorVersion' => Type::getInt(false, $codebase->getMajorAnalysisPhpVersion()),
+            'TPhpVersionId' => Type::getInt(false, $codebase->analysis_php_version_id),
+            default => null,
+        };
+
+        if ($bound !== null) {
+            return ['fn-' . $method_id->method_name => [new TemplateBound($bound)]];
+        }
+
+        return [
+            $template_type->defining_class => [
+                new TemplateBound(
+                    $static_call_class_storage?->template_extended_params
+                        [$template_type->defining_class][$template_type->param_name]
+                    ?? Type::getNever(),
+                ),
+            ],
+        ];
     }
 }

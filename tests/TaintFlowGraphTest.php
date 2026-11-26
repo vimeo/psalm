@@ -15,11 +15,13 @@ use Psalm\Internal\DataFlow\Path;
 use Psalm\IssueBuffer;
 use Psalm\Storage\FunctionStorage;
 use Psalm\Type\TaintKind;
+use ReflectionMethod;
 use ReflectionProperty;
 
 use function array_diff;
 use function array_keys;
 use function array_reverse;
+use function hrtime;
 use function json_encode;
 use function ksort;
 use function memory_get_usage;
@@ -563,6 +565,47 @@ final class TaintFlowGraphTest extends TestCase
     }
 
     /**
+     * linkGeneratorSends() walks back from what a send reaches, looking for generators. It only walks the nodes a
+     * generator's return node or what a generator receives flows into: from any other node it can't find one.
+     */
+    public function testGeneratorSendWalkSkipsNodesNoGeneratorFlowsInto(): void
+    {
+        $storage = new FunctionStorage();
+        $node = static fn(string $id, ?string $key = null): DataFlowNode
+            => DataFlowNode::getForMethodReturn($id, $storage, specialization_key: $key);
+
+        $graph = new TaintFlowGraph();
+        $edge = static function (DataFlowNode $from, DataFlowNode $to) use ($graph): void {
+            $graph->addNode($from);
+            $graph->addNode($to);
+            $graph->addPath($from, $to, '=');
+        };
+
+        $generator = $node('gen');
+        $received = $node('gen received');
+        $graph->addNode($received);
+        $graph->addGenerator($generator, $received);
+
+        // the generator, and what it receives, flow into $target; so does data no generator flows into
+        $edge($generator, $node('target'));
+        $edge($received, $node('relay'));
+        $edge($node('data'), $node('more data'));
+        $edge($node('more data'), $node('target'));
+        $edge($node('callee'), $node('callee', 'call'));
+        $edge($node('callee', 'call'), $node('target'));
+
+        /** @var array<string, array<string, true>> $reverse */
+        $reverse = (new ReflectionMethod(TaintFlowGraph::class, 'getReverseEdges'))->invoke($graph);
+        /** @var array<string, true> $reaching */
+        $reaching = (new ReflectionMethod(TaintFlowGraph::class, 'getNodesReachingGeneratorSentNodes'))
+            ->invoke($graph, $reverse);
+
+        $ids = array_keys($reaching);
+        sort($ids);
+        $this->assertSame(['gen', 'gen received', 'relay', 'target'], $ids);
+    }
+
+    /**
      * A forked worker's graph reaches the main process serialized, with hundreds of thousands of paths on a large
      * codebase. Unserializing an object without __unserialize() also builds a table of its properties
      * (https://github.com/php/php-src/issues/10126), which takes more memory than the path itself.
@@ -626,5 +669,79 @@ final class TaintFlowGraphTest extends TestCase
         $state = ['class' => Raw::class] + $state;
         $location = CodeLocation::fromCompactState('/a/b.php', 'b.php', 10, 100, 120, $state);
         $this->assertSame($state, $location->getCompactState());
+    }
+
+    /**
+     * A sink the body of a specialized function adds taints for is reported through each call to it (see
+     * TaintFlowResolution::addEntrySink()). Here those flows all have the same origins, so all but the first are
+     * dropped as already reported, and finding that out mustn't rebuild the trace of each, through the whole body,
+     * for each of its taints: a trace for each call and taint took seconds to tens of seconds.
+     */
+    public function testFlowsReportedThroughManyCallsAreDroppedWithoutRebuildingTheirTraces(): void
+    {
+        $calls = 1_000;
+        // the trace reported is longer, below Xdebug's default max nesting level of getPredecessorPath()
+        $steps = 300;
+
+        $body = '';
+        for ($i = 1; $i <= $steps; $i++) {
+            $body .= "    \$x$i = \$x" . ($i - 1) . " . '';\n";
+        }
+
+        $code = "<?php\n"
+            . "/** @psalm-taint-unescape input */\n"
+            . "function unescape(string \$s): string { return \$s; }\n"
+            . "/** @psalm-taint-sink input \$s */\n"
+            . "function sink(string \$s): void {}\n"
+            . "/** @psalm-taint-specialize */\n"
+            . "function f(string \$p): void {\n"
+            . "    \$x0 = unescape(\$p);\n"
+            . $body
+            . "    sink(\$x$steps);\n"
+            . "}\n"
+            . "\$c = (string) \$_GET['c'];\n"
+            . str_repeat("f(\$c);\n", $calls);
+        // the parameter of sink()
+        $sink_line = 5;
+
+        IssueBuffer::clear();
+        $this->project_analyzer->trackTaintedInputs();
+        $codebase = $this->project_analyzer->getCodebase();
+        $codebase->config->throw_exception = false;
+
+        $path = self::$src_dir_path . 'somefile.php';
+        $this->file_provider->registerFile($path, $code);
+        $codebase->addFilesToAnalyze([$path => $path]);
+        $codebase->scanFiles();
+        $this->project_analyzer->getConfig()->visitStubFiles($codebase);
+
+        $graph = new TaintFlowGraph();
+        $codebase->taint_flow_graph = $graph;
+        (new FileAnalyzer($this->project_analyzer, $path, $codebase->config->shortenFileName($path)))
+            ->analyze(new Context());
+
+        $start = hrtime(true);
+        $graph->connectSinksAndSources($codebase->progress);
+        $nanoseconds = hrtime(true) - $start;
+
+        $html_lines = [];
+        $taint_issues = 0;
+
+        foreach (IssueBuffer::getIssuesData() as $file_issues) {
+            foreach ($file_issues as $issue) {
+                if ($issue->type === 'TaintedHtml') {
+                    $html_lines[] = $issue->line_from;
+                }
+
+                if (str_starts_with($issue->type, 'Tainted')) {
+                    $taint_issues++;
+                }
+            }
+        }
+
+        // the flows of the unescaped taints and of those the calls keep, whatever the number of calls
+        $this->assertSame([$sink_line, $sink_line], $html_lines);
+        $this->assertSame(2 * 21, $taint_issues);
+        $this->assertLessThan(2_000_000_000, $nanoseconds);
     }
 }

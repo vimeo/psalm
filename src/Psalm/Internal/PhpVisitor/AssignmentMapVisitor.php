@@ -15,6 +15,10 @@ use function array_map;
 use function count;
 use function is_string;
 use function spl_object_id;
+use function str_contains;
+use function str_starts_with;
+use function strrpos;
+use function substr;
 
 /**
  * @internal
@@ -77,6 +81,20 @@ final class AssignmentMapVisitor extends PhpParser\NodeVisitorAbstract
     private array $overwritten_var_ids = [];
 
     /**
+     * The variables the loop itself writes, and the ones it binds by reference
+     *
+     * @var array<string, true>
+     */
+    private array $loop_written_var_ids = [];
+
+    private int $function_like_depth = 0;
+
+    /**
+     * The depth of the functions and methods, which don't share `$this` with the loop
+     */
+    private int $own_this_depth = 0;
+
+    /**
      * @psalm-mutation-free
      */
     public function __construct(protected ?string $this_class_name, private readonly ?self $outer_visitor = null)
@@ -105,11 +123,28 @@ final class AssignmentMapVisitor extends PhpParser\NodeVisitorAbstract
     #[Override]
     public function enterNode(PhpParser\Node $node): ?int
     {
+        if ($node instanceof PhpParser\Node\FunctionLike) {
+            ++$this->function_like_depth;
+
+            if (!$node instanceof PhpParser\Node\Expr\Closure
+                && !$node instanceof PhpParser\Node\Expr\ArrowFunction
+            ) {
+                ++$this->own_this_depth;
+            }
+
+            return null;
+        }
+
         if ($node instanceof PhpParser\Node\Expr\AssignRef) {
             $right_var_id = ExpressionIdentifier::getRootVarId($node->expr, $this->this_class_name);
 
+            // written through the reference
+            if ($right_var_id !== null) {
+                $this->addLoopWrittenVarId($right_var_id);
+            }
+
             foreach ($this->getAssignedRootVarIds($node->var) as $var_id) {
-                $this->defined_var_ids[$var_id] = true;
+                $this->addDefinedVarId($var_id);
 
                 // what is written to either of them goes into the other one
                 if ($right_var_id !== null && $right_var_id !== $var_id) {
@@ -127,7 +162,7 @@ final class AssignmentMapVisitor extends PhpParser\NodeVisitorAbstract
             $left_var_ids = $this->getAssignedRootVarIds($node->var);
 
             // `$a = [$b]`, `$a[$k] = 1`, `[$a, $b] = [$b, $c]`
-            $read_var_ids = self::getReadVarIds([$node->expr, $node->var]);
+            $read_var_ids = $this->getReadVarIds([$node->expr, $node->var]);
 
             if (!$node->var instanceof PhpParser\Node\Expr\List_
                 && !$node->var instanceof PhpParser\Node\Expr\Array_
@@ -135,11 +170,9 @@ final class AssignmentMapVisitor extends PhpParser\NodeVisitorAbstract
                 $read_var_ids = array_diff_key($read_var_ids, array_flip($left_var_ids));
             }
 
-            $this->addFeedingVarIds($read_var_ids);
-
             foreach ($left_var_ids as $left_var_id) {
                 $this->assignment_map[$left_var_id][$right_var_id ?? 'isset'] = true;
-                $this->written_var_ids[$left_var_id] = true;
+                $this->addWrittenVarId($left_var_id);
             }
 
             // what the sides change themselves (`$x = $counts['one']++`, `$a[$i++] = 1`) is in the map too
@@ -155,14 +188,19 @@ final class AssignmentMapVisitor extends PhpParser\NodeVisitorAbstract
             $this->defined_var_ids += $inner_visitor->defined_var_ids;
             $this->feeding_var_ids += $inner_visitor->feeding_var_ids;
             $this->written_var_ids += $inner_visitor->written_var_ids;
+            $this->loop_written_var_ids += $inner_visitor->loop_written_var_ids;
             $this->by_ref_arg_var_ids += $inner_visitor->by_ref_arg_var_ids;
 
+            // after the writes of the sides: `($p = f())->b` doesn't read the `$p->b` written before
+            $this->addFeedingVarIds($read_var_ids);
+
             // the sides are evaluated before the variable is overwritten
-            if ($node->var instanceof PhpParser\Node\Expr\Variable
-                && is_string($node->var->name)
-                && isset($this->statement_expr_ids[spl_object_id($node)])
-            ) {
-                $this->overwritten_var_ids['$' . $node->var->name] = true;
+            if (isset($this->statement_expr_ids[spl_object_id($node)])) {
+                $overwritten_var_id = $this->getPlainVarId($node->var);
+
+                if ($overwritten_var_id !== null) {
+                    $this->overwritten_var_ids[$overwritten_var_id] = true;
+                }
             }
 
             return PhpParser\NodeVisitor::DONT_TRAVERSE_CHILDREN;
@@ -179,14 +217,14 @@ final class AssignmentMapVisitor extends PhpParser\NodeVisitorAbstract
             if ($node instanceof PhpParser\Node\Expr\AssignOp) {
                 // `$s .= $t`
                 $this->addFeedingVarIds(array_diff_key(
-                    self::getReadVarIds([$node->expr, $node->var]),
+                    $this->getReadVarIds([$node->expr, $node->var]),
                     $var_id !== null ? [$var_id => true] : [],
                 ));
             }
 
             if ($var_id !== null) {
                 $this->assignment_map[$var_id][$var_id] = true;
-                $this->written_var_ids[$var_id] = true;
+                $this->addWrittenVarId($var_id);
             }
 
             return PhpParser\NodeVisitor::DONT_TRAVERSE_CHILDREN;
@@ -218,7 +256,7 @@ final class AssignmentMapVisitor extends PhpParser\NodeVisitorAbstract
 
             // an argument may go into another one passed by reference (`array_push($b, $c)`)
             if (count($args) > 1) {
-                $this->addFeedingVarIds(self::getReadVarIds(array_map(
+                $this->addFeedingVarIds($this->getReadVarIds(array_map(
                     static fn(PhpParser\Node\Arg $arg): PhpParser\Node\Expr => $arg->value,
                     $args,
                 )));
@@ -237,32 +275,32 @@ final class AssignmentMapVisitor extends PhpParser\NodeVisitorAbstract
 
                 if ($arg_var_id !== null) {
                     $this->assignment_map[$arg_var_id][$arg_var_id] = true;
-                    $this->written_var_ids[$arg_var_id] = true;
+                    $this->addWrittenVarId($arg_var_id);
                 }
             }
         } elseif ($node instanceof PhpParser\Node\Stmt\Foreach_) {
-            $this->addFeedingVarIds(self::getReadVarIds([$node->expr]));
+            $this->addFeedingVarIds($this->getReadVarIds([$node->expr]));
 
             if ($node->byRef) {
                 // written through the value
                 $iterated_var_id = ExpressionIdentifier::getRootVarId($node->expr, $this->this_class_name);
 
                 if ($iterated_var_id !== null) {
-                    $this->written_var_ids[$iterated_var_id] = true;
+                    $this->addWrittenVarId($iterated_var_id);
                 }
             }
 
             foreach ([$node->keyVar, $node->valueVar] as $target) {
                 if ($target) {
                     foreach ($this->getAssignedRootVarIds($target) as $var_id) {
-                        $this->defined_var_ids[$var_id] = true;
+                        $this->addDefinedVarId($var_id);
                     }
                 }
             }
         } elseif ($node instanceof PhpParser\Node\Stmt\Static_) {
             foreach ($node->vars as $static_var) {
                 if (is_string($static_var->var->name)) {
-                    $this->defined_var_ids['$' . $static_var->var->name] = true;
+                    $this->addDefinedVarId('$' . $static_var->var->name);
                 }
             }
         } elseif ($node instanceof PhpParser\Node\Stmt\Global_) {
@@ -270,7 +308,7 @@ final class AssignmentMapVisitor extends PhpParser\NodeVisitorAbstract
                 $var_id = ExpressionIdentifier::getRootVarId($global_var, $this->this_class_name);
 
                 if ($var_id !== null) {
-                    $this->defined_var_ids[$var_id] = true;
+                    $this->addDefinedVarId($var_id);
                 }
             }
         }
@@ -321,20 +359,72 @@ final class AssignmentMapVisitor extends PhpParser\NodeVisitorAbstract
      */
     private function isOverwritten(string $var_id): bool
     {
-        return isset($this->overwritten_var_ids[$var_id]) || $this->outer_visitor?->isOverwritten($var_id);
+        return (isset($this->overwritten_var_ids[$var_id]) && !$this->isObjectOfPropertyWritten($var_id))
+            || $this->outer_visitor?->isOverwritten($var_id);
     }
 
     /**
+     * Whether the loop body has so far written what `$a->b` in `$a->b->c` goes through: it may be another object now
+     *
+     * @psalm-mutation-free
+     */
+    private function isObjectOfPropertyWritten(string $var_id): bool
+    {
+        while (($arrow = strrpos($var_id, '->')) !== false) {
+            $var_id = substr($var_id, 0, $arrow);
+
+            if (isset($this->written_var_ids[$var_id])
+                || isset($this->defined_var_ids[$var_id])
+                || isset($this->by_ref_arg_var_ids[$var_id])
+            ) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * The id of a variable or of a chain of properties; null when an offset makes it stand for several values
+     */
+    private function getPlainVarId(PhpParser\Node\Expr $expr): ?string
+    {
+        if ($expr instanceof PhpParser\Node\Expr\PropertyFetch) {
+            return $expr->name instanceof PhpParser\Node\Identifier && $this->getPlainVarId($expr->var) !== null
+                ? ExpressionIdentifier::getRootVarId($expr, $this->this_class_name)
+                : null;
+        }
+
+        return $expr instanceof PhpParser\Node\Expr\Variable || $expr instanceof PhpParser\Node\Expr\StaticPropertyFetch
+            ? ExpressionIdentifier::getRootVarId($expr, $this->this_class_name)
+            : null;
+    }
+
+    /**
+     * The variables and properties the expressions read (`$this->b` in `$this->a = $this->b`)
+     *
      * @param list<PhpParser\Node\Expr> $exprs
      * @return array<string, true>
      */
-    private static function getReadVarIds(array $exprs): array
+    private function getReadVarIds(array $exprs): array
     {
         $var_ids = [];
 
-        foreach ((new PhpParser\NodeFinder)->findInstanceOf($exprs, PhpParser\Node\Expr\Variable::class) as $var) {
-            if (is_string($var->name)) {
-                $var_ids['$' . $var->name] = true;
+        foreach ((new PhpParser\NodeFinder)->find(
+            $exprs,
+            static fn(PhpParser\Node $node): bool => $node instanceof PhpParser\Node\Expr\Variable
+                || $node instanceof PhpParser\Node\Expr\PropertyFetch
+                || $node instanceof PhpParser\Node\Expr\StaticPropertyFetch,
+        ) as $node) {
+            if ($node instanceof PhpParser\Node\Expr\Variable) {
+                if (is_string($node->name)) {
+                    $var_ids['$' . $node->name] = true;
+                }
+            } elseif (($node instanceof PhpParser\Node\Expr\PropertyFetch
+                    || $node instanceof PhpParser\Node\Expr\StaticPropertyFetch)
+                && ($var_id = ExpressionIdentifier::getRootVarId($node, $this->this_class_name)) !== null
+            ) {
+                $var_ids[$var_id] = true;
             }
         }
 
@@ -361,6 +451,85 @@ final class AssignmentMapVisitor extends PhpParser\NodeVisitorAbstract
             $this->feeding_var_ids,
             $this->written_var_ids + $this->defined_var_ids + $this->by_ref_arg_var_ids,
         );
+    }
+
+    /**
+     * The variables the loop writes, not counting the calls it gives them to
+     *
+     * @return array<string, true>
+     * @psalm-capabilities read-props
+     */
+    public function getWrittenVarIds(): array
+    {
+        return $this->loop_written_var_ids;
+    }
+
+    /**
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    #[Override]
+    public function leaveNode(PhpParser\Node $node): null
+    {
+        if ($node instanceof PhpParser\Node\FunctionLike) {
+            --$this->function_like_depth;
+
+            if (!$node instanceof PhpParser\Node\Expr\Closure
+                && !$node instanceof PhpParser\Node\Expr\ArrowFunction
+            ) {
+                --$this->own_this_depth;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    private function addWrittenVarId(string $var_id): void
+    {
+        $this->written_var_ids[$var_id] = true;
+        $this->addLoopWrittenVarId($var_id);
+    }
+
+    /**
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    private function addDefinedVarId(string $var_id): void
+    {
+        $this->defined_var_ids[$var_id] = true;
+        $this->addLoopWrittenVarId($var_id);
+    }
+
+    /**
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    private function addLoopWrittenVarId(string $var_id): void
+    {
+        // a function declared in the loop has its own variables, but the objects are shared, and so is `$this` with a
+        // closure; a method of a class declared in the loop has its own `$this`
+        if (!$this->isInFunctionLike()
+            || (!$this->hasOwnThis() && (str_contains($var_id, '->') || str_contains($var_id, '::')))
+            || !str_starts_with($var_id, '$')
+        ) {
+            $this->loop_written_var_ids[$var_id] = true;
+        }
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    private function isInFunctionLike(): bool
+    {
+        return $this->function_like_depth > 0 || ($this->outer_visitor?->isInFunctionLike() ?? false);
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    private function hasOwnThis(): bool
+    {
+        return $this->own_this_depth > 0 || ($this->outer_visitor?->hasOwnThis() ?? false);
     }
 
     /**

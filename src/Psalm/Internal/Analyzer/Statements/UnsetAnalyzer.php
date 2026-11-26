@@ -10,6 +10,7 @@ use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\ArrayAssignmentAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\AssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\DestructorAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
@@ -84,6 +85,8 @@ final class UnsetAnalyzer
         $context->inside_unset = true;
 
         foreach ($stmt->vars as $var) {
+            AssignmentAnalyzer::checkConstantObjectWrite($statements_analyzer, $var);
+
             $var->setAttribute(self::TARGET_ATTRIBUTE, true);
 
             $chain_node = $var;
@@ -144,6 +147,8 @@ final class UnsetAnalyzer
 
                 $context->forgetMethodResultsDependingOn($var_id);
                 $context->remove($var_id);
+                // "possibly assigned" also stands for "possibly unset": either way it differs from the outer scope
+                $context->possibly_assigned_var_ids[$var_id] = true;
                 unset($context->references_possibly_from_confusing_scope[$var_id]);
             }
 
@@ -166,6 +171,7 @@ final class UnsetAnalyzer
                     );
                     $context->possibly_assigned_var_ids[$root_var_id] = true;
 
+                    $context->releaseKeysBoundToList($root_var_id);
                     $context->removeVarFromConflictingClauses(
                         $root_var_id,
                         $context->vars_in_scope[$root_var_id],
@@ -328,6 +334,7 @@ final class UnsetAnalyzer
 
             $context->vars_in_scope[$parent_var_id] = $parent_type;
             $context->possibly_assigned_var_ids[$parent_var_id] = true;
+            $context->releaseKeysBoundToList($parent_var_id);
             $context->removeVarFromConflictingClauses($parent_var_id, $parent_type, $statements_analyzer);
 
             $child_expr = $child_expr->var;

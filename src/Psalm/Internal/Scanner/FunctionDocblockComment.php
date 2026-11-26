@@ -61,6 +61,13 @@ final class FunctionDocblockComment
     public ?array $if_this_is = null;
 
     /**
+     * The signatures of the `@psalm-overload` tags: the text after the tag, and its offset in the docblock
+     *
+     * @var list<array{entry: string, offset: int}>
+     */
+    public array $overloads = [];
+
+    /**
      * @var array<int, array{name:string, type:string, line_number: int, start: int, end: int}>
      */
     public array $globals = [];
@@ -101,6 +108,13 @@ final class FunctionDocblockComment
      * @var array<string>
      */
     public array $flows = [];
+
+    /**
+     * The `@psalm-database-*` annotations: the kind (`query`, ...) and what follows it
+     *
+     * @var list<array{string, string}>
+     */
+    public array $database_calls = [];
 
     /**
      * @var array<string>
