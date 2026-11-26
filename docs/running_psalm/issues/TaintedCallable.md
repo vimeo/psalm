@@ -6,7 +6,7 @@ Emitted when tainted text names the function, method or class that the code call
 
 ## Risk
 
-An attacker who controls the function or method name can run any function or method that is callable from there, with arguments of their choice, which usually ends in code execution.
+An attacker who controls a function name can run any function that is callable from there, with the arguments the call passes, which usually ends in code execution. An attacker who controls a method name can run any method of that object or class, including ones the code never meant to expose.
 
 This can lead to dangerous situations, like running arbitrary functions.
 

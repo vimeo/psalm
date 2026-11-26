@@ -2650,6 +2650,14 @@ final class TaintTest extends TestCase
                     (new A())->$name();
                     (new A())->{"run"}();',
             ],
+            'methodNamedByAnArray' => [
+                'code' => '<?php
+                    final class A {
+                        public function run(): void {}
+                    }
+
+                    (new A())->{$_GET}();',
+            ],
             'arrayWalkCallbackWritingSafeValuesByReference' => [
                 'code' => '<?php
                     $items = ["a"];
@@ -19698,6 +19706,18 @@ final class TaintTest extends TestCase
             ],
             'taintCallingAStaticMethodNamedByInputOnAClassString' => [
                 'code' => '<?php
+                    function f(string $class): void {
+                        $name = (string) $_GET["method"];
+                        $class::$name();
+                    }',
+                'error_message' => 'TaintedCallable',
+            ],
+            'taintCallingAStaticMethodNamedByInputOnAnUnboundedClassString' => [
+                'code' => '<?php
+                    /**
+                     * @param class-string $class
+                     * @psalm-suppress MixedMethodCall
+                     */
                     function f(string $class): void {
                         $name = (string) $_GET["method"];
                         $class::$name();

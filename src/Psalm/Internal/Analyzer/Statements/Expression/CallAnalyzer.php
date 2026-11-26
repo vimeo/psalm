@@ -66,7 +66,14 @@ use Psalm\Storage\MethodStorage;
 use Psalm\Storage\Possibilities;
 use Psalm\Type;
 use Psalm\Type\Atomic\Scalar;
+use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TBool;
+use Psalm\Type\Atomic\TFloat;
+use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Reconciler;
@@ -1964,6 +1971,7 @@ abstract class CallAnalyzer
         if (!$taint_flow_graph
             || $name_type === null
             || $name_type->parent_nodes === []
+            || !self::canBeMethodName($name_type)
             || $codebase->config->suppressesIssueType($statements_analyzer->getSuppressedIssues(), 'TaintedInput')
         ) {
             return;
@@ -1971,7 +1979,7 @@ abstract class CallAnalyzer
 
         $sink = DataFlowNode::getForCallableArg(
             'dynamic-method-call',
-            'variable-call',
+            'variable-method-call',
             0,
             new CodeLocation($statements_analyzer->getSource(), $name),
             TaintKind::INPUT_CALLABLE,
@@ -1992,5 +2000,29 @@ abstract class CallAnalyzer
         foreach ($name_type->parent_nodes as $parent_node) {
             $taint_flow_graph->addPath($parent_node, $sink, 'call', $added_taints, $removed_taints);
         }
+    }
+
+    /**
+     * PHP throws before the call for a method name that is not a string, objects with `__toString()` included.
+     *
+     * @psalm-pure
+     */
+    private static function canBeMethodName(Union $name_type): bool
+    {
+        foreach ($name_type->getAtomicTypes() as $atomic) {
+            if (!$atomic instanceof TArray
+                && !$atomic instanceof TKeyedArray
+                && !$atomic instanceof TNamedObject
+                && !$atomic instanceof TObject
+                && !$atomic instanceof TNull
+                && !$atomic instanceof TBool
+                && !$atomic instanceof TInt
+                && !$atomic instanceof TFloat
+            ) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
