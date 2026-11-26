@@ -25,3 +25,5 @@ The type comes from a docblock, which Psalm trusts, so a check against it is red
 ## Reporting a bug
 
 Please include a link to [psalm.dev](https://psalm.dev) that reproduces it, or the smallest code and `psalm.xml` that do.
+
+If Psalm crashed, attach the `crash-*.txt` file it names after `Full report:`; the link it prints fills in the rest of the issue. `PSALM_CRASH_REPORT=<dir>` writes that file to another directory, and `PSALM_CRASH_REPORT=0` turns it off.

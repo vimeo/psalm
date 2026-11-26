@@ -1201,9 +1201,6 @@
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/Cli/Psalm.php">
-    <InvalidScalarArgument>
-      <code><![CDATA[$options['f'] ?? null]]></code>
-    </InvalidScalarArgument>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[!$config->error_baseline]]></code>
       <code><![CDATA[!$paths_to_check]]></code>
@@ -1675,7 +1672,6 @@
       <code><![CDATA[!$skip_if_descendants]]></code>
       <code><![CDATA[!$skip_if_descendants]]></code>
       <code><![CDATA[$include_path]]></code>
-      <code><![CDATA[$path_to_file]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/PhpVisitor/Reflector/FunctionLikeDocblockParser.php">

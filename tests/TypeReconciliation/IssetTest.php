@@ -2529,6 +2529,103 @@ final class IssetTest extends TestCase
                 'ignored_issues' => ['MixedAssignment'],
                 'php_version' => '8.0',
             ],
+            'offsetOfAnOffsetCheckedWithIssetIsNarrowedByAnInnerIf' => [
+                'code' => '<?php
+                    interface D {}
+
+                    function f(array $config, int $mode): void {
+                        if (isset($config["x"][$mode])) {
+                            if ($config["x"][$mode] instanceof D) {
+                                $d = $config["x"][$mode];
+                                /** @psalm-check-type-exact $d = D */;
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'parentOfAnIntOffsetCheckedWithIssetIsNotMixed' => [
+                'code' => '<?php
+                    function f(array $a): string {
+                        if (!isset($a["x"][3])) {
+                            return "";
+                        }
+
+                        return (string) $a["x"][3];
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'parentOfANegativeOrNumericStringOffsetCheckedWithIssetIsNotMixed' => [
+                'code' => '<?php
+                    /** @param int<0, 5> $i */
+                    function f(array $a, int $i): void {
+                        if (isset($a["x"][-1], $a["y"]["3"], $a["z"][$i])) {
+                            $x = $a["x"];
+                            $y = $a["y"];
+                            $z = $a["z"];
+                            /** @psalm-check-type-exact $x = ArrayAccess|non-empty-array<array-key, mixed>|non-empty-string */;
+                            /** @psalm-check-type-exact $y = ArrayAccess|non-empty-array<array-key, mixed>|non-empty-string */;
+                            /** @psalm-check-type-exact $z = ArrayAccess|non-empty-array<array-key, mixed>|non-empty-string */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'parentOfAnIntOffsetCheckedWithIssetMayBeAString' => [
+                'code' => '<?php
+                    function f(array $a): string {
+                        if (isset($a["x"][3]) && is_string($a["x"])) {
+                            return $a["x"];
+                        }
+
+                        return "";
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'stringOffsetUnderAnIntOffsetCheckedWithIssetIsReadWithoutIssue' => [
+                'code' => '<?php
+                    function f(array $r): string {
+                        if (isset($r["messages"][0]["messageId"])) {
+                            return (string) $r["messages"][0]["messageId"];
+                        }
+
+                        return "";
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedArrayAccess'],
+                'php_version' => '8.0',
+            ],
+            'propertyUnderAnIntOffsetCheckedWithIssetIsReadWithoutIssue' => [
+                'code' => '<?php
+                    function f(array $u): string {
+                        if (isset($u["x"][0]->current)) {
+                            return (string) $u["x"][0]->current;
+                        }
+
+                        return "";
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedArrayAccess', 'MixedPropertyFetch'],
+                'php_version' => '8.0',
+            ],
+            'parentOfAStringVariableOffsetCheckedWithIssetStaysMixed' => [
+                'code' => '<?php
+                    function f(array $a, string $k): void {
+                        if (isset($a["x"][$k])) {
+                            $p = $a["x"];
+                            /** @psalm-check-type-exact $p = mixed */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment'],
+                'php_version' => '8.0',
+            ],
             'issetOfIntOffsetSetsPossiblyUndefinedMixedVariable' => [
                 'code' => '<?php
                     /** @return mixed */

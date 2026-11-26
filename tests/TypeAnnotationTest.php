@@ -1181,6 +1181,9 @@ final class TypeAnnotationTest extends TestCase
                             /** @psalm-check-type-exact $_doesNotWork = D<array{b?: bool, c?: string}> */;
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'forwardReferencedTypeAliasInSameDocblock' => [
                 'code' => <<<'PHP'
@@ -1203,6 +1206,8 @@ final class TypeAnnotationTest extends TestCase
                 'assertions' => [
                     '$_z===' => 'array{child: array{foo: string}}',
                 ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'typeAliasResolvesForwardReferenceWithinSameDocblock' => [
                 'code' => <<<'PHP'

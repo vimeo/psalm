@@ -557,7 +557,7 @@ When `true`, Psalm will treat all classes as if they had sealed properties, mean
 >
 ```
 
-When `true` (the default), Psalm will run [Taint Analysis](../security_analysis/index.md) on your codebase. This config is the same as if you were running Psalm with `--taint-analysis`.
+When `true` (the default), Psalm will run [Taint Analysis](../security_analysis/index.md) on your codebase. This config is the same as if you were running Psalm with `--taint-analysis`. `--no-taint-analysis` turns it off for one run.
 
 #### reportInfo
 
@@ -878,7 +878,7 @@ Optional. A list of issues that can't be suppressed: Psalm reports them as error
 </unsuppressibleIssues>
 ```
 
-An entry names an issue, or a class or interface several issues extend, which makes all of them unsuppressible: `TaintedInput` for every taint issue, `MixedIssue` for every `Mixed*` issue, `ClassIssue`, `MethodIssue`, `PropertyIssue`, `ArgumentIssue`, `FunctionIssue`, `ClassConstantIssue`, `VariableIssue`, `PluginIssue` for every issue of a plugin, or `CodeIssue` for every issue. An issue of a plugin is named by the fully qualified name of its class.
+An entry names an issue, or a class or interface several issues extend, which makes all of them unsuppressible: `SecurityIssue` for every security issue (the taint issues, `WeakHash`, `WeakRandom`, `WeakCipher`, `InsecureCookie` and `XmlExternalEntity`), `TaintedInput` for every taint issue, `MixedIssue` for every `Mixed*` issue, `ClassIssue`, `MethodIssue`, `PropertyIssue`, `ArgumentIssue`, `FunctionIssue`, `ClassConstantIssue`, `VariableIssue`, `PluginIssue` for every issue of a plugin, or `CodeIssue` for every issue. An issue of a plugin is named by the fully qualified name of its class.
 
 Taint issues can only be suppressed in docblocks all at once, with `@psalm-suppress TaintedInput`, which stops tracking taints in the function or the statement it annotates: if any taint issue is unsuppressible, it doesn't, and every taint issue found there is reported.
 

@@ -8,10 +8,13 @@ use InvalidArgumentException;
 use PhpParser;
 use Psalm\Codebase;
 use Psalm\Config;
+use Psalm\Exception\CodeException;
 use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\Crash\CrashContext;
+use Psalm\Internal\FileChangedDuringRunException;
 use Psalm\Internal\FileManipulation\ClassDocblockManipulator;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\FileManipulation\FunctionDocblockManipulator;
@@ -21,6 +24,7 @@ use Psalm\Internal\Fork\AnalyzerTask;
 use Psalm\Internal\Fork\InitAnalyzerTask;
 use Psalm\Internal\Fork\Pool;
 use Psalm\Internal\Fork\ShutdownAnalyzerTask;
+use Psalm\Internal\Fork\TaskCrashedException;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Perf;
 use Psalm\Internal\Provider\FileProvider;
@@ -33,6 +37,7 @@ use Psalm\Storage\Capabilities;
 use Psalm\Type;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Union;
+use Throwable;
 use UnexpectedValueException;
 
 use function Amp\Future\await;
@@ -59,6 +64,7 @@ use function substr;
 use function usort;
 
 use const PATHINFO_EXTENSION;
+use const PHP_EOL;
 use const PHP_INT_MAX;
 
 /**
@@ -233,6 +239,16 @@ final class Analyzer
         return isset($this->files_with_analysis_results[$file_path]);
     }
 
+    /**
+     * A file of the project, or analysed: its class declarations are not alternatives to those of a dependency
+     *
+     * @psalm-mutation-free
+     */
+    public function isOwnCodeFile(string $file_path): bool
+    {
+        return isset($this->files_with_analysis_results[$file_path]) || $this->config->isInProjectDirs($file_path);
+    }
+
     public function analyzeFiles(
         ProjectAnalyzer $project_analyzer,
         int $pool_size,
@@ -241,9 +257,32 @@ final class Analyzer
     ): void {
         Perf\Collector::stage('analysis.setup');
 
-        $this->loadCachedResults($project_analyzer);
-
         $codebase = $project_analyzer->getCodebase();
+
+        $scanned = $codebase->scanner->getScannedFiles();
+        $changed_files = [];
+
+        // a file that was gone when its scan came, and is back, is analysed against a codebase without it, whether
+        // it is a file to analyse or one that a file to analyse depends on
+        foreach ($this->files_to_analyze + $codebase->scanner->getVanishedFiles() as $file_path => $_) {
+            if (!isset($scanned[$file_path])
+                && $this->file_provider->fileExists($file_path)
+                && !$this->file_provider->isDirectory($file_path)
+            ) {
+                $changed_files[] = $this->config->shortenFileName($file_path);
+            }
+        }
+
+        if ($changed_files) {
+            throw new FileChangedDuringRunException(
+                count($changed_files) === 1
+                    ? $changed_files[0] . ' changed while Psalm was running. Run Psalm again.'
+                    : 'These files changed while Psalm was running. Run Psalm again.'
+                        . PHP_EOL . '  ' . implode(PHP_EOL . '  ', $changed_files),
+            );
+        }
+
+        $this->loadCachedResults($project_analyzer);
 
         if ($alter_code) {
             $project_analyzer->interpretRefactors();
@@ -347,7 +386,11 @@ final class Analyzer
             Perf\Collector::poolStart('analysis', count($this->files_to_analyze));
             await($pool->runAll(new InitAnalyzerTask));
             Perf\Collector::poolStep('init_us');
-            $pool->run($this->files_to_analyze, AnalyzerTask::class, $task_done_closure);
+            try {
+                $pool->run($this->files_to_analyze, AnalyzerTask::class, $task_done_closure);
+            } catch (TaskCrashedException $e) {
+                $this->throwUnlessFileChanged($codebase, $e);
+            }
             Perf\Collector::poolStep('run_us');
             Perf\Collector::stage('analysis.merge');
             $this->progress->debug('Collecting forked analysis results' . "\n");
@@ -436,9 +479,36 @@ final class Analyzer
             Perf\Collector::poolEnd();
         } else {
             foreach ($this->files_to_analyze as $file_path => $_) {
-                $task_done_closure(self::analysisWorker($this->config, $this->progress, $file_path));
+                try {
+                    $task_done_closure(self::analysisWorker($this->config, $this->progress, $file_path));
+                } catch (CodeException $e) {
+                    // an issue that throwExceptionOnError raises is a result, not a crash
+                    throw $e;
+                } catch (Throwable $e) {
+                    $this->throwUnlessFileChanged($codebase, TaskCrashedException::inProcess($file_path, $e));
+                }
             }
         }
+    }
+
+    /**
+     * A file that differs from the one that was scanned is analysed against storage built from the scanned contents,
+     * which can crash the analysis. The crash is then reported as that change: the likely cause, not a proven one.
+     */
+    private function throwUnlessFileChanged(Codebase $codebase, TaskCrashedException $crash): never
+    {
+        if (!$codebase->scanner->changedSinceScan($crash->path)) {
+            throw $crash;
+        }
+
+        $this->progress->debug($crash->getMessage() . PHP_EOL);
+
+        throw new FileChangedDuringRunException(
+            'Psalm crashed on ' . $this->config->shortenFileName($crash->path)
+                . ', which changed while Psalm was running. Run Psalm again (--debug shows the crash).',
+            0,
+            $crash,
+        );
     }
 
     public function loadCachedResults(ProjectAnalyzer $project_analyzer): void
@@ -1538,7 +1608,12 @@ final class Analyzer
 
         $perf_start = Perf\Collector::$enabled ? Perf\Collector::fileStart() : null;
 
-        $file_analyzer->analyze();
+        try {
+            $file_analyzer->analyze();
+        } catch (Throwable $e) {
+            CrashContext::recordFile($e, 'analysing', $file_path);
+            throw $e;
+        }
         $file_analyzer->context = null;
         $file_analyzer->clearSourceBeforeDestruction();
         unset($file_analyzer);

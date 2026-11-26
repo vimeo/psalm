@@ -994,6 +994,40 @@ final class PropertyTypeTest extends TestCase
         );
     }
 
+    public function testEachPromotedPropertyIsReportedBeforePhp8(): void
+    {
+        $this->testConfig->throw_exception = false;
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile($file_path, '<?php
+            final class A {
+                public function __construct(
+                    public int $a,
+                    int $b,
+                    private int $c,
+                ) {}
+            }
+        ');
+
+        $this->project_analyzer->setPhpVersion('7.4', 'tests');
+        $this->analyzeFile($file_path, new Context());
+
+        $issues = [];
+
+        foreach (IssueBuffer::getIssuesDataForFile($file_path) as $issue) {
+            $issues[] = $issue->type . ':' . $issue->line_from . ' ' . $issue->message;
+        }
+
+        self::assertSame(
+            [
+                'ParseError:4 Constructor property promotion is only available in PHP 8.0 and later, but A::$a uses it',
+                'ParseError:6 Constructor property promotion is only available in PHP 8.0 and later, but A::$c uses it',
+            ],
+            $issues,
+        );
+    }
+
     /**
      * @return iterable<string, array{string}>
      * @psalm-pure
@@ -1125,6 +1159,8 @@ final class PropertyTypeTest extends TestCase
                 'assertions' => [
                     '$b===' => 'Box<int>|null',
                 ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'offsetWriteInitializesAnUninitializedArrayProperty' => [
                 'code' => '<?php
@@ -4818,6 +4854,9 @@ final class PropertyTypeTest extends TestCase
                     }
 
                     echo (new A)->foo;',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'promotedPublicPropertyWithoutDefault' => [
                 'code' => '<?php
@@ -4826,6 +4865,9 @@ final class PropertyTypeTest extends TestCase
                     }
 
                     echo (new A(5))->foo;',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'promotedProtectedProperty' => [
                 'code' => '<?php
@@ -4838,6 +4880,9 @@ final class PropertyTypeTest extends TestCase
                             return $this->foo;
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'skipConstructor' => [
                 'code' => '<?php
@@ -5128,6 +5173,9 @@ final class PropertyTypeTest extends TestCase
                         /** @param array $arr */
                         protected function __construct(public array $arr){}
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'nullsafeShortCircuit' => [
                 'code' => '<?php
@@ -6169,6 +6217,27 @@ final class PropertyTypeTest extends TestCase
                     }',
                 'error_message' => 'PossiblyNullArgument',
             ],
+            'issetOnATypedPropertyOfABuiltinClassWithADefault' => [
+                'code' => '<?php
+                    function f(php_user_filter $f): string {
+                        if (isset($f->filtername)) {
+                            return $f->filtername;
+                        }
+                        return "";
+                    }',
+                'error_message' => 'RedundantCondition',
+                'error_levels' => [],
+                'php_version' => '8.6',
+            ],
+            'nullCoalesceOnATypedPropertyOfABuiltinClassWithoutADefault' => [
+                'code' => '<?php
+                    function f(PhpToken $t): string {
+                        return $t->text ?? "";
+                    }',
+                'error_message' => 'RedundantCondition',
+                'error_levels' => [],
+                'php_version' => '8.6',
+            ],
             'finalClassFollowsItsOwnOverrideOfTheTraitMethod' => [
                 'code' => '<?php
                     interface H {}
@@ -6277,6 +6346,8 @@ final class PropertyTypeTest extends TestCase
                         public function __construct(public int $id) {}
                     }',
                 'error_message' => 'ParseError - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:64 - Promoted property id clashes',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'staticPropertyOfATraitIsSharedWithTheSubclassesOfTheUsingClass' => [
                 'code' => '<?php
@@ -8080,6 +8151,42 @@ final class PropertyTypeTest extends TestCase
 
                     echo (new A)->foo;',
                 'error_message' => 'InaccessibleProperty',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'promotedPropertyBeforePhp8' => [
+                'code' => '<?php
+                    final class A {
+                        public function __construct(private int $foo) {}
+                    }',
+                'error_message' => 'ParseError - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:53 - '
+                    . 'Constructor property promotion is only available in PHP 8.0 and later, but A::$foo uses it',
+                'error_levels' => [],
+                'php_version' => '7.4',
+            ],
+            'promotedPropertyInTraitBeforePhp8' => [
+                'code' => '<?php
+                    trait T {
+                        public function __construct(protected string $name) {}
+                    }
+
+                    final class A {
+                        use T;
+                    }',
+                'error_message' => 'ParseError - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:53 - '
+                    . 'Constructor property promotion is only available in PHP 8.0 and later, but T::$name uses it',
+                'error_levels' => [],
+                'php_version' => '7.4',
+            ],
+            'promotedPropertyInAnonymousClassBeforePhp8' => [
+                'code' => '<?php
+                    $a = new class (1) {
+                        public function __construct(public int $foo) {}
+                    };',
+                'error_message' => 'ParseError - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:53 - '
+                    . 'Constructor property promotion is only available in PHP 8.0 and later',
+                'error_levels' => [],
+                'php_version' => '7.4',
             ],
             'undefinedClassInDocblockOfTypedPropertyIsReportedAtTheDocblock' => [
                 'code' => '<?php

@@ -925,9 +925,14 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                         );
                     }
 
-                    if ((($property_storage->signature_type && !$guide_property_storage->signature_type)
+                    // a native type the running PHP declares for a property of a builtin class is not known when
+                    // the analysed PHP version is older
+                    if ((($property_storage->signature_type
+                                && !$guide_property_storage->signature_type
+                                && !$guide_property_storage->has_unrecorded_signature_type)
                             || (!$property_storage->signature_type && $guide_property_storage->signature_type)
                             || ($property_storage->signature_type
+                                && $guide_property_storage->signature_type
                                 && !$property_storage->signature_type->equals(
                                     $guide_property_storage->signature_type,
                                 )))

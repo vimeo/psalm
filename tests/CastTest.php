@@ -520,6 +520,9 @@ final class CastTest extends TestCase
                     /** @psalm-check-type-exact $twice = string */
                 }
             ',
+            'assertions' => [],
+            'ignored_issues' => [],
+            'php_version' => '8.0',
         ];
         yield 'interpolationWithClassStringUnionStaysNonEmpty' => [
             'code' => '<?php

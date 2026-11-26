@@ -18032,6 +18032,13 @@ final class TaintTest extends TestCase
                     include str_replace("a", "b", $b);',
                 'error_message' => 'TaintedInclude',
             ],
+            'taintedInputInABranchOfAnIncludedTernary' => [
+                'code' => '<?php
+                    $a = (string) $_GET["file"];
+                    /** @psalm-suppress UnresolvableInclude, MissingFile */
+                    include rand(0, 1) ? "default.php" : $a;',
+                'error_message' => 'TaintedInclude',
+            ],
             'taintedInputFromReturnToEval' => [
                 'code' => '<?php
                     $a = $_GET["file"];
@@ -19525,6 +19532,28 @@ final class TaintTest extends TestCase
                 'code' => '<?php
                     exec(escapeshellcmd("curl " . (string) $_GET["x"]));',
                 'error_message' => 'TaintedShell',
+            ],
+            'taintHtmlThroughStripTagsKeepingSomeTags' => [
+                'code' => '<?php
+                    echo strip_tags((string) $_GET["x"], "<a>");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintHtmlThroughStripTagsKeepingSomeTagsGivenAsAnArray' => [
+                'code' => '<?php
+                    echo strip_tags((string) $_GET["x"], ["a"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'stripTagsWithNullAllowedTagsStillEscapesHtml' => [
+                'code' => '<?php
+                    echo strip_tags((string) $_GET["x"], null);',
+                'error_message' => 'TaintedTextWithQuotes',
+            ],
+            'taintHtmlThroughStripTagsWithUnknownAllowedTags' => [
+                'code' => '<?php
+                    function f(?string $t): void {
+                        echo strip_tags((string) $_GET["x"], $t);
+                    }',
+                'error_message' => 'TaintedHtml',
             ],
             'taintThroughBuiltinStaticMethod' => [
                 'code' => '<?php

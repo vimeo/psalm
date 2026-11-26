@@ -930,6 +930,19 @@ final class AssignmentAnalyzer
                     $context->vars_in_scope[$var_id] = $new_mutable->freeze();
                     $context->has_returned = false;
                 } else {
+                    // what is read of the variable is a use of what it is assigned, never or not
+                    self::analyzeAssignValueDataFlow(
+                        $statements_analyzer,
+                        $codebase,
+                        $assign_var,
+                        $assign_value,
+                        $assign_expr,
+                        $assign_value_type,
+                        $var_id,
+                        $context,
+                        $removed_taints,
+                    );
+
                     $context->inside_assignment = $was_in_assignment;
 
                     return $context->vars_in_scope[$var_id];
