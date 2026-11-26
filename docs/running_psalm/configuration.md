@@ -941,6 +941,17 @@ Optional. If your codebase uses global variables that are accessed with the `glo
 </globals>
 ```
 
+In a function, `global` gives the variable this type, whatever the file scope assigned to it:
+```php
+// <var name="x" type="int|null" />
+$x = null;
+
+function f(): void {
+    global $x;
+    $x ??= 1; // no issue
+}
+```
+
 Some frameworks and libraries expose functionalities through e.g. `$GLOBALS[DB]->query($query)`.
 The  following configuration declares custom types for super-globals (`$GLOBALS`, `$_GET`, ...).
 

@@ -46,6 +46,12 @@ Psalm loads the precise stubs of an extension (`pdo`, `redis`, `mongodb`, `imagi
   `--debug` prints `Loaded plugin …` for each. Others: install with Composer, enable with
   `vendor/bin/psalm-plugin enable <package>`.
 
+## Globals
+
+`<globals><var name="x" type="int|null"/></globals>` declares the type of a global variable. In a function,
+`global $x` gives `$x` that type, whatever the file scope assigned to it; an inline `@var` or a `@global` tag of
+the function wins over it. At file scope, `$x` keeps the type it was assigned.
+
 ## Notable attributes of `<psalm>`
 
 | Attribute | Default | Effect |
