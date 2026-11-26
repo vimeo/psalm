@@ -18,8 +18,7 @@ final class HasIntOrStringArrayAccess extends Assertion
     use UnserializeMemoryUsageSuppressionTrait;
 
     /**
-     * @param bool $int_key whether the key is an int and the last offset checked, which a string also has a
-     *     character at
+     * @param bool $int_key unused: kept so that plugins creating the assertion keep working
      */
     public function __construct(public readonly bool $int_key = false)
     {
@@ -36,7 +35,7 @@ final class HasIntOrStringArrayAccess extends Assertion
 
     public function __toString(): string
     {
-        return $this->int_key ? 'has-int-array-access' : 'has-string-or-int-array-access';
+        return 'has-string-or-int-array-access';
     }
 
     /**
