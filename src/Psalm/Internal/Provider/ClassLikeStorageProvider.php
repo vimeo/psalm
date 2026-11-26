@@ -138,9 +138,10 @@ final class ClassLikeStorageProvider
                     && $location !== null
                     && $duplicate_location->getHash() !== $location->getHash()
                 ) {
-                    $is_own_code = $duplicate_storage->stubbed || $analyzer->isOwnCodeFile($location->file_path);
-                    $duplicate_is_own_code = $duplicate_storage->stubbed
-                        || $analyzer->isOwnCodeFile($duplicate_location->file_path);
+                    // a stub is no dependency alternative: a duplicate of it stays a duplicate
+                    $has_stub = $duplicate_storage->stubbed || $storage->stubbed;
+                    $is_own_code = $has_stub || $analyzer->isOwnCodeFile($location->file_path);
+                    $duplicate_is_own_code = $has_stub || $analyzer->isOwnCodeFile($duplicate_location->file_path);
 
                     if ($is_own_code !== $duplicate_is_own_code) {
                         // the project's declaration replaces a dependency's, see ClassLikeNodeScanner
