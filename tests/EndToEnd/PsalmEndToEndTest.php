@@ -210,7 +210,7 @@ final class PsalmEndToEndTest extends PsalmEndToEndTestCase
      */
     public static function provideConfigPathsThatAreNotFiles(): iterable
     {
-        yield 'a directory' => [['-c', 'src'], '/src'];
+        yield 'a directory' => [['-c', 'src'], DIRECTORY_SEPARATOR . 'src'];
         yield 'an empty path' => [['-c', ''], ''];
     }
 
