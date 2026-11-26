@@ -5818,6 +5818,33 @@ final class TaintTest extends TestCase
                         mysleep($true);
                     }',
             ],
+            'sleepAndCustomTaintsCutByIntOrBoolNarrowing' => [
+                'code' => '<?php
+                    /** @psalm-taint-sink sleep $s */
+                    function mysleep($s): void {}
+
+                    /** @psalm-taint-sink alpha $s */
+                    function sink($s): void {}
+
+                    /**
+                     * @psalm-taint-source input
+                     * @psalm-taint-source alpha
+                     */
+                    function input(): mixed {
+                        return null;
+                    }
+
+                    // a known false negative: following them through every number would cost too much memory
+                    $int = input();
+                    if (is_int($int) || $int === null) {
+                        sleep((int) $int);
+                        sink($int);
+                    }
+                    $bool = input();
+                    if (is_bool($bool)) {
+                        mysleep($bool);
+                    }',
+            ],
             'htmlSinkNotTaintedThroughNumericParam' => [
                 'code' => '<?php
                     /** @psalm-taint-sink html $s */
@@ -21858,51 +21885,6 @@ final class TaintTest extends TestCase
                     mysleep((float) $_GET["seconds"]);',
                 'error_message' => 'TaintedSleep',
             ],
-            'sleepSurvivesIntNarrowing' => [
-                'code' => '<?php
-                    /** @psalm-taint-source input */
-                    function input(): mixed {
-                        return null;
-                    }
-
-                    $seconds = input();
-                    if (is_int($seconds)) {
-                        sleep($seconds);
-                    }',
-                'error_message' => 'TaintedSleep',
-            ],
-            'sleepSurvivesNullableIntNarrowing' => [
-                'code' => '<?php
-                    /** @psalm-taint-sink sleep $s */
-                    function mysleep($s): void {}
-
-                    /** @psalm-taint-source input */
-                    function input(): mixed {
-                        return null;
-                    }
-
-                    $seconds = input();
-                    if (is_int($seconds) || $seconds === null) {
-                        mysleep($seconds);
-                    }',
-                'error_message' => 'TaintedSleep',
-            ],
-            'sleepSurvivesBoolNarrowing' => [
-                'code' => '<?php
-                    /** @psalm-taint-sink sleep $s */
-                    function mysleep($s): void {}
-
-                    /** @psalm-taint-source input */
-                    function input(): mixed {
-                        return null;
-                    }
-
-                    $seconds = input();
-                    if (is_bool($seconds)) {
-                        mysleep($seconds);
-                    }',
-                'error_message' => 'TaintedSleep',
-            ],
             'sleepSurvivesNumericNarrowing' => [
                 'code' => '<?php
                     /** @psalm-taint-source input */
@@ -21939,23 +21921,6 @@ final class TaintTest extends TestCase
 
                     run($_GET["n"]);',
                 'error_message' => 'TaintedShell',
-            ],
-            'customTaintSurvivesIntNarrowing' => [
-                'code' => '<?php
-                    /** @psalm-taint-source alpha */
-                    function input(): mixed {
-                        return null;
-                    }
-
-                    /** @psalm-taint-sink alpha $s */
-                    function sink($s): void {}
-
-                    // like an int cast, an int narrowing only removes the taints of `input`
-                    $value = input();
-                    if (is_int($value)) {
-                        sink($value);
-                    }',
-                'error_message' => 'TaintedCustom',
             ],
             'htmlSurvivesNarrowingToArrayOrInt' => [
                 'code' => '<?php

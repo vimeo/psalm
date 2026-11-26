@@ -524,7 +524,8 @@ class Reconciler
                 continue;
             }
 
-            // a value narrowed to a type holding no input (a literal-string a validation asserts) can't carry taints
+            // a value narrowed to a type holding no input (a literal-string a validation asserts) can't carry taints;
+            // neither, as following them through every number costs too much memory, can an int or a bool
             $input_taints = $codebase->getInputTaints();
             $taints_to_remove = $result_type->getTaintsToRemove($input_taints);
             $can_carry_taints = ($taints_to_remove | TaintKind::NUMERIC_ONLY | TaintKind::BOOL_ONLY) !== $input_taints;

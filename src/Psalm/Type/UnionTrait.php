@@ -1870,11 +1870,6 @@ trait UnionTrait
         // a value the code wrote, or null, cannot hold what the client sends
         if ($atomic instanceof TLiteralString
             || $atomic instanceof TNonspecificLiteralString
-            || $atomic instanceof TLiteralInt
-            || $atomic instanceof TNonspecificLiteralInt
-            || $atomic instanceof TLiteralFloat
-            || $atomic instanceof TTrue
-            || $atomic instanceof TFalse
             || $atomic instanceof TNull
         ) {
             return $input_taints;
