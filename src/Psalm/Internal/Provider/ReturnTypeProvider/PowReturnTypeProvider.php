@@ -67,6 +67,7 @@ final class PowReturnTypeProvider implements FunctionReturnTypeProviderInterface
         $second_arg_is_float = false;
         $second_arg_is_negative = false;
         $second_arg_can_be_negative = false;
+        $second_arg_is_positive = false;
         if ($second_arg !== null && $second_arg->isSingle()) {
             $second_atomic_type = $second_arg->getSingleAtomic();
             if ($second_atomic_type instanceof TInt) {
@@ -74,9 +75,11 @@ final class PowReturnTypeProvider implements FunctionReturnTypeProviderInterface
                 if ($second_atomic_type instanceof TLiteralInt) {
                     $second_arg_is_negative = $second_atomic_type->value < 0;
                     $second_arg_can_be_negative = $second_arg_is_negative;
+                    $second_arg_is_positive = $second_atomic_type->value > 0;
                 } elseif ($second_atomic_type instanceof TIntRange) {
                     $second_arg_is_negative = $second_atomic_type->isNegative();
                     $second_arg_can_be_negative = !$second_atomic_type->isPositiveOrZero();
+                    $second_arg_is_positive = $second_atomic_type->isPositive();
                 } else {
                     $second_arg_can_be_negative = true;
                 }
@@ -90,11 +93,22 @@ final class PowReturnTypeProvider implements FunctionReturnTypeProviderInterface
             }
         }
 
-        if ($first_arg_literal === 0 && !$second_arg_can_be_negative) {
-            return Type::getInt(true, 0);
-        }
         if ($second_arg_literal === 0) {
-            return Type::getInt(true, 1);
+            if ($first_arg_is_int) {
+                return Type::getInt(true, 1);
+            }
+            if ($first_arg_is_float) {
+                return Type::getFloat(1.0);
+            }
+        }
+        if ($first_arg_literal === 0 && !$second_arg_can_be_negative) {
+            // 0 ** 0 is 1, so the result is only 0 when the exponent is known to be positive
+            if ($second_arg_is_int && $second_arg_is_positive) {
+                return Type::getInt(true, 0);
+            }
+            if ($second_arg_literal !== null && $second_arg_literal > 0) {
+                return Type::getFloat(0.0);
+            }
         }
         if ($first_arg_literal !== 0 && $first_arg_literal !== null && $second_arg_literal !== null) {
             $result = $first_arg_literal ** $second_arg_literal;

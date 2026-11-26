@@ -1790,6 +1790,95 @@ final class CapabilitiesTest extends TestCase
                         return $f();
                     }',
             ],
+            'callingAClosureWritingThisForgetsItsProperties' => [
+                'code' => '<?php
+                    final class Holder {
+                        public int $limit = 10;
+                    }
+
+                    final class Strategy {
+                        private int $limit = 10;
+
+                        public function run(int $n, Holder $holder): void {
+                            $decrement = function (int $by): void {
+                                $this->limit -= $by;
+                            };
+
+                            if ($this->limit <= 0 || $holder->limit <= 0) {
+                                return;
+                            }
+
+                            $decrement($n);
+
+                            $limit = $this->limit;
+                            /** @psalm-check-type-exact $limit = int */;
+                            $holderLimit = $holder->limit;
+                            /** @psalm-check-type-exact $holderLimit = int<1, max> */;
+                        }
+
+                        public function runAtOnce(int $n): void {
+                            if ($this->limit <= 0) {
+                                return;
+                            }
+
+                            (function (int $by): void {
+                                $this->limit -= $by;
+                            })($n);
+
+                            $limit = $this->limit;
+                            /** @psalm-check-type-exact $limit = int */;
+                        }
+                    }',
+            ],
+            'callingAStaticClosureWritingByRefCapturesKeepsThisProperties' => [
+                'code' => '<?php
+                    final class Writer {
+                        /** @var resource|null */
+                        private $lock = null;
+
+                        /** @param resource $lock */
+                        public function run($lock): int {
+                            $this->lock = $lock;
+                            $total = 0;
+
+                            $add = static function (int $n) use (&$total): void {
+                                $total += $n;
+                            };
+                            $append = static function (int $n) use ($add): void {
+                                $add($n);
+                            };
+
+                            $add(1);
+                            $append(2);
+
+                            $lock = $this->lock;
+                            /** @psalm-check-type-exact $lock = resource */;
+
+                            return $total;
+                        }
+                    }',
+            ],
+            'callingAClosureReadingThisKeepsItsProperties' => [
+                'code' => '<?php
+                    final class Strategy {
+                        private int $limit = 10;
+
+                        public function run(): void {
+                            $read = function (): int {
+                                return $this->limit;
+                            };
+
+                            if ($this->limit <= 0) {
+                                return;
+                            }
+
+                            $read();
+
+                            $limit = $this->limit;
+                            /** @psalm-check-type-exact $limit = int<1, max> */;
+                        }
+                    }',
+            ],
             'closureMayWriteTheObjectsItCapturedFromTheScopeCreatingThem' => [
                 'code' => '<?php
                     /** @psalm-external-mutation-free */

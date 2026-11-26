@@ -129,6 +129,31 @@ final class ClosureTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'closureParamTypedForOneCallableOfAUnionKeepsItsTypeForEveryReceiver' => [
+                'code' => '<?php
+                    interface Item {}
+                    interface TaggedItem extends Item {
+                        public function tag(string $t): void;
+                    }
+                    interface Cache {
+                        /** @param (callable(Item):mixed)|(callable(TaggedItem):mixed) $callback */
+                        public function fetch(callable $callback): mixed;
+                    }
+                    interface TaggedCache {
+                        /** @param callable(TaggedItem):mixed $callback */
+                        public function fetch(callable $callback): mixed;
+                    }
+
+                    function useCache(Cache|TaggedCache $cache): void {
+                        $cache->fetch(function (TaggedItem $item): int {
+                            $item->tag("t");
+                            return 1;
+                        });
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'closureFromCallableOfAMethodReturningStaticBindsItToThis' => [
                 'code' => '<?php
                     class Foo {
