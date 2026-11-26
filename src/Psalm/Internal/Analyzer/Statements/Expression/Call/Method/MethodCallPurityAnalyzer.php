@@ -758,6 +758,27 @@ final class MethodCallPurityAnalyzer
             'method ' . $cased_method_id,
         );
 
+        $containing_class_capabilities = $method_storage->containing_class_capabilities;
+
+        // the storage of a trait's method is shared by the classes using it, and holds the trait's capabilities only,
+        // so add those of the class using the trait, and of the receiver's class, which may extend it
+        if ($method_storage->defining_fqcln !== null
+            && $codebase->classlike_storage_provider->has($method_storage->defining_fqcln)
+            && $codebase->classlike_storage_provider->get($method_storage->defining_fqcln)->is_trait
+        ) {
+            $containing_class_capabilities |= $class_storage->capabilities;
+
+            $appearing_method_id = $codebase->methods->getAppearingMethodId(
+                new MethodIdentifier($class_storage->name, $method_id->method_name),
+            );
+
+            if ($appearing_method_id !== null) {
+                $containing_class_capabilities |= $codebase->classlike_storage_provider
+                    ->get($appearing_method_id->fq_class_name)
+                    ->capabilities;
+            }
+        }
+
         if (!$context->inside_unset
             && $method_storage->isMutationFree()
             && $call_is_mutation_free
@@ -768,7 +789,7 @@ final class MethodCallPurityAnalyzer
                 // the class is immutable, or pure
                 && (Capabilities::allowsAnyOf(
                     Capabilities::MUTATION_FREE,
-                    $method_storage->containing_class_capabilities,
+                    $containing_class_capabilities,
                 )
                     || $config->remember_property_assignments_after_call
                 )
@@ -781,7 +802,7 @@ final class MethodCallPurityAnalyzer
 
                     if (Capabilities::allowsAnyOf(
                         Capabilities::MUTATION_FREE,
-                        $method_storage->containing_class_capabilities,
+                        $containing_class_capabilities,
                     )) {
                         $stmt->setAttribute('pure', true);
                     }
@@ -792,7 +813,7 @@ final class MethodCallPurityAnalyzer
                 // the class is neither immutable nor pure
                 if (!Capabilities::allowsAnyOf(
                     Capabilities::MUTATION_FREE,
-                    $method_storage->containing_class_capabilities,
+                    $containing_class_capabilities,
                 )) {
                     $result->memoized_result_has_mutations = true;
                 }

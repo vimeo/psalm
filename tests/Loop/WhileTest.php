@@ -248,6 +248,51 @@ final class WhileTest extends TestCase
                     '$concatenated===' => '\'1a\'|\'other\'',
                 ],
             ],
+            'assignmentInsideACompoundAssignmentIsFollowedByTheLoop' => [
+                'code' => '<?php
+                    $a = null;
+                    $b = null;
+                    $c = null;
+                    $s = "";
+                    while (rand(0, 1)) {
+                        $c = $b;
+                        $s .= ($b = $a) ? "x" : "y";
+                        $a = 1;
+                    }',
+                'assertions' => [
+                    '$c===' => '1|null',
+                ],
+            ],
+            'assignmentInsideACoalesceAssignmentIsFollowedByTheLoop' => [
+                'code' => '<?php
+                    $a = null;
+                    $b = null;
+                    $c = null;
+                    $x = null;
+                    while (rand(0, 1)) {
+                        $c = $b;
+                        $x ??= ($b = $a);
+                        $a = 1;
+                    }',
+                'assertions' => [
+                    '$c===' => '1|null',
+                ],
+            ],
+            'assignmentInsideTheOffsetOfAnIncrementIsFollowedByTheLoop' => [
+                'code' => '<?php
+                    $a = null;
+                    $b = null;
+                    $c = null;
+                    $counts = [0, 0];
+                    while (rand(0, 1)) {
+                        $c = $b;
+                        $counts[($b = $a) ? 1 : 0]++;
+                        $a = 1;
+                    }',
+                'assertions' => [
+                    '$c===' => '1|null',
+                ],
+            ],
             'variableAssignedInALoopOverARangeStartBelowTheEndIsDefined' => [
                 'code' => '<?php
                     $try = rand(0, 5);

@@ -524,12 +524,13 @@ class Reconciler
                 continue;
             }
 
-            // a value narrowed to a type holding no input (a literal-string a validation asserts) can't carry taints
+            // a value narrowed to a type holding no input (a literal-string a validation asserts) can't carry taints.
+            // An int or a bool can't either: following their taints through every number costs too much memory
             $input_taints = $codebase->getInputTaints();
             $taints_to_remove = $result_type->getTaintsToRemove($input_taints);
-            $can_carry_taints = (!$result_type->hasScalarType()
-                    || ($result_type->hasString() && !$result_type->hasLiteralString()))
-                && $taints_to_remove !== $input_taints;
+            $can_carry_taints = $taints_to_remove !== $input_taints
+                && ($result_type->hasArray()
+                    || ($taints_to_remove | TaintKind::NUMERIC_ONLY | TaintKind::BOOL_ONLY) !== $input_taints);
 
             if ($graph = $statements_analyzer->data_flow_graph) {
                 $parent_nodes = null;
@@ -639,14 +640,16 @@ class Reconciler
                             continue;
                         }
 
-                        if ((!isset($new_types[$new_key]) || str_contains($new_key, '[' . $key . ']'))
+                        // the cheap checks come first: the call below copies the whole scope
+                        if ($is_real
+                            && str_contains($new_key, $key)
+                            && (!isset($new_types[$new_key]) || str_contains($new_key, '[' . $key . ']'))
                             && self::dependsOnNarrowedVar(
                                 $codebase,
                                 $new_key,
                                 $key,
                                 [$key => $result_type] + $existing_types,
                             )
-                            && $is_real
                         ) {
                             // Fix any references to the type before removing it.
                             $references_to_fix = array_keys($reference_graph[$new_key] ?? []);
@@ -1123,6 +1126,10 @@ class Reconciler
         string $narrowed_var_id,
         array $types,
     ): bool {
+        if (!str_contains($var_id, $narrowed_var_id)) {
+            return false;
+        }
+
         $index = '[' . $narrowed_var_id . ']';
 
         if (preg_match('/' . preg_quote($narrowed_var_id, '/') . '[\]\[\-]/', str_replace($index, '[]', $var_id))) {
