@@ -35,6 +35,8 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Atomic\TTemplateValueOf;
+use Psalm\Type\Atomic\TValueOf;
 use Psalm\Type\Union;
 
 use function array_merge;
@@ -279,6 +281,24 @@ final class InstancePropertyFetchAnalyzer
         }
 
         $stmt_type = $statements_analyzer->node_data->getType($stmt);
+
+        // the value of an enum of a template type is one of the values of that type
+        if ($prop_name === 'value'
+            && !$in_assignment
+            && $stmt_type !== null
+            && $stmt_var_type->isSingle()
+            && ($template = $stmt_var_type->getSingleAtomic()) instanceof TTemplateParam
+            && $template->as->isSingle()
+            && $template->as->getSingleAtomic() instanceof TNamedObject
+            && TValueOf::getValueType($template->as, $codebase) !== null
+        ) {
+            $stmt_type = (new Union([new TTemplateValueOf(
+                $template->param_name,
+                $template->defining_class,
+                new Union([$template]),
+            )]))->setParentNodes($stmt_type->parent_nodes);
+            $statements_analyzer->node_data->setType($stmt, $stmt_type);
+        }
 
         // a member of the union that has no such property gives null to isset(), whatever the others give
         if ($missing_in_isset
