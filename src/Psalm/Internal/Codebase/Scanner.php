@@ -27,6 +27,7 @@ use Psalm\Storage\FunctionStorage;
 use Psalm\Type;
 use Psalm\Type\Union;
 use ReflectionClass;
+use RuntimeException;
 use Throwable;
 use UnexpectedValueException;
 
@@ -904,8 +905,8 @@ final class Scanner
 
         try {
             return $hash !== $this->file_provider->getContentsHash($file_path);
-        } catch (UnexpectedValueException) {
-            // it was readable at scan time
+        } catch (RuntimeException) {
+            // it was readable at scan time; ErrorHandler turns the warning of a file that is gone into this
             return true;
         }
     }
