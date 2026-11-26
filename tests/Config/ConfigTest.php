@@ -2852,6 +2852,7 @@ final class ConfigTest extends DeferredAnalyzerTestCase
     }
 
     /**
+     * @psalm-pure
      * @return iterable<string, array{string, string, ?string}>
      */
     public static function providerGlobalTypeOverFileScope(): iterable
