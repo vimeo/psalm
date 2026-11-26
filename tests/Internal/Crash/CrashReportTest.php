@@ -13,8 +13,10 @@ use Psalm\Internal\Crash\CrashContext;
 use Psalm\Internal\Crash\CrashContextException;
 use Psalm\Internal\Crash\CrashReport;
 use Psalm\Internal\EventDispatcher;
+use Psalm\Internal\Provider\AddRemoveTaints\HtmlFunctionTainter;
 use Psalm\Plugin\EventHandler\AfterCodebasePopulatedInterface;
 use Psalm\Plugin\EventHandler\Event\AfterCodebasePopulatedEvent;
+use Psalm\Plugin\EventHandler\RemoveTaintsInterface;
 use Psalm\Tests\Internal\Crash\Plugin\NestingHandler;
 use Psalm\Tests\Internal\Crash\Plugin\PluginCode;
 use Psalm\Tests\Internal\Crash\Plugin\ThrowOnBoom;
@@ -90,6 +92,16 @@ final class CrashReportTest extends TestCase
             ' crashed in a plugin (AfterCodebasePopulatedInterface, ' . ThrowingHandler::class . ')',
             (new CrashReport($e, null, []))->getHeadline(),
         );
+    }
+
+    public function testAPluginHookAroundAHookOfPsalmIsNotBlamed(): void
+    {
+        $e = new LogicException('a hook of Psalm failed');
+        // what EventDispatcher records as the exception goes up through the hooks, the innermost first
+        CrashContext::recordHook($e, RemoveTaintsInterface::class, HtmlFunctionTainter::class);
+        CrashContext::recordHook($e, AfterCodebasePopulatedInterface::class, ThrowingHandler::class);
+
+        $this->assertSame('Psalm crashed', (new CrashReport($e, null, [self::package()]))->getHeadline());
     }
 
     public function testAHookThatThrowsInsideAnotherHookIsTheOneReported(): void

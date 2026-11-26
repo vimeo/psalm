@@ -130,6 +130,11 @@ final class CrashReport
 
         $this->task_crash = $task_crash;
 
+        if ($this->context->handler !== null && str_starts_with($this->context->handler, 'Psalm\\Internal\\')) {
+            // a hook of Psalm itself (the taint handlers of Config::initializePlugins()) threw: no plugin did
+            $this->context->hook = $this->context->handler = null;
+        }
+
         $handler_file = $this->context->handler === null ? null : self::getClassFile($this->context->handler);
         if ($this->context->handler !== null) {
             $this->plugin_package = $handler_file === null ? null : $this->findPackage($handler_file, false);
