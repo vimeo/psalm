@@ -8,8 +8,8 @@ use Override;
 use Psalm\Context;
 use Psalm\IssueBuffer;
 use Psalm\Tests\TestCase;
-use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
-use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+use Psalm\Tests\Traits\InvalidCodeAnalysisCasesTrait;
+use Psalm\Tests\Traits\ValidCodeAnalysisCasesTrait;
 
 use function sort;
 use function str_ends_with;
@@ -18,8 +18,13 @@ use const DIRECTORY_SEPARATOR;
 
 final class ConditionalTest extends TestCase
 {
-    use InvalidCodeAnalysisTestTrait;
-    use ValidCodeAnalysisTestTrait;
+    use InvalidCodeAnalysisCasesTrait;
+    use ValidCodeAnalysisCasesTrait;
+
+    /**
+     * The cases are run by ConditionalCases1Test to ConditionalCases<SHARDS>Test (see ProviderShard).
+     */
+    public const SHARDS = 3;
 
     /**
      * @return list<int>

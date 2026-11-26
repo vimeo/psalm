@@ -32,9 +32,9 @@ metadata:
 4. Grep both `^ERROR` and `^SECURITY` (taint issues), and watch for crashes (exit 11).
 
 To show a new test fails on the base branch, either use a CLI repro or run **just that
-one test case** with phpunit in a base worktree (`--filter 'testValidCode@caseName'`, or
-`tests/Taint --filter '@caseName'` for TaintTest; see CLAUDE.md). Never run the whole
-test file.
+one test case** with phpunit in a base worktree (`--filter 'testValidCode@caseName'`, on
+`tests/Shards` for the files sharded there, or `tests/Taint --filter '@caseName'` for
+TaintTest; see CLAUDE.md). Never run the whole test file.
 
 ## Comparing versions
 

@@ -14,6 +14,7 @@ use Psalm\Internal\Provider\Providers;
 use Psalm\Report\ReportOptions;
 use Psalm\Tests\DeferredAnalyzerTestCase;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
+use Psalm\Tests\Shards\ProviderShard;
 use Psalm\Tests\TestConfig;
 
 use function array_filter;
@@ -28,8 +29,15 @@ use const DIRECTORY_SEPARATOR;
 /**
  * A plugin wires calls into the taint graph with Codebase::addTaintedCall(), as Psalm wires those of PHP code.
  */
-final class TaintedCallTest extends DeferredAnalyzerTestCase
+class TaintedCallTest extends DeferredAnalyzerTestCase
 {
+    public const SHARDS = 2;
+
+    /**
+     * @var int<0, 1>
+     */
+    protected const SHARD = 0;
+
     private const DECLARATIONS = '<?php // --taint-analysis
         /** @param mixed ...$args */
         function call_through(string $function, ...$args): string {
@@ -136,7 +144,7 @@ final class TaintedCallTest extends DeferredAnalyzerTestCase
         parent::setUpBeforeClass();
     }
 
-    #[DataProvider('providerInvalidCalls')]
+    #[DataProvider('shardOfInvalidCalls')]
     public function testTaintGoesThroughTheCall(string $code, string $error): void
     {
         $this->expectException(CodeException::class);
@@ -145,7 +153,7 @@ final class TaintedCallTest extends DeferredAnalyzerTestCase
         $this->analyze($code);
     }
 
-    #[DataProvider('providerValidCalls')]
+    #[DataProvider('shardOfValidCalls')]
     public function testTaintDoesNotGoThroughTheCall(string $code): void
     {
         $this->expectNotToPerformAssertions();
@@ -156,7 +164,7 @@ final class TaintedCallTest extends DeferredAnalyzerTestCase
     /**
      * @param list<string> $events
      */
-    #[DataProvider('providerCallTaintEvents')]
+    #[DataProvider('shardOfCallTaintEvents')]
     public function testCallTaintEventsAreDispatchedWhereTaintAnalysisRuns(
         string $docblock,
         string $statement,
@@ -184,6 +192,35 @@ final class TaintedCallTest extends DeferredAnalyzerTestCase
                 static fn(string $event): bool => $event !== 'echo#0',
             )),
         );
+    }
+
+    /**
+     * The cases of this shard, the shards being this class and TaintedCallCases2Test (see ProviderShard).
+     *
+     * @return array<string, array{string, string}>
+     * @psalm-pure
+     */
+    public static function shardOfInvalidCalls(): array
+    {
+        return ProviderShard::of(self::providerInvalidCalls(), static::SHARD, self::SHARDS);
+    }
+
+    /**
+     * @return array<string, array{string}>
+     * @psalm-pure
+     */
+    public static function shardOfValidCalls(): array
+    {
+        return ProviderShard::of(self::providerValidCalls(), static::SHARD, self::SHARDS);
+    }
+
+    /**
+     * @return array<string, array{string, string, list<string>}>
+     * @psalm-pure
+     */
+    public static function shardOfCallTaintEvents(): array
+    {
+        return ProviderShard::of(self::providerCallTaintEvents(), static::SHARD, self::SHARDS);
     }
 
     /**

@@ -8,8 +8,8 @@ use Override;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\IssueBuffer;
-use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
-use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+use Psalm\Tests\Traits\InvalidCodeAnalysisCasesTrait;
+use Psalm\Tests\Traits\ValidCodeAnalysisCasesTrait;
 
 use function array_map;
 
@@ -17,8 +17,13 @@ use const DIRECTORY_SEPARATOR;
 
 final class UnusedVariableTest extends TestCase
 {
-    use ValidCodeAnalysisTestTrait;
-    use InvalidCodeAnalysisTestTrait;
+    use ValidCodeAnalysisCasesTrait;
+    use InvalidCodeAnalysisCasesTrait;
+
+    /**
+     * The cases are run by UnusedVariableCases1Test to UnusedVariableCases<SHARDS>Test (see ProviderShard).
+     */
+    public const SHARDS = 2;
 
     public function testStaticCallOnUndefinedClassReportsOnlyTheClassWhenItsArgumentUsesAVariable(): void
     {

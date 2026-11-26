@@ -6,8 +6,8 @@ namespace Psalm\Tests;
 
 use Override;
 use Psalm\Context;
-use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
-use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+use Psalm\Tests\Traits\InvalidCodeAnalysisCasesTrait;
+use Psalm\Tests\Traits\ValidCodeAnalysisCasesTrait;
 
 use function getcwd;
 
@@ -15,8 +15,13 @@ use const DIRECTORY_SEPARATOR;
 
 final class ConstantTest extends TestCase
 {
-    use InvalidCodeAnalysisTestTrait;
-    use ValidCodeAnalysisTestTrait;
+    use InvalidCodeAnalysisCasesTrait;
+    use ValidCodeAnalysisCasesTrait;
+
+    /**
+     * The cases are run by ConstantCases1Test to ConstantCases<SHARDS>Test (see ProviderShard).
+     */
+    public const SHARDS = 2;
 
     public function testConstantDefinedInSeveralBranchesIsTheUnionInAnotherFile(): void
     {

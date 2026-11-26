@@ -44,21 +44,11 @@ use const PHP_VERSION;
  * This is trait allows testing for the second case, when the value of
  * "throw_exception" will be "false".
  *
- * @psalm-type NamedArgumentsDataProviderArrayNotation = array{
- *     code: string,
- *     error_message: string,
- *     error_levels?: list<string>,
- *     php_version?: string
- * }
  * @psalm-mutable
  */
 trait InvalidCodeAnalysisWithIssuesTestTrait
 {
-    /**
-     * @return iterable<string, NamedArgumentsDataProviderArrayNotation>
-     */
-    abstract public static function providerInvalidCodeParse(): iterable;
-
+    use InvalidCodeAnalysisCasesTrait;
 
     /**
      * @param list<string> $error_levels

@@ -29,7 +29,7 @@ metadata:
   node whose edge carries `removed_taints`.
 - Providers: `tests/TaintTest.php` (`providerValidCodeParse`/`providerInvalidCodeParse`,
   `IGNORE`, dedicated test methods); they run sharded through
-  `tests/Taint/TaintCases{1..8}Test.php` + `TaintCasesTestCase.php`, each case in both
+  `tests/Taint/TaintCases{1..13}Test.php` + `TaintCasesTestCase.php`, each case in both
   taint-only mode and tracking unused variables.
 
 ## Invariants: don't break these

@@ -8,7 +8,7 @@ use Override;
 use Psalm\Context;
 use Psalm\IssueBuffer;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
-use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+use Psalm\Tests\Traits\ValidCodeAnalysisCasesTrait;
 use Psalm\Type;
 use Psalm\Type\Atomic\TLiteralString;
 
@@ -20,8 +20,14 @@ use const DIRECTORY_SEPARATOR;
 
 final class ReturnTypeTest extends TestCase
 {
-    use InvalidCodeAnalysisTestTrait;
-    use ValidCodeAnalysisTestTrait;
+    // testVoidParameterType() runs a case through testInvalidCode(), which is not a test of this class: the cases
+    // are run by ReturnTypeCases1Test to ReturnTypeCases<SHARDS>Test (see ProviderShard).
+    use InvalidCodeAnalysisTestTrait {
+        testInvalidCode as private;
+    }
+    use ValidCodeAnalysisCasesTrait;
+
+    public const SHARDS = 2;
 
     public function testVoidParameterType(): void
     {
