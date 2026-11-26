@@ -18,7 +18,7 @@ Run with `--help` to see a list of options that Psalm supports.
 
 ## Output format
 
-`--output-format` picks the format printed on stdout. Without it Psalm prints `console`, or `compact` (one line per issue, no snippets) when an AI coding agent is driving the shell:
+`--output-format` picks the format printed on stdout. Without it Psalm prints `console`, or `compact` (one line per issue, no snippets) when an AI coding agent is driving the shell (see [Running Psalm from AI coding agents](ai_agents.md)):
 
 ```
 ERROR src/Foo.php:12:5 InvalidReturnType: The declared return type 'string' for foo is incorrect, got 'int'
@@ -42,39 +42,9 @@ An explicit `--output-format` always wins, and `--report=FILE` is not affected:
 
 All three print the same Markdown page and exit with status `0`. For an unknown issue Psalm prints `Unknown issue: …` to stderr and exits with status `1`.
 
-## Running under an AI coding agent
-
-When Psalm detects that an AI coding agent runs it (for example `CLAUDECODE`, `CURSOR_AGENT`, `CODEX_THREAD_ID` or `AI_AGENT` is set), it prints no progress and no colours, because an agent only reads the raw bytes.
-
-An agent marker wins over `CI`: some agents set `CI=true` for the commands they run, and Psalm still stays quiet. Add `--long-progress` to get the phase lines of CI logs (`Scanning files...`) back:
-
-```bash
-CLAUDECODE=1 CI=true ./vendor/bin/psalm --long-progress
-```
-
-`FORCE_COLOR` turns the colours back on. Without an agent marker, `CI` alone keeps the phase lines, and `--no-progress` silences them.
-
 ## Statistics
 
-At the end of a run Psalm prints (except [for an AI agent](#output-for-ai-coding-agents)) how long it took, how much memory it used and how much of the code it could infer types for, plus the output of `--stats` and [`--debug-performance`](performance.md) if you give them. With any output format other than `console`, `phpstorm` and `github` (`json`, `checkstyle`, `sarif`, …) this goes to stderr, so that stdout stays the report; `--no-progress` leaves stderr empty.
-
-## Output for AI coding agents
-
-When Psalm detects that an AI coding agent runs it (for example through `CLAUDECODE`, `CURSOR_AGENT`, `CODEX_THREAD_ID` or `AI_AGENT`, also in CI), the `console` and `compact` formats end with a footer that says everything once. Other formats, and reports written with `--report`, don't change.
-
-```
-$ ./vendor/bin/psalm --output-format=compact
-ERROR src/a.php:3:10 MissingReturnType [*]: Method a does not have a return type, expecting 1
-ERROR src/a.php:7:12 InvalidReturnStatement: The inferred type 'int' does not match the declared return type 'string' for b
-2 issues
-[*] 1 fixable with --alter --issues=MissingReturnType (add --dry-run to preview)
-Explain an issue: psalm --explain=<IssueType>, or https://psalm.dev/docs/running_psalm/issues/<IssueType>.md
-```
-
-* The result line is always printed, also when there are no issues (`0 issues`). Info issues hidden by `--show-info=false` are counted on it: `0 issues, 2 info issues hidden (--show-info=true shows them)`.
-* `[*]` marks the issues [`--alter`](manipulating_code/fixing.md) can fix, as in Ruff. The next line gives the command to preview the changes, and `--no-suggestions` leaves both out.
-* The documentation line is printed once instead of a link after each issue, and only when there are issues.
-* The time, memory and type coverage lines are left out. `--stats` and `--debug-performance` still print.
+At the end of a run Psalm prints (except [for an AI agent](ai_agents.md#what-changes-under-an-agent)) how long it took, how much memory it used and how much of the code it could infer types for, plus the output of `--stats` and [`--debug-performance`](performance.md) if you give them. With any output format other than `console`, `phpstorm` and `github` (`json`, `checkstyle`, `sarif`, …) this goes to stderr, so that stdout stays the report; `--no-progress` leaves stderr empty.
 
 ## Exit status
 
