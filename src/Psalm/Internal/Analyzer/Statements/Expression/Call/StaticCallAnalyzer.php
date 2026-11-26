@@ -163,6 +163,8 @@ final class StaticCallAnalyzer extends CallAnalyzer
                 }
 
                 if ($context->isPhantomClass($fq_class_name)) {
+                    self::analyzeMethodName($statements_analyzer, $stmt, $context);
+
                     return true;
                 }
             } else {
@@ -184,6 +186,8 @@ final class StaticCallAnalyzer extends CallAnalyzer
                 }
 
                 if ($context->isPhantomClass($fq_class_name)) {
+                    self::analyzeMethodName($statements_analyzer, $stmt, $context);
+
                     ArgumentsAnalyzer::analyze(
                         $statements_analyzer,
                         $stmt->isFirstClassCallable() ? [] : $stmt->getArgs(),
@@ -321,21 +325,7 @@ final class StaticCallAnalyzer extends CallAnalyzer
             );
         }
 
-        // the name is analysed whatever the class is, a string or mixed included
-        if ($stmt->name instanceof PhpParser\Node\Expr) {
-            $was_inside_general_use = $context->inside_general_use;
-            $context->inside_general_use = true;
-            // the name is read even in isset mode
-            $was_inside_isset = $context->inside_isset;
-            $context->inside_isset = false;
-
-            ExpressionAnalyzer::analyze($statements_analyzer, $stmt->name, $context);
-
-            $context->inside_general_use = $was_inside_general_use;
-            $context->inside_isset = $was_inside_isset;
-
-            self::addMethodNameSink($statements_analyzer, $stmt, $stmt->name, $context);
-        }
+        self::analyzeMethodName($statements_analyzer, $stmt, $context);
 
         if (!$lhs_type) {
             if (ArgumentsAnalyzer::analyze(
@@ -518,6 +508,32 @@ final class StaticCallAnalyzer extends CallAnalyzer
 
         return strtolower($declaring_class) === strtolower($ancestor_storage->name)
             || $ancestor_storage->properties[$property_name]->visibility !== ClassLikeAnalyzer::VISIBILITY_PRIVATE;
+    }
+
+    /**
+     * A dynamic method name is analysed whatever the class is: a string, mixed or phantom class included.
+     */
+    private static function analyzeMethodName(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\StaticCall $stmt,
+        Context $context,
+    ): void {
+        if (!$stmt->name instanceof PhpParser\Node\Expr) {
+            return;
+        }
+
+        $was_inside_general_use = $context->inside_general_use;
+        $context->inside_general_use = true;
+        // the name is read even in isset mode
+        $was_inside_isset = $context->inside_isset;
+        $context->inside_isset = false;
+
+        ExpressionAnalyzer::analyze($statements_analyzer, $stmt->name, $context);
+
+        $context->inside_general_use = $was_inside_general_use;
+        $context->inside_isset = $was_inside_isset;
+
+        self::addMethodNameSink($statements_analyzer, $stmt, $stmt->name, $context);
     }
 
     private static function analyzeParentPropertyHookCall(

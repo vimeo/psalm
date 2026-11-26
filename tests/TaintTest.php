@@ -19724,6 +19724,15 @@ final class TaintTest extends TestCase
                     }',
                 'error_message' => 'TaintedCallable',
             ],
+            'taintCallingAStaticMethodNamedByInputOnAPhantomClass' => [
+                'code' => '<?php
+                    $name = (string) $_GET["method"];
+
+                    if (class_exists("OptionalLibrary")) {
+                        OptionalLibrary::$name();
+                    }',
+                'error_message' => 'TaintedCallable',
+            ],
             'taintCallableOfAMethodNamedByInput' => [
                 'code' => '<?php
                     final class A {
