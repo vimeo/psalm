@@ -2063,9 +2063,10 @@ final class TaintTest extends TestCase
      */
     public function testKeyWritesDontMakeAStateOfEveryKeyAtEveryNodeAfterThem(): void
     {
+        // without the forgetting, 1500 writes take about 390 MB, and 160 MB with it
         $writes = implode('', array_map(
             static fn(int $i): string => "    \$form['k$i'] = \$value;\n",
-            range(1, 4000),
+            range(1, 1500),
         ));
 
         $this->testConfig->throw_exception = false;
@@ -2077,7 +2078,7 @@ final class TaintTest extends TestCase
             . "/** @psalm-taint-specialize */\n"
             . "function build(string \$value, mixed \$form): void {\n"
             . $writes
-            . "    echo \$form['k4000'];\n"
+            . "    echo \$form['k1500'];\n"
             . "}\n"
             . "build((string) \$_GET['q'], []);\n",
         );
@@ -2099,7 +2100,7 @@ final class TaintTest extends TestCase
         ));
 
         self::assertSame(['TaintedHtml', 'TaintedTextWithQuotes'], $taint_issue_types);
-        self::assertLessThan(768 * 1024 * 1024, $memory_used);
+        self::assertLessThan(256 * 1024 * 1024, $memory_used);
     }
 
     /**

@@ -398,9 +398,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                     $statements_analyzer->node_data,
                 );
 
-                if (!$function_call_info->is_stubbed
-                    && !$codebase->functions->params_provider->has($function_call_info->function_id)
-                ) {
+                if (!$function_call_info->is_stubbed && !$function_call_info->function_params_from_provider) {
                     $function_call_info->function_params = $function_callable->params;
                 }
             }
@@ -1145,13 +1143,18 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         }
 
         if ($codebase->functions->params_provider->has($function_call_info->function_id)) {
-            $function_call_info->function_params = $codebase->functions->params_provider->getFunctionParams(
+            $provided_params = $codebase->functions->params_provider->getFunctionParams(
                 $statements_analyzer,
                 $function_call_info->function_id,
                 $args,
                 $context,
                 $code_location,
             );
+
+            if ($provided_params !== null) {
+                $function_call_info->function_params = $provided_params;
+                $function_call_info->function_params_from_provider = true;
+            }
         }
 
         if ($codebase->store_node_types

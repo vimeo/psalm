@@ -72,6 +72,42 @@ final class MissingReturnTypeTest extends FileManipulationTestCase
                 'issues_to_fix' => ['MissingReturnType'],
                 'safe_types' => false,
             ],
+            'addMissingReturnTypeObjectShape71' => [
+                'input' => '<?php
+                    /**
+                     * @param object{a: int} $o
+                     */
+                    function foo($o) {
+                        return $o;
+                    }',
+                'output' => '<?php
+                    /**
+                     * @param object{a: int} $o
+                     *
+                     * @return object
+                     *
+                     * @psalm-return object{a:int}
+                     */
+                    function foo($o) {
+                        return $o;
+                    }',
+                'php_version' => '7.1',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => false,
+            ],
+            'arrayKeyReturn80' => [
+                'input' => '<?php
+                    function scope(array $array) {
+                        return (array_keys($array))[0] ?? null;
+                    }',
+                'output' => '<?php
+                    function scope(array $array): int|string|null {
+                        return (array_keys($array))[0] ?? null;
+                    }',
+                'php_version' => '8.0',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => false,
+            ],
             'addMissingReturnTypeWritesTheStringRefinementWithoutADocblock' => [
                 'input' => '<?php
                     function foo(string $s) {

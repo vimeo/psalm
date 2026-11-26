@@ -188,6 +188,17 @@ final class ExpressionIdentifier
         );
     }
 
+    /**
+     * Whether `$o->{'name'}` can have the id `$o->name`: a name like `a[0]` or `a->b` would make the id of
+     * another expression
+     *
+     * @psalm-pure
+     */
+    public static function isLiteralPropertyNameOfVarId(string $name): bool
+    {
+        return preg_match('/^[\w\x80-\xff.-]+$/D', $name) === 1;
+    }
+
     public static function getExtendedVarId(
         PhpParser\Node\Expr $stmt,
         ?string $this_class_name,
@@ -289,7 +300,9 @@ final class ExpressionIdentifier
                 return null;
             }
 
-            if ($stmt_name_type->isSingleStringLiteral()) {
+            if ($stmt_name_type->isSingleStringLiteral()
+                && self::isLiteralPropertyNameOfVarId($stmt_name_type->getSingleStringLiteral()->value)
+            ) {
                 return $object_id . '->' . $stmt_name_type->getSingleStringLiteral()->value;
             }
 

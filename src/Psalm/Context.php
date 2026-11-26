@@ -857,13 +857,28 @@ final class Context
         StatementsAnalyzer $statements_analyzer,
         array $block_nodes,
     ): void {
+        $this->detachReferencesReboundWhere($block_context->references_in_scope, $statements_analyzer, $block_nodes);
+    }
+
+    /**
+     * {@see self::detachReferencesReboundIn()} for a place the block goes on from (its end, or a `break` in it)
+     *
+     * @param array<string, string> $block_references_in_scope the references where the block goes on
+     * @param array<PhpParser\Node> $block_nodes
+     * @internal
+     */
+    public function detachReferencesReboundWhere(
+        array $block_references_in_scope,
+        StatementsAnalyzer $statements_analyzer,
+        array $block_nodes,
+    ): void {
         $rebindings = [];
         $was_reference = [];
 
         foreach ($this->references_in_scope as $reference_id => $referenced_id) {
             foreach ([$reference_id, $referenced_id] as $var_id) {
                 if (!isset($rebindings[$var_id])
-                    && ($block_context->references_in_scope[$var_id] ?? null)
+                    && ($block_references_in_scope[$var_id] ?? null)
                         !== ($this->references_in_scope[$var_id] ?? null)
                     && ($rebinding = self::findReferenceRebinding($block_nodes, $var_id)) !== null
                 ) {

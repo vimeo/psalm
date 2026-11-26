@@ -736,7 +736,10 @@ final class TypeExpander
                 );
             }
 
-            /** @psalm-suppress InvalidArgument Psalm bug */
+            /**
+             * @psalm-suppress InvalidArgument Psalm bug
+             * @psalm-suppress ArgumentTypeCoercion Psalm bug
+             */
             $return_type = $return_type instanceof TGenericObject
                 ? $return_type->setHeldTypes($type_params)
                 : $return_type->setTypeParams($type_params);
