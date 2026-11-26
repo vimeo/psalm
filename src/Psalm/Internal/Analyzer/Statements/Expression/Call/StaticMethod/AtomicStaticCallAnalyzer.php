@@ -700,17 +700,22 @@ final class AtomicStaticCallAnalyzer
                     || !$codebase->classExtends($context->self, $fq_class_name)
                 )
             ) {
-                MethodAnalyzer::checkStatic(
-                    $method_id,
-                    ($stmt->class instanceof PhpParser\Node\Name
-                        && strtolower($stmt->class->getFirst()) === 'self')
-                    || $context->self === $fq_class_name,
-                    !$statements_analyzer->isStatic(),
-                    $codebase,
-                    new CodeLocation($statements_analyzer, $stmt),
-                    $statements_analyzer->getSuppressedIssues(),
-                    $is_dynamic_this_method,
-                );
+                $is_dynamic_this_method = false;
+
+                // the synthetic constructor call of a class is not a real static call, even when a trait declares it
+                if ($stmt->getAttribute(ClassAnalyzer::FAKE_CONSTRUCTOR_CALL_ATTRIBUTE) !== true) {
+                    MethodAnalyzer::checkStatic(
+                        $method_id,
+                        ($stmt->class instanceof PhpParser\Node\Name
+                            && strtolower($stmt->class->getFirst()) === 'self')
+                        || $context->self === $fq_class_name,
+                        !$statements_analyzer->isStatic(),
+                        $codebase,
+                        new CodeLocation($statements_analyzer, $stmt),
+                        $statements_analyzer->getSuppressedIssues(),
+                        $is_dynamic_this_method,
+                    );
+                }
 
                 if ($is_dynamic_this_method) {
                     // the forwarded instance call analyses the arguments
