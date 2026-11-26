@@ -22,6 +22,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Codebase\AssertionsFromInheritanceResolver;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
+use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Provider\NodeDataProvider;
@@ -48,6 +49,7 @@ use Psalm\IssueBuffer;
 use Psalm\Node\Expr\BinaryOp\VirtualIdentical;
 use Psalm\Node\Expr\VirtualConstFetch;
 use Psalm\Node\VirtualName;
+use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Plugin\EventHandler\Event\AfterMethodCallAnalysisEvent;
 use Psalm\StatementsSource;
 use Psalm\Storage\Assertion\Falsy;
@@ -68,6 +70,7 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Reconciler;
+use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
@@ -1941,6 +1944,53 @@ abstract class CallAnalyzer
                     }
                 }
             }
+        }
+    }
+
+    /**
+     * The value naming the method of a call (`$object->$name()`, `A::$name()`) chooses the code it runs, like the name
+     * of `$name()` or the method of `[$object, $name]()`.
+     */
+    public static function addMethodNameSink(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr $stmt,
+        PhpParser\Node\Expr $name,
+        Context $context,
+    ): void {
+        $taint_flow_graph = $statements_analyzer->taint_flow_graph;
+        $name_type = $statements_analyzer->node_data->getType($name);
+        $codebase = $statements_analyzer->getCodebase();
+
+        if (!$taint_flow_graph
+            || $name_type === null
+            || $name_type->parent_nodes === []
+            || $codebase->config->suppressesIssueType($statements_analyzer->getSuppressedIssues(), 'TaintedInput')
+        ) {
+            return;
+        }
+
+        $sink = DataFlowNode::getForCallableArg(
+            'dynamic-method-call',
+            'variable-call',
+            0,
+            new CodeLocation($statements_analyzer->getSource(), $name),
+            TaintKind::INPUT_CALLABLE,
+        );
+
+        $taint_flow_graph->addSink($sink);
+
+        $event = new AddRemoveTaintsEvent($stmt, $context, $statements_analyzer, $codebase);
+
+        $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
+        $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
+
+        $taints = $added_taints & ~$removed_taints;
+        if ($taints !== 0) {
+            $taint_flow_graph->addSource($sink->setTaints($taints));
+        }
+
+        foreach ($name_type->parent_nodes as $parent_node) {
+            $taint_flow_graph->addPath($parent_node, $sink, 'call', $added_taints, $removed_taints);
         }
     }
 }

@@ -252,6 +252,8 @@ final class AtomicStaticCallAnalyzer
 
                 $context->inside_general_use = $was_inside_general_use;
                 $context->inside_isset = $was_inside_isset;
+
+                CallAnalyzer::addMethodNameSink($statements_analyzer, $stmt, $stmt->name, $context);
             }
 
             if (!$context->ignore_variable_method) {
