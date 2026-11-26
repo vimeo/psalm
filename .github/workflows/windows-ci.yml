@@ -1,7 +1,10 @@
 name: Run unit tests on Windows
 
 on:
+  # branches only: a tag points to a commit the push to its branch already tested
   push:
+    branches:
+      - '**'
   pull_request:
   # dispatched by bin/ci/apply-queued-changes.php after merging, which doesn't trigger pushes
   workflow_dispatch:
