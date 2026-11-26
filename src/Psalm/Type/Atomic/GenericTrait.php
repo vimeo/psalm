@@ -86,9 +86,12 @@ trait GenericTrait
             $params = [];
 
             foreach ($type_params as $i => $type_param) {
-                $params[] = $generic_object?->getProjection($i) === TypeArgumentProjection::Star
-                    ? StarProjection::NAME
-                    : $to_string($type_param);
+                $params[] = match ($generic_object?->getProjection($i)) {
+                    TypeArgumentProjection::Star => StarProjection::NAME,
+                    TypeArgumentProjection::Covariant => 'covariant ' . $to_string($type_param),
+                    TypeArgumentProjection::Contravariant => 'contravariant ' . $to_string($type_param),
+                    default => $to_string($type_param),
+                };
             }
 
             $s .= '<' . implode(', ', $params) . '>';
@@ -268,9 +271,14 @@ trait GenericTrait
             $contravariant = isset($container_type_params_contravariant[$offset]);
 
             // a `*` is no type of its own for an invariant (or contravariant) argument to bind a template to, only one
-            // bounded by the bound it holds, which a covariant argument reads; a `*` of the container takes no binding
-            $invariant_star_input = isset($input_star_offsets[$offset])
-                && ($contravariant || !($container_type_params_covariant[$offset] ?? true));
+            // bounded by the bound it holds, which a covariant argument reads; a `*` of the container takes no binding.
+            // A `covariant X` input is read as `X`, and a `contravariant X` one bounds a contravariant argument
+            $input_projection = $input_star_offsets[$offset] ?? null;
+            $invariant_star_input = $input_projection !== null
+                && ($contravariant
+                    ? $input_projection !== TypeArgumentProjection::Contravariant
+                    : !($container_type_params_covariant[$offset] ?? true)
+                        || $input_projection === TypeArgumentProjection::Contravariant);
             $star_container_param = $this instanceof TGenericObject
                 && $this->getProjection($offset) === TypeArgumentProjection::Star;
 
