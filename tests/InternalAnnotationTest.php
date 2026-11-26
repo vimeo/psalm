@@ -1937,6 +1937,32 @@ final class InternalAnnotationTest extends TestCase
         ];
     }
 
+    /**
+     * Taint analysis initializes a promoted property by a write in the constructor, which is no use of it.
+     */
+    public function testPromotedPropertyInternalToAnotherNamespaceWithTaintAnalysis(): void
+    {
+        $this->project_analyzer->trackTaintedInputs();
+        $this->testValidCode(
+            '<?php
+                namespace NsA {
+                    final class A {
+                        public function __construct(
+                            /** @psalm-internal NsA\Sub */
+                            public string $promoted = "",
+                        ) {}
+                    }
+                }
+
+                namespace NsA\Sub {
+                    echo (new \NsA\A("a"))->promoted;
+                }',
+            [],
+            [],
+            '8.1',
+        );
+    }
+
     public function testCodeTheProjectDoesNotShipIsInternal(): void
     {
         $this->project_analyzer->getConfig()->throw_exception = false;

@@ -272,6 +272,19 @@ final class DeprecatedAnnotationTest extends TestCase
                     echo (new A)->foo;',
                 'error_message' => 'DeprecatedProperty',
             ],
+            'deprecatedAttributeOnAPromotedProperty' => [
+                'code' => '<?php
+                    final class A {
+                        public function __construct(
+                            #[\Psalm\Deprecated]
+                            public int $foo = 0,
+                        ) {}
+                    }
+                    echo (new A)->foo;',
+                'error_message' => 'DeprecatedProperty - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:26 - A::$foo is marked deprecated',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'deprecatedPropertySet' => [
                 'code' => '<?php
                     class A{

@@ -1550,17 +1550,17 @@ final class InstancePropertyAssignmentAnalyzer
                 $prop_name,
                 $declaring_class_storage,
             );
-        }
 
-        PropertyAccessAnalyzer::checkDeclaredProperty(
-            $statements_analyzer,
-            $stmt,
-            $context,
-            $prop_name,
-            $property_id,
-            $declaring_class_storage,
-            true,
-        );
+            PropertyAccessAnalyzer::checkDeclaredProperty(
+                $statements_analyzer,
+                $stmt,
+                $context,
+                $prop_name,
+                $property_id,
+                $declaring_class_storage,
+                true,
+            );
+        }
 
         if ($property_storage !== null) {
             if (self::trackPropertyImpurity(
