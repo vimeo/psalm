@@ -3897,6 +3897,79 @@ final class ForeachTest extends TestCase
                     }
                 PHP,
             ],
+            'foreachOverNeverReportsNothingForTheChecksCallsAndReturnsOfTheItem' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Foo {
+                        public const C = 1;
+
+                        public static function m(): int {
+                            return 1;
+                        }
+                    }
+
+                    /** @return list<never> */
+                    function nothing(): array {
+                        return [];
+                    }
+
+                    function takesInt(int $i): int {
+                        return $i;
+                    }
+
+                    /** @return Generator<int, mixed> */
+                    function gen(): Generator {
+                        foreach (nothing() as $item) {
+                            yield $item;
+                        }
+                    }
+
+                    function f(): void {
+                        foreach (nothing() as $item) {
+                            if (is_string($item) || is_int($item) || is_array($item) || is_object($item)) {
+                                echo 1;
+                            }
+
+                            if ($item instanceof Foo) {
+                                echo 2;
+                            }
+
+                            if ($item === 1 || $item == 'a') {
+                                echo 3;
+                            }
+
+                            echo match ($item) {
+                                1 => 'a',
+                                default => 'b',
+                            };
+
+                            switch ($item) {
+                                case 1:
+                                    echo 4;
+                                    break;
+                                default:
+                                    echo 5;
+                            }
+
+                            $item();
+                            $item::m();
+                            echo $item::C;
+                            $object = new $item();
+                            $copy = clone $item;
+                            echo takesInt($item);
+                            $typed = static fn(): int => $item;
+                            $typedToo = function () use ($item): int {
+                                return $item;
+                            };
+                            echo "x {$item} y $item";
+                            echo json_encode([$object, $copy, $typed, $typedToo]);
+                        }
+                    }
+                PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'foreachOverAnEmptyListOrAListOfIntsHasIntItems' => [
                 'code' => <<<'PHP'
                     <?php
