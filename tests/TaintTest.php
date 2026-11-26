@@ -19526,6 +19526,28 @@ final class TaintTest extends TestCase
                     exec(escapeshellcmd("curl " . (string) $_GET["x"]));',
                 'error_message' => 'TaintedShell',
             ],
+            'taintHtmlThroughStripTagsKeepingSomeTags' => [
+                'code' => '<?php
+                    echo strip_tags((string) $_GET["x"], "<a>");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintHtmlThroughStripTagsKeepingSomeTagsGivenAsAnArray' => [
+                'code' => '<?php
+                    echo strip_tags((string) $_GET["x"], ["a"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'stripTagsWithNullAllowedTagsStillEscapesHtml' => [
+                'code' => '<?php
+                    echo strip_tags((string) $_GET["x"], null);',
+                'error_message' => 'TaintedTextWithQuotes',
+            ],
+            'taintHtmlThroughStripTagsWithUnknownAllowedTags' => [
+                'code' => '<?php
+                    function f(?string $t): void {
+                        echo strip_tags((string) $_GET["x"], $t);
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintThroughBuiltinStaticMethod' => [
                 'code' => '<?php
                     echo (string) Normalizer::normalize((string) $_GET["x"]);',
