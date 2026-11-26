@@ -26,6 +26,7 @@
 /psalm.xml.dist export-ignore
 /README.md export-ignore
 /scoper.inc.php export-ignore
+/structarmed.php export-ignore
 /tests export-ignore
 /vendor-bin export-ignore
 

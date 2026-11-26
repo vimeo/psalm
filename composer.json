@@ -59,6 +59,7 @@
     "require-dev": {
         "ext-curl": "*",
         "bamarni/composer-bin-plugin": "^1.4",
+        "boundwize/structarmed": "^0.22.12",
         "brianium/paratest": "^7.3",
         "danog/class-finder": "^0.4.8",
         "dg/bypass-finals": "^1.5",

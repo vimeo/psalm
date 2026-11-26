@@ -227,7 +227,7 @@ final class FileReferenceTest extends TestCase
          * @psalm-suppress MixedAssignment
          * @psalm-capabilities write-refs
          */
-        $ksort_recursive = function (array &$arr) use (&$ksort_recursive): void {
+        $ksort_recursive = static function (array &$arr) use (&$ksort_recursive): void {
             ksort($arr);
             foreach ($arr as &$value) {
                 if (is_array($value)) {
