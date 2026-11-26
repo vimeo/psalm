@@ -1281,6 +1281,73 @@ final class ClassLikeStringTest extends TestCase
                         return is_a($collectionClass, $type, true);
                     }',
             ],
+            'interfaceStringStaysWhenInterfaceExistsNegated' => [
+                'code' => '<?php
+                    /** @return interface-string */
+                    function getName(): string {
+                        return Countable::class;
+                    }
+                    $name = getName();
+                    if (interface_exists($name)) {
+                        throw new \RuntimeException($name);
+                    }',
+                'assertions' => [
+                    '$name===' => 'interface-string',
+                ],
+            ],
+            'enumStringStaysWhenEnumExistsNegated' => [
+                'code' => '<?php
+                    /** @return enum-string */
+                    function getName(): string {
+                        throw new RuntimeException();
+                    }
+                    $name = getName();
+                    if (enum_exists($name)) {
+                        throw new \RuntimeException($name);
+                    }',
+                'assertions' => [
+                    '$name===' => 'enum-string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'traitStringStaysWhenTraitExistsNegated' => [
+                'code' => '<?php
+                    /** @return trait-string */
+                    function getName(): string {
+                        throw new RuntimeException();
+                    }
+                    $name = getName();
+                    if (trait_exists($name)) {
+                        throw new \RuntimeException($name);
+                    }',
+                'assertions' => [
+                    '$name===' => 'trait-string',
+                ],
+            ],
+            'typedClassStringAssertionStillNarrowsWhenNegated' => [
+                'code' => '<?php
+                    interface Collection {}
+
+                    /** @psalm-assert-if-true class-string<Collection> $x */
+                    function isCollectionClass(mixed $x): bool {
+                        return true;
+                    }
+
+                    /** @return class-string<Collection>|int */
+                    function getValue(): string|int {
+                        return 0;
+                    }
+                    $value = getValue();
+                    if (isCollectionClass($value)) {
+                        throw new \RuntimeException();
+                    }',
+                'assertions' => [
+                    '$value===' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'classStringStaysClassStringWhenInterfaceExistsNegated' => [
                 'code' => '<?php
                     /** @return class-string */

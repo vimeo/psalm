@@ -41,6 +41,7 @@ use Psalm\Type\Atomic\TNonspecificLiteralString;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Atomic\TTraitString;
 use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Reconciler;
@@ -235,13 +236,13 @@ final class NegatedAssertionReconciler extends Reconciler
                     }
                 }
             }
-        } elseif ((($assertion_type instanceof TClassString || $assertion_type instanceof TTraitString)
-                && $assertion_type->is_loaded)
-            // `class_exists()` is false for the names of interfaces, enums and traits: a class-like name stays one
-            || ($assertion_type instanceof TClassString
-                && $assertion_type->getKey() === 'class-string')
+        } elseif (($assertion_type instanceof TClassString
+                && !$assertion_type instanceof TTemplateParamClass
+                && $assertion_type->as === 'object')
+            || $assertion_type instanceof TTraitString
         ) {
-            // do nothing
+            // `class_exists()` is false for the names of interfaces, enums and traits, and any `*_exists()` is false
+            // for a name that isn't loaded or doesn't autoload: a class-like name stays one
         } elseif ($existing_var_type->isArray()
             && ($assertion_type instanceof TArray || $assertion_type instanceof TKeyedArray)
         ) {
