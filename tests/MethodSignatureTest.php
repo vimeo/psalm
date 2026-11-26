@@ -15,9 +15,8 @@ use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Provider\Providers;
 use Psalm\IssueBuffer;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
-use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
-use Psalm\Tests\Traits\InvalidCodeAnalysisWithIssuesTestTrait;
-use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+use Psalm\Tests\Traits\InvalidCodeAnalysisCasesTrait;
+use Psalm\Tests\Traits\ValidCodeAnalysisCasesTrait;
 
 use function array_map;
 use function dirname;
@@ -26,9 +25,13 @@ use const DIRECTORY_SEPARATOR;
 
 final class MethodSignatureTest extends TestCase
 {
-    use InvalidCodeAnalysisWithIssuesTestTrait;
-    use ValidCodeAnalysisTestTrait;
-    use InvalidCodeAnalysisTestTrait;
+    use InvalidCodeAnalysisCasesTrait;
+    use ValidCodeAnalysisCasesTrait;
+
+    /**
+     * The cases are run by MethodSignatureCases1Test to MethodSignatureCases<SHARDS>Test (see ProviderShard).
+     */
+    public const SHARDS = 2;
 
     public function testStubNativeReturnWithoutGeneratedMetadata(): void
     {

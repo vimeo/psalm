@@ -11,8 +11,8 @@ use Psalm\Exception\CodeException;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\IssueBuffer;
 use Psalm\Storage\Capabilities;
-use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
-use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+use Psalm\Tests\Traits\InvalidCodeAnalysisCasesTrait;
+use Psalm\Tests\Traits\ValidCodeAnalysisCasesTrait;
 
 use function array_filter;
 use function array_map;
@@ -27,8 +27,13 @@ use const DIRECTORY_SEPARATOR;
  */
 final class CapabilitiesTest extends TestCase
 {
-    use ValidCodeAnalysisTestTrait;
-    use InvalidCodeAnalysisTestTrait;
+    use ValidCodeAnalysisCasesTrait;
+    use InvalidCodeAnalysisCasesTrait;
+
+    /**
+     * The cases are run by CapabilitiesCases1Test to CapabilitiesCases<SHARDS>Test (see ProviderShard).
+     */
+    public const SHARDS = 3;
 
     /**
      * @psalm-pure

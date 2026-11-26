@@ -43,8 +43,14 @@ These come first, before every other rule here:
 - **Running a single test case is fine, and recommended** for reproducing an issue or
   showing that a new test fails on the base and passes on the branch. Run just that one
   case, never the whole file:
-  - provider case: `vendor/bin/phpunit tests/CapabilitiesTest.php --filter 'testValidCode@caseName'`;
-  - TaintTest provider case (sharded over `tests/Taint/TaintCases{1..8}Test.php`):
+  - provider case: `vendor/bin/phpunit tests/FooTest.php --filter 'testValidCode@caseName'`;
+  - provider case of a sharded file (the slowest ones, e.g. `CapabilitiesTest`; `ls tests/Shards`):
+    `FooTest` keeps the cases but runs only its other tests, and `tests/Shards/FooCases{1..N}Test.php`
+    run the cases (see `ProviderShard`), so use
+    `vendor/bin/phpunit tests/Shards --filter 'testValidCode@caseName'`. A new case still goes into
+    `FooTest`'s provider. `TaintedCallTest` runs its first shard itself, `TaintedCallCases2Test` the
+    second: use the directory `tests/Config/Plugin/EventHandler/TaintedCall`;
+  - TaintTest provider case (sharded over `tests/Taint/TaintCases{1..13}Test.php`):
     `vendor/bin/phpunit tests/Taint --filter '@caseName'`. This runs the case in both modes
     (plain and `TrackingUnusedVariables`);
   - test method: `vendor/bin/phpunit tests/TaintTest.php --filter 'testMethodName$'`.

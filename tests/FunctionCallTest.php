@@ -7,15 +7,20 @@ namespace Psalm\Tests;
 use Override;
 use Psalm\Config;
 use Psalm\Context;
-use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
-use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+use Psalm\Tests\Traits\InvalidCodeAnalysisCasesTrait;
+use Psalm\Tests\Traits\ValidCodeAnalysisCasesTrait;
 
 use const DIRECTORY_SEPARATOR;
 
 final class FunctionCallTest extends TestCase
 {
-    use InvalidCodeAnalysisTestTrait;
-    use ValidCodeAnalysisTestTrait;
+    use InvalidCodeAnalysisCasesTrait;
+    use ValidCodeAnalysisCasesTrait;
+
+    /**
+     * The cases are run by FunctionCallCases1Test to FunctionCallCases<SHARDS>Test (see ProviderShard).
+     */
+    public const SHARDS = 4;
 
     /**
      * @psalm-pure

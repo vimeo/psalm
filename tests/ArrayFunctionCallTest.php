@@ -10,8 +10,8 @@ use Psalm\Context;
 use Psalm\Exception\CodeException;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\IssueBuffer;
-use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
-use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+use Psalm\Tests\Traits\InvalidCodeAnalysisCasesTrait;
+use Psalm\Tests\Traits\ValidCodeAnalysisCasesTrait;
 
 use function array_map;
 use function function_exists;
@@ -22,8 +22,13 @@ use const PHP_VERSION_ID;
 
 final class ArrayFunctionCallTest extends TestCase
 {
-    use InvalidCodeAnalysisTestTrait;
-    use ValidCodeAnalysisTestTrait;
+    use InvalidCodeAnalysisCasesTrait;
+    use ValidCodeAnalysisCasesTrait;
+
+    /**
+     * The cases are run by ArrayFunctionCallCases1Test to ArrayFunctionCallCases<SHARDS>Test (see ProviderShard).
+     */
+    public const SHARDS = 3;
 
     public function testArrayFirstNullableReturnWithoutIgnoreInternalFunctionNullReturn(): void
     {

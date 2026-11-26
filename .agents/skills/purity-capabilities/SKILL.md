@@ -25,8 +25,9 @@ metadata:
     there's no call.
   - Parsed in `FunctionLikeDocblockScanner` like conditional return types.
 - Docs: `docs/annotating_code/purity_model.md` and supported_annotations.md
-  ("Purity and capabilities"). Tests: `tests/CapabilitiesTest.php`,
-  `tests/PurityTemplateTest.php`. BC list: `UPGRADING.md`.
+  ("Purity and capabilities"). Tests: `tests/CapabilitiesTest.php` (its cases run in
+  `tests/Shards/CapabilitiesCases{1..3}Test.php`), `tests/PurityTemplateTest.php`. BC list:
+  `UPGRADING.md`.
 
 ## Maintainer decisions: settled, don't propose reverting them
 

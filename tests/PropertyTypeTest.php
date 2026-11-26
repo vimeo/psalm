@@ -12,8 +12,8 @@ use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
 use Psalm\IssueBuffer;
-use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
-use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+use Psalm\Tests\Traits\InvalidCodeAnalysisCasesTrait;
+use Psalm\Tests\Traits\ValidCodeAnalysisCasesTrait;
 
 use function array_column;
 use function sort;
@@ -23,8 +23,13 @@ use const PHP_VERSION_ID;
 
 final class PropertyTypeTest extends TestCase
 {
-    use InvalidCodeAnalysisTestTrait;
-    use ValidCodeAnalysisTestTrait;
+    use InvalidCodeAnalysisCasesTrait;
+    use ValidCodeAnalysisCasesTrait;
+
+    /**
+     * The cases are run by PropertyTypeCases1Test to PropertyTypeCases<SHARDS>Test (see ProviderShard).
+     */
+    public const SHARDS = 2;
 
     public function testForgetPropertyAssignments(): void
     {

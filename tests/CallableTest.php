@@ -8,15 +8,20 @@ use Override;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
-use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
-use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+use Psalm\Tests\Traits\InvalidCodeAnalysisCasesTrait;
+use Psalm\Tests\Traits\ValidCodeAnalysisCasesTrait;
 
 use const DIRECTORY_SEPARATOR;
 
 final class CallableTest extends TestCase
 {
-    use InvalidCodeAnalysisTestTrait;
-    use ValidCodeAnalysisTestTrait;
+    use InvalidCodeAnalysisCasesTrait;
+    use ValidCodeAnalysisCasesTrait;
+
+    /**
+     * The cases are run by CallableCases1Test to CallableCases<SHARDS>Test (see ProviderShard).
+     */
+    public const SHARDS = 2;
 
     public function testRequiredClosureParamIsAcceptedForAnOptionalCallableParamByDefault(): void
     {

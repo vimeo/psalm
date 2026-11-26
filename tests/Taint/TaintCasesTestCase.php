@@ -9,6 +9,7 @@ use Psalm\Config;
 use Psalm\Config\IssueHandler;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
+use Psalm\Tests\Shards\ProviderShard;
 use Psalm\Tests\TaintTest;
 use Psalm\Tests\TestCase;
 
@@ -20,11 +21,11 @@ use function strpos;
  * Runs the cases of TaintTest::providerValidCodeParse() and TaintTest::providerInvalidCodeParse().
  *
  * They take long enough that a single test file would keep one CI core busy long after the others
- * are done, so each subclass runs every SHARDS-th case, starting at its own.
+ * are done, so each subclass runs every SHARDS-th case, starting at its own (see ProviderShard).
  */
 abstract class TaintCasesTestCase extends TestCase
 {
-    protected const SHARDS = 8;
+    protected const SHARDS = 13;
 
     /**
      * @return array<string, array{code: string, php_version?: string}>
@@ -37,7 +38,7 @@ abstract class TaintCasesTestCase extends TestCase
     abstract public static function invalidCases(): array;
 
     /**
-     * The cases at positions $shard, $shard + SHARDS, $shard + 2 * SHARDS, ...
+     * The cases of shard number $shard.
      *
      * @template T
      * @param array<string, T> $cases
@@ -46,16 +47,7 @@ abstract class TaintCasesTestCase extends TestCase
      */
     protected static function shard(array $cases, int $shard): array
     {
-        $result = [];
-        $position = 0;
-        foreach ($cases as $name => $case) {
-            if ($position % self::SHARDS === $shard) {
-                $result[$name] = $case;
-            }
-            $position++;
-        }
-
-        return $result;
+        return ProviderShard::of($cases, $shard, self::SHARDS);
     }
 
     #[DataProvider('validCases')]

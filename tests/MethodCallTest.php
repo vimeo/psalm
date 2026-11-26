@@ -8,9 +8,8 @@ use Override;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\IssueBuffer;
-use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
-use Psalm\Tests\Traits\InvalidCodeAnalysisWithIssuesTestTrait;
-use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+use Psalm\Tests\Traits\InvalidCodeAnalysisCasesTrait;
+use Psalm\Tests\Traits\ValidCodeAnalysisCasesTrait;
 
 use function array_map;
 
@@ -18,9 +17,13 @@ use const DIRECTORY_SEPARATOR;
 
 final class MethodCallTest extends TestCase
 {
-    use InvalidCodeAnalysisWithIssuesTestTrait;
-    use InvalidCodeAnalysisTestTrait;
-    use ValidCodeAnalysisTestTrait;
+    use InvalidCodeAnalysisCasesTrait;
+    use ValidCodeAnalysisCasesTrait;
+
+    /**
+     * The cases are run by MethodCallCases1Test to MethodCallCases<SHARDS>Test (see ProviderShard).
+     */
+    public const SHARDS = 2;
 
     public function testExtendDocblockParamType(): void
     {

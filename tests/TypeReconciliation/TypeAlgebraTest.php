@@ -8,8 +8,8 @@ use Override;
 use Psalm\Context;
 use Psalm\IssueBuffer;
 use Psalm\Tests\TestCase;
-use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
-use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+use Psalm\Tests\Traits\InvalidCodeAnalysisCasesTrait;
+use Psalm\Tests\Traits\ValidCodeAnalysisCasesTrait;
 
 use function array_column;
 
@@ -17,8 +17,13 @@ use const DIRECTORY_SEPARATOR;
 
 final class TypeAlgebraTest extends TestCase
 {
-    use InvalidCodeAnalysisTestTrait;
-    use ValidCodeAnalysisTestTrait;
+    use InvalidCodeAnalysisCasesTrait;
+    use ValidCodeAnalysisCasesTrait;
+
+    /**
+     * The cases are run by TypeAlgebraCases1Test to TypeAlgebraCases<SHARDS>Test (see ProviderShard).
+     */
+    public const SHARDS = 3;
 
     public function testOffsetOfAPropertyAssignedInTheIfIsKnownAfterIt(): void
     {

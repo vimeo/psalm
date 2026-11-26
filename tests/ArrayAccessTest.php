@@ -9,7 +9,7 @@ use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
 use Psalm\IssueBuffer;
-use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
+use Psalm\Tests\Traits\InvalidCodeAnalysisCasesTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
 use function array_filter;
@@ -26,8 +26,14 @@ use const PHP_VERSION_ID;
 
 final class ArrayAccessTest extends TestCase
 {
-    use InvalidCodeAnalysisTestTrait;
-    use ValidCodeAnalysisTestTrait;
+    // The taint tests call testValidCode(), which is not a test of this class: the cases are run by
+    // ArrayAccessCases1Test to ArrayAccessCases<SHARDS>Test (see ProviderShard).
+    use InvalidCodeAnalysisCasesTrait;
+    use ValidCodeAnalysisTestTrait {
+        testValidCode as private;
+    }
+
+    public const SHARDS = 2;
 
     public function testEmptyBranchOffsetMayBeUndefined(): void
     {

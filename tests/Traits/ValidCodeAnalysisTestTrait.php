@@ -24,19 +24,7 @@ use const PHP_VERSION_ID;
 /** @psalm-mutable */
 trait ValidCodeAnalysisTestTrait
 {
-    /**
-     * @return iterable<
-     *     string,
-     *     array{
-     *         code: string,
-     *         assertions?: array<string, string>,
-     *         ignored_issues?: list<string>,
-     *         php_version?: string,
-     *     }
-     * >
-     */
-    abstract public static function providerValidCodeParse(): iterable;
-
+    use ValidCodeAnalysisCasesTrait;
 
     /**
      * @param array<string, string> $assertions

@@ -21,22 +21,10 @@ use function substr;
 
 use const PHP_OS;
 
-/**
- * @psalm-type NamedArgumentsDataProviderArrayNotation = array{
- *     code: string,
- *     error_message: string,
- *     error_levels?: list<string>,
- *     php_version?: string
- * }
- * @psalm-mutable
- */
+/** @psalm-mutable */
 trait InvalidCodeAnalysisTestTrait
 {
-    /**
-     * @return iterable<string, NamedArgumentsDataProviderArrayNotation>
-     */
-    abstract public static function providerInvalidCodeParse(): iterable;
-
+    use InvalidCodeAnalysisCasesTrait;
 
     /**
      * @param list<string> $error_levels
