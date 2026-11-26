@@ -778,6 +778,64 @@ final class IssetTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => ['EmptyArrayAccess'],
             ],
+            'issetOnAnEmptyArrayAddsTheOffset' => [
+                'code' => '<?php
+                    $a = [];
+                    assert(isset($a["min"]));',
+                'assertions' => [
+                    '$a===' => 'array{min: mixed}',
+                ],
+            ],
+            'issetOfSeveralOffsetsOfAnEmptyArray' => [
+                'code' => '<?php
+                    $a = [];
+                    assert(isset($a["min"], $a["max"]));',
+                'assertions' => [
+                    '$a===' => 'array{max: mixed, min: mixed}',
+                ],
+            ],
+            'issetOfAnIntOffsetOfAnEmptyArray' => [
+                'code' => '<?php
+                    $a = [];
+                    assert(isset($a[3]));',
+                'assertions' => [
+                    '$a===' => 'array{3: mixed}',
+                ],
+            ],
+            'issetOfAnUnknownOffsetLeavesAnEmptyArrayEmpty' => [
+                'code' => '<?php
+                    function f(string $k): void {
+                        $a = [];
+                        assert(isset($a[$k]));
+                        /** @psalm-check-type-exact $a = array<never, never> */;
+                    }',
+            ],
+            'notIssetOnAnEmptyArrayAddsTheOffsetAfterwards' => [
+                'code' => '<?php
+                    $a = [];
+                    if (!isset($a["min"])) {
+                        $a["max"] = 1;
+                    }',
+                'assertions' => [
+                    '$a===' => 'array{max?: 1, min?: mixed}',
+                ],
+            ],
+            'arrayKeyExistsOnAnEmptyArrayAddsTheOffset' => [
+                'code' => '<?php
+                    $a = [];
+                    assert(array_key_exists("min", $a));',
+                'assertions' => [
+                    '$a===' => 'array{min: mixed}',
+                ],
+            ],
+            'issetOfANestedOffsetOfAnEmptyArray' => [
+                'code' => '<?php
+                    $a = [];
+                    assert(isset($a["a"]["b"]));',
+                'assertions' => [
+                    '$a===' => 'array{a: ArrayAccess|array{b: mixed, ...<array-key, mixed>}}',
+                ],
+            ],
             'issetWithMultipleAssignments' => [
                 'code' => '<?php
                     if (rand(0, 4) > 2) {

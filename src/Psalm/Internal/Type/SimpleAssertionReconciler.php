@@ -2456,7 +2456,7 @@ final class SimpleAssertionReconciler extends Reconciler
 
         foreach ($existing_var_atomic_types as $type) {
             if ($type->isArrayAccessibleWithStringKey($codebase)) {
-                if ($type::class === TArray::class) {
+                if ($type::class === TArray::class && !$type->isEmptyArray()) {
                     $array_types[] = new TNonEmptyArray($type->type_params);
                 } elseif ($type instanceof TKeyedArray && $type->is_list) {
                     $properties = $type->properties;
@@ -2528,7 +2528,7 @@ final class SimpleAssertionReconciler extends Reconciler
 
         foreach ($existing_var_atomic_types as $type) {
             if ($type->isArrayAccessibleWithIntOrStringKey($codebase)) {
-                if ($type::class === TArray::class) {
+                if ($type::class === TArray::class && !$type->isEmptyArray()) {
                     $array_types[] = new TNonEmptyArray($type->type_params);
                 } elseif ($type::class === TString::class) {
                     // a string with a character at an offset has one
