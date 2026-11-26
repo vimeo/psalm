@@ -27,6 +27,7 @@ use function tempnam;
 use function unlink;
 use function var_export;
 
+use const DIRECTORY_SEPARATOR;
 use const JSON_THROW_ON_ERROR;
 use const PHP_BINARY;
 use const PHP_EOL;
