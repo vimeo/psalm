@@ -1663,6 +1663,69 @@ final class PluginTest extends DeferredAnalyzerTestCase
         );
     }
 
+    public function testFunctionParamsProviderResolvesThisCallableArgInTraitToUsingClassMethod(): void
+    {
+        $this->expectExceptionMessageMatches('/^InvalidScalarArgument - .*somefile\.php:6:59 - Argument 2 of forwardToCallable expects int,/');
+        $this->expectException(CodeException::class);
+
+        $this->analyzeWithFunctionPlugin(
+            '<?php
+                function forwardToCallable(callable $callable, mixed ...$args): void {}
+
+                trait T {
+                    public function init(): void {
+                        forwardToCallable([$this, "run"], "hello");
+                    }
+                }
+
+                final class Bar {
+                    use T;
+
+                    public function run(int $a): void {}
+                }',
+        );
+    }
+
+    public function testFunctionParamsProviderResolvesThisCallableArgInClosure(): void
+    {
+        $this->expectExceptionMessageMatches('/^InvalidScalarArgument - .*somefile\.php:9:63 - Argument 2 of forwardToCallable expects int,/');
+        $this->expectException(CodeException::class);
+
+        $this->analyzeWithFunctionPlugin(
+            '<?php
+                function forwardToCallable(callable $callable, mixed ...$args): void {}
+
+                final class Bar {
+                    public function run(int $a): void {}
+
+                    public function init(): void {
+                        $f = function (): void {
+                            forwardToCallable([$this, "run"], "hello");
+                        };
+                        $f();
+                    }
+                }',
+        );
+    }
+
+    public function testFunctionParamsProviderResolvesLocalVariableCallableArg(): void
+    {
+        $this->expectExceptionMessageMatches('/^InvalidScalarArgument - .*somefile\.php:9:48 - Argument 2 of forwardToCallable expects int,/');
+        $this->expectException(CodeException::class);
+
+        $this->analyzeWithFunctionPlugin(
+            '<?php
+                function forwardToCallable(callable $callable, mixed ...$args): void {}
+
+                final class Bar {
+                    public function run(int $a): void {}
+                }
+
+                $b = new Bar();
+                forwardToCallable([$b, "run"], "hello");',
+        );
+    }
+
     public function testFunctionParamsProviderAcceptsValidArgForThisCallableArg(): void
     {
         $this->analyzeWithFunctionPlugin(
