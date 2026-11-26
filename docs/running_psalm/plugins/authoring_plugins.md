@@ -29,40 +29,7 @@ All plugin API versions with a list of contained breaking changes will be listed
 Stub files provide a way to override third-party type information when you cannot add Psalm's extended docblocks to the upstream source files directly.
 By convention, stub files have `.phpstub` extension to avoid IDEs treating them as actual php code.
 
-A stub that declares a method of an existing class gives it the stub's parameters, and keeps what the stub leaves out of the original declaration: the return type and other method tags such as `@throws`, purity and taint annotations.
-What the original says of `$this` comes from the stub alone: `@psalm-this-out` and `@psalm-if-this-is`.
-The original `@return $this` and `@psalm-overload` tags refine its return type, so the stub keeps them until the stub declares the result itself with a `@return` tag or its own `@psalm-overload` tags.
-A native return type in the stub replaces the original return type but keeps these.
-
-```php
-// the library
-/** @template T */
-class Query
-{
-    /**
-     * @template N
-     * @param class-string<N> $class
-     * @return $this
-     * @psalm-this-out Query<N>
-     */
-    public function as(string $class) { return $this; }
-}
-
-// the stub
-/** @template T */
-class Query
-{
-    /**
-     * @template N
-     * @param class-string<N> $class
-     * @return static<N>
-     */
-    public function as(string $class) {}
-}
-
-/** @var Query<User> $query */
-$posts = $query->as(Post::class); // Query<Post>&static, and $query stays Query<User>
-```
+A `@return` tag or `@psalm-overload` tags in a stub method's docblock replace the original method's `@return $this` and `@psalm-overload` tags.
 
 ## Generating stubs
 

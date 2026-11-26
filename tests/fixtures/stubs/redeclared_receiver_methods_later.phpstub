@@ -9,9 +9,4 @@ class StubbedRelation
      * @return static<N|int>
      */
     public function usingTwice($c) {}
-
-    /**
-     * @since 8.0
-     */
-    public function onlyFloatBeforePhp8(): void {}
 }

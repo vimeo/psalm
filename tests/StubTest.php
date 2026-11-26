@@ -2864,42 +2864,12 @@ final class StubTest extends DeferredAnalyzerTestCase
         $this->analyzeFile($file_path, new Context());
     }
 
-    public function testStubReturnReplacesTheReturnThisAndThisOutOfTheScannedMethod(): void
+    public function testStubReturnReplacesTheReturnThisOfTheScannedMethod(): void
     {
         $context = $this->analyzeWithStubsRedeclaringReceiverMethods('$x = $r->using(stdClass::class);');
 
         $this->assertContextVars(
-            ['$x===' => 'StubbedRelation<int|stdClass>&static', '$r===' => 'StubbedRelation<string>'],
-            $context,
-        );
-    }
-
-    public function testStubKeepsItsOwnReturnThisAndThisOut(): void
-    {
-        $context = $this->analyzeWithStubsRedeclaringReceiverMethods('$x = $r->usingKept(stdClass::class);');
-
-        $this->assertContextVars(
-            ['$x===' => 'StubbedRelation<float|stdClass>', '$r===' => 'StubbedRelation<float|stdClass>'],
-            $context,
-        );
-    }
-
-    public function testLaterStubReplacesTheReturnThisAndThisOutOfAnEarlierStub(): void
-    {
-        $context = $this->analyzeWithStubsRedeclaringReceiverMethods('$x = $r->usingTwice(stdClass::class);');
-
-        $this->assertContextVars(
-            ['$x===' => 'StubbedRelation<int|stdClass>&static', '$r===' => 'StubbedRelation<string>'],
-            $context,
-        );
-    }
-
-    public function testStubReturnReplacesTheReturnThisTheScannedBodyProves(): void
-    {
-        $context = $this->analyzeWithStubsRedeclaringReceiverMethods('$x = $r->with(1.5);');
-
-        $this->assertContextVars(
-            ['$x===' => 'StubbedRelation<int>', '$r===' => 'StubbedRelation<float(1.5)>'],
+            ['$x===' => 'StubbedRelation<int|stdClass>&static', '$r===' => 'StubbedRelation<stdClass>'],
             $context,
         );
     }
@@ -2908,17 +2878,24 @@ final class StubTest extends DeferredAnalyzerTestCase
     {
         $context = $this->analyzeWithStubsRedeclaringReceiverMethods(
             '$x = $r->using(stdClass::class);',
-            provided_return_type: Type::getInt(),
+            Type::getInt(),
         );
 
         $this->assertContextVars(['$x===' => 'int'], $context);
     }
 
-    public function testStubConstructorWithoutThisOutReplacesTheOneOfTheScannedConstructor(): void
+    public function testLaterStubReturnReplacesTheReturnThisOfAnEarlierStub(): void
     {
-        $context = $this->analyzeWithStubsRedeclaringReceiverMethods('$b = new StubbedBox(stdClass::class);');
+        $context = $this->analyzeWithStubsRedeclaringReceiverMethods('$x = $r->usingTwice(stdClass::class);');
 
-        $this->assertContextVars(['$b===' => 'StubbedBox<stdClass::class>'], $context);
+        $this->assertContextVars(['$x===' => 'StubbedRelation<int|stdClass>&static'], $context);
+    }
+
+    public function testStubReturnReplacesTheReturnThisTheScannedBodyProves(): void
+    {
+        $context = $this->analyzeWithStubsRedeclaringReceiverMethods('$x = $r->with(1.5);');
+
+        $this->assertContextVars(['$x===' => 'StubbedRelation<int>'], $context);
     }
 
     public function testOverrideOfAStubbedMethodNoLongerReturningThisMayReturnAnotherObject(): void
@@ -2935,53 +2912,29 @@ final class StubTest extends DeferredAnalyzerTestCase
         );
     }
 
-    public function testStubOverloadsReplaceTheReturnThisOfTheScannedMethod(): void
+    public function testStubKeepsItsOwnReturnThisAndThisOut(): void
     {
-        $context = $this->analyzeWithStubsRedeclaringReceiverMethods('$x = $r->convert(1);');
+        $context = $this->analyzeWithStubsRedeclaringReceiverMethods('$x = $r->usingKept(stdClass::class);');
 
-        $this->assertContextVars(['$x===' => 'string', '$r===' => 'StubbedRelation<int>'], $context);
+        $this->assertContextVars(
+            ['$x===' => 'StubbedRelation<float|stdClass>', '$r===' => 'StubbedRelation<float|stdClass>'],
+            $context,
+        );
     }
 
-    public function testStubWithoutDocblockReturnKeepsTheReturnThisOfTheScannedMethod(): void
+    public function testStubWithoutReturnTypeKeepsTheReturnThisOfTheScannedMethod(): void
     {
         $this->analyzeWithStubsRedeclaringReceiverMethods(
             '/** @extends StubbedRelation<int> */
             final class ChainingRelation extends StubbedRelation
             {
                 /** @psalm-external-mutation-free */
-                public function setThrice(): void
+                public function setTwice(): void
                 {
-                    $this->setA(1)->setB(2)->setA(3);
+                    $this->setA(1)->setA(2);
                 }
             }',
-            '8.0',
         );
-    }
-
-    public function testStubWithoutIfThisIsDropsTheOneOfTheScannedMethod(): void
-    {
-        $this->analyzeWithStubsRedeclaringReceiverMethods('$r->onlyInt();');
-    }
-
-    public function testStubKeepsItsOwnIfThisIs(): void
-    {
-        $this->expectException(CodeException::class);
-        $this->expectExceptionMessage('Class type must be StubbedRelation<float> ');
-
-        $this->analyzeWithStubsRedeclaringReceiverMethods('$r->onlyFloat();');
-    }
-
-    public function testStubRedeclarationSkippedForTheAnalyzedVersionKeepsTheEarlierIfThisIs(): void
-    {
-        $this->expectException(CodeException::class);
-        $this->expectExceptionMessage('Class type must be StubbedRelation<float> ');
-
-        $this->analyzeWithStubsRedeclaringReceiverMethods('$r->onlyFloatBeforePhp8();');
-    }
-
-    public function testStubRedeclarationAppliedForTheAnalyzedVersionReplacesTheEarlierIfThisIs(): void
-    {
-        $this->analyzeWithStubsRedeclaringReceiverMethods('$r->onlyFloatBeforePhp8();', '8.0');
     }
 
     public function testStubReturnReplacesTheOverloadsOfTheScannedMethod(): void
@@ -2998,24 +2951,18 @@ final class StubTest extends DeferredAnalyzerTestCase
         $this->assertContextVars(['$x===' => 'bool'], $context);
     }
 
-    public function testStubWithoutDocblockReturnKeepsTheOverloadsOfTheScannedMethod(): void
+    public function testStubWithoutReturnTypeKeepsTheOverloadsOfTheScannedMethod(): void
     {
-        $context = $this->analyzeWithStubsRedeclaringReceiverMethods(
-            '$x = $r->pickKept(1);
-            $y = $r->pickNarrowed("a");',
-            '8.0',
-        );
+        $context = $this->analyzeWithStubsRedeclaringReceiverMethods('$x = $r->pickKept(1);');
 
-        $this->assertContextVars(['$x===' => 'int', '$y===' => 'string'], $context);
+        $this->assertContextVars(['$x===' => 'int'], $context);
     }
 
     /**
-     * Analyzes `$code` after a `StubbedRelation<string> $r`, with a scanned `StubbedRelation` and `StubbedBox`
-     * redeclared by two stubs
+     * Analyzes `$code` after a `StubbedRelation<string> $r`, with a scanned `StubbedRelation` redeclared by two stubs
      */
     private function analyzeWithStubsRedeclaringReceiverMethods(
         string $code,
-        string $php_version = '7.4',
         ?Union $provided_return_type = null,
     ): Context {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
@@ -3035,7 +2982,6 @@ final class StubTest extends DeferredAnalyzerTestCase
                     </stubs>
                 </psalm>',
             ),
-            $php_version,
         );
 
         if ($provided_return_type !== null) {
@@ -3079,26 +3025,9 @@ final class StubTest extends DeferredAnalyzerTestCase
                     final public function with($v) { return $this; }
 
                     /**
-                     * @psalm-if-this-is StubbedRelation<int>
-                     */
-                    public function onlyInt(): void {}
-
-                    /**
-                     * @psalm-if-this-is StubbedRelation<int>
-                     */
-                    public function onlyFloat(): void {}
-
-                    public function onlyFloatBeforePhp8(): void {}
-
-                    /**
                      * @return $this
                      */
                     public function chain() { return $this; }
-
-                    /**
-                     * @return $this
-                     */
-                    public function convert($x) { return $this; }
 
                     /**
                      * @psalm-overload (int $x): int
@@ -3111,12 +3040,6 @@ final class StubTest extends DeferredAnalyzerTestCase
                     /**
                      * @psalm-overload (int $x): int
                      * @psalm-overload (string $x): string
-                     */
-                    public function pickNarrowed(int|string $x): int|string { return $x; }
-
-                    /**
-                     * @psalm-overload (int $x): int
-                     * @psalm-overload (string $x): string
                      * @param int|string $x
                      * @return int|string
                      */
@@ -3125,10 +3048,8 @@ final class StubTest extends DeferredAnalyzerTestCase
                     /**
                      * @psalm-overload (int $x): int
                      * @psalm-overload (string $x): string
-                     * @param int|string $x
-                     * @return int|string
                      */
-                    public function pickKept($x) { return $x; }
+                    public function pickKept(int|string $x): int|string { return $x; }
 
                     /** @var int */
                     public $a = 0;
@@ -3138,22 +3059,6 @@ final class StubTest extends DeferredAnalyzerTestCase
                      * @psalm-external-mutation-free
                      */
                     public function setA(int $a) { $this->a = $a; return $this; }
-
-                    /**
-                     * @return $this
-                     * @psalm-external-mutation-free
-                     */
-                    public function setB(int $b) { $this->a = $b; return $this; }
-                }
-
-                /** @template T */
-                class StubbedBox
-                {
-                    /**
-                     * @param T $v
-                     * @psalm-this-out StubbedBox<int>
-                     */
-                    public function __construct($v) {}
                 }',
         );
 
@@ -3319,38 +3224,6 @@ final class StubTest extends DeferredAnalyzerTestCase
         );
         $this->assertFalse($constructor->stubbed);
         $this->assertSame(Capabilities::WRITE_THIS_PROPS, $constructor->capabilities);
-    }
-
-    /**
-     * A stub that extends a class from an already scanned real file forces its rescan during stub registration.
-     */
-    public function testRealFileRescannedDuringStubRegistrationKeepsTheThisOutOfTheStub(): void
-    {
-        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
-            TestConfig::loadFromXML(
-                dirname(__DIR__),
-                '<?xml version="1.0"?>
-                <psalm errorLevel="1">
-                    <projectFiles>
-                        <directory name="src" />
-                    </projectFiles>
-
-                    <stubs>
-                        <file name="tests/fixtures/stubs/stub_redeclaring_fluent.phpstub" />
-                    </stubs>
-                </psalm>',
-            ),
-        );
-
-        $codebase = $this->project_analyzer->getCodebase();
-        $codebase->scanner->addFileToShallowScan(dirname(__DIR__) . '/tests/fixtures/stub_dependency/Fluent.php');
-        $codebase->scanFiles();
-        $codebase->config->visitStubFiles($codebase);
-
-        $method = $codebase->methods->getStorage(new MethodIdentifier('StubDependency\Fluent', 'alter'));
-        $this->assertFalse($method->stubbed);
-        $this->assertTrue($method->returns_this);
-        $this->assertSame('StubDependency\Fluent<string>', $method->self_out_type?->getId());
     }
 
     /**

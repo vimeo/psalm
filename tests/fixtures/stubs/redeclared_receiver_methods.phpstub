@@ -30,21 +30,8 @@ class StubbedRelation
      * @template N
      * @param N $v
      * @return StubbedRelation<int>
-     * @psalm-this-out StubbedRelation<N>
      */
     final public function with($v) {}
-
-    public function onlyInt(): void {}
-
-    /**
-     * @psalm-if-this-is StubbedRelation<float>
-     */
-    public function onlyFloat(): void {}
-
-    /**
-     * @psalm-if-this-is StubbedRelation<float>
-     */
-    public function onlyFloatBeforePhp8(): void {}
 
     /**
      * @return static
@@ -52,18 +39,10 @@ class StubbedRelation
     public function chain() {}
 
     /**
-     * @psalm-overload (int $x): string
-     * @psalm-this-out StubbedRelation<int>
-     */
-    public function convert($x) {}
-
-    /**
      * @param int|string $x
      * @return float
      */
     public function pick($x) {}
-
-    public function pickNarrowed(int|string $x): int {}
 
     /**
      * @psalm-overload (int $x): bool
@@ -74,24 +53,10 @@ class StubbedRelation
     /**
      * @psalm-taint-sink sql $x
      */
-    public function pickKept($x) {}
+    public function pickKept(int|string $x): int|string {}
 
     /**
      * @psalm-taint-sink sql $a
      */
     public function setA(int $a) {}
-
-    /**
-     * @psalm-taint-sink sql $b
-     */
-    public function setB(int $b): static {}
-}
-
-/** @template T */
-class StubbedBox
-{
-    /**
-     * @param T $v
-     */
-    public function __construct($v) {}
 }

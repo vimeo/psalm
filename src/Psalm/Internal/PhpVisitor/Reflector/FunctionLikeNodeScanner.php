@@ -1430,21 +1430,13 @@ final class FunctionLikeNodeScanner
                 $is_functionlike_override = true;
                 $storage = $this->storage = $classlike_storage->methods[$method_name_lc];
 
-                // a real file rescanned during stub registration must not clear what the stub declared
-                if ($this->codebase->scanner->isStubFile($this->file_path)) {
-                    // what the earlier declaration says of `$this` belongs to that declaration
-                    $storage->self_out_type = null;
-                    $storage->self_out_type_location = null;
-                    $storage->if_this_is_type = null;
-
-                    // the `$this` return and the overloads refine the return type, so they go with the docblock that
-                    // states the result
-                    if ($docblock_info !== null
-                        && ($docblock_info->return_type !== null || $docblock_info->overloads !== [])
-                    ) {
-                        $storage->returns_this = false;
-                        $storage->overloads = [];
-                    }
+                // the `$this` return and the overloads refine the return type, so a docblock declaring the result
+                // replaces them
+                if ($docblock_info !== null
+                    && ($docblock_info->return_type !== null || $docblock_info->overloads !== [])
+                ) {
+                    $storage->returns_this = false;
+                    $storage->overloads = [];
                 }
             }
 
