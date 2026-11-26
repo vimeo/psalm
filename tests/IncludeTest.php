@@ -1782,6 +1782,125 @@ final class IncludeTest extends TestCase
     }
 
     /**
+     * Psalm scans the files that a dependency's file requires, including each branch of a ternary. A class
+     * declared in several of them, or also in the project, has one declaration and its subclasses are analysed.
+     *
+     * @param array<string, string> $required_files the files beside the dependency's file
+     * @param 'before'|'after'|null $project_base whether the project declares the class too, before or after the
+     *                                           dependency is registered
+     */
+    #[DataProvider('providerFilesRequiredByADependency')]
+    public function testFilesRequiredByADependencyAreScanned(
+        string $require,
+        array $required_files,
+        ?string $project_base = null,
+    ): void {
+        $dir = (string) getcwd() . DIRECTORY_SEPARATOR . 'vendor' . DIRECTORY_SEPARATOR . 'lib' . DIRECTORY_SEPARATOR;
+        $src = 'src' . DIRECTORY_SEPARATOR;
+        $files_to_analyze = [$src . 'Mine.php'];
+
+        if ($project_base !== null) {
+            $files_to_analyze[] = $src . 'Base.php';
+        }
+
+        $add_project_base = function () use ($src): void {
+            $this->addFile((string) getcwd() . DIRECTORY_SEPARATOR . $src . 'Base.php', '<?php
+                namespace Lib;
+                class Base { public function both(): void {} }');
+        };
+
+        if ($project_base === 'before') {
+            $add_project_base();
+        }
+
+        foreach ($required_files as $file_name => $contents) {
+            $this->file_provider->registerFile($dir . $file_name, $contents);
+        }
+
+        $this->addFile($dir . 'A.php', '<?php
+            namespace Lib;
+            ' . $require . '
+            class A extends Base {}');
+        $this->addFile((string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'Mine.php', '<?php
+            final class Mine extends Lib\A {
+                public function f(): int {
+                    $this->both();
+                    return "not an int";
+                }
+            }');
+
+        if ($project_base === 'after') {
+            $add_project_base();
+        }
+
+        $this->assertSame(
+            [$src . 'Mine.php: InvalidReturnStatement@5', $src . 'Mine.php: InvalidReturnType@3'],
+            $this->analyzeFilesInOrder($files_to_analyze),
+        );
+    }
+
+    /**
+     * @return iterable<string, array{
+     *     require: string,
+     *     required_files: array<string, string>,
+     *     project_base?: 'before'|'after',
+     * }>
+     * @psalm-pure
+     */
+    public static function providerFilesRequiredByADependency(): iterable
+    {
+        $base = '<?php
+            namespace Lib;
+            if (!class_exists(Base::class, false)) {
+                class Base { public function both(): void {} }
+            }';
+
+        yield 'ternary' => [
+            'require' => 'require PHP_VERSION_ID < 80200 ? __DIR__ . "/Old.php" : __DIR__ . "/New.php";',
+            'required_files' => ['Old.php' => $base, 'New.php' => $base],
+        ];
+
+        yield 'short ternary' => [
+            'require' => 'require getenv("BASE_FILE") ?: __DIR__ . "/New.php";',
+            'required_files' => ['New.php' => $base],
+        ];
+
+        yield 'nested ternary' => [
+            'require' => 'require PHP_VERSION_ID < 80000
+                ? __DIR__ . "/Old.php"
+                : (PHP_VERSION_ID < 80200 ? __DIR__ . "/Mid.php" : __DIR__ . "/New.php");',
+            'required_files' => ['Old.php' => $base, 'Mid.php' => $base, 'New.php' => $base],
+        ];
+
+        yield 'ternary with a branch to a missing file' => [
+            'require' => 'require PHP_VERSION_ID < 80200 ? __DIR__ . "/Missing.php" : __DIR__ . "/New.php";',
+            'required_files' => ['New.php' => $base],
+        ];
+
+        yield 'if and else requiring a file each' => [
+            'require' => 'if (PHP_VERSION_ID < 80200) {
+                require __DIR__ . "/Old.php";
+            } else {
+                require __DIR__ . "/New.php";
+            }',
+            'required_files' => ['Old.php' => $base, 'New.php' => $base],
+        ];
+
+        yield 'one file' => [
+            'require' => 'require __DIR__ . "/New.php";',
+            'required_files' => ['New.php' => $base],
+        ];
+
+        foreach (['before', 'after'] as $project_base) {
+            yield "ternary, and the project declaring the class $project_base" => [
+                'require' => 'require PHP_VERSION_ID < 80200 ? __DIR__ . "/Old.php" : __DIR__ . "/New.php";',
+                'required_files' => ['Old.php' => $base, 'New.php' => $base],
+                'project_base' => $project_base,
+            ];
+        }
+    }
+
+    /**
      * The constructor of the parent initializes its property through a helper, in a file that requires the
      * child's file: collecting what the helper does must not be cut short by the include cycle.
      */
