@@ -7,30 +7,51 @@ namespace Psalm\Internal\Crash;
 use Amp\Parallel\Worker\Task;
 use Amp\Parallel\Worker\TaskFailureThrowable;
 use Psalm\Config;
+use Psalm\Internal\CliUtils;
 use Psalm\Internal\Fork\TaskCrashedException;
 use ReflectionClass;
+use RuntimeException;
 use Symfony\Component\Filesystem\Path;
 use Throwable;
 
 use function array_column;
 use function array_reverse;
+use function date;
 use function defined;
 use function dirname;
+use function file_put_contents;
+use function function_exists;
 use function fwrite;
+use function get_loaded_extensions;
+use function getenv;
+use function getmypid;
+use function implode;
+use function is_dir;
 use function is_int;
 use function is_string;
 use function is_subclass_of;
+use function ltrim;
+use function mkdir;
+use function php_uname;
+use function phpversion;
 use function preg_replace;
 use function realpath;
 use function rtrim;
+use function simplexml_load_file;
+use function sort;
 use function str_starts_with;
 use function strlen;
 use function strpos;
 use function strrpos;
 use function strtolower;
+use function strtr;
 use function substr;
+use function sys_get_temp_dir;
 
+use const DIRECTORY_SEPARATOR;
 use const PHP_EOL;
+use const PHP_OS_FAMILY;
+use const PHP_VERSION;
 use const STDERR;
 
 /**
@@ -98,24 +119,36 @@ final class CrashReport
     }
 
     /**
-     * Prints the report of the crash to STDERR. A failure to make the report does not hide the crash.
+     * Prints the report of the crash and writes the full report to a file. A failure to make either does not hide
+     * the crash.
+     *
+     * @param resource $output
      */
-    public static function print(Throwable $throwable): void
+    public static function print(Throwable $throwable, string $command_line, $output = STDERR): void
     {
         try {
             $report = self::create($throwable);
             $summary = $report->getSummary();
         } catch (Throwable $failure) {
             fwrite(
-                STDERR,
-                PHP_EOL . 'Uncaught ' . $throwable->__toString() . PHP_EOL
+                $output,
+                PHP_EOL . 'Uncaught ' . $throwable . PHP_EOL
                 . 'Psalm could not report the crash: ' . $failure->getMessage() . PHP_EOL,
             );
 
             return;
         }
 
-        fwrite(STDERR, PHP_EOL . $summary . PHP_EOL);
+        fwrite($output, PHP_EOL . $summary . PHP_EOL);
+
+        try {
+            $path = $report->writeFile($command_line);
+            if ($path !== null) {
+                fwrite($output, 'Full report: ' . $path . PHP_EOL);
+            }
+        } catch (Throwable $failure) {
+            fwrite($output, 'Psalm could not write the full report: ' . $failure->getMessage() . PHP_EOL);
+        }
     }
 
     public static function create(Throwable $throwable): self
@@ -127,6 +160,188 @@ final class CrashReport
         }
 
         return new self($throwable, $config, $config?->getInstalledPackages() ?? []);
+    }
+
+    /**
+     * Writes the full report to crash-<time>-<pid>.txt in the cache directory, the directory of PSALM_CRASH_REPORT
+     * or the temporary directory when there is no cache. PSALM_CRASH_REPORT=0 writes nothing.
+     *
+     * @return ?string the path of the file
+     */
+    public function writeFile(string $command_line): ?string
+    {
+        $setting = CliUtils::chosenByOperator(getenv('PSALM_CRASH_REPORT'));
+        if ($setting === '0') {
+            return null;
+        }
+
+        $config = $this->config;
+        $directory = is_string($setting) && $setting !== ''
+            ? $setting
+            : ($config !== null && $config->cache_directory !== null && $config->global_cache_directory !== null
+                ? $config->global_cache_directory
+                : sys_get_temp_dir());
+
+        if (!is_dir($directory) && !@mkdir($directory, 0777, true) && !is_dir($directory)) {
+            throw new RuntimeException('could not create ' . $directory);
+        }
+
+        $path = rtrim($directory, '/\\') . DIRECTORY_SEPARATOR
+            . 'crash-' . date('Ymd-His') . '-' . (int) getmypid() . '.txt';
+        if (@file_put_contents($path, $this->getFileContents($command_line)) === false) {
+            throw new RuntimeException('could not write ' . $path);
+        }
+
+        return $path;
+    }
+
+    /**
+     * The full report, without the paths of the user's machine
+     */
+    public function getFileContents(string $command_line): string
+    {
+        $context = $this->getContextLine();
+
+        $lines = [
+            $this->getHeadline(),
+            ...($context === null ? [] : [$context]),
+            '',
+            'Psalm: ' . (defined('PSALM_VERSION') ? self::getPsalmVersion() : 'unknown'),
+            'PHP: ' . PHP_VERSION,
+            'Extensions: ' . self::describeExtensions(),
+            'OS: ' . self::describeOs(),
+            'Command: ' . $command_line,
+            'Config: ' . ($this->config?->source_filename ?? 'none'),
+            'Config attributes: ' . $this->describeConfigAttributes(),
+            'Plugins: ' . $this->describePlugins(),
+            'Phase: ' . ($this->context->activity ?? ($this->context->line === null ? 'unknown' : 'analysing')),
+            '',
+            $this->renderChain(),
+        ];
+
+        return $this->sanitize(implode(PHP_EOL, $lines) . PHP_EOL);
+    }
+
+    /**
+     * The text with the paths of the packages, of Psalm, of the project, of the home and the temporary directories
+     * made relative to them, and the directories of other absolute paths left out
+     */
+    public function sanitize(string $text): string
+    {
+        $prefixes = [];
+        foreach ($this->packages as $package) {
+            self::addPrefix($prefixes, $package['install_path'], $package['name']);
+        }
+
+        self::addPrefix($prefixes, self::getPsalmRoot(), 'vimeo/psalm');
+        if ($this->config !== null) {
+            self::addPrefix($prefixes, $this->config->base_dir, '<project>');
+        }
+
+        foreach (['HOME', 'USERPROFILE'] as $variable) {
+            $home = CliUtils::chosenByOperator(getenv($variable));
+            if (is_string($home) && $home !== '') {
+                self::addPrefix($prefixes, $home, '~');
+            }
+        }
+
+        self::addPrefix($prefixes, sys_get_temp_dir(), '<tmp>');
+
+        // strtr() replaces the longest prefix first: a package inside the project, the project inside the home
+        return (string) preg_replace(
+            [
+                '#(?<![\w.~<>/:\\\\-])/(?:[^\s/\\\\:()\'"<>]+/)+#',
+                '#(?<![\w.])[A-Za-z]:\\\\(?:[^\s/\\\\:()\'"<>]+\\\\)+#',
+            ],
+            '.../',
+            strtr($text, $prefixes),
+        );
+    }
+
+    /**
+     * @param array<string, string> $prefixes
+     */
+    private static function addPrefix(array &$prefixes, string $path, string $replacement): void
+    {
+        $real_path = realpath($path);
+        foreach ([$path, $real_path === false ? $path : $real_path] as $candidate) {
+            $candidate = rtrim($candidate, '/\\');
+            if ($candidate !== '') {
+                $prefixes[$candidate . '/'] = $replacement . '/';
+                $prefixes[$candidate . '\\'] = $replacement . '/';
+            }
+        }
+    }
+
+    private static function describeExtensions(): string
+    {
+        $extensions = [];
+        foreach (get_loaded_extensions() as $extension) {
+            $version = phpversion($extension);
+            $extensions[] = $extension . ($version === false || $version === PHP_VERSION ? '' : ' ' . $version);
+        }
+
+        sort($extensions);
+
+        return implode(', ', $extensions);
+    }
+
+    /**
+     * @psalm-pure
+     */
+    private static function describeOs(): string
+    {
+        return function_exists('php_uname')
+            ? PHP_OS_FAMILY . ' ' . php_uname('r') . ' ' . php_uname('m')
+            : PHP_OS_FAMILY;
+    }
+
+    /**
+     * The attributes the config file sets on <psalm>
+     */
+    private function describeConfigAttributes(): string
+    {
+        $path = $this->config?->source_filename;
+        $xml = $path === null ? false : @simplexml_load_file($path);
+        if ($xml === false) {
+            return 'none';
+        }
+
+        $attributes = [];
+        foreach ($xml->attributes() ?? [] as $name => $value) {
+            $attributes[] = $name . '="' . (string) $value . '"';
+        }
+
+        return implode(' ', $attributes);
+    }
+
+    /**
+     * The enabled plugins: the package and its version for a plugin class Composer installed
+     */
+    private function describePlugins(): string
+    {
+        if ($this->config === null) {
+            return 'unknown';
+        }
+
+        $packages_by_class = [];
+        foreach ($this->packages as $package) {
+            if ($package['plugin_class'] !== null) {
+                $packages_by_class[strtolower(ltrim($package['plugin_class'], '\\'))] = $package['name']
+                    . ($package['version'] === null ? '' : ' ' . $package['version']);
+            }
+        }
+
+        $plugins = [];
+        foreach ($this->config->getPluginClasses() as $plugin) {
+            $plugins[] = $packages_by_class[strtolower(ltrim($plugin['class'], '\\'))] ?? $plugin['class'];
+        }
+
+        foreach ($this->config->plugin_paths as $path) {
+            $plugins[] = $this->config->shortenFileName($path);
+        }
+
+        return $plugins === [] ? 'none' : implode(', ', $plugins);
     }
 
     /**
@@ -195,6 +410,40 @@ final class CrashReport
     private function shortenFileName(string $file_path): string
     {
         return $this->config?->shortenFileName($file_path) ?? $file_path;
+    }
+
+    /**
+     * Each exception of the chain: its class and message, where it was thrown and the frames of its trace
+     *
+     * @psalm-capabilities read-props
+     */
+    private function renderChain(): string
+    {
+        $rendered = [];
+        foreach ($this->chain as $exception) {
+            $lines = [
+                $exception['class'] . ': ' . $exception['message'],
+                '  at ' . $exception['file'] . ':' . $exception['line'],
+            ];
+            foreach ($exception['frames'] as $i => $frame) {
+                $lines[] = self::renderFrame($i, $frame);
+            }
+
+            $rendered[] = implode(PHP_EOL, $lines);
+        }
+
+        return implode(PHP_EOL . 'Caused by ', $rendered);
+    }
+
+    /**
+     * @param Frame $frame
+     * @psalm-pure
+     */
+    private static function renderFrame(int $i, array $frame): string
+    {
+        return '#' . $i . ' '
+            . ($frame['file'] === null ? '[internal function]' : $frame['file'] . '(' . $frame['line'] . ')')
+            . ': ' . $frame['call'];
     }
 
     /**

@@ -102,7 +102,7 @@ final class ErrorHandler
                 exit(1);
             }
 
-            CrashReport::print($throwable);
+            CrashReport::print($throwable, ErrorHandler::$args);
             exit(1);
         });
     }

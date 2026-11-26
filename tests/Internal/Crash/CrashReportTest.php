@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Tests\Internal\Crash;
 
 use LogicException;
+use PHPUnit\Framework\Attributes\After;
 use Psalm\Context;
 use Psalm\Internal\Crash\CrashReport;
 use Psalm\Internal\EventDispatcher;
@@ -15,12 +16,42 @@ use Psalm\Tests\Internal\Crash\Plugin\ThrowOnBoom;
 use Psalm\Tests\Internal\Crash\Plugin\ThrowingHandler;
 use Psalm\Tests\Internal\Crash\Plugin\ThrowingInterpreter;
 use Psalm\Tests\TestCase;
+use Symfony\Component\Filesystem\Filesystem;
+use Throwable;
+
+use function dirname;
+use function file_get_contents;
+use function fopen;
+use function getenv;
+use function getmypid;
+use function glob;
+use function mkdir;
+use function putenv;
+use function rewind;
+use function rtrim;
+use function stream_get_contents;
+use function sys_get_temp_dir;
+use function touch;
+use function uniqid;
+
+use const PHP_EOL;
+use const PHP_VERSION;
 
 /**
  * The classes in Plugin/ stand for a Composer package of a plugin
  */
 final class CrashReportTest extends TestCase
 {
+    /** @var list<string> */
+    private array $temporary_paths = [];
+
+    #[After]
+    public function removeReports(): void
+    {
+        putenv('PSALM_CRASH_REPORT');
+        (new Filesystem())->remove($this->temporary_paths);
+    }
+
     public function testAHookThatThrowsIsAttributedToItsPackageAndHook(): void
     {
         $e = $this->dispatchAfterCodebasePopulated(ThrowingHandler::class);
@@ -129,6 +160,99 @@ final class CrashReportTest extends TestCase
                 (new CrashReport($e, null, []))->getContextLine(),
             );
         }
+    }
+
+    public function testPsalmCrashReport0WritesNoReport(): void
+    {
+        putenv('PSALM_CRASH_REPORT=0');
+
+        $output = self::printCrash(self::pluginFailure());
+
+        $this->assertStringContainsString('LogicException: the plugin failed', $output);
+        $this->assertStringNotContainsString('Full report', $output);
+        $this->assertStringNotContainsString('could not write', $output);
+    }
+
+    public function testPsalmCrashReportPutsTheReportInItsDirectory(): void
+    {
+        $directory = $this->makeTemporaryDirectory() . '/reports';
+        putenv('PSALM_CRASH_REPORT=' . $directory);
+
+        $output = self::printCrash(self::pluginFailure());
+
+        $reports = glob($directory . '/crash-*-' . (int) getmypid() . '.txt');
+        $this->assertIsArray($reports);
+        $this->assertCount(1, $reports);
+        $this->assertStringContainsString('Full report: ' . $reports[0] . PHP_EOL, $output);
+
+        $report = (string) file_get_contents($reports[0]);
+        $this->assertStringContainsString('PHP: ' . PHP_VERSION . PHP_EOL, $report);
+        $this->assertStringContainsString('Command: psalm --threads=2' . PHP_EOL, $report);
+        $this->assertStringContainsString('LogicException: the plugin failed' . PHP_EOL, $report);
+        // the tests run in Psalm's own project
+        $this->assertStringContainsString('  at <project>/tests/Internal/Crash/Plugin/PluginCode.php:', $report);
+        $this->assertStringNotContainsString(__DIR__, $report);
+        $this->assertStringNotContainsString((string) getenv('HOME') . '/', $report);
+    }
+
+    public function testAReportThatCannotBeWrittenDoesNotHideTheCrash(): void
+    {
+        // a file where the directory should be
+        $directory = $this->makeTemporaryDirectory() . '/reports';
+        touch($directory);
+        putenv('PSALM_CRASH_REPORT=' . $directory);
+
+        $output = self::printCrash(self::pluginFailure());
+
+        $this->assertStringContainsString('LogicException: the plugin failed', $output);
+        $this->assertStringEndsWith(
+            PHP_EOL . 'Psalm could not write the full report: could not create ' . $directory . PHP_EOL,
+            $output,
+        );
+    }
+
+    public function testWithoutACacheTheReportGoesToTheTemporaryDirectory(): void
+    {
+        putenv('PSALM_CRASH_REPORT');
+        $config = $this->project_analyzer->getConfig();
+        $config->cache_directory = null;
+
+        $path = (new CrashReport(self::pluginFailure(), $config, []))->writeFile('psalm');
+
+        $this->assertNotNull($path);
+        $this->temporary_paths[] = $path;
+        $this->assertSame(rtrim(sys_get_temp_dir(), '/\\'), dirname($path));
+    }
+
+    private static function pluginFailure(): LogicException
+    {
+        try {
+            PluginCode::fail();
+        } catch (LogicException $e) {
+            return $e;
+        }
+    }
+
+    /**
+     * What Psalm prints for the crash
+     */
+    private static function printCrash(Throwable $e): string
+    {
+        $output = fopen('php://memory', 'w+');
+        self::assertIsResource($output);
+        CrashReport::print($e, 'psalm --threads=2', $output);
+        rewind($output);
+
+        return (string) stream_get_contents($output);
+    }
+
+    private function makeTemporaryDirectory(): string
+    {
+        $directory = sys_get_temp_dir() . '/psalm-crash-report-' . uniqid();
+        mkdir($directory);
+        $this->temporary_paths[] = $directory;
+
+        return $directory;
     }
 
     /**

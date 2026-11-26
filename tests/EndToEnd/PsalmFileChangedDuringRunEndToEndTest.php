@@ -277,7 +277,8 @@ final class PsalmFileChangedDuringRunEndToEndTest extends PsalmEndToEndTestCase
                 ...$extra_args,
             ],
             self::$tmpDir,
-            self::agentEnvVarsToUnset(),
+            // no crash-*.txt in the temporary directory
+            ['PSALM_CRASH_REPORT' => '0'] + self::agentEnvVarsToUnset(),
         );
         $process->run();
 
