@@ -12,6 +12,7 @@ use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\FileChangedDuringRunException;
 use Psalm\Internal\FileManipulation\ClassDocblockManipulator;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\FileManipulation\FunctionDocblockManipulator;
@@ -59,6 +60,7 @@ use function substr;
 use function usort;
 
 use const PATHINFO_EXTENSION;
+use const PHP_EOL;
 use const PHP_INT_MAX;
 
 /**
@@ -241,9 +243,23 @@ final class Analyzer
     ): void {
         Perf\Collector::stage('analysis.setup');
 
-        $this->loadCachedResults($project_analyzer);
-
         $codebase = $project_analyzer->getCodebase();
+
+        $scanned = $codebase->scanner->getScannedFiles();
+        $changed_files = [];
+
+        foreach ($this->files_to_analyze as $file_path => $_) {
+            if (!isset($scanned[$file_path]) && $this->file_provider->fileExists($file_path)) {
+                $changed_files[] = $this->config->shortenFileName($file_path)
+                    . ' was removed or created while Psalm was running: run Psalm again';
+            }
+        }
+
+        if ($changed_files) {
+            throw new FileChangedDuringRunException(implode(PHP_EOL, $changed_files));
+        }
+
+        $this->loadCachedResults($project_analyzer);
 
         if ($alter_code) {
             $project_analyzer->interpretRefactors();

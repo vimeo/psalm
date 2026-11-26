@@ -16,6 +16,7 @@ use function set_error_handler;
 use function set_exception_handler;
 
 use const E_ALL;
+use const PHP_EOL;
 use const STDERR;
 
 /**
@@ -96,6 +97,11 @@ final class ErrorHandler
          * then exit with a non-zero exit code to indicate failure.
          */
         set_exception_handler(static function (Throwable $throwable): never {
+            if ($throwable instanceof FileChangedDuringRunException) {
+                fwrite(STDERR, PHP_EOL . $throwable->getMessage() . PHP_EOL);
+                exit(1);
+            }
+
             fwrite(STDERR, "Uncaught $throwable\n");
             $version = defined('PSALM_VERSION') ? PSALM_VERSION : '(unknown version)';
             fwrite(STDERR, "(Psalm $version crashed due to an uncaught Throwable)\n");

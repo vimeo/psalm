@@ -846,6 +846,7 @@ final class PreloaderList {
         \Psalm\Internal\ExecutionEnvironment\PullRequest::class,
         \Psalm\Internal\ExecutionEnvironment\Repository::class,
         \Psalm\Internal\ExecutionEnvironment\SystemCommandExecutor::class,
+        \Psalm\Internal\FileChangedDuringRunException::class,
         \Psalm\Internal\FileLink::class,
         \Psalm\Internal\FileManipulation\ClassDocblockManipulator::class,
         \Psalm\Internal\FileManipulation\CodeMigration::class,
