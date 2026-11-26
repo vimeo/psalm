@@ -175,7 +175,79 @@ final class ArrayKeyExistsTest extends TestCase
                         if (!isset($foo["retry_in"])) {
                             /** @psalm-check-type-exact $foo = array{retry_in: mixed}|int */
                         }
+                    }
+
+                    /**
+                     * @template T of ?int
+                     * @param int|array{retry_in: T} $foo
+                     */
+                    function ofNullableTemplate($foo): int {
+                        if (!isset($foo["retry_in"]) && is_array($foo)) {
+                            return 0;
+                        }
+                        return 1;
                     }',
+            ],
+            'negatedIssetKeepsAKeyOfAnUnboundedTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param int|array{retry_in: T} $foo
+                     */
+                    function required($foo): int {
+                        if (!isset($foo["retry_in"])) {
+                            if (is_array($foo)) {
+                                return 0;
+                            }
+                            return $foo;
+                        }
+                        return 1;
+                    }
+
+                    /**
+                     * @template T
+                     * @param array{retry_in?: T, id: int} $foo
+                     */
+                    function optional(array $foo): int {
+                        if (!isset($foo["retry_in"]) && array_key_exists("retry_in", $foo)) {
+                            return 0;
+                        }
+                        return 1;
+                    }',
+            ],
+            'negatedIssetRemovesAShapeWithAKeyOfANonNullTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template T of int
+                     * @param int|array{retry_in: T} $foo
+                     */
+                    function f($foo): void {
+                        if (!isset($foo["retry_in"])) {
+                            /** @psalm-check-type-exact $foo = int */
+                        }
+                    }',
+            ],
+            'negatedIssetOfAMagicPropertyOffsetKeepsItsShape' => [
+                'code' => '<?php
+                    /** @property int|array{retry_in: int} $p */
+                    final class Bag {
+                        public function __get(string $name): mixed {
+                            return ["retry_in" => 1];
+                        }
+
+                        public function __isset(string $name): bool {
+                            return false;
+                        }
+                    }
+
+                    function f(Bag $bag): void {
+                        if (!isset($bag->p["retry_in"])) {
+                            /** @psalm-check-type-exact $bag->p = array{retry_in: int}|int */
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'negatedIssetKeepsTheTypeWhereNoShapeIsLeft' => [
                 'code' => '<?php

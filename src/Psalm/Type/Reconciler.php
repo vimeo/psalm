@@ -67,6 +67,7 @@ use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TClassStringMap;
+use Psalm\Type\Atomic\TConditional;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TInt;
@@ -2361,6 +2362,13 @@ class Reconciler
             return;
         }
 
+        // isset() of an offset of a property read through __get() asks __isset() first, which may say it isn't set
+        if (!$is_absent
+            && self::isReadThroughMagicGetter($statements_analyzer->getCodebase(), $base_key, $existing_types)
+        ) {
+            return;
+        }
+
         if ($array_key[0] === '\'' || $array_key[0] === '"') {
             $offset = TLiteralString::make(ExpressionIdentifier::unquoteOffset($array_key));
         } elseif (preg_match('/^-?[0-9]+$/', $array_key) === 1) {
@@ -2379,9 +2387,7 @@ class Reconciler
                 ? $atomic_type->properties[$offset->value] ?? null
                 : null;
 
-            if ($property === null
-                || (!$is_absent && ($property->isNullable() || $property->hasMixed()))
-            ) {
+            if ($property === null || (!$is_absent && self::mayHoldNull($property))) {
                 $atomic_types[] = $atomic_type;
 
                 continue;
@@ -2457,6 +2463,28 @@ class Reconciler
                 $changed_var_ids[$base_key] = true;
             }
         }
+    }
+
+    /**
+     * A template stands for any type its bound contains, null too where the bound is mixed
+     *
+     * @psalm-pure
+     */
+    private static function mayHoldNull(Union $type): bool
+    {
+        if ($type->isNullable() || $type->hasMixed()) {
+            return true;
+        }
+
+        foreach ($type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TConditional
+                || ($atomic_type instanceof TTemplateParam && self::mayHoldNull($atomic_type->as))
+            ) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
