@@ -10,6 +10,7 @@ use Psalm\Codebase;
 use Psalm\Internal\Analyzer\Statements\Block\ForeachAnalyzer;
 use Psalm\Internal\PhpVisitor\YieldTypeCollector;
 use Psalm\Internal\Provider\NodeDataProvider;
+use Psalm\Internal\Type\Comparator\GenericTypeComparator;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TGenericObject;
@@ -282,6 +283,7 @@ final class ReturnTypeCollector
             }
         }
 
+        // a generator that ends without a value returns null from getReturn()
         return [
             new Union([
                 new TGenericObject(
@@ -290,7 +292,11 @@ final class ReturnTypeCollector
                         $key_type ?? Type::getMixed(),
                         $value_type ?? Type::getMixed(),
                         Type::getMixed(),
-                        $return_types ? Type::combineUnionTypeArray($return_types, null) : Type::getVoid(),
+                        $return_types
+                            ? GenericTypeComparator::replaceVoidWithNull(
+                                Type::combineUnionTypeArray($return_types, null),
+                            )
+                            : Type::getNull(),
                     ],
                 ),
             ]),

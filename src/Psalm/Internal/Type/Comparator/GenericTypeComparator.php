@@ -11,7 +11,9 @@ use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TTypeVariable;
+use Psalm\Type\Union;
 
 use function count;
 
@@ -157,6 +159,15 @@ final class GenericTypeComparator
                 }
 
                 continue;
+            }
+
+            // a generator that ends without a value returns null, whether its TReturn is written void or null
+            if ($i === 3
+                && $container_type_part instanceof TGenericObject
+                && $container_type_part->value === 'Generator'
+            ) {
+                $input_param = self::replaceVoidWithNull($input_param);
+                $container_param = self::replaceVoidWithNull($container_param);
             }
 
             $param_comparison_result = new TypeComparisonResult();
@@ -318,5 +329,17 @@ final class GenericTypeComparator
         }
 
         return false;
+    }
+
+    public static function replaceVoidWithNull(Union $type): Union
+    {
+        if (!$type->hasType('void')) {
+            return $type;
+        }
+
+        $builder = $type->getBuilder();
+        $builder->removeType('void');
+
+        return $builder->addType(new TNull())->freeze();
     }
 }
