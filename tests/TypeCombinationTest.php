@@ -425,6 +425,42 @@ final class TypeCombinationTest extends TestCase
                     'array{id: string, name: 5, ...<string, int>}',
                 ],
             ],
+            'keyOfASealedShapeIsTheFallbackWhenAnUnsealedShapeLacksIt' => [
+                'array{id: string, ...<array-key, mixed>}',
+                [
+                    'array{id: string, ...<array-key, mixed>}',
+                    'array{id: string, name: string}',
+                ],
+            ],
+            'keyOfASealedShapeIsTheFallbackWhenAnUnsealedShapeLacksItAndItsFallbackHoldsItsType' => [
+                'array{id: string, ...<string, int>}',
+                [
+                    'array{id: string, ...<string, int>}',
+                    'array{id: string, name: 5}',
+                ],
+            ],
+            'keyOfAnUnsealedShapeWithAMixedFallbackIsOptionalWhenASealedShapeLacksIt' => [
+                'array{id: string, name?: string, ...<array-key, mixed>}',
+                [
+                    'array{id: string, name: string, ...<array-key, mixed>}',
+                    'array{id: string}',
+                ],
+            ],
+            'keyOfASealedShapeIsOptionalWhenAnUnsealedShapeAndAnotherSealedShapeLackIt' => [
+                'array{id: string, name?: mixed|string, ...<array-key, mixed>}',
+                [
+                    'array{id: string, ...<array-key, mixed>}',
+                    'array{id: string, name: string}',
+                    'array{id: string}',
+                ],
+            ],
+            'optionalKeyOfASealedShapeStaysOptionalWhenAnUnsealedShapeLacksIt' => [
+                'array{id: string, name?: mixed|string, ...<array-key, mixed>}',
+                [
+                    'array{id: string, ...<array-key, mixed>}',
+                    'array{id: string, name?: string}',
+                ],
+            ],
             'arrayKeyOfAnUnsealedShapeIsOptionalWhenAnotherShapeLacksItAndItsFallbackHoldsAnotherArray' => [
                 'array{id: string, name?: array{0?: string, x?: 1, ...<int<0, max>, string>}, ...<string, list<string>>}',
                 [

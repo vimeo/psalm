@@ -1,0 +1,23 @@
+<?php
+
+/**
+ * @template T
+ * @extends ArrayAccess<int, T>
+ */
+interface StubbedSequence extends ArrayAccess
+{
+    /**
+     * @param int $offset
+     * @return T
+     */
+    public function offsetGet($offset);
+}
+
+/**
+ * @template T
+ * @implements IteratorAggregate<int, T>
+ * @implements StubbedSequence<T>
+ */
+class StubbedCollection implements ArrayAccess, IteratorAggregate, StubbedSequence, Countable
+{
+}

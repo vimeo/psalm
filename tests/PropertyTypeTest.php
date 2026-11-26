@@ -2354,6 +2354,157 @@ final class PropertyTypeTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'promotedPropertyReadInTheBodyOfAParentConstructor' => [
+                'code' => '<?php
+                    class A
+                    {
+                        public string $copy;
+
+                        public function __construct(public string $title)
+                        {
+                            $this->copy = $this->title;
+                        }
+                    }
+
+                    final class B extends A
+                    {
+                        public function __construct()
+                        {
+                            parent::__construct("b");
+                        }
+                    }
+
+                    final class C extends A
+                    {
+                        public function __construct()
+                        {
+                            A::__construct("c");
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'promotedPropertyOfAncestorConstructorCalledByItsName' => [
+                'code' => '<?php
+                    class A
+                    {
+                        public function __construct(
+                            public string $name,
+                        ) {}
+                    }
+
+                    class B extends A {}
+
+                    final class C extends B
+                    {
+                        public function __construct()
+                        {
+                            A::__construct("c");
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'promotedPropertyOverwrittenNoConstructor' => [
+                'code' => '<?php
+                    class A
+                    {
+                        public function __construct(
+                            public array $abc,
+                        ) {}
+                    }
+
+                    class B extends A
+                    {
+                        public array $abc;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'promotedPropertyOverwrittenNoConstructorDeep' => [
+                'code' => '<?php
+                    class A
+                    {
+                        public function __construct(
+                            public array $abc,
+                        ) {}
+                    }
+
+                    class B extends A
+                    {
+                    }
+
+                    class C extends B
+                    {
+                        public array $abc;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'promotedPropertyOverwrittenNoConstructorDeep2' => [
+                'code' => '<?php
+                    class A
+                    {
+                        public function __construct(
+                            public array $abc,
+                        ) {}
+                    }
+
+                    class B extends A
+                    {
+                        public array $abc;
+                    }
+
+                    class C extends B
+                    {
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'protectedPromotedPropertyOverwrittenNoConstructor' => [
+                'code' => '<?php
+                    class A
+                    {
+                        public function __construct(
+                            protected array $abc,
+                        ) {}
+                    }
+
+                    class B extends A
+                    {
+                        protected array $abc;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'promotedPropertyOverwrittenInitializedByParentConstructorCall' => [
+                'code' => '<?php
+                    class A
+                    {
+                        public function __construct(
+                            public array $abc,
+                        ) {}
+                    }
+
+                    class B extends A
+                    {
+                        public array $abc;
+
+                        public function __construct()
+                        {
+                            parent::__construct([]);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'propertyWithoutTypeSuppressingIssueAndAssertingNull' => [
                 'code' => '<?php
                     class A {
@@ -2577,6 +2728,96 @@ final class PropertyTypeTest extends TestCase
                 'assertions' => [
                     '$inserted===' => 'int|null',
                     '$error===' => 'MongoDB\Driver\WriteConcernError|null',
+                ],
+            ],
+            'variablePropertyAssignment' => [
+                'code' => '<?php
+                    class MyClass
+                    {
+                        protected int $num;
+
+                        public function __construct()
+                        {
+                            $myString = "num";
+                            $this->$myString = 5;
+                        }
+                    }',
+            ],
+            'variablePropertyAssignmentWithStringName' => [
+                'code' => '<?php
+                    class MyClass
+                    {
+                        protected int $num;
+
+                        public function __construct()
+                        {
+                            $this->{"num"} = 5;
+                        }
+                    }',
+            ],
+            'variablePropertyAssignmentNarrowsTheProperty' => [
+                'code' => '<?php
+                    final class A
+                    {
+                        public int $p = 0;
+                    }
+
+                    $a = new A();
+                    $name = "p";
+                    $a->$name = 5;
+                    $b = $a->p;',
+                'assertions' => [
+                    '$b===' => '5',
+                ],
+            ],
+            'variablePropertyAssignmentOnArrayElementOrMethodCall' => [
+                'code' => '<?php
+                    final class A
+                    {
+                        public int $p = 0;
+
+                        /** @psalm-mutation-free */
+                        public function self(): A
+                        {
+                            return $this;
+                        }
+                    }
+
+                    /** @var array<int, A> */
+                    $arr = [new A()];
+                    $k = 0;
+                    $name = "p";
+                    $arr[$k]->$name = 5;
+                    $b = $arr[$k]->p;
+
+                    $o = new A();
+                    $o->self()->$name = 5;
+                    $c = $o->self()->p;',
+                'assertions' => [
+                    '$b===' => 'int',
+                    '$c===' => 'int',
+                ],
+            ],
+            'variablePropertyNameThatIsNotAnIdentifier' => [
+                'code' => '<?php
+                    $o = new stdClass();
+                    $o->a = [1];
+                    $o->{"a[0]"} = "x";
+                    $v = $o->a[0];
+                    $w = $o->{"a[0]"};',
+                'assertions' => [
+                    '$v===' => '1',
+                    '$w===' => 'mixed',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
+            'variablePropertyAssignmentWithADash' => [
+                'code' => '<?php
+                    $o = new stdClass();
+                    $o->{"a-b"} = 5;
+                    $v = $o->{"a-b"};',
+                'assertions' => [
+                    '$v===' => '5',
                 ],
             ],
             'goodArrayProperties' => [
@@ -6569,6 +6810,89 @@ final class PropertyTypeTest extends TestCase
                     class B extends A {}',
                 'error_message' => 'MissingConstructor',
             ],
+            'firstClassCallableOfParentConstructorDoesNotInitializePromotedProperty' => [
+                'code' => '<?php
+                    class A
+                    {
+                        public function __construct(public string $name) {}
+                    }
+
+                    final class B extends A
+                    {
+                        public function __construct()
+                        {
+                            $f = parent::__construct(...);
+                        }
+                    }',
+                'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:33 - Property B::$name',
+                'error_levels' => ['UnusedVariable'],
+                'php_version' => '8.1',
+            ],
+            'firstClassCallableOfAncestorConstructorDoesNotInitializePromotedProperty' => [
+                'code' => '<?php
+                    class A
+                    {
+                        public function __construct(public string $name) {}
+                    }
+
+                    final class B extends A
+                    {
+                        public function __construct()
+                        {
+                            $f = A::__construct(...);
+                        }
+                    }',
+                'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:33 - Property B::$name',
+                'error_levels' => ['UnusedVariable'],
+                'php_version' => '8.1',
+            ],
+            'parentConstructorDoesNotInitializePropertyShadowingAPrivatePromotedOne' => [
+                'code' => '<?php
+                    class A
+                    {
+                        public function __construct(private string $name) {}
+                    }
+
+                    final class B extends A
+                    {
+                        private string $name;
+
+                        public function __construct()
+                        {
+                            parent::__construct("a");
+                        }
+                    }',
+                'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:40 - Property B::$name',
+                'error_levels' => ['UnusedProperty'],
+                'php_version' => '8.0',
+            ],
+            'ancestorConstructorDoesNotInitializePropertyShadowingAPrivatePromotedOne' => [
+                'code' => '<?php
+                    class A
+                    {
+                        public function __construct(private string $name) {}
+                    }
+
+                    final class B extends A
+                    {
+                        private string $name;
+
+                        public function __construct()
+                        {
+                            A::__construct("a");
+                        }
+                    }',
+                'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:40 - Property B::$name',
+                'error_levels' => ['UnusedProperty'],
+                'php_version' => '8.0',
+            ],
+            'inheritedConstructorOfAStubbedBuiltinClass' => [
+                'code' => '<?php
+                    final class E extends Exception {
+                        public string $foo;
+                    }',
+                'error_message' => 'MissingConstructor',
+            ],
             'abstractClassInheritsPrivateConstructor' => [
                 'code' => '<?php
                     abstract class A {
@@ -7242,6 +7566,57 @@ final class PropertyTypeTest extends TestCase
                 'error_message' => 'PropertyNotSetInConstructor',
                 'error_levels' => [],
                 'php_version' => '8.0',
+            ],
+            'promotedPropertyNotSetInExtendedConstructorDeep' => [
+                'code' => '<?php
+                    class A
+                    {
+                        public function __construct(
+                            public string $name,
+                        ) {}
+                    }
+
+                    class B extends A {}
+
+                    class C extends B
+                    {
+                        public function __construct() {}
+                    }',
+                'error_message' => 'PropertyNotSetInConstructor',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'promotedPropertyOverwrittenParentConstructorNotCalled' => [
+                'code' => '<?php
+                    class A
+                    {
+                        public function __construct(
+                            public array $abc,
+                        ) {}
+                    }
+
+                    class B extends A
+                    {
+                        public array $abc;
+
+                        public function __construct() {}
+                    }',
+                'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:38 - Property B::$abc',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'variablePropertyAssignmentWithNonLiteralName' => [
+                'code' => '<?php
+                    class MyClass
+                    {
+                        protected int $num;
+
+                        public function __construct(string $name)
+                        {
+                            $this->$name = 5;
+                        }
+                    }',
+                'error_message' => 'PropertyNotSetInConstructor',
             ],
             'nullableTypedPropertyNoConstructor' => [
                 'code' => '<?php

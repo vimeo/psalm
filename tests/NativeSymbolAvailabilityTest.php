@@ -707,6 +707,21 @@ final class NativeSymbolAvailabilityTest extends TestCase
             'php_version' => '8.6',
         ];
 
+        yield 'php85GlobalConstantsAreDefined' => [
+            'code' => '<?php
+                $follow = CURLFOLLOW_ALL;
+                $buildDate = PHP_BUILD_DATE;
+                $ethernetProtocol = ETH_P_ALL;
+            ',
+            'assertions' => [
+                '$follow===' => '1',
+                '$buildDate===' => 'string',
+                '$ethernetProtocol===' => 'int',
+            ],
+            'ignored_issues' => [],
+            'php_version' => '8.5',
+        ];
+
         yield 'stubConstantWithAVarDocblockHasTheDocblockType' => [
             'code' => '<?php
                 $icuVersion = INTL_ICU_VERSION;

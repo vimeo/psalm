@@ -705,6 +705,14 @@ final class LoopAnalyzer
             $loop_parent_context->detachReferencesReboundIn($continue_context, $statements_analyzer, $loop_nodes);
         }
 
+        foreach ($loop_scope->references_in_scope_at_breaks as $references_in_scope_at_break) {
+            $loop_parent_context->detachReferencesReboundWhere(
+                $references_in_scope_at_break,
+                $statements_analyzer,
+                $loop_nodes,
+            );
+        }
+
         $loop_parent_context->mergeConstraintsOfReferencesReboundIn(
             $continue_context,
             $loop_nodes,

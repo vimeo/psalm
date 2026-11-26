@@ -27,6 +27,7 @@ use Psalm\Storage\FunctionStorage;
 use Psalm\Type;
 use Psalm\Type\Union;
 use ReflectionClass;
+use RuntimeException;
 use Throwable;
 use UnexpectedValueException;
 
@@ -42,6 +43,7 @@ use function enum_exists;
 use function error_reporting;
 use function explode;
 use function file_exists;
+use function hash;
 use function interface_exists;
 use function ksort;
 use function ltrim;
@@ -67,7 +69,9 @@ use const SORT_STRING;
  *     array<string, string>,
  *     array<string, bool>,
  *     array<string, bool>,
- *     array<string, bool>
+ *     array<string, bool>,
+ *     array<string, string>,
+ *     array<string, true>
  * }
  *
  * @psalm-type  PoolData = array{
@@ -140,6 +144,20 @@ final class Scanner
      * @var array<string, bool>
      */
     private array $scanned_files = [];
+
+    /**
+     * The xxh128 hash of the contents of each deep-scanned file, as scanned
+     *
+     * @var array<string, string>
+     */
+    private array $scanned_file_hashes = [];
+
+    /**
+     * The files that were queued for the scan and gone when their turn came
+     *
+     * @var array<string, true>
+     */
+    private array $vanished_files = [];
 
     /**
      * The deep-scanned files whose classes queueFilesOfInheritedMethods() went through => true
@@ -261,7 +279,7 @@ final class Scanner
      */
     public function removeFile(string $file_path): void
     {
-        unset($this->scanned_files[$file_path]);
+        unset($this->scanned_files[$file_path], $this->scanned_file_hashes[$file_path]);
     }
 
     /**
@@ -708,8 +726,11 @@ final class Scanner
             throw new UnexpectedValueException('Should not be rescanning ' . $file_path);
         }
 
-        if (!$this->file_provider->fileExists($file_path) && $this->config->mustBeIgnored($file_path)) {
-            // this should not happen, but might if the file was temporary
+        if (!$this->file_provider->fileExists($file_path)) {
+            // deleted since it was queued, as shouldScan() skips a file that doesn't exist; if it is back by the
+            // analysis, Analyzer::analyzeFiles() reports it
+            $this->vanished_files[$file_path] = true;
+
             return;
         }
 
@@ -726,6 +747,10 @@ final class Scanner
         }
 
         $this->scanned_files[$file_path] = $will_analyze;
+
+        if ($will_analyze) {
+            $this->scanned_file_hashes[$file_path] = hash('xxh128', $file_contents);
+        }
 
         $file_storage = $this->file_storage_provider->get($file_path);
 
@@ -870,6 +895,42 @@ final class Scanner
     }
 
     /**
+     * The files that were queued for the scan and gone when their turn came
+     *
+     * @return array<string, true>
+     * @psalm-mutation-free
+     */
+    public function getVanishedFiles(): array
+    {
+        return $this->vanished_files;
+    }
+
+    /**
+     * Whether a file differs from the one that was scanned: it was not scanned, or its contents are not the ones
+     * that were, or can't be read now. Never throws, as it runs while a crash is being reported.
+     */
+    public function changedSinceScan(string $file_path): bool
+    {
+        if (!isset($this->scanned_files[$file_path])) {
+            return true;
+        }
+
+        $hash = $this->scanned_file_hashes[$file_path] ?? null;
+
+        if ($hash === null) {
+            return false;
+        }
+
+        try {
+            return $hash !== $this->file_provider->getContentsHash($file_path);
+        } catch (RuntimeException) {
+            // a file that is gone, or a directory, makes getContentsHash() throw, and a warning raised by an
+            // unreadable one is turned into an exception by ErrorHandler
+            return true;
+        }
+    }
+
+    /**
      * Checks whether a class exists, and if it does then records what file it's in
      * for later checking
      */
@@ -983,6 +1044,8 @@ final class Scanner
             $this->deep_scanned_classlike_files,
             $this->scanned_files,
             $this->reflected_classlikes_lc,
+            $this->scanned_file_hashes,
+            $this->vanished_files,
         ];
     }
 
@@ -1002,6 +1065,8 @@ final class Scanner
             $deep_scanned_classlike_files,
             $scanned_files,
             $reflected_classlikes_lc,
+            $scanned_file_hashes,
+            $vanished_files,
         ] = $thread_data;
 
         $this->files_to_scan = array_merge($files_to_scan, $this->files_to_scan);
@@ -1034,6 +1099,8 @@ final class Scanner
             $this->scanned_files[$file_path] = $deep || ($this->scanned_files[$file_path] ?? false);
         }
         $this->reflected_classlikes_lc = array_merge($reflected_classlikes_lc, $this->reflected_classlikes_lc);
+        $this->scanned_file_hashes = array_merge($scanned_file_hashes, $this->scanned_file_hashes);
+        $this->vanished_files = array_merge($vanished_files, $this->vanished_files);
     }
 
     /**

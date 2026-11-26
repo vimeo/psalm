@@ -1993,6 +1993,47 @@ final class ConstantTest extends TestCase
                     A::foo(2);
                     A::foo(3);',
             ],
+            'intMaskWithSuppressedUndefinedGlobalConstantInPropertyType' => [
+                'code' => '<?php
+                    namespace App;
+
+                    final class Holder {
+                        /**
+                         * @psalm-suppress UndefinedConstant
+                         * @psalm-suppress InvalidPropertyAssignmentValue
+                         * @var int-mask<NO_SUCH_CONSTANT>
+                         */
+                        public int $flags = 0;
+                    }',
+            ],
+            'intMaskWithSuppressedUndefinedGlobalConstantInMethodParamType' => [
+                'code' => '<?php
+                    namespace App;
+
+                    final class Encoder {
+                        /**
+                         * @psalm-suppress UndefinedConstant
+                         * @param int-mask<NO_SUCH_CONSTANT> $flags
+                         */
+                        public function encode(int $flags): void {}
+                    }',
+            ],
+            'suppressedUndefinedClassConstantInPropertyType' => [
+                'code' => '<?php
+                    namespace App;
+
+                    final class Holder {
+                        /**
+                         * @psalm-suppress UndefinedConstant
+                         * @psalm-suppress InvalidPropertyAssignmentValue
+                         * @var self::NO_SUCH
+                         */
+                        public mixed $flag = 0;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
             'globalConstantWildcard' => [
                 'code' => '<?php
                     namespace Ns;

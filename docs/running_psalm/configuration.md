@@ -810,7 +810,7 @@ is not being used to suppress an issue. Defaults to `true`.
 ## Project settings
 
 #### &lt;projectFiles&gt;
-Contains a list of all the directories that Psalm should inspect. You can also specify a set of files and folders to ignore with the `<ignoreFiles>` directive.  By default, ignored files/folders are required to exist.  An `allowMissingFiles` attribute can be added for ignored files/folders than may or may not exist.
+Contains a list of all the directories that Psalm should inspect. You can also specify a set of files and folders to ignore with the `<ignoreFiles>` directive. Psalm fails to load the config when a listed file or directory does not exist. Add `allowMissingFiles="true"` to `<projectFiles>` or `<ignoreFiles>` to skip the paths that do not exist instead. The attribute only applies to the paths listed directly in the element that has it.
 ```xml
 <projectFiles>
   <directory name="src" />
@@ -819,6 +819,18 @@ Contains a list of all the directories that Psalm should inspect. You can also s
   </ignoreFiles>
   <ignoreFiles allowMissingFiles="true">
     <directory name="path-that-may-not-exist" />
+  </ignoreFiles>
+</projectFiles>
+```
+
+The `name` of a `<directory>` or `<file>` can contain `*`, which matches any part of a single file or directory name, and `**` as a whole path segment, which matches any number of nested directories. A pattern that matches nothing is a missing path. This works in `<projectFiles>`, `<extraFiles>`, `<ignoreFiles>` (also the one of `<taintAnalysis>`) and the `<errorLevel>` of an [issue handler](dealing_with_code_issues.md#config-suppression), not in other paths of the config such as `<stubs>` or `autoloader`.
+```xml
+<projectFiles>
+  <directory name="src" />
+  <ignoreFiles allowMissingFiles="true">
+    <directory name="src/*/Generated" />  <!-- src/Foo/Generated, src/Bar/Generated -->
+    <directory name="src/**/cache" />     <!-- src/cache, src/Foo/cache, src/Foo/Bar/cache -->
+    <file name="src/**/*.tpl.php" />      <!-- src/a.tpl.php, src/Foo/b.tpl.php -->
   </ignoreFiles>
 </projectFiles>
 ```
@@ -866,7 +878,7 @@ Optional. A list of issues that can't be suppressed: Psalm reports them as error
 </unsuppressibleIssues>
 ```
 
-An entry names an issue, or a class or interface several issues extend, which makes all of them unsuppressible: `TaintedInput` for every taint issue, `MixedIssue` for every `Mixed*` issue, `ClassIssue`, `MethodIssue`, `PropertyIssue`, `ArgumentIssue`, `FunctionIssue`, `ClassConstantIssue`, `VariableIssue`, `PluginIssue` for every issue of a plugin, or `CodeIssue` for every issue. An issue of a plugin is named by the fully qualified name of its class.
+An entry names an issue, or a class or interface several issues extend, which makes all of them unsuppressible: `SecurityIssue` for every security issue (the taint issues, `WeakHash`, `WeakRandom`, `WeakCipher`, `InsecureCookie` and `XmlExternalEntity`), `TaintedInput` for every taint issue, `MixedIssue` for every `Mixed*` issue, `ClassIssue`, `MethodIssue`, `PropertyIssue`, `ArgumentIssue`, `FunctionIssue`, `ClassConstantIssue`, `VariableIssue`, `PluginIssue` for every issue of a plugin, or `CodeIssue` for every issue. An issue of a plugin is named by the fully qualified name of its class.
 
 Taint issues can only be suppressed in docblocks all at once, with `@psalm-suppress TaintedInput`, which stops tracking taints in the function or the statement it annotates: if any taint issue is unsuppressible, it doesn't, and every taint issue found there is reported.
 
