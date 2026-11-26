@@ -778,6 +778,66 @@ final class IssetTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => ['EmptyArrayAccess'],
             ],
+            'issetOnAnEmptyArrayLeavesItEmpty' => [
+                'code' => '<?php
+                    $a = [];
+                    assert(isset($a["min"]));',
+                'assertions' => [
+                    '$a===' => 'array<never, never>',
+                ],
+            ],
+            'issetOfSeveralOffsetsOfAnEmptyArrayLeavesItEmpty' => [
+                'code' => '<?php
+                    $a = [];
+                    assert(isset($a["min"], $a["max"]));',
+                'assertions' => [
+                    '$a===' => 'array<never, never>',
+                ],
+            ],
+            'issetOfAnIntOffsetOfAnEmptyArrayLeavesItEmpty' => [
+                'code' => '<?php
+                    $a = [];
+                    assert(isset($a[3]));',
+                'assertions' => [
+                    '$a===' => 'array<never, never>',
+                ],
+            ],
+            'issetOfAnUnknownOffsetOfAnEmptyArrayLeavesItEmpty' => [
+                'code' => '<?php
+                    function f(string $k): void {
+                        $a = [];
+                        assert(isset($a[$k]));
+                        /** @psalm-check-type-exact $a = array<never, never> */;
+                    }',
+            ],
+            'issetOfANestedOffsetOfAnEmptyArrayLeavesItEmpty' => [
+                'code' => '<?php
+                    $a = [];
+                    assert(isset($a["a"]["b"]));',
+                'assertions' => [
+                    '$a===' => 'array<never, never>',
+                ],
+            ],
+            'coalesceOnAnEmptyArrayGivesTheDefault' => [
+                'code' => '<?php
+                    $a = [];
+                    $b = $a["x"] ?? 5;',
+                'assertions' => [
+                    '$b===' => '5',
+                ],
+                'ignored_issues' => ['EmptyArrayAccess'],
+            ],
+            'coalesceAssignmentFillsAnEmptyArrayInALoop' => [
+                'code' => '<?php
+                    /** @param list<string> $keys */
+                    function f(array $keys): void {
+                        $a = [];
+                        foreach ($keys as $k) {
+                            $a[$k] ??= 1;
+                        }
+                        /** @psalm-check-type-exact $a = array<string, 1> */;
+                    }',
+            ],
             'issetWithMultipleAssignments' => [
                 'code' => '<?php
                     if (rand(0, 4) > 2) {
