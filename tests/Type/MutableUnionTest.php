@@ -17,6 +17,7 @@ use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TLowercaseString;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNonEmptyString;
+use Psalm\Type\Atomic\TNonFalsyString;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Atomic\TUnknownClassString;
@@ -118,6 +119,15 @@ final class MutableUnionTest extends TestCase
 
         $union->removeType('string');
         self::assertSame(['int'], array_keys($union->getAtomicTypes()));
+    }
+
+    public function testAddNonFalsyStringKeepsTypedClassStrings(): void
+    {
+        $union = new MutableUnion([new TClassString('Foo', new TNamedObject('Foo'))]);
+
+        $union->addType(new TNonFalsyString());
+        self::assertSame(['class-string<Foo>', 'string'], array_keys($union->getAtomicTypes()));
+        self::assertTrue($union->hasLiteralClassString());
     }
 
     public function testAddLowercaseStringKeepsUppercaseLiterals(): void

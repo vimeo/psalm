@@ -266,7 +266,7 @@ final class MutableUnion implements TypeNode
                     unset($this->literal_string_types[$key], $this->types[$key]);
                 }
             }
-            if (($refinements & ~(StringRefinement::NON_EMPTY | StringRefinement::NON_FALSY)) === 0) {
+            if ($refinements === 0) {
                 // template class-strings stay, they are needed to infer their template
                 foreach ($this->typed_class_strings as $key => $typed_class_string) {
                     if (!$typed_class_string instanceof TTemplateParamClass) {
