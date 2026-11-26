@@ -426,6 +426,10 @@ final class SwitchCaseAnalyzer
 
         $statements_analyzer->node_data = $old_node_data;
 
+        foreach ($case_scope->references_in_scope_at_breaks as $references_in_scope_at_break) {
+            $context->detachReferencesReboundWhere($references_in_scope_at_break, $statements_analyzer, $case->stmts);
+        }
+
         // a case whose end is unreachable (return/throw, possibly in a following case it falls through to)
         // but that leaves the switch through `break` statements contributes the variables of its `break`s
         $ends_unless_breaking = $case_context->has_returned
@@ -447,6 +451,14 @@ final class SwitchCaseAnalyzer
         }
 
         if ($case_exit_type !== 'return_throw' && !$ends_unless_breaking) {
+            if ($case_exit_type !== 'continue') {
+                $context->detachReferencesReboundWhere(
+                    $case_context->references_in_scope,
+                    $statements_analyzer,
+                    $case->stmts,
+                );
+            }
+
             if (self::handleNonReturningCase(
                 $statements_analyzer,
                 $switch_var_id,
