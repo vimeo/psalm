@@ -16,6 +16,18 @@ If you want to run on specific files, use
 
 Run with `--help` to see a list of options that Psalm supports.
 
+## Running under an AI coding agent
+
+When Psalm detects that an AI coding agent runs it (for example `CLAUDECODE`, `CURSOR_AGENT`, `CODEX_THREAD_ID` or `AI_AGENT` is set), it prints no progress and no colours, because an agent only reads the raw bytes.
+
+An agent marker wins over `CI`: some agents set `CI=true` for the commands they run, and Psalm still stays quiet. Add `--long-progress` to get the phase lines of CI logs (`Scanning files...`) back:
+
+```bash
+CLAUDECODE=1 CI=true ./vendor/bin/psalm --long-progress
+```
+
+`FORCE_COLOR` turns the colours back on. Without an agent marker, `CI` alone keeps the phase lines, and `--no-progress` silences them.
+
 ## Statistics
 
 At the end of a run Psalm prints how long it took, how much memory it used and how much of the code it could infer types for, plus the output of `--stats` and [`--debug-performance`](performance.md) if you give them. With any output format other than `console`, `phpstorm` and `github` (`json`, `checkstyle`, `sarif`, …) this goes to stderr, so that stdout stays the report; `--no-progress` leaves stderr empty.

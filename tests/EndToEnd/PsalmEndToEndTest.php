@@ -834,6 +834,58 @@ final class PsalmEndToEndTest extends PsalmEndToEndTestCase
     }
 
     /**
+     * @return iterable<string, array{array<string, string>, list<string>, bool}>
+     * @psalm-pure
+     */
+    public static function provideProgressUnderAnAgentAndCi(): iterable
+    {
+        yield 'CI only' => [['CI' => 'true'], [], true];
+        yield 'agent only' => [['CLAUDECODE' => '1'], [], false];
+        yield 'agent and CI: the agent wins' => [['CLAUDECODE' => '1', 'CI' => 'true'], [], false];
+        yield 'agent and CI with --long-progress' => [
+            ['CLAUDECODE' => '1', 'CI' => 'true'],
+            ['--long-progress'],
+            true,
+        ];
+        yield 'CI only with --no-progress' => [['CI' => 'true'], ['--no-progress'], false];
+    }
+
+    /**
+     * @param array<string, string> $env
+     * @param list<string> $args
+     */
+    #[DataProvider('provideProgressUnderAnAgentAndCi')]
+    public function testAnAgentMarkerBeatsCiForTheProgress(array $env, array $args, bool $has_breadcrumbs): void
+    {
+        file_put_contents(
+            self::$tmpDir . '/psalm.xml',
+            '<?xml version="1.0"?>
+            <psalm errorLevel="8" findUnusedCode="false">
+                <projectFiles><directory name="src"/></projectFiles>
+            </psalm>',
+        );
+
+        $unset_ci = [];
+        foreach (['TRAVIS', 'CIRCLECI', 'APPVEYOR', 'JENKINS_URL', 'SCRUTINIZER', 'GITLAB_CI', 'CI', 'GITHUB_WORKFLOW', 'DRONE'] as $name) {
+            $unset_ci[$name] = false;
+        }
+
+        $process = self::newProcess(
+            [PHP_BINARY, $this->psalm, '--no-cache', '--output-format=compact', ...$args],
+            self::$tmpDir,
+            [...self::agentEnvVarsToUnset(), ...$unset_ci, ...$env],
+        );
+        $process->run();
+
+        $this->assertSame(2, $process->getExitCode(), $process->getOutput() . $process->getErrorOutput());
+        if ($has_breadcrumbs) {
+            $this->assertStringContainsString('Scanning files', $process->getErrorOutput());
+        } else {
+            $this->assertStringNotContainsString('Scanning files', $process->getErrorOutput());
+        }
+    }
+
+    /**
      * @param list<string> $args
      * @param array<string, string|false> $env
      */
