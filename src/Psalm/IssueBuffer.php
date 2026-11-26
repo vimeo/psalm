@@ -405,7 +405,10 @@ final class IssueBuffer
 
         if ($reporting_level === Config::REPORT_INFO) {
             if (($is_tainted || !self::alreadyEmitted($emitted_key))
-                && self::addIssueData($e->getFilePath(), $e->toIssueData(IssueData::SEVERITY_INFO, $is_fixable))
+                && self::addIssueData(
+                    $e->getFilePath(),
+                    self::toIssueData($e, IssueData::SEVERITY_INFO, $is_fixable),
+                )
             ) {
                 if ($is_fixable) {
                     self::addFixableIssue($issue_type);
@@ -433,7 +436,10 @@ final class IssueBuffer
         }
 
         if (($is_tainted || !self::alreadyEmitted($emitted_key))
-            && self::addIssueData($e->getFilePath(), $e->toIssueData(IssueData::SEVERITY_ERROR, $is_fixable))
+            && self::addIssueData(
+                $e->getFilePath(),
+                self::toIssueData($e, IssueData::SEVERITY_ERROR, $is_fixable),
+            )
         ) {
             ++self::$error_count;
 
@@ -443,6 +449,17 @@ final class IssueBuffer
         }
 
         return true;
+    }
+
+    /**
+     * @param IssueData::SEVERITY_* $severity
+     */
+    private static function toIssueData(CodeIssue $e, string $severity, bool $is_fixable): IssueData
+    {
+        $issue_data = $e->toIssueData($severity);
+        $issue_data->is_fixable = $is_fixable;
+
+        return $issue_data;
     }
 
     /**

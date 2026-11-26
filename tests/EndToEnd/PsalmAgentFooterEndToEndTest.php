@@ -155,7 +155,7 @@ final class PsalmAgentFooterEndToEndTest extends PsalmEndToEndTestCase
                 '--dry-run',
             ],
             null,
-            self::agentEnvVarsToUnset(),
+            [...self::agentEnvVarsToUnset(), 'NO_COLOR' => '1'],
         );
         $alter->run();
         $this->assertStringContainsString('int $age', $alter->getOutput());
@@ -242,6 +242,9 @@ final class PsalmAgentFooterEndToEndTest extends PsalmEndToEndTestCase
             null,
             [
                 ...self::agentEnvVarsToUnset(),
+                // CI sets FORCE_COLOR, which would colour the output of every run
+                'FORCE_COLOR' => false,
+                'NO_COLOR' => '1',
                 'CI' => false,
                 'GITHUB_ACTIONS' => false,
                 'GITHUB_WORKFLOW' => false,
