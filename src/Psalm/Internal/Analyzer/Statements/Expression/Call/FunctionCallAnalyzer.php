@@ -600,6 +600,15 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         }
 
         // a called closure may write what it captured by reference
+        if ($function_name instanceof PhpParser\Node\Expr) {
+            ClosureAnalyzer::addTypesWrittenByCall(
+                $statements_analyzer,
+                $context,
+                $function_name,
+                $function_call_info->closure_written_var_ids,
+            );
+        }
+
         foreach ($function_call_info->closure_written_var_ids as $var_id => $_) {
             $context->removeVarFromConflictingClauses(
                 $var_id,
