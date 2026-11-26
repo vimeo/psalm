@@ -58,6 +58,15 @@ final class UnusedVariableTest extends TestCase
     public static function providerValidCodeParse(): array
     {
         return [
+            'methodNameOfAStaticCallOnAStringIsUsed' => [
+                'code' => '<?php
+                    function f(string $class): void {
+                        $name = "run";
+                        $class::$name();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['InvalidStringClass'],
+            ],
             'variableIncrementedInTheConditionOfAnIfInALoopIsUsed' => [
                 'code' => '<?php
                     /**
