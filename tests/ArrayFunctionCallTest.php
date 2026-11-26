@@ -4209,6 +4209,49 @@ final class ArrayFunctionCallTest extends TestCase
                     '$a===' => 'list<int>',
                 ],
             ],
+            'arrayMultisortArrayItemKeepsItsType' => [
+                'code' => '<?php
+                    /** @var array<string, list<int>> $m */
+                    /** @var string $k */
+                    array_multisort($m[$k]);',
+                'assertions' => [
+                    '$m===' => 'array<string, list<int>>',
+                ],
+            ],
+            'arrayMultisortNullableArrayKeepsItsType' => [
+                'code' => '<?php
+                    /** @var list<int>|null $a */
+                    array_multisort($a);',
+                'assertions' => [
+                    '$a===' => 'list<int>|null',
+                ],
+                'ignored_issues' => ['PossiblyNullArgument'],
+            ],
+            'arrayMultisortPropertiesAndConstantsKeepTheirType' => [
+                'code' => '<?php
+                    final class Listeners {
+                        public const KEYS = [2, 1];
+
+                        /** @var array<string, array{0: bool, 1: int[], 2: callable[]}> */
+                        private array $listeners = [];
+
+                        /** @var array<array-key, int> */
+                        public array $values = [];
+
+                        public function sort(string $event_name): void {
+                            array_multisort(
+                                $this->listeners[$event_name][1],
+                                SORT_NUMERIC,
+                                $this->listeners[$event_name][2],
+                            );
+                        }
+
+                        public function sortValues(int $order): void {
+                            array_multisort($this->values, SORT_ASC);
+                            array_multisort(self::KEYS, $order, $this->values);
+                        }
+                    }',
+            ],
             'arrayMapGenericObject' => [
                 'code' => '<?php
                     /**
@@ -6024,6 +6067,17 @@ final class ArrayFunctionCallTest extends TestCase
                     /** @var string $s */
                     $r = array_filter($s);',
                 'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:39 - Argument 1 of array_filter expects array<array-key, mixed>, but string provided',
+            ],
+            'arrayMultisortNullableArray' => [
+                'code' => '<?php
+                    /** @var list<int>|null $a */
+                    array_multisort($a);',
+                'error_message' => 'PossiblyNullArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:37 - Argument 1 of array_multisort',
+            ],
+            'arrayMultisortUndefinedVariable' => [
+                'code' => '<?php
+                    array_multisort($undefined);',
+                'error_message' => 'UndefinedGlobalVariable',
             ],
             'arrayMultisortWithoutArguments' => [
                 'code' => '<?php

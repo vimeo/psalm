@@ -342,8 +342,9 @@ final class ArrayMultisortParamsProvider implements FunctionParamsProviderInterf
     }
 
     /**
-     * PHP's own signature, for the calls whose arguments cannot be told apart. PHP passes an argument by reference
-     * only when it is a variable, so only a variable first argument is taken by reference.
+     * PHP's own signature, for the calls whose arguments cannot be told apart. Sorting keeps the type of the arrays,
+     * so the first argument is only taken by reference when it is a variable known to hold an array: its type is then
+     * the type written back.
      *
      * @return list<FunctionLikeParameter>
      */
@@ -358,12 +359,13 @@ final class ArrayMultisortParamsProvider implements FunctionParamsProviderInterf
             $statements_source,
         );
         $first_var_type = $first_var_id !== null ? $event->getContext()->vars_in_scope[$first_var_id] ?? null : null;
+        $first_array_type = $first_var_type !== null && $first_var_type->isArray() ? $first_var_type : null;
 
         return [
             new FunctionLikeParameter(
                 'array',
-                $first_var_id !== null,
-                $first_var_type !== null && $first_var_type->isArray() ? $first_var_type : Type::getArray(),
+                $first_array_type !== null,
+                $first_array_type ?? Type::getArray(),
                 Type::getArray(),
                 null,
                 null,

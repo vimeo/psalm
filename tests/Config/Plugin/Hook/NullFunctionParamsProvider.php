@@ -21,7 +21,7 @@ final class NullFunctionParamsProvider implements FunctionParamsProviderInterfac
     #[Override]
     public static function getFunctionIds(): array
     {
-        return ['strlen', 'nullparamsfunction'];
+        return ['strlen', 'strtr', 'nullparamsfunction'];
     }
 
     /**

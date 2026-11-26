@@ -1623,6 +1623,15 @@ final class PluginTest extends DeferredAnalyzerTestCase
         );
     }
 
+    public function testFunctionParamsProviderReturningNullKeepsCallMapOverloadOfTheArguments(): void
+    {
+        $this->analyzeWithNullFunctionParamsPlugin(
+            '<?php
+                echo strtr("abc", ["a" => "x"]);
+                echo strtr("abc", "a", "x");',
+        );
+    }
+
     private function analyzeWithNullFunctionParamsPlugin(string $code): void
     {
         require_once __DIR__ . '/Plugin/NullFunctionParamsPlugin.php';
