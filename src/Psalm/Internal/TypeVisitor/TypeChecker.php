@@ -608,7 +608,7 @@ final class TypeChecker extends TypeVisitor
                     'Constant ' . $fq_classlike_name . '::' . $const_name . ' is not defined',
                     $this->code_location,
                 ),
-                $this->source->getSuppressedIssues(),
+                $this->source->getSuppressedIssues() + $this->suppressed_issues,
             );
         }
     }
@@ -705,7 +705,7 @@ final class TypeChecker extends TypeVisitor
                 'No constant matches ' . ($atomic->fallback_const_name ?? $atomic->const_name),
                 $this->code_location,
             ),
-            $this->source->getSuppressedIssues(),
+            $this->source->getSuppressedIssues() + $this->suppressed_issues,
         );
     }
 

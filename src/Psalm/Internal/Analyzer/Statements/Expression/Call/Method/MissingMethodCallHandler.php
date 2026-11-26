@@ -25,6 +25,7 @@ use Psalm\Node\VirtualArg;
 use Psalm\Node\VirtualArrayItem;
 use Psalm\Storage\Capabilities;
 use Psalm\Storage\ClassLikeStorage;
+use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic;
@@ -45,6 +46,8 @@ final class MissingMethodCallHandler
     /**
      * @param array{type: TNamedObject, storage: ClassLikeStorage, declared: TNamedObject|TTemplateParam}|null $mixin
      *     the mixin, bound for the receiver, whose `@method` the call goes to
+     * @param bool $return_type_provider_asked whether the return type provider of the class was asked already, for
+     *     $provided_return_type
      */
     public static function handleMagicMethod(
         StatementsAnalyzer $statements_analyzer,
@@ -59,6 +62,8 @@ final class MissingMethodCallHandler
         ?Atomic $lhs_type_part,
         ?string $lhs_var_id,
         ?array $mixin,
+        ?Union $provided_return_type = null,
+        bool $return_type_provider_asked = false,
     ): ?AtomicCallContext {
         $fq_class_name = $method_id->fq_class_name;
         $method_name_lc = $method_id->method_name;
@@ -144,15 +149,17 @@ final class MissingMethodCallHandler
             );
         }
 
-        if ($codebase->methods->return_type_provider->has($fq_class_name)) {
-            $return_type_candidate = $codebase->methods->return_type_provider->getReturnType(
-                $statements_analyzer,
-                $method_id->fq_class_name,
-                $method_id->method_name,
-                $stmt,
-                $context,
-                new CodeLocation($statements_analyzer->getSource(), $stmt->name),
-            );
+        if ($return_type_provider_asked || $codebase->methods->return_type_provider->has($fq_class_name)) {
+            $return_type_candidate = $return_type_provider_asked
+                ? $provided_return_type
+                : $codebase->methods->return_type_provider->getReturnType(
+                    $statements_analyzer,
+                    $method_id->fq_class_name,
+                    $method_id->method_name,
+                    $stmt,
+                    $context,
+                    new CodeLocation($statements_analyzer->getSource(), $stmt->name),
+                );
 
             if ($return_type_candidate) {
                 if ($all_intersection_return_type) {
@@ -172,13 +179,23 @@ final class MissingMethodCallHandler
                 $result->has_valid_method_call_type = true;
                 $result->existent_method_ids[$method_id->__toString()] = true;
 
-                CallAnalyzer::checkMethodArgs(
-                    $method_id,
-                    $stmt->getArgs(),
-                    new TemplateResult([], []),
-                    $context,
-                    new CodeLocation($statements_analyzer->getSource(), $stmt),
+                self::checkMagicCallArgs($statements_analyzer, $codebase, $stmt, $method_id, $context);
+
+                self::analyzeMagicCallPurity(
                     $statements_analyzer,
+                    $codebase,
+                    $stmt,
+                    $lhs_var_id,
+                    $class_storage->name . '::' . $method_id->method_name,
+                    $method_id,
+                    [],
+                    $class_storage,
+                    $context,
+                    $config,
+                    $result,
+                    new TemplateResult([], []),
+                    [],
+                    [],
                 );
 
                 return null;
@@ -386,6 +403,48 @@ final class MissingMethodCallHandler
             return;
         }
 
+        self::analyzeMagicCallPurity(
+            $statements_analyzer,
+            $codebase,
+            $stmt,
+            $lhs_var_id,
+            $cased_method_id,
+            $method_id,
+            $pseudo_method_storage->params,
+            $class_storage,
+            $context,
+            $config,
+            $result,
+            $template_result,
+            $found_generic_params,
+            $pseudo_method_storage->purity_from_templates,
+        );
+    }
+
+    /**
+     * A call implemented by `__call` needs what `__call` does, with the parameters and purity templates of what is
+     * called
+     *
+     * @param list<FunctionLikeParameter> $params
+     * @param array<string, array<string, Union>> $found_generic_params
+     * @param list<string> $purity_from_templates
+     */
+    private static function analyzeMagicCallPurity(
+        StatementsAnalyzer $statements_analyzer,
+        Codebase $codebase,
+        PhpParser\Node\Expr\MethodCall $stmt,
+        ?string $lhs_var_id,
+        string $cased_method_id,
+        MethodIdentifier $method_id,
+        array $params,
+        ClassLikeStorage $class_storage,
+        Context $context,
+        Config $config,
+        AtomicMethodCallAnalysisResult $result,
+        TemplateResult $template_result,
+        array $found_generic_params,
+        array $purity_from_templates,
+    ): void {
         $magic_method_id = $codebase->methods->getDeclaringMethodId(
             new MethodIdentifier($class_storage->name, '__call'),
         );
@@ -395,8 +454,8 @@ final class MissingMethodCallHandler
         }
 
         $call_storage = clone $codebase->methods->getStorage($magic_method_id);
-        $call_storage->setParams($pseudo_method_storage->params);
-        $call_storage->purity_from_templates = $pseudo_method_storage->purity_from_templates;
+        $call_storage->setParams($params);
+        $call_storage->purity_from_templates = $purity_from_templates;
 
         MethodCallPurityAnalyzer::analyze(
             $statements_analyzer,
@@ -412,6 +471,68 @@ final class MissingMethodCallHandler
             $result,
             $template_result,
             $found_generic_params,
+        );
+    }
+
+    /**
+     * The arguments of a call through `__call` or `__callStatic` that a return type provider types. A method the class
+     * declares and the caller can't access isn't the one called: only a params provider gives its parameters.
+     */
+    public static function checkMagicCallArgs(
+        StatementsAnalyzer $statements_analyzer,
+        Codebase $codebase,
+        PhpParser\Node\Expr\MethodCall|PhpParser\Node\Expr\StaticCall $stmt,
+        MethodIdentifier $method_id,
+        Context $context,
+    ): void {
+        $code_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
+
+        if ($codebase->methods->getDeclaringMethodId($method_id) === null) {
+            CallAnalyzer::checkMethodArgs(
+                $method_id,
+                $stmt->getArgs(),
+                new TemplateResult([], []),
+                $context,
+                $code_location,
+                $statements_analyzer,
+            );
+
+            return;
+        }
+
+        $params = $codebase->methods->params_provider->has($method_id->fq_class_name)
+            ? $codebase->methods->params_provider->getMethodParams(
+                $method_id->fq_class_name,
+                $method_id->method_name,
+                $stmt->getArgs(),
+                $statements_analyzer,
+                $context,
+                $code_location,
+            )
+            : null;
+
+        if (ArgumentsAnalyzer::analyze(
+            $statements_analyzer,
+            $stmt->getArgs(),
+            $params,
+            $params !== null ? (string) $method_id : null,
+            $context,
+        ) === false
+            || $params === null
+        ) {
+            return;
+        }
+
+        ArgumentsAnalyzer::checkArgumentsMatch(
+            $statements_analyzer,
+            $stmt->getArgs(),
+            $method_id,
+            $params,
+            null,
+            null,
+            new TemplateResult([], []),
+            $code_location,
+            $context,
         );
     }
 

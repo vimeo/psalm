@@ -22,6 +22,7 @@ use function sort;
 use function str_contains;
 
 use const DIRECTORY_SEPARATOR;
+use const PHP_VERSION_ID;
 
 final class ArrayAccessTest extends TestCase
 {
@@ -1671,6 +1672,52 @@ final class ArrayAccessTest extends TestCase
         );
     }
 
+    public function testOffsetsOfDomNamespaceCollectionsAreReadByPositionOrName(): void
+    {
+        if (PHP_VERSION_ID < 8_04_00) {
+            $this->markTestSkipped('The Dom namespace needs PHP 8.4');
+        }
+
+        $this->project_analyzer->setPhpVersion('8.4', 'tests');
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                function domAttributeAt(Dom\\NamedNodeMap $attributes): ?Dom\\Attr {
+                    return $attributes[0];
+                }
+
+                function domAttributeNamed(Dom\\NamedNodeMap $attributes): ?Dom\\Attr {
+                    return $attributes["href"];
+                }
+
+                function childAt(Dom\\NodeList $children): ?Dom\\Node {
+                    return $children[0];
+                }
+
+                function elementAt(Dom\\HTMLCollection $elements): ?Dom\\Element {
+                    return $elements[0];
+                }
+
+                function elementNamed(Dom\\HTMLCollection $elements): ?Dom\\Element {
+                    return $elements["main"];
+                }
+
+                function entityAt(Dom\\DocumentType $doctype): ?Dom\\Node {
+                    return $doctype->entities[0];
+                }
+
+                function entityNamed(Dom\\DocumentType $doctype): ?Dom\\Node {
+                    return $doctype->entities["e"];
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+        $this->assertTrue(true);
+    }
+
     /**
      * @psalm-pure
      */
@@ -1678,6 +1725,15 @@ final class ArrayAccessTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'offsetOfADomNamedNodeMapOfEitherKindIsRead' => [
+                'code' => '<?php
+                    function either(DOMNamedNodeMap $attributes, int|string $key): ?DOMNode {
+                        return $attributes[$key];
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'issetOfAnOffsetOfATemplateBoundedByLiteralsThatPartlyMatchTheKeys' => [
                 'code' => '<?php
                     /**
@@ -1700,6 +1756,16 @@ final class ArrayAccessTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.0',
+            ],
+            'offsetsOfADomNamedNodeMapAreReadByPositionOrName' => [
+                'code' => '<?php
+                    function attributeAt(DOMNamedNodeMap $attributes): ?DOMNode {
+                        return $attributes[0];
+                    }
+
+                    function attributeNamed(DOMNamedNodeMap $attributes): ?DOMNode {
+                        return $attributes["href"];
+                    }',
             ],
             'issetOfASealedArrayWithATemplateOffsetBoundedByAUnion' => [
                 'code' => '<?php
@@ -2565,6 +2631,21 @@ final class ArrayAccessTest extends TestCase
                     }',
                 'assertions' => [],
                 'ignored_issues' => ['MixedAssignment'],
+            ],
+            'offsetOfAnArrayUnionCombinedWithAShapeDeclaringItIsNotOptional' => [
+                'code' => '<?php
+                    function f(array $a, bool $c): int {
+                        $x = $c ? $a + ["alpha" => 0] : ["red" => 1, "alpha" => 2];
+                        return (int) $x["red"];
+                    }',
+            ],
+            'offsetOfAnIntArrayUnionCombinedWithAShapeDeclaringItIsNotOptional' => [
+                'code' => '<?php
+                    /** @param array<array-key, int> $a */
+                    function f(array $a, bool $c): int {
+                        $x = $c ? $a + ["alpha" => 0] : ["red" => 1, "alpha" => 2];
+                        return $x["red"];
+                    }',
             ],
             'offsetOfUnsealedArrayNarrowedInIfWithoutElseIsNotOptional' => [
                 'code' => '<?php
@@ -3655,6 +3736,9 @@ final class ArrayAccessTest extends TestCase
                     $test = new test(1);
                     $a = [1 => $test];
                     unset($a[$test->value]);',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'nestedUnsetAfterIssetOnMixedArray' => [
                 'code' => '<?php
@@ -4378,6 +4462,27 @@ final class ArrayAccessTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'writeToAnOffsetOfADomNamedNodeMapIsInvalid' => [
+                'code' => '<?php
+                    function a(DOMNamedNodeMap $m, DOMAttr $a): void { $m["x"] = $a; }',
+                'error_message' => 'InvalidArrayAssignment',
+                'error_levels' => [],
+                'php_version' => '8.2',
+            ],
+            'appendToADomNodeListIsInvalid' => [
+                'code' => '<?php
+                    function b(DOMNodeList $l, DOMNode $n): void { $l[] = $n; }',
+                'error_message' => 'InvalidArrayAssignment',
+                'error_levels' => [],
+                'php_version' => '8.2',
+            ],
+            'unsetAnOffsetOfADomNamedNodeMapIsInvalid' => [
+                'code' => '<?php
+                    function c(DOMNamedNodeMap $m): void { unset($m[0]); }',
+                'error_message' => 'InvalidArrayAccess',
+                'error_levels' => [],
+                'php_version' => '8.2',
+            ],
             'offsetOfATemplateBoundedByLiteralsOutsideIssetIsStillReported' => [
                 'code' => '<?php
                     /**
@@ -4649,6 +4754,22 @@ final class ArrayAccessTest extends TestCase
                         echo $items[$key];
                     }',
                 'error_message' => 'PossiblyInvalidArrayOffset - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:30 - Cannot access value on variable $items using possibly false offset array-key|false, which is 0',
+            ],
+            'offsetOfAnArrayUnionCombinedWithAShapeLackingItIsOptional' => [
+                'code' => '<?php
+                    function f(array $a, bool $c): int {
+                        $x = $c ? $a + ["red" => 1, "alpha" => 0] : ["alpha" => 2];
+                        return (int) $x["red"];
+                    }',
+                'error_message' => 'PossiblyUndefinedArrayOffset',
+            ],
+            'offsetOfAnArrayUnionCombinedWithAShapeDeclaringItOptionalIsOptional' => [
+                'code' => '<?php
+                    function f(array $a, bool $c, bool $d): int {
+                        $x = $c ? $a + ["alpha" => 0] : ($d ? ["red" => 1, "alpha" => 2] : ["alpha" => 3]);
+                        return (int) $x["red"];
+                    }',
+                'error_message' => 'PossiblyUndefinedArrayOffset',
             ],
             'declaredOptionalOffsetOfUnsealedArrayNarrowedInIfWithoutElseStaysOptional' => [
                 'code' => '<?php

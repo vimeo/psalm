@@ -53,6 +53,7 @@ use UnexpectedValueException;
 use function array_values;
 use function count;
 use function dirname;
+use function explode;
 use function is_int;
 use function reset;
 use function rtrim;
@@ -380,7 +381,10 @@ final class StubsGenerator
                 $identifier_string = $atomic_type->toPhpString(null, [], null, 8_00_00);
 
                 if ($identifier_string !== null) {
-                    $nodes[$identifier_string] = new VirtualIdentifier($identifier_string);
+                    // array-key is int|string
+                    foreach (explode('|', $identifier_string) as $identifier_name) {
+                        $nodes[$identifier_name] = new VirtualIdentifier($identifier_name);
+                    }
 
                     continue;
                 }

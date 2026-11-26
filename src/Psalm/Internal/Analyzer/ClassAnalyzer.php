@@ -473,31 +473,8 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
             return;
         }
 
-        if (!$storage->abstract) {
-            foreach ($storage->declaring_method_ids as $declaring_method_id) {
-                $method_storage = $codebase->methods->getStorage($declaring_method_id);
-
-                $declaring_class_name = $declaring_method_id->fq_class_name;
-                $method_name_lc = $declaring_method_id->method_name;
-
-                if ($method_storage->abstract) {
-                    if (IssueBuffer::accepts(
-                        new UnimplementedAbstractMethod(
-                            'Method ' . $method_name_lc . ' is not defined on class ' .
-                            $this->fq_class_name . ', defined abstract in ' . $declaring_class_name,
-                            new CodeLocation(
-                                $this,
-                                $class->name ?? $class,
-                                $class_context->include_location,
-                                true,
-                            ),
-                        ),
-                        $storage->suppressed_issues + $this->getSuppressedIssues(),
-                    )) {
-                        return;
-                    }
-                }
-            }
+        if (!$this->checkUnimplementedAbstractMethods($class_context)) {
+            return;
         }
 
         AttributesAnalyzer::analyze(
@@ -1748,6 +1725,23 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
         }
 
         if (!$storage->abstract && $uninitialized_typed_properties) {
+            // a stub that leaves out the constructor keeps the real one, whose body isn't analysed: what it
+            // initializes is unknown
+            if (isset($storage->declaring_method_ids['__construct'])) {
+                $constructor_class_storage = $classlike_storage_provider->get(
+                    $storage->declaring_method_ids['__construct']->fq_class_name,
+                );
+                $constructor_storage = $constructor_class_storage->methods['__construct'] ?? null;
+
+                if ($constructor_class_storage->stubbed
+                    && $constructor_storage !== null
+                    && !$constructor_storage->stubbed
+                    && $constructor_storage->location !== null
+                ) {
+                    return;
+                }
+            }
+
             foreach ($uninitialized_typed_properties as $id => $uninitialized_property) {
                 if ($uninitialized_property->location) {
                     IssueBuffer::maybeAdd(
@@ -2670,6 +2664,48 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
             $overridden_method_ids,
             $did_explicitly_return,
         );
+    }
+
+    private function checkUnimplementedAbstractMethods(Context $class_context): bool
+    {
+        $storage = $this->storage;
+
+        if ($storage->abstract) {
+            return true;
+        }
+
+        $codebase = $this->getCodebase();
+        $class = $this->class;
+
+        foreach ($storage->declaring_method_ids as $declaring_method_id) {
+            $method_storage = $codebase->methods->getStorage($declaring_method_id);
+
+            $declaring_class_name = $declaring_method_id->fq_class_name;
+            $method_name_lc = $declaring_method_id->method_name;
+
+            // a class only gets a method declared by an interface from a stubbed class leaving it out, which
+            // implements it
+            if ($method_storage->abstract
+                && !$codebase->classlike_storage_provider->get($declaring_class_name)->is_interface
+                && IssueBuffer::accepts(
+                    new UnimplementedAbstractMethod(
+                        'Method ' . $method_name_lc . ' is not defined on class ' .
+                        $this->fq_class_name . ', defined abstract in ' . $declaring_class_name,
+                        new CodeLocation(
+                            $this,
+                            $class->name ?? $class,
+                            $class_context->include_location,
+                            true,
+                        ),
+                    ),
+                    $storage->suppressed_issues + $this->getSuppressedIssues(),
+                )
+            ) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**

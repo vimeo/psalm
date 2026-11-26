@@ -6,6 +6,7 @@ namespace Psalm\Internal\Analyzer\Statements\Expression\Fetch;
 
 use PhpParser;
 use Psalm\CodeLocation;
+use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
@@ -34,6 +35,7 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Union;
 
+use function array_values;
 use function count;
 use function explode;
 use function in_array;
@@ -557,7 +559,11 @@ final class StaticPropertyFetchAnalyzer
                 );
             }
 
-            $fq_class_names = self::getClassNamesFromClassStringType($class_atomic_type);
+            // `$object::$prop` is a static fetch on the object's class, so instance-only rules
+            // (dynamic properties, __get, @property) don't apply
+            $fq_class_names = $class_atomic_type instanceof TNamedObject
+                ? [self::getClassNameFromObjectType($codebase, $class_atomic_type, $stmt->name)]
+                : self::getClassNamesFromClassStringType($class_atomic_type);
 
             if ($fq_class_names !== null) {
                 $fake_stmt_type = null;
@@ -633,6 +639,32 @@ final class StaticPropertyFetchAnalyzer
         }
 
         $statements_analyzer->node_data->setType($stmt, $stmt_type);
+    }
+
+    /**
+     * Returns the class to look up `$property` on in `$object::$property`: for an intersection,
+     * the first of its classes that has the property.
+     */
+    public static function getClassNameFromObjectType(
+        Codebase $codebase,
+        TNamedObject $object_type,
+        PhpParser\Node\Identifier|PhpParser\Node\Expr $prop_name,
+    ): string {
+        if ($prop_name instanceof PhpParser\Node\Identifier) {
+            foreach ([$object_type, ...array_values($object_type->getIntersectionTypes())] as $type) {
+                if ($type instanceof TNamedObject
+                    && $codebase->properties->propertyExists(
+                        $codebase,
+                        $type->value . '::$' . $prop_name->name,
+                        false,
+                    )
+                ) {
+                    return $type->value;
+                }
+            }
+        }
+
+        return $object_type->value;
     }
 
     /**

@@ -192,6 +192,8 @@ final class GetObjectVarsTest extends TestCase
             'assertions' => [
                 '$a===' => "array{t: 'test'}",
             ],
+            'ignored_issues' => [],
+            'php_version' => '8.0',
         ];
 
         yield 'dynamicProperties' => [

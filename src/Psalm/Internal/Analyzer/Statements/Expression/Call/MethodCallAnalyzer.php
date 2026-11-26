@@ -101,12 +101,18 @@ final class MethodCallAnalyzer extends CallAnalyzer
 
         if (!$stmt->name instanceof PhpParser\Node\Identifier) {
             $context->inside_call = true;
+            // the name is read even in isset mode
+            $was_inside_isset = $context->inside_isset;
+            $context->inside_isset = false;
 
             if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->name, $context) === false) {
                 $context->inside_call = $was_inside_call;
+                $context->inside_isset = $was_inside_isset;
 
                 return false;
             }
+
+            $context->inside_isset = $was_inside_isset;
         }
 
         $context->inside_call = $was_inside_call;

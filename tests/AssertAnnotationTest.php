@@ -2128,6 +2128,9 @@ final class AssertAnnotationTest extends TestCase
                         $owner->assertKnownType();
                         /** @psalm-check-type-exact $owner->type = \'organization\'|\'prof\' */;
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'implicitAssertInstanceOfB' => [
                 'code' => '<?php
@@ -4503,6 +4506,9 @@ final class AssertAnnotationTest extends TestCase
                         }
                         public function getA(): a { return $this->a; }
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'assertWithEmptyStringOnKeyedArray' => [
                 'code' => '<?php

@@ -14,6 +14,7 @@ use Psalm\Internal\Analyzer\AlgebraAnalyzer;
 use Psalm\Internal\Analyzer\ClosureAnalyzer;
 use Psalm\Internal\Analyzer\ExtensionRequirementAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
+use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\PurityWildcardInference;
 use Psalm\Internal\Analyzer\Statements\Expression\ArrayAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallPurityAnalyzer;
@@ -46,6 +47,8 @@ use Psalm\Internal\TypeVisitor\TypeVariableResolver;
 use Psalm\Issue\DeprecatedFunction;
 use Psalm\Issue\ImpureFunctionCall;
 use Psalm\Issue\ImpureMethodCall;
+use Psalm\Issue\InternalClass;
+use Psalm\Issue\InternalFunction;
 use Psalm\Issue\InvalidArrayOffset;
 use Psalm\Issue\InvalidFunctionCall;
 use Psalm\Issue\MixedFunctionCall;
@@ -398,9 +401,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                     $statements_analyzer->node_data,
                 );
 
-                if (!$function_call_info->is_stubbed
-                    && !$codebase->functions->params_provider->has($function_call_info->function_id)
-                ) {
+                if (!$function_call_info->is_stubbed && !$function_call_info->function_params_from_provider) {
                     $function_call_info->function_params = $function_callable->params;
                 }
             }
@@ -603,6 +604,15 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         }
 
         // a called closure may write what it captured by reference
+        if ($function_name instanceof PhpParser\Node\Expr) {
+            ClosureAnalyzer::addTypesWrittenByCall(
+                $statements_analyzer,
+                $context,
+                $function_name,
+                $function_call_info->closure_written_var_ids,
+            );
+        }
+
         foreach ($function_call_info->closure_written_var_ids as $var_id => $_) {
             $context->removeVarFromConflictingClauses(
                 $var_id,
@@ -745,6 +755,26 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                     ),
                     $statements_analyzer->getSuppressedIssues(),
                 );
+            }
+
+            if ($function_call_info->function_id !== null && !$context->collect_initializations) {
+                $caller_identifier = $statements_analyzer->getFullyQualifiedFunctionMethodOrNamespaceName() ?? '';
+
+                if (!NamespaceAnalyzer::isWithinAny(
+                    $caller_identifier,
+                    $function_call_info->function_storage->internal,
+                )) {
+                    IssueBuffer::maybeAdd(
+                        new InternalFunction(
+                            'The function ' . $function_call_info->function_id . ' is internal to '
+                                . InternalClass::listToPhrase($function_call_info->function_storage->internal)
+                                . ' but called from ' . ($caller_identifier ?: 'root namespace'),
+                            $code_location,
+                            $function_call_info->function_id,
+                        ),
+                        $statements_analyzer->getSuppressedIssues(),
+                    );
+                }
             }
         }
 
@@ -1146,13 +1176,18 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         }
 
         if ($codebase->functions->params_provider->has($function_call_info->function_id)) {
-            $function_call_info->function_params = $codebase->functions->params_provider->getFunctionParams(
+            $provided_params = $codebase->functions->params_provider->getFunctionParams(
                 $statements_analyzer,
                 $function_call_info->function_id,
                 $args,
                 $context,
                 $code_location,
             );
+
+            if ($provided_params !== null) {
+                $function_call_info->function_params = $provided_params;
+                $function_call_info->function_params_from_provider = true;
+            }
         }
 
         if ($codebase->store_node_types
@@ -1634,24 +1669,35 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         );
     }
 
-    private static function analyzeClosureCallPurity(
+    /**
+     * The capabilities of calling the closure, and the checks of the global state its arguments pass it
+     *
+     * @return CapabilitySet
+     */
+    private static function analyzeClosureCallCapabilities(
         StatementsAnalyzer $statements_analyzer,
+        Context $context,
         PhpParser\Node\Expr\FuncCall $stmt,
         PhpParser\Node\Expr $function_name,
-        Context $context,
-        TClosure|TCallable $var_type_part,
-        FunctionCallInfo $function_call_info,
-    ): void {
+        TClosure|TCallable $closure,
+    ): int {
         // the purity of the closure, where a purity template the enclosing function-like
         // inherits its purity from requires nothing: that is deferred to its callers
-        $closure_capabilities = CallPurityResolver::resolvePurity(
-            $var_type_part->purity,
-            $statements_analyzer,
-        );
+        $closure_capabilities = CallPurityResolver::resolvePurity($closure->purity, $statements_analyzer);
 
         // a closure created in this scope: what it does to the variables it captured
         // by reference, and through its by-reference parameters, stays in this scope
         if ($statements_analyzer->node_data->isPureCompatible($function_name)) {
+            // its `$this` is the caller's: what it writes of it is forgotten, as after a method called on `$this`
+            if ($closure instanceof TClosure
+                && !$stmt->isFirstClassCallable()
+                && ($closure_capabilities & Capabilities::WRITE_THIS_PROPS) !== 0
+                && isset($context->vars_in_scope['$this'])
+                && !self::isStaticClosure($statements_analyzer, $closure)
+            ) {
+                $context->removeMutableObjectVars(false, Capabilities::WRITE_THIS_PROPS, object_var_id: '$this');
+            }
+
             $closure_capabilities &= ~Capabilities::RECEIVER_LOCAL;
         }
 
@@ -1659,7 +1705,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             $statements_analyzer,
             $context,
             $closure_capabilities,
-            $var_type_part->params,
+            $closure->params,
             $stmt->isFirstClassCallable() ? [] : $stmt->getArgs(),
         );
 
@@ -1678,32 +1724,25 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             );
         }
 
-        $source = $statements_analyzer->getSource();
+        return $closure_capabilities;
+    }
 
-        if ($function_name instanceof PhpParser\Node\Expr\Variable
-            && is_string($function_name->name)
-            && $source instanceof ClosureAnalyzer
-            && $source->getRecursiveVarId() === '$' . $function_name->name
-        ) {
-            // a recursive call of the closure being analysed: not a mutation of its own
-        } elseif ($statements_analyzer->signalMutation(
-            $closure_capabilities,
-            $context,
-            'function call on ' . $var_type_part->getId(),
-            ImpureFunctionCall::class,
-            $stmt,
-            self::isPurityWildcardCandidate($statements_analyzer, $function_name, $var_type_part)
-                ? Capabilities::NONE
-                : null,
-            false,
-            $function_call_info->function_storage,
-        )) {
-            if (!$function_call_info->function_storage) {
-                $function_call_info->function_storage = new FunctionStorage();
-            }
-
-            $function_call_info->function_storage->capabilities |= $closure_capabilities;
+    /**
+     * A static closure has no `$this`: its `write-this-props` is only its writes to the variables it captured by
+     * reference, directly or through the closures it calls
+     */
+    private static function isStaticClosure(StatementsAnalyzer $statements_analyzer, TClosure $closure): bool
+    {
+        if ($closure->callable_id === null) {
+            return false;
         }
+
+        // created in this scope, so declared in the file analyzed
+        $closure_storage = $statements_analyzer->getCodebase()->file_storage_provider
+            ->get($statements_analyzer->getFilePath())
+            ->functions[$closure->callable_id] ?? null;
+
+        return $closure_storage !== null && $closure_storage->is_static;
     }
 
     private static function getAnalyzeNamedExpression(
@@ -1762,6 +1801,8 @@ final class FunctionCallAnalyzer extends CallAnalyzer
 
             $var_atomic_types = $stmt_name_type->getAtomicTypes();
 
+            $source = $statements_analyzer->getSource();
+
             while ($var_atomic_types) {
                 $var_type_part = array_shift($var_atomic_types);
 
@@ -1777,14 +1818,38 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                 }
 
                 if ($var_type_part instanceof TClosure || $var_type_part instanceof TCallable) {
-                    self::analyzeClosureCallPurity(
+                    $closure_capabilities = self::analyzeClosureCallCapabilities(
                         $statements_analyzer,
+                        $context,
                         $stmt,
                         $function_name,
-                        $context,
                         $var_type_part,
-                        $function_call_info,
                     );
+
+                    if ($function_name instanceof PhpParser\Node\Expr\Variable
+                        && is_string($function_name->name)
+                        && $source instanceof ClosureAnalyzer
+                        && $source->getRecursiveVarId() === '$' . $function_name->name
+                    ) {
+                        // a recursive call of the closure being analysed: not a mutation of its own
+                    } elseif ($statements_analyzer->signalMutation(
+                        $closure_capabilities,
+                        $context,
+                        'function call on ' . $var_type_part->getId(),
+                        ImpureFunctionCall::class,
+                        $stmt,
+                        self::isPurityWildcardCandidate($statements_analyzer, $function_name, $var_type_part)
+                            ? Capabilities::NONE
+                            : null,
+                        false,
+                        $function_call_info->function_storage,
+                    )) {
+                        if (!$function_call_info->function_storage) {
+                            $function_call_info->function_storage = new FunctionStorage();
+                        }
+
+                        $function_call_info->function_storage->capabilities |= $closure_capabilities;
+                    }
 
                     $function_call_info->function_params = $var_type_part->params;
 

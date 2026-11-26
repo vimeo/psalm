@@ -50,6 +50,8 @@ final class TClosure extends TNamedObject
      *                                  variable it is (see
      *                                  {@see \Psalm\Internal\Analyzer\ClosureAnalyzer::getByRefUseScopes()}); a
      *                                  name without scopes is taken to be a variable of any scope
+     * @param array<string, Union> $byref_use_types For a name of $byref_uses, what the closure may leave in the
+     *                                  variable when it returns
      */
     public function __construct(
         ?array $params = null,
@@ -60,6 +62,7 @@ final class TClosure extends TNamedObject
         bool $from_docblock = false,
         public ?string $callable_id = null,
         public array $byref_use_scopes = [],
+        public array $byref_use_types = [],
         public ?DataFlowNode $bound_receiver = null,
     ) {
         $this->params = $params;
@@ -159,6 +162,7 @@ final class TClosure extends TNamedObject
             $this->from_docblock,
             $this->callable_id,
             $this->byref_use_scopes,
+            $this->byref_use_types,
             $this->bound_receiver,
         );
     }
@@ -215,6 +219,7 @@ final class TClosure extends TNamedObject
             $this->from_docblock,
             $this->callable_id,
             $this->byref_use_scopes,
+            $this->byref_use_types,
             $this->bound_receiver,
         );
     }

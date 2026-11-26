@@ -58,6 +58,9 @@ final class PurityTemplateTest extends TestCase
                     function make(): Table {
                         return new Table([1]);
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'newOfAClassGivingItsPurityTemplateToItsParentResolvesItLikeAClassExtendingNothing' => [
                 'code' => '<?php
@@ -552,6 +555,9 @@ final class PurityTemplateTest extends TestCase
                         $b = new Box(function (): void {});
                         return $b->fire();
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'typeTemplateBoundToClosure' => [
                 'code' => '<?php
@@ -702,6 +708,9 @@ final class PurityTemplateTest extends TestCase
                         $box = new Box(fn(): int => 1);
                         return $box->wrap()() + $box->later()();
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'purityTemplateWithoutParams' => [
                 'code' => '<?php
@@ -775,6 +784,9 @@ final class PurityTemplateTest extends TestCase
                     function usePure(): int {
                         return makeBox(fn(): int => 1)->fire();
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'newStaticOfClassWithPurityTemplateItsConstructorDoesNotTake' => [
                 'code' => '<?php
@@ -1181,6 +1193,8 @@ final class PurityTemplateTest extends TestCase
                 'assertions' => [
                     '$f' => 'Closure[impure]():int',
                 ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'overrideWithFewerCapabilitiesThanDependentParent' => [
                 'code' => '<?php
@@ -1696,6 +1710,9 @@ final class PurityTemplateTest extends TestCase
                             return !parent::accept();
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'firstClassCallableOfPurityPolymorphicFunctionTakesAnyClosure' => [
                 'code' => '<?php
@@ -1761,6 +1778,9 @@ final class PurityTemplateTest extends TestCase
                     }
 
                     $box = new Box(new ArrayIterator([1 => "a"]));',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'purityTemplateInferredFromSeveralPositionsJoinsTheirPurities' => [
                 'code' => '<?php
@@ -3175,6 +3195,8 @@ final class PurityTemplateTest extends TestCase
                         })->fire();
                     }',
                 'error_message' => 'ImpureMethodCall',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'classPurityTemplateBoundToImpure' => [
                 'code' => '<?php
@@ -3261,6 +3283,8 @@ final class PurityTemplateTest extends TestCase
                         return $b->fire();
                     }',
                 'error_message' => 'ImpureMethodCall',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'typeTemplateBoundToImpureClosure' => [
                 'code' => '<?php
@@ -3459,6 +3483,8 @@ final class PurityTemplateTest extends TestCase
                         return (new Box(function (): int { echo "x"; return 1; }))->wrap()();
                     }',
                 'error_message' => 'ImpureFunctionCall',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'closurePurityMustBeAPurityType' => [
                 'code' => '<?php
@@ -3760,6 +3786,8 @@ final class PurityTemplateTest extends TestCase
                         });
                     }',
                 'error_message' => 'ImpureMethodCall',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'wildcardPurityOnPromotedPropertyIsImpureWhenCalled' => [
                 'code' => '<?php
@@ -3777,6 +3805,8 @@ final class PurityTemplateTest extends TestCase
                         return ($h->f)();
                     }',
                 'error_message' => 'ImpureFunctionCall',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'wildcardPurityInPropertyType' => [
                 'code' => '<?php
@@ -4069,6 +4099,8 @@ final class PurityTemplateTest extends TestCase
                         }
                     }',
                 'error_message' => 'ImmutableDependency - src' . DIRECTORY_SEPARATOR . 'somefile.php:25:25 - Filter::accept is read-props, but Noisy::accept additionally requires io',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'nativeStaticMethodCallIsCharged' => [
                 'code' => '<?php
@@ -4132,6 +4164,8 @@ final class PurityTemplateTest extends TestCase
                         return callIt($t);
                     }',
                 'error_message' => 'callable[io]():int provided',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'callbackFilterIteratorWithImpureCallback' => [
                 'code' => '<?php
@@ -4212,6 +4246,8 @@ final class PurityTemplateTest extends TestCase
                         $w->inner = $it;
                     }',
                 'error_message' => 'IncompatibleTypeParameters',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'purityTemplateInferredFromAClosureAndItsReturnMakesCallImpure' => [
                 'code' => '<?php
@@ -4313,6 +4349,8 @@ final class PurityTemplateTest extends TestCase
                         }
                     }',
                 'error_message' => 'UnsafeGenericInstantiation',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'newStaticOfClassWithTypeTemplateBoundedByATypeAlias' => [
                 'code' => '<?php

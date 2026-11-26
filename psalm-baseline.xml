@@ -1201,9 +1201,6 @@
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/Cli/Psalm.php">
-    <InvalidScalarArgument>
-      <code><![CDATA[$options['f'] ?? null]]></code>
-    </InvalidScalarArgument>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[!$config->error_baseline]]></code>
       <code><![CDATA[!$paths_to_check]]></code>
@@ -1675,7 +1672,6 @@
       <code><![CDATA[!$skip_if_descendants]]></code>
       <code><![CDATA[!$skip_if_descendants]]></code>
       <code><![CDATA[$include_path]]></code>
-      <code><![CDATA[$path_to_file]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/PhpVisitor/Reflector/FunctionLikeDocblockParser.php">
@@ -2237,9 +2233,6 @@
     <ComplexMethod>
       <code><![CDATA[expandConditional]]></code>
     </ComplexMethod>
-    <InvalidArgument>
-      <code><![CDATA[$fallback_params]]></code>
-    </InvalidArgument>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[$container_class_storage->template_types]]></code>
       <code><![CDATA[$params]]></code>
@@ -2261,10 +2254,6 @@
     <InvalidArgument>
       <code><![CDATA[$class_strings]]></code>
       <code><![CDATA[$class_strings]]></code>
-      <code><![CDATA[$extra_params ?? ($sealed
-                    ? null
-                    : [$is_list ? Type::getListKey() : Type::getArrayKey(), Type::getMixed()]
-                )]]></code>
     </InvalidArgument>
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[$const_name]]></code>
@@ -3121,8 +3110,6 @@
       <code><![CDATA[self|TArray]]></code>
     </InvalidReturnType>
     <PossiblyUndefinedIntArrayOffset>
-      <code><![CDATA[$fallback_params[1]]]></code>
-      <code><![CDATA[$fallback_params[1]]]></code>
       <code><![CDATA[$this->properties[0]]]></code>
     </PossiblyUndefinedIntArrayOffset>
   </file>
