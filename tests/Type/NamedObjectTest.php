@@ -29,6 +29,7 @@ final class NamedObjectTest extends TestCase
 
     /**
      * @return iterable<string, array{TNamedObject, bool, ?bool, bool}>
+     * @psalm-pure
      */
     public static function providerSetValueIsStatic(): iterable
     {
