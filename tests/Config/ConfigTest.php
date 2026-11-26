@@ -1844,6 +1844,7 @@ final class ConfigTest extends DeferredAnalyzerTestCase
         $this->assertGreaterThan(8, $error_levels->length);
 
         foreach ($error_levels as $error_level) {
+            $this->assertInstanceOf(DOMElement::class, $error_level);
             $declared = $xpath->query('xs:attribute[@name="allowMissingFiles"]', $error_level);
 
             if (!$declared || $declared->length === 0) {

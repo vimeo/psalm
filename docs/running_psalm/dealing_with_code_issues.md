@@ -37,8 +37,8 @@ Some issue types allow the use of `referencedMethod`, `referencedClass` or `refe
   </InvalidReturnType>
   <InvalidGlobal>
     <errorLevel type="suppress" allowMissingFiles="true"> <!-- paths that do not exist are skipped -->
-      <directory name="**/views" />     <!-- every views directory, at any depth -->
-      <directory name="**/templates" />
+      <directory name="src/**/views" /> <!-- every views directory under src, at any depth -->
+      <directory name="src/**/templates" />
     </errorLevel>
   </InvalidGlobal>
   <UndefinedMethod>
