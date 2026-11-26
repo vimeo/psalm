@@ -27,6 +27,7 @@ use Closure;
 use Generator;
 use Override;
 use Psalm\Config;
+use Psalm\Internal\Crash\CrashContext;
 use Psalm\Internal\Perf;
 use Psalm\Progress\Progress;
 use Revolt\EventLoop;
@@ -182,7 +183,7 @@ final class Pool
                 $results []= $f = $execution->getFuture()->catch(
                     static function (Throwable $e) use ($file, $main_task): never {
                         throw $e instanceof TaskFailureThrowable
-                            ? TaskCrashedException::inWorker($file, $e, $main_task)
+                            ? TaskCrashedException::inWorker($file, CrashContext::fromWorker($e), $main_task)
                             : TaskCrashedException::workerLost($file, $e);
                     },
                 );

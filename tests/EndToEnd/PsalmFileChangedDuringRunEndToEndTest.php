@@ -225,7 +225,8 @@ final class PsalmFileChangedDuringRunEndToEndTest extends PsalmEndToEndTestCase
         }
 
         $this->assertStringStartsWith(
-            PHP_EOL . 'Psalm crashed on src/C3.php' . PHP_EOL . 'LogicException: plugin boom' . PHP_EOL
+            PHP_EOL . 'Psalm crashed on src/C3.php in a plugin (AfterFileAnalysisInterface, Repro\CrashOnC3)' . PHP_EOL
+                . 'LogicException: plugin boom' . PHP_EOL
                 . '  at plugins/plugin.php:',
             $result['STDERR'],
         );
