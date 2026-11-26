@@ -73,7 +73,7 @@ if (!class_exists(Lazy::class, false)) {
             [$file_path, $classlike_storages] = $processes[$process];
             $codebase = $this->project_analyzer->getCodebase();
             $codebase->classlike_storage_provider->addMore($classlike_storages);
-            $codebase->scanner->addThreadData([[], [], [], [], [], ['lib\lazy' => $file_path], [], [], []]);
+            $codebase->scanner->addThreadData([[], [], [], [], [], ['lib\lazy' => $file_path], [], [], [], [], []]);
         }
 
         $winner_file = $this->dir . 'a.php';

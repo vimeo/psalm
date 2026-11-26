@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Internal;
 
+use Psalm\Internal\Fork\TaskCrashedException;
 use RuntimeException;
 use Throwable;
 
@@ -16,6 +17,7 @@ use function set_error_handler;
 use function set_exception_handler;
 
 use const E_ALL;
+use const PHP_EOL;
 use const STDERR;
 
 /**
@@ -91,14 +93,20 @@ final class ErrorHandler
     private static function installExceptionHandler(): void
     {
         /**
-         * If there is an uncaught exception,
-         * then print more of the backtrace than is done by default to stderr,
+         * If there is an uncaught exception, print a report of it to stderr: the message of a file that changed
+         * during the run, the report of a crash in a file, or the whole chain of the exception with its backtrace,
          * then exit with a non-zero exit code to indicate failure.
          */
         set_exception_handler(static function (Throwable $throwable): never {
-            fwrite(STDERR, "Uncaught $throwable\n");
+            if ($throwable instanceof FileChangedDuringRunException) {
+                fwrite(STDERR, PHP_EOL . $throwable->getMessage() . PHP_EOL);
+                exit(1);
+            }
+
+            $report = $throwable instanceof TaskCrashedException ? $throwable->getMessage() : "Uncaught $throwable";
+            fwrite(STDERR, PHP_EOL . $report . PHP_EOL);
             $version = defined('PSALM_VERSION') ? PSALM_VERSION : '(unknown version)';
-            fwrite(STDERR, "(Psalm $version crashed due to an uncaught Throwable)\n");
+            fwrite(STDERR, "(Psalm $version crashed due to an uncaught Throwable)" . PHP_EOL);
             exit(1);
         });
     }
