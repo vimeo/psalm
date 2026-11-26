@@ -34,6 +34,13 @@ use function substr;
 final class TypeTokenizer
 {
     /**
+     * The tokens of `(false|0|0.0|''|'0'|null|array{})`, the values `empty()` is true for
+     */
+    private const FALSY_TOKENS = [
+        '(', 'false', '|', '0', '|', '0.0', '|', "''", '|', "'0'", '|', 'null', '|', 'array', '{', '}', ')',
+    ];
+
+    /**
      * @var array<string, bool>
      */
     public const PSALM_RESERVED_WORDS = [
@@ -450,6 +457,7 @@ final class TypeTokenizer
         ?array $type_aliases = null,
         ?string $self_fqcln = null,
         ?string $parent_fqcln = null,
+        bool $allow_assertions = false,
     ): array {
         $type_tokens = self::tokenize($string_type);
 
@@ -531,6 +539,24 @@ final class TypeTokenizer
 
             if ($string_type_token[0] === 'parent' && $parent_fqcln) {
                 $type_tokens[$i][0] = $parent_fqcln;
+                continue;
+            }
+
+            // in an assertion, `empty` and `falsy` are the values `empty()` is true for, not `never`
+            if ($allow_assertions
+                && ($string_type_token[0] === 'empty' || $string_type_token[0] === 'falsy')
+            ) {
+                $falsy_tokens = [];
+
+                foreach (self::FALSY_TOKENS as $falsy_token) {
+                    $falsy_tokens[] = [$falsy_token, $string_type_token[1]];
+                }
+
+                array_splice($type_tokens, $i, 1, $falsy_tokens);
+
+                $i += count($falsy_tokens) - 1;
+                $l += count($falsy_tokens) - 1;
+
                 continue;
             }
 

@@ -110,6 +110,27 @@ function isNull($value): bool {
 }
 ```
 
+### Asserting empty values
+
+In an assertion, `empty` and `falsy` are the values `empty()` is true for, also inside a union or a generic (elsewhere, `empty` is `never`):
+
+```php
+<?php
+/** @psalm-assert empty $value */
+function isEmpty(mixed $value): void {}
+
+/** @psalm-assert iterable<empty|null> $value */
+function allNullOrEmpty(mixed $value): void {}
+
+/** @param list<int|bool> $l */
+function f(?string $s, array $l): void {
+  isEmpty($s);
+  /** @psalm-check-type-exact $s = ''|'0'|null */
+  allNullOrEmpty($l);
+  /** @psalm-check-type-exact $l = list<0|false> */
+}
+```
+
 ### Asserting that an array key exists
 
 `array-key-exists` asserts that the array in one parameter has the key held by another parameter. The same works with `@psalm-assert-if-true` and `@psalm-assert-if-false` (`!array-key-exists` asserts the opposite):

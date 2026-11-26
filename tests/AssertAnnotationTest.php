@@ -6291,6 +6291,29 @@ final class AssertAnnotationTest extends TestCase
                     '$a===' => 'array{empty: int, falsy: string}',
                 ],
             ],
+            'emptyInInlineAliasOfAssertionIsNever' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-type NoItems = list<empty>
+                     */
+                    final class A {
+                        /**
+                         * @param mixed $value
+                         * @psalm-assert NoItems $value
+                         */
+                        public static function hasNoItems($value): void {}
+                    }
+
+                    /** @return list<mixed> */
+                    function get(): array {
+                        return [];
+                    }
+                    $l = get();
+                    A::hasNoItems($l);',
+                'assertions' => [
+                    '$l===' => 'array<never, never>',
+                ],
+            ],
         ];
     }
 
