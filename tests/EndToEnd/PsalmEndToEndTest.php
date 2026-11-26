@@ -17,6 +17,7 @@ use function file_put_contents;
 use function json_decode;
 use function mkdir;
 use function preg_replace;
+use function realpath;
 use function sort;
 use function str_contains;
 use function str_replace;
@@ -26,6 +27,7 @@ use function tempnam;
 use function unlink;
 use function var_export;
 
+use const DIRECTORY_SEPARATOR;
 use const JSON_THROW_ON_ERROR;
 use const PHP_BINARY;
 use const PHP_EOL;
@@ -182,6 +184,35 @@ final class PsalmEndToEndTest extends PsalmEndToEndTestCase
     {
         yield 'review first' => [['--review', 'report.json', 'code']];
         yield 'review after the report' => [['report.json', '--review', 'code']];
+    }
+
+    /**
+     * @param list<string> $args
+     */
+    #[DataProvider('provideConfigPathsThatAreNotFiles')]
+    public function testAConfigPathThatIsNotAFileIsReportedWithoutACrash(array $args, string $expected_suffix): void
+    {
+        $process = self::newProcess([PHP_BINARY, $this->psalm, ...$args], self::$tmpDir, self::agentEnvVarsToUnset());
+        $process->run();
+
+        $output = $process->getOutput() . $process->getErrorOutput();
+        $this->assertSame(1, $process->getExitCode(), $output);
+        $this->assertStringContainsString(
+            'Cannot read the config file ' . (string) realpath(self::$tmpDir) . $expected_suffix,
+            $process->getErrorOutput(),
+        );
+        $this->assertStringNotContainsString('Uncaught', $output);
+        $this->assertStringNotContainsString('crashed', $output);
+    }
+
+    /**
+     * @return iterable<string, array{list<string>, string}>
+     * @psalm-pure
+     */
+    public static function provideConfigPathsThatAreNotFiles(): iterable
+    {
+        yield 'a directory' => [['-c', 'src'], DIRECTORY_SEPARATOR . 'src'];
+        yield 'an empty path' => [['-c', ''], ''];
     }
 
     public function testPsalm(): void

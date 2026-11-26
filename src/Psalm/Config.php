@@ -117,6 +117,7 @@ use function is_a;
 use function is_array;
 use function is_dir;
 use function is_file;
+use function is_readable;
 use function is_resource;
 use function is_string;
 use function is_writable;
@@ -847,6 +848,10 @@ final class Config
      */
     public static function loadFromXMLFile(string $file_path, string $current_dir): Config
     {
+        if (!is_file($file_path) || !is_readable($file_path)) {
+            throw new ConfigException('Cannot read the config file ' . $file_path);
+        }
+
         $file_contents = file_get_contents($file_path);
 
         $base_dir = dirname($file_path);

@@ -288,6 +288,15 @@ final class ConfigTest extends DeferredAnalyzerTestCase
         $this->assertFalse($config->isInProjectDirs((string) realpath('examples/TemplateScanner.php')));
     }
 
+    public function testLoadFromXMLFileThrowsOnADirectory(): void
+    {
+        $this->expectException(ConfigException::class);
+        $this->expectExceptionMessage('Cannot read the config file ' . __DIR__);
+        ErrorHandler::install();
+
+        Config::loadFromXMLFile(__DIR__, __DIR__);
+    }
+
     public function testIgnoreProjectDirectory(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
