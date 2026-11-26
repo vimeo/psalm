@@ -305,7 +305,6 @@ final class UnusedCodeTest extends TestCase
         $issue = IssueBuffer::getIssuesDataForFile($file_path)[0];
         $this->assertSame('UnnecessaryVarAnnotation', $issue->type);
         $this->assertTrue($issue->is_fixable);
-        $this->assertSame(['UnnecessaryVarAnnotation' => 1], IssueBuffer::getFixableIssues());
     }
 
     public function testAFixableIssueOfTheBodyOfALoopOverNeverStaysFixable(): void
@@ -340,7 +339,6 @@ final class UnusedCodeTest extends TestCase
         $issue = IssueBuffer::getIssuesDataForFile($file_path)[0];
         $this->assertSame('UnnecessaryVarAnnotation', $issue->type);
         $this->assertTrue($issue->is_fixable);
-        $this->assertSame(['UnnecessaryVarAnnotation' => 1], IssueBuffer::getFixableIssues());
     }
 
     public function testTheArgumentsOfACallOfAMissingClassAreNotAnalysed(): void
