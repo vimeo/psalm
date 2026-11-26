@@ -122,6 +122,28 @@ final class FunctionTemplateTest extends TestCase
                         return $t;
                     }',
             ],
+            'resourceIsAValidTemplateBoundOfAFunctionAndAMethod' => [
+                'code' => '<?php
+                    /**
+                     * @template T of resource
+                     * @param T $t
+                     * @return T
+                     */
+                    function f($t) {
+                        return $t;
+                    }
+
+                    final class A {
+                        /**
+                         * @template T of resource|null
+                         * @param T $t
+                         * @return T
+                         */
+                        public function m($t) {
+                            return $t;
+                        }
+                    }',
+            ],
             'classStringOrTemplateIsBoundToTheClassOfAClassString' => [
                 'code' => '<?php
                     final class Foo {}

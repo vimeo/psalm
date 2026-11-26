@@ -22,7 +22,6 @@ use Psalm\StatementsSource;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Type;
-use Psalm\Type\Atomic\TResource;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
@@ -440,10 +439,7 @@ final class TemplateDefaults
                 continue;
             }
 
-            // `resource` is only valid where the type is written in a docblock
-            $mutable_default = $default->getBuilder();
-            (new FromDocblockSetter(true, TResource::class))->traverse($mutable_default);
-            $default = $mutable_default->freeze();
+            $default = FromDocblockSetter::markResources($default);
 
             $type_scanner->traverseArray($default->getAtomicTypes());
 

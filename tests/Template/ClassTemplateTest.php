@@ -65,10 +65,28 @@ final class ClassTemplateTest extends TestCase
                     final class B extends A {}
 
                     /** @template T = array<string, resource> */
-                    final class C {}
+                    final class C {}',
+            ],
+            'resourceIsAValidTemplateBoundOfAClassInterfaceAndTrait' => [
+                'code' => '<?php
+                    /** @template T of resource */
+                    class A {}
 
-                    /** @template T = resource|null */
-                    final class D {}',
+                    final class B extends A {}
+
+                    /** @template T of array<string, resource> */
+                    interface I {}
+
+                    final class C implements I {}
+
+                    /** @template T of resource */
+                    trait Tr {}
+
+                    final class D {
+                        use Tr;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingTemplateParam'],
             ],
             'nullCoalescingATemplatePropertyBoundedByANullableStringToAString' => [
                 'code' => '<?php

@@ -43,6 +43,7 @@ use Psalm\Internal\Type\TypeAlias\InlineTypeAlias;
 use Psalm\Internal\Type\TypeAlias\LinkableTypeAlias;
 use Psalm\Internal\Type\TypeParser;
 use Psalm\Internal\Type\TypeTokenizer;
+use Psalm\Internal\TypeVisitor\FromDocblockSetter;
 use Psalm\Internal\TypeVisitor\TypeScanner;
 use Psalm\Issue\ConstantDeclarationInTrait;
 use Psalm\Issue\DuplicateClass;
@@ -577,6 +578,8 @@ final class ClassLikeNodeScanner
 
                                 continue;
                             }
+
+                            $template_type = FromDocblockSetter::markResources($template_type);
 
                             $other_templates = array_map(
                                 preg_quote(...),
