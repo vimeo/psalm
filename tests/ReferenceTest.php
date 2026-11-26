@@ -2891,6 +2891,22 @@ final class ReferenceTest extends TestCase
                     }',
                 'error_message' => 'ReferenceConstraintViolation',
             ],
+            'referenceReboundInASwitchCaseThatFallsThroughIsStillWrittenToInTheNextCase' => [
+                'code' => '<?php
+                    /** @param array<string, mixed> $data */
+                    function fallthroughThenWrite(array &$data, string $key, string $value): void {
+                        $cursor = &$data;
+
+                        switch ($key) {
+                            case "a":
+                                $cursor = &$cursor["x"];
+                                // no break
+                            case "b":
+                                $cursor = $value;
+                        }
+                    }',
+                'error_message' => 'ReferenceConstraintViolation',
+            ],
             'referenceReuseDeclaredInElseif' => [
                 'code' => '<?php
                     /** @var array<int> */
