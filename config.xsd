@@ -110,6 +110,7 @@
             <xs:element name="file" minOccurs="0" maxOccurs="unbounded" type="NameAttributeType" />
             <xs:element name="ignoreFiles" minOccurs="0" maxOccurs="1" type="IgnoreFilesType" />
         </xs:choice>
+        <xs:attribute name="allowMissingFiles" type="xs:string" />
         <xs:anyAttribute processContents="skip" />
     </xs:complexType>
 
@@ -606,6 +607,7 @@
                     </xs:choice>
 
                     <xs:attribute name="type" type="ErrorLevelType" use="required" />
+                    <xs:attribute name="allowMissingFiles" type="xs:string" />
                     <xs:anyAttribute processContents="skip" />
                 </xs:complexType>
             </xs:element>
@@ -625,6 +627,7 @@
                     </xs:choice>
 
                     <xs:attribute name="type" type="ErrorLevelType" use="required" />
+                    <xs:attribute name="allowMissingFiles" type="xs:string" />
                     <xs:anyAttribute processContents="skip"/>
                 </xs:complexType>
             </xs:element>
@@ -646,6 +649,7 @@
                     </xs:choice>
 
                     <xs:attribute name="type" type="ErrorLevelType" use="required" />
+                    <xs:attribute name="allowMissingFiles" type="xs:string" />
                     <xs:anyAttribute processContents="skip" />
                 </xs:complexType>
             </xs:element>
@@ -666,6 +670,7 @@
                     </xs:choice>
 
                     <xs:attribute name="type" type="ErrorLevelType" use="required" />
+                    <xs:attribute name="allowMissingFiles" type="xs:string" />
                     <xs:anyAttribute processContents="skip" />
                 </xs:complexType>
             </xs:element>
@@ -686,6 +691,7 @@
                     </xs:choice>
 
                     <xs:attribute name="type" type="ErrorLevelType" use="required" />
+                    <xs:attribute name="allowMissingFiles" type="xs:string" />
                     <xs:anyAttribute processContents="skip" />
                 </xs:complexType>
             </xs:element>
@@ -706,6 +712,7 @@
                     </xs:choice>
 
                     <xs:attribute name="type" type="ErrorLevelType" use="required" />
+                    <xs:attribute name="allowMissingFiles" type="xs:string" />
                     <xs:anyAttribute processContents="skip" />
                 </xs:complexType>
             </xs:element>
@@ -726,6 +733,7 @@
                     </xs:choice>
 
                     <xs:attribute name="type" type="ErrorLevelType" use="required" />
+                    <xs:attribute name="allowMissingFiles" type="xs:string" />
                     <xs:anyAttribute processContents="skip" />
                 </xs:complexType>
             </xs:element>
@@ -746,6 +754,8 @@
                     </xs:choice>
 
                     <xs:attribute name="type" type="ErrorLevelType" use="required" />
+                    <xs:attribute name="allowMissingFiles" type="xs:string" />
+                    <xs:anyAttribute processContents="skip" />
                 </xs:complexType>
             </xs:element>
         </xs:sequence>
@@ -764,6 +774,7 @@
                     </xs:choice>
 
                     <xs:attribute name="type" type="ErrorLevelType" use="required" />
+                    <xs:attribute name="allowMissingFiles" type="xs:string" />
                     <xs:anyAttribute processContents="skip" />
                 </xs:complexType>
             </xs:element>
