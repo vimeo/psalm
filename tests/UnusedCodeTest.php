@@ -245,6 +245,43 @@ final class UnusedCodeTest extends TestCase
         $this->assertSame([], IssueBuffer::getIssuesDataForFile($src_file_path));
     }
 
+    public function testUnusedDocblockParamIsLocatedOnItsName(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $this->project_analyzer->setPhpVersion('7.4', 'tests');
+        $file_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            "<?php\n"
+            . "/**\n"
+            . " * @param int \$b\n"
+            . " */\n"
+            . "\$f = function (string \$a): void { echo \$a; };\n"
+            . "\$f('x');\n"
+            . "/** @param int \$c */\n"
+            . "\$g = fn(string \$a): string => \$a;\n"
+            . "echo \$g('x');\n"
+            . "/**\n"
+            . " * @param int \$d\tdescription\n"
+            . " */\n"
+            . "function h(string \$a): void { echo \$a; }\n"
+            . "h('x');\n",
+        );
+        $this->analyzeFile($file_path, new Context(), false);
+        $this->project_analyzer->consolidateAnalyzedData();
+
+        $issues = [];
+        foreach (IssueBuffer::getIssuesDataForFile($file_path) as $issue) {
+            if ($issue->type === 'UnusedDocblockParam') {
+                $issues[] = $issue->line_from . ':' . $issue->column_from . '-' . $issue->column_to
+                    . ' ' . $issue->selected_text;
+            }
+        }
+
+        $this->assertSame(['3:15-17 $b', '7:16-18 $c', '11:15-17 $d'], $issues);
+    }
+
     public function testSeesClassesUsedAfterUnevaluatedCodeIssue(): void
     {
         $this->project_analyzer->getConfig()->throw_exception = false;

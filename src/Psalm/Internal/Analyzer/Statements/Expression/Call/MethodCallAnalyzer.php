@@ -113,6 +113,8 @@ final class MethodCallAnalyzer extends CallAnalyzer
             }
 
             $context->inside_isset = $was_inside_isset;
+
+            self::addMethodNameSink($statements_analyzer, $stmt, $stmt->name, $context);
         }
 
         $context->inside_call = $was_inside_call;

@@ -36,7 +36,6 @@
       <code><![CDATA[$this->docblock_line_number]]></code>
       <code><![CDATA[$this->docblock_line_number]]></code>
       <code><![CDATA[$this->docblock_start]]></code>
-      <code><![CDATA[$this->docblock_start_line_number]]></code>
       <code><![CDATA[$this->text]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
@@ -3230,11 +3229,6 @@
     <ImplicitToStringCast>
       <code><![CDATA[$this->type]]></code>
     </ImplicitToStringCast>
-  </file>
-  <file src="src/Psalm/Type/MutableUnion.php">
-    <RiskyTruthyFalsyComparison>
-      <code><![CDATA[strpos($type_string, '(')]]></code>
-    </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Type/Reconciler.php">
     <ImplicitToStringCast>
