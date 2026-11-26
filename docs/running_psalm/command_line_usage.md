@@ -16,6 +16,20 @@ If you want to run on specific files, use
 
 Run with `--help` to see a list of options that Psalm supports.
 
+## Output format
+
+`--output-format` picks the format printed on stdout. Without it Psalm prints `console`, or `compact` (one line per issue, no snippets) when an AI coding agent is driving the shell:
+
+```
+ERROR src/Foo.php:12:5 InvalidReturnType: The declared return type 'string' for foo is incorrect, got 'int'
+```
+
+An explicit `--output-format` always wins, and `--report=FILE` is not affected:
+
+```bash
+./vendor/bin/psalm --output-format=console
+```
+
 ## Running under an AI coding agent
 
 When Psalm detects that an AI coding agent runs it (for example `CLAUDECODE`, `CURSOR_AGENT`, `CODEX_THREAD_ID` or `AI_AGENT` is set), it prints no progress and no colours, because an agent only reads the raw bytes.
