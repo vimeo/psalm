@@ -769,11 +769,14 @@ abstract class CallAnalyzer
 
     /**
      * @param PhpParser\Node\Scalar\String_|PhpParser\Node\Expr\Array_|PhpParser\Node\Expr\BinaryOp\Concat $callable_arg
+     * @param ?Context $context resolves the variable of an `[$object, 'method']` argument that is not analysed yet,
+     *                          as in a params provider
      * @return list<non-empty-string>
      */
     public static function getFunctionIdsFromCallableArg(
         FileSource $file_source,
         PhpParser\Node\Expr $callable_arg,
+        ?Context $context = null,
     ): array {
         if ($callable_arg instanceof PhpParser\Node\Expr\BinaryOp\Concat) {
             if ($callable_arg->left instanceof PhpParser\Node\Expr\ClassConstFetch
@@ -839,9 +842,19 @@ abstract class CallAnalyzer
             return [$fq_class_name . '::' . $method_name_arg->value];
         }
 
-        if (!$file_source instanceof StatementsAnalyzer
-            || !($class_arg_type = $file_source->node_data->getType($class_arg))
+        $class_arg_type = $file_source instanceof StatementsAnalyzer
+            ? $file_source->node_data->getType($class_arg)
+            : null;
+
+        if (!$class_arg_type
+            && $context
+            && $class_arg instanceof PhpParser\Node\Expr\Variable
+            && is_string($class_arg->name)
         ) {
+            $class_arg_type = $context->vars_in_scope['$' . $class_arg->name] ?? null;
+        }
+
+        if (!$class_arg_type) {
             return [];
         }
 
