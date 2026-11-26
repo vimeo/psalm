@@ -889,6 +889,69 @@ final class IncludeTest extends TestCase
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'limit.php',
                 ],
             ],
+            'requireOfATernaryBetweenTwoFiles' => [
+                'files' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'main.php' => '<?php
+                        require PHP_VERSION_ID < 80200 ? __DIR__ . "/old.php" : __DIR__ . "/new.php";
+                        libfn();
+                        echo $version;',
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'old.php' => '<?php
+                        function libfn(): void {}
+                        $version = "old";',
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'new.php' => '<?php
+                        function libfn(): void {}
+                        $version = "new";',
+                ],
+                'files_to_check' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'main.php',
+                ],
+            ],
+            'requireOfANestedTernary' => [
+                'files' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'main.php' => '<?php
+                        require PHP_VERSION_ID < 80000
+                            ? __DIR__ . "/old.php"
+                            : (PHP_VERSION_ID < 80200 ? __DIR__ . "/mid.php" : __DIR__ . "/new.php");
+                        echo $version;',
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'old.php' => '<?php
+                        $version = "old";',
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'mid.php' => '<?php
+                        $version = "mid";',
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'new.php' => '<?php
+                        $version = "new";',
+                ],
+                'files_to_check' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'main.php',
+                ],
+            ],
+            'requireOfAShortTernary' => [
+                'files' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'main.php' => '<?php
+                        $file = PHP_VERSION_ID < 80200 ? __DIR__ . "/old.php" : "";
+                        require $file ?: __DIR__ . "/new.php";
+                        echo $version;',
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'old.php' => '<?php
+                        $version = "old";',
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'new.php' => '<?php
+                        $version = "new";',
+                ],
+                'files_to_check' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'main.php',
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'old.php',
+                ],
+            ],
+            'requireOfATernaryWithABranchCheckedByFileExists' => [
+                'files' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'main.php' => '<?php
+                        $file = (string) getenv("CONFIG_FILE");
+                        require file_exists($file) ? $file : __DIR__ . "/default.php";',
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'default.php' => '<?php
+                        echo "default";',
+                ],
+                'files_to_check' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'main.php',
+                ],
+            ],
         ];
     }
 
@@ -1204,6 +1267,60 @@ final class IncludeTest extends TestCase
                 'files_to_check' => [(string) getcwd() . DIRECTORY_SEPARATOR . 'test.php'],
                 'error_message' => 'MissingFile',
                 'directories' => [(string) getcwd() . DIRECTORY_SEPARATOR],
+            ],
+            'requireOfATernaryAnalyzesTheIncludedFiles' => [
+                'files' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'main.php' => '<?php
+                        require PHP_VERSION_ID < 80200 ? __DIR__ . "/old.php" : __DIR__ . "/new.php";',
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'old.php' => '<?php
+                        echo $undefined;',
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'new.php' => '<?php
+                        echo "new";',
+                ],
+                'files_to_check' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'main.php',
+                ],
+                'error_message' => 'UndefinedGlobalVariable',
+            ],
+            'requireOfATernaryReturnsWhatEitherFileReturns' => [
+                'files' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'main.php' => '<?php
+                        function takesInt(int $i): void {}
+                        $value = require PHP_VERSION_ID < 80200 ? __DIR__ . "/old.php" : __DIR__ . "/new.php";
+                        takesInt($value);',
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'old.php' => '<?php
+                        return 1;',
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'new.php' => '<?php
+                        return "new";',
+                ],
+                'files_to_check' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'main.php',
+                ],
+                'error_message' => 'InvalidScalarArgument - main.php:4:34 - Argument 1 of takesInt expects int, but \'new\'|1 provided',
+            ],
+            'requireOfATernaryWithABranchToAMissingFile' => [
+                'files' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'main.php' => '<?php
+                        require PHP_VERSION_ID < 80200 ? __DIR__ . "/missing.php" : __DIR__ . "/new.php";',
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'new.php' => '<?php
+                        echo "new";',
+                ],
+                'files_to_check' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'main.php',
+                ],
+                'error_message' => 'MissingFile',
+            ],
+            'requireOfATernaryWithAnUnresolvableBranch' => [
+                'files' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'main.php' => '<?php
+                        require (string) getenv("FILE") ?: __DIR__ . "/new.php";',
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'new.php' => '<?php
+                        echo "new";',
+                ],
+                'files_to_check' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'main.php',
+                ],
+                'error_message' => 'UnresolvableInclude',
             ],
         ];
     }

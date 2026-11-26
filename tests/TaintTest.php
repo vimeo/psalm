@@ -18032,6 +18032,13 @@ final class TaintTest extends TestCase
                     include str_replace("a", "b", $b);',
                 'error_message' => 'TaintedInclude',
             ],
+            'taintedInputInABranchOfAnIncludedTernary' => [
+                'code' => '<?php
+                    $a = (string) $_GET["file"];
+                    /** @psalm-suppress UnresolvableInclude, MissingFile */
+                    include rand(0, 1) ? "default.php" : $a;',
+                'error_message' => 'TaintedInclude',
+            ],
             'taintedInputFromReturnToEval' => [
                 'code' => '<?php
                     $a = $_GET["file"];
