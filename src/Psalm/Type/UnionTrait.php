@@ -537,12 +537,12 @@ trait UnionTrait
 
         $types = $this->types;
 
-        if (isset($types['null'])) {
-            if (count($types) > 1 && $analysis_php_version_id >= 7_01_00) {
-                unset($types['null']);
-            } else {
+        if (isset($types['null']) && count($types) > 1) {
+            if ($analysis_php_version_id < 7_01_00) {
                 return false;
             }
+
+            unset($types['null']);
         }
 
         foreach ($types as $t) {

@@ -1522,6 +1522,69 @@ final class MissingReturnTypeTest extends FileManipulationTestCase
                 'issues_to_fix' => ['MissingReturnType'],
                 'safe_types' => false,
             ],
+            'returnNullAndReturnTrue82' => [
+                'input' => '<?php
+                    function a() {
+                        if (rand(0,1)){
+                            return true;
+                        }
+
+                        return null;
+                    }',
+                'output' => '<?php
+                    function a(): true|null {
+                        if (rand(0,1)){
+                            return true;
+                        }
+
+                        return null;
+                    }',
+                'php_version' => '8.2',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => false,
+            ],
+            'returnTrue82' => [
+                'input' => '<?php
+                    function a() {
+                        return true;
+                    }',
+                'output' => '<?php
+                    function a(): true {
+                        return true;
+                    }',
+                'php_version' => '8.2',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => false,
+            ],
+            'returnTrue81' => [
+                'input' => '<?php
+                    function a() {
+                        return true;
+                    }',
+                'output' => '<?php
+                    /**
+                     * @return true
+                     */
+                    function a(): bool {
+                        return true;
+                    }',
+                'php_version' => '8.1',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => false,
+            ],
+            'returnFalse82' => [
+                'input' => '<?php
+                    function a() {
+                        return false;
+                    }',
+                'output' => '<?php
+                    function a(): false {
+                        return false;
+                    }',
+                'php_version' => '8.2',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => false,
+            ],
             'staticReturn5.6' => [
                 'input' => '<?php
                     class HelloWorld
