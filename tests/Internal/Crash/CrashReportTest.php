@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace Psalm\Tests\Internal\Crash;
 
+use Amp\Parallel\Worker\TaskFailureException;
 use LogicException;
 use PHPUnit\Framework\Attributes\After;
 use Psalm\Context;
 use Psalm\Exception\ConfigException;
+use Psalm\Internal\Crash\CrashContext;
+use Psalm\Internal\Crash\CrashContextException;
 use Psalm\Internal\Crash\CrashReport;
 use Psalm\Internal\EventDispatcher;
 use Psalm\Plugin\EventHandler\AfterCodebasePopulatedInterface;
@@ -96,6 +99,30 @@ final class CrashReportTest extends TestCase
         $this->assertStringEndsWith(
             ' crashed in plugin acme/crash 1.2.0 (StringInterpreterInterface, ' . ThrowingInterpreter::class . ')',
             (new CrashReport($e, null, [self::package()]))->getHeadline(),
+        );
+    }
+
+    public function testTheHookOfAWrappedExceptionReachesTheParentProcess(): void
+    {
+        $wrapped = new RuntimeException('wrapped', 0, $this->dispatchAfterCodebasePopulated(ThrowingHandler::class));
+
+        $carrier = CrashContext::forParent($wrapped);
+        $this->assertInstanceOf(CrashContextException::class, $carrier);
+
+        // what amphp hands the parent: the class, message and trace of each exception, nothing else
+        $failure = new TaskFailureException(
+            CrashContextException::class,
+            $carrier->getMessage(),
+            0,
+            __FILE__,
+            1,
+            [],
+            new TaskFailureException(RuntimeException::class, 'wrapped', 0, __FILE__, 1, []),
+        );
+
+        $this->assertStringEndsWith(
+            ' crashed in plugin acme/crash 1.2.0 (AfterCodebasePopulatedInterface, ' . ThrowingHandler::class . ')',
+            (new CrashReport(CrashContext::fromWorker($failure), null, [self::package()]))->getHeadline(),
         );
     }
 

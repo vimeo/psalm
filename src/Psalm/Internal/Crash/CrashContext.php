@@ -129,7 +129,11 @@ final class CrashContext
      */
     public static function forParent(Throwable $e): Throwable
     {
-        return isset(self::$contexts[$e]) ? new CrashContextException(serialize(self::$contexts[$e]), $e) : $e;
+        $context = self::of($e);
+
+        return $context->handler === null && $context->file_path === null
+            ? $e
+            : new CrashContextException(serialize($context), $e);
     }
 
     /**
