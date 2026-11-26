@@ -1070,7 +1070,7 @@ final class FunctionLikeDocblockScanner
                     null,
                     true,
                     CodeLocation::FUNCTION_PARAM_VAR,
-                    null,
+                    '$' . $param_name,
                     $docblock_param['line_number'],
                 );
 
