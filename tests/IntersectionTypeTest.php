@@ -246,6 +246,9 @@ final class IntersectionTypeTest extends TestCase
                     function wrap(array $filtered): array {
                         return array_map(fn ($x) => new Wrapper($x), $filtered);
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'intersectionBoundOfATemplateKeepsItsInterfacesInAClosureParam' => [
                 'code' => '<?php

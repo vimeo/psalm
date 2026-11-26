@@ -976,6 +976,9 @@ final class TypeVariableTest extends TestCase
                         $b = new Box(new User());
                         echo $b->value->getId();
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'nestedConstructionElementArithmetic' => [
                 // nested `new Box(new Box(5))`: the inner element resolves to int
@@ -994,6 +997,9 @@ final class TypeVariableTest extends TestCase
                         $inner = $bb->value;
                         echo $inner->value + 1;
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'propertyFetchOnTypeVariableIteratorElement' => [
                 // reading an element out of a `list<TValue>` return yields a
@@ -1154,6 +1160,9 @@ final class TypeVariableTest extends TestCase
                         $box->set("two");
                         return $box;
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'earlierInvariantArgumentPinStaysSilent' => [
                 'code' => '<?php
@@ -1172,6 +1181,9 @@ final class TypeVariableTest extends TestCase
                         $box = new Box(1);
                         takesIntBox($box);
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'boundViolationSuppressed' => [
                 'code' => '<?php
@@ -1728,6 +1740,9 @@ final class TypeVariableTest extends TestCase
                         $c = new Collection($items);
                         $c->map(static fn (Foo $foo): string => (string) $foo->x);
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'unboundConstructionSatisfiesTypedProperty' => [
                 // nothing bound the variable from below, so the property type
@@ -2053,6 +2068,9 @@ final class TypeVariableTest extends TestCase
                             return $this->objectFactory->create(new ReflectionClass($class));
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'constructedGenericObjectInfersCalleeTemplateThroughVariable' => [
                 'code' => '<?php
@@ -2082,6 +2100,9 @@ final class TypeVariableTest extends TestCase
                             return $this->objectFactory->create($reflectionClass);
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'propertyInitialisedFromTemplatedMethodCallInConstructor' => [
                 // vimeo/psalm#11963: the constructor initialisation pass must see
@@ -3010,6 +3031,8 @@ final class TypeVariableTest extends TestCase
                     '$last===' => "'x'|1|null",
                     '$mapped===' => "list<'x'|1>",
                 ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'untypedMethodCallbackOfWidenedVariable' => [
                 'code' => '<?php
@@ -3042,6 +3065,8 @@ final class TypeVariableTest extends TestCase
                 'assertions' => [
                     '$mapped===' => "list<'x'|1>",
                 ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'typedCallbackAcceptingEveryValueOfWidenedVariable' => [
                 'code' => '<?php
@@ -3107,6 +3132,8 @@ final class TypeVariableTest extends TestCase
                 'assertions' => [
                     '$last===' => '1|2|null',
                 ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'classStringOfAVariableResolvesThroughItsValues' => [
                 'code' => '<?php
@@ -3456,6 +3483,8 @@ final class TypeVariableTest extends TestCase
                     }',
                 'error_message' => 'MixedArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR
                     . 'somefile.php:25:29 - Type mixed should be a subtype of Foo',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'mixedConstructionReturnedAsTypedGeneric' => [
                 'code' => '<?php
@@ -3481,6 +3510,8 @@ final class TypeVariableTest extends TestCase
                     }',
                 'error_message' => 'MixedReturnTypeCoercion - src' . DIRECTORY_SEPARATOR
                     . "somefile.php:20:32 - The type 'Box<mixed>' is more general than the declared return type 'Box<Foo>' for boxMixed",
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'constructorlessConstructionSeesValuesAddedAfterward' => [
                 'code' => '<?php
@@ -3560,6 +3591,8 @@ final class TypeVariableTest extends TestCase
                     }',
                 'error_message' => 'MixedPropertyTypeCoercion - src' . DIRECTORY_SEPARATOR
                     . "somefile.php:21:42 - \$this->box expects 'Box<Foo>',  parent type `Box<mixed>` provided",
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'propertyRequirementThenMixedWrite' => [
                 // the property requires array<int, string> first, the mixed
@@ -3675,6 +3708,8 @@ final class TypeVariableTest extends TestCase
                     }',
                 'error_message' => 'PropertyTypeCoercion - src' . DIRECTORY_SEPARATOR
                     . 'somefile.php:15:33 - Type string should be a subtype of non-empty-string',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'argumentRequirementThenInvalidWrite' => [
                 'code' => '<?php
@@ -3746,6 +3781,8 @@ final class TypeVariableTest extends TestCase
                     }',
                 'error_message' => 'ArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR
                     . 'somefile.php:19:39 - Type Base should be a subtype of Child',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'coercedPropertyRequirementIsPropertyTypeCoercion' => [
                 'code' => '<?php
@@ -3772,6 +3809,8 @@ final class TypeVariableTest extends TestCase
                     }',
                 'error_message' => 'PropertyTypeCoercion - src' . DIRECTORY_SEPARATOR
                     . 'somefile.php:20:40 - Type Base should be a subtype of Child',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'callbackTooNarrowForValueAddedAfterConstruction' => [
                 'code' => '<?php
@@ -3802,6 +3841,8 @@ final class TypeVariableTest extends TestCase
                     $c->each(function (int $i): void {});',
                 'error_message' => 'IncompatibleTypeParameters - src' . DIRECTORY_SEPARATOR
                     . 'somefile.php:26:30 - Type \'x\' should be a subtype of int',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'valueAddedAfterConstructionMustFitTheConstructorCallback' => [
                 'code' => '<?php
@@ -3856,6 +3897,8 @@ final class TypeVariableTest extends TestCase
                     $c->each(function ($x): void { $x->onlyA(); });',
                 'error_message' => 'PossiblyUndefinedMethod - src' . DIRECTORY_SEPARATOR
                     . 'somefile.php:31:56 - Method B::onlyA does not exist',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'readSitesSeeValuesAddedAfterConstruction' => [
                 // a value added after the construction is one the read may
@@ -3889,6 +3932,8 @@ final class TypeVariableTest extends TestCase
                     }',
                 'error_message' => 'PossiblyUndefinedMethod - src' . DIRECTORY_SEPARATOR
                     . 'somefile.php:24:41 - Method B::onlyA does not exist',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'inhabitedVariableNotContainedByNeverReturn' => [
                 // returning `a<int>` where `@return a<never>` is declared must be
@@ -3908,6 +3953,8 @@ final class TypeVariableTest extends TestCase
                     /** @return a<never> */
                     function f(): a { return new a(5); }',
                 'error_message' => 'IncompatibleTypeParameters',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'mixedConstructorInferenceCoercesClosureParam' => [
                 // the constructor infers TValue as mixed (lower bound mixed); the
@@ -4077,6 +4124,8 @@ final class TypeVariableTest extends TestCase
                     }',
                 'error_message' => 'IncompatibleTypeParameters - src' . DIRECTORY_SEPARATOR
                     . "somefile.php:16:32 - Type 1 should be a subtype of string",
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'constructorBoundWideningBeyondConstraint' => [
                 'code' => '<?php
@@ -4098,6 +4147,8 @@ final class TypeVariableTest extends TestCase
                     }',
                 'error_message' => 'IncompatibleTypeParameters - src' . DIRECTORY_SEPARATOR
                     . "somefile.php:16:35 - Type DateTime should be a subtype of int|string",
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'laterInvariantArgumentPinDoesNotBlameEarlierValidCall' => [
                 // vimeo/psalm#11937: the invalid takesStringBox call is reported
@@ -4126,6 +4177,8 @@ final class TypeVariableTest extends TestCase
                     }',
                 'error_message' => 'IncompatibleTypeParameters - src' . DIRECTORY_SEPARATOR
                     . 'somefile.php:21:40 - Type 1 should be a subtype of string',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'unboundVariablePassedToConflictingInvariantParams' => [
                 // with no content, two incompatible invariant requirements are

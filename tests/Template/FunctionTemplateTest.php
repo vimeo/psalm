@@ -4093,6 +4093,9 @@ final class FunctionTemplateTest extends TestCase
                             return fn() => fn() => $this->value;
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'nullAcceptedAsTheDefaultOfATemplateParameterAndComparedWithIt' => [
                 'code' => '<?php

@@ -743,6 +743,9 @@ final class InternalAnnotationTest extends TestCase
                     }
                 };
                 PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'internalSymbolsUsedFromFunctionAndTopLevelCodeInSameNamespace' => [
                 'code' => '<?php

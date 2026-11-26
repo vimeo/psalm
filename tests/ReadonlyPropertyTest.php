@@ -125,6 +125,9 @@ final class ReadonlyPropertyTest extends TestCase
                     }
 
                     echo (new A)->bar;',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'readonlyPublicConstructorPropertySetInAnotherMethod' => [
                 'code' => '<?php
@@ -142,6 +145,9 @@ final class ReadonlyPropertyTest extends TestCase
                     }
 
                     echo (new A)->bar;',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'readonlyPropertySetChildClass' => [
                 'code' => '<?php
