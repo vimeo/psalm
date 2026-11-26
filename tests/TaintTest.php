@@ -2622,6 +2622,75 @@ final class TaintTest extends TestCase
     public static function providerValidCodeParse(): array
     {
         return [
+            'overrideOptingOutOfASourceIsNoSource' => [
+                'code' => '<?php
+                    abstract class Request {
+                        /** @psalm-taint-source input */
+                        abstract public function get(string $name): string;
+                    }
+
+                    final class QueuedRequest extends Request {
+                        /** @param array<string, string> $vars */
+                        public function __construct(private array $vars) {}
+
+                        /** @psalm-no-taint-source */
+                        public function get(string $name): string {
+                            return $this->vars[$name] ?? "";
+                        }
+                    }
+
+                    function show(QueuedRequest $request): void {
+                        echo $request->get("a");
+                    }',
+            ],
+            'implementationOptingOutOfASourceIsNoSource' => [
+                'code' => '<?php
+                    interface Input {
+                        /** @psalm-taint-source input */
+                        public function get(): string;
+                    }
+
+                    final class ConstantInput implements Input {
+                        /** @psalm-no-taint-source */
+                        public function get(): string {
+                            return "";
+                        }
+                    }
+
+                    function show(ConstantInput $input): void {
+                        echo $input->get();
+                    }',
+            ],
+            'overrideOfAnOverrideOptingOutOfASourceIsNoSource' => [
+                'code' => '<?php
+                    interface Input {
+                        /** @psalm-taint-source input */
+                        public function get(): string;
+                    }
+
+                    class Request implements Input {
+                        public function get(): string {
+                            return "";
+                        }
+                    }
+
+                    class QueuedRequest extends Request {
+                        /** @psalm-no-taint-source */
+                        public function get(): string {
+                            return "";
+                        }
+                    }
+
+                    final class RetriedRequest extends QueuedRequest {
+                        public function get(): string {
+                            return "";
+                        }
+                    }
+
+                    function show(RetriedRequest $request): void {
+                        echo $request->get();
+                    }',
+            ],
             'arrayWalkCallbackWritingSafeValuesByReference' => [
                 'code' => '<?php
                     $items = ["a"];
@@ -9159,6 +9228,108 @@ final class TaintTest extends TestCase
                         echo $input->get();
                     }',
                 'error_message' => 'TaintedHtml',
+            ],
+            'callThroughTheParentTypeOfAnOverrideOptingOutOfASourceIsASource' => [
+                'code' => '<?php
+                    abstract class Request {
+                        /** @psalm-taint-source input */
+                        abstract public function get(): string;
+                    }
+
+                    final class QueuedRequest extends Request {
+                        /** @psalm-no-taint-source */
+                        public function get(): string {
+                            return "";
+                        }
+                    }
+
+                    function show(Request $request): void {
+                        echo $request->get();
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'siblingOfAnOverrideOptingOutOfASourceIsASource' => [
+                'code' => '<?php
+                    abstract class Request {
+                        /** @psalm-taint-source input */
+                        abstract public function get(): string;
+                    }
+
+                    final class QueuedRequest extends Request {
+                        /** @psalm-no-taint-source */
+                        public function get(): string {
+                            return "";
+                        }
+                    }
+
+                    final class WebRequest extends Request {
+                        public function get(): string {
+                            return "";
+                        }
+                    }
+
+                    function show(QueuedRequest $queued, WebRequest $http): void {
+                        echo $queued->get();
+                        echo $http->get();
+                    }',
+                'error_message' => 'TaintedHtml - src' . DIRECTORY_SEPARATOR . 'somefile.php:22:25',
+            ],
+            'overrideOptingOutOfASourceStillReturnsWhatItsBodyReturns' => [
+                'code' => '<?php
+                    abstract class Request {
+                        /** @psalm-taint-source input */
+                        abstract public function get(): string;
+                    }
+
+                    final class QueuedRequest extends Request {
+                        /** @psalm-no-taint-source */
+                        public function get(): string {
+                            return (string) $_GET["a"];
+                        }
+                    }
+
+                    function show(QueuedRequest $request): void {
+                        echo $request->get();
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'overrideWithItsOwnSourceOfAnOverrideOptingOutIsASource' => [
+                'code' => '<?php
+                    abstract class Request {
+                        /** @psalm-taint-source input */
+                        abstract public function get(): string;
+                    }
+
+                    class QueuedRequest extends Request {
+                        /** @psalm-no-taint-source */
+                        public function get(): string {
+                            return "";
+                        }
+                    }
+
+                    final class ForwardedRequest extends QueuedRequest {
+                        /** @psalm-taint-source input */
+                        public function get(): string {
+                            return "";
+                        }
+                    }
+
+                    function show(ForwardedRequest $request): void {
+                        echo $request->get();
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'noTaintSourceNextToATaintSourceIsAnInvalidDocblock' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-taint-source input
+                     * @psalm-no-taint-source
+                     */
+                    function get(): string {
+                        return "";
+                    }',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:21 - '
+                    . '@psalm-no-taint-source can\'t be combined with @psalm-taint-source',
             ],
             'taintOfAnArgumentAfterTheFirstOneReachesAVariadicOverrideCalledThroughTheParentType' => [
                 'code' => '<?php

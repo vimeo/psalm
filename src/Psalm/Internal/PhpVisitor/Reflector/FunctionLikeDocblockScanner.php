@@ -482,6 +482,7 @@ final class FunctionLikeDocblockScanner
 
         // merge taints from doc block to storage, enforce uniqueness and having consecutive index keys
         $storage->taint_source_types |= $docblock_info->taint_source_types;
+        $storage->no_taint_source = $storage->no_taint_source || $docblock_info->no_taint_source;
         $storage->taint_source_keys = [...$storage->taint_source_keys, ...$docblock_info->taint_source_keys];
         $location = new CodeLocation($file_scanner, $stmt, null, true);
 

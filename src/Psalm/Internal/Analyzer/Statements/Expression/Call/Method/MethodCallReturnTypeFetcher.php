@@ -464,7 +464,8 @@ final class MethodCallReturnTypeFetcher
 
     /**
      * The taints the methods $method_id implements or overrides are sources of (`@psalm-taint-source`), through the
-     * ones that don't say it themselves
+     * ones that don't say it themselves. A method with `@psalm-no-taint-source` hides the sources of the methods it
+     * overrides.
      *
      * @param array<string, true> $visited
      * @psalm-capabilities read-props
@@ -481,9 +482,31 @@ final class MethodCallReturnTypeFetcher
         }
 
         $class_storage = $codebase->classlike_storage_provider->get($method_id->fq_class_name);
+        $overridden_method_ids = $class_storage->overridden_method_ids[$method_id->method_name] ?? [];
         $taints = 0;
 
-        foreach ($class_storage->overridden_method_ids[$method_id->method_name] ?? [] as $overridden_method_id) {
+        // the overridden methods of an ancestor are listed here too, so the ones an opted-out ancestor hides are
+        // skipped before any of them is read
+        foreach ($overridden_method_ids as $overridden_method_id) {
+            if ($codebase->methods->hasStorage($overridden_method_id)
+                && $codebase->methods->getStorage($overridden_method_id)->no_taint_source
+            ) {
+                $visited[(string) $overridden_method_id] = true;
+
+                $opted_out_class = $overridden_method_id->fq_class_name;
+
+                if ($codebase->classlike_storage_provider->has($opted_out_class)) {
+                    $hidden_method_ids = $codebase->classlike_storage_provider->get($opted_out_class)
+                        ->overridden_method_ids[$overridden_method_id->method_name] ?? [];
+
+                    foreach ($hidden_method_ids as $hidden_method_id) {
+                        $visited[(string) $hidden_method_id] = true;
+                    }
+                }
+            }
+        }
+
+        foreach ($overridden_method_ids as $overridden_method_id) {
             if (isset($visited[(string) $overridden_method_id])
                 || !$codebase->methods->hasStorage($overridden_method_id)
             ) {
@@ -845,9 +868,10 @@ final class MethodCallReturnTypeFetcher
             $codebase->getInputTaints(),
         );
 
-        // a method implementing or overriding a source is one too, unless it says what it returns itself: a source
-        // replaces the one of the node taintUsingStorage() added, so it adds the taints of the method too
-        if ($method_storage->taint_source_types === 0) {
+        // a method implementing or overriding a source is one too, unless it says what it returns itself or opts out
+        // with @psalm-no-taint-source: a source replaces the one of the node taintUsingStorage() added, so it adds
+        // the taints of the method too
+        if ($method_storage->taint_source_types === 0 && !$method_storage->no_taint_source) {
             $inherited_taints = self::getInheritedTaintSources($codebase, $method_id, []);
             $taints = ($inherited_taints === 0 ? 0 : $inherited_taints | $method_storage->added_taints)
                 & ~$method_storage->removed_taints

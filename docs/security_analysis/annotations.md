@@ -4,6 +4,11 @@
 
 See [Custom taint sources](custom_taint_sources.md#taint-source-annotation).
 
+## `@psalm-no-taint-source`
+
+An override that isn't a source of what the method it overrides is a source of. See
+[Custom taint sources](custom_taint_sources.md#taint-source-annotation).
+
 ## `@psalm-taint-sink <taint-type #conditional> <param-name>`
 
 See [Custom taint sinks](custom_taint_sinks.md) and [Conditional sinks](custom_taint_sinks.md#conditional-sinks).

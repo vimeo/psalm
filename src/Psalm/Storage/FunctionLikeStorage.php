@@ -315,6 +315,12 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
     public int $taint_source_types = 0;
 
     /**
+     * `@psalm-no-taint-source`: a method that isn't a source of the taints the methods it implements or overrides are
+     * sources of, and neither are the methods overriding it that have no `@psalm-taint-source` of their own
+     */
+    public bool $no_taint_source = false;
+
+    /**
      * The taints of the sources under keys of what the function-like returns, the keys outermost first:
      * `@psalm-taint-source input return['key']`
      *

@@ -582,6 +582,18 @@ final class FunctionLikeDocblockParser
             }
         }
 
+        if (isset($parsed_docblock->tags['psalm-no-taint-source'])) {
+            if (isset($parsed_docblock->tags['psalm-taint-source'])) {
+                $info->docblock_issues[] = new InvalidDocblock(
+                    '@psalm-no-taint-source can\'t be combined with @psalm-taint-source in docblock for '
+                        . $cased_function_id,
+                    $code_location,
+                );
+            } else {
+                $info->no_taint_source = true;
+            }
+        }
+
         if (isset($parsed_docblock->tags['psalm-taint-unescape'])) {
             foreach ($parsed_docblock->tags['psalm-taint-unescape'] as $param) {
                 $param = trim($param);

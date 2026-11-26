@@ -146,6 +146,11 @@ final class FunctionDocblockComment
     public int $taint_source_types = 0;
 
     /**
+     * `@psalm-no-taint-source`: a method that isn't a source of the taints the methods it overrides are sources of
+     */
+    public bool $no_taint_source = false;
+
+    /**
      * The taints of the sources under keys of what the function-like returns: `@psalm-taint-source input return['key']`
      *
      * @var list<array{non-empty-list<string>, int}>
