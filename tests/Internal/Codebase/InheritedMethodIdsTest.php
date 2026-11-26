@@ -139,6 +139,7 @@ final class InheritedMethodIdsTest extends TestCase
      * @param lowercase-string $fq_class_name_lc
      * @param lowercase-string $method_name_lc
      * @return array<string, string>
+     * @psalm-capabilities read-props
      */
     private function getOverriddenMethodIds(string $fq_class_name_lc, string $method_name_lc): array
     {
