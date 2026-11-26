@@ -30,3 +30,4 @@
 /vendor-bin export-ignore
 
 *.phpstub linguist-language=PHP
+tests/HackConformanceTranspiledTest.php linguist-generated

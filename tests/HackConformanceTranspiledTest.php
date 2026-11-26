@@ -184,6 +184,79 @@ final class HackConformanceTranspiledTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.3',
             ],
+            'type_parameter_lower_bounds/lower_bound_widens_the_inferred_type' => [
+                // the lower bound is one more lower bound of the template: keep(1) is int|Cat, not an error.
+                'code' => '<?php
+                    class Animal {}
+
+                    class Cat extends Animal {}
+
+                    /** @template T super Cat */
+                    final class Sink {
+                        /**
+                         * @psalm-impure
+                         * @param T $v
+                         */
+                        public function put($v): void {}
+                    }
+
+                    /**
+                     * @template T super Cat
+                     * @psalm-impure
+                     * @param T $v
+                     * @return T
+                     */
+                    function keep($v) { return $v; }
+
+                    /** @psalm-impure */
+                    function test(): void {
+                        keep(1);
+                        keep(new Animal());
+                        keep(new Cat());
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'type_parameter_lower_bounds/sink_accepts_supertype_arguments' => [
+                // a type argument of a template with a lower bound may be the lower bound or any supertype of it, and a
+                // value of the lower bound fits the template, also where the argument is another template with that bound.
+                'code' => '<?php
+                    class Animal {}
+
+                    class Cat extends Animal {}
+
+                    /** @template T super Cat */
+                    final class Sink {
+                        /**
+                         * @psalm-impure
+                         * @param T $v
+                         */
+                        public function put($v): void {}
+                    }
+
+                    /**
+                     * @psalm-impure
+                     * @param Sink<Animal> $s
+                     */
+                    function takesAnimalSink(Sink $s): void { $s->put(new Cat()); }
+
+                    /**
+                     * @psalm-impure
+                     * @param Sink<mixed> $s
+                     */
+                    function takesMixedSink(Sink $s): void { $s->put(new Cat()); }
+
+                    /**
+                     * @template T super Cat
+                     * @psalm-impure
+                     * @param Sink<T> $s
+                     */
+                    function generic(Sink $s): void { $s->put(new Cat()); }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
             'type_variables/array_access' => [
                 // nested array access on an element read out of a type-variable list.
                 'code' => '<?php
@@ -932,6 +1005,218 @@ final class HackConformanceTranspiledTest extends TestCase
                         }
                     }',
                 'error_message' => 'ImmutableDependency',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
+            'type_parameter_lower_bounds/child_template_without_lower_bound' => [
+                // a template of a class without a lower bound may be bound to a type below Cat.
+                'code' => '<?php
+                    class Animal {}
+
+                    class Cat extends Animal {}
+
+                    /** @template T super Cat */
+                    final class Sink {
+                        /**
+                         * @psalm-impure
+                         * @param T $v
+                         */
+                        public function put($v): void {}
+                    }
+
+                    /** @template T */
+                    final class Child {
+                        /**
+                         * @psalm-impure
+                         * @param Sink<T> $s
+                         */
+                        public function f(Sink $s): void {}
+                    }',
+                'error_message' => 'InvalidTemplateParam',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
+            'type_parameter_lower_bounds/invariant_argument_conflicts_with_lower_bound' => [
+                // Box<int> pins T to int, which does not contain the lower bound Cat.
+                'code' => '<?php
+                    class Animal {}
+
+                    class Cat extends Animal {}
+
+                    /** @template T super Cat */
+                    final class Sink {
+                        /**
+                         * @psalm-impure
+                         * @param T $v
+                         */
+                        public function put($v): void {}
+                    }
+
+                    /** @template T */
+                    final class Box {
+                        /**
+                         * @psalm-impure
+                         * @param T $v
+                         */
+                        public function __construct(public $v) {}
+
+                        /**
+                         * @psalm-impure
+                         * @param T $v
+                         */
+                        public function set($v): void {}
+                    }
+
+                    /**
+                     * @template T super Cat
+                     * @psalm-impure
+                     * @param Box<T> $b
+                     */
+                    function fill(Box $b): void { $b->set(new Cat()); }
+
+                    /**
+                     * @psalm-impure
+                     * @param Box<int> $b
+                     */
+                    function callFill(Box $b): void { fill($b); }',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
+            'type_parameter_lower_bounds/lower_bound_is_part_of_the_result' => [
+                // mk(1) may return a Cat, so it is int|Cat, which is not an int.
+                'code' => '<?php
+                    class Animal {}
+
+                    class Cat extends Animal {}
+
+                    /** @template T super Cat */
+                    final class Sink {
+                        /**
+                         * @psalm-impure
+                         * @param T $v
+                         */
+                        public function put($v): void {}
+                    }
+
+                    /**
+                     * @template T super Cat
+                     * @psalm-impure
+                     * @param T $v
+                     * @return T
+                     */
+                    function mk($v) { return new Cat(); }
+
+                    /** @psalm-impure */
+                    function test(): int { return mk(1); }',
+                'error_message' => 'InvalidReturnStatement',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
+            'type_parameter_lower_bounds/sink_rejects_unrelated_argument' => [
+                // int is not a supertype of the lower bound Cat.
+                'code' => '<?php
+                    class Animal {}
+
+                    class Cat extends Animal {}
+
+                    /** @template T super Cat */
+                    final class Sink {
+                        /**
+                         * @psalm-impure
+                         * @param T $v
+                         */
+                        public function put($v): void {}
+                    }
+
+                    /**
+                     * @psalm-impure
+                     * @param Sink<int> $s
+                     */
+                    function takesIntSink(Sink $s): void {}',
+                'error_message' => 'InvalidTemplateParam',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
+            'type_parameter_lower_bounds/unbounded_template_does_not_fit_lower_bound' => [
+                // a template without a lower bound may be bound to a type below Cat.
+                'code' => '<?php
+                    class Animal {}
+
+                    class Cat extends Animal {}
+
+                    /** @template T super Cat */
+                    final class Sink {
+                        /**
+                         * @psalm-impure
+                         * @param T $v
+                         */
+                        public function put($v): void {}
+                    }
+
+                    /**
+                     * @template T
+                     * @psalm-impure
+                     * @param Sink<T> $s
+                     */
+                    function generic(Sink $s): void {}',
+                'error_message' => 'InvalidTemplateParam',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
+            'type_parameter_lower_bounds/upper_bound_is_still_checked' => [
+                // with both bounds, the upper bound rejects int.
+                'code' => '<?php
+                    class Animal {}
+
+                    class Cat extends Animal {}
+
+                    /** @template T super Cat */
+                    final class Sink {
+                        /**
+                         * @psalm-impure
+                         * @param T $v
+                         */
+                        public function put($v): void {}
+                    }
+
+                    /**
+                     * @template T of Animal super Cat
+                     * @psalm-impure
+                     * @param T $v
+                     * @return T
+                     */
+                    function keep2($v) { return $v; }
+
+                    /** @psalm-impure */
+                    function test(): void { keep2(1); }',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
+            'type_parameter_lower_bounds/value_reads_as_upper_bound' => [
+                // a value of a template with only a lower bound is any type, not the lower bound.
+                'code' => '<?php
+                    class Animal {}
+
+                    class Cat extends Animal {}
+
+                    /** @template T super Cat */
+                    final class Sink {
+                        /**
+                         * @psalm-impure
+                         * @param T $v
+                         */
+                        public function put($v): void {}
+                    }
+
+                    /**
+                     * @template T super Cat
+                     * @psalm-impure
+                     * @param T $v
+                     */
+                    function f($v): Cat { return $v; }',
+                'error_message' => 'MixedReturnTypeCoercion',
                 'error_levels' => [],
                 'php_version' => '8.3',
             ],
