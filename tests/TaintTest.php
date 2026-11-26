@@ -5659,6 +5659,59 @@ final class TaintTest extends TestCase
                     $agent = new LlmAgent();
                     $agent->prompt(sanitize_for_llm((string) $_GET["question"]));',
             ],
+            'recursiveSpecializedCallPuttingWhatItReturnsUnderTheKeyOfAnElementKeepsItOutOfTheKeys' => [
+                'code' => '<?php
+                    final class Helper {
+                        /** @psalm-taint-specialize */
+                        public static function prepare(mixed $attr): array|string {
+                            if (is_array($attr)) {
+                                $prepared = [];
+                                foreach ($attr as $key => $value) {
+                                    $prepared[$key] = self::prepare($value);
+                                }
+                                return $prepared;
+                            }
+                            return (string) $attr;
+                        }
+                    }
+
+                    /** @psalm-suppress MixedArgument */
+                    $attributes = Helper::prepare(["value" => $_GET["x"]]);
+                    if (is_array($attributes)) {
+                        foreach ($attributes as $name => $value) {
+                            echo $name . "=\"" . htmlspecialchars((string) $value, ENT_QUOTES) . "\" ";
+                        }
+                    }',
+            ],
+            'recursiveSpecializedCallPuttingWhatItReturnsUnderTheKeyOfANestedElementKeepsItOutOfTheKeys' => [
+                'code' => '<?php
+                    final class Helper {
+                        /** @psalm-taint-specialize */
+                        public static function prepare(mixed $attr): array|string {
+                            if (is_array($attr)) {
+                                $prepared = [];
+                                foreach ($attr as $key => $value) {
+                                    $prepared[$key] = self::prepare($value);
+                                }
+                                return $prepared;
+                            }
+                            return (string) $attr;
+                        }
+                    }
+
+                    /** @psalm-suppress MixedArgument */
+                    $attributes = Helper::prepare(["style" => ["color" => $_GET["x"]]]);
+                    if (is_array($attributes)) {
+                        foreach ($attributes as $name => $style) {
+                            echo $name;
+                            if (is_array($style)) {
+                                foreach ($style as $property => $value) {
+                                    echo $property . ":" . htmlspecialchars((string) $value, ENT_QUOTES);
+                                }
+                            }
+                        }
+                    }',
+            ],
             'nosqlSinkNotTaintedByString' => [
                 'code' => '<?php
                     /** @psalm-taint-sink nosql $filter */
@@ -17779,6 +17832,87 @@ final class TaintTest extends TestCase
                     }
 
                     echo first((array) $_GET["names"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'recursiveSpecializedCallPuttingWhatItReturnsUnderTheKeyOfAnElementKeepsATaintedKey' => [
+                'code' => '<?php
+                    final class Helper {
+                        /** @psalm-taint-specialize */
+                        public static function prepare(mixed $attr): array|string {
+                            if (is_array($attr)) {
+                                $prepared = [];
+                                foreach ($attr as $key => $value) {
+                                    $prepared[$key] = self::prepare($value);
+                                }
+                                return $prepared;
+                            }
+                            return (string) $attr;
+                        }
+                    }
+
+                    $attributes = Helper::prepare([(string) $_GET["x"] => "a"]);
+                    if (is_array($attributes)) {
+                        foreach ($attributes as $name => $_) {
+                            echo $name;
+                        }
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'recursiveSpecializedCallPuttingWhatItReturnsUnderTheKeyOfANestedElementKeepsATaintedKey' => [
+                'code' => '<?php
+                    final class Helper {
+                        /** @psalm-taint-specialize */
+                        public static function prepare(mixed $attr): array|string {
+                            if (is_array($attr)) {
+                                $prepared = [];
+                                foreach ($attr as $key => $value) {
+                                    $prepared[$key] = self::prepare($value);
+                                }
+                                return $prepared;
+                            }
+                            return (string) $attr;
+                        }
+                    }
+
+                    $attributes = Helper::prepare(["style" => [(string) $_GET["x"] => "red"]]);
+                    if (is_array($attributes)) {
+                        foreach ($attributes as $style) {
+                            if (is_array($style)) {
+                                foreach ($style as $property => $_) {
+                                    echo $property;
+                                }
+                            }
+                        }
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'recursiveSpecializedCallPuttingWhatItReturnsUnderTheKeyOfANestedElementKeepsATaintedValue' => [
+                'code' => '<?php
+                    final class Helper {
+                        /** @psalm-taint-specialize */
+                        public static function prepare(mixed $attr): array|string {
+                            if (is_array($attr)) {
+                                $prepared = [];
+                                foreach ($attr as $key => $value) {
+                                    $prepared[$key] = self::prepare($value);
+                                }
+                                return $prepared;
+                            }
+                            return (string) $attr;
+                        }
+                    }
+
+                    /** @psalm-suppress MixedArgument */
+                    $attributes = Helper::prepare(["style" => ["color" => $_GET["x"]]]);
+                    if (is_array($attributes)) {
+                        foreach ($attributes as $style) {
+                            if (is_array($style)) {
+                                foreach ($style as $value) {
+                                    echo (string) $value;
+                                }
+                            }
+                        }
+                    }',
                 'error_message' => 'TaintedHtml',
             ],
             'taintedNosqlKeepsTaintWithoutScalarNarrowing' => [
