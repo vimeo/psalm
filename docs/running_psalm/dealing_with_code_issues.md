@@ -99,7 +99,7 @@ function (int $a) : string {
 
 If you wish to suppress all issues, you can use `@psalm-suppress all` instead of multiple annotations.
 
-The issues listed in [`<unsuppressibleIssues>`](configuration.md#unsuppressibleissues) can't be suppressed, neither this way nor with `<issueHandlers>` or a baseline.
+The issues listed in [`<unsuppressibleIssues>`](configuration.md#unsuppressibleissues) can't be suppressed, neither this way nor with `<issueHandlers>` or a baseline: `<issue name="SecurityIssue" />` there keeps every security issue reported.
 
 ## Using a baseline file
 
