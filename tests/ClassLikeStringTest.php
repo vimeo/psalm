@@ -1236,17 +1236,64 @@ final class ClassLikeStringTest extends TestCase
                         new \RuntimeException();
                     }',
             ],
-            'convertToStringClassExistsNegated' => [
+            'classStringStaysClassStringWhenClassExistsNegated' => [
                 'code' => '<?php
-                    /** @param class-string $className */
-                    $className = stdClass::class;
+                    /** @return class-string */
+                    function getClassName(): string {
+                        return stdClass::class;
+                    }
+                    $className = getClassName();
                     if (class_exists($className)) {
                         throw new \RuntimeException($className);
                     }',
                 'assertions' => [
-                    '$className===' => 'string',
+                    '$className===' => 'class-string',
                 ],
+            ],
+            'typedClassStringStaysWhenClassExistsNegated' => [
+                'code' => '<?php
+                    interface Collection {}
 
+                    /** @return class-string<Collection> */
+                    function getClassName(): string {
+                        throw new RuntimeException();
+                    }
+                    $className = getClassName();
+                    if (class_exists($className)) {
+                        throw new \RuntimeException($className);
+                    }',
+                'assertions' => [
+                    '$className===' => 'class-string<Collection>',
+                ],
+            ],
+            'typedClassStringStaysClassStringForIsAWhenClassExistsNegated' => [
+                'code' => '<?php
+                    interface Collection {}
+
+                    /** @param class-string $collectionClass */
+                    function supports(string $collectionClass, string $type): bool {
+                        if (!is_a($type, Collection::class, true)) {
+                            return false;
+                        }
+                        if (class_exists($type)) {
+                            return true;
+                        }
+                        return is_a($collectionClass, $type, true);
+                    }',
+            ],
+            'classStringStaysClassStringWhenInterfaceExistsNegated' => [
+                'code' => '<?php
+                    /** @return class-string */
+                    function getClassName(): string {
+                        return stdClass::class;
+                    }
+                    $className = getClassName();
+                    if (interface_exists($className)) {
+                        throw new \RuntimeException($className);
+                    }',
+                'assertions' => [
+                    '$className===' => 'class-string',
+                ],
             ],
             'createNewObjectFromGetClass' => [
                 'code' => '<?php

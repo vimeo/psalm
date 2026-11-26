@@ -146,11 +146,6 @@ final class NegatedAssertionReconciler extends Reconciler
             $existing_var_type->removeType('array');
         }
 
-        if ($assertion instanceof IsNotType && $assertion_type instanceof TClassString) {
-            $existing_var_type->removeType(TClassString::class);
-            $existing_var_type->addType(new TString);
-        }
-
         if (!$is_equality
             && isset($existing_var_atomic_types['int'])
             && $existing_var_type->from_calculation
@@ -240,8 +235,11 @@ final class NegatedAssertionReconciler extends Reconciler
                     }
                 }
             }
-        } elseif (($assertion_type instanceof TClassString || $assertion_type instanceof TTraitString)
-            && $assertion_type->is_loaded
+        } elseif ((($assertion_type instanceof TClassString || $assertion_type instanceof TTraitString)
+                && $assertion_type->is_loaded)
+            // `class_exists()` is false for the names of interfaces, enums and traits: a class-like name stays one
+            || ($assertion_type instanceof TClassString
+                && $assertion_type->getKey() === 'class-string')
         ) {
             // do nothing
         } elseif ($existing_var_type->isArray()
