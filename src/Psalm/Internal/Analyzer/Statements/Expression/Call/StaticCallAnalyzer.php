@@ -351,7 +351,11 @@ final class StaticCallAnalyzer extends CallAnalyzer
         $targets_if_true_assertions = [];
         $targets_if_false_assertions = [];
 
+        $union_receiver_assertions = UnionReceiverAssertions::startCall($stmt, $context, count($lhs_type_parts));
+
         foreach ($lhs_type_parts as $lhs_type_part) {
+            $union_receiver_assertions?->startReceiver();
+
             AtomicStaticCallAnalyzer::analyze(
                 $statements_analyzer,
                 $stmt,
@@ -365,7 +369,9 @@ final class StaticCallAnalyzer extends CallAnalyzer
                 $template_result,
             );
 
-            if (count($lhs_type_parts) > 1) {
+            if ($union_receiver_assertions !== null) {
+                $union_receiver_assertions->endReceiver();
+
                 $targets_if_true_assertions[] = $statements_analyzer->node_data->getIfTrueAssertions($stmt) ?? [];
                 $targets_if_false_assertions[] = $statements_analyzer->node_data->getIfFalseAssertions($stmt) ?? [];
 
@@ -373,6 +379,8 @@ final class StaticCallAnalyzer extends CallAnalyzer
                 $statements_analyzer->node_data->setIfFalseAssertions($stmt, []);
             }
         }
+
+        $union_receiver_assertions?->endCall($context, $codebase);
 
         if ($targets_if_true_assertions && $targets_if_false_assertions) {
             $statements_analyzer->node_data->setIfTrueAssertions(

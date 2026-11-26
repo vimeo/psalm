@@ -18,6 +18,7 @@ use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentsAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallProhibitionAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\UnionReceiverAssertions;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Codebase\AssertionsFromInheritanceResolver;
@@ -1274,30 +1275,51 @@ abstract class CallAnalyzer
         $assertions = $assertions_resolver->resolve($method_storage, $class_storage);
 
         if ($assertions) {
-            self::applyAssertionsToContext(
+            $var_assertions = self::resolveStaticPropertyAssertionClasses(
+                self::getAssertionsOnArgs(
+                    $assertions,
+                    $method_storage,
+                    $args,
+                    $statements_analyzer->node_data,
+                    $context->strict_types,
+                ),
+                $codebase,
+                $context,
+                $trait_self_class,
+                $static_class,
+                $fq_class_name,
+            );
+
+            $apply_assertions = static function (Context $context) use (
                 $stmt_name,
                 $context_this_var_id,
-                self::resolveStaticPropertyAssertionClasses(
-                    self::getAssertionsOnArgs(
-                        $assertions,
-                        $method_storage,
-                        $args,
-                        $statements_analyzer->node_data,
-                        $context->strict_types,
-                    ),
-                    $codebase,
-                    $context,
-                    $trait_self_class,
-                    $static_class,
-                    $fq_class_name,
-                ),
+                $var_assertions,
                 $args,
                 $template_result,
-                $context,
                 $statements_analyzer,
                 $context_static_type,
                 $trait_self_class,
-            );
+            ): void {
+                self::applyAssertionsToContext(
+                    $stmt_name,
+                    $context_this_var_id,
+                    $var_assertions,
+                    $args,
+                    $template_result,
+                    $context,
+                    $statements_analyzer,
+                    $context_static_type,
+                    $trait_self_class,
+                );
+            };
+
+            $union_receiver_assertions = UnionReceiverAssertions::forCall($stmt, $context);
+
+            if ($union_receiver_assertions !== null) {
+                $union_receiver_assertions->apply($context, $apply_assertions);
+            } else {
+                $apply_assertions($context);
+            }
         }
 
         self::setConditionalAssertions(

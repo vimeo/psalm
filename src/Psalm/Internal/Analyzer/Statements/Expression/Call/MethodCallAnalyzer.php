@@ -253,7 +253,16 @@ final class MethodCallAnalyzer extends CallAnalyzer
         $memoized_type = $method_var_id !== null ? $context->vars_in_scope[$method_var_id] ?? null : null;
 
         $possible_new_class_types = [];
+
+        $union_receiver_assertions = UnionReceiverAssertions::startCall($stmt, $context, count($lhs_types));
+
+        // a call on one of several types asserts only what each of them asserts
+        $targets_if_true_assertions = [];
+        $targets_if_false_assertions = [];
+
         foreach ($lhs_types as $lhs_type_part) {
+            $union_receiver_assertions?->startReceiver();
+
             AtomicMethodCallAnalyzer::analyze(
                 $statements_analyzer,
                 $stmt,
@@ -270,11 +279,35 @@ final class MethodCallAnalyzer extends CallAnalyzer
                 $result,
                 $template_result,
             );
+
+            if ($union_receiver_assertions !== null) {
+                $union_receiver_assertions->endReceiver();
+
+                $targets_if_true_assertions[] = $statements_analyzer->node_data->getIfTrueAssertions($stmt) ?? [];
+                $targets_if_false_assertions[] = $statements_analyzer->node_data->getIfFalseAssertions($stmt) ?? [];
+
+                $statements_analyzer->node_data->setIfTrueAssertions($stmt, []);
+                $statements_analyzer->node_data->setIfFalseAssertions($stmt, []);
+            }
+
             if ($lhs_var_id !== null && isset($context->vars_in_scope[$lhs_var_id])
                 && ($possible_new_class_type = $context->vars_in_scope[$lhs_var_id]) instanceof Union
                 && !$possible_new_class_type->equals($class_type)) {
                 $possible_new_class_types[] = $context->vars_in_scope[$lhs_var_id];
             }
+        }
+
+        $union_receiver_assertions?->endCall($context, $codebase);
+
+        if ($targets_if_true_assertions && $targets_if_false_assertions) {
+            $statements_analyzer->node_data->setIfTrueAssertions(
+                $stmt,
+                self::getCommonAssertions($targets_if_true_assertions),
+            );
+            $statements_analyzer->node_data->setIfFalseAssertions(
+                $stmt,
+                self::getCommonAssertions($targets_if_false_assertions),
+            );
         }
 
         MethodCallPurityAnalyzer::keepPropertiesNotWrittenForEveryReceiverType($codebase, $context, $result);

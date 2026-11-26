@@ -6163,6 +6163,155 @@ final class AssertAnnotationTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'methodCallOnSeveralTypesAssertsOnTheVariablesAsTheyWereBeforeTheCall' => [
+                'code' => '<?php
+                    class Model {
+                        public ?int $id = null;
+
+                        /** @psalm-assert !null $this->id */
+                        public function assertId(): void {
+                            if ($this->id === null) {
+                                throw new RuntimeException();
+                            }
+                        }
+                    }
+
+                    final class A extends Model {}
+                    final class B extends Model {}
+
+                    function f(A|B $model): void {
+                        $model->assertId();
+                        /** @psalm-check-type-exact $model->id = int */;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'methodCallOnSeveralTypesAssertsOnlyWhatEachOfThemAsserts' => [
+                'code' => '<?php
+                    final class A {
+                        public ?int $id = null;
+
+                        /** @psalm-assert !null $this->id */
+                        public function check(): void {
+                            if ($this->id === null) {
+                                throw new RuntimeException();
+                            }
+                        }
+
+                        /** @psalm-assert int $x */
+                        public function checkInt(mixed $x): void {
+                            if (!is_int($x)) {
+                                throw new RuntimeException();
+                            }
+                        }
+                    }
+
+                    final class B {
+                        public ?int $id = null;
+
+                        public function check(): void {}
+
+                        public function checkInt(mixed $_x): void {}
+                    }
+
+                    function f(A|B $model, B|A $other, ?int $x): void {
+                        $model->check();
+                        $id = $model->id;
+                        /** @psalm-check-type-exact $id = int|null */;
+                        $other->check();
+                        $id = $other->id;
+                        /** @psalm-check-type-exact $id = int|null */;
+                        $model->checkInt($x);
+                        /** @psalm-check-type-exact $x = int|null */;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'methodCallOnSeveralTypesAssertsIfTrueOnlyWhatEachOfThemAsserts' => [
+                'code' => '<?php
+                    final class A {
+                        public ?int $id = null;
+
+                        /** @psalm-assert-if-true !null $this->id */
+                        public function hasId(): bool {
+                            return $this->id !== null;
+                        }
+                    }
+
+                    final class B {
+                        public ?int $id = null;
+
+                        public function hasId(): bool {
+                            return true;
+                        }
+                    }
+
+                    final class C {
+                        public ?int $id = null;
+
+                        /** @psalm-assert-if-true !null $this->id */
+                        public function hasId(): bool {
+                            return $this->id !== null;
+                        }
+                    }
+
+                    function f(A|B $model, B|A $other, A|C $asserting): void {
+                        if ($model->hasId()) {
+                            $id = $model->id;
+                        /** @psalm-check-type-exact $id = int|null */;
+                        }
+                        if ($other->hasId()) {
+                            $id = $other->id;
+                        /** @psalm-check-type-exact $id = int|null */;
+                        }
+                        if ($asserting->hasId()) {
+                            /** @psalm-check-type-exact $asserting->id = int */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'staticCallOnSeveralClassesAssertsOnTheVariablesAsTheyWereBeforeTheCall' => [
+                'code' => '<?php
+                    final class A {
+                        /** @psalm-assert int $x */
+                        public static function checkInt(mixed $x): void {
+                            if (!is_int($x)) {
+                                throw new RuntimeException();
+                            }
+                        }
+                    }
+
+                    final class B {
+                        /** @psalm-assert int $x */
+                        public static function checkInt(mixed $x): void {
+                            if (!is_int($x)) {
+                                throw new RuntimeException();
+                            }
+                        }
+                    }
+
+                    final class C {
+                        public static function checkInt(mixed $_x): void {}
+                    }
+
+                    /**
+                     * @param class-string<A>|class-string<B> $asserting
+                     * @param class-string<A>|class-string<C> $class
+                     */
+                    function f(string $asserting, string $class, ?int $x, ?int $y): void {
+                        $asserting::checkInt($x);
+                        /** @psalm-check-type-exact $x = int */;
+                        $class::checkInt($y);
+                        /** @psalm-check-type-exact $y = int|null */;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
@@ -6173,6 +6322,30 @@ final class AssertAnnotationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'methodCallOnSeveralTypesRedundantForEachOfThem' => [
+                'code' => '<?php
+                    class Model {
+                        public ?int $id = null;
+
+                        /** @psalm-assert !null $this->id */
+                        public function assertId(): void {
+                            if ($this->id === null) {
+                                throw new RuntimeException();
+                            }
+                        }
+                    }
+
+                    final class A extends Model {}
+                    final class B extends Model {}
+
+                    function f(A|B $model): void {
+                        $model->assertId();
+                        $model->assertId();
+                    }',
+                'error_message' => 'RedundantConditionGivenDocblockType - src' . DIRECTORY_SEPARATOR . 'somefile.php:18:33',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'assertIfTrueOfAMemoizedMethodComparedWithFalseThenTheMethodIsNeverTrue' => [
                 'code' => '<?php
                     final class Name {

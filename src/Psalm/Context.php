@@ -9,6 +9,7 @@ use PhpParser;
 use Psalm\Internal\Analyzer\ConstructorExits;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\ArrayAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\UnionReceiverAssertions;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
@@ -392,6 +393,13 @@ final class Context
      * @internal
      */
     public ?ConstructorExits $constructor_exits = null;
+
+    /**
+     * The assertions of the call on one of several receiver types being analysed
+     *
+     * @internal
+     */
+    public ?UnionReceiverAssertions $union_receiver_assertions = null;
 
     /**
      * Stored to prevent re-analysing methods when checking for initialised properties
