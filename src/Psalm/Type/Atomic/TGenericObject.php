@@ -16,7 +16,6 @@ use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 
-use function array_diff_key;
 use function array_values;
 use function count;
 use function implode;
@@ -126,6 +125,23 @@ final class TGenericObject extends TNamedObject
     }
 
     /**
+     * Whether an argument is a `*`, a `covariant` or a `contravariant` one: one unknown type
+     *
+     * @internal
+     * @psalm-mutation-free
+     */
+    public function hasUnknownArgument(): bool
+    {
+        foreach ($this->projections as $projection) {
+            if ($projection->isUnknown()) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * @internal
      * @param array<int, TypeArgumentProjection> $projections
      */
@@ -144,7 +160,8 @@ final class TGenericObject extends TNamedObject
     /**
      * The object with other type arguments. An argument that is replaced by a different type is no `*` or left out
      * argument any more: a plugin that rebuilds an argument (`Relation<User, *>` with a pivot class) means that type,
-     * while one that rebuilds an equal type keeps the marker.
+     * while one that rebuilds an equal type keeps the marker. A `covariant` or `contravariant` argument keeps its
+     * variance, which is written next to the type it holds.
      *
      * @param non-empty-list<Union> $type_params
      * @return static
@@ -158,7 +175,14 @@ final class TGenericObject extends TNamedObject
         $cloned = clone $this;
         $cloned->type_params = $type_params;
 
-        foreach ($cloned->projections as $offset => $_) {
+        foreach ($cloned->projections as $offset => $projection) {
+            if (isset($type_params[$offset])
+                && ($projection === TypeArgumentProjection::Covariant
+                    || $projection === TypeArgumentProjection::Contravariant)
+            ) {
+                continue;
+            }
+
             if (!isset($type_params[$offset], $this->type_params[$offset])
                 || !$type_params[$offset]->equals($this->type_params[$offset])
             ) {
@@ -193,8 +217,14 @@ final class TGenericObject extends TNamedObject
     {
         [$type_params, $purity_args] = $this->getTypeParamsAndPurityArgs();
 
+        // the types a `contravariant` argument fits are not those of the union of what the arguments hold, so only
+        // equal ones are merged
+        $to_string = in_array(TypeArgumentProjection::Contravariant, $this->projections, true)
+            ? static fn(Union $type_param): string => $type_param->getId()
+            : self::getTypeParamKey(...);
+
         return $this->value
-            . self::formatTypeParams($type_params, $purity_args, self::getTypeParamKey(...), $this)
+            . self::formatTypeParams($type_params, $purity_args, $to_string, $this)
             . ($include_extra ? $this->getIntersectionTypesId(true) : '');
     }
 
@@ -252,11 +282,15 @@ final class TGenericObject extends TNamedObject
         }
 
         foreach ($this->type_params as $i => $type_param) {
-            $is_star = $this->getProjection($i) === TypeArgumentProjection::Star;
+            $projection = $this->getProjection($i);
+            $other_projection = $other_type->getProjection($i);
 
-            // the type of a `*` is a function of the class and the other arguments
-            if ($is_star !== ($other_type->getProjection($i) === TypeArgumentProjection::Star)
-                || (!$is_star && !$type_param->equals($other_type->type_params[$i], $ensure_source_equality, false))
+            // a left out argument is the type it holds; the type of a `*` is a function of the class and the other
+            // arguments
+            if (($projection !== $other_projection
+                    && ($projection?->isUnknown() || $other_projection?->isUnknown()))
+                || ($projection !== TypeArgumentProjection::Star
+                    && !$type_param->equals($other_type->type_params[$i], $ensure_source_equality, false))
             ) {
                 return false;
             }
@@ -350,12 +384,17 @@ final class TGenericObject extends TNamedObject
             return $this;
         }
 
-        $projections = $this->projections + $this->getStarBoundProjections($template_result, $codebase);
+        $star_bound_projections = $this->getStarBoundProjections($template_result, $codebase);
+        // an argument that mentions a template bound to an unknown type takes the marker of what is read from it
+        $projections = $star_bound_projections + $this->projections;
         $type_params ??= $this->type_params;
 
-        // a new `*` holds the bound of the template of this class, which resolve() computes from `mixed`
-        foreach (array_diff_key($projections, $this->projections) as $offset => $_) {
-            $type_params[$offset] = Type::getMixed();
+        // a new `*` holds the bound of the template of this class, which resolve() computes from `mixed`; a new
+        // `covariant X` holds the type the arguments were replaced with
+        foreach ($star_bound_projections as $offset => $projection) {
+            if ($projection === TypeArgumentProjection::Star) {
+                $type_params[$offset] = Type::getMixed();
+            }
         }
 
         return (new static(
@@ -370,9 +409,11 @@ final class TGenericObject extends TNamedObject
     }
 
     /**
-     * The invariant arguments that mention a template the receiver bound to a `*` (`Box<T>`, `Box<Box<T>>` read from
-     * a `Box<*>`): what is read from the receiver is as unknown as the receiver, at the outermost such argument. A
-     * covariant argument reads the bound.
+     * The arguments that mention a template the receiver bound to a `*`, `covariant` or `contravariant` argument
+     * (`Box<T>`, `Box<Box<T>>` read from a `Box<*>`): what is read from the receiver is as unknown as the receiver, at
+     * the outermost such argument. A covariant argument reads the bound and needs no marker. An invariant argument
+     * that mentions only templates bound to a `covariant X` is `covariant` itself (`Box<covariant X>`); any other is
+     * a `*`.
      *
      * @return array<int, TypeArgumentProjection>
      * @psalm-mutation-free
@@ -390,7 +431,14 @@ final class TGenericObject extends TNamedObject
         $projections = [];
 
         foreach ($this->type_params as $offset => $type_param) {
-            if ($class_storage?->getTemplateVariance($offset) === TemplateVariance::Covariant) {
+            $variance = $this->getProjection($offset) === TypeArgumentProjection::Contravariant
+                ? TemplateVariance::Contravariant
+                : $class_storage?->getTemplateVariance($offset);
+
+            // a covariant argument reads what the template is read as
+            if ($variance === TemplateVariance::Covariant
+                || $this->getProjection($offset) === TypeArgumentProjection::Covariant
+            ) {
                 continue;
             }
 
@@ -398,11 +446,19 @@ final class TGenericObject extends TNamedObject
             $collector->traverseArray($type_param->getAtomicTypes());
 
             foreach ($collector->getTemplateTypes() as $template) {
-                if (isset($template_result->star_bindings[$template->param_name][$template->defining_class])) {
+                $binding = $template_result->star_bindings[$template->param_name][$template->defining_class] ?? null;
+
+                if ($binding === null) {
+                    continue;
+                }
+
+                if ($binding !== TypeArgumentProjection::Covariant || $variance === TemplateVariance::Contravariant) {
                     $projections[$offset] = TypeArgumentProjection::Star;
 
                     break;
                 }
+
+                $projections[$offset] = TypeArgumentProjection::Covariant;
             }
         }
 

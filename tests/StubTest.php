@@ -2203,6 +2203,108 @@ final class StubTest extends DeferredAnalyzerTestCase
         $this->analyzeFile($file_path, new Context());
     }
 
+    private function analyzeWithPartialUserlandStubs(string $code): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+
+                    <stubs>
+                        <file name="tests/fixtures/stubs/partial_userland_classes.phpstub" />
+                    </stubs>
+                </psalm>',
+            ),
+            '8.0',
+        );
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                namespace Foo;
+
+                interface PartiallyStubbedInterface {
+                    /** @param array<string, mixed> $context */
+                    public function denormalize(mixed $data, array $context = []): mixed;
+
+                    /** @param array<string, mixed> $context */
+                    public function supportsDenormalization(mixed $data, array $context = []): bool;
+                }
+
+                class PartiallyStubbedResponse {
+                    public function setContent(?string $content): void {}
+
+                    public function setStatus(int|string $code): void {}
+
+                    /** @param array<string, mixed> $headers */
+                    public function setHeaders(array $headers): void {}
+                }
+                ' . $code,
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testWiderParamOfAnInterfaceMethodLeftOutOfAStub(): void
+    {
+        $this->analyzeWithPartialUserlandStubs('
+            final class Denormalizer implements PartiallyStubbedInterface {
+                public function denormalize(mixed $data, array $context = []): mixed {
+                    return null;
+                }
+
+                public function supportsDenormalization(mixed $data, array $context = []): bool {
+                    return true;
+                }
+            }');
+    }
+
+    public function testWiderParamOfAMethodLeftOutOfAStub(): void
+    {
+        $this->analyzeWithPartialUserlandStubs('
+            final class Response extends PartiallyStubbedResponse {
+                public function setContent(mixed $content): void {}
+            }');
+    }
+
+    public function testWiderParamOfAStubbedMethod(): void
+    {
+        $this->analyzeWithPartialUserlandStubs('
+            final class Response extends PartiallyStubbedResponse {
+                public function setHeaders(array $headers): void {}
+            }');
+    }
+
+    public function testNarrowerParamOfAMethodLeftOutOfAStub(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('MethodSignatureMismatch');
+
+        $this->analyzeWithPartialUserlandStubs('
+            final class Response extends PartiallyStubbedResponse {
+                public function setStatus(int $code): void {}
+            }');
+    }
+
+    public function testFloatParamOverridingAnIntParamLeftOutOfAStub(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('MethodSignatureMismatch');
+
+        $this->analyzeWithPartialUserlandStubs('
+            final class Response extends PartiallyStubbedResponse {
+                public function setStatus(float|string $code): void {}
+            }');
+    }
+
     public function testStubbedMethodWithConditionalReturnOverridingSource(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(

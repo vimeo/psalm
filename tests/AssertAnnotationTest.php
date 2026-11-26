@@ -6179,6 +6179,18 @@ final class AssertAnnotationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'assertNonEmptyArrayOnAnEmptyArray' => [
+                'code' => '<?php
+                    /**
+                     * @param mixed $x
+                     * @psalm-assert non-empty-array $x
+                     */
+                    function assertNonEmpty($x): void {}
+
+                    $a = [];
+                    assertNonEmpty($a);',
+                'error_message' => 'TypeDoesNotContainType',
+            ],
             'assertIfTrueOfAMemoizedMethodComparedWithFalseThenTheMethodIsNeverTrue' => [
                 'code' => '<?php
                     final class Name {
