@@ -1151,7 +1151,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                 $args,
                 $context,
                 $code_location,
-            );
+            ) ?? $function_call_info->function_params;
         }
 
         if ($codebase->store_node_types
