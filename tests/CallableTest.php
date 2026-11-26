@@ -155,6 +155,36 @@ final class CallableTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'callableObjectSignatureConstantIsResolved' => [
+                'code' => '<?php
+                    final class A {
+                        const FOO = 1;
+
+                        /** @return object&callable(): self::FOO */
+                        public function f(): object {
+                            return function (): int { return 1; };
+                        }
+                    }
+
+                    $y = (new A)->f()();
+                ',
+                'assertions' => [
+                    '$y===' => '1',
+                ],
+            ],
+            'callableObjectSignatureWithStaticConstant' => [
+                'code' => '<?php
+                    class A {
+                        const FOO = 1;
+
+                        /** @param object&callable(): static::FOO $o */
+                        public function f(object $o): void {}
+
+                        /** @param class-string<object&callable(): static::FOO> $c */
+                        public function g(string $c): void {}
+                    }
+                ',
+            ],
             'isCallableOnAShapeWhoseOtherElementsAreOptionalKeepsTheCallableArray' => [
                 'code' => '<?php
                     /**
@@ -4570,6 +4600,27 @@ final class CallableTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'callableObjectWithUndefinedParamClass' => [
+                'code' => '<?php
+                    /** @param object&callable(Missing): void $o */
+                    function f(object $o): void {}
+                ',
+                'error_message' => 'UndefinedDocblockClass',
+            ],
+            'callableObjectWithUndefinedReturnClass' => [
+                'code' => '<?php
+                    /** @param object&callable(): Missing $o */
+                    function f(object $o): void {}
+                ',
+                'error_message' => 'UndefinedDocblockClass',
+            ],
+            'classStringOfCallableObjectWithUndefinedParamClass' => [
+                'code' => '<?php
+                    /** @param class-string<object&callable(Missing): void> $c */
+                    function f(string $c): void {}
+                ',
+                'error_message' => 'UndefinedDocblockClass',
+            ],
             'isCallableOnAListOfIntsIsNeverTrue' => [
                 'code' => '<?php
                     /** @param list<int> $list */

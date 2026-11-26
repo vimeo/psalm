@@ -1253,8 +1253,12 @@ final class TypeCombiner
                 unset($combination->value_types['string']);
             } elseif (!empty($combination->objectlike_entries) && $combination->all_arrays_callable) {
                 $combination->objectlike_entries = [];
-            } elseif (isset($combination->value_types['callable-object'])) {
-                unset($combination->value_types['callable-object']);
+            } else {
+                foreach ($combination->value_types as $key => $value_type) {
+                    if ($value_type instanceof TCallableObject) {
+                        unset($combination->value_types[$key]);
+                    }
+                }
             }
         }
 
