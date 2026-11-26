@@ -839,9 +839,22 @@ abstract class CallAnalyzer
             return [$fq_class_name . '::' . $method_name_arg->value];
         }
 
-        if (!$file_source instanceof StatementsAnalyzer
-            || !($class_arg_type = $file_source->node_data->getType($class_arg))
+        if (!$file_source instanceof StatementsAnalyzer) {
+            return [];
+        }
+
+        $class_arg_type = $file_source->node_data->getType($class_arg);
+
+        // params providers run before the arguments are analysed
+        if (!$class_arg_type
+            && $class_arg instanceof PhpParser\Node\Expr\Variable
+            && $class_arg->name === 'this'
+            && ($fq_class_name = $file_source->getFQCLN()) !== null
         ) {
+            $class_arg_type = new Union([new TNamedObject($fq_class_name)]);
+        }
+
+        if (!$class_arg_type) {
             return [];
         }
 
