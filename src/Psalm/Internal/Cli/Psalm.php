@@ -133,6 +133,7 @@ final class Psalm
         'debug-emitted-issues',
         'diff',
         'disable-extension:',
+        'explain:',
         'find-dead-code::',
         'find-unused-code::',
         'find-unused-variables',
@@ -267,7 +268,7 @@ final class Psalm
             $current_dir,
             isset($options['r']),
             $vendor_dir,
-            !array_key_exists('v', $options),
+            !array_key_exists('v', $options) && !array_key_exists('explain', $options),
         );
 
         $run_taint_analysis = ProjectBootstrap::shouldRunTaintAnalysis($options);
@@ -275,6 +276,10 @@ final class Psalm
         if (array_key_exists('v', $options)) {
             echo 'Psalm ' . PSALM_VERSION . PHP_EOL;
             exit;
+        }
+
+        if (array_key_exists('explain', $options)) {
+            self::explainIssue($options['explain']);
         }
 
         $output_format = self::initOutputFormat($options);
@@ -1094,6 +1099,23 @@ final class Psalm
         Preloader::preload($progress, $hasJit);
     }
 
+    private static function explainIssue(mixed $query): never
+    {
+        $docs = is_string($query) ? IssueDocs::read($query) : null;
+
+        if ($docs === null) {
+            fwrite(
+                STDERR,
+                'Unknown issue: ' . (is_string($query) ? $query : '')
+                    . '. See https://psalm.dev/docs/running_psalm/issues/' . PHP_EOL,
+            );
+            exit(1);
+        }
+
+        echo $docs;
+        exit;
+    }
+
     /** @param array<int, string> $argv */
     private static function forwardCliCall(array $options, array $argv): void
     {
@@ -1478,6 +1500,11 @@ final class Psalm
         Miscellaneous:
             -h, --help
                 Display this help message
+
+            --explain=ISSUE
+                Print the documentation of an issue: what it means, an example and how to fix it.
+                ISSUE is an issue type (PossiblyNullReference), a shortcode (83) or a link (https://psalm.dev/083).
+                Needs no config file. Exits with 1 when the issue is unknown.
 
             -v, --version
                 Display the Psalm version

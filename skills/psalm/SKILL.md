@@ -47,10 +47,11 @@ vendor/bin/psalm --no-progress --output-format=compact src/Foo.php src/Bar.php
 - Many issues: `--report=psalm.json` writes a JSON report next to the normal output, then
   `php scripts/summary.php psalm.json` prints counts per type and file; `--type=…`, `--file=…`,
   `--changed` narrow it down (see `--help`).
-- `php scripts/explain.php IssueType` prints the issue's documentation: what it means and how to fix it.
+- `vendor/bin/psalm --explain=IssueType` prints the issue's documentation: what it means and how to fix it.
+  It also takes a shortcode (`--explain=83`) and needs no `psalm.xml`.
 - `SECURITY` lines come in the same run as type errors: taint findings (`Tainted*`, a source → sink path:
   [references/taint.md](references/taint.md)) and unsafe calls (`WeakHash`, `InsecureCookie`, …, fixed as
-  `explain.php` says).
+  `--explain` says).
 - After changing `psalm.xml`, stubs or `composer.json`, add `--no-cache` once.
 - Other output formats (`count`, `json-summary`, `by-issue-level`), cache and threads, `--stats`,
   `--show-info`, `--find-references-to`: [references/cli.md](references/cli.md).
