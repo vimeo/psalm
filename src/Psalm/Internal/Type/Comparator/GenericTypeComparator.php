@@ -11,7 +11,9 @@ use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TTypeVariable;
+use Psalm\Type\Atomic\TVoid;
 
 use function count;
 
@@ -157,6 +159,18 @@ final class GenericTypeComparator
                 }
 
                 continue;
+            }
+
+            // a generator that ends without a value returns null, whether its TReturn is written void or null
+            if ($i === 3
+                && $container_type_part instanceof TGenericObject
+                && $container_type_part->value === 'Generator'
+                && ($container_param->hasType('void') || $container_param->hasType('null'))
+            ) {
+                $container_param = $container_param->getBuilder()
+                    ->addType(new TVoid())
+                    ->addType(new TNull())
+                    ->freeze();
             }
 
             $param_comparison_result = new TypeComparisonResult();
