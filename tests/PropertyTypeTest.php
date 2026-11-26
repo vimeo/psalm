@@ -1323,6 +1323,59 @@ final class PropertyTypeTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'constructorWritingAPropertyNamedByAForeachKeyKeepsTheParentsInitialisations' => [
+                'code' => '<?php
+                    class Base {
+                        protected string $pluginId;
+                        public function __construct(string $id) { $this->pluginId = $id; }
+                    }
+
+                    final class Source extends Base {
+                        private bool $cacheCounts = false;
+                        private bool $skipCount = false;
+
+                        public function __construct(string $id, array $configuration) {
+                            parent::__construct($id);
+                            foreach (["cacheCounts" => "cache_counts", "skipCount" => "skip_count"] as $property => $key) {
+                                if (isset($configuration[$key])) {
+                                    $this->$property = (bool) $configuration[$key];
+                                }
+                            }
+                        }
+                    }',
+            ],
+            'constructorWritingAPropertyNamedByOneOfSeveralLiteralsKeepsTheOtherInitialisations' => [
+                'code' => '<?php
+                    final class Own {
+                        private string $a;
+                        private bool $x = false;
+                        private bool $y = false;
+
+                        /** @param "x"|"y" $p */
+                        public function __construct(string $p) {
+                            $this->a = "v";
+                            $this->{$p} = true;
+                        }
+                    }',
+            ],
+            'writeOfAPropertyNamedByOneOfSeveralLiteralsKeepsWhatIsKnownOfTheOthers' => [
+                'code' => '<?php
+                    final class Narrow {
+                        public ?string $n = null;
+                        public ?string $m = null;
+                        public bool $x = false;
+                    }
+
+                    function takesString(string $s): void {}
+
+                    /** @param "x"|"m" $p */
+                    function narrowedOther(Narrow $o, string $p): void {
+                        if ($o->n !== null) {
+                            $o->{$p} = null;
+                            takesString($o->n);
+                        }
+                    }',
+            ],
             'finalClassInitialisesThePropertyThroughAnAliasedTraitMethod' => [
                 'code' => '<?php
                     interface H {}

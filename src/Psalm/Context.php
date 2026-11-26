@@ -9,6 +9,7 @@ use PhpParser;
 use Psalm\Internal\Analyzer\ConstructorExits;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\ArrayAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
@@ -1261,7 +1262,11 @@ final class Context
 
         unset($this->vars_possibly_in_scope[$remove_var_id], $this->null_array_offsets_read[$remove_var_id]);
         $this->forgetNullArrayOffsets($remove_var_id);
-        $this->forgetPropertiesAliasedBy($remove_var_id);
+
+        // `$o->{$p}` is also removed when `$p` changes, which changes no property
+        if (!str_ends_with($remove_var_id, '}')) {
+            $this->forgetPropertiesAliasedBy($remove_var_id);
+        }
     }
 
     /**
@@ -1523,9 +1528,12 @@ final class Context
 
     /**
      * `$o->{$p}` is one of the properties `$p` names: a change of a property of `$o` changes it, and a change of it
-     * may change any property of `$o`
+     * changes the properties `$p` names (any property of `$o` when those are unknown)
+     *
+     * @param Union|null $assigned_type what `$o->{$p}` was set to, null when it was unset: each property `$p` names
+     *     may now hold it
      */
-    public function forgetPropertiesAliasedBy(string $property_var_id): void
+    public function forgetPropertiesAliasedBy(string $property_var_id, ?Union $assigned_type = null): void
     {
         $divider = strrpos($property_var_id, '->');
 
@@ -1536,6 +1544,29 @@ final class Context
         $prefix = substr($property_var_id, 0, $divider + 2);
         $property_name = substr($property_var_id, $divider + 2);
         $is_dynamic = str_starts_with($property_name, '{');
+
+        $named = $is_dynamic && isset($this->vars_in_scope[substr($property_name, 1, -1)])
+            ? ExpressionIdentifier::getLiteralPropertyNames($this->vars_in_scope[substr($property_name, 1, -1)])
+            : [];
+
+        foreach ($named as $name) {
+            $named_id = $prefix . $name;
+
+            foreach ($this->vars_in_scope as $var_id => $type) {
+                if ($var_id === $named_id) {
+                    if ($assigned_type !== null) {
+                        $this->vars_in_scope[$var_id] = Type::combineUnionTypes($type, $assigned_type);
+                    } else {
+                        unset($this->vars_in_scope[$var_id]);
+                    }
+                } elseif (str_starts_with($var_id, $named_id . '->') || str_starts_with($var_id, $named_id . '[')) {
+                    unset($this->vars_in_scope[$var_id]);
+                }
+            }
+
+            $this->clauses = self::filterClauses($named_id, $this->clauses);
+            $this->parent_remove_vars[$named_id] = ++self::$clause_removal_count;
+        }
 
         $var_ids = array_keys($this->vars_in_scope);
 
@@ -1558,7 +1589,7 @@ final class Context
             if ($member !== ''
                 && $member !== $property_name
                 && !str_ends_with($member, '()')
-                && ($is_dynamic || str_starts_with($member, '{'))
+                && (($is_dynamic && $named === []) || str_starts_with($member, '{'))
             ) {
                 $aliased_ids[$prefix . $member] = true;
             }
