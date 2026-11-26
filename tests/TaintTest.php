@@ -5760,6 +5760,103 @@ final class TaintTest extends TestCase
                     // an int can never be a NoSQL query document
                     query((int) $_GET["username"]);',
             ],
+            'htmlSinkNotTaintedByScalarNarrowing' => [
+                'code' => '<?php
+                    /** @psalm-taint-sink html $s */
+                    function render($s): void {}
+
+                    /** @psalm-taint-source input */
+                    function input(): mixed {
+                        return null;
+                    }
+
+                    $int = input();
+                    if (is_int($int)) {
+                        render($int);
+                    }
+                    $nullable_int = input();
+                    if (is_int($nullable_int) || $nullable_int === null) {
+                        render($nullable_int);
+                    }
+                    $float_or_bool = input();
+                    if (is_float($float_or_bool) || is_bool($float_or_bool)) {
+                        render($float_or_bool);
+                    }
+                    $literal = input();
+                    if ($literal === "a" || $literal === "b") {
+                        render($literal);
+                    }
+                    $numeric = input();
+                    if (is_numeric($numeric)) {
+                        render($numeric);
+                    }',
+            ],
+            'sleepSinkNotTaintedByLiteralNarrowing' => [
+                'code' => '<?php
+                    /** @psalm-taint-sink sleep $s */
+                    function mysleep($s): void {}
+
+                    /** @psalm-taint-source input */
+                    function input(): mixed {
+                        return null;
+                    }
+
+                    $int = input();
+                    if ($int === 5) {
+                        sleep($int);
+                    }
+                    $listed = input();
+                    if (in_array($listed, [1, 2, 3], true)) {
+                        sleep($listed);
+                    }
+                    $float = input();
+                    if ($float === 1.5) {
+                        mysleep($float);
+                    }
+                    $true = input();
+                    if ($true === true) {
+                        mysleep($true);
+                    }',
+            ],
+            'sleepAndCustomTaintsCutByIntOrBoolNarrowing' => [
+                'code' => '<?php
+                    /** @psalm-taint-sink sleep $s */
+                    function mysleep($s): void {}
+
+                    /** @psalm-taint-sink alpha $s */
+                    function sink($s): void {}
+
+                    /**
+                     * @psalm-taint-source input
+                     * @psalm-taint-source alpha
+                     */
+                    function input(): mixed {
+                        return null;
+                    }
+
+                    // a known false negative: following them through every number would cost too much memory
+                    $int = input();
+                    if (is_int($int) || $int === null) {
+                        sleep((int) $int);
+                        sink($int);
+                    }
+                    $bool = input();
+                    if (is_bool($bool)) {
+                        mysleep($bool);
+                    }',
+            ],
+            'htmlSinkNotTaintedThroughNumericParam' => [
+                'code' => '<?php
+                    /** @psalm-taint-sink html $s */
+                    function render($s): void {}
+
+                    /** @param numeric $n */
+                    function show($n): void {
+                        render($n);
+                    }
+
+                    show($_GET["n"]);',
+            ],
             'nosqlSinkNotTaintedByFloatCast' => [
                 'code' => '<?php
                     /** @psalm-taint-sink nosql $filter */
@@ -21787,6 +21884,107 @@ final class TaintTest extends TestCase
                     function mysleep($s): void {}
                     mysleep((float) $_GET["seconds"]);',
                 'error_message' => 'TaintedSleep',
+            ],
+            'sleepSurvivesNumericNarrowing' => [
+                'code' => '<?php
+                    /** @psalm-taint-source input */
+                    function input(): mixed {
+                        return null;
+                    }
+
+                    $seconds = input();
+                    if (is_numeric($seconds)) {
+                        sleep((int) $seconds);
+                    }',
+                'error_message' => 'TaintedSleep',
+            ],
+            'shellSurvivesNumericNarrowing' => [
+                'code' => '<?php
+                    /** @psalm-taint-source input */
+                    function input(): mixed {
+                        return null;
+                    }
+
+                    // "1\n" is numeric
+                    $value = input();
+                    if (is_numeric($value)) {
+                        shell_exec("echo " . $value . " done");
+                    }',
+                'error_message' => 'TaintedShell',
+            ],
+            'shellSurvivesNumericParam' => [
+                'code' => '<?php
+                    /** @param numeric $n */
+                    function run($n): void {
+                        shell_exec("echo " . $n . " done");
+                    }
+
+                    run($_GET["n"]);',
+                'error_message' => 'TaintedShell',
+            ],
+            'customTaintSurvivesNarrowingToAnArrayOfInts' => [
+                'code' => '<?php
+                    /** @psalm-taint-source alpha */
+                    function input(): mixed {
+                        return null;
+                    }
+
+                    /** @psalm-taint-sink alpha $s */
+                    function sink($s): void {}
+
+                    /** @psalm-assert array<int, int> $x */
+                    function assertInts(mixed $x): void {}
+
+                    $ids = input();
+                    assertInts($ids);
+                    sink($ids);',
+                'error_message' => 'TaintedCustom',
+            ],
+            'htmlSurvivesNarrowingToArrayOrInt' => [
+                'code' => '<?php
+                    /** @psalm-taint-sink html $s */
+                    function render($s): void {}
+
+                    /** @psalm-taint-source input */
+                    function input(): mixed {
+                        return null;
+                    }
+
+                    // the array part of the value still holds the input
+                    $value = input();
+                    if (is_array($value) || is_int($value)) {
+                        render($value);
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'htmlSurvivesNarrowingToObjectOrFalse' => [
+                'code' => '<?php
+                    final class Html {}
+
+                    /** @psalm-taint-sink html $s */
+                    function render($s): void {}
+
+                    /** @psalm-taint-source input */
+                    function input(): mixed {
+                        return null;
+                    }
+
+                    $value = input();
+                    if ($value instanceof Html || $value === false) {
+                        render($value);
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'htmlSurvivesNarrowingToLiteralStringOrArray' => [
+                'code' => '<?php
+                    /** @psalm-taint-sink html $s */
+                    function render($s): void {}
+
+                    $value = $_GET["value"];
+                    if ($value === "a" || is_array($value)) {
+                        render($value);
+                    }',
+                'error_message' => 'TaintedHtml',
             ],
             'sqlSurvivesStringCast' => [
                 'code' => '<?php
