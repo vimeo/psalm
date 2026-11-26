@@ -1,0 +1,17 @@
+<?php
+
+/** @template T */
+class StubbedRelation
+{
+    /**
+     * @template N
+     * @param class-string<N> $c
+     * @return static<N|int>
+     */
+    public function usingTwice($c) {}
+
+    /**
+     * @since 8.0
+     */
+    public function onlyFloatBeforePhp8(): void {}
+}

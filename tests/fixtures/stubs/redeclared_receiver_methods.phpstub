@@ -1,0 +1,78 @@
+<?php
+
+/** @template T */
+class StubbedRelation
+{
+    /**
+     * @template N
+     * @param class-string<N> $c
+     * @return static<N|int>
+     */
+    public function using($c) {}
+
+    /**
+     * @template N
+     * @param class-string<N> $c
+     * @return $this
+     * @psalm-this-out StubbedRelation<N|float>
+     */
+    public function usingKept($c) {}
+
+    /**
+     * @template N
+     * @param class-string<N> $c
+     * @return $this
+     * @psalm-this-out StubbedRelation<N|float>
+     */
+    public function usingTwice($c) {}
+
+    /**
+     * @template N
+     * @param N $v
+     * @return StubbedRelation<int>
+     * @psalm-this-out StubbedRelation<N>
+     */
+    final public function with($v) {}
+
+    public function onlyInt(): void {}
+
+    /**
+     * @psalm-if-this-is StubbedRelation<float>
+     */
+    public function onlyFloat(): void {}
+
+    /**
+     * @psalm-if-this-is StubbedRelation<float>
+     */
+    public function onlyFloatBeforePhp8(): void {}
+
+    /**
+     * @return static
+     */
+    public function chain() {}
+
+    /**
+     * @psalm-overload (int $x): string
+     * @psalm-this-out StubbedRelation<int>
+     */
+    public function convert($x) {}
+
+    /**
+     * @psalm-taint-sink sql $a
+     */
+    public function setA(int $a) {}
+
+    /**
+     * @psalm-taint-sink sql $b
+     */
+    public function setB(int $b): static {}
+}
+
+/** @template T */
+class StubbedBox
+{
+    /**
+     * @param T $v
+     */
+    public function __construct($v) {}
+}

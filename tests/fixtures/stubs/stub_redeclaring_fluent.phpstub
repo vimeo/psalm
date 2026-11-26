@@ -1,0 +1,15 @@
+<?php
+
+namespace StubDependency;
+
+class StubbedFluentDependency extends FluentDependency {}
+
+/** @template T */
+class Fluent
+{
+    /**
+     * @return $this
+     * @psalm-this-out self<string>
+     */
+    public function alter() {}
+}
