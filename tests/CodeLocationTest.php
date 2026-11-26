@@ -148,6 +148,86 @@ final class CodeLocationTest extends BaseTestCase
         $this->assertSame(4, $location->getLineNumber());
     }
 
+    public function testDocblockSelectionAboveANodeWithoutTheDocComment(): void
+    {
+        $contents = "<?php\n/**\n * @param int \$b\n */\n\$f = function (string \$a): void {};\n";
+        $location = $this->locateWithCommentLine($contents, 'function (string $a): void {}', 5, 3);
+
+        $this->assertSame('$b', $location->getSelectedText());
+        $this->assertSame(3, $location->getLineNumber());
+        $this->assertSame(3, $location->getEndLineNumber());
+        $this->assertSame(15, $location->getColumn());
+        $this->assertSame(17, $location->getEndColumn());
+    }
+
+    public function testDocblockSelectionOnTheLineOfANodeWithoutTheDocComment(): void
+    {
+        $contents = "<?php\n/** @param int \$b */ \$f = function (string \$a): void {};\n";
+        $location = $this->locateWithCommentLine($contents, 'function (string $a): void {}', 2, 2);
+
+        $this->assertSame('$b', $location->getSelectedText());
+        $this->assertSame(2, $location->getLineNumber());
+        $this->assertSame(16, $location->getColumn());
+    }
+
+    public function testDocblockSelectionOnTheFirstLine(): void
+    {
+        $contents = "/** @param int \$b */\n\$f = 1;\n";
+        $location = $this->locateWithCommentLine($contents, '1', 2, 1);
+
+        $this->assertSame('$b', $location->getSelectedText());
+        $this->assertSame(1, $location->getLineNumber());
+        $this->assertSame(16, $location->getColumn());
+    }
+
+    public function testDocblockSelectionAfterCodeOnItsLine(): void
+    {
+        $contents = "<?php\n\$s = '@'; \$b = 1; /** @param int \$b */ function f(string \$a): void {}\n";
+        $location = $this->locateWithCommentLine($contents, 'function f(string $a): void {}', 2, 2);
+
+        $this->assertSame('$b', $location->getSelectedText());
+        $this->assertSame(34, $location->getColumn());
+    }
+
+    public function testDocblockSelectionBeforeCodeOnItsLine(): void
+    {
+        $contents = "<?php\n/** @var int */ \$x = 1;\n";
+        $location = $this->locateWithCommentLine($contents, '1', 2, 2, null, null);
+
+        $this->assertSame('@var int', $location->getSelectedText());
+        $this->assertSame(5, $location->getColumn());
+    }
+
+    private function locateWithCommentLine(
+        string $contents,
+        string $selection,
+        int $line,
+        int $comment_line,
+        ?int $regex_type = CodeLocation::FUNCTION_PARAM_VAR,
+        ?string $selected_text = '$b',
+    ): CodeLocation {
+        $this->file_provider->registerFile(self::FILE, $contents);
+
+        $start = strpos($contents, $selection);
+        $this->assertNotFalse($start);
+
+        $node = new String_('x', [
+            'startFilePos' => $start,
+            'endFilePos' => $start + strlen($selection) - 1,
+            'startLine' => $line,
+        ]);
+
+        return new CodeLocation(
+            $this->file_analyzer,
+            $node,
+            null,
+            true,
+            $regex_type,
+            $selected_text,
+            $comment_line,
+        );
+    }
+
     private function locate(
         string $contents,
         string $selection,
