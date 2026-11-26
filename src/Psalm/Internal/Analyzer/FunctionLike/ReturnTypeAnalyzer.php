@@ -672,7 +672,7 @@ final class ReturnTypeAnalyzer
                 // a generator function returns its Generator even if its body never ends
                 && !$function_like_storage?->has_yield
                 // never return type only available from PHP 8.1 in non-docblock
-                && ($declared_return_type->from_docblock || $codebase->analysis_php_version_id >= 8_10_00)
+                && ($declared_return_type->from_docblock || $codebase->analysis_php_version_id >= 8_01_00)
                 // no error for single throw, as extending a class might not work without errors
                 // https://3v4l.org/vCSF4#v8.1.12
                 && !ScopeAnalyzer::onlyThrows($function_stmts)

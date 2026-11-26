@@ -4416,6 +4416,28 @@ final class FunctionCallTest extends TestCase
                     }
                 ',
             ],
+            'noNeverReturnErrorNativeTypeBeforePhp81' => [
+                'code' => '<?php
+                    function foo(): string {
+                        exit;
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'noNeverReturnErrorNativeTypeOverridableMethod' => [
+                'code' => '<?php
+                    class A {
+                        public function foo(): string {
+                            exit;
+                        }
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'noInvalidReturnTypeVoidNeverExplicit' => [
                 'code' => '<?php
                     /**
@@ -6669,6 +6691,26 @@ final class FunctionCallTest extends TestCase
 
                     foo();',
                 'error_message' => 'InvalidReturnType',
+            ],
+            'shouldReturnNeverNotNativeString' => [
+                'code' => '<?php
+                    function finalFunc(): string {
+                        exit;
+                    }',
+                'error_message' => 'InvalidReturnType',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'shouldReturnNeverNotNativeStringFinalMethod' => [
+                'code' => '<?php
+                    final class A {
+                        public function foo(): string {
+                            exit;
+                        }
+                    }',
+                'error_message' => 'InvalidReturnType',
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
             'DontAcceptArrayWithShapesNotContained' => [
                 'code' => '<?php
