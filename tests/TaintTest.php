@@ -2622,6 +2622,42 @@ final class TaintTest extends TestCase
     public static function providerValidCodeParse(): array
     {
         return [
+            'methodNamedByInputNarrowedToALiteral' => [
+                'code' => '<?php
+                    final class A {
+                        public function run(): void {}
+
+                        public static function purge(): void {}
+                    }
+
+                    $name = (string) $_GET["method"];
+
+                    if ($name === "run") {
+                        (new A())->$name();
+                    }
+
+                    if (in_array($name, ["purge"], true)) {
+                        A::$name();
+                    }',
+            ],
+            'methodNamedByALiteral' => [
+                'code' => '<?php
+                    final class A {
+                        public function run(): void {}
+                    }
+
+                    $name = "run";
+                    (new A())->$name();
+                    (new A())->{"run"}();',
+            ],
+            'methodNamedByAnArray' => [
+                'code' => '<?php
+                    final class A {
+                        public function run(): void {}
+                    }
+
+                    (new A())->{$_GET}();',
+            ],
             'arrayWalkCallbackWritingSafeValuesByReference' => [
                 'code' => '<?php
                     $items = ["a"];
@@ -19621,6 +19657,119 @@ final class TaintTest extends TestCase
                 'code' => '<?php
                     $name = (string) $_GET["function"];
                     $name();',
+                'error_message' => 'TaintedCallable',
+            ],
+            'taintCallingAMethodNamedByInput' => [
+                'code' => '<?php
+                    final class A {
+                        public function run(): void {}
+                    }
+
+                    $name = (string) $_GET["method"];
+                    (new A())->$name();',
+                'error_message' => 'TaintedCallable',
+            ],
+            'taintCallingAMethodNamedByInputInBraces' => [
+                'code' => '<?php
+                    final class A {
+                        public function run(): void {}
+                    }
+
+                    $name = (string) $_GET["method"];
+                    (new A())->{$name}();',
+                'error_message' => 'TaintedCallable',
+            ],
+            'taintCallingANullsafeMethodNamedByInput' => [
+                'code' => '<?php
+                    final class A {
+                        public function run(): void {}
+                    }
+
+                    function f(?A $a): void {
+                        $name = (string) $_GET["method"];
+                        $a?->$name();
+                    }',
+                'error_message' => 'TaintedCallable',
+            ],
+            'taintCallingAStaticMethodNamedByInput' => [
+                'code' => '<?php
+                    final class A {
+                        public static function run(): void {}
+                    }
+
+                    $name = (string) $_GET["method"];
+                    A::$name();',
+                'error_message' => 'TaintedCallable',
+            ],
+            'taintCallingAStaticMethodNamedByInputInBraces' => [
+                'code' => '<?php
+                    final class A {
+                        public static function run(): void {}
+                    }
+
+                    $name = (string) $_GET["method"];
+                    A::{$name}();',
+                'error_message' => 'TaintedCallable',
+            ],
+            'taintCallingAStaticMethodNamedByInputOnAClassString' => [
+                'code' => '<?php
+                    function f(string $class): void {
+                        $name = (string) $_GET["method"];
+                        $class::$name();
+                    }',
+                'error_message' => 'TaintedCallable',
+            ],
+            'taintCallingAStaticMethodNamedByInputOnAnUnboundedClassString' => [
+                'code' => '<?php
+                    /**
+                     * @param class-string $class
+                     * @psalm-suppress MixedMethodCall
+                     */
+                    function f(string $class): void {
+                        $name = (string) $_GET["method"];
+                        $class::$name();
+                    }',
+                'error_message' => 'TaintedCallable',
+            ],
+            'taintCallingAStaticMethodNamedByInputOnAPhantomClass' => [
+                'code' => '<?php
+                    $name = (string) $_GET["method"];
+
+                    if (class_exists("OptionalLibrary")) {
+                        OptionalLibrary::$name();
+                    }',
+                'error_message' => 'TaintedCallable',
+            ],
+            'taintCallingAStaticMethodNamedByInputOnAnUndefinedClass' => [
+                'code' => '<?php
+                    $name = (string) $_GET["method"];
+                    /** @psalm-suppress UndefinedClass */
+                    MissingLibrary::$name();',
+                'error_message' => 'TaintedCallable',
+            ],
+            'taintCallableOfAMethodNamedByInput' => [
+                'code' => '<?php
+                    final class A {
+                        public function run(): void {}
+                    }
+
+                    $name = (string) $_GET["method"];
+                    $f = (new A())->$name(...);
+                    $f();',
+                'error_message' => 'TaintedCallable',
+                'php_version' => '8.1',
+            ],
+            'taintCallingAMethodOfThisNamedByAParameter' => [
+                'code' => '<?php
+                    class A {
+                        public function dispatch(string $name): void {
+                            $this->$name();
+                        }
+
+                        public function run(): void {}
+                    }
+
+                    (new A())->dispatch((string) $_GET["method"]);',
                 'error_message' => 'TaintedCallable',
             ],
             'taintCallingAnOffsetOverwrittenThroughAnUnknownKey' => [
