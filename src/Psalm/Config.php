@@ -110,7 +110,6 @@ use function getcwd;
 use function getenv;
 use function glob;
 use function hash;
-use function hrtime;
 use function implode;
 use function in_array;
 use function interface_exists;
@@ -2229,7 +2228,7 @@ final class Config
             }
 
             try {
-                $perf_start = Perf\Collector::$enabled ? (int) hrtime(true) : 0;
+                $perf_start = Perf\Collector::$enabled ? Perf\Collector::nowNs() : 0;
                 $plugin($socket, $plugin_config);
 
                 if ($perf_start !== 0) {
@@ -2272,7 +2271,7 @@ final class Config
 
         foreach ($this->plugin_paths as $path) {
             try {
-                $perf_start = Perf\Collector::$enabled ? (int) hrtime(true) : 0;
+                $perf_start = Perf\Collector::$enabled ? Perf\Collector::nowNs() : 0;
                 $plugin = new FileBasedPluginAdapter($path, $this, $codebase);
                 $plugin($socket);
 
@@ -3150,6 +3149,10 @@ final class Config
             $this->internal_stubs[] = $stubsDir . 'Php82.phpstub';
             $this->internal_stubs[] = $stubsDir . 'Php82Functions.phpstub';
             $this->php_extensions['random'] = true; // random is a part of the PHP core starting from PHP 8.2
+        }
+
+        if ($codebase->analysis_php_version_id >= 8_03_00) {
+            $this->internal_stubs[] = $stubsDir . 'Php83.phpstub';
         }
 
         if ($codebase->analysis_php_version_id >= 8_04_00) {

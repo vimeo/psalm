@@ -169,6 +169,75 @@ final class IssetTest extends TestCase
                 ],
                 'ignored_issues' => ['TypeDoesNotContainType'],
             ],
+            'nullsafeCallOnTheLeftOfCoalesceIsMadeOnAVariableInIssetMode' => [
+                'code' => '<?php
+                    final class R {
+                        public function info(): array {
+                            return [];
+                        }
+                    }
+
+                    function send(): ?R {
+                        return rand(0, 1) ? new R() : null;
+                    }
+
+                    function assignedInTry(): array {
+                        try {
+                            $r = send();
+                            throw new \RuntimeException("x");
+                        } catch (\RuntimeException $e) {
+                            return $r?->info() ?? [];
+                        }
+                    }
+
+                    function assignedInIf(): array {
+                        if (rand(0, 1)) {
+                            $r = send();
+                        }
+
+                        return $r?->info() ?? [];
+                    }
+
+                    function thenFetched(): mixed {
+                        if (rand(0, 1)) {
+                            $r = send();
+                        }
+
+                        return $r?->info()["k"] ?? [];
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'nullsafeOnTheLeftOfCoalesceOnAPossiblyUndefinedObject' => [
+                'code' => '<?php
+                    final class R {
+                        public ?array $p = null;
+
+                        public function info(): ?array {
+                            return null;
+                        }
+                    }
+
+                    function call(): array {
+                        if (rand(0, 1)) {
+                            $r = new R();
+                        }
+
+                        return $r?->info() ?? [];
+                    }
+
+                    function fetch(): array {
+                        if (rand(0, 1)) {
+                            $r = new R();
+                        }
+
+                        return $r?->p ?? [];
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'nullsafeFetchOnTheLeftOfCoalesceStaysInIssetMode' => [
                 'code' => '<?php
                     final class Ext {
@@ -2721,6 +2790,159 @@ final class IssetTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'coalesceOnANullsafeCallKeepsArgumentIssues' => [
+                'code' => '<?php
+                    final class R {
+                        public function info(mixed $_x): ?array {
+                            return null;
+                        }
+                    }
+
+                    function f(?R $r): array {
+                        return $r?->info($u) ?? [];
+                    }',
+                'error_message' => 'UndefinedVariable',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'coalesceOnANullsafeCallKeepsDynamicNameIssues' => [
+                'code' => '<?php
+                    final class R {
+                        public function info(): ?array {
+                            return null;
+                        }
+                    }
+
+                    function f(?R $r): mixed {
+                        if (rand(0, 1)) {
+                            $n = "info";
+                        }
+
+                        return $r?->{$n}() ?? [];
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'coalesceOnAFetchFromANullsafeCallKeepsDynamicNameIssues' => [
+                'code' => '<?php
+                    final class R {
+                        public function info(): ?array {
+                            return null;
+                        }
+                    }
+
+                    function f(?R $r): mixed {
+                        if (rand(0, 1)) {
+                            $n = "info";
+                        }
+
+                        return $r?->{$n}()["k"] ?? [];
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'coalesceOnANullsafeCallOnAVariableVariableReadsTheName' => [
+                'code' => '<?php
+                    final class R {
+                        public function info(): ?array {
+                            return null;
+                        }
+                    }
+
+                    function f(): mixed {
+                        if (rand(0, 1)) {
+                            $n = "r";
+                        }
+
+                        return $$n?->info() ?? [];
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'coalesceOnAFetchFromAStaticCallKeepsDynamicNameIssues' => [
+                'code' => '<?php
+                    final class R {
+                        public static function info(): ?array {
+                            return null;
+                        }
+                    }
+
+                    function f(): mixed {
+                        if (rand(0, 1)) {
+                            $n = "info";
+                        }
+
+                        return R::{$n}()["k"] ?? [];
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'coalesceOnANullsafeCallOnAFetchReadsTheVariable' => [
+                'code' => '<?php
+                    final class R {
+                        public ?R $x = null;
+                        public function info(): ?array {
+                            return null;
+                        }
+                    }
+
+                    function f(): array {
+                        try {
+                            $r = rand(0, 1) ? new R() : null;
+                            throw new \RuntimeException("x");
+                        } catch (\RuntimeException $e) {
+                            return $r?->x?->info() ?? [];
+                        }
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'coalesceOnANullsafeCallOnACallReadsTheVariable' => [
+                'code' => '<?php
+                    final class R {
+                        public function self(): ?R {
+                            return $this;
+                        }
+                        public function info(): ?array {
+                            return null;
+                        }
+                    }
+
+                    function f(): array {
+                        try {
+                            $r = rand(0, 1) ? new R() : null;
+                            throw new \RuntimeException("x");
+                        } catch (\RuntimeException $e) {
+                            return $r?->self()?->info() ?? [];
+                        }
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'coalesceOnAMethodCallReadsTheVariable' => [
+                'code' => '<?php
+                    final class R {
+                        public function info(): ?array {
+                            return null;
+                        }
+                    }
+
+                    function f(): array {
+                        try {
+                            $r = new R();
+                            throw new \RuntimeException("x");
+                        } catch (\RuntimeException $e) {
+                            return $r->info() ?? [];
+                        }
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
             'coalesceOnAConcatenationKeepsOffsetIssues' => [
                 'code' => '<?php
                     /** @param array{a?: string} $arr */

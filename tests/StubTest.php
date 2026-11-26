@@ -2346,6 +2346,126 @@ final class StubTest extends DeferredAnalyzerTestCase
         $this->project_analyzer->consolidateAnalyzedData();
     }
 
+    public function testStubWithoutConstructorKeepsTheInheritedConstructor(): void
+    {
+        $this->analyzeChildOfClassStubbedWithoutConstructor(
+            '<?php
+                namespace App;
+
+                final class MyRequest extends \Vendor\Request {
+                    /** @var \Closure */
+                    protected $resolver;
+                }',
+        );
+    }
+
+    public function testStubWithoutConstructorKeepsThePropertiesTheRealConstructorInitializes(): void
+    {
+        $this->analyzeChildOfClassStubbedWithoutConstructor(
+            '<?php
+                namespace App;
+
+                final class MyRequest extends \Vendor\Request {}',
+        );
+    }
+
+    public function testConstructorOfStubbedAncestorCalledByItsName(): void
+    {
+        $this->analyzeChildOfClassStubbedWithoutConstructor(
+            '<?php
+                namespace App;
+
+                final class MyRequest extends \Vendor\Request {
+                    public string $own;
+
+                    public function __construct() {
+                        \Vendor\Request::__construct();
+                        $this->own = "";
+                    }
+                }',
+        );
+    }
+
+    public function testStubOfBuiltinClassWithoutConstructorKeepsMissingConstructor(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('MissingConstructor');
+
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+
+                    <stubs>
+                        <file name="tests/fixtures/stubs/partial_builtin_class.phpstub" />
+                    </stubs>
+                </psalm>',
+            ),
+        );
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                final class MyDateTime extends DateTime {
+                    public string $foo;
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    private function analyzeChildOfClassStubbedWithoutConstructor(string $code): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+
+                    <stubs>
+                        <file name="tests/fixtures/stubs/class_without_constructor.phpstub" />
+                    </stubs>
+                </psalm>',
+            ),
+        );
+
+        // stubs only override classes declared outside the project directories
+        $this->addFile(
+            (string) getcwd() . '/vendor/Request.php',
+            '<?php
+                namespace Vendor;
+
+                class Request {
+                    public string $real;
+                    public string $query;
+
+                    public function __construct() {
+                        $this->real = "";
+                        $this->query = "";
+                    }
+                }',
+        );
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile($file_path, $code);
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
     public function testStubOverridingMissingClass(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(

@@ -1445,6 +1445,7 @@ final class ArrayAssignmentAnalyzer
     ): Union {
         $templated_assignment = false;
 
+        $array_atomic_key_type = null;
         $array_atomic_type_class_string = null;
         $array_atomic_type_array = null;
         $array_atomic_type_list = null;
@@ -1560,9 +1561,9 @@ final class ArrayAssignmentAnalyzer
 
         $array_atomic_type = self::writeUnknownKeyOfTheRootShape(
             $root_type,
-            $current_dim,
-            $array_atomic_type_array,
-            $array_atomic_type_list,
+            $array_atomic_key_type,
+            $value_type,
+            $offset_already_existed,
         );
         if ($array_atomic_type === null && !$current_dim && !$context->inside_loop) {
             $atomic_root_types = $root_type->getAtomicTypes();
@@ -1746,16 +1747,15 @@ final class ArrayAssignmentAnalyzer
     }
 
     /**
-     * The shape an array is after a write under a key whose value isn't known, or an append
+     * The shape an array is after a write under a key whose value isn't known, or an append (no key)
      *
-     * @param array{Union, Union}|null $written
      * @psalm-capabilities read-props|write-this-props
      */
     private static function writeUnknownKeyOfTheRootShape(
         Union $root_type,
-        ?PhpParser\Node\Expr $current_dim,
-        ?array $written,
-        ?Union $appended,
+        ?Union $key_type,
+        Union $value_type,
+        bool $key_exists,
     ): ?TKeyedArray {
         $root_array_type = $root_type->getAtomicTypes()['array'] ?? null;
 
@@ -1763,13 +1763,9 @@ final class ArrayAssignmentAnalyzer
             return null;
         }
 
-        if ($written !== null) {
-            return ArrayFetchAnalyzer::writeUnknownKeyOfAShape($root_array_type, $written[0], $written[1]);
-        }
-
-        return !$current_dim && $appended !== null
-            ? ArrayFetchAnalyzer::writeUnknownKeyOfAShape($root_array_type, Type::getInt(), $appended, true)
-            : null;
+        return $key_type !== null
+            ? ArrayFetchAnalyzer::writeUnknownKeyOfAShape($root_array_type, $key_type, $value_type, false, $key_exists)
+            : ArrayFetchAnalyzer::writeUnknownKeyOfAShape($root_array_type, Type::getInt(), $value_type, true);
     }
 
     /**
@@ -2063,21 +2059,20 @@ final class ArrayAssignmentAnalyzer
                 }
 
                 $written_key_type = $current_dim ? $statements_analyzer->node_data->getType($current_dim) : null;
-                $child_shape = self::writeUnknownKeyOfTheRootShape(
-                    $child_stmt_type,
-                    $current_dim,
-                    $written_key_type
-                        ? [
-                            $written_key_type->hasMixed()
+                $child_shape = $current_dim && !$written_key_type
+                    ? null
+                    : self::writeUnknownKeyOfTheRootShape(
+                        $child_stmt_type,
+                        $written_key_type
+                            ? ($written_key_type->hasMixed()
                                 ? Type::getArrayKey()
                                 : ArrayFetchAnalyzer::castOffsetTypeOfAWrite(
                                     ArrayFetchAnalyzer::replaceOffsetTypeWithInts($written_key_type),
-                                ),
-                            $current_type,
-                        ]
-                        : null,
-                    $current_type,
-                );
+                                ))
+                            : null,
+                        $current_type,
+                        false,
+                    );
 
                 $new_child_type = $child_shape
                     ? $child_stmt_type->setTypes([$child_shape])

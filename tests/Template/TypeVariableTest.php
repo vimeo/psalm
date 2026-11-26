@@ -443,6 +443,84 @@ final class TypeVariableTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'constructorClassStringOrTemplateParamIsBoundToTheTemplateOfAClassString' => [
+                'code' => '<?php
+                    /** @template TModel */
+                    final class Select
+                    {
+                        /** @param class-string<TModel>|string|TModel $model */
+                        public function __construct(public mixed $model) {}
+                    }
+
+                    /** @template TModel */
+                    final class QB
+                    {
+                        /** @param class-string<TModel>|TModel|string $model */
+                        public function __construct(private readonly string|object $model) {}
+
+                        /** @return Select<TModel> */
+                        public function select(): Select
+                        {
+                            return new Select(model: $this->model);
+                        }
+
+                        /**
+                         * @param class-string<TModel> $class
+                         * @return Select<TModel>
+                         */
+                        public function selectClass(string $class): Select
+                        {
+                            return new Select($class);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'constructorClassStringOrTemplateParamIsBoundToTheClassOfALiteralClassString' => [
+                'code' => '<?php
+                    final class Foo {}
+
+                    /** @template T */
+                    final class Select
+                    {
+                        /** @param class-string<T>|string|T $model */
+                        public function __construct(public mixed $model) {}
+                    }
+
+                    /** @return Select<Foo> */
+                    function f(): Select
+                    {
+                        return new Select(Foo::class);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'constructorClassStringParamsAreBoundByEachArgument' => [
+                'code' => '<?php
+                    final class Foo {}
+                    final class Bar {}
+
+                    /** @template T */
+                    final class Pair
+                    {
+                        /**
+                         * @param class-string<T> $a
+                         * @param class-string<T> $b
+                         */
+                        public function __construct(string $a, string $b) {}
+
+                        /** @param T $t */
+                        public function set(mixed $t): void {}
+                    }
+
+                    $pair = new Pair(Foo::class, Bar::class);
+                    $pair->set(new Bar());',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'unboundConstructorTemplateHeldBySiblingConstraints' => [
                 'code' => '<?php
                     /**
@@ -3028,6 +3106,231 @@ final class TypeVariableTest extends TestCase
                     $last = array_reduce($c->all(), fn($carry, $i) => $i, null);',
                 'assertions' => [
                     '$last===' => '1|2|null',
+                ],
+            ],
+            'classStringOfAVariableResolvesThroughItsValues' => [
+                'code' => '<?php
+                    /** @template T as object */
+                    class Box {
+                        /** @param T $o */
+                        public function __construct(object $o) {}
+
+                        /** @param T $o */
+                        public function add(object $o): void {}
+
+                        /** @return class-string<T> */
+                        public function getName(): string { throw new Exception(); }
+                    }
+
+                    final class P {}
+                    final class Q {}
+
+                    $box = new Box(new P());
+                    $name = $box->getName();
+
+                    $widened = new Box(new P());
+                    $widened->add(new Q());
+                    $widened_name = $widened->getName();',
+                'assertions' => [
+                    '$box===' => 'Box<`_0:P>',
+                    '$name===' => 'class-string<P>',
+                    '$widened_name===' => 'class-string<P>|class-string<Q>',
+                ],
+            ],
+            'classStringOfAVariableResolvesInASubclass' => [
+                'code' => '<?php
+                    /** @template T as object */
+                    class Base {
+                        /** @param T $o */
+                        public function __construct(object $o) {}
+
+                        /** @return class-string<T> */
+                        public function getName(): string { throw new Exception(); }
+
+                        /** @param T $o */
+                        public function isInstance(object $o): bool { return true; }
+                    }
+
+                    /**
+                     * @template T as object
+                     * @extends Base<T>
+                     */
+                    final class Child extends Base {
+                        /** @param T $o */
+                        public function __construct(object $o) { parent::__construct($o); }
+                    }
+
+                    final class P {}
+
+                    $child = new Child(new P());
+                    $name = $child->getName();',
+                'assertions' => [
+                    '$child===' => 'Child<`_0:P>',
+                    '$name===' => 'class-string<P>',
+                ],
+            ],
+            'keyOfValueOfAndIndexedAccessOfAVariableResolveThroughItsValues' => [
+                'code' => '<?php
+                    /** @template T of array<string, int> */
+                    final class Row {
+                        /** @param T $a */
+                        public function __construct(array $a) {}
+
+                        /** @param T $a */
+                        public function add(array $a): void {}
+
+                        /** @return key-of<T> */
+                        public function key() { throw new Exception(); }
+
+                        /** @return value-of<T> */
+                        public function value() { throw new Exception(); }
+
+                        /**
+                         * @template K of key-of<T>
+                         * @param K $k
+                         * @return T[K]
+                         */
+                        public function at(string $k) { throw new Exception(); }
+                    }
+
+                    $row = new Row(["a" => 1]);
+                    $key = $row->key();
+                    $value = $row->value();
+                    $at = $row->at("a");
+
+                    $widened = new Row(["a" => 1]);
+                    $widened->add(["b" => 2]);
+                    $widened_key = $widened->key();',
+                'assertions' => [
+                    '$row===' => 'Row<`_0:array{a: 1}>',
+                    '$key===' => "'a'",
+                    '$value===' => '1',
+                    '$at===' => '1',
+                    '$widened_key===' => "'a'|'b'",
+                ],
+            ],
+            'propertiesOfAVariableResolveThroughItsValues' => [
+                'code' => '<?php
+                    /** @template T as object */
+                    final class Box {
+                        /** @param T $o */
+                        public function __construct(object $o) {}
+
+                        /** @param T $o */
+                        public function add(object $o): void {}
+
+                        /** @return properties-of<T> */
+                        public function props() { throw new Exception(); }
+                    }
+
+                    final class P {
+                        public int $x = 0;
+                    }
+
+                    $box = new Box(new P());
+                    $props = $box->props();',
+                'assertions' => [
+                    '$box===' => 'Box<`_0:P>',
+                    '$props===' => 'array{x: int}',
+                ],
+            ],
+            'assertionOfAParentNarrowsTheVariableOfASubclass' => [
+                'code' => '<?php
+                    /** @template T as object */
+                    class Base {
+                        /** @param T $o */
+                        public function __construct(object $o) {}
+
+                        /** @param T $o */
+                        public function isInstance(object $o): bool { return true; }
+
+                        /**
+                         * @template C of object
+                         * @param class-string<C> $c
+                         * @psalm-assert-if-true self<T&C> $this
+                         */
+                        public function isSubclassOf(string $c): bool { return true; }
+                    }
+
+                    /**
+                     * @template T as object
+                     * @extends Base<T>
+                     */
+                    final class Child extends Base {
+                        /** @param T $o */
+                        public function __construct(object $o) { parent::__construct($o); }
+                    }
+
+                    interface I {}
+                    class P {}
+
+                    $child = new Child(new P());
+                    if (!$child->isSubclassOf(I::class)) {
+                        throw new Exception();
+                    }
+
+                    $kept = new Child(new P());
+                    assert($kept instanceof Base);',
+                'assertions' => [
+                    '$child===' => 'Child<P&I>',
+                    '$kept===' => 'Child<`_1:P>',
+                ],
+                'ignored_issues' => ['RedundantCondition'],
+            ],
+            'assertionOnAVariableBoundToItsOwnObject' => [
+                'code' => '<?php
+                    /** @template T */
+                    class Base {}
+
+                    /**
+                     * @template T
+                     * @extends Base<T>
+                     */
+                    final class Box extends Base {
+                        /** @param T $v */
+                        public function __construct(mixed $v) {}
+
+                        /** @param T $v */
+                        public function add(mixed $v): void {}
+                    }
+
+                    final class P {}
+
+                    $box = new Box(new P());
+                    $box->add($box);
+                    assert($box instanceof Base);',
+                'assertions' => [
+                    '$box===' => 'Box<`_0:Box<`_0:P>|P>',
+                ],
+                'ignored_issues' => ['RedundantCondition'],
+            ],
+            'propertiesOfAVariableWithSeveralValues' => [
+                'code' => '<?php
+                    /** @template T as object */
+                    final class Box {
+                        /** @param T $o */
+                        public function __construct(object $o) {}
+
+                        /** @param T $o */
+                        public function add(object $o): void {}
+
+                        /** @return properties-of<T> */
+                        public function props() { throw new Exception(); }
+                    }
+
+                    final class P {
+                        public int $x = 0;
+                    }
+
+                    final class Q {
+                        public string $x = "";
+                    }
+
+                    $box = new Box(new P());
+                    $box->add(new Q());
+                    $props = $box->props();',
+                'assertions' => [
+                    '$props===' => 'array{x: int|string}',
                 ],
             ],
         ];
