@@ -363,7 +363,7 @@ final class Analyzer
             Perf\Collector::poolStart('analysis', count($this->files_to_analyze));
             await($pool->runAll(new InitAnalyzerTask));
             Perf\Collector::poolStep('init_us');
-            $pool->run($this->files_to_analyze, AnalyzerTask::class, $task_done_closure);
+            $pool->run($this->files_to_analyze, AnalyzerTask::class, 'analysing', $task_done_closure);
             Perf\Collector::poolStep('run_us');
             Perf\Collector::stage('analysis.merge');
             $this->progress->debug('Collecting forked analysis results' . "\n");

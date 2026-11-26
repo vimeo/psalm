@@ -567,6 +567,7 @@ final class Scanner
             $pool->run(
                 $files_to_scan,
                 ScannerTask::class,
+                'scanning',
                 function (): void {
                     $this->progress->taskDone(0);
                 },

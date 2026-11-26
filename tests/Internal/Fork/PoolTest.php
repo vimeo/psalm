@@ -8,7 +8,9 @@ use Amp\Parallel\Worker\TaskFailureException;
 use Override;
 use PHPUnit\Framework\TestCase;
 use Psalm\Internal\Fork\Pool;
+use Psalm\Internal\Fork\TaskCrashedException;
 use Psalm\Progress\VoidProgress;
+use Psalm\Tests\TestConfig;
 use Revolt\EventLoop;
 use RuntimeException;
 
@@ -17,6 +19,9 @@ use function gc_collect_cycles;
 use function getmypid;
 use function posix_kill;
 use function sort;
+use function substr_count;
+
+use const PHP_EOL;
 
 final class PoolTest extends TestCase
 {
@@ -57,6 +62,7 @@ final class PoolTest extends TestCase
         $pool->run(
             ['a', 'b', 'c', 'd', 'e', 'f'],
             ThrowOnBoomTask::class,
+            'analysing',
             static function (string $result) use (&$done): void {
                 $done[] = $result;
             },
@@ -69,21 +75,37 @@ final class PoolTest extends TestCase
 
     public function testATaskThatFailsIsReportedOnce(): void
     {
+        new TestConfig();
         $pool = new Pool(2, 1000.0, new VoidProgress());
 
         try {
             $pool->run(
                 ['a', 'b', 'boom', 'c', 'd'],
                 ThrowOnBoomTask::class,
+                'analysing',
                 static function (): void {
                 },
                 static function (): void {
                 },
             );
             $this->fail('The failing task should have been reported');
-        } catch (RuntimeException $e) {
-            $this->assertStringStartsWith('Psalm crashed processing boom: ', $e->getMessage());
+        } catch (TaskCrashedException $e) {
+            $this->assertSame('boom', $e->path);
             $this->assertInstanceOf(TaskFailureException::class, $e->getPrevious());
+
+            $message = $e->getMessage();
+            $this->assertStringStartsWith(
+                'Psalm crashed while analysing boom' . PHP_EOL . 'RuntimeException: boom' . PHP_EOL . '  at ',
+                $message,
+            );
+            $this->assertMatchesRegularExpression('~\R  at \S*ThrowOnBoomTask\.php:\d+\R#0 ~', $message);
+            // the trace of the worker, once, up to the task: not the event loop or the stack of the parent
+            $this->assertSame(1, substr_count($message, 'ThrowOnBoomTask->run('));
+            $this->assertSame(1, substr_count($message, "\n#0 "));
+            // only as the caller of the task
+            $this->assertSame(1, substr_count($message, 'task-runner.php'));
+            $this->assertStringNotContainsString('Revolt', $message);
+            $this->assertStringNotContainsString('Stack trace', $message);
         }
 
         unset($e);

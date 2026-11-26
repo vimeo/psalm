@@ -865,6 +865,7 @@ final class PreloaderList {
         \Psalm\Internal\Fork\ShutdownAnalyzerTask::class,
         \Psalm\Internal\Fork\ShutdownScannerTask::class,
         \Psalm\Internal\Fork\SignalDiagnosticContext::class,
+        \Psalm\Internal\Fork\TaskCrashedException::class,
         \Psalm\Internal\GzipSerializer::class,
         \Psalm\Internal\IncludeCollector::class,
         \Psalm\Internal\Json\Json::class,

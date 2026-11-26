@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Internal;
 
+use Psalm\Internal\Fork\TaskCrashedException;
 use RuntimeException;
 use Throwable;
 
@@ -102,7 +103,8 @@ final class ErrorHandler
                 exit(1);
             }
 
-            fwrite(STDERR, PHP_EOL . "Uncaught $throwable\n");
+            $report = $throwable instanceof TaskCrashedException ? $throwable->getMessage() : "Uncaught $throwable";
+            fwrite(STDERR, PHP_EOL . $report . "\n");
             $version = defined('PSALM_VERSION') ? PSALM_VERSION : '(unknown version)';
             fwrite(STDERR, "(Psalm $version crashed due to an uncaught Throwable)\n");
             exit(1);
