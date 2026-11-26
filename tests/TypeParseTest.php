@@ -2474,6 +2474,8 @@ final class TypeParseTest extends TestCase
         yield 'string|true before PHP 8.2' => ['string|true', 8_01_00, 'string|bool', false];
         yield 'string|true' => ['string|true', 8_02_00, 'string|true', true];
         yield 'string|false' => ['string|false', 8_02_00, 'string|false', true];
+        yield 'string|false before PHP 8.2' => ['string|false', 8_00_00, 'string|false', true];
+        yield 'nullable false before PHP 8.2' => ['false|null', 8_01_00, 'bool|null', false];
     }
 
     #[DataProvider('nativeTypeProvider')]

@@ -1585,6 +1585,38 @@ final class MissingReturnTypeTest extends FileManipulationTestCase
                 'issues_to_fix' => ['MissingReturnType'],
                 'safe_types' => false,
             ],
+            'returnIntOrFalse80' => [
+                'input' => '<?php
+                    function a() {
+                        return rand(0, 1) ? rand() : false;
+                    }',
+                'output' => '<?php
+                    function a(): int|false {
+                        return rand(0, 1) ? rand() : false;
+                    }',
+                'php_version' => '8.0',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => false,
+            ],
+            'returnNullAndReturnTrueWithDocblock82' => [
+                'input' => '<?php
+                    /**
+                     * Does a.
+                     */
+                    function a() {
+                        return rand(0, 1) ? true : null;
+                    }',
+                'output' => '<?php
+                    /**
+                     * Does a.
+                     */
+                    function a(): true|null {
+                        return rand(0, 1) ? true : null;
+                    }',
+                'php_version' => '8.2',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => false,
+            ],
             'staticReturn5.6' => [
                 'input' => '<?php
                     class HelloWorld

@@ -545,6 +545,10 @@ trait UnionTrait
             unset($types['null']);
         }
 
+        if (isset($types['false']) && count($types) > 1) {
+            unset($types['false']);
+        }
+
         foreach ($types as $t) {
             if (!$t->canBeFullyExpressedInPhp($analysis_php_version_id)) {
                 return false;
