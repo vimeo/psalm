@@ -15,6 +15,7 @@ use Psalm\Internal\Codebase\MutationLevelResolver;
 use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\RuntimeCaches;
+use Psalm\Internal\Scanner\DocblockParser;
 use Psalm\Internal\Type\TypeParser;
 use Psalm\Internal\Type\TypeTokenizer;
 use Psalm\Internal\VersionUtils;
@@ -83,6 +84,9 @@ class TestCase extends BaseTestCase
         if (!defined('PHP_PARSER_VERSION')) {
             define('PHP_PARSER_VERSION', VersionUtils::getPhpParserVersion());
         }
+
+        // the stubs are parsed again for every test case
+        DocblockParser::memoize();
 
         parent::setUpBeforeClass();
         self::$src_dir_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR;
