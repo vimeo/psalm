@@ -9,11 +9,9 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use function extension_loaded;
 use function file_put_contents;
 use function mkdir;
-use function str_replace;
 use function substr_count;
 use function unlink;
 
-use const DIRECTORY_SEPARATOR;
 use const PHP_BINARY;
 use const PHP_EOL;
 
@@ -113,48 +111,46 @@ final class PsalmFileChangedDuringRunEndToEndTest extends PsalmEndToEndTestCase
             $this->markTestSkipped('--threads needs pcntl and posix');
         }
 
-        // The file provider keeps what it read, which the scan workers of a large project leave out of the parent
-        // process. The plugin makes it forget the file it edits, under the path the scanner knows it by.
-        $edit = $edited
-            ? <<<'PHP'
-                $path = realpath(dirname(__DIR__) . '/src/C3.php');
+        $this->initProjectOfSixClasses(
+            <<<'PHP'
+                <?php
+
+                namespace Repro;
+
+                use LogicException;
+                use Psalm\Plugin\EventHandler\AfterCodebasePopulatedInterface;
+                use Psalm\Plugin\EventHandler\AfterFileAnalysisInterface;
+                use Psalm\Plugin\EventHandler\Event\AfterCodebasePopulatedEvent;
+                use Psalm\Plugin\EventHandler\Event\AfterFileAnalysisEvent;
+
+                final class CrashOnC3 implements AfterCodebasePopulatedInterface, AfterFileAnalysisInterface
+                {
+                    public static function afterCodebasePopulated(AfterCodebasePopulatedEvent $event): void
+                    {
+                        if (!is_file(__DIR__ . '/edit-c3')) {
+                            return;
+                        }
+
+                        // The file provider keeps what it read, which the scan workers of a large project leave out
+                        // of the parent process. Make it forget the file, under the path the scanner knows it by.
+                        $path = realpath(dirname(__DIR__) . '/src/C3.php');
                         file_put_contents($path, "<?php\n\nfinal class C3 {}\n// " . uniqid() . "\n");
                         $event->getCodebase()->file_provider->closeFile($path);
-                PHP
-            : '';
+                    }
 
-        $this->initProjectOfSixClasses(
-            str_replace(
-                '// EDIT',
-                $edit,
-                <<<'PHP'
-                    <?php
-
-                    namespace Repro;
-
-                    use LogicException;
-                    use Psalm\Plugin\EventHandler\AfterCodebasePopulatedInterface;
-                    use Psalm\Plugin\EventHandler\AfterFileAnalysisInterface;
-                    use Psalm\Plugin\EventHandler\Event\AfterCodebasePopulatedEvent;
-                    use Psalm\Plugin\EventHandler\Event\AfterFileAnalysisEvent;
-
-                    final class CrashOnC3 implements AfterCodebasePopulatedInterface, AfterFileAnalysisInterface
+                    public static function afterAnalyzeFile(AfterFileAnalysisEvent $event): void
                     {
-                        public static function afterCodebasePopulated(AfterCodebasePopulatedEvent $event): void
-                        {
-                            // EDIT
-                        }
-
-                        public static function afterAnalyzeFile(AfterFileAnalysisEvent $event): void
-                        {
-                            if (basename($event->getStatementsSource()->getFilePath()) === 'C3.php') {
-                                throw new LogicException('plugin boom');
-                            }
+                        if (basename($event->getStatementsSource()->getFilePath()) === 'C3.php') {
+                            throw new LogicException('plugin boom');
                         }
                     }
-                    PHP,
-            ),
+                }
+                PHP,
         );
+
+        if ($edited) {
+            file_put_contents(self::$tmpDir . '/plugins/edit-c3', '');
+        }
 
         $result = $this->runPsalmExpectingExitCode1($threads);
 
@@ -177,7 +173,7 @@ final class PsalmFileChangedDuringRunEndToEndTest extends PsalmEndToEndTestCase
 
         $this->assertStringStartsWith(
             PHP_EOL . 'Psalm crashed on src/C3.php' . PHP_EOL . 'LogicException: plugin boom' . PHP_EOL
-                . '  at plugins' . DIRECTORY_SEPARATOR . 'plugin.php:',
+                . '  at plugins/plugin.php:',
             $result['STDERR'],
         );
         $this->assertSame(1, substr_count($result['STDERR'], 'LogicException: plugin boom'));
