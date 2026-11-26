@@ -111,6 +111,253 @@ final class ClassTemplateExtendsTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'nonTemplatedParentMethodsImplementAnInterfaceOfTheChild' => [
+                'code' => '<?php
+                    interface Entity {}
+
+                    /**
+                     * @template T of Entity
+                     */
+                    interface EntityDao {
+                        /**
+                         * @return T|null
+                         */
+                        public function selectById(int $yId);
+
+                        /**
+                         * @param T $yObj
+                         * @return T
+                         */
+                        public function insert($yObj);
+                    }
+
+                    final class Car implements Entity {}
+
+                    class GeneratedCarDao {
+                        /**
+                         * @return Car
+                         */
+                        public function selectById(int $yId) {
+                            return new Car();
+                        }
+
+                        /**
+                         * @param Car $yObj
+                         * @return Car
+                         */
+                        public function insert($yObj) {
+                            return $yObj;
+                        }
+                    }
+
+                    /**
+                     * @implements EntityDao<Car>
+                     */
+                    final class CarDao extends GeneratedCarDao implements EntityDao {
+                    }',
+            ],
+            'traitMethodImplementingATemplatedInterfaceMethodTakesTheBoundType' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface Setter {
+                        /** @param T $value */
+                        public function set(mixed $value): void;
+                    }
+
+                    trait SetsInt {
+                        /** @param int $value */
+                        public function set(mixed $value): void {}
+                    }
+
+                    /** @implements Setter<int> */
+                    final class Node implements Setter {
+                        use SetsInt;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'traitMethodImplementingATemplatedInterfaceMethodTakesStatic' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface Setter {
+                        /** @param T $value */
+                        public function set(mixed $value): void;
+                    }
+
+                    trait SetsSelf {
+                        /** @param static $value */
+                        public function set(mixed $value): void {}
+                    }
+
+                    /** @implements Setter<static> */
+                    class Node implements Setter {
+                        use SetsSelf;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'traitMethodImplementingATemplatedAbstractParentMethodTakesTheBoundType' => [
+                'code' => '<?php
+                    /** @template T */
+                    abstract class Base {
+                        /** @param T $value */
+                        abstract public function set(mixed $value): void;
+                    }
+
+                    trait SetsInt {
+                        /** @param int $value */
+                        public function set(mixed $value): void {}
+                    }
+
+                    /** @extends Base<int> */
+                    final class Node extends Base {
+                        use SetsInt;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'staticOfAnImplementedTemplateIsTheObjectItIsInferredFrom' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface Wrapper {}
+
+                    /** @implements Wrapper<static> */
+                    class Node implements Wrapper {}
+
+                    /** @template T */
+                    final class Box {
+                        /** @return self<T> */
+                        public function same(): self {
+                            return $this;
+                        }
+                    }
+
+                    /**
+                     * @template T
+                     * @param Wrapper<T> $value
+                     * @return Box<T>
+                     */
+                    function unwrap(Wrapper $value): Box {
+                        return new Box();
+                    }
+
+                    $a = unwrap(new Node());',
+                'assertions' => [
+                    '$a===' => 'Box<Node>',
+                ],
+            ],
+            'staticInsideTypesOfAnImplementedTemplateIsTheObjectItIsInferredFrom' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface Wrapper {}
+
+                    /** @implements Wrapper<Closure(): static> */
+                    final class Factory implements Wrapper {}
+
+                    /** @implements Wrapper<object{p: static}> */
+                    final class Shaped implements Wrapper {}
+
+                    /** @implements Wrapper<class-string<static>> */
+                    class Named implements Wrapper {}
+
+                    final class SubNamed extends Named {}
+
+                    /** @template T */
+                    final class Box {}
+
+                    /**
+                     * @template T
+                     * @param Wrapper<T> $value
+                     * @return Box<T>
+                     */
+                    function unwrap(Wrapper $value): Box {
+                        return new Box();
+                    }
+
+                    $closure = unwrap(new Factory());
+                    $shape = unwrap(new Shaped());
+                    $class = unwrap(new SubNamed());',
+                'assertions' => [
+                    '$closure===' => 'Box<Closure[impure]():Factory>',
+                    '$shape===' => 'Box<object{p:Shaped}>',
+                    '$class===' => 'Box<class-string<SubNamed>>',
+                ],
+            ],
+            'staticNestedInAnImplementedTemplateIsTheObjectItIsInferredFrom' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface Wrapper {}
+
+                    /** @implements Wrapper<list<static>> */
+                    class Node implements Wrapper {}
+
+                    /** @template T */
+                    final class Box {}
+
+                    /**
+                     * @template T
+                     * @param Wrapper<T> $value
+                     * @return Box<T>
+                     */
+                    function unwrap(Wrapper $value): Box {
+                        return new Box();
+                    }
+
+                    $a = unwrap(new Node());',
+                'assertions' => [
+                    '$a===' => 'Box<list<Node>>',
+                ],
+            ],
+            'chainedCallOnATemplateInferredFromAnImplementedStatic' => [
+                'code' => '<?php
+                    /** @implements IteratorAggregate<int, static> */
+                    final class Node implements IteratorAggregate {
+                        #[Override]
+                        public function getIterator(): Iterator {
+                            return new ArrayIterator([$this]);
+                        }
+
+                        /** @return list<static> */
+                        public function all(): array {
+                            return wrap($this)->same()->items();
+                        }
+                    }
+
+                    /** @template T */
+                    final class Box {
+                        /** @param list<T> $items */
+                        public function __construct(private array $items) {}
+
+                        /** @return self<T> */
+                        public function same(): self {
+                            return $this;
+                        }
+
+                        /** @return list<T> */
+                        public function items(): array {
+                            return $this->items;
+                        }
+                    }
+
+                    /**
+                     * @template T
+                     * @param iterable<T> $value
+                     * @return Box<T>
+                     */
+                    function wrap(iterable $value): Box {
+                        return new Box([]);
+                    }
+
+                    $n = wrap(new Node())->same();',
+                'assertions' => [
+                    '$n===' => 'Box<Node>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
             'templateTagNamesParentInAnotherCase' => [
                 'code' => '<?php
                     /** @template T */
@@ -2319,6 +2566,26 @@ final class ClassTemplateExtendsTest extends TestCase
                 'assertions' => [
                     '$b' => 'AContainer<A>',
                 ],
+            ],
+            'newStaticWithStaticOnlyAsAShapeKeyOfTheReturnType' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @psalm-consistent-constructor
+                     */
+                    class Container {
+                        /** @param T $t */
+                        public function __construct($t) {}
+
+                        /**
+                         * @param mixed $t
+                         * @return array{static: int}
+                         */
+                        public static function count($t): array {
+                            new static($t);
+                            return ["static" => 1];
+                        }
+                    }',
             ],
             'templateExtendsSameNameWithStaticCall' => [
                 'code' => '<?php
@@ -6465,6 +6732,27 @@ final class ClassTemplateExtendsTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'traitMethodImplementingATemplatedInterfaceMethodWithAnotherType' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface Setter {
+                        /** @param T $value */
+                        public function set(mixed $value): void;
+                    }
+
+                    trait SetsString {
+                        /** @param string $value */
+                        public function set(mixed $value): void {}
+                    }
+
+                    /** @implements Setter<int> */
+                    final class Node implements Setter {
+                        use SetsString;
+                    }',
+                'error_message' => 'ImplementedParamTypeMismatch',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'extendsTagWithoutClass' => [
                 'code' => '<?php
                     /** @template T */
@@ -7630,7 +7918,7 @@ final class ClassTemplateExtendsTest extends TestCase
                     function baz($t) {
                         return new BarOfFoo("hello");
                     }',
-                'error_message' => 'InvalidReturnStatement',
+                'error_message' => 'IncompatibleTypeParameters',
             ],
             'noCrashForTooManyTemplateParams' => [
                 'code' => '<?php
@@ -8101,6 +8389,48 @@ final class ClassTemplateExtendsTest extends TestCase
                         public function getValue()
                         {
                             return $this->t;
+                        }
+                    }',
+                'error_message' => 'UnsafeGenericInstantiation',
+            ],
+            'newStaticWithStaticNestedInTheReturnType' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @psalm-consistent-constructor
+                     */
+                    class Container {
+                        /** @param T $t */
+                        public function __construct($t) {}
+
+                        /**
+                         * @param mixed $t
+                         * @return list<static>
+                         */
+                        public static function many($t): array {
+                            return [new static($t)];
+                        }
+                    }',
+                'error_message' => 'UnsafeGenericInstantiation',
+            ],
+            'newStaticWithStaticInTheBoundOfAValueOfReturnType' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @psalm-consistent-constructor
+                     */
+                    class Container {
+                        /** @param T $t */
+                        public function __construct($t) {}
+
+                        /**
+                         * @template U of array<int, static>
+                         * @param U $u
+                         * @return value-of<U>
+                         */
+                        public static function first(array $u) {
+                            new static(1);
+                            return $u[0];
                         }
                     }',
                 'error_message' => 'UnsafeGenericInstantiation',

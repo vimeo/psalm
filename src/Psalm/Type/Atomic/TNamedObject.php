@@ -12,9 +12,9 @@ use Psalm\Storage\Capabilities;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 
-use function array_map;
+use function array_key_last;
 use function implode;
-use function strrpos;
+use function strtolower;
 use function substr;
 
 /**
@@ -110,7 +110,9 @@ class TNamedObject extends Atomic
     public function equals(Atomic $other_type, bool $ensure_source_equality): bool
     {
         return $other_type::class === static::class
-            && $this->is_static === $other_type->is_static;
+            && $this->value === $other_type->value
+            && $this->is_static === $other_type->is_static
+            && $this->intersectionTypesEqual($other_type->extra_types, $ensure_source_equality);
     }
 
     #[Override]
@@ -124,16 +126,10 @@ class TNamedObject extends Atomic
     }
 
     #[Override]
-    public function getId(bool $exact = true, bool $nested = false): string
+    public function getId(bool $exact = true): string
     {
         if ($this->extra_types) {
-            return $this->value . '&' . implode(
-                '&',
-                array_map(
-                    static fn(Atomic $type): string => $type->getId($exact, true),
-                    $this->extra_types,
-                ),
-            );
+            return $this->value . $this->getIntersectionTypesId($exact);
         }
 
         return $this->is_static && $exact ? $this->value . '&static' : $this->value;
@@ -188,18 +184,90 @@ class TNamedObject extends Atomic
             return $analysis_php_version_id >= 8_00_00 ? 'static' : 'self';
         }
 
-        $result = $this->toNamespacedString($namespace, $aliased_classes, $this_class, false);
-        $intersection = strrpos($result, '&');
-        if ($intersection === false || $analysis_php_version_id >= 8_01_00) {
-            return $result;
-        }
-        return substr($result, $intersection+1);
+        return $this->addNativeIntersectionTypes(
+            Type::getStringFromFQCLN($this->value, $namespace, $aliased_classes, $this_class, true),
+            $namespace,
+            $aliased_classes,
+            $this_class,
+            $analysis_php_version_id,
+        );
     }
 
     #[Override]
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
-        return ($this->value !== 'static' && $this->is_static === false) || $analysis_php_version_id >= 8_00_00;
+        return (($this->value !== 'static' && $this->is_static === false) || $analysis_php_version_id >= 8_00_00)
+            && $this->canExpressIntersectionTypesInPhp($analysis_php_version_id);
+    }
+
+    /**
+     * Intersects $native, the native type of the class, with the classes of the intersection. A type of the
+     * intersection that can't be part of a native intersection is left out, which leaves a wider type. Before
+     * PHP 8.1, the last class of the intersection is declared alone.
+     *
+     * @param  array<lowercase-string, string> $aliased_classes
+     */
+    protected function addNativeIntersectionTypes(
+        string $native,
+        ?string $namespace,
+        array $aliased_classes,
+        ?string $this_class,
+        int $analysis_php_version_id,
+    ): string {
+        if (!$this->extra_types) {
+            return $native;
+        }
+
+        $natives = [strtolower($native) => $native];
+
+        foreach ($this->extra_types as $extra_type) {
+            if (!$extra_type instanceof TNamedObject) {
+                continue;
+            }
+
+            $extra_native = $extra_type->toPhpString(
+                $namespace,
+                $aliased_classes,
+                $this_class,
+                $analysis_php_version_id,
+            );
+
+            if ($extra_native !== null && $extra_native !== 'static') {
+                $natives[strtolower($extra_native)] ??= $extra_native;
+            }
+        }
+
+        if ($analysis_php_version_id < 8_01_00) {
+            return $natives[array_key_last($natives)];
+        }
+
+        return implode('&', $natives);
+    }
+
+    /**
+     * Whether the native type expresses every type of the intersection: they're all classes from PHP 8.1
+     */
+    protected function canExpressIntersectionTypesInPhp(int $analysis_php_version_id): bool
+    {
+        if (!$this->extra_types) {
+            return true;
+        }
+
+        if ($analysis_php_version_id < 8_01_00 || $this->value === 'static' || $this->is_static) {
+            return false;
+        }
+
+        foreach ($this->extra_types as $extra_type) {
+            if (!$extra_type instanceof TNamedObject
+                || $extra_type->value === 'static'
+                || $extra_type->is_static
+                || !$extra_type->canBeFullyExpressedInPhp($analysis_php_version_id)
+            ) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**

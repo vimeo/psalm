@@ -974,6 +974,23 @@ return array (
         'countryOrRawOffset=' => 'int|null|string',
       ),
     ),
+    'ldap_get_option' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'ldap' => 'LDAP\\Connection',
+        'option' => 'int',
+        '&w value=' => 'array<array-key, mixed>|int|string',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'ldap' => 'LDAP\\Connection|null',
+        'option' => 'int',
+        '&w value=' => 'array<array-key, mixed>|int|string',
+      ),
+    ),
     'libxml_set_external_entity_loader' => 
     array (
       'old' => 
@@ -1119,6 +1136,19 @@ return array (
       'new' => 
       array (
         0 => 'true',
+      ),
+    ),
+    'shm_detach' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'shm' => 'SysvSharedMemory',
+      ),
+      'new' => 
+      array (
+        0 => 'true',
+        'shm' => 'SysvSharedMemory',
       ),
     ),
     'soapclient::__dorequest' => 
@@ -7604,7 +7634,7 @@ return array (
       0 => 'false|resource',
       'session' => 'resource',
       'command' => 'string',
-      'pty=' => 'bool',
+      'pty=' => 'null|string',
       'env=' => 'array<array-key, mixed>|null',
       'width=' => 'int',
       'height=' => 'int',
@@ -8027,6 +8057,7 @@ return array (
     array (
       0 => 'bool',
       'data' => 'array<array-key, mixed>|string',
+      'length=' => 'int|null',
     ),
     'swoole\\coroutine\\http\\client::setdefer' => 
     array (
@@ -8137,6 +8168,7 @@ return array (
       'filename' => 'string',
       'offset=' => 'int',
       'length=' => 'int',
+      'delete_file=' => 'bool',
     ),
     'swoole\\http\\response::status' => 
     array (
@@ -8401,6 +8433,7 @@ return array (
       'filename' => 'string',
       'offset=' => 'int',
       'length=' => 'int',
+      'delete_file=' => 'bool',
     ),
     'swoole\\server::sendmessage' => 
     array (
@@ -8476,7 +8509,7 @@ return array (
     ),
     'swoole\\server\\port::set' => 
     array (
-      0 => 'void',
+      0 => 'bool',
       'settings' => 'array<array-key, mixed>',
     ),
     'swoole\\table::column' => 
@@ -8703,6 +8736,7 @@ return array (
       0 => 'int',
       'ms' => 'int',
       'callback' => 'callable[impure]',
+      '...params=' => 'mixed',
     ),
     'swoole_timer_exists' => 
     array (
@@ -8714,6 +8748,7 @@ return array (
       0 => 'int',
       'ms' => 'int',
       'callback' => 'callable[impure]',
+      '...params=' => 'mixed',
     ),
     'swoole_version' => 
     array (

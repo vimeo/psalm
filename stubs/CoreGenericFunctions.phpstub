@@ -1064,6 +1064,8 @@ function htmlspecialchars_decode(string $string, ?int $flags = null) : string {}
  * @psalm-taint-escape html_attribute
  * @psalm-taint-escape url_scheme
  * @psalm-flow ($string) -> return
+ *
+ * @return ($string is non-empty-string ? non-empty-string : string)
  */
 function urlencode(string $string) : string {}
 
@@ -1077,8 +1079,28 @@ function urlencode(string $string) : string {}
  * @psalm-taint-escape html_attribute
  * @psalm-taint-escape url_scheme
  * @psalm-flow ($string) -> return
+ *
+ * @return ($string is non-empty-string ? non-empty-string : string)
  */
 function rawurlencode(string $string) : string {}
+
+/**
+ * @psalm-pure
+ *
+ * @psalm-flow ($string) -> return
+ *
+ * @return ($string is non-empty-string ? non-empty-string : string)
+ */
+function urldecode(string $string) : string {}
+
+/**
+ * @psalm-pure
+ *
+ * @psalm-flow ($string) -> return
+ *
+ * @return ($string is non-empty-string ? non-empty-string : string)
+ */
+function rawurldecode(string $string) : string {}
 
 /**
  * @psalm-pure
@@ -1561,12 +1583,15 @@ function printf(string $format, ...$values) {}
 function vprintf(string $format, array $values) {}
 
 /**
+ * A local path, which isn't the URL of a server
+ *
  * @psalm-pure
  *
  * @return string|false
  * @psalm-ignore-falsable-return
  *
  * @psalm-flow ($path) -> return
+ * @psalm-taint-escape ssrf
  */
 function realpath(string $path) {}
 
@@ -1742,6 +1767,10 @@ function ldap_escape(string $value, string $ignore = "", int $flags = 0) : strin
  *
  * @param int<1, 2147483647> $depth
  * @return mixed
+ *
+ * A JSON string can hold any character as an escape sequence: the taints escapes of the JSON text removed are given
+ * back in a plugin
+ *
  * @psalm-flow ($json) -(unserialization)-> return
  */
 function json_decode(string $json, ?bool $associative = null, int $depth = 512, int $flags = 0) {}

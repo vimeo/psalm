@@ -9,6 +9,7 @@ use PhpParser\Comment\Doc;
 use PhpParser\Node\Stmt\Class_;
 use Psalm\Aliases;
 use Psalm\Internal\PhpVisitor\Reflector\ClassLikeDocblockParser;
+use Psalm\Storage\TemplateVariance;
 
 use function array_values;
 
@@ -38,7 +39,10 @@ final class ClassLikeDocblockParserTest extends TestCase
         $node = new Class_(null);
         $php_parser_doc = new Doc($doc);
         $class_docblock = ClassLikeDocblockParser::parse($node, $php_parser_doc, new Aliases());
-        $this->assertSame([['T', 'of', 'string', true, 33]], $class_docblock->templates);
+        $this->assertSame(
+            [['T', 'of', 'string', TemplateVariance::Covariant, 33]],
+            $class_docblock->templates,
+        );
     }
 
     public function testTemplateDefaults(): void
@@ -58,11 +62,11 @@ final class ClassLikeDocblockParserTest extends TestCase
 
         $this->assertSame(
             [
-                ['TA', 'of', 'int', false, 23],
-                ['TB', null, null, false, 86],
-                ['TC', 'of', 'callable(int=): void', true, 120],
-                ['TD', 'of', 'array{x?: int}', false, 183],
-                ['TE', 'of', 'string', false, 251],
+                ['TA', 'of', 'int', TemplateVariance::Invariant, 23],
+                ['TB', null, null, TemplateVariance::Invariant, 86],
+                ['TC', 'of', 'callable(int=): void', TemplateVariance::Covariant, 120],
+                ['TD', 'of', 'array{x?: int}', TemplateVariance::Invariant, 183],
+                ['TE', 'of', 'string', TemplateVariance::Invariant, 251],
             ],
             $class_docblock->templates,
         );
@@ -94,12 +98,12 @@ final class ClassLikeDocblockParserTest extends TestCase
 
         $this->assertSame(
             [
-                ['TA', 'of', '\'a\\\'=b\'', false, 17],
-                ['TB', 'of', '"c\\"=d"', false, 44],
-                ['TC', 'of', '\'e\\\\\'', false, 81],
-                ['TD', 'of', '"f\\\\" description = text', false, 114],
-                ['TE', 'of', 'int', false, 158],
-                ['TF', 'of', 'string', false, 183],
+                ['TA', 'of', '\'a\\\'=b\'', TemplateVariance::Invariant, 17],
+                ['TB', 'of', '"c\\"=d"', TemplateVariance::Invariant, 44],
+                ['TC', 'of', '\'e\\\\\'', TemplateVariance::Invariant, 81],
+                ['TD', 'of', '"f\\\\" description = text', TemplateVariance::Invariant, 114],
+                ['TE', 'of', 'int', TemplateVariance::Invariant, 158],
+                ['TF', 'of', 'string', TemplateVariance::Invariant, 183],
             ],
             $class_docblock->templates,
         );

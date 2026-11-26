@@ -61,6 +61,17 @@ final class SwitchTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'switchOnAVariableNamedLikeTheTemporaryOneKeepsIt' => [
+                'code' => '<?php
+                    function bar(int $__tmp_switch__1): int {
+                        switch ($__tmp_switch__1) {
+                            case 1:
+                                break;
+                        }
+
+                        return $__tmp_switch__1;
+                    }',
+            ],
             'continueTargetingAnOuterSwitchLeavesItLikeBreak' => [
                 'code' => '<?php
                     $outer = uniqid();
@@ -245,6 +256,34 @@ final class SwitchTypeTest extends TestCase
                 'assertions' => ['$rest===' => "'a'|'b'|'c'"],
                 'ignored_issues' => [],
                 'php_version' => '8.0',
+            ],
+            'switchTrueOverAUnionOfFinalClassesIsExhaustive' => [
+                'code' => '<?php
+                    final class Bar {}
+                    final class Baz {}
+
+                    function test(Bar|Baz $instance): string {
+                        switch (true) {
+                            case $instance instanceof Bar:
+                                return "bar";
+                            case $instance instanceof Baz:
+                                return "baz";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'switchTrueOverAClassAndItsOwnInstanceofIsExhaustive' => [
+                'code' => '<?php
+                    class Open {}
+
+                    function test(Open $instance): string {
+                        switch (true) {
+                            case $instance instanceof Open:
+                                return "open";
+                        }
+                    }',
             ],
             'conditionalBreakOfAnExitingCaseKeepsTheTypeOfAVarDefinedBeforeTheSwitch' => [
                 'code' => <<<'PHP'
@@ -696,6 +735,114 @@ final class SwitchTypeTest extends TestCase
                             testInt($a);
                             break;
                     }',
+            ],
+            'getTypeVarReassigned' => [
+                'code' => '<?php
+                    function takesInt(int $i): void {}
+
+                    function foo(int|string $x): void {
+                        $t = gettype($x);
+                        $x = 5;
+
+                        switch ($t) {
+                            case "string":
+                                takesInt($x);
+                                break;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'getTypeVarUnsetAndReassigned' => [
+                'code' => '<?php
+                    function takesInt(int $i): void {}
+
+                    function foo(int|string $x): void {
+                        $t = gettype($x);
+                        unset($x);
+                        $x = 5;
+
+                        switch ($t) {
+                            case "string":
+                                takesInt($x);
+                                break;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'getTypeCopiedVarReassigned' => [
+                'code' => '<?php
+                    function takesInt(int $i): void {}
+
+                    function foo(int|string $x): void {
+                        $t = gettype($x);
+                        $x = 5;
+                        $u = $t;
+
+                        switch ($u) {
+                            case "string":
+                                takesInt($x);
+                                break;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'getTypeVarWrittenByReference' => [
+                'code' => '<?php
+                    function takesInt(int $i): void {}
+
+                    /** @param-out int $i */
+                    function setInt(mixed &$i): void {
+                        $i = 5;
+                    }
+
+                    function foo(int|string $x): void {
+                        $t = gettype($x);
+                        setInt($x);
+
+                        switch ($t) {
+                            case "string":
+                                takesInt($x);
+                                break;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'getTypeResultAfterReassignment' => [
+                'code' => '<?php
+                    $x = rand(0, 1) ? 1 : "a";
+                    $t = gettype($x);
+                    $x = 5;',
+                'assertions' => [
+                    '$t===' => 'non-falsy-string',
+                ],
+            ],
+            'getDebugTypeResultAfterReassignment' => [
+                'code' => '<?php
+                    $x = rand(0, 1) ? 1 : "a";
+                    $t = get_debug_type($x);
+                    $x = 5;',
+                'assertions' => [
+                    '$t===' => 'non-falsy-string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'getClassResultAfterReassignment' => [
+                'code' => '<?php
+                    $x = new ArrayObject();
+                    $t = get_class($x);
+                    $x = new stdClass();',
+                'assertions' => [
+                    '$t===' => 'class-string',
+                ],
             ],
             'switchTruthy' => [
                 'code' => '<?php
@@ -1948,6 +2095,110 @@ final class SwitchTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'getTypeVarReassignedInOneBranch' => [
+                'code' => '<?php
+                    function takesString(string $s): void {}
+
+                    function foo(int|string $x): void {
+                        $t = gettype($x);
+                        if (rand(0, 1)) {
+                            $x = 5.0;
+                        }
+
+                        switch ($t) {
+                            case "string":
+                                takesString($x);
+                                break;
+                        }
+                    }',
+                'error_message' => 'InvalidScalarArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:12:45',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'switchTrueWithACaseThatAssignsItsVariableIsNotExhaustive' => [
+                'code' => '<?php
+                    final class A {}
+                    function f(): ?A { return rand(0, 1) ? new A() : null; }
+
+                    function assignInCase(): string {
+                        $y = new A();
+                        switch (true) {
+                            case ($y = f()) instanceof A:
+                                return "a";
+                        }
+                    }',
+                'error_message' => 'InvalidReturnType',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'switchTrueWithACaseThatPassesItsVariableByReferenceIsNotExhaustive' => [
+                'code' => '<?php
+                    function byRef(string $s): string {
+                        $m = 1;
+                        switch (true) {
+                            case preg_match("/a/", $s, $m) === 1:
+                                return "a";
+                            case $m === 1:
+                                return "b";
+                        }
+                    }',
+                'error_message' => 'InvalidReturnType',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'switchTrueWithACaseThatCallsAMethodChangingTheTestedPropertyIsNotExhaustive' => [
+                'code' => '<?php
+                    final class A {}
+
+                    final class Holder {
+                        public ?A $a = null;
+
+                        public function reset(): bool {
+                            $this->a = null;
+                            return false;
+                        }
+                    }
+
+                    function viaMethod(Holder $h): string {
+                        if ($h->a === null) {
+                            return "early";
+                        }
+                        switch (true) {
+                            case $h->reset():
+                                return "r";
+                            case $h->a instanceof A:
+                                return "a";
+                        }
+                    }',
+                'error_message' => 'InvalidReturnType',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'switchTrueOverASubclassIsNotExhaustive' => [
+                'code' => '<?php
+                    class Open {}
+                    class Sub extends Open {}
+
+                    function test(Open $instance): string {
+                        switch (true) {
+                            case $instance instanceof Sub:
+                                return "sub";
+                        }
+                    }',
+                'error_message' => 'InvalidReturnType',
+            ],
+            'switchTrueOverUnrelatedConditionsIsNotExhaustive' => [
+                'code' => '<?php
+                    function test(int $a, int $b): string {
+                        switch (true) {
+                            case $a > 1:
+                                return "a";
+                            case $b > 1:
+                                return "b";
+                        }
+                    }',
+                'error_message' => 'InvalidReturnType',
+            ],
             'varFromBreakTwoOutOfNestedSwitchIsUndefinedAfterIt' => [
                 'code' => '<?php
                     function f(string $s, string $u): void {
@@ -2628,6 +2879,12 @@ final class SwitchTypeTest extends TestCase
                         }
                     }',
                 'error_message' => 'UndefinedMethod',
+            ],
+            'switchTemporaryVariableIsNotDefinedAfterTheSwitch' => [
+                'code' => '<?php function bar(): int { switch (rand(0, 1)) { case 1: break; }
+                        return $__tmp_switch__36;
+                    }',
+                'error_message' => 'UndefinedVariable',
             ],
         ];
     }

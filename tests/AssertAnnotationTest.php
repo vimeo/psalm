@@ -294,6 +294,303 @@ final class AssertAnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'assertIfTrueOfAMethodNotReturningABoolComparedWithFalseKeepsTheMethodNarrowing' => [
+                'code' => '<?php
+                    final class Box {
+                        public ?int $v = null;
+
+                        /**
+                         * @psalm-assert-if-true !null $this->v
+                         * @psalm-capabilities read-props
+                         */
+                        public function get(): string|false {
+                            return $this->v === null ? false : (string) $this->v;
+                        }
+                    }
+
+                    /** @psalm-pure */
+                    function takesString(string $s): string {
+                        return $s;
+                    }
+
+                    function f(Box $b): int {
+                        if ($b->get() !== false) {
+                            echo takesString($b->get());
+
+                            return $b->v + 1;
+                        }
+
+                        return 0;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'assertIfFalseOfAMemoizedMethodComparedWithABool' => [
+                'code' => '<?php
+                    final class Numbers {
+                        /** @var list<int> */
+                        public array $items = [];
+
+                        /**
+                         * @return list<int>
+                         * @psalm-capabilities read-props
+                         */
+                        public function getAll(): array {
+                            return $this->items;
+                        }
+
+                        /**
+                         * @psalm-assert-if-false non-empty-list<int> $this->getAll()
+                         * @psalm-capabilities read-props
+                         */
+                        public function isEmpty(): bool {
+                            return !$this->items;
+                        }
+
+                        /**
+                         * @psalm-assert-if-false non-empty-list<int> $this->items
+                         * @psalm-capabilities read-props
+                         */
+                        public function hasNoItems(): bool {
+                            return !$this->items;
+                        }
+                    }
+
+                    /**
+                     * @param non-empty-list<int> $numbers
+                     * @psalm-pure
+                     */
+                    function takesNonEmpty(array $numbers): int {
+                        return count($numbers);
+                    }
+
+                    function f(Numbers $n): void {
+                        if (false === $n->isEmpty()) {
+                            echo takesNonEmpty($n->getAll());
+                        }
+
+                        if (false === $n->hasNoItems()) {
+                            echo takesNonEmpty($n->items);
+                        }
+
+                        if ($n->isEmpty() === false) {
+                            echo takesNonEmpty($n->getAll());
+                        }
+
+                        if ($n->isEmpty() !== true) {
+                            echo takesNonEmpty($n->getAll());
+                        }
+
+                        if (true !== $n->hasNoItems()) {
+                            echo takesNonEmpty($n->items);
+                        }
+                    }',
+            ],
+            'assertIterableIntersectionOnAnIterable' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-assert iterable&Countable $x
+                     */
+                    function assertCountable(mixed $x): void {}
+
+                    function f(iterable $x): int {
+                        assertCountable($x);
+                        return count($x);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'assertIterableIntersectionKeepsTheIntersectedTypes' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-assert iterable&Countable $x
+                     */
+                    function assertCountable(mixed $x): void {}
+
+                    function m(): mixed { return 1; }
+                    function t(): Traversable { return new ArrayIterator([]); }
+                    function o(): object { return new ArrayObject([]); }
+
+                    $m = m();
+                    assertCountable($m);
+                    $t = t();
+                    assertCountable($t);
+                    $o = o();
+                    assertCountable($o);',
+                'assertions' => [
+                    '$m' => 'iterable<mixed, mixed>&Countable',
+                    '$t' => 'Traversable[impure]<mixed, mixed>&Countable',
+                    '$o' => 'Traversable&Countable',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+                'php_version' => '8.0',
+            ],
+            'negatedIterableIntersectionKeepsWhatMayNotBeCountable' => [
+                'code' => '<?php
+                    /** @psalm-assert-if-true iterable&Countable $x */
+                    function isCountable(mixed $x): bool {
+                        return is_iterable($x) && $x instanceof Countable;
+                    }
+
+                    function t(): Traversable { return new ArrayIterator([]); }
+                    /** @return iterable|int */
+                    function i() { return 1; }
+
+                    $t = t();
+                    if (isCountable($t)) {
+                        throw new Exception();
+                    }
+                    $i = i();
+                    if (isCountable($i)) {
+                        throw new Exception();
+                    }',
+                'assertions' => [
+                    '$t' => 'Traversable[impure]<mixed, mixed>',
+                    '$i' => 'int|iterable<mixed, mixed>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'negatedIterableIntersectionKeepsAnArray' => [
+                'code' => '<?php
+                    /** @psalm-assert-if-true iterable&Countable $x */
+                    function isCountable(mixed $x): bool {
+                        return is_iterable($x) && $x instanceof Countable;
+                    }
+
+                    /** @return array<int> */
+                    function a(): array { return []; }
+
+                    $a = a();
+                    if (isCountable($a)) {
+                        throw new Exception();
+                    }',
+                'assertions' => [
+                    '$a' => 'array<array-key, int>',
+                ],
+                'ignored_issues' => ['TypeDoesNotContainType'],
+                'php_version' => '8.0',
+            ],
+            'assertIterableIntersectionOnABoundedTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-assert iterable&Countable $x
+                     */
+                    function assertCountable(mixed $x): void {}
+
+                    /**
+                     * @template T of iterable<int, string>
+                     * @param T $x
+                     */
+                    function f($x): int {
+                        assertCountable($x);
+                        return count($x);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'assertShapeOnANonEmptyArrayFiltersEachItemByTheValueType' => [
+                'code' => '<?php
+                    /**
+                     * @param mixed $v
+                     * @psalm-assert-if-true array{a: int|bool, b: string} $v
+                     */
+                    function isAB($v): bool {
+                        return true;
+                    }
+
+                    /** @var non-empty-array<string, int|string|null> */
+                    $a = [];
+
+                    if (!isAB($a)) {
+                        throw new RuntimeException();
+                    }',
+                'assertions' => [
+                    '$a===' => 'array{a: int, b: string}',
+                ],
+            ],
+            'assertListOnANonEmptyArrayNarrowsItsValues' => [
+                'code' => '<?php
+                    /**
+                     * @param mixed $v
+                     * @psalm-assert-if-true list<int> $v
+                     */
+                    function isIntList($v): bool {
+                        return true;
+                    }
+
+                    /** @var non-empty-array<int, int|string> */
+                    $a = [];
+
+                    if (!isIntList($a)) {
+                        throw new RuntimeException();
+                    }',
+                'assertions' => [
+                    '$a===' => 'non-empty-list<int>',
+                ],
+            ],
+            'assertListOnAStringKeyedArrayThatMayBeEmptyIsPossible' => [
+                'code' => '<?php
+                    /**
+                     * @param mixed $v
+                     * @psalm-assert-if-true list<int> $v
+                     */
+                    function isIntList($v): bool {
+                        return true;
+                    }
+
+                    /** @param array<string, mixed> $a */
+                    function f(array $a): void {
+                        if (isIntList($a)) {
+                            echo count($a);
+                        }
+                    }',
+            ],
+            'assertShapeWhoseRestFitsNoValueOfTheArrayDropsTheRest' => [
+                'code' => '<?php
+                    /**
+                     * @param mixed $v
+                     * @psalm-assert-if-true array{a: int, ...<string, bool>} $v
+                     */
+                    function isABoolRest($v): bool {
+                        return true;
+                    }
+
+                    /** @param non-empty-array<string, int|string> $a */
+                    function h(array $a): array {
+                        if (isABoolRest($a)) {
+                            /** @psalm-check-type-exact $a = array{a: int} */;
+                        }
+
+                        return $a;
+                    }',
+            ],
+            'assertListOfANonEmptyArrayKeepsItNonEmpty' => [
+                'code' => '<?php
+                    /**
+                     * @param mixed $value
+                     * @psalm-assert-if-true list<int> $value
+                     */
+                    function isIntList($value): bool {
+                        return is_array($value) && array_is_list($value);
+                    }
+
+                    /** @param mixed[] $ids */
+                    function first(array $ids): int {
+                        if (count($ids) === 2 && isIntList($ids)) {
+                            /** @psalm-check-type-exact $ids = non-empty-list<int> */;
+                            return $ids[0];
+                        }
+
+                        return 0;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'assertionOnAPropertyIsForgottenAfterAMethodWritingIt' => [
                 'code' => '<?php
                     /**
@@ -377,6 +674,38 @@ final class AssertAnnotationTest extends TestCase
                             return;
                         }
                         useText($s);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'callWithTwoAssertIfTrueTagsKeepsItsOwnAssertionWhenComparedToFalse' => [
+                'code' => '<?php
+                    final class Box {
+                        public ?int $v = null;
+                        public ?int $w = null;
+
+                        /**
+                         * @psalm-assert-if-true !null $this->v
+                         * @psalm-assert-if-true !null $this->w
+                         * @psalm-capabilities read-props
+                         */
+                        public function get(): string|false {
+                            return $this->v === null || $this->w === null ? false : (string) $this->v;
+                        }
+                    }
+
+                    /** @psalm-pure */
+                    function takesString(string $s): string {
+                        return $s;
+                    }
+
+                    function f(Box $b): string {
+                        if ($b->get() !== false) {
+                            return takesString($b->get());
+                        }
+
+                        return "";
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],
@@ -1163,7 +1492,7 @@ final class AssertAnnotationTest extends TestCase
                     $afterCheck = $a;
                     $ifTrue = has("k", $b) ? $b : null;
                     $ifFalse = missing("k", $c) ? null : $c;
-                    check(strtoupper("k"), $d);
+                    check(uniqid(), $d);
                     $unknownKey = $d;',
                 'assertions' => [
                     '$afterCheck' => 'array{k: mixed, ...<array-key, mixed>}',
@@ -5844,6 +6173,122 @@ final class AssertAnnotationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'assertIfTrueOfAMemoizedMethodComparedWithFalseThenTheMethodIsNeverTrue' => [
+                'code' => '<?php
+                    final class Name {
+                        public string $s = "";
+
+                        /**
+                         * @psalm-assert-if-true non-empty-string $this->s
+                         * @psalm-capabilities read-props
+                         */
+                        public function isSet(): bool {
+                            return $this->s !== "";
+                        }
+                    }
+
+                    function g(Name $n): void {
+                        if (false === $n->isSet()) {
+                            if ($n->isSet()) {
+                                echo 1;
+                            }
+                        }
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'assertIfFalseOfAMemoizedMethodComparedWithTrue' => [
+                'code' => '<?php
+                    final class Numbers {
+                        /** @var list<int> */
+                        public array $items = [];
+
+                        /**
+                         * @return list<int>
+                         * @psalm-capabilities read-props
+                         */
+                        public function getAll(): array {
+                            return $this->items;
+                        }
+
+                        /**
+                         * @psalm-assert-if-false non-empty-list<int> $this->getAll()
+                         * @psalm-capabilities read-props
+                         */
+                        public function isEmpty(): bool {
+                            return !$this->items;
+                        }
+
+                        /**
+                         * @psalm-assert-if-false non-empty-list<int> $this->items
+                         * @psalm-capabilities read-props
+                         */
+                        public function hasNoItems(): bool {
+                            return !$this->items;
+                        }
+                    }
+
+                    /**
+                     * @param non-empty-list<int> $numbers
+                     * @psalm-pure
+                     */
+                    function takesNonEmpty(array $numbers): int {
+                        return count($numbers);
+                    }
+
+                    function f(Numbers $n): void {
+                        if (true === $n->isEmpty()) {
+                            echo takesNonEmpty($n->getAll());
+                        }
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'assertIterableIntersectionOnAnArray' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-assert iterable&Countable $x
+                     */
+                    function assertCountable(mixed $x): void {}
+
+                    /** @param array<int> $x */
+                    function f(array $x): void {
+                        assertCountable($x);
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'assertIterableIntersectionOnAnIntersection' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-assert iterable&Countable $x
+                     */
+                    function assertCountable(mixed $x): void {}
+
+                    function f(Countable&Traversable $x): void {
+                        assertCountable($x);
+                    }',
+                'error_message' => 'RedundantCondition',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'assertListOnANonEmptyStringKeyedArrayIsImpossible' => [
+                'code' => '<?php
+                    /**
+                     * @param mixed $v
+                     * @psalm-assert-if-true list<int> $v
+                     */
+                    function isIntList($v): bool {
+                        return true;
+                    }
+
+                    /** @param non-empty-array<string, mixed> $a */
+                    function f(array $a): void {
+                        if (isIntList($a)) {}
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+            ],
             'assertIfFalseOfANullsafeMethodCallDoesNotHoldWhereItIsFalsy' => [
                 'code' => '<?php
                     final class M {

@@ -7,6 +7,7 @@ namespace Psalm\Internal\Type;
 use InvalidArgumentException;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\Statements\Expression\ArrayAnalyzer;
+use Psalm\Internal\TypeVisitor\ClassStringMapBoundReplacer;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\Scalar;
@@ -20,6 +21,7 @@ use Psalm\Type\Atomic\TCapabilities;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClassStringMap;
 use Psalm\Type\Atomic\TDecimalIntString;
+use Psalm\Type\Atomic\TDependentGetClass;
 use Psalm\Type\Atomic\TEmptyMixed;
 use Psalm\Type\Atomic\TEnumCase;
 use Psalm\Type\Atomic\TFalse;
@@ -756,7 +758,13 @@ final class TypeCombiner
         }
 
         if ($type instanceof TClassStringMap) {
-            foreach ([$type->getStandinKeyParam(), $type->value_param] as $i => $type_param) {
+            // the map's template is only kept if the result is a class-string-map again
+            $type_params = [
+                ClassStringMapBoundReplacer::getKeyType($type),
+                ClassStringMapBoundReplacer::getValueType($type),
+            ];
+
+            foreach ($type_params as $i => $type_param) {
                 // See https://github.com/vimeo/psalm/pull/9439#issuecomment-1464563015
                 /** @psalm-suppress PropertyTypeCoercion */
                 $combination->array_type_params[$i] = Type::combineUnionTypes(
@@ -768,11 +776,19 @@ final class TypeCombiner
             }
 
             $combination->array_always_filled = false;
+            $combination->all_arrays_lists = false;
+            $combination->all_arrays_callable = false;
 
             if ($combination->all_arrays_class_string_maps !== false) {
                 $combination->all_arrays_class_string_maps = true;
                 $combination->class_string_map_names[$type->param_name] = true;
                 $combination->class_string_map_as_types[(string) $type->as_type] = $type->as_type;
+                $combination->class_string_map_value_param = Type::combineUnionTypes(
+                    $combination->class_string_map_value_param,
+                    $type->value_param,
+                    $codebase,
+                    $overwrite_empty_array,
+                );
             }
 
             return null;
@@ -840,10 +856,9 @@ final class TypeCombiner
             $combination->objectlike_sealed = $combination->objectlike_sealed
                 && $type->fallback_params === null;
 
-            if (!$type->fallback_params
-                || ($combination->objectlike_key_type
-                    ? $combination->objectlike_key_type->getId() !== $type->fallback_params[0]->getId()
-                    : $existing_objectlike_entries)
+            if ($type->fallback_params
+                && $combination->objectlike_key_type
+                && $combination->objectlike_key_type->getId() !== $type->fallback_params[0]->getId()
             ) {
                 $combination->objectlike_same_fallback_key = false;
             }
@@ -860,7 +875,8 @@ final class TypeCombiner
                         ->setPossiblyUndefined($existing_objectlike_entries
                             || $candidate_property_type->possibly_undefined);
                     if ($existing_objectlike_entries && $combination->objectlike_same_fallback_key) {
-                        $combination->objectlike_missing_keys[$candidate_property_name] = true;
+                        $combination->objectlike_missing_keys[$candidate_property_name]
+                            = !$combination->objectlike_some_sealed;
                     }
                 } else {
                     $combination->objectlike_entries[$candidate_property_name] = Type::combineUnionTypes(
@@ -879,6 +895,8 @@ final class TypeCombiner
 
                 if (!$candidate_property_type->possibly_undefined) {
                     $has_defined_keys = true;
+                } elseif ($type->fallback_params === null) {
+                    $combination->objectlike_missing_keys[$candidate_property_name] = false;
                 }
 
                 if ($value_type === null && $combination->fallbackKeyContains($candidate_property_name)) {
@@ -943,18 +961,23 @@ final class TypeCombiner
                 $combination->objectlike_entries[$k] = $combination->objectlike_entries[$k]
                     ->setPossiblyUndefined(true);
                 if ($combination->objectlike_same_fallback_key) {
-                    $combination->objectlike_missing_keys[$k] = true;
+                    $combination->objectlike_missing_keys[$k] = ($combination->objectlike_missing_keys[$k] ?? true)
+                        && $type->fallback_params !== null;
                 }
             }
 
-            if ($combination->objectlike_value_type) {
+            if ($type->fallback_params === null) {
+                $combination->objectlike_some_sealed = true;
+            }
+
+            if ($type->fallback_params) {
                 foreach ($missing_entries as $k => $_) {
                     if (!$combination->fallbackKeyContains($k)) {
                         continue;
                     }
                     $combination->objectlike_entries[$k] =  Type::combineUnionTypes(
                         $combination->objectlike_entries[$k],
-                        $type->fallback_params[1] ?? $combination->objectlike_value_type,
+                        $type->fallback_params[1],
                         $codebase,
                         $overwrite_empty_array,
                     );
@@ -1245,6 +1268,28 @@ final class TypeCombiner
         ?Codebase $codebase,
         int $literal_limit,
     ): void {
+        // beside other strings, the class name `get_class()` gives is a non-falsy string
+        $existing_string = $combination->value_types['string'] ?? null;
+        $is_class_string = $type instanceof TClassString || $type instanceof TLiteralClassString;
+
+        if ($existing_string instanceof TDependentGetClass
+            && !$type instanceof TDependentGetClass
+            && !$is_class_string
+        ) {
+            $combination->value_types['string'] = new TNonFalsyString();
+        }
+
+        if ($type instanceof TDependentGetClass
+            && (($existing_string !== null && !$existing_string instanceof TDependentGetClass)
+                || array_any(
+                    $combination->strings ?? [],
+                    static fn(TLiteralString $string): bool => !$string instanceof TLiteralClassString,
+                ))
+        ) {
+            $type = new TNonFalsyString();
+            $type_key = 'string';
+        }
+
         if ($type instanceof TCallableString && isset($combination->value_types['callable[impure]'])) {
             return;
         }
@@ -1525,16 +1570,21 @@ final class TypeCombiner
                         && $combination->value_types['string']::class === TNonEmptyString::class
                     ) {
                         // do nothing
-                    } elseif (($type::class === TNonEmptyString::class
-                            || $type::class === TNumericString::class)
+                    } elseif ($type::class === TNonEmptyString::class
                         && $combination->value_types['string']::class === TNonFalsyString::class
                     ) {
                         $combination->value_types['string'] = $type;
                     } elseif ($type::class === TNonFalsyString::class
-                        && ($combination->value_types['string']::class === TNonEmptyString::class
-                            || $combination->value_types['string']::class === TNumericString::class)
+                        && $combination->value_types['string']::class === TNonEmptyString::class
                     ) {
                         // do nothing
+                    } elseif ((($type::class === TNumericString::class
+                                && $combination->value_types['string']::class === TNonFalsyString::class)
+                            || ($type::class === TNonFalsyString::class
+                                && $combination->value_types['string']::class === TNumericString::class))
+                    ) {
+                        // 'abc' isn't numeric, and '0' is numeric but falsy
+                        $combination->value_types['string'] = new TNonEmptyString();
                     } elseif (($type::class === TNonEmptyString::class
                             || $type::class === TNonFalsyString::class)
                         && $combination->value_types['string']::class === TNonEmptyLowercaseString::class
@@ -1907,9 +1957,10 @@ final class TypeCombiner
             ) {
                 // a key that every array lacking it may hold in its fallback, with the fallback's type, is the fallback
                 $fallback_value_type = $combination->objectlike_value_type;
-                foreach ($combination->objectlike_missing_keys as $k => $_) {
+                foreach ($combination->objectlike_missing_keys as $k => $only_unsealed_lack_it) {
                     $objectlike_entry = $combination->objectlike_entries[$k];
-                    if ($objectlike_entry->possibly_undefined
+                    if ($only_unsealed_lack_it
+                        && $objectlike_entry->possibly_undefined
                         && $combination->fallbackKeyAlwaysContains($k)
                         && ($objectlike_entry->hasMixed()
                             ? $fallback_value_type->hasMixed()
@@ -2123,13 +2174,14 @@ final class TypeCombiner
             }
         } else {
             if ($combination->all_arrays_class_string_maps
+                && $combination->class_string_map_value_param
                 && count($combination->class_string_map_as_types) === 1
                 && count($combination->class_string_map_names) === 1
             ) {
                 $array_type = new TClassStringMap(
                     array_keys($combination->class_string_map_names)[0],
                     array_values($combination->class_string_map_as_types)[0],
-                    $generic_type_params[1],
+                    $combination->class_string_map_value_param,
                 );
             } elseif ($combination->all_arrays_lists) {
                 $array_type = Type::getListAtomic($generic_type_params[1]);

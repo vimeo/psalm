@@ -9,6 +9,7 @@ use Psalm\Exception\DocblockParseException;
 use Psalm\Exception\IncorrectDocblockException;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Scanner\ParsedDocblock;
+use Psalm\Storage\TemplateVariance;
 
 use function array_shift;
 use function asort;
@@ -27,9 +28,9 @@ use function substr_count;
 use function trim;
 
 /**
- * Parses the `@template` and `@template-covariant` tags of a docblock, with their `@psalm-` and `@phpstan-`
- * forms: `T`, `T of Bound`, `T = Default` or `T of Bound = Default` (`as` and `super` may stand for `of`),
- * each followed by an optional description.
+ * Parses the `@template`, `@template-covariant` and `@template-contravariant` tags of a docblock, with their
+ * `@psalm-` and `@phpstan-` forms: `T`, `T of Bound`, `T = Default` or `T of Bound = Default` (`as` and `super`
+ * may stand for `of`), each followed by an optional description.
  *
  * @internal
  * @psalm-immutable
@@ -38,15 +39,15 @@ final class TemplateTagParser
 {
     /**
      * The templates of the docblock in order of first declaration in any form, each from its preferred form
-     * (`@psalm-`, then `@phpstan-`, then the plain tag), as `[name, modifier, bound, covariant, offset of the
+     * (`@psalm-`, then `@phpstan-`, then the plain tag), as `[name, modifier, bound, variance, offset of the
      * first declaration in the docblock]`, and their defaults. The bound comes with what follows it, as the
      * scanner cuts the description off.
      *
-     * @param array<string, bool> $tags the tags to read, and whether their templates are covariant
-     * @param array<string, array<string, array{string, ?string, ?string, bool, int}>> $templates the purity
-     *     templates already read, by name and form
+     * @param array<string, TemplateVariance> $tags the tags to read, and the variance of their templates
+     * @param array<string, array<string, array{string, ?string, ?string, TemplateVariance, int}>> $templates
+     *     the purity templates already read, by name and form
      * @return array{
-     *     list<array{string, ?string, ?string, bool, int}>,
+     *     list<array{string, ?string, ?string, TemplateVariance, int}>,
      *     array<string, array{type: string, line_number: int}>
      * }
      * @throws IncorrectDocblockException
@@ -60,7 +61,7 @@ final class TemplateTagParser
     ): array {
         $defaults = [];
 
-        foreach ($tags as $tag => $covariant) {
+        foreach ($tags as $tag => $variance) {
             foreach ($parsed_docblock->combined_tags[$tag] ?? [] as $offset => $template_line) {
                 [$name, $modifier, $bound, $default] = self::parse($template_line, $tag);
 
@@ -72,7 +73,7 @@ final class TemplateTagParser
                 }
 
                 $docblock_offset = $offset - $comment->getStartFilePos();
-                $templates[$name][$source_prefix] = [$name, $modifier, $bound, $covariant, $docblock_offset];
+                $templates[$name][$source_prefix] = [$name, $modifier, $bound, $variance, $docblock_offset];
 
                 if ($default !== null) {
                     $defaults[$name][$source_prefix] = [
@@ -101,8 +102,8 @@ final class TemplateTagParser
         foreach ($declared_at as $name => $offset) {
             foreach (['psalm', 'phpstan', 'none'] as $source_prefix) {
                 if (isset($templates[$name][$source_prefix])) {
-                    [$template_name, $modifier, $bound, $covariant] = $templates[$name][$source_prefix];
-                    $chosen_templates[] = [$template_name, $modifier, $bound, $covariant, $offset];
+                    [$template_name, $modifier, $bound, $variance] = $templates[$name][$source_prefix];
+                    $chosen_templates[] = [$template_name, $modifier, $bound, $variance, $offset];
 
                     if (isset($defaults[$name][$source_prefix])) {
                         $chosen_defaults[$name] = $defaults[$name][$source_prefix];

@@ -6,6 +6,9 @@ namespace Psalm\Internal\TypeVisitor;
 
 use Override;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TTemplateKeyOf;
+use Psalm\Type\Atomic\TTemplatePropertiesOf;
+use Psalm\Type\Atomic\TTemplateValueOf;
 use Psalm\Type\TypeNode;
 use Psalm\Type\TypeVisitor;
 
@@ -37,6 +40,17 @@ final class ContainsStaticVisitor extends TypeVisitor
             $this->contains_static = true;
             return self::STOP_TRAVERSAL;
         }
+
+        // unlike that of a template parameter, their bound is not a child node
+        if ($type instanceof TTemplateKeyOf
+            || $type instanceof TTemplateValueOf
+            || $type instanceof TTemplatePropertiesOf
+        ) {
+            $this->traverse($type->as);
+
+            return $this->contains_static ? self::STOP_TRAVERSAL : null;
+        }
+
         return null;
     }
 

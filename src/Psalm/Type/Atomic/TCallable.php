@@ -87,7 +87,10 @@ final class TCallable extends Atomic
     #[Override]
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
-        return $this->params === null && $this->return_type === null;
+        return $this->params === null
+            && $this->return_type === null
+            && $this->hasFixedPurity()
+            && $this->getCapabilities() === Capabilities::ALL;
     }
 
     /**

@@ -44,7 +44,7 @@ use Psalm\Internal\IncludeCollector;
 use Psalm\Internal\Lz4Serializer;
 use Psalm\Internal\Perf;
 use Psalm\Internal\Provider\AddRemoveTaints\HtmlFunctionTainter;
-use Psalm\Internal\Provider\AddRemoveTaints\JsonEncodeTainter;
+use Psalm\Internal\Provider\AddRemoveTaints\JsonFunctionTainter;
 use Psalm\Internal\Scanner\FileScanner;
 use Psalm\Internal\ZstdSerializer;
 use Psalm\Issue\ArgumentIssue;
@@ -110,7 +110,6 @@ use function getcwd;
 use function getenv;
 use function glob;
 use function hash;
-use function hrtime;
 use function implode;
 use function in_array;
 use function interface_exists;
@@ -207,7 +206,6 @@ final class Config
     private const FIRST_PARTY_PLUGINS = [
         'phpunit/phpunit' => 'Psalm\PhpUnitPlugin\Plugin',
         'mockery/mockery' => 'Psalm\MockeryPlugin\Plugin',
-        'symfony/framework-bundle' => 'Psalm\SymfonyPsalmPlugin\Plugin',
         'laravel/framework' => 'Psalm\LaravelPlugin\Plugin',
         'orchestra/testbench' => 'Psalm\LaravelPlugin\Plugin',
         'doctrine/orm' => 'Weirdan\DoctrinePsalmPlugin\Plugin',
@@ -1234,7 +1232,6 @@ final class Config
     /**
      * @param non-empty-string $file_contents
      * @psalm-suppress MixedAssignment
-     * @psalm-suppress MixedPropertyFetch
      * @throws ConfigException
      */
     private static function fromXmlAndPaths(
@@ -1663,14 +1660,12 @@ final class Config
         }
 
         if (isset($config_xml->mockClasses) && isset($config_xml->mockClasses->class)) {
-            /** @var SimpleXMLElement $mock_class */
             foreach ($config_xml->mockClasses->class as $mock_class) {
                 $config->mock_classes[] = strtolower((string)$mock_class['name']);
             }
         }
 
         if (isset($config_xml->universalObjectCrates) && isset($config_xml->universalObjectCrates->class)) {
-            /** @var SimpleXMLElement $universal_object_crate */
             foreach ($config_xml->universalObjectCrates->class as $universal_object_crate) {
                 $classString = (string) $universal_object_crate['name'];
                 $config->addUniversalObjectCrate($classString);
@@ -1701,21 +1696,18 @@ final class Config
         }
 
         if (isset($config_xml->unsuppressibleIssues) && isset($config_xml->unsuppressibleIssues->issue)) {
-            /** @var SimpleXMLElement $unsuppressible_issue */
             foreach ($config_xml->unsuppressibleIssues->issue as $unsuppressible_issue) {
                 $config->addUnsuppressibleIssue((string) $unsuppressible_issue['name']);
             }
         }
 
         if (isset($config_xml->forbiddenFunctions) && isset($config_xml->forbiddenFunctions->function)) {
-            /** @var SimpleXMLElement $forbidden_function */
             foreach ($config_xml->forbiddenFunctions->function as $forbidden_function) {
                 $config->forbidden_functions[strtolower((string) $forbidden_function['name'])] = true;
             }
         }
 
         if (isset($config_xml->forbiddenConstants) && isset($config_xml->forbiddenConstants->constant)) {
-            /** @var SimpleXMLElement $forbidden_function */
             foreach ($config_xml->forbiddenConstants->constant as $forbidden_function) {
                 $config->forbidden_constants[(string) $forbidden_function['name']] = true;
             }
@@ -1802,7 +1794,7 @@ final class Config
 
             foreach (['require', 'require-dev'] as $section) {
                 foreach ($composer_json[$section] ?? [] as $package => $_) {
-                    $plugin_class_name = self::FIRST_PARTY_PLUGINS[strtolower((string) $package)] ?? null;
+                    $plugin_class_name = self::getFirstPartyPluginClass(strtolower((string) $package));
                     if ($plugin_class_name !== null) {
                         $library_plugin_classes[] = $plugin_class_name;
                     }
@@ -1847,7 +1839,6 @@ final class Config
         }
 
         if (isset($config_xml->globals) && isset($config_xml->globals->var)) {
-            /** @var SimpleXMLElement $var */
             foreach ($config_xml->globals->var as $var) {
                 $config->globals['$' . (string) $var['name']] = (string) $var['type'];
             }
@@ -1863,6 +1854,21 @@ final class Config
         }
 
         return $config;
+    }
+
+    /**
+     * The first-party plugin of a library composer.json requires (see loadLibraryPlugins): that of any Symfony
+     * package but the polyfills, which libraries require without using Symfony
+     *
+     * @psalm-pure
+     */
+    private static function getFirstPartyPluginClass(string $package): ?string
+    {
+        if (str_starts_with($package, 'symfony/') && !str_starts_with($package, 'symfony/polyfill-')) {
+            return 'Psalm\SymfonyPsalmPlugin\Plugin';
+        }
+
+        return self::FIRST_PARTY_PLUGINS[$package] ?? null;
     }
 
     /**
@@ -2222,7 +2228,7 @@ final class Config
             }
 
             try {
-                $perf_start = Perf\Collector::$enabled ? (int) hrtime(true) : 0;
+                $perf_start = Perf\Collector::$enabled ? Perf\Collector::nowNs() : 0;
                 $plugin($socket, $plugin_config);
 
                 if ($perf_start !== 0) {
@@ -2265,7 +2271,7 @@ final class Config
 
         foreach ($this->plugin_paths as $path) {
             try {
-                $perf_start = Perf\Collector::$enabled ? (int) hrtime(true) : 0;
+                $perf_start = Perf\Collector::$enabled ? Perf\Collector::nowNs() : 0;
                 $plugin = new FileBasedPluginAdapter($path, $this, $codebase);
                 $plugin($socket);
 
@@ -2282,10 +2288,10 @@ final class Config
         }
 
         new HtmlFunctionTainter();
-        new JsonEncodeTainter();
+        new JsonFunctionTainter();
 
         $socket->registerHooksFromClass(HtmlFunctionTainter::class);
-        $socket->registerHooksFromClass(JsonEncodeTainter::class);
+        $socket->registerHooksFromClass(JsonFunctionTainter::class);
     }
 
     private function loadPlugin(ProjectAnalyzer $projectAnalyzer, string $pluginClassName): PluginInterface
@@ -3143,6 +3149,10 @@ final class Config
             $this->internal_stubs[] = $stubsDir . 'Php82.phpstub';
             $this->internal_stubs[] = $stubsDir . 'Php82Functions.phpstub';
             $this->php_extensions['random'] = true; // random is a part of the PHP core starting from PHP 8.2
+        }
+
+        if ($codebase->analysis_php_version_id >= 8_03_00) {
+            $this->internal_stubs[] = $stubsDir . 'Php83.phpstub';
         }
 
         if ($codebase->analysis_php_version_id >= 8_04_00) {

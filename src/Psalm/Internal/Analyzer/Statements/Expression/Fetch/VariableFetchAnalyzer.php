@@ -153,7 +153,15 @@ final class VariableFetchAnalyzer
                     self::addDataFlowToVariable($statements_analyzer, $stmt, $var_name, $stmt_type, $context);
 
                     $context->vars_in_scope[$var_name] = $stmt_type;
-                    $statements_analyzer->node_data->setType($stmt, $stmt_type);
+                    // the variables aren't checked: where the variable isn't assigned, it holds a value from
+                    // elsewhere (extract(), the including scope), so it can be anything (an isset() asks about
+                    // the variable)
+                    $statements_analyzer->node_data->setType(
+                        $stmt,
+                        $stmt_type->possibly_undefined && !$context->inside_isset
+                            ? Type::getMixed()->setParentNodes($stmt_type->parent_nodes)
+                            : $stmt_type,
+                    );
                 }
             } else {
                 $statements_analyzer->node_data->setType($stmt, Type::getMixed());

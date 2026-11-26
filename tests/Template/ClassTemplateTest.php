@@ -57,6 +57,218 @@ final class ClassTemplateTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'nullCoalescingATemplatePropertyBoundedByANullableStringToAString' => [
+                'code' => '<?php
+                    /**
+                     * @template-covariant T of non-empty-string|null
+                     */
+                    final class X implements Stringable
+                    {
+                        /**
+                         * @param T $value
+                         */
+                        public function __construct(private ?string $value)
+                        {
+                        }
+
+                        public function __toString(): string
+                        {
+                            return $this->value ?? \'\';
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'nullableArrayOfAnInterfaceTemplateBoundByTheClassTemplatePassedBackInALoop' => [
+                'code' => '<?php
+                    /**
+                     * @template T1 of array|object
+                     */
+                    interface ExampleInterface
+                    {
+                        /**
+                         * @param ?T1[] $args
+                         * @return ?T1[]
+                         */
+                        public function run(?array $args): ?array;
+                    }
+
+                    /**
+                     * @template T2 of array|object
+                     */
+                    final class Example
+                    {
+                        /**
+                         * @param ExampleInterface<T2> $example
+                         */
+                        public function run(ExampleInterface $example): void
+                        {
+                            $arg = null;
+                            do {
+                                $arg = $example->run($arg);
+                            } while ($arg !== null);
+                        }
+                    }',
+            ],
+            'classTemplateBoundNamingATemplateDeclaredAfterIt' => [
+                'code' => '<?php
+                    /** @template-covariant TValue */
+                    interface Box {
+                        /** @return TValue */
+                        public function get();
+                    }
+
+                    /** @implements Box<int> */
+                    final class IntBox implements Box {
+                        public function get(): int {
+                            return 1;
+                        }
+                    }
+
+                    /**
+                     * @template TBox of Box<TValue>
+                     * @template TValue
+                     */
+                    final class Holder {
+                        /** @var TBox */
+                        public Box $box;
+
+                        /** @param TBox $box */
+                        public function __construct(Box $box) {
+                            $this->box = $box;
+                        }
+
+                        /** @return TValue */
+                        public function value() {
+                            return $this->box->get();
+                        }
+                    }
+
+                    $value = (new Holder(new IntBox()))->value();',
+                'assertions' => [
+                    '$value===' => 'int',
+                ],
+            ],
+            'classTemplateBoundNamingALaterTemplateWithABoundOfItsOwn' => [
+                'code' => '<?php
+                    /** @template-covariant TValue */
+                    interface Box {
+                        /** @return TValue */
+                        public function get();
+                    }
+
+                    /**
+                     * @template TBox of Box<TValue>
+                     * @template TValue of int
+                     */
+                    final class FwdHolder {
+                        /** @param TBox $box */
+                        public function __construct(public Box $box) {}
+
+                        public function v(): int {
+                            return $this->box->get();
+                        }
+                    }
+
+                    /**
+                     * @template TValue of int
+                     * @template TBox of Box<TValue>
+                     */
+                    final class DeclaredHolder {
+                        /** @param TBox $box */
+                        public function __construct(public Box $box) {}
+
+                        public function v(): int {
+                            return $this->box->get();
+                        }
+                    }
+
+                    /**
+                     * @template TA of Box<TB>
+                     * @template TB of Box<TC>
+                     * @template TC of int
+                     */
+                    final class ChainHolder {
+                        /** @param TA $a */
+                        public function __construct(public Box $a) {}
+
+                        public function v(): int {
+                            return $this->a->get()->get();
+                        }
+                    }
+
+                    /**
+                     * @template TA of Box<TB>
+                     * @template TB of Box<TA>
+                     */
+                    final class CycleHolder {
+                        /** @param TA $a */
+                        public function __construct(public Box $a) {}
+
+                        public function v(): void {
+                            $this->a->get();
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'classTemplateBoundNamingATemplateDeclaredBeforeAndAfterIt' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /** @param T $v */
+                        public function __construct(private mixed $v) {}
+
+                        /** @return T */
+                        public function get(): mixed {
+                            return $this->v;
+                        }
+                    }
+
+                    /**
+                     * @template TB of Box<TC>
+                     * @template TC of int
+                     * @template TD of Box<TB>
+                     */
+                    final class DepHolder {
+                        /** @param TD $d */
+                        public function __construct(public Box $d) {}
+
+                        public function v(): int {
+                            return $this->d->get()->get();
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'classTemplateBoundNamingAnEarlierTemplateWithAForwardBound' => [
+                'code' => '<?php
+                    /** @template-covariant TValue */
+                    interface Box {
+                        /** @return TValue */
+                        public function get();
+                    }
+
+                    /**
+                     * @template TB of Box<TC>
+                     * @template TC of int
+                     * @template TD of Box<TB>
+                     */
+                    final class DepHolder {
+                        /** @param TD $d */
+                        public function __construct(public Box $d) {}
+
+                        public function v(): int {
+                            return $this->d->get()->get();
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'staticWithTheTypeArgumentsOfATemplateReceiverIsTheTemplate' => [
                 'code' => '<?php
                     /**
@@ -5602,7 +5814,7 @@ final class ClassTemplateTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
-            'newUsesTheDefaultOfATemplateOnlyAnInheritedMethodTakes' => [
+            'newLeavesATemplateWithADefaultOnlyAnInheritedMethodTakesToLaterCode' => [
                 'code' => '<?php
                     /**
                      * @psalm-mutable
@@ -5639,12 +5851,22 @@ final class ClassTemplateTest extends TestCase
                         public function __construct() {}
                     }
 
-                    $inherited = new Inherited();
-                    $from_trait = new FromTrait();',
-                'assertions' => [
-                    '$inherited===' => 'Inherited<int>',
-                    '$from_trait===' => 'FromTrait<int>',
-                ],
+                    /** @return Inherited<string> */
+                    function inherited(): Inherited {
+                        $inherited = new Inherited();
+                        $inherited->set("x");
+
+                        return $inherited;
+                    }
+
+                    /** @return FromTrait<string> */
+                    function fromTrait(): FromTrait {
+                        $from_trait = new FromTrait();
+                        $from_trait->set("x");
+
+                        return $from_trait;
+                    }',
+                'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
@@ -6553,6 +6775,67 @@ final class ClassTemplateTest extends TestCase
                     $map = new Map();
                     f($map);',
             ],
+            'templateBoundByStaticReadOnThis' => [
+                'code' => '<?php
+                    /**
+                     * @template T of static
+                     */
+                    class SelfBound {
+                        /** @return T */
+                        public function get() {
+                            throw new Exception();
+                        }
+
+                        /** @return T */
+                        public static function getStatic() {
+                            throw new Exception();
+                        }
+
+                        /** @return T */
+                        public function viaThis() {
+                            return $this->get();
+                        }
+
+                        /** @return T */
+                        public function chained() {
+                            return $this->get()->get()->get();
+                        }
+
+                        /** @return T */
+                        public function viaStatic() {
+                            return static::getStatic();
+                        }
+
+                        /** @return T */
+                        public function inClosure() {
+                            return (fn() => $this->get())();
+                        }
+
+                        /** @return T|static */
+                        public function inLoop(bool $b) {
+                            $x = $this;
+                            while ($b) {
+                                $x = $x->get();
+                            }
+                            return $x;
+                        }
+                    }
+
+                    /**
+                     * @template T of static|null
+                     */
+                    class NullableSelfBound {
+                        /** @return T */
+                        public function get() {
+                            throw new Exception();
+                        }
+
+                        /** @return list<T> */
+                        public function all() {
+                            return [$this->get()];
+                        }
+                    }',
+            ],
         ];
     }
 
@@ -6563,6 +6846,23 @@ final class ClassTemplateTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'templateBoundByStaticReadOnThisIsTheTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template T of static
+                     */
+                    class SelfBound {
+                        /** @return T */
+                        public function get() {
+                            throw new Exception();
+                        }
+
+                        public function test(): int {
+                            return $this->get()->get();
+                        }
+                    }',
+                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:12:36 - The inferred type \'T:SelfBound as SelfBound<T:SelfBound as SelfBound&static>&static',
+            ],
             'staticWithOtherTypeArgumentsOfATemplateReceiverIsNotTheTemplate' => [
                 'code' => '<?php
                     /**

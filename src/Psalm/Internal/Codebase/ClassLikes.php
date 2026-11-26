@@ -711,6 +711,16 @@ final class ClassLikes
         $this->existing_classlike_aliases[$alias_name] = true;
     }
 
+    /**
+     * Whether class_alias() gives a class the name
+     *
+     * @psalm-mutation-free
+     */
+    public function isClassAlias(string $name): bool
+    {
+        return isset($this->classlike_aliases_map[strtolower($name)]);
+    }
+
     /** @psalm-mutation-free */
     public function getUnAliasedName(string $alias_name): string
     {
@@ -3043,8 +3053,11 @@ final class ClassLikes
                 }
             }
 
+            // a subclass may give the constant another value, of its docblock or native type
             $constant_type = $late_static_binding
-                ? $constant_storage->type
+                ? ($constant_storage->type?->from_docblock
+                    ? $constant_storage->type
+                    : $constant_storage->signature_type ?? $constant_storage->type)
                 : ($constant_storage->inferred_type ?? null);
 
             if ($constant_type === null) {

@@ -133,7 +133,7 @@ final class Review
             throw new AssertionError("Could not read issues");
         }
 
-        /** @var list<array{type: string, snippet: string, selected_text: string, line_from: int, column_from: int, file_name: string}> */
+        /** @var list<array{type: string, message: string, snippet: string, selected_text: string, line_from: int, column_from: int, file_name: string}> */
         $issues = json_decode($issues, true, flags: JSON_THROW_ON_ERROR);
         foreach ($args as $issue) {
             if ($issue[0] === '~' || $issue[0] === '-') {

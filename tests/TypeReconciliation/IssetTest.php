@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Tests\TypeReconciliation;
 
 use Override;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
@@ -75,12 +76,192 @@ final class IssetTest extends TestCase
     }
 
     /**
+     * Taint analysis tracks an offset the negation of `isset()` removes, which changes only the data flow of the
+     * array in the implicit else: the array keeps its type from before the if, as without taint analysis.
+     */
+    #[DataProvider('providerNarrowingOfAnIssetOffset')]
+    public function testArrayTypeAfterNestedNarrowingOfAnIssetOffsetWithTaintAnalysis(string $narrowing): void
+    {
+        $this->project_analyzer->trackTaintedInputs();
+        $this->testValidCode(
+            '<?php
+                final class Definition {}
+
+                function getService(): array {
+                    return [];
+                }
+
+                $service = getService();
+                $definition = isset($service[0]) && $service[0] instanceof Definition ? array_shift($service) : null;
+                if (isset($service["from_callable"])) {
+                    $service["class"] = "Closure";
+                }
+                ' . $narrowing,
+            ['$service===' => "array<array-key, 'Closure'|Definition|mixed>"],
+            ['MixedAssignment'],
+        );
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     * @psalm-pure
+     */
+    public static function providerNarrowingOfAnIssetOffset(): iterable
+    {
+        return [
+            'if' => [
+                'if (isset($service["lazy"])) {
+                    if (is_string($service["lazy"])) {}
+                }',
+            ],
+            'ifElseChain' => [
+                'if (isset($service["lazy"])) {
+                    if (is_string($service["lazy"])) {}
+                } elseif (rand(0, 1)) {
+                } else {
+                }',
+            ],
+            'inASwitchCase' => [
+                'switch (rand(0, 2)) {
+                    case 0:
+                        if (isset($service["lazy"])) {
+                            if (is_string($service["lazy"])) {}
+                        }
+                        break;
+                    default:
+                }',
+            ],
+            'inALoop' => [
+                'while (rand(0, 1)) {
+                    if (isset($service["lazy"])) {
+                        if (is_string($service["lazy"])) {}
+                    }
+                }',
+            ],
+        ];
+    }
+
+    /**
      * @psalm-pure
      */
     #[Override]
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'nullCoalesceOnAnyExpression' => [
+                'code' => '<?php
+                    final class S {
+                        public const NOTHING = null;
+                    }
+
+                    /** @return int|null */
+                    function maybe() {
+                        return null;
+                    }
+
+                    $from_null = null ?? 1;
+                    $from_class_constant = S::NOTHING ?? 2;
+                    $from_operation = (rand(0, 1) ? maybe() : null) ?? 3;',
+                'assertions' => [
+                    '$from_null===' => '1',
+                    '$from_class_constant===' => '2',
+                    '$from_operation===' => 'int',
+                ],
+                'ignored_issues' => ['TypeDoesNotContainType'],
+            ],
+            'nullsafeCallOnTheLeftOfCoalesceIsMadeOnAVariableInIssetMode' => [
+                'code' => '<?php
+                    final class R {
+                        public function info(): array {
+                            return [];
+                        }
+                    }
+
+                    function send(): ?R {
+                        return rand(0, 1) ? new R() : null;
+                    }
+
+                    function assignedInTry(): array {
+                        try {
+                            $r = send();
+                            throw new \RuntimeException("x");
+                        } catch (\RuntimeException $e) {
+                            return $r?->info() ?? [];
+                        }
+                    }
+
+                    function assignedInIf(): array {
+                        if (rand(0, 1)) {
+                            $r = send();
+                        }
+
+                        return $r?->info() ?? [];
+                    }
+
+                    function thenFetched(): mixed {
+                        if (rand(0, 1)) {
+                            $r = send();
+                        }
+
+                        return $r?->info()["k"] ?? [];
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'nullsafeOnTheLeftOfCoalesceOnAPossiblyUndefinedObject' => [
+                'code' => '<?php
+                    final class R {
+                        public ?array $p = null;
+
+                        public function info(): ?array {
+                            return null;
+                        }
+                    }
+
+                    function call(): array {
+                        if (rand(0, 1)) {
+                            $r = new R();
+                        }
+
+                        return $r?->info() ?? [];
+                    }
+
+                    function fetch(): array {
+                        if (rand(0, 1)) {
+                            $r = new R();
+                        }
+
+                        return $r?->p ?? [];
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'nullsafeFetchOnTheLeftOfCoalesceStaysInIssetMode' => [
+                'code' => '<?php
+                    final class Ext {
+                        public int $w = 0;
+                    }
+
+                    /** @param array<string, ?Ext> $list */
+                    function undefinedProperty(array $list, string $k): mixed {
+                        return $list[$k]?->weight ?? -999;
+                    }
+
+                    /** @param array<string, ?Ext> $list */
+                    function definedProperty(array $list, string $k): int {
+                        return $list[$k]?->w ?? -999;
+                    }
+
+                    /** @param array{a?: ?Ext} $arr */
+                    function optionalOffset(array $arr): int {
+                        return $arr["a"]?->w ?? -1;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'issetInALoopOverLiteralKeysOfAnIntersectionShape' => [
                 'code' => '<?php
                     /**
@@ -1651,6 +1832,59 @@ final class IssetTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'issetOnNullableMixedInElseif' => [
+                'code' => '<?php
+                    function processParam(mixed $param) : void {
+                        if (rand(0, 1)) {
+                            $param = null;
+                        }
+
+                        if (rand(0, 1)) {
+                        } elseif (isset($param["name"])) {
+                            /**
+                             * @psalm-suppress MixedArgument
+                             */
+                            echo $param["name"];
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'issetOnMixedAssignedInElseifCondition' => [
+                'code' => '<?php
+                    function getMixed(): mixed {
+                        return rand(0, 1) ? ["name" => "a"] : null;
+                    }
+
+                    function processParam() : void {
+                        if (rand(0, 1)) {
+                        } elseif (($param = getMixed()) !== null && isset($param["name"])) {
+                            /**
+                             * @psalm-suppress MixedArgument
+                             */
+                            echo $param["name"];
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment'],
+                'php_version' => '8.0',
+            ],
+            'elseifTooComplicatedToNegateKeepsEarlierNegation' => [
+                'code' => '<?php
+                    function takesInt(int $i): void {}
+
+                    function f(?int $x, ?int $y, bool $a1, bool $b1, bool $a2, bool $b2, bool $a3, bool $b3, bool $a4, bool $b4, bool $a5, bool $b5, bool $a6, bool $b6, bool $a7, bool $b7, bool $a8, bool $b8, bool $a9, bool $b9, bool $a10, bool $b10, bool $a11, bool $b11, bool $a12, bool $b12, bool $a13, bool $b13, bool $a14, bool $b14, bool $a15, bool $b15): void {
+                        if ($x === null) {
+                            return;
+                        } elseif ($y !== null && ($a1 || $b1) && ($a2 || $b2) && ($a3 || $b3) && ($a4 || $b4) && ($a5 || $b5) && ($a6 || $b6) && ($a7 || $b7) && ($a8 || $b8) && ($a9 || $b9) && ($a10 || $b10) && ($a11 || $b11) && ($a12 || $b12) && ($a13 || $b13) && ($a14 || $b14) && ($a15 || $b15)) {
+                            takesInt($x);
+                            takesInt($y);
+                        } else {
+                            takesInt($x);
+                        }
+                    }',
+            ],
             'assertComplex' => [
                 'code' => '<?php
                     function returnsInt(?int $a, ?int $b): int {
@@ -2556,6 +2790,182 @@ final class IssetTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'coalesceOnANullsafeCallKeepsArgumentIssues' => [
+                'code' => '<?php
+                    final class R {
+                        public function info(mixed $_x): ?array {
+                            return null;
+                        }
+                    }
+
+                    function f(?R $r): array {
+                        return $r?->info($u) ?? [];
+                    }',
+                'error_message' => 'UndefinedVariable',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'coalesceOnANullsafeCallKeepsDynamicNameIssues' => [
+                'code' => '<?php
+                    final class R {
+                        public function info(): ?array {
+                            return null;
+                        }
+                    }
+
+                    function f(?R $r): mixed {
+                        if (rand(0, 1)) {
+                            $n = "info";
+                        }
+
+                        return $r?->{$n}() ?? [];
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'coalesceOnAFetchFromANullsafeCallKeepsDynamicNameIssues' => [
+                'code' => '<?php
+                    final class R {
+                        public function info(): ?array {
+                            return null;
+                        }
+                    }
+
+                    function f(?R $r): mixed {
+                        if (rand(0, 1)) {
+                            $n = "info";
+                        }
+
+                        return $r?->{$n}()["k"] ?? [];
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'coalesceOnANullsafeCallOnAVariableVariableReadsTheName' => [
+                'code' => '<?php
+                    final class R {
+                        public function info(): ?array {
+                            return null;
+                        }
+                    }
+
+                    function f(): mixed {
+                        if (rand(0, 1)) {
+                            $n = "r";
+                        }
+
+                        return $$n?->info() ?? [];
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'coalesceOnAFetchFromAStaticCallKeepsDynamicNameIssues' => [
+                'code' => '<?php
+                    final class R {
+                        public static function info(): ?array {
+                            return null;
+                        }
+                    }
+
+                    function f(): mixed {
+                        if (rand(0, 1)) {
+                            $n = "info";
+                        }
+
+                        return R::{$n}()["k"] ?? [];
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'coalesceOnANullsafeCallOnAFetchReadsTheVariable' => [
+                'code' => '<?php
+                    final class R {
+                        public ?R $x = null;
+                        public function info(): ?array {
+                            return null;
+                        }
+                    }
+
+                    function f(): array {
+                        try {
+                            $r = rand(0, 1) ? new R() : null;
+                            throw new \RuntimeException("x");
+                        } catch (\RuntimeException $e) {
+                            return $r?->x?->info() ?? [];
+                        }
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'coalesceOnANullsafeCallOnACallReadsTheVariable' => [
+                'code' => '<?php
+                    final class R {
+                        public function self(): ?R {
+                            return $this;
+                        }
+                        public function info(): ?array {
+                            return null;
+                        }
+                    }
+
+                    function f(): array {
+                        try {
+                            $r = rand(0, 1) ? new R() : null;
+                            throw new \RuntimeException("x");
+                        } catch (\RuntimeException $e) {
+                            return $r?->self()?->info() ?? [];
+                        }
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'coalesceOnAMethodCallReadsTheVariable' => [
+                'code' => '<?php
+                    final class R {
+                        public function info(): ?array {
+                            return null;
+                        }
+                    }
+
+                    function f(): array {
+                        try {
+                            $r = new R();
+                            throw new \RuntimeException("x");
+                        } catch (\RuntimeException $e) {
+                            return $r->info() ?? [];
+                        }
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'coalesceOnAConcatenationKeepsOffsetIssues' => [
+                'code' => '<?php
+                    /** @param array{a?: string} $arr */
+                    function f(array $arr): string {
+                        return "x: " . $arr["a"] ?? "none";
+                    }',
+                'error_message' => 'PossiblyUndefinedArrayOffset',
+            ],
+            'coalesceOnAConcatenationKeepsMixedOffsetIssues' => [
+                'code' => '<?php
+                    /** @param mixed $error */
+                    function g($error): string {
+                        return "x: " . $error[0]["description"] ?? "none";
+                    }',
+                'error_message' => 'MixedArrayAccess',
+            ],
+            'coalesceOnAConcatenationKeepsNullOffsetIssuesOfACall' => [
+                'code' => '<?php
+                    function h(): string {
+                        return "x: " . error_get_last()["message"] ?? "none";
+                    }',
+                'error_message' => 'PossiblyNullArrayAccess',
+            ],
             'possiblyUndefinedMixedVariableStaysSoWhereIssetOfOffsetIsFalse' => [
                 'code' => '<?php
                     /** @return mixed */
