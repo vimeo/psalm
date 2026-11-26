@@ -221,7 +221,7 @@ final class CrashReport
         try {
             $url = $package === null ? $this->getPsalmIssueUrl() : $this->getPluginIssueUrl($package);
         } catch (Throwable) {
-            $url = $package === null ? self::PSALM_ISSUES . '?template=crash.yml' : self::getTracker($package);
+            $url = $package === null ? self::PSALM_ISSUES : self::getTracker($package);
         }
 
         if ($package === null) {
@@ -232,58 +232,54 @@ final class CrashReport
     }
 
     /**
-     * A link to the crash form of Psalm's tracker, filled in
+     * A link to a new issue on Psalm's tracker, with the title and the body filled in
      */
     public function getPsalmIssueUrl(): string
     {
-        $context = $this->getContextLine();
-
-        return $this->fitUrl(
-            self::PSALM_ISSUES,
-            fn(int $max_frames, int $max_length): array => [
-                'template' => 'crash.yml',
-                'title' => $this->getIssueTitle(),
-                'psalm_version' => defined('PSALM_VERSION') ? self::getPsalmVersion() : 'unknown',
-                'php_version' => PHP_VERSION,
-                'os' => self::describeOs(),
-                'plugins' => $this->describePlugins(),
-                'exception' => $this->renderChain(false, $max_length),
-                'context' => $context ?? '',
-                'frames' => $this->renderFrames($max_frames),
-            ],
-        );
+        return $this->getIssueUrl('vimeo/psalm', null);
     }
 
     /**
-     * A link to the tracker of a plugin, with the title and the body filled in on GitHub
+     * A link to the tracker of a plugin, filled in when it is on GitHub
      *
      * @param Package $package
      */
     private function getPluginIssueUrl(array $package): ?string
     {
         $repository = self::findGithubRepository($package['issues'] ?? $package['source']);
-        if ($repository === null) {
-            return self::getTracker($package);
-        }
 
+        return $repository === null ? self::getTracker($package) : $this->getIssueUrl($repository, $package);
+    }
+
+    /**
+     * @param ?Package $package the plugin that crashed
+     */
+    private function getIssueUrl(string $repository, ?array $package): string
+    {
         $context = $this->getContextLine();
-        $hook = $this->context->hook === null
-            ? '- Hook: unknown, guessed from the trace' . "\n"
-            : '- Hook: ' . $this->context->hook . ', ' . (string) $this->context->handler . "\n";
+        $crashed = $package === null
+            ? 'Psalm crashed.' . "\n\n" . '- Plugins: ' . $this->describePlugins() . "\n"
+            : 'Psalm crashed in the plugin.' . "\n\n"
+                . '- Plugin: ' . $package['name'] . ' ' . ($package['version'] ?? '') . "\n"
+                . ($this->context->hook === null
+                    ? '- Hook: unknown, guessed from the trace' . "\n"
+                    : '- Hook: ' . $this->context->hook . ', ' . (string) $this->context->handler . "\n");
 
         return $this->fitUrl(
             'https://github.com/' . $repository . '/issues/new',
             fn(int $max_frames, int $max_length): array => [
                 'title' => $this->getIssueTitle(),
-                'body' => 'Psalm crashed in the plugin.' . "\n\n"
-                    . '- Plugin: ' . $package['name'] . ' ' . ($package['version'] ?? '') . "\n"
-                    . $hook
+                'body' => $crashed
                     . '- Psalm: ' . (defined('PSALM_VERSION') ? self::getPsalmVersion() : 'unknown')
                     . ', PHP ' . PHP_VERSION . ', ' . self::describeOs() . "\n"
                     . ($context === null ? '' : '- Context: ' . $context . "\n")
                     . "\n```\n" . $this->renderChain(false, $max_length) . PHP_EOL . $this->renderFrames($max_frames)
                     . "\n```\n\n"
-                    . 'Psalm wrote a full report to a crash-*.txt file: attach it if it helps.' . "\n",
+                    . 'Psalm wrote a full report to a crash-*.txt file: attach it if it helps.'
+                    . ($package === null
+                        ? ' If you can, add the code and the `psalm.xml` that make Psalm crash.'
+                        : '')
+                    . "\n",
             ],
         );
     }

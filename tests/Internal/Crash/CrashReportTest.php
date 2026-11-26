@@ -31,7 +31,6 @@ use function array_filter;
 use function array_keys;
 use function basename;
 use function dirname;
-use function explode;
 use function file_get_contents;
 use function fopen;
 use function getenv;
@@ -48,6 +47,7 @@ use function str_repeat;
 use function str_replace;
 use function stream_get_contents;
 use function strlen;
+use function substr_count;
 use function sys_get_temp_dir;
 use function touch;
 use function uniqid;
@@ -299,24 +299,21 @@ final class CrashReportTest extends TestCase
         $url = (new CrashReport($e, $this->project_analyzer->getConfig(), []))->getPsalmIssueUrl();
         $fields = self::getQuery($url, 'https://github.com/vimeo/psalm/issues/new?');
 
-        $this->assertSame(
-            ['template', 'title', 'psalm_version', 'php_version', 'os', 'plugins', 'exception', 'context', 'frames'],
-            array_keys($fields),
-        );
-        $this->assertSame('crash.yml', $fields['template']);
+        $this->assertSame(['title', 'body'], array_keys($fields));
         $this->assertSame('Crash: RuntimeException: Undefined array key "X"', $fields['title']);
         // the separators after the prefix and the ends of lines are the platform's
-        $exception = str_replace(['\\', "\r\n"], ['/', "\n"], $fields['exception']);
+        $body = str_replace(['\\', "\r\n"], ['/', "\n"], $fields['body']);
         $this->assertMatchesRegularExpression(
-            '~^RuntimeException: PHP Error: Undefined array key "X"'
+            '~\n```\nRuntimeException: PHP Error: Undefined array key "X"'
                 . ' in <project>/tests/Internal/Crash/CrashReportTest\.php:12'
-                . '\n  at <project>/tests/Internal/Crash/CrashReportTest\.php:\d+$~',
-            $exception,
+                . '\n  at <project>/tests/Internal/Crash/CrashReportTest\.php:\d+'
+                . '\n#0 <project>/vendor/phpunit/~',
+            $body,
         );
-        // 10 frames, without the message again
-        $frames = str_replace(['\\', "\r\n"], ['/', "\n"], $fields['frames']);
-        $this->assertCount(10, explode("\n", $frames));
-        $this->assertStringStartsWith('#0 <project>/vendor/phpunit/', $frames);
+        // 10 frames
+        $this->assertStringContainsString("\n#9 ", $body);
+        $this->assertStringNotContainsString("\n#10 ", $body);
+        $this->assertStringNotContainsString('for command with CLI args', $body);
         foreach (array_filter([dirname(__DIR__, 3), $home === '' ? '' : $home . '/', sys_get_temp_dir()]) as $private) {
             $this->assertStringNotContainsString($private, $url);
             $this->assertStringNotContainsString(rawurlencode($private), $url);
@@ -326,7 +323,7 @@ final class CrashReportTest extends TestCase
         $this->assertLessThanOrEqual(7_500, strlen($long));
         $this->assertStringContainsString(
             'xxx...' . PHP_EOL . '  at ',
-            self::getQuery($long, 'https://github.com/vimeo/psalm/issues/new?')['exception'],
+            self::getQuery($long, 'https://github.com/vimeo/psalm/issues/new?')['body'],
         );
     }
 
@@ -334,16 +331,15 @@ final class CrashReportTest extends TestCase
     {
         $e = new RuntimeException(str_repeat('a', 1_500), 0, new LogicException(str_repeat('b', 1_500)));
 
-        $fields = self::getQuery(
+        $body = self::getQuery(
             (new CrashReport($e, null, []))->getPsalmIssueUrl(),
             'https://github.com/vimeo/psalm/issues/new?',
-        );
+        )['body'];
 
-        $this->assertStringContainsString(str_repeat('a', 1_500) . PHP_EOL, $fields['exception']);
-        $this->assertStringContainsString(str_repeat('b', 1_500) . PHP_EOL, $fields['exception']);
-        $this->assertCount(10, explode(PHP_EOL, $fields['frames']));
-        $this->assertStringNotContainsString('aaa', $fields['frames']);
-        $this->assertStringNotContainsString('bbb', $fields['frames']);
+        $this->assertSame(1, substr_count($body, str_repeat('a', 1_500) . PHP_EOL));
+        $this->assertSame(1, substr_count($body, str_repeat('b', 1_500) . PHP_EOL));
+        $this->assertStringContainsString(PHP_EOL . '#9 ', $body);
+        $this->assertStringNotContainsString(PHP_EOL . '#10 ', $body);
     }
 
     public function testACrashInAPluginLinksToItsTrackerWithATitleAndABody(): void
@@ -405,7 +401,7 @@ final class CrashReportTest extends TestCase
 
         $output = self::printCrash(new RuntimeException('boom'));
         $this->assertStringContainsString(
-            PHP_EOL . 'Report the bug to Psalm: https://github.com/vimeo/psalm/issues/new?template=crash.yml&',
+            PHP_EOL . 'Report the bug to Psalm: https://github.com/vimeo/psalm/issues/new?title=Crash%3A%20',
             $output,
         );
     }
