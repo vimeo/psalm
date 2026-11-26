@@ -9,6 +9,8 @@ use Amp\Parallel\Worker\Task;
 use Amp\Sync\Channel;
 use Override;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\Crash\CrashContext;
+use Throwable;
 
 /**
  * @internal
@@ -33,6 +35,8 @@ final class ScannerTask implements Task
 
         try {
             return $codebase->scanner->scanAPath($this->file);
+        } catch (Throwable $e) {
+            throw CrashContext::forParent($e);
         } finally {
             $codebase->setTaintRegistrationChannel(null);
         }
