@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call\Method;
 
+use Closure;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
@@ -30,6 +31,7 @@ use Psalm\Storage\MethodStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TClosure;
+use Psalm\Type\Atomic\TConditional;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
@@ -43,6 +45,78 @@ use function count;
  */
 final class MissingMethodCallHandler
 {
+    /**
+     * The pseudo method with `static` in its params, and in the bounds of the templates of its conditional return
+     * type, resolved to the object it is called on; also in its return type unless that stays the caller's (a mixin)
+     */
+    public static function resolveStaticInParams(
+        Codebase $codebase,
+        MethodStorage $pseudo_method_storage,
+        ClassLikeStorage $defining_class_storage,
+        Atomic\TNamedObject $static_type,
+        bool $final,
+        bool $resolve_return_type = true,
+    ): MethodStorage {
+        $expand = static fn(Union $type): Union => TypeExpander::expandUnion(
+            $codebase,
+            $type,
+            $defining_class_storage->name,
+            $static_type,
+            $defining_class_storage->parent_class,
+            true,
+            false,
+            $final,
+        );
+
+        $resolved_storage = clone $pseudo_method_storage;
+
+        $resolved_storage->setParams(array_map(
+            static fn(FunctionLikeParameter $param): FunctionLikeParameter => $param->type !== null
+                ? $param->setType($expand($param->type))
+                : $param,
+            $resolved_storage->params,
+        ));
+
+        if ($resolved_storage->return_type !== null) {
+            $resolved_storage->return_type = $resolve_return_type
+                ? $expand($resolved_storage->return_type)
+                : self::expandConditionsOfReturnType($resolved_storage->return_type, $expand);
+        }
+
+        if ($resolved_storage->template_types !== null) {
+            $resolved_storage->template_types = array_map(
+                static fn(array $bounds): array => array_map($expand, $bounds),
+                $resolved_storage->template_types,
+            );
+        }
+
+        return $resolved_storage;
+    }
+
+    /**
+     * What a conditional return type tests is about the params, its results stay as written
+     *
+     * @psalm-capabilities read-props
+     * @param Closure[_](Union): Union $expand
+     */
+    private static function expandConditionsOfReturnType(Union $type, Closure $expand): Union
+    {
+        $atomics = [];
+
+        foreach ($type->getAtomicTypes() as $atomic) {
+            $atomics[] = $atomic instanceof TConditional
+                ? $atomic->setTypes(
+                    $expand($atomic->as_type),
+                    $expand($atomic->conditional_type),
+                    self::expandConditionsOfReturnType($atomic->if_type, $expand),
+                    self::expandConditionsOfReturnType($atomic->else_type, $expand),
+                )
+                : $atomic;
+        }
+
+        return $type->setTypes($atomics);
+    }
+
     /**
      * @param array{type: TNamedObject, storage: ClassLikeStorage, declared: TNamedObject|TTemplateParam}|null $mixin
      *     the mixin, bound for the receiver, whose `@method` the call goes to
@@ -208,17 +282,30 @@ final class MissingMethodCallHandler
 
             [$pseudo_method_storage, $defining_class_storage] = $found_method_and_class_storage;
 
-            $overloads = $defining_class_storage->pseudo_method_overloads[$method_name_lc] ?? null;
+            // `static` in the params is the object the method is called on, as for a declared method: the mixin
+            // for a method of a mixin
+            $static_type = $mixin_type ?? $lhs_type_part;
+            $static_is_final = $mixin_type === null ? $class_storage->final : $pseudo_method_class_storage->final;
+            $resolve_return_type = $mixin_type === null;
 
-            if ($overloads !== null) {
-                $pseudo_method_storage = OverloadSelector::select(
-                    $statements_analyzer,
-                    $codebase,
-                    $stmt->getArgs(),
-                    $context,
-                    $overloads,
-                );
-            }
+            $pseudo_method_storage = self::selectOverload(
+                $statements_analyzer,
+                $codebase,
+                $stmt->getArgs(),
+                $context,
+                $defining_class_storage->pseudo_method_overloads[$method_name_lc] ?? null,
+                $pseudo_method_storage,
+                $static_type instanceof Atomic\TNamedObject
+                    ? static fn(MethodStorage $storage): MethodStorage => self::resolveStaticInParams(
+                        $codebase,
+                        $storage,
+                        $defining_class_storage,
+                        $static_type,
+                        $static_is_final,
+                        $resolve_return_type,
+                    )
+                    : null,
+            );
 
             // the templates of a mixin's `@method` are those of the mixin, `$this` and static stay the class
             $found_generic_params = ClassTemplateParamCollector::collect(
@@ -573,6 +660,28 @@ final class MissingMethodCallHandler
 
             [$pseudo_method_storage, $defining_class_storage] = $found_method_and_class_storage;
 
+            // `static` in the params is the object the method is called on
+            $pseudo_method_storage = self::selectOverload(
+                $statements_analyzer,
+                $codebase,
+                $stmt->isFirstClassCallable() ? [] : $stmt->getArgs(),
+                $context,
+                $stmt->isFirstClassCallable()
+                    ? null
+                    : $defining_class_storage->pseudo_method_overloads[$method_name_lc] ?? null,
+                $pseudo_method_storage,
+                $lhs_type_part instanceof Atomic\TNamedObject
+                    ? static fn(MethodStorage $storage): MethodStorage => self::resolveStaticInParams(
+                        $codebase,
+                        $storage,
+                        $defining_class_storage,
+                        $lhs_type_part,
+                        $class_storage->final,
+                        false,
+                    )
+                    : null,
+            );
+
             if ($stmt->isFirstClassCallable()) {
                 $result->return_type = self::createFirstClassCallableReturnType(
                     $statements_analyzer,
@@ -775,6 +884,36 @@ final class MissingMethodCallHandler
             $defining_class_storage->parent_class,
             $class_storage->final,
         );
+    }
+
+    /**
+     * The overload of a `@method` declared more than once that the call selects (see OverloadSelector::select()),
+     * the declared one when it has no overloads
+     *
+     * @param list<PhpParser\Node\Arg> $args
+     * @param non-empty-list<MethodStorage>|null $overloads
+     * @param (Closure[_](MethodStorage): MethodStorage)|null $resolve applied to every overload before the arguments
+     *     are matched against it, so that the choice sees the object the method is called on
+     */
+    public static function selectOverload(
+        StatementsAnalyzer $statements_analyzer,
+        Codebase $codebase,
+        array $args,
+        Context $context,
+        ?array $overloads,
+        MethodStorage $default,
+        ?Closure $resolve = null,
+    ): MethodStorage {
+        if ($resolve !== null) {
+            $default = $resolve($default);
+            $overloads = $overloads !== null ? array_map($resolve, $overloads) : null;
+        }
+
+        if ($overloads === null) {
+            return $default;
+        }
+
+        return OverloadSelector::select($statements_analyzer, $codebase, $args, $context, $overloads);
     }
 
     /**
