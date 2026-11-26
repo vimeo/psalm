@@ -732,7 +732,9 @@ final class MethodComparator
         }
 
         if ($prevent_method_signature_mismatch) {
-            if (!$guide_classlike_storage->user_defined
+            $guide_is_native = self::isNativeMethod($guide_classlike_storage, $cased_guide_method_id);
+
+            if ($guide_is_native
                 && $guide_param->type) {
                 $implementer_param_type = $implementer_param->signature_type;
 
@@ -857,7 +859,7 @@ final class MethodComparator
                 }
             }
 
-            if ($guide_classlike_storage->user_defined
+            if (!$guide_is_native
                 && $implementer_param->signature_type
                 && $guide_param->signature_type
             ) {
@@ -915,6 +917,18 @@ final class MethodComparator
                 $suppressed_issues + $implementer_classlike_storage->suppressed_issues,
             );
         }
+    }
+
+    /**
+     * A stub can declare a userland class, whose param signatures are real ones, unlike the callmap types of a
+     * native method
+     *
+     * @psalm-external-mutation-free
+     */
+    private static function isNativeMethod(ClassLikeStorage $classlike_storage, string $cased_method_id): bool
+    {
+        return !$classlike_storage->user_defined
+            && (!$classlike_storage->stubbed || InternalCallMapHandler::inCallMap($cased_method_id));
     }
 
     /**
