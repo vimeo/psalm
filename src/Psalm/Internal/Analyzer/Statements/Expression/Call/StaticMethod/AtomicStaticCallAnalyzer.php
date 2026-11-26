@@ -700,6 +700,8 @@ final class AtomicStaticCallAnalyzer
                     || !$codebase->classExtends($context->self, $fq_class_name)
                 )
             ) {
+                $is_dynamic_this_method = false;
+
                 // the synthetic constructor call of a class is not a real static call, even when a trait declares it
                 if ($stmt->getAttribute(ClassAnalyzer::FAKE_CONSTRUCTOR_CALL_ATTRIBUTE) !== true) {
                     MethodAnalyzer::checkStatic(
