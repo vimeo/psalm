@@ -760,12 +760,20 @@ final class MethodCallPurityAnalyzer
 
         $containing_class_capabilities = $method_storage->containing_class_capabilities;
 
-        // the storage of a trait's method is shared by the classes using it, and holds the trait's capabilities
+        // the storage of a trait's method is shared by the classes using it, and holds the trait's capabilities only,
+        // so add those of the class using the trait
         if ($method_storage->defining_fqcln !== null
             && $codebase->classlike_storage_provider->has($method_storage->defining_fqcln)
             && $codebase->classlike_storage_provider->get($method_storage->defining_fqcln)->is_trait
         ) {
-            $containing_class_capabilities = $class_storage->capabilities;
+            $appearing_method_id = $codebase->methods->getAppearingMethodId(
+                new MethodIdentifier($class_storage->name, $method_id->method_name),
+            );
+            $using_class_storage = $appearing_method_id !== null
+                ? $codebase->classlike_storage_provider->get($appearing_method_id->fq_class_name)
+                : $class_storage;
+
+            $containing_class_capabilities |= $using_class_storage->capabilities;
         }
 
         if (!$context->inside_unset

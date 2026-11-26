@@ -2323,6 +2323,72 @@ final class TraitTest extends TestCase
                     }
                 PHP,
             ],
+            'immutableTraitMethodOfAMutableClassForgottenThroughAnImmutableChild' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @psalm-immutable */
+                    trait Reads {
+                        public function get(): int {
+                            return $this->value;
+                        }
+                    }
+
+                    class Counter {
+                        use Reads;
+
+                        private int $value = 0;
+
+                        /** @psalm-capabilities read-props|write-this-props */
+                        public function set(int $value): void {
+                            $this->value = $value;
+                        }
+                    }
+
+                    /** @psalm-immutable */
+                    final class ChildCounter extends Counter {}
+
+                    function f(ChildCounter $c): void {
+                        if ($c->get() === 0) {
+                            $c->set(1);
+                            if ($c->get() === 1) {}
+                        }
+                    }
+                PHP,
+                'assertions' => [],
+                'ignored_issues' => ['MutableDependency'],
+            ],
+            'mutatingTraitMethodOfAnImmutableClassForgottenAfterAMutation' => [
+                'code' => <<<'PHP'
+                    <?php
+                    trait Counts {
+                        private int $value = 0;
+
+                        /** @psalm-capabilities read-props */
+                        public function get(): int {
+                            return $this->value;
+                        }
+
+                        /** @psalm-capabilities read-props|write-this-props */
+                        public function set(int $value): void {
+                            $this->value = $value;
+                        }
+                    }
+
+                    /** @psalm-immutable */
+                    final class Counter {
+                        use Counts;
+                    }
+
+                    function f(Counter $c): void {
+                        if ($c->get() === 0) {
+                            $c->set(1);
+                            if ($c->get() === 1) {}
+                        }
+                    }
+                PHP,
+                'assertions' => [],
+                'ignored_issues' => ['MutableDependency'],
+            ],
         ];
     }
 
@@ -2975,8 +3041,6 @@ final class TraitTest extends TestCase
                     <?php
                     /** @psalm-immutable */
                     trait Reads {
-                        private int $value = 0;
-
                         public function get(): int {
                             return $this->value;
                         }
@@ -2985,50 +3049,29 @@ final class TraitTest extends TestCase
                     /** @psalm-immutable */
                     final class Counter {
                         use Reads;
+
+                        public function __construct(private int $value) {}
                     }
 
-                    function report(): void {
-                        echo "report";
-                    }
-
-                    function f(Counter $c): void {
-                        if ($c->get() === 0) {
-                            report();
-                            if ($c->get() === 1) {}
-                        }
-                    }
-                PHP,
-                'error_message' => 'TypeDoesNotContainType',
-            ],
-            'traitMethodOfAnImmutableClassStaysMemoized' => [
-                'code' => <<<'PHP'
-                    <?php
-                    trait Reads {
+                    final class Other {
                         private int $value = 0;
 
-                        /** @psalm-capabilities read-props */
-                        public function get(): int {
-                            return $this->value;
+                        /** @psalm-capabilities read-props|write-this-props */
+                        public function set(int $value): void {
+                            $this->value = $value;
                         }
                     }
 
-                    /** @psalm-immutable */
-                    final class Counter {
-                        use Reads;
-                    }
-
-                    function report(): void {
-                        echo "report";
-                    }
-
-                    function f(Counter $c): void {
+                    function f(Counter $c, Other $o): void {
                         if ($c->get() === 0) {
-                            report();
+                            $o->set(1);
                             if ($c->get() === 1) {}
                         }
                     }
                 PHP,
                 'error_message' => 'TypeDoesNotContainType',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
         ];
     }
