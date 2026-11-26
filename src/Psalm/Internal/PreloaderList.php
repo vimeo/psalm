@@ -1095,6 +1095,7 @@ final class PreloaderList {
         \Psalm\Internal\TypeVisitor\CapturedValueVisitor::class,
         \Psalm\Internal\TypeVisitor\ClassStringMapBoundReplacer::class,
         \Psalm\Internal\TypeVisitor\ClasslikeReplacer::class,
+        \Psalm\Internal\TypeVisitor\ConditionTypeCollector::class,
         \Psalm\Internal\TypeVisitor\ConditionalSubjectReplacer::class,
         \Psalm\Internal\TypeVisitor\ConditionalTemplateVisitor::class,
         \Psalm\Internal\TypeVisitor\ContainsClassLikeVisitor::class,

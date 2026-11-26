@@ -1690,6 +1690,8 @@ final class ArrayFetchAnalyzer
                 && $type->fallback_params !== null
                 && $type->fallback_params[1]->isMixed()
                 && count($key_values) === 1
+                // the fallback is about the keys the shape doesn't list: a listed key holds its own type
+                && !isset($type->properties[$key_values[0]->value])
             ) {
                 $properties = $type->properties;
                 $properties[$key_values[0]->value] = Type::getMixed();
