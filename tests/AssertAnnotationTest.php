@@ -6314,6 +6314,25 @@ final class AssertAnnotationTest extends TestCase
                     '$l===' => 'array<never, never>',
                 ],
             ],
+            'constantsNamedEmptyAndFalsyInAssertion' => [
+                'code' => '<?php
+                    final class K {
+                        const empty = 1;
+                        const falsy = 2;
+                    }
+
+                    /**
+                     * @param mixed $value
+                     * @psalm-assert K::empty|K::falsy $value
+                     */
+                    function isK($value): void {}
+
+                    /** @param mixed $v */
+                    function f($v): void {
+                        isK($v);
+                        /** @psalm-check-type-exact $v = 1|2 */;
+                    }',
+            ],
         ];
     }
 
