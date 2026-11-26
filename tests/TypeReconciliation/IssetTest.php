@@ -2558,6 +2558,23 @@ final class IssetTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'parentOfANegativeOrNumericStringOffsetCheckedWithIssetIsNotMixed' => [
+                'code' => '<?php
+                    /** @param int<0, 5> $i */
+                    function f(array $a, int $i): void {
+                        if (isset($a["x"][-1], $a["y"]["3"], $a["z"][$i])) {
+                            $x = $a["x"];
+                            $y = $a["y"];
+                            $z = $a["z"];
+                            /** @psalm-check-type-exact $x = ArrayAccess|non-empty-array<array-key, mixed>|non-empty-string */;
+                            /** @psalm-check-type-exact $y = ArrayAccess|non-empty-array<array-key, mixed>|non-empty-string */;
+                            /** @psalm-check-type-exact $z = ArrayAccess|non-empty-array<array-key, mixed>|non-empty-string */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'parentOfAnIntOffsetCheckedWithIssetMayBeAString' => [
                 'code' => '<?php
                     function f(array $a): string {

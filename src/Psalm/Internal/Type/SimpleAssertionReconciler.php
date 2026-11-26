@@ -2485,7 +2485,7 @@ final class SimpleAssertionReconciler extends Reconciler
         $existing_var_atomic_types = $existing_var_type->getAtomicTypes();
 
         if ($existing_var_type->hasMixed()) {
-            // with a key that may be a string, a string would report an invalid offset where it is read
+            // a string only has characters at int offsets: with a key that may be a string, the parent stays mixed
             return $assertion->int_key
                 ? new Union([
                     new TNonEmptyArray([Type::getArrayKey(), Type::getMixed()]),
