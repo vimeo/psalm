@@ -132,6 +132,24 @@ final class ArrayAssignmentTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'nestedWriteUnderAListedKeyOfAShapeWithAMixedFallback' => [
+                'code' => '<?php
+                    /** @param array{meta: array<string, string>, ...} $payload */
+                    function addId(array $payload): array {
+                        $payload["meta"]["id"] = "foo";
+                        /** @psalm-check-type-exact $payload = array{meta: array{id: \'foo\', ...<string, string>}, ...<array-key, mixed>} */;
+
+                        return $payload;
+                    }
+
+                    /** @param array{blocks: list<int>, ...<string, mixed>} $document */
+                    function addBlock(array $document): array {
+                        $document["blocks"][] = 1;
+                        /** @psalm-check-type-exact $document = array{blocks: non-empty-list<int>, ...<string, mixed>} */;
+
+                        return $document;
+                    }',
+            ],
             'foreachWritingBackUnderItsKeysKeepsTheListShape' => [
                 'code' => '<?php
                     /** @param list{int, int} $l */
@@ -4141,6 +4159,16 @@ final class ArrayAssignmentTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'nestedWriteUnderAnUnlistedKeyOfAShapeWithAMixedFallback' => [
+                'code' => '<?php
+                    /** @param array{meta: array, ...} $payload */
+                    function addId(array $payload): array {
+                        $payload["other"]["id"] = "foo";
+
+                        return $payload;
+                    }',
+                'error_message' => 'MixedArrayAssignment',
+            ],
             'invalidArrayOffsetShowsTheFullKeyType' => [
                 'code' => '<?php
                     $a = [[1] => 2];',

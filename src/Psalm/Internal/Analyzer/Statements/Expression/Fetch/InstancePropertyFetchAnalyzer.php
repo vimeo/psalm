@@ -413,8 +413,16 @@ final class InstancePropertyFetchAnalyzer
             return false;
         }
 
-        $property = $codebase->classlike_storage_provider->get($storage->declaring_property_ids[$property_name])
-            ->properties[$property_name] ?? null;
+        $declaring_storage = $codebase->classlike_storage_provider->get(
+            $storage->declaring_property_ids[$property_name],
+        );
+
+        // what the constructor of a reflected builtin class initializes is not known
+        if (!$declaring_storage->user_defined && !$declaring_storage->stubbed) {
+            return false;
+        }
+
+        $property = $declaring_storage->properties[$property_name] ?? null;
 
         if ($property === null
             || $property->signature_type === null
