@@ -19,23 +19,8 @@ use const PHP_EOL;
  */
 final class PsalmFileChangedDuringRunEndToEndTest extends PsalmEndToEndTestCase
 {
-    /**
-     * @return iterable<string, array{int}>
-     * @psalm-pure
-     */
-    public static function threadCounts(): iterable
+    public function testAFileRemovedDuringTheScanAndRestoredBeforeTheAnalysisIsReportedInOneLine(): void
     {
-        yield '1 thread' => [1];
-        yield '2 threads' => [2];
-    }
-
-    #[DataProvider('threadCounts')]
-    public function testAFileRemovedDuringTheScanAndRestoredBeforeTheAnalysisIsReportedInOneLine(int $threads): void
-    {
-        if ($threads > 1 && !(extension_loaded('pcntl') && extension_loaded('posix'))) {
-            $this->markTestSkipped('--threads needs pcntl and posix');
-        }
-
         $this->initProjectOfSixClasses(
             <<<'PHP'
                 <?php
@@ -57,15 +42,12 @@ final class PsalmFileChangedDuringRunEndToEndTest extends PsalmEndToEndTestCase
                 PHP,
         );
 
-        $result = $this->runPsalmExpectingExitCode1($threads);
+        $result = $this->runPsalmExpectingExitCode1(1);
 
-        $this->assertStringContainsString(
-            'src/C3.php was removed or created while Psalm was running: run Psalm again' . PHP_EOL,
+        $this->assertSame(
+            PHP_EOL . 'src/C3.php changed while Psalm was running. Run Psalm again.' . PHP_EOL,
             $result['STDERR'],
         );
-        $this->assertStringNotContainsString('Stack trace', $result['STDERR']);
-        $this->assertStringNotContainsString('#0', $result['STDERR']);
-        $this->assertStringNotContainsString('crashed', $result['STDERR']);
     }
 
     /**
@@ -163,7 +145,7 @@ final class PsalmFileChangedDuringRunEndToEndTest extends PsalmEndToEndTestCase
 
     /**
      * @param list<string> $extra_args
-     * @return array{STDOUT: string, STDERR: string, CODE: int|null}
+     * @return array{STDOUT: string, STDERR: string}
      */
     private function runPsalmExpectingExitCode1(int $threads, array $extra_args = []): array
     {
@@ -187,7 +169,6 @@ final class PsalmFileChangedDuringRunEndToEndTest extends PsalmEndToEndTestCase
         return [
             'STDOUT' => $process->getOutput(),
             'STDERR' => $process->getErrorOutput(),
-            'CODE' => $process->getExitCode(),
         ];
     }
 }

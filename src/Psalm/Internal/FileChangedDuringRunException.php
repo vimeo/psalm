@@ -7,7 +7,8 @@ namespace Psalm\Internal;
 use RuntimeException;
 
 /**
- * A project file was added, removed or edited after Psalm listed or scanned it; the message is meant for the user
+ * A project file that Psalm scanned or analyses is not what it was when the run began: it was missing
+ * at the scan and is there now, or has other contents. The message is meant for the user.
  *
  * @internal
  */

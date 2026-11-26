@@ -251,14 +251,21 @@ final class Analyzer
         $changed_files = [];
 
         foreach ($this->files_to_analyze as $file_path => $_) {
-            if (!isset($scanned[$file_path]) && $this->file_provider->fileExists($file_path)) {
-                $changed_files[] = $this->config->shortenFileName($file_path)
-                    . ' was removed or created while Psalm was running: run Psalm again';
+            if (!isset($scanned[$file_path])
+                && $this->file_provider->fileExists($file_path)
+                && !$this->file_provider->isDirectory($file_path)
+            ) {
+                $changed_files[] = $this->config->shortenFileName($file_path);
             }
         }
 
         if ($changed_files) {
-            throw new FileChangedDuringRunException(implode(PHP_EOL, $changed_files));
+            throw new FileChangedDuringRunException(
+                count($changed_files) === 1
+                    ? $changed_files[0] . ' changed while Psalm was running. Run Psalm again.'
+                    : 'These files changed while Psalm was running. Run Psalm again.'
+                        . PHP_EOL . '  ' . implode(PHP_EOL . '  ', $changed_files),
+            );
         }
 
         $this->loadCachedResults($project_analyzer);
