@@ -313,7 +313,7 @@ final class HackConformanceTranspiledTest extends TestCase
             ],
             'type_variables/foreach_over_nothing' => [
                 // a loop over a `vec<nothing>` accepts any use of its item: nothing is a
-                // subtype of every type, and the body is never entered.
+                // subtype of every type, so any use of the item is accepted.
                 'code' => '<?php
                     final class User {
                         public int $id = 0;
