@@ -6,6 +6,7 @@ namespace Psalm\Internal\Type\ParseTree;
 
 use Override;
 use Psalm\Internal\Type\ParseTree;
+use Psalm\Internal\Type\TypeArgumentProjection;
 
 /**
  * @internal
@@ -26,6 +27,13 @@ final class GenericTree extends ParseTree
      * (`Traversable[pure]<int, string>`).
      */
     public ?PurityTree $purity = null;
+
+    /**
+     * The `covariant` and `contravariant` arguments, by the offset of the child
+     *
+     * @var array<int, TypeArgumentProjection>
+     */
+    public array $projections = [];
 
     /**
      * @psalm-mutation-free
