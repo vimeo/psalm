@@ -31,8 +31,8 @@ By convention, stub files have `.phpstub` extension to avoid IDEs treating them 
 
 A stub that declares a method of an existing class gives it the stub's parameters, and keeps what the stub leaves out of the original declaration: the return type and other method tags such as `@throws`, purity and taint annotations.
 What the original says of `$this` comes from the stub alone: `@psalm-this-out` and `@psalm-if-this-is`.
-The original `@return $this` refines its return type, so the stub keeps it until the stub declares the result itself with a `@return` tag or its own `@psalm-overload` tags.
-A native return type in the stub replaces the original return type but keeps `@return $this`.
+The original `@return $this` and `@psalm-overload` tags refine its return type, so the stub keeps them until the stub declares the result itself with a `@return` tag or its own `@psalm-overload` tags.
+A native return type in the stub replaces the original return type but keeps these.
 
 ```php
 // the library

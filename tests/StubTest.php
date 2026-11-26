@@ -2984,6 +2984,31 @@ final class StubTest extends DeferredAnalyzerTestCase
         $this->analyzeWithStubsRedeclaringReceiverMethods('$r->onlyFloatBeforePhp8();', '8.0');
     }
 
+    public function testStubReturnReplacesTheOverloadsOfTheScannedMethod(): void
+    {
+        $context = $this->analyzeWithStubsRedeclaringReceiverMethods('$x = $r->pick(1);');
+
+        $this->assertContextVars(['$x===' => 'float'], $context);
+    }
+
+    public function testStubOverloadsReplaceTheOverloadsOfTheScannedMethod(): void
+    {
+        $context = $this->analyzeWithStubsRedeclaringReceiverMethods('$x = $r->pickOwn(1);');
+
+        $this->assertContextVars(['$x===' => 'bool'], $context);
+    }
+
+    public function testStubWithoutDocblockReturnKeepsTheOverloadsOfTheScannedMethod(): void
+    {
+        $context = $this->analyzeWithStubsRedeclaringReceiverMethods(
+            '$x = $r->pickKept(1);
+            $y = $r->pickNarrowed("a");',
+            '8.0',
+        );
+
+        $this->assertContextVars(['$x===' => 'int', '$y===' => 'string'], $context);
+    }
+
     /**
      * Analyzes `$code` after a `StubbedRelation<string> $r`, with a scanned `StubbedRelation` and `StubbedBox`
      * redeclared by two stubs
@@ -3074,6 +3099,36 @@ final class StubTest extends DeferredAnalyzerTestCase
                      * @return $this
                      */
                     public function convert($x) { return $this; }
+
+                    /**
+                     * @psalm-overload (int $x): int
+                     * @psalm-overload (string $x): string
+                     * @param int|string $x
+                     * @return int|string
+                     */
+                    public function pick($x) { return $x; }
+
+                    /**
+                     * @psalm-overload (int $x): int
+                     * @psalm-overload (string $x): string
+                     */
+                    public function pickNarrowed(int|string $x): int|string { return $x; }
+
+                    /**
+                     * @psalm-overload (int $x): int
+                     * @psalm-overload (string $x): string
+                     * @param int|string $x
+                     * @return int|string
+                     */
+                    public function pickOwn($x) { return $x; }
+
+                    /**
+                     * @psalm-overload (int $x): int
+                     * @psalm-overload (string $x): string
+                     * @param int|string $x
+                     * @return int|string
+                     */
+                    public function pickKept($x) { return $x; }
 
                     /** @var int */
                     public $a = 0;

@@ -58,6 +58,25 @@ class StubbedRelation
     public function convert($x) {}
 
     /**
+     * @param int|string $x
+     * @return float
+     */
+    public function pick($x) {}
+
+    public function pickNarrowed(int|string $x): int {}
+
+    /**
+     * @psalm-overload (int $x): bool
+     * @param int|string $x
+     */
+    public function pickOwn($x) {}
+
+    /**
+     * @psalm-taint-sink sql $x
+     */
+    public function pickKept($x) {}
+
+    /**
      * @psalm-taint-sink sql $a
      */
     public function setA(int $a) {}

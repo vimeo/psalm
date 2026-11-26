@@ -1437,11 +1437,13 @@ final class FunctionLikeNodeScanner
                     $storage->self_out_type_location = null;
                     $storage->if_this_is_type = null;
 
-                    // the `$this` return refines the return type, so it goes with the docblock that states the result
+                    // the `$this` return and the overloads refine the return type, so they go with the docblock that
+                    // states the result
                     if ($docblock_info !== null
                         && ($docblock_info->return_type !== null || $docblock_info->overloads !== [])
                     ) {
                         $storage->returns_this = false;
+                        $storage->overloads = [];
                     }
                 }
             }
