@@ -309,6 +309,48 @@ final class ConstantTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'lateStaticBoundConstantDeclaredTypeNamingOtherConstantsIsExpanded' => [
+                'code' => '<?php
+                    final class VoiceText {
+                        public const string ROLE_FROM = "from";
+                        public const string ROLE_TO = "to";
+                    }
+
+                    abstract class Provider {
+                        /** @var array<int, VoiceText::ROLE_*> */
+                        protected const array ROLES = [
+                            0 => VoiceText::ROLE_TO,
+                            1 => VoiceText::ROLE_FROM,
+                        ];
+
+                        /** @return array<string, int> */
+                        public function parse(int $channel): array {
+                            $role = static::ROLES[$channel];
+                            /** @psalm-check-type-exact $role = "from"|"to" */;
+
+                            return [$role => $channel];
+                        }
+
+                        public function afterConditions(): void {
+                            if (static::ROLES === []) {
+                                return;
+                            }
+
+                            $roles = static::ROLES;
+                            /** @psalm-check-type-exact $roles = non-empty-array<int, "from"|"to"> */;
+
+                            if (static::ROLES[0] === VoiceText::ROLE_TO) {
+                                return;
+                            }
+
+                            $role = static::ROLES[0];
+                            /** @psalm-check-type-exact $role = "from" */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
             'lateStaticBoundConstantsKeepTheirDeclaredTypes' => [
                 'code' => '<?php
                     class Service {
