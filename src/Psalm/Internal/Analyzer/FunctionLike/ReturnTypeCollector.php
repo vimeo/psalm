@@ -10,7 +10,6 @@ use Psalm\Codebase;
 use Psalm\Internal\Analyzer\Statements\Block\ForeachAnalyzer;
 use Psalm\Internal\PhpVisitor\YieldTypeCollector;
 use Psalm\Internal\Provider\NodeDataProvider;
-use Psalm\Internal\Type\Comparator\GenericTypeComparator;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TGenericObject;
@@ -19,6 +18,7 @@ use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
 
+use function array_map;
 use function array_merge;
 
 /**
@@ -293,8 +293,12 @@ final class ReturnTypeCollector
                         $value_type ?? Type::getMixed(),
                         Type::getMixed(),
                         $return_types
-                            ? GenericTypeComparator::replaceVoidWithNull(
-                                Type::combineUnionTypeArray($return_types, null),
+                            ? Type::combineUnionTypeArray(
+                                array_map(
+                                    static fn(Union $type): Union => $type->isVoid() ? Type::getNull() : $type,
+                                    $return_types,
+                                ),
+                                null,
                             )
                             : Type::getNull(),
                     ],

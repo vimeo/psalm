@@ -57,6 +57,7 @@ use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
@@ -833,7 +834,14 @@ final class ReturnAnalyzer
 
         $return_type = TypeCombiner::combine($return_types, $codebase);
 
-        return $return_type->hasMixed() ? null : $return_type;
+        if ($return_type->hasMixed()) {
+            return null;
+        }
+
+        // a generator declared with TReturn void may return null
+        return $return_type->hasType('void')
+            ? $return_type->getBuilder()->addType(new TNull())->freeze()
+            : $return_type;
     }
 
     /**

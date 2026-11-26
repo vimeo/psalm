@@ -473,6 +473,48 @@ final class GeneratorTest extends TestCase
                     takesNull(returnsVoid());
                     takesVoid(returnsNull());',
             ],
+            'generatorReturnTemplateBoundedByVoidOrNull' => [
+                'code' => '<?php
+                    /** @param Generator<int, string, mixed, null> $g */
+                    function takesNull(Generator $g): void {}
+                    /** @param Generator<int, string, mixed, void> $g */
+                    function takesVoid(Generator $g): void {}
+
+                    /**
+                     * @template T of void
+                     * @param Generator<int, string, mixed, T> $g
+                     */
+                    function forwardVoid(Generator $g): void {
+                        takesVoid($g);
+                        takesNull($g);
+                    }
+
+                    /**
+                     * @template T of null
+                     * @param Generator<int, string, mixed, T> $g
+                     */
+                    function forwardNull(Generator $g): void {
+                        takesVoid($g);
+                        takesNull($g);
+                    }',
+            ],
+            'generatorReturnNullMatchesVoidReturnType' => [
+                'code' => '<?php
+                    /** @return Generator<int, string, mixed, void> */
+                    function a(): Generator {
+                        yield "a";
+                        return null;
+                    }',
+            ],
+            'generatorGetReturnAfterEndingWithoutValueIsNull' => [
+                'code' => '<?php
+                    /** @psalm-suppress MissingClosureReturnType */
+                    $f = function() { yield "a"; };
+                    $r = $f()->getReturn();',
+                'assertions' => [
+                    '$r===' => 'null',
+                ],
+            ],
             'generatorReturnWithIntersectionReturnType' => [
                 'code' => '<?php
                     /** @return Traversable&Generator<int, int, mixed, int> */
@@ -816,6 +858,15 @@ final class GeneratorTest extends TestCase
                         return;
                     }',
                 'error_message' => 'InvalidReturnType - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:33',
+            ],
+            'generatorReturnValueDoesNotMatchVoidReturnType' => [
+                'code' => '<?php
+                    /** @return Generator<int, int, mixed, void> */
+                    function a(): Generator {
+                        yield 1;
+                        return 1;
+                    }',
+                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:32',
             ],
             'generatorReturnDoesNotMatchIntersectionWithGeneratorFirst' => [
                 'code' => '<?php
