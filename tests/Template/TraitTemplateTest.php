@@ -1252,6 +1252,9 @@ final class TraitTemplateTest extends TestCase
                             return $this->value;
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'insteadofTraitMethodWithoutDocblockBindsTheMethodTemplateOfTheParent' => [
                 'code' => '<?php

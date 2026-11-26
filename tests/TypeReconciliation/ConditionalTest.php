@@ -1957,6 +1957,8 @@ final class ConditionalTest extends TestCase
                 'assertions' => [
                     '$box' => 'Box<int>|null',
                 ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'arrayAssignmentPropagation' => [
                 'code' => '<?php
@@ -2506,6 +2508,9 @@ final class ConditionalTest extends TestCase
                             return $this->id === $other->id;
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'negatedInstanceofThisNarrowsInTheElseBranch' => [
                 'code' => '<?php

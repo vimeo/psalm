@@ -2455,6 +2455,9 @@ final class ClosureTest extends TestCase
                     function takesIntToHolder(\Closure $_): void {}
 
                     takesIntToHolder(C::create(...));',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'FirstClassCallable:WithArrayMap' => [
                 'code' => '<?php
@@ -3218,6 +3221,9 @@ final class ClosureTest extends TestCase
 
                         echo $closure() . $arrow();
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'recursiveClosureCalledThroughItsByReferenceUseHasItsOwnReturnType' => [
                 'code' => '<?php

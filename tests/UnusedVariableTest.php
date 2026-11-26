@@ -3181,6 +3181,9 @@ final class UnusedVariableTest extends TestCase
                             return new self($value);
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'noUnusedVariableDefinedInBranchOfIf' => [
                 'code' => '<?php
