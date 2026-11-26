@@ -88,8 +88,9 @@ final class ReturnTypeAnalyzer
             && !$storage->final
             && $storage->visibility !== ClassLikeAnalyzer::VISIBILITY_PRIVATE
             && (
-                // other classes, final or not, may use the same trait
-                ($storage->defining_fqcln !== null
+                // a return type declared in a trait also applies to the other classes using it, final or not
+                ($storage->return_type !== null
+                    && $storage->defining_fqcln !== null
                     && $codebase->classlike_storage_provider->get($storage->defining_fqcln)->is_trait)
                 || (!$codebase->classlike_storage_provider->get($fq_class_name)->final
                     && !$codebase->classlike_storage_provider->get($fq_class_name)->anonymous)
