@@ -1,0 +1,62 @@
+<?php
+
+/** @template T */
+class StubbedRelation
+{
+    /**
+     * @template N
+     * @param class-string<N> $c
+     * @return static<N|int>
+     */
+    public function using($c) {}
+
+    /**
+     * @template N
+     * @param class-string<N> $c
+     * @return $this
+     * @psalm-this-out StubbedRelation<N|float>
+     */
+    public function usingKept($c) {}
+
+    /**
+     * @template N
+     * @param class-string<N> $c
+     * @return $this
+     * @psalm-this-out StubbedRelation<N|float>
+     */
+    public function usingTwice($c) {}
+
+    /**
+     * @template N
+     * @param N $v
+     * @return StubbedRelation<int>
+     */
+    final public function with($v) {}
+
+    /**
+     * @return static
+     */
+    public function chain() {}
+
+    /**
+     * @param int|string $x
+     * @return float
+     */
+    public function pick($x) {}
+
+    /**
+     * @psalm-overload (int $x): bool
+     * @param int|string $x
+     */
+    public function pickOwn($x) {}
+
+    /**
+     * @psalm-taint-sink sql $x
+     */
+    public function pickKept(int|string $x): int|string {}
+
+    /**
+     * @psalm-taint-sink sql $a
+     */
+    public function setA(int $a) {}
+}
