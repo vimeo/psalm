@@ -35,11 +35,11 @@ use function count;
 use function hash;
 use function implode;
 use function ksort;
-use function preg_match;
-use function preg_quote;
 use function reset;
 use function serialize;
+use function str_contains;
 use function str_starts_with;
+use function strlen;
 use function substr;
 
 /**
@@ -300,18 +300,30 @@ final class Clause implements Stringable
     }
 
     /**
-     * What is assigned to an offset or a property of a mixed variable is not tracked, so a clause on one says nothing
-     * of it. Where the variable may be unset and the clause only holds if it is set, it says that instead.
+     * Whether the key is a property of the variable, or is reached through one (`$a['k']->p`, `$a->p['k']`)
+     *
+     * @psalm-pure
+     */
+    public static function isUnderAPropertyOf(string $key, string $var_id): bool
+    {
+        return (str_starts_with($key, $var_id . '[') || str_starts_with($key, $var_id . '->'))
+            && str_contains(substr($key, strlen($var_id)), '->');
+    }
+
+    /**
+     * What is assigned to a property of a mixed variable or of one of its offsets, or changed by a method call on it,
+     * is not tracked, so a clause on one says nothing of it. Where the variable may be unset and the clause only holds
+     * if it is set, it says that instead.
      *
      * @param array<string, bool> $mixed_vars whether each mixed variable may be unset
      */
-    public function forgetItemsOfMixedVars(array $mixed_vars, int $cond_object_id): self
+    public function forgetPropertiesOfMixedVars(array $mixed_vars, int $cond_object_id): self
     {
         $possibilities = [];
 
         foreach ($this->possibilities as $key => $assertions) {
             foreach ($mixed_vars as $mixed_var_id => $may_be_unset) {
-                if (!preg_match('/^' . preg_quote($mixed_var_id, '/') . '(\[|-)/', $key)) {
+                if (!self::isUnderAPropertyOf($key, $mixed_var_id)) {
                     continue;
                 }
 

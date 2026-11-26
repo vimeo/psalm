@@ -474,7 +474,7 @@ final class IfConditionalAnalyzer
     }
 
     /**
-     * The clauses of the condition, where a clause on an offset or a property of a variable that is mixed in the body
+     * The clauses of the condition, where a clause under a property of a variable that is mixed in the body
      * is unknown, and a function returning those of its negation
      *
      * @return array{list<Clause>, Closure(): list<Clause>}
@@ -514,7 +514,7 @@ final class IfConditionalAnalyzer
         foreach ($cond_clauses as $clause) {
             $mixed_vars = array_diff_key($mixed_vars, $clause->possibilities);
 
-            $if_clauses[] = $clause->forgetItemsOfMixedVars($mixed_vars, $cond_object_id);
+            $if_clauses[] = $clause->forgetPropertiesOfMixedVars($mixed_vars, $cond_object_id);
         }
 
         $get_negated_clauses = static fn(): array => [

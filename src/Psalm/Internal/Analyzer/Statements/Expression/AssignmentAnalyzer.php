@@ -3418,7 +3418,7 @@ final class AssignmentAnalyzer
 
                         $right_clauses = Context::filterClauses(
                             $var_id,
-                            self::forgetItemsOfMixedVars($cond_clauses, $mixed_vars, $cond_object_id),
+                            self::forgetPropertiesOfMixedVars($cond_clauses, $mixed_vars, $cond_object_id),
                         );
 
                         $assignment_clauses = Algebra::combineOredClauses(
@@ -3436,7 +3436,7 @@ final class AssignmentAnalyzer
                         try {
                             $negated_clauses = Context::filterClauses(
                                 $var_id,
-                                self::forgetItemsOfMixedVars(
+                                self::forgetPropertiesOfMixedVars(
                                     FormulaGenerator::getNegatedFormula(
                                         $cond_clauses,
                                         $assign_value,
@@ -3501,15 +3501,15 @@ final class AssignmentAnalyzer
     }
 
     /**
-     * The clauses without those on an offset or a property of a mixed variable, which say nothing (see
-     * Clause::forgetItemsOfMixedVars()), unless a clause is about the variable itself, as in an if condition
+     * The clauses without those under a property of a mixed variable, which say nothing (see
+     * Clause::forgetPropertiesOfMixedVars()), unless a clause is about the variable itself, as in an if condition
      *
      * @param list<Clause> $clauses
      * @param array<string, bool> $mixed_vars whether each mixed variable may be unset
      * @return list<Clause>
      * @psalm-capabilities read-props
      */
-    private static function forgetItemsOfMixedVars(array $clauses, array $mixed_vars, int $cond_object_id): array
+    private static function forgetPropertiesOfMixedVars(array $clauses, array $mixed_vars, int $cond_object_id): array
     {
         foreach ($clauses as $clause) {
             $mixed_vars = array_diff_key($mixed_vars, $clause->possibilities);
@@ -3518,7 +3518,7 @@ final class AssignmentAnalyzer
         $known_clauses = [];
 
         foreach ($clauses as $clause) {
-            $clause = $clause->forgetItemsOfMixedVars($mixed_vars, $cond_object_id);
+            $clause = $clause->forgetPropertiesOfMixedVars($mixed_vars, $cond_object_id);
 
             if (!$clause->wedge) {
                 $known_clauses[] = $clause;

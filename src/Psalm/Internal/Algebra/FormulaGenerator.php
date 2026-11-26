@@ -990,7 +990,7 @@ final class FormulaGenerator
         $set_clauses = [];
 
         foreach ($negated_clauses as $clause) {
-            $set_clause = $clause->forgetItemsOfMixedVars(
+            $set_clause = $clause->forgetPropertiesOfMixedVars(
                 array_diff_key($mixed_vars, $clause->possibilities),
                 $conditional_object_id,
             );

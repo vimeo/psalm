@@ -2529,6 +2529,149 @@ final class IssetTest extends TestCase
                 'ignored_issues' => ['MixedAssignment'],
                 'php_version' => '8.0',
             ],
+            'offsetOfAnOffsetCheckedWithIssetIsNarrowedByAnInnerIf' => [
+                'code' => '<?php
+                    interface D {}
+
+                    function f(array $config, int $mode): void {
+                        if (isset($config["x"][$mode])) {
+                            if ($config["x"][$mode] instanceof D) {
+                                $d = $config["x"][$mode];
+                                /** @psalm-check-type-exact $d = D */;
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedArrayAccess'],
+                'php_version' => '8.0',
+            ],
+            'offsetOfAMixedVariableIsNarrowedAfterAnEarlyReturn' => [
+                'code' => '<?php
+                    interface D {}
+
+                    function f(mixed $m): void {
+                        if (!$m["x"] instanceof D) {
+                            return;
+                        }
+
+                        $d = $m["x"];
+                        /** @psalm-check-type-exact $d = D */;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedArrayAccess'],
+                'php_version' => '8.0',
+            ],
+            'offsetOfAMixedVariableIsNarrowedInAnElseif' => [
+                'code' => '<?php
+                    interface D {}
+
+                    function f(mixed $m): void {
+                        if (rand(0, 1)) {
+                        } elseif ($m["x"] instanceof D) {
+                            $d = $m["x"];
+                            /** @psalm-check-type-exact $d = D */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedArrayAccess'],
+                'php_version' => '8.0',
+            ],
+            'offsetOfAMixedVariableIsNarrowedInATernary' => [
+                'code' => '<?php
+                    interface D {}
+
+                    function f(mixed $m): void {
+                        $d = $m["x"] instanceof D ? $m["x"] : null;
+                        /** @psalm-check-type-exact $d = D|null */;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedArrayAccess'],
+                'php_version' => '8.0',
+            ],
+            'offsetOfAMixedVariableIsNarrowedWhereAConditionStoredInAVariableIsTrue' => [
+                'code' => '<?php
+                    interface D {}
+
+                    function f(mixed $m): void {
+                        $b = $m["x"] instanceof D;
+
+                        if ($b) {
+                            $d = $m["x"];
+                            /** @psalm-check-type-exact $d = D */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedArrayAccess'],
+                'php_version' => '8.0',
+            ],
+            'offsetOfAMixedVariableIsNarrowedAfterADoWhileLoop' => [
+                'code' => '<?php
+                    interface D {}
+
+                    function f(mixed $m): void {
+                        do {
+                            echo "";
+                        } while (!$m["x"] instanceof D);
+
+                        $d = $m["x"];
+                        /** @psalm-check-type-exact $d = D */;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedArrayAccess'],
+                'php_version' => '8.0',
+            ],
+            'propertyOfAMixedVariableWrittenInTheIfIsNotNarrowedByItsCondition' => [
+                'code' => '<?php
+                    function f(mixed $o): void {
+                        if ($o->p === false) {
+                            $o->p = (bool) rand(0, 1);
+
+                            if ($o->p === false) {}
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedPropertyFetch', 'MixedPropertyAssignment'],
+                'php_version' => '8.0',
+            ],
+            'propertyOfAMixedVariableIsNotNarrowedAfterAMethodCallOnIt' => [
+                'code' => '<?php
+                    function f(mixed $o): void {
+                        if ($o->p === false) {
+                            $o->reset();
+
+                            if ($o->p === false) {}
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedPropertyFetch', 'MixedMethodCall'],
+                'php_version' => '8.0',
+            ],
+            'propertyOfAnOffsetOfAMixedVariableWrittenInTheIfIsNotNarrowedByItsCondition' => [
+                'code' => '<?php
+                    function f(mixed $a): void {
+                        if ($a["x"]->p === false) {
+                            $a["x"]->p = (bool) rand(0, 1);
+
+                            if ($a["x"]->p === false) {}
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedArrayAccess', 'MixedPropertyFetch', 'MixedPropertyAssignment'],
+                'php_version' => '8.0',
+            ],
+            'offsetOfAPropertyOfAMixedVariableIsNotNarrowedAfterAMethodCallOnIt' => [
+                'code' => '<?php
+                    function f(mixed $o): void {
+                        if ($o->p["x"] === false) {
+                            $o->reset();
+
+                            if ($o->p["x"] === false) {}
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedArrayAccess', 'MixedPropertyFetch', 'MixedMethodCall'],
+                'php_version' => '8.0',
+            ],
             'issetOfIntOffsetSetsPossiblyUndefinedMixedVariable' => [
                 'code' => '<?php
                     /** @return mixed */
