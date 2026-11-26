@@ -8,6 +8,7 @@ use InvalidArgumentException;
 use PhpParser;
 use Psalm\Codebase;
 use Psalm\Config;
+use Psalm\Exception\CodeException;
 use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\IssueData;
@@ -373,9 +374,9 @@ final class Analyzer
             await($pool->runAll(new InitAnalyzerTask));
             Perf\Collector::poolStep('init_us');
             try {
-                $pool->run($this->files_to_analyze, AnalyzerTask::class, 'analysing', $task_done_closure);
+                $pool->run($this->files_to_analyze, AnalyzerTask::class, $task_done_closure);
             } catch (TaskCrashedException $e) {
-                $this->throwUnlessFileChanged($codebase, $e->path, $e);
+                $this->throwUnlessFileChanged($codebase, $e);
             }
             Perf\Collector::poolStep('run_us');
             Perf\Collector::stage('analysis.merge');
@@ -467,8 +468,11 @@ final class Analyzer
             foreach ($this->files_to_analyze as $file_path => $_) {
                 try {
                     $task_done_closure(self::analysisWorker($this->config, $this->progress, $file_path));
+                } catch (CodeException $e) {
+                    // an issue that throwExceptionOnError raises is a result, not a crash
+                    throw $e;
                 } catch (Throwable $e) {
-                    $this->throwUnlessFileChanged($codebase, $file_path, $e);
+                    $this->throwUnlessFileChanged($codebase, TaskCrashedException::inProcess($file_path, $e));
                 }
             }
         }
@@ -478,18 +482,19 @@ final class Analyzer
      * A file that differs from the one that was scanned is analysed against storage built from the scanned contents,
      * which can crash the analysis. The crash is then reported as that change: the likely cause, not a proven one.
      */
-    private function throwUnlessFileChanged(Codebase $codebase, string $file_path, Throwable $e): never
+    private function throwUnlessFileChanged(Codebase $codebase, TaskCrashedException $crash): never
     {
-        if (!$codebase->scanner->changedSinceScan($file_path)) {
-            throw $e;
+        if (!$codebase->scanner->changedSinceScan($crash->path)) {
+            throw $crash;
         }
 
-        $this->progress->debug(($e instanceof TaskCrashedException ? $e->getMessage() : (string) $e) . PHP_EOL);
+        $this->progress->debug($crash->getMessage() . PHP_EOL);
 
         throw new FileChangedDuringRunException(
-            $this->config->shortenFileName($file_path) . ' changed while Psalm was running: run Psalm again',
+            'Psalm crashed on ' . $this->config->shortenFileName($crash->path)
+                . ', which changed while Psalm was running. Run Psalm again (--debug shows the crash).',
             0,
-            $e,
+            $crash,
         );
     }
 

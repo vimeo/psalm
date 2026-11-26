@@ -62,7 +62,6 @@ final class PoolTest extends TestCase
         $pool->run(
             ['a', 'b', 'c', 'd', 'e', 'f'],
             ThrowOnBoomTask::class,
-            'analysing',
             static function (string $result) use (&$done): void {
                 $done[] = $result;
             },
@@ -82,7 +81,6 @@ final class PoolTest extends TestCase
             $pool->run(
                 ['a', 'b', 'boom', 'c', 'd'],
                 ThrowOnBoomTask::class,
-                'analysing',
                 static function (): void {
                 },
                 static function (): void {
@@ -95,10 +93,13 @@ final class PoolTest extends TestCase
 
             $message = $e->getMessage();
             $this->assertStringStartsWith(
-                'Psalm crashed while analysing boom' . PHP_EOL . 'RuntimeException: boom' . PHP_EOL . '  at ',
+                'Psalm crashed on boom' . PHP_EOL . 'RuntimeException: boom' . PHP_EOL . '  at ',
                 $message,
             );
-            $this->assertMatchesRegularExpression('~\R  at \S*ThrowOnBoomTask\.php:\d+\R#0 ~', $message);
+            $this->assertMatchesRegularExpression(
+                '~\R  at \S*ThrowOnBoomTask\.php:\d+\RCaused by: LogicException: the cause\R#0 ~',
+                $message,
+            );
             // the trace of the worker, once, up to the task: not the event loop or the stack of the parent
             $this->assertSame(1, substr_count($message, 'ThrowOnBoomTask->run('));
             $this->assertSame(1, substr_count($message, "\n#0 "));
@@ -111,6 +112,27 @@ final class PoolTest extends TestCase
         unset($e);
         gc_collect_cycles();
         // the other tasks' derived futures, destroyed now, would report the failure again from the event loop
+        EventLoop::run();
+    }
+
+    public function testAWorkerThatIsGoneIsReportedOnceWithoutATrace(): void
+    {
+        new TestConfig();
+        $pool = new Pool(2, 1000.0, new VoidProgress());
+
+        try {
+            $pool->run(['a', 'die', 'b'], ThrowOnBoomTask::class, static function (): void {
+            });
+            $this->fail('The lost worker should have been reported');
+        } catch (TaskCrashedException $e) {
+            $this->assertSame('die', $e->path);
+            $this->assertStringStartsWith('Psalm crashed on die' . PHP_EOL, $e->getMessage());
+            $this->assertSame(1, substr_count($e->getMessage(), PHP_EOL));
+            $this->assertStringNotContainsString('#0', $e->getMessage());
+        }
+
+        unset($e);
+        gc_collect_cycles();
         EventLoop::run();
     }
 }

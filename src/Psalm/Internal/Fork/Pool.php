@@ -44,8 +44,6 @@ use function gc_collect_cycles;
 use function is_file;
 use function ksort;
 use function strlen;
-use function strpos;
-use function substr;
 use function unlink;
 
 use const PHP_EOL;
@@ -133,7 +131,6 @@ final class Pool
      * @phpcsSuppress SlevomatCodingStandard.TypeHints.ParameterTypeHint
      * @param class-string<Task<TResult, TReceive, TSend>> $main_task A task to execute on each task data.
      *                                                                It must return an array (to be gathered).
-     * @param string $activity What the tasks do to a file, for the report of a crash: "analysing", "scanning"
      *
      * @param Closure(TResult $data):void $task_done_closure A closure to execute when a task is done
      * @param null|Closure(TSend):TReceive $message_handler Handles a message sent by a worker over its task
@@ -143,7 +140,6 @@ final class Pool
     public function run(
         array $process_task_data_iterator,
         string $main_task,
-        string $activity,
         ?Closure $task_done_closure = null,
         ?Closure $message_handler = null,
     ): void {
@@ -165,21 +161,10 @@ final class Pool
             $execution = $this->pool->submit(new $main_task($file));
             // a task that fails says which file it was given: the trace of the worker cuts the path short
             $results []= $f = $execution->getFuture()->catch(
-                static function (Throwable $e) use ($file, $activity, $main_task): never {
-                    if ($e instanceof TaskFailureThrowable) {
-                        $config = Config::getInstance();
-
-                        throw new TaskCrashedException(
-                            $file,
-                            "Psalm crashed while $activity " . $config->shortenFileName($file) . PHP_EOL
-                            . $e->getOriginalClassName() . ': ' . $e->getOriginalMessage() . PHP_EOL
-                            . '  at ' . $config->shortenFileName($e->getOriginalFile()) . ':' . $e->getOriginalLine()
-                            . PHP_EOL . self::traceUpToTask($e, $main_task),
-                            $e,
-                        );
-                    }
-
-                    throw new RuntimeException('Psalm crashed processing ' . $file . ': ' . $e->getMessage(), 0, $e);
+                static function (Throwable $e) use ($file, $main_task): never {
+                    throw $e instanceof TaskFailureThrowable
+                        ? TaskCrashedException::inWorker($file, $e, $main_task)
+                        : TaskCrashedException::workerLost($file, $e);
                 },
             );
             if ($message_handler !== null) {
@@ -207,29 +192,24 @@ final class Pool
             });
         }
 
-        // awaiting subscribes to every derived future too, so a failure is not reported again when they're destroyed
-        await($results);
-    }
+        // When a worker dies, amphp fails its task and then throws from the event loop while it closes the worker,
+        // which would end the await() below before the failed task says which file the worker died on.
+        $uncaught = null;
+        EventLoop::setErrorHandler(static function (Throwable $e) use (&$uncaught): void {
+            $uncaught ??= $e;
+        });
 
-    /**
-     * The trace of a failure in a worker up to the frame of the task: a forked worker's trace goes on through the
-     * task runner of amphp and the stack of the parent at the time of the fork, none of which is of use.
-     *
-     * @param class-string $main_task
-     */
-    private static function traceUpToTask(TaskFailureThrowable $e, string $main_task): string
-    {
-        $trace = $e->getOriginalTraceAsString();
-
-        foreach ($e->getOriginalTrace() as $i => $frame) {
-            if (($frame['class'] ?? null) === $main_task && ($frame['function'] ?? null) === 'run') {
-                $end = strpos($trace, "\n#" . ($i + 1) . ' ');
-
-                return $end === false ? $trace : substr($trace, 0, $end);
-            }
+        try {
+            // awaiting subscribes to every derived future too, so a failure is not reported again when they're
+            // destroyed
+            await($results);
+        } finally {
+            EventLoop::setErrorHandler(null);
         }
 
-        return $trace;
+        if ($uncaught !== null) {
+            throw $uncaught;
+        }
     }
 
     /**

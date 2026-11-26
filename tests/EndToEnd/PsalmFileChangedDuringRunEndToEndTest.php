@@ -9,8 +9,11 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use function extension_loaded;
 use function file_put_contents;
 use function mkdir;
+use function str_replace;
+use function substr_count;
 use function unlink;
 
+use const DIRECTORY_SEPARATOR;
 use const PHP_BINARY;
 use const PHP_EOL;
 
@@ -92,68 +95,95 @@ final class PsalmFileChangedDuringRunEndToEndTest extends PsalmEndToEndTestCase
     }
 
     /**
-     * @return iterable<string, array{int, string}>
+     * @return iterable<string, array{int, bool}>
      * @psalm-pure
      */
-    public static function threadCountsWithTheirCrashReport(): iterable
+    public static function crashes(): iterable
     {
-        yield '1 thread' => [1, 'RuntimeException: PHP Error: Undefined array key "X"'];
-        yield '2 threads' => [
-            2,
-            'Psalm crashed while analysing src/C3.php' . PHP_EOL . 'RuntimeException: PHP Error: Undefined array key',
-        ];
+        yield '1 thread, file edited' => [1, true];
+        yield '1 thread, file untouched' => [1, false];
+        yield '2 threads, file edited' => [2, true];
+        yield '2 threads, file untouched' => [2, false];
     }
 
-    #[DataProvider('threadCountsWithTheirCrashReport')]
-    public function testACrashOnAFileEditedDuringTheRunIsReportedInOneLine(int $threads, string $crash_report): void
+    #[DataProvider('crashes')]
+    public function testACrashIsReportedAsAChangeOnlyWhenTheFileChanged(int $threads, bool $edited): void
     {
         if ($threads > 1 && !(extension_loaded('pcntl') && extension_loaded('posix'))) {
             $this->markTestSkipped('--threads needs pcntl and posix');
         }
 
-        // The provider keeps what it read, which the scan workers of a large project leave out of the parent
-        // process, so the plugin makes it forget the file it edits, under the path the scanner knows it by.
-        $this->initProjectOfSixClasses(
-            <<<'PHP'
-                <?php
-
-                namespace Repro;
-
-                use Psalm\Plugin\EventHandler\AfterCodebasePopulatedInterface;
-                use Psalm\Plugin\EventHandler\Event\AfterCodebasePopulatedEvent;
-
-                final class EditFile implements AfterCodebasePopulatedInterface
-                {
-                    public static function afterCodebasePopulated(AfterCodebasePopulatedEvent $event): void
-                    {
-                        $path = realpath(dirname(__DIR__) . '/src/C3.php');
-                        file_put_contents($path, "<?php\n\nfinal class C3 { const X = 1; }\necho C3::X;\n");
+        // The file provider keeps what it read, which the scan workers of a large project leave out of the parent
+        // process. The plugin makes it forget the file it edits, under the path the scanner knows it by.
+        $edit = $edited
+            ? <<<'PHP'
+                $path = realpath(dirname(__DIR__) . '/src/C3.php');
+                        file_put_contents($path, "<?php\n\nfinal class C3 {}\n// " . uniqid() . "\n");
                         $event->getCodebase()->file_provider->closeFile($path);
+                PHP
+            : '';
+
+        $this->initProjectOfSixClasses(
+            str_replace(
+                '// EDIT',
+                $edit,
+                <<<'PHP'
+                    <?php
+
+                    namespace Repro;
+
+                    use LogicException;
+                    use Psalm\Plugin\EventHandler\AfterCodebasePopulatedInterface;
+                    use Psalm\Plugin\EventHandler\AfterFileAnalysisInterface;
+                    use Psalm\Plugin\EventHandler\Event\AfterCodebasePopulatedEvent;
+                    use Psalm\Plugin\EventHandler\Event\AfterFileAnalysisEvent;
+
+                    final class CrashOnC3 implements AfterCodebasePopulatedInterface, AfterFileAnalysisInterface
+                    {
+                        public static function afterCodebasePopulated(AfterCodebasePopulatedEvent $event): void
+                        {
+                            // EDIT
+                        }
+
+                        public static function afterAnalyzeFile(AfterFileAnalysisEvent $event): void
+                        {
+                            if (basename($event->getStatementsSource()->getFilePath()) === 'C3.php') {
+                                throw new LogicException('plugin boom');
+                            }
+                        }
                     }
-                }
-                PHP,
+                    PHP,
+            ),
         );
 
         $result = $this->runPsalmExpectingExitCode1($threads);
 
-        $this->assertStringContainsString(
-            'src/C3.php changed while Psalm was running: run Psalm again' . PHP_EOL,
+        if ($edited) {
+            $this->assertSame(
+                PHP_EOL . 'Psalm crashed on src/C3.php, which changed while Psalm was running.'
+                    . ' Run Psalm again (--debug shows the crash).' . PHP_EOL,
+                $result['STDERR'],
+            );
+
+            $debug = $this->runPsalmExpectingExitCode1($threads, ['--debug']);
+
+            $this->assertStringContainsString(
+                'Psalm crashed on src/C3.php' . PHP_EOL . 'LogicException: plugin boom' . PHP_EOL . '  at ',
+                $debug['STDOUT'] . $debug['STDERR'],
+            );
+
+            return;
+        }
+
+        $this->assertStringStartsWith(
+            PHP_EOL . 'Psalm crashed on src/C3.php' . PHP_EOL . 'LogicException: plugin boom' . PHP_EOL
+                . '  at plugins' . DIRECTORY_SEPARATOR . 'plugin.php:',
             $result['STDERR'],
         );
-        $this->assertStringNotContainsString('Stack trace', $result['STDERR']);
-        $this->assertStringNotContainsString('#0', $result['STDERR']);
-        $this->assertStringNotContainsString('crashed', $result['STDERR']);
-
-        // the plugin has edited the file for good
-        file_put_contents(self::$tmpDir . '/src/C3.php', "<?php\n\nfinal class C3 {}\n");
-        $debug = $this->runPsalmExpectingExitCode1($threads, ['--debug']);
-
-        $this->assertStringContainsString($crash_report, $debug['STDOUT'] . $debug['STDERR']);
-        $this->assertStringContainsString('#0 ', $debug['STDOUT'] . $debug['STDERR']);
-        $this->assertStringContainsString(
-            'src/C3.php changed while Psalm was running: run Psalm again' . PHP_EOL,
-            $debug['STDERR'],
-        );
+        $this->assertSame(1, substr_count($result['STDERR'], 'LogicException: plugin boom'));
+        $this->assertStringNotContainsString('Revolt', $result['STDERR']);
+        $this->assertStringNotContainsString('which changed', $result['STDERR']);
+        $this->assertStringEndsWith('crashed due to an uncaught Throwable)' . PHP_EOL, $result['STDERR']);
     }
 
     /**
