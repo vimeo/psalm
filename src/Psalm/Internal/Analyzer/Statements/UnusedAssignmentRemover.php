@@ -62,10 +62,19 @@ final class UnusedAssignmentRemover
             }
 
             if ($removable_stmt) {
+                // the assignments of a removable chain only write unused variables: what counts is the value
+                $value_exp = $rhs_exp;
+                while ($value_exp instanceof PhpParser\Node\Expr\Assign
+                    || $value_exp instanceof PhpParser\Node\Expr\AssignOp
+                    || $value_exp instanceof PhpParser\Node\Expr\AssignRef
+                ) {
+                    $value_exp = $value_exp->expr;
+                }
+
                 $traverser = new PhpParser\NodeTraverser();
                 $visitor = new CheckTrivialExprVisitor();
                 $traverser->addVisitor($visitor);
-                $traverser->traverse([$rhs_exp]);
+                $traverser->traverse([$value_exp]);
 
                 $rhs_exp_trivial = !$visitor->hasNonTrivialExpr();
 

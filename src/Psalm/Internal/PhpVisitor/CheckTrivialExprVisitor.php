@@ -23,6 +23,7 @@ final class CheckTrivialExprVisitor extends PhpParser\NodeVisitorAbstract
             || $node instanceof PhpParser\Node\Expr\Include_
             || $node instanceof PhpParser\Node\Expr\FuncCall
             || $node instanceof PhpParser\Node\Expr\MethodCall
+            || $node instanceof PhpParser\Node\Expr\NullsafeMethodCall
             || $node instanceof PhpParser\Node\Expr\ArrowFunction
             || $node instanceof PhpParser\Node\Expr\ShellExec
             || $node instanceof PhpParser\Node\Expr\StaticCall
@@ -31,6 +32,16 @@ final class CheckTrivialExprVisitor extends PhpParser\NodeVisitorAbstract
             || $node instanceof PhpParser\Node\Expr\New_
             || $node instanceof PhpParser\Node\Expr\Cast\String_
             || $node instanceof PhpParser\Node\Expr\BinaryOp\Pipe
+            || $node instanceof PhpParser\Node\Expr\Assign
+            || $node instanceof PhpParser\Node\Expr\AssignOp
+            || $node instanceof PhpParser\Node\Expr\AssignRef
+            || $node instanceof PhpParser\Node\Expr\PreInc
+            || $node instanceof PhpParser\Node\Expr\PreDec
+            || $node instanceof PhpParser\Node\Expr\PostInc
+            || $node instanceof PhpParser\Node\Expr\PostDec
+            || $node instanceof PhpParser\Node\Expr\Print_
+            || $node instanceof PhpParser\Node\Expr\Clone_
+            || $node instanceof PhpParser\Node\Expr\Throw_
         ) {
             if (($node instanceof PhpParser\Node\Expr\FuncCall
                     || $node instanceof PhpParser\Node\Expr\MethodCall

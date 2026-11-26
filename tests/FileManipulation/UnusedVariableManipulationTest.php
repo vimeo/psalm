@@ -442,6 +442,132 @@ final class UnusedVariableManipulationTest extends FileManipulationTestCase
                 'issues_to_fix' => ['UnusedVariable'],
                 'safe_types' => true,
             ],
+            'keepIncrementOfUnusedAssignment' => [
+                'input' => '<?php
+                    function foo(int $i) : int {
+                        $a = $i++;
+                        return $i;
+                    }',
+                'output' => '<?php
+                    function foo(int $i) : int {
+                        $i++;
+                        return $i;
+                    }',
+                'php_version' => '7.1',
+                'issues_to_fix' => ['UnusedVariable'],
+                'safe_types' => true,
+            ],
+            'keepNestedAssignmentOfUnusedAssignment' => [
+                'input' => '<?php
+                    function foo() : int {
+                        $a = [$j = 5];
+                        return $j;
+                    }',
+                'output' => '<?php
+                    function foo() : int {
+                        [$j = 5];
+                        return $j;
+                    }',
+                'php_version' => '7.1',
+                'issues_to_fix' => ['UnusedVariable'],
+                'safe_types' => true,
+            ],
+            'keepCompoundAssignmentOfUnusedAssignment' => [
+                'input' => '<?php
+                    function foo(string $s) : string {
+                        $a = "x" . ($s .= "y");
+                        return $s;
+                    }',
+                'output' => '<?php
+                    function foo(string $s) : string {
+                        "x" . ($s .= "y");
+                        return $s;
+                    }',
+                'php_version' => '7.1',
+                'issues_to_fix' => ['UnusedVariable'],
+                'safe_types' => true,
+            ],
+            'keepIncrementOfUnusedChainAssignment' => [
+                'input' => '<?php
+                    function foo(int $i) : int {
+                        $a = $b = $i++;
+                        return $i;
+                    }',
+                'output' => '<?php
+                    function foo(int $i) : int {
+                        $i++;
+                        return $i;
+                    }',
+                'php_version' => '7.1',
+                'issues_to_fix' => ['UnusedVariable'],
+                'safe_types' => true,
+            ],
+            'keepPrintOfUnusedAssignment' => [
+                'input' => '<?php
+                    function foo() : void {
+                        $a = print "x";
+                    }',
+                'output' => '<?php
+                    function foo() : void {
+                        print "x";
+                    }',
+                'php_version' => '7.1',
+                'issues_to_fix' => ['UnusedVariable'],
+                'safe_types' => true,
+            ],
+            'keepCloneOfUnusedAssignment' => [
+                'input' => '<?php
+                    function foo(stdClass $o) : void {
+                        $a = clone $o;
+                    }',
+                'output' => '<?php
+                    function foo(stdClass $o) : void {
+                        clone $o;
+                    }',
+                'php_version' => '7.1',
+                'issues_to_fix' => ['UnusedVariable'],
+                'safe_types' => true,
+            ],
+            'keepThrowOfUnusedAssignment' => [
+                'input' => '<?php
+                    function foo(?int $x, Exception $e) : void {
+                        $a = $x ?? throw $e;
+                    }',
+                'output' => '<?php
+                    function foo(?int $x, Exception $e) : void {
+                        $x ?? throw $e;
+                    }',
+                'php_version' => '8.0',
+                'issues_to_fix' => ['UnusedVariable'],
+                'safe_types' => true,
+            ],
+            'keepNullsafeMethodCallOfUnusedAssignment' => [
+                'input' => '<?php
+                    final class O {
+                        public function run(): int {
+                            echo "run";
+                            return 1;
+                        }
+                    }
+
+                    function foo(?O $o) : void {
+                        $a = $o?->run();
+                    }',
+                'output' => '<?php
+                    final class O {
+                        public function run(): int {
+                            echo "run";
+                            return 1;
+                        }
+                    }
+
+                    function foo(?O $o) : void {
+                        $o?->run();
+                    }',
+                'php_version' => '8.0',
+                'issues_to_fix' => ['UnusedVariable'],
+                'safe_types' => true,
+            ],
 
             'removeUnusedVarTwoPass' => [
                 'input' => '<?php
