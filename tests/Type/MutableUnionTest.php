@@ -6,6 +6,7 @@ namespace Psalm\Tests\Type;
 
 use Psalm\Tests\TestCase;
 use Psalm\Type;
+use Psalm\Type\Atomic\TCallableObject;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIterable;
@@ -13,9 +14,12 @@ use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
+use Psalm\Type\Atomic\TLowercaseString;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNonEmptyString;
 use Psalm\Type\Atomic\TString;
+use Psalm\Type\Atomic\TTemplateParamClass;
+use Psalm\Type\Atomic\TUnknownClassString;
 use Psalm\Type\MutableUnion;
 use Psalm\Type\Union;
 
@@ -105,6 +109,25 @@ final class MutableUnionTest extends TestCase
         self::assertTrue($union->hasLiteralString());
     }
 
+    public function testAddStringSubtypeDropsContainedLiterals(): void
+    {
+        $union = new MutableUnion([new TLiteralString('a'), new TInt()]);
+
+        $union->addType(new TNonEmptyString());
+        self::assertSame(['int', 'string'], array_keys($union->getAtomicTypes()));
+
+        $union->removeType('string');
+        self::assertSame(['int'], array_keys($union->getAtomicTypes()));
+    }
+
+    public function testAddLowercaseStringKeepsUppercaseLiterals(): void
+    {
+        $union = new MutableUnion([new TLiteralString('A'), new TLiteralString('b')]);
+
+        $union->addType(new TLowercaseString());
+        self::assertSame(['string(A)', 'string'], array_keys($union->getAtomicTypes()));
+    }
+
     public function testAddStringDropsLiteralsAndClassStrings(): void
     {
         $union = new MutableUnion([new TLiteralString('a'), new TClassString('Foo', new TNamedObject('Foo'))]);
@@ -113,6 +136,25 @@ final class MutableUnionTest extends TestCase
         self::assertSame(['string'], array_keys($union->getAtomicTypes()));
         self::assertFalse($union->hasLiteralString());
         self::assertFalse($union->hasLiteralClassString());
+    }
+
+    public function testAddStringKeepsTemplateClassStrings(): void
+    {
+        $union = new MutableUnion([new TTemplateParamClass('U', 'Foo', new TNamedObject('Foo'), 'Bar')]);
+
+        $union->addType(new TString());
+        self::assertSame(['class-string<U:Bar>', 'string'], array_keys($union->getAtomicTypes()));
+
+        $union->addType(new TClassString());
+        self::assertSame(['class-string<U:Bar>', 'string', 'class-string'], array_keys($union->getAtomicTypes()));
+    }
+
+    public function testAddUnknownClassStringKeepsTypedClassStrings(): void
+    {
+        $union = new MutableUnion([new TClassString('Foo', new TNamedObject('Foo'))]);
+
+        $union->addType(new TUnknownClassString(new TCallableObject()));
+        self::assertSame(['class-string<Foo>', 'class-string'], array_keys($union->getAtomicTypes()));
     }
 
     public function testAddTypedClassString(): void

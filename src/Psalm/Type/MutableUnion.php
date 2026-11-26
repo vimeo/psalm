@@ -6,6 +6,7 @@ namespace Psalm\Type;
 
 use Override;
 use Psalm\Internal\DataFlow\DataFlowNode;
+use Psalm\Internal\Type\StringRefinement;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Internal\TypeVisitor\FromDocblockSetter;
 use Psalm\Type;
@@ -258,24 +259,34 @@ final class MutableUnion implements TypeNode
             $this->literal_int_types[$type_key] = $type;
         } elseif ($type instanceof TLiteralFloat) {
             $this->literal_float_types[$type_key] = $type;
-        } elseif ($type::class === TString::class) {
-            foreach ($this->literal_string_types as $key => $_) {
-                unset($this->literal_string_types[$key], $this->types[$key]);
+        } elseif ($type instanceof TString && ($refinements = StringRefinement::get($type)) !== null) {
+            // drop the literals and class-strings the added type contains
+            foreach ($this->literal_string_types as $key => $literal_string_type) {
+                if (((StringRefinement::get($literal_string_type) ?? 0) & $refinements) === $refinements) {
+                    unset($this->literal_string_types[$key], $this->types[$key]);
+                }
             }
-            foreach ($this->typed_class_strings as $key => $_) {
-                unset($this->typed_class_strings[$key], $this->types[$key]);
+            if (($refinements & ~(StringRefinement::NON_EMPTY | StringRefinement::NON_FALSY)) === 0) {
+                // template class-strings stay, they are needed to infer their template
+                foreach ($this->typed_class_strings as $key => $typed_class_string) {
+                    if (!$typed_class_string instanceof TTemplateParamClass) {
+                        unset($this->typed_class_strings[$key], $this->types[$key]);
+                    }
+                }
             }
         } elseif ($type instanceof TClassString) {
             if ($type->as_type || $type instanceof TTemplateParamClass) {
                 $this->typed_class_strings[$type_key] = $type;
-            } elseif ($type_key === 'class-string') {
+            } elseif ($type::class === TClassString::class && $type_key === 'class-string') {
                 foreach ($this->literal_string_types as $key => $literal_string_type) {
                     if ($literal_string_type instanceof TLiteralClassString) {
                         unset($this->literal_string_types[$key], $this->types[$key]);
                     }
                 }
-                foreach ($this->typed_class_strings as $key => $_) {
-                    if (str_starts_with($key, 'class-string<')) {
+                foreach ($this->typed_class_strings as $key => $typed_class_string) {
+                    if (!$typed_class_string instanceof TTemplateParamClass
+                        && str_starts_with($key, 'class-string<')
+                    ) {
                         unset($this->typed_class_strings[$key], $this->types[$key]);
                     }
                 }
