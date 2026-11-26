@@ -587,7 +587,7 @@ final class Psalm
     }
 
     /**
-     * @psalm-capabilities read-globals
+     * @psalm-capabilities read-globals|io
      */
     private static function initOutputFormat(array $options): string
     {
@@ -598,10 +598,16 @@ final class Psalm
 
     /**
      * @return Report::TYPE_*
-     * @psalm-capabilities read-globals
+     * @psalm-capabilities read-globals|io
      */
-    private static function findDefaultOutputFormat(): string
+    public static function findDefaultOutputFormat(): string
     {
+        // An AI agent beats the PhpStorm and GitHub Actions guesses: those are guesses about the terminal,
+        // the agent is the one reading the output.
+        if (CliUtils::runningUnderAiAgent()) {
+            return Report::TYPE_COMPACT;
+        }
+
         if (IdeDetector::detect() === IdeDetector::IDE_PHPSTORM) {
             return Report::TYPE_PHP_STORM;
         }
@@ -1409,7 +1415,8 @@ final class Psalm
                 FORCE_COLOR set to a non-empty value forces colors on instead.
 
             --output-format=console
-                Changes the output format.
+                Changes the output format. Defaults to console, to compact when an AI coding agent is
+                driving the shell.
                 Available formats:
                     $outputFormats
 
