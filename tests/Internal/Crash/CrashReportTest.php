@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace Psalm\Tests\Internal\Crash;
 
 use LogicException;
+use Psalm\Context;
 use Psalm\Internal\Crash\CrashReport;
 use Psalm\Internal\EventDispatcher;
 use Psalm\Plugin\EventHandler\Event\AfterCodebasePopulatedEvent;
 use Psalm\Tests\Internal\Crash\Plugin\NestingHandler;
 use Psalm\Tests\Internal\Crash\Plugin\PluginCode;
+use Psalm\Tests\Internal\Crash\Plugin\ThrowOnBoom;
 use Psalm\Tests\Internal\Crash\Plugin\ThrowingHandler;
 use Psalm\Tests\Internal\Crash\Plugin\ThrowingInterpreter;
 use Psalm\Tests\TestCase;
@@ -69,6 +71,62 @@ final class CrashReportTest extends TestCase
             $this->assertStringEndsWith(
                 ' crashed',
                 (new CrashReport($e, null, [['plugin_class' => null] + self::package()]))->getHeadline(),
+            );
+        }
+    }
+
+    public function testTheContextIsTheInnermostStatement(): void
+    {
+        $this->project_analyzer->getConfig()->eventDispatcher->registerClass(ThrowOnBoom::class);
+        $this->addFile(
+            'somefile.php',
+            <<<'PHP'
+                <?php
+                final class Greeter
+                {
+                    public function greet(bool $loud): void
+                    {
+                        if ($loud) {
+                            foreach ([1, 2] as $_) {
+                                echo 'boom';
+                            }
+                        }
+                    }
+                }
+                PHP,
+        );
+
+        try {
+            $this->analyzeFile('somefile.php', new Context());
+            $this->fail('The hook should have thrown');
+        } catch (LogicException $e) {
+            $this->assertSame(
+                'while analysing Greeter::greet() at somefile.php:8',
+                (new CrashReport($e, null, []))->getContextLine(),
+            );
+        }
+    }
+
+    public function testTheContextOfAClosureNamesTheClosure(): void
+    {
+        $this->project_analyzer->getConfig()->eventDispatcher->registerClass(ThrowOnBoom::class);
+        $this->addFile(
+            'somefile.php',
+            <<<'PHP'
+                <?php
+                $greet = function (): void {
+                    echo 'boom';
+                };
+                PHP,
+        );
+
+        try {
+            $this->analyzeFile('somefile.php', new Context());
+            $this->fail('The hook should have thrown');
+        } catch (LogicException $e) {
+            $this->assertSame(
+                'while analysing {closure}() at somefile.php:3',
+                (new CrashReport($e, null, []))->getContextLine(),
             );
         }
     }

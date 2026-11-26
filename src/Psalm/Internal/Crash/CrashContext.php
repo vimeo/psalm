@@ -5,6 +5,10 @@ declare(strict_types=1);
 namespace Psalm\Internal\Crash;
 
 use Amp\Parallel\Worker\TaskFailureThrowable;
+use PhpParser\Node\Stmt;
+use Psalm\Internal\Analyzer\ClosureAnalyzer;
+use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
+use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Throwable;
 use WeakMap;
 
@@ -37,6 +41,12 @@ final class CrashContext
 
     public ?string $file_path = null;
 
+    /** The line of the innermost statement being analysed */
+    public ?int $line = null;
+
+    /** The function, method or closure of that statement */
+    public ?string $function_like = null;
+
     /**
      * The innermost hook wins: the exception goes through the hooks that called the one that threw.
      *
@@ -59,6 +69,31 @@ final class CrashContext
     }
 
     /**
+     * The innermost statement wins: the exception goes through the statements that contain the one that threw.
+     */
+    public static function recordStatement(Throwable $e, StatementsAnalyzer $statements_analyzer, Stmt $stmt): void
+    {
+        $context = self::get($e);
+        if ($context->line !== null) {
+            return;
+        }
+
+        $context->file_path = $statements_analyzer->getFilePath();
+        $context->line = $stmt->getStartLine();
+
+        $source = $statements_analyzer->getSource();
+        try {
+            $context->function_like = match (true) {
+                $source instanceof ClosureAnalyzer => '{closure}',
+                $source instanceof FunctionLikeAnalyzer => $source->getCorrectlyCasedMethodId(),
+                default => null,
+            };
+        } catch (Throwable) {
+            // the exception being thrown is the one to report
+        }
+    }
+
+    /**
      * The context of an exception and of the exceptions it wraps
      */
     public static function of(Throwable $e): self
@@ -76,7 +111,13 @@ final class CrashContext
             }
 
             $merged->activity ??= $context->activity;
-            $merged->file_path ??= $context->file_path;
+            if ($merged->line === null && $context->line !== null) {
+                $merged->file_path = $context->file_path;
+                $merged->line = $context->line;
+                $merged->function_like = $context->function_like;
+            } else {
+                $merged->file_path ??= $context->file_path;
+            }
         }
 
         return $merged;

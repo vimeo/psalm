@@ -134,10 +134,12 @@ final class CrashReport
      */
     public function getSummary(): string
     {
+        $context = $this->getContextLine();
         $message = $this->task_crash?->getMessage();
         $end_of_first_line = $message === null ? false : strpos($message, PHP_EOL);
 
         return $this->getHeadline() . PHP_EOL
+            . ($context === null ? '' : $context . PHP_EOL)
             // the first line of the report of a TaskCrashedException says where it crashed, like the headline
             . ($message === null || $end_of_first_line === false
                 ? 'Uncaught ' . $this->throwable->__toString()
@@ -148,12 +150,27 @@ final class CrashReport
     }
 
     /**
-     * "Psalm crashed", on which file, and in which plugin
+     * The statement Psalm was analysing: "while analysing App\Foo::bar() at src/Foo.php:42"
+     */
+    public function getContextLine(): ?string
+    {
+        if ($this->context->file_path === null || $this->context->line === null) {
+            return null;
+        }
+
+        return 'while analysing '
+            . ($this->context->function_like === null ? '' : $this->context->function_like . '() at ')
+            . $this->shortenFileName($this->context->file_path) . ':' . $this->context->line;
+    }
+
+    /**
+     * "Psalm crashed", on which file when there is no statement to name, and in which plugin
      */
     public function getHeadline(): string
     {
         $file_path = $this->context->file_path ?? $this->task_crash?->path;
-        $headline = 'Psalm crashed' . ($file_path !== null ? ' on ' . $this->shortenFileName($file_path) : '');
+        $headline = 'Psalm crashed'
+            . ($file_path !== null && $this->context->line === null ? ' on ' . $this->shortenFileName($file_path) : '');
 
         $package = $this->plugin_package === null
             ? null
