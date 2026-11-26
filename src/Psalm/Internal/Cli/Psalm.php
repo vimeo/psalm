@@ -54,6 +54,7 @@ use function chdir;
 use function count;
 use function ctype_digit;
 use function defined;
+use function dirname;
 use function extension_loaded;
 use function file_exists;
 use function file_get_contents;
@@ -133,6 +134,7 @@ final class Psalm
         'debug-emitted-issues',
         'diff',
         'disable-extension:',
+        'explain:',
         'find-dead-code::',
         'find-unused-code::',
         'find-unused-variables',
@@ -245,6 +247,12 @@ final class Psalm
             */
 
             exit;
+        }
+
+        if (array_key_exists('explain', $options)) {
+            // the docs belong to Psalm, so only its own autoloader: not the composer.json or vendor/ of the cwd
+            CliUtils::requireAutoloaders(dirname(__DIR__, 4), false, 'vendor', false);
+            self::explainIssue($options['explain']);
         }
 
         $current_dir = CliUtils::getCurrentDir($options);
@@ -1094,6 +1102,23 @@ final class Psalm
         Preloader::preload($progress, $hasJit);
     }
 
+    private static function explainIssue(mixed $query): never
+    {
+        $docs = is_string($query) ? IssueDocs::read($query) : null;
+
+        if ($docs === null) {
+            fwrite(
+                STDERR,
+                'Unknown issue: ' . (is_string($query) ? $query : '')
+                    . '. See https://psalm.dev/docs/running_psalm/issues/' . PHP_EOL,
+            );
+            exit(1);
+        }
+
+        echo $docs;
+        exit;
+    }
+
     /** @param array<int, string> $argv */
     private static function forwardCliCall(array $options, array $argv): void
     {
@@ -1478,6 +1503,11 @@ final class Psalm
         Miscellaneous:
             -h, --help
                 Display this help message
+
+            --explain=ISSUE
+                Print the documentation of an issue: what it means, an example and how to fix it.
+                ISSUE is an issue type (PossiblyNullReference), a shortcode (83) or a link (https://psalm.dev/083).
+                Needs no config file. Exits with 1 when the issue is unknown.
 
             -v, --version
                 Display the Psalm version

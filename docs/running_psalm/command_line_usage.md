@@ -30,6 +30,18 @@ An explicit `--output-format` always wins, and `--report=FILE` is not affected:
 ./vendor/bin/psalm --output-format=console
 ```
 
+## Explaining an issue
+
+`--explain` prints the documentation of an issue: what it means, an example and how to fix it. It takes an issue type, a shortcode (the number in the `https://psalm.dev/083` link behind each reported issue) or a psalm.dev link, works offline and needs no config file:
+
+```bash
+./vendor/bin/psalm --explain=PossiblyNullReference
+./vendor/bin/psalm --explain=83
+./vendor/bin/psalm --explain=https://psalm.dev/083
+```
+
+All three print the same Markdown page and exit with status `0`. For an unknown issue Psalm prints `Unknown issue: …` to stderr and exits with status `1`.
+
 ## Running under an AI coding agent
 
 When Psalm detects that an AI coding agent runs it (for example `CLAUDECODE`, `CURSOR_AGENT`, `CODEX_THREAD_ID` or `AI_AGENT` is set), it prints no progress and no colours, because an agent only reads the raw bytes.
