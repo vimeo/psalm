@@ -279,6 +279,23 @@ final class IncludeTest extends TestCase
                 ],
                 'hoist_constants' => false,
             ],
+            'hoistedConstantUsedBeforeItsDeclaration' => [
+                'files' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
+                        class B {
+                            const C = A;
+                        }
+
+                        echo A;
+                        new B;
+
+                        const A = 5;',
+                ],
+                'files_to_check' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'file1.php',
+                ],
+                'hoist_constants' => true,
+            ],
             'includedCodeCheckingThisDoesNotChangeIt' => [
                 'files' => [
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'file2.php' => '<?php

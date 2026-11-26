@@ -317,8 +317,8 @@ final class Php85Test extends TestCase
                 'code' => '<?php
                     $config = new stdClass();
                     $config->debug = true;
-                    echo CONFIG_NAME;
-                    const CONFIG_NAME = "a";',
+                    const CONFIG_NAME = "a";
+                    echo CONFIG_NAME;',
                 'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.5',

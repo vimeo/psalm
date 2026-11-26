@@ -17,6 +17,7 @@ use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeNameOptions;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
@@ -713,6 +714,14 @@ final class ClassConstAnalyzer
 
             return true;
         }
+
+        ConstFetchAnalyzer::checkClassLikeConstantsDeclaredLater(
+            $statements_analyzer,
+            $context,
+            $stmt,
+            $fq_class_name,
+            $const_name,
+        );
 
         if ($context->calling_method_id) {
             $codebase->addReferenceToClassConstant(

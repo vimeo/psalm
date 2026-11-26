@@ -18,6 +18,7 @@ use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallReturnTypeFetcher;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodVisibilityAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\GlobalStateAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\SimpleTypeInferer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
@@ -307,6 +308,16 @@ final class NewAnalyzer extends CallAnalyzer
                     $stmt->class,
                     $fq_class_name,
                     $context,
+                );
+            }
+
+            if ($stmt->class instanceof PhpParser\Node\Name) {
+                ConstFetchAnalyzer::checkClassLikeConstantsDeclaredLater(
+                    $statements_analyzer,
+                    $context,
+                    $stmt,
+                    $fq_class_name,
+                    null,
                 );
             }
 
