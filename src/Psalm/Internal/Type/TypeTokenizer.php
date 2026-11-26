@@ -450,7 +450,6 @@ final class TypeTokenizer
         ?array $type_aliases = null,
         ?string $self_fqcln = null,
         ?string $parent_fqcln = null,
-        bool $allow_assertions = false,
     ): array {
         $type_tokens = self::tokenize($string_type);
 
@@ -578,11 +577,6 @@ final class TypeTokenizer
                 && $type_tokens[$i + 1][0] === '['
                 && $type_tokens[$i + 2][0] !== ']'
             ) {
-                continue;
-            }
-
-            if ($allow_assertions && $string_type_token[0] === 'falsy') {
-                $type_tokens[$i][0] = 'false-y';
                 continue;
             }
 

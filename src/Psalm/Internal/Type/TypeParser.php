@@ -145,6 +145,8 @@ final class TypeParser
      * @param  array<string, TypeAlias> $type_aliases
      * @param  bool $allow_purity_wildcard whether the type may contain the `_` purity: only a
      *         parameter's type, where it stands for a purity template bound by the caller
+     * @param  bool $empty_is_falsy whether `empty` and `falsy` mean the values `empty()` is true for, as in
+     *         an assertion, instead of `never`
      */
     public static function parseTokens(
         array $type_tokens,
@@ -153,8 +155,9 @@ final class TypeParser
         array $type_aliases = [],
         bool $from_docblock = false,
         bool $allow_purity_wildcard = false,
+        bool $empty_is_falsy = false,
     ): Union {
-        if (count($type_tokens) === 1) {
+        if (count($type_tokens) === 1 && !$empty_is_falsy) {
             $only_token = $type_tokens[0];
 
             // Note: valid identifiers can include class names or $this
@@ -177,6 +180,15 @@ final class TypeParser
         }
 
         $parse_tree = (new ParseTreeCreator($type_tokens))->create();
+
+        if ($empty_is_falsy) {
+            if (self::isFalsyKeyword($parse_tree)) {
+                return self::getFalsyUnion($from_docblock);
+            }
+
+            self::replaceFalsyKeywords($parse_tree);
+        }
+
         $codebase = ProjectAnalyzer::getInstance()->getCodebase();
         $parsed_type = self::getTypeFromTree(
             $parse_tree,
@@ -351,6 +363,24 @@ final class TypeParser
             new TNull($from_docblock),
             Type::getEmptyArrayAtomic(),
         ], ['from_docblock' => $from_docblock]);
+    }
+
+    /**
+     * Replaces each `empty` or `falsy` keyword below the root with the values of getFalsyUnion()
+     *
+     * @psalm-capabilities read-props|write-props|write-refs
+     */
+    private static function replaceFalsyKeywords(ParseTree $parse_tree): void
+    {
+        foreach ($parse_tree->children as $i => $child) {
+            if (self::isFalsyKeyword($child)) {
+                $parse_tree->children[$i] = (new ParseTreeCreator(
+                    TypeTokenizer::tokenize("(false|0|0.0|''|'0'|null|array{})"),
+                ))->create();
+            } else {
+                self::replaceFalsyKeywords($child);
+            }
+        }
     }
 
     /**

@@ -6169,6 +6169,128 @@ final class AssertAnnotationTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'emptyInAssertedUnion' => [
+                'code' => '<?php
+                    /**
+                     * @param mixed $value
+                     * @psalm-assert empty|true $value
+                     */
+                    function trueOrIsEmpty($value): void {}
+
+                    /** @param mixed $s */
+                    function f($s): void {
+                        trueOrIsEmpty($s);
+                        /** @psalm-check-type-exact $s = \'\'|\'0\'|0|0.0|array<never, never>|bool|null */;
+                    }',
+            ],
+            'emptyInAssertedGeneric' => [
+                'code' => '<?php
+                    /**
+                     * @param mixed $value
+                     * @psalm-assert iterable<empty> $value
+                     */
+                    function allIsEmpty($value): void {}
+
+                    /** @return list<mixed> */
+                    function get(): array {
+                        return [];
+                    }
+                    $l = get();
+                    allIsEmpty($l);',
+                'assertions' => [
+                    '$l===' => "list<''|'0'|0|array<never, never>|false|float(0)|null>",
+                ],
+            ],
+            'emptyOrNullInAssertedGeneric' => [
+                'code' => '<?php
+                    /**
+                     * @param mixed $value
+                     * @psalm-assert iterable<empty|null> $value
+                     */
+                    function allNullOrIsEmpty($value): void {}
+
+                    /** @return list<int|bool> */
+                    function get(): array {
+                        return [];
+                    }
+                    $l = get();
+                    allNullOrIsEmpty($l);',
+                'assertions' => [
+                    '$l===' => 'list<0|false>',
+                ],
+            ],
+            'nullableEmptyInAssertion' => [
+                'code' => '<?php
+                    /**
+                     * @param mixed $value
+                     * @psalm-assert iterable<?empty> $value
+                     */
+                    function allNullOrIsEmpty($value): void {}
+
+                    /** @return list<mixed> */
+                    function get(): array {
+                        return [];
+                    }
+                    $l = get();
+                    allNullOrIsEmpty($l);',
+                'assertions' => [
+                    '$l===' => "list<''|'0'|0|array<never, never>|false|float(0)|null>",
+                ],
+            ],
+            'falsyInAssertedUnion' => [
+                'code' => '<?php
+                    /**
+                     * @param mixed $value
+                     * @psalm-assert falsy|int $value
+                     */
+                    function intOrFalsy($value): void {}
+
+                    /** @param mixed $s */
+                    function f($s): void {
+                        intOrFalsy($s);
+                        /** @psalm-check-type-exact $s = \'\'|\'0\'|0.0|array<never, never>|false|int|null */;
+                    }',
+            ],
+            'classNamedFalsyInAssertedUnion' => [
+                'code' => '<?php
+                    namespace Ns;
+
+                    class falsy {}
+
+                    /**
+                     * @param mixed $value
+                     * @psalm-assert \Ns\falsy|null $value
+                     */
+                    function nullOrFalsyObject($value): void {}
+
+                    /** @return falsy|int|null */
+                    function get() {
+                        return null;
+                    }
+                    $s = get();
+                    nullOrFalsyObject($s);',
+                'assertions' => [
+                    '$s===' => 'Ns\falsy|null',
+                ],
+            ],
+            'keyNamedEmptyInAssertedShape' => [
+                'code' => '<?php
+                    /**
+                     * @param mixed $value
+                     * @psalm-assert array{empty: int, falsy: string} $value
+                     */
+                    function isShape($value): void {}
+
+                    /** @return array<string, int|string> */
+                    function get(): array {
+                        return [];
+                    }
+                    $a = get();
+                    isShape($a);',
+                'assertions' => [
+                    '$a===' => 'array{empty: int, falsy: string}',
+                ],
+            ],
         ];
     }
 
