@@ -37,6 +37,158 @@ final class CapabilitiesTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'callableArrayOfMethodWritingItsObjectKeepsUnaffectedGetterOfThis' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Owner {
+                        public ?string $name = null;
+                        /** @psalm-external-mutation-free */
+                        public function reset(): void { $this->name = null; }
+                    }
+                    final class Counter {
+                        private ?int $count = null;
+                        /** @psalm-mutation-free */
+                        public function getCount(): ?int { return $this->count; }
+                        public function f(Owner $owner): int {
+                            if ($this->getCount() === null) {
+                                return 0;
+                            }
+                            [$owner, 'reset']();
+                            return $this->getCount();
+                        }
+                    }
+                    PHP,
+            ],
+            'closureCallingMethodOfThisKeepsMemoizedGetterOfAnotherObject' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Child {}
+                    final class Owner {
+                        public ?Child $child = null;
+                        /** @psalm-mutation-free */
+                        public function getChild(): ?Child { return $this->child; }
+                    }
+                    final class Counter {
+                        private int $n = 0;
+                        private function bump(): void { $this->n++; }
+                        public function f(Owner $owner): Child {
+                            $bump = function (): void { $this->bump(); };
+                            if ($owner->getChild() === null) {
+                                return new Child();
+                            }
+                            $bump();
+                            return $owner->getChild();
+                        }
+                        public function g(Owner $owner): Child {
+                            $bump = fn(): null => $this->bump();
+                            if ($owner->getChild() === null) {
+                                return new Child();
+                            }
+                            $bump();
+                            return $owner->getChild();
+                        }
+                    }
+                    PHP,
+            ],
+            'closureCallingNamedFunctionKeepsMemoizedGetter' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Child {}
+                    final class Owner {
+                        public ?Child $child = null;
+                        /** @psalm-mutation-free */
+                        public function getChild(): ?Child { return $this->child; }
+                    }
+                    function increment(int $i): int { return $i + 1; }
+                    function f(Owner $owner): Child {
+                        $next = fn(): int => increment(1);
+                        if ($owner->getChild() === null) {
+                            return new Child();
+                        }
+                        $next();
+                        return $owner->getChild();
+                    }
+                    PHP,
+            ],
+            'closureWritingThisKeepsMemoizedGetterOfAnotherObject' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Child {}
+                    final class Owner {
+                        public ?Child $child = null;
+                        /** @psalm-mutation-free */
+                        public function getChild(): ?Child { return $this->child; }
+                    }
+                    final class Counter {
+                        private int $n = 0;
+                        public function f(Owner $owner): Child {
+                            $count = function (): void { $this->n++; };
+                            if ($owner->getChild() === null) {
+                                return new Child();
+                            }
+                            $count();
+                            return $owner->getChild();
+                        }
+                    }
+                    PHP,
+            ],
+            'pureClosureCallKeepsMemoizedGetter' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Child {}
+                    final class Owner {
+                        public ?Child $child = null;
+                        /** @psalm-mutation-free */
+                        public function getChild(): ?Child { return $this->child; }
+                    }
+                    /** @param pure-Closure():void $f */
+                    function f(Owner $owner, Closure $f): Child {
+                        if ($owner->getChild() === null) {
+                            return new Child();
+                        }
+                        $f();
+                        return $owner->getChild();
+                    }
+                    PHP,
+            ],
+            'closureWritingCapturedReferenceKeepsMemoizedGetter' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Child {}
+                    final class Owner {
+                        public ?Child $child = null;
+                        /** @psalm-mutation-free */
+                        public function getChild(): ?Child { return $this->child; }
+                    }
+                    function f(Owner $owner): Child {
+                        $calls = 0;
+                        $count = function () use (&$calls): void { $calls++; };
+                        if ($owner->getChild() === null) {
+                            return new Child();
+                        }
+                        $count();
+                        return $owner->getChild();
+                    }
+                    PHP,
+            ],
+            'closureCallArgumentKeepsMemoizedGetter' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Child {}
+                    final class Owner {
+                        public ?Child $child = null;
+                        /** @psalm-mutation-free */
+                        public function getChild(): ?Child { return $this->child; }
+                    }
+                    /** @param Closure(Child):void $use */
+                    function f(Owner $owner, Closure $use): void {
+                        if ($owner->getChild() === null) {
+                            return;
+                        }
+                        $use($owner->getChild());
+                    }
+                    PHP,
+            ],
             'decodingAWaitStatusIsPure' => [
                 'code' => '<?php
                     /** @psalm-pure */
@@ -4194,6 +4346,243 @@ final class CapabilitiesTest extends TestCase
                     }
                     PHP,
                 'error_message' => 'LessSpecificReturnStatement',
+            ],
+            'closureCallForgetsMemoizedGetter' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Child {}
+                    final class Owner {
+                        public ?Child $child = null;
+                        /** @psalm-mutation-free */
+                        public function getChild(): ?Child { return $this->child; }
+                    }
+                    function f(Owner $owner, Closure $clear): Child {
+                        if ($owner->getChild() === null) {
+                            return new Child();
+                        }
+                        $clear();
+                        return $owner->getChild();
+                    }
+                    PHP,
+                'error_message' => 'NullableReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:12',
+            ],
+            'callableCallForgetsMemoizedGetter' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Child {}
+                    final class Owner {
+                        public ?Child $child = null;
+                        /** @psalm-mutation-free */
+                        public function getChild(): ?Child { return $this->child; }
+                    }
+                    /** @param callable():void $clear */
+                    function f(Owner $owner, callable $clear): Child {
+                        if ($owner->getChild() === null) {
+                            return new Child();
+                        }
+                        $clear();
+                        return $owner->getChild();
+                    }
+                    PHP,
+                'error_message' => 'NullableReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:14:12',
+            ],
+            'closureWritingThisForgetsMemoizedGetterOfThis' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Child {}
+                    final class Owner {
+                        private ?Child $child = null;
+                        /** @psalm-mutation-free */
+                        public function getChild(): ?Child { return $this->child; }
+                        public function f(): Child {
+                            $clear = function (): void { $this->child = null; };
+                            if ($this->getChild() === null) {
+                                return new Child();
+                            }
+                            $clear();
+                            return $this->getChild();
+                        }
+                    }
+                    PHP,
+                'error_message' => 'NullableReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:16',
+            ],
+            'callableArrayCallForgetsMemoizedGetter' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Child {}
+                    final class Owner {
+                        public ?Child $child = null;
+                        /** @psalm-mutation-free */
+                        public function getChild(): ?Child { return $this->child; }
+                        public function reset(): void { $this->child = null; }
+                    }
+                    function f(Owner $owner): Child {
+                        if ($owner->getChild() === null) {
+                            return new Child();
+                        }
+                        [$owner, 'reset']();
+                        return $owner->getChild();
+                    }
+                    PHP,
+                'error_message' => 'NullableReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:14:12',
+            ],
+            'callableArrayOfExternalMutationFreeMethodForgetsMemoizedGetter' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Child {}
+                    final class Owner {
+                        public ?Child $child = null;
+                        /** @psalm-mutation-free */
+                        public function getChild(): ?Child { return $this->child; }
+                        /** @psalm-external-mutation-free */
+                        public function reset(): void { $this->child = null; }
+                    }
+                    function viaArray(Owner $owner): Child {
+                        if ($owner->getChild() === null) {
+                            return new Child();
+                        }
+                        [$owner, 'reset']();
+                        return $owner->getChild();
+                    }
+                    PHP,
+                'error_message' => 'NullableReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:15:12',
+            ],
+            'closureBoundToAnotherObjectForgetsMemoizedGetter' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Child {}
+                    final class Owner {
+                        public ?Child $child = null;
+                        /** @psalm-mutation-free */
+                        public function getChild(): ?Child { return $this->child; }
+                    }
+                    final class Clearer {
+                        private ?Child $child = null;
+                        public function run(Owner $owner): Child {
+                            $clear = Closure::bind(function (): void { $this->child = null; }, $owner, Owner::class);
+                            assert($clear !== null);
+                            if ($owner->getChild() === null) {
+                                return new Child();
+                            }
+                            $clear();
+                            return $owner->getChild();
+                        }
+                    }
+                    PHP,
+                'error_message' => 'NullableReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:17:16',
+            ],
+            'closureCallingUnannotatedMethodOfCapturedObjectForgetsMemoizedGetter' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Child {}
+                    final class Owner {
+                        public ?Child $child = null;
+                        /** @psalm-mutation-free */
+                        public function getChild(): ?Child { return $this->child; }
+                        public function reset(): void { $this->child = null; }
+                    }
+                    function f(Owner $owner): Child {
+                        $reset = function () use ($owner): void { $owner->reset(); };
+                        if ($owner->getChild() === null) {
+                            return new Child();
+                        }
+                        $reset();
+                        return $owner->getChild();
+                    }
+                    PHP,
+                'error_message' => 'NullableReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:15:12',
+            ],
+            'closureCallingMethodOfThisWritingAnotherObjectForgetsMemoizedGetter' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Child {}
+                    final class Owner {
+                        public ?Child $child = null;
+                        /** @psalm-mutation-free */
+                        public function getChild(): ?Child { return $this->child; }
+                    }
+                    final class Clearer {
+                        private function clear(Owner $owner): void { $owner->child = null; }
+                        public function f(Owner $owner): Child {
+                            $clear = function () use ($owner): void { $this->clear($owner); };
+                            if ($owner->getChild() === null) {
+                                return new Child();
+                            }
+                            $clear();
+                            return $owner->getChild();
+                        }
+                    }
+                    PHP,
+                'error_message' => 'NullableReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:16:16',
+            ],
+            'closureReboundWithBindToForgetsMemoizedGetter' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Child {}
+                    final class Owner {
+                        public ?Child $child = null;
+                        /** @psalm-mutation-free */
+                        public function getChild(): ?Child { return $this->child; }
+                    }
+                    final class Clearer {
+                        private ?Child $child = null;
+                        public function run(Owner $owner): Child {
+                            $clear = (function (): void { $this->child = null; })->bindTo($owner, Owner::class);
+                            assert($clear instanceof Closure);
+                            if ($owner->getChild() === null) {
+                                return new Child();
+                            }
+                            $clear();
+                            return $owner->getChild();
+                        }
+                    }
+                    PHP,
+                'error_message' => 'NullableReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:17:16',
+            ],
+            'callableArrayOfMethodWritingItsObjectForgetsMemoizedGetter' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Child {}
+                    final class Owner {
+                        public ?Child $child = null;
+                        /** @psalm-mutation-free */
+                        public function getChild(): ?Child { return $this->child; }
+                        /** @psalm-capabilities read-props|write-this-props */
+                        public function reset(): void { $this->child = null; }
+                    }
+                    function f(Owner $owner): Child {
+                        if ($owner->getChild() === null) {
+                            return new Child();
+                        }
+                        [$owner, 'reset']();
+                        return $owner->getChild();
+                    }
+                    PHP,
+                'error_message' => 'NullableReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:15:12',
+            ],
+            'firstClassCallableOfMethodWritingItsObjectForgetsMemoizedGetter' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Child {}
+                    final class Owner {
+                        public ?Child $child = null;
+                        /** @psalm-mutation-free */
+                        public function getChild(): ?Child { return $this->child; }
+                        /** @psalm-capabilities read-props|write-this-props */
+                        public function reset(): void { $this->child = null; }
+                    }
+                    function f(Owner $owner): Child {
+                        $reset = $owner->reset(...);
+                        if ($owner->getChild() === null) {
+                            return new Child();
+                        }
+                        $reset();
+                        return $owner->getChild();
+                    }
+                    PHP,
+                'error_message' => 'NullableReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:16:12',
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
             'unsetScalarPropertyCanDispatchToMagicSetter' => [
                 'code' => <<<'PHP'
@@ -9534,6 +9923,29 @@ final class CapabilitiesTest extends TestCase
                     }
                     Magic::noop();
                     return $a->x;
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testWithoutRememberedPropertiesAClosureCallForgetsPropertyRefinements(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('NullableReturnStatement - somefile.php:9:28');
+        Config::getInstance()->remember_property_assignments_after_call = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                final class Child {}
+                final class Owner { public ?Child $child = null; }
+                function f(Owner $owner, Closure $clear): Child {
+                    if ($owner->child === null) {
+                        return new Child();
+                    }
+                    $clear();
+                    return $owner->child;
                 }',
         );
 

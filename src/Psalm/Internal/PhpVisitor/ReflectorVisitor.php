@@ -41,6 +41,7 @@ use Psalm\Type;
 use SplObjectStorage;
 use UnexpectedValueException;
 
+use function array_filter;
 use function array_pop;
 use function array_unshift;
 use function defined;
@@ -281,6 +282,25 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
                     // an assignment to it writes the caller's variable
                     if ($param->by_ref) {
                         $method_storage->writes_only_this_properties = false;
+                    }
+                }
+            } elseif (($node instanceof PhpParser\Node\Expr\Closure
+                    || $node instanceof PhpParser\Node\Expr\ArrowFunction)
+                && $functionlike_node_scanner->storage instanceof FunctionStorage
+            ) {
+                $closure_storage = $functionlike_node_scanner->storage;
+
+                // an assignment to a variable captured or taken by reference writes the caller's variable
+                $closure_storage->writes_only_this_properties = $this->scan_deep
+                    && !$node->byRef
+                    && !($node instanceof PhpParser\Node\Expr\Closure && array_filter(
+                        $node->uses,
+                        static fn(PhpParser\Node\ClosureUse $use): bool => $use->byRef,
+                    ));
+
+                foreach ($closure_storage->params as $param) {
+                    if ($param->by_ref) {
+                        $closure_storage->writes_only_this_properties = false;
                     }
                 }
             }
@@ -575,7 +595,9 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
 
         $storage = end($this->functionlike_node_scanners)->storage;
 
-        if (!$storage instanceof MethodStorage || !$storage->writes_only_this_properties) {
+        if (!($storage instanceof MethodStorage || $storage instanceof FunctionStorage)
+            || !$storage->writes_only_this_properties
+        ) {
             return;
         }
 
@@ -583,6 +605,31 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
             $node->expr->setAttribute('thrownExceptionConstruction', true);
 
             return;
+        }
+
+        // a closure may call the methods of `$this` and named functions, see FunctionStorage::$this_method_calls
+        if ($storage instanceof FunctionStorage) {
+            if ($node instanceof PhpParser\Node\Expr\MethodCall
+                && $node->var instanceof PhpParser\Node\Expr\Variable
+                && $node->var->name === 'this'
+                && $node->name instanceof PhpParser\Node\Identifier
+            ) {
+                $storage->this_method_calls[strtolower($node->name->name)] = true;
+
+                return;
+            }
+
+            // except those that call the callable they are given
+            if ($node instanceof PhpParser\Node\Expr\FuncCall
+                && $node->name instanceof Name
+                && !in_array(
+                    strtolower($node->name->getLast()),
+                    ['call_user_func', 'call_user_func_array', 'forward_static_call', 'forward_static_call_array'],
+                    true,
+                )
+            ) {
+                return;
+            }
         }
 
         if ($node instanceof PhpParser\Node\Expr\Assign
@@ -671,13 +718,22 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
             || !$target->var instanceof PhpParser\Node\Expr\Variable
             || $target->var->name !== 'this'
             || !$target->name instanceof PhpParser\Node\Identifier
-            || !$storage instanceof MethodStorage
         ) {
             return;
         }
 
         $name = $target->name->name;
         $writes_property = !$path && $writes_last;
+
+        if ($storage instanceof FunctionStorage && $storage->writes_only_this_properties && $writes_property) {
+            $storage->this_property_mutations[$name] = true;
+
+            return;
+        }
+
+        if (!$storage instanceof MethodStorage) {
+            return;
+        }
 
         $storage->this_property_mutations[$name] = $writes_property
             || ($storage->this_property_mutations[$name] ?? false);
