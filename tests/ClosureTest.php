@@ -468,7 +468,7 @@ final class ClosureTest extends TestCase
                     };
                     $r = $f(1);',
                 'assertions' => [
-                    '$r===' => 'Generator[pure]<int, 1, mixed, void>',
+                    '$r===' => 'Generator[pure]<int, 1, mixed, null>',
                 ],
                 'ignored_issues' => ['MissingClosureReturnType'],
             ],
