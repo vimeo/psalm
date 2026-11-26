@@ -128,6 +128,7 @@ final class InheritedMethodIdsTest extends TestCase
 
     /**
      * @param lowercase-string $fq_class_name_lc
+     * @psalm-capabilities read-props
      */
     private function getStorage(string $fq_class_name_lc): ClassLikeStorage
     {
@@ -147,6 +148,7 @@ final class InheritedMethodIdsTest extends TestCase
     /**
      * @param array<string, MethodIdentifier> $method_ids
      * @return array<string, string>
+     * @psalm-pure
      */
     private static function toStrings(array $method_ids): array
     {
