@@ -2357,6 +2357,41 @@ final class TraitTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => ['MutableDependency'],
             ],
+            'immutableTraitMethodOfAnImmutableParentForgottenThroughAMutableChild' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @psalm-immutable */
+                    trait Reads {
+                        public function get(): int {
+                            return $this->value;
+                        }
+                    }
+
+                    /** @psalm-immutable */
+                    class Counter {
+                        use Reads;
+
+                        public function __construct(protected int $value) {}
+                    }
+
+                    final class ChildCounter extends Counter {
+                        /** @psalm-capabilities read-props|write-this-props */
+                        public function set(int $value): void {
+                            $this->value = $value;
+                        }
+                    }
+
+                    function f(ChildCounter $c): void {
+                        if ($c->get() === 0) {
+                            $c->set(1);
+                            if ($c->get() === 1) {}
+                        }
+                    }
+                PHP,
+                'assertions' => [],
+                'ignored_issues' => ['ImmutableDependency', 'InaccessibleProperty'],
+                'php_version' => '8.0',
+            ],
             'mutatingTraitMethodOfAnImmutableClassForgottenAfterAMutation' => [
                 'code' => <<<'PHP'
                     <?php
