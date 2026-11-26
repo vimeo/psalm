@@ -312,7 +312,6 @@ final class AssignmentMapVisitor extends PhpParser\NodeVisitorAbstract
      * Adds what the sides of a write change themselves, which aren't traversed as children of the write
      *
      * @param list<PhpParser\Node\Expr> $sides
-     * @psalm-capabilities read-props|write-this-props|write-refs
      */
     private function visitSides(array $sides): void
     {
