@@ -240,6 +240,9 @@ final class FunctionLikeDocblockScanner
             $storage->internal = $docblock_info->psalm_internal;
         } elseif ($docblock_info->internal && $aliases->namespace) {
             $storage->internal = [NamespaceAnalyzer::getNameSpaceRoot($aliases->namespace)];
+        } elseif ($docblock_info->internal && $classlike_storage) {
+            // a method of a class in the global namespace is internal to its class, like its properties
+            $storage->internal = [$classlike_storage->name];
         }
 
         // a tag on the method replaces the one on its class
