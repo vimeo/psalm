@@ -90239,7 +90239,7 @@ return array (
   ),
   'sqlite3result::columnname' => 
   array (
-    0 => 'string',
+    0 => 'false|string',
     'column_number' => 'int',
     -2 => 'none',
   ),

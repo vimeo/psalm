@@ -30,6 +30,20 @@ final class DoTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'variableAssignedBeforeEveryBreakOfADoWhileInsideALoopIsDefinedAfterIt' => [
+                'code' => '<?php
+                    function pick(): void {
+                        foreach ([1, 2] as $_) {
+                            do {
+                                $picked = rand(0, 5);
+                                if ($picked > 2) {
+                                    break;
+                                }
+                            } while (rand(0, 1));
+                            /** @psalm-check-type-exact $picked = int<0, 5> */;
+                        }
+                    }',
+            ],
             'doWhileConditionOnAnOffsetOfAMixedVariableDoesNotHoldAfterTheLoop' => [
                 'code' => '<?php
                     function f(mixed $m): void {
@@ -91,7 +105,7 @@ final class DoTest extends TestCase
                         do {
                             echo "a";
                         } while (($r += rand(1, 3)) < 100);
-                        /** @psalm-check-type-exact $i = int<1, max> */;
+                        /** @psalm-check-type-exact $i = int<100, 102> */;
                     }
                     PHP,
             ],

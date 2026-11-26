@@ -1,0 +1,7 @@
+<?php
+namespace Vendor;
+
+class Request
+{
+    public string $query;
+}

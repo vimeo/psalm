@@ -159,15 +159,26 @@ final class ExpressionIdentifier
         );
     }
 
+    /**
+     * Whether `$o->{'name'}` can have the id `$o->name`: a name like `a[0]` or `a->b` would make the id of
+     * another expression
+     *
+     * @psalm-pure
+     */
+    public static function isLiteralPropertyNameOfVarId(string $name): bool
+    {
+        return preg_match('/^[\w\x80-\xff.-]+$/D', $name) === 1;
+    }
+
     public static function getExtendedVarId(
         PhpParser\Node\Expr $stmt,
         ?string $this_class_name,
         ?FileSource $source = null,
     ): ?string {
-        // the value of `$a ??= $b`, `++$a` and `--$a` is the value `$a` has afterwards
+        // the value of `$a ??= $b`, `$a += $b`, `++$a` and `--$a` is the value `$a` has afterwards
         if ($stmt instanceof PhpParser\Node\Expr\Assign
             || $stmt instanceof PhpParser\Node\Expr\AssignRef
-            || $stmt instanceof PhpParser\Node\Expr\AssignOp\Coalesce
+            || $stmt instanceof PhpParser\Node\Expr\AssignOp
             || $stmt instanceof PhpParser\Node\Expr\PreInc
             || $stmt instanceof PhpParser\Node\Expr\PreDec
         ) {
@@ -254,7 +265,9 @@ final class ExpressionIdentifier
 
             if ($source instanceof StatementsAnalyzer
                 && ($stmt_name_type = $source->node_data->getType($stmt->name))
-                && $stmt_name_type->isSingleStringLiteral()) {
+                && $stmt_name_type->isSingleStringLiteral()
+                && self::isLiteralPropertyNameOfVarId($stmt_name_type->getSingleStringLiteral()->value)
+            ) {
                 return $object_id . '->' . $stmt_name_type->getSingleStringLiteral()->value;
             }
 

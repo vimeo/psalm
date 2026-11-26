@@ -67,6 +67,7 @@
  - [InsecureCookie](issues/InsecureCookie.md)
  - [InterfaceInstantiation](issues/InterfaceInstantiation.md)
  - [InternalClass](issues/InternalClass.md)
+ - [InternalFunction](issues/InternalFunction.md)
  - [InternalMethod](issues/InternalMethod.md)
  - [InternalProperty](issues/InternalProperty.md)
  - [IntMaskComparison](issues/IntMaskComparison.md)

@@ -161,7 +161,8 @@ final class TIterable extends Atomic
     #[Override]
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
-        return !$this->extra_types
+        return $analysis_php_version_id >= 7_01_00
+            && !$this->extra_types
             && $this->type_params[0]->isMixed()
             && $this->type_params[1]->isMixed()
             && $this->hasDefaultPurity();

@@ -319,6 +319,7 @@ final class FunctionDocblockManipulator
         ?string $php_type,
         string $new_type,
         string $phpdoc_type,
+        bool $is_php_compatible,
     ): void {
         $new_type = str_replace(['<mixed, mixed>', '<array-key, mixed>', '<never, never>'], '', $new_type);
 
@@ -329,7 +330,7 @@ final class FunctionDocblockManipulator
             $this->new_php_param_types[$param_name] = $php_type;
         }
 
-        if ($php_type !== $phpdoc_type) {
+        if ($php_type !== $phpdoc_type && !($php_type !== null && $php_type !== '' && $is_php_compatible)) {
             $this->new_phpdoc_param_types[$param_name] = $phpdoc_type;
         }
         if ($php_type !== $new_type && $phpdoc_type !== $new_type) {
@@ -499,7 +500,12 @@ final class FunctionDocblockManipulator
 
 
         if ($this->new_phpdoc_return_type && $this->new_phpdoc_return_type !== $old_phpdoc_return_type) {
-            if ($this->new_phpdoc_return_type !== $this->new_php_return_type || $this->return_type_description) {
+            if (($this->new_phpdoc_return_type !== $this->new_php_return_type
+                    && ($this->new_php_return_type === null
+                        || $this->new_php_return_type === ''
+                        || !$this->return_type_is_php_compatible))
+                || $this->return_type_description
+            ) {
                 //only add the type if it's different than signature or if there's a description
                 $modified_docblock = true;
                 $parsed_docblock->tags['return'] = [

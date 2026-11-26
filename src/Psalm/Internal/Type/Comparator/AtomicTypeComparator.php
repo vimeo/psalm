@@ -401,8 +401,19 @@ final class AtomicTypeComparator
         }
 
         if ($input_type_part instanceof TCallableObject &&
-            $container_type_part instanceof TObject
+            $container_type_part instanceof TObject &&
+            !$container_type_part instanceof TObjectWithProperties
         ) {
+            if ($container_type_part instanceof TCallableObject && $container_type_part->callable !== null) {
+                // a callable object must also fit the signature of the callable object it is passed as
+                return CallableTypeComparator::isContainedBy(
+                    $codebase,
+                    $input_type_part->callable ?? new TCallable(),
+                    $container_type_part->callable,
+                    $atomic_comparison_result,
+                );
+            }
+
             return true;
         }
 
@@ -445,7 +456,6 @@ final class AtomicTypeComparator
         if ($container_type_part instanceof TObjectWithProperties
             && $input_type_part instanceof TObject
             && !$input_type_part instanceof TObjectWithProperties
-            && !$input_type_part instanceof TCallableObject
         ) {
             if ($atomic_comparison_result) {
                 $atomic_comparison_result->type_coerced = true;

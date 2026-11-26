@@ -18,6 +18,9 @@ interface MethodParamsProviderInterface
     public static function getClassLikeNames(): array;
 
     /**
+     * Return null to keep the parameters Psalm already knows for the method, and an empty array when the method
+     * takes no parameter.
+     *
      * @return ?array<int, FunctionLikeParameter>
      */
     public static function getMethodParams(MethodParamsProviderEvent $event): ?array;

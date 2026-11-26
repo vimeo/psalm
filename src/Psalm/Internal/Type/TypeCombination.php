@@ -85,14 +85,19 @@ final class TypeCombination
     public ?Union $objectlike_value_type = null;
 
     /**
-     * Whether every keyed array is unsealed, with the same fallback key type.
+     * Whether every unsealed keyed array has the same fallback key type.
      */
     public bool $objectlike_same_fallback_key = true;
 
     /**
-     * Keys that a keyed array does not declare.
+     * Whether a sealed keyed array was combined.
+     */
+    public bool $objectlike_some_sealed = false;
+
+    /**
+     * Keys that a keyed array does not declare, mapped to whether every keyed array lacking the key is unsealed.
      *
-     * @var array<string|int, true>
+     * @var array<string|int, bool>
      */
     public array $objectlike_missing_keys = [];
 

@@ -1,9 +1,11 @@
 <?php
 
 /**
+ * The attributes of an allowed tag pass through, so only stripping every tag escapes html
+ *
  * @psalm-pure
  *
- * @psalm-taint-escape html
+ * @psalm-taint-escape ($allowed_tags is null ? "html" : null)
  * @psalm-flow ($string) -> return
  *
  * @param null|string|array<array-key,string> $allowed_tags

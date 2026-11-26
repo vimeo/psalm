@@ -24,6 +24,28 @@ final class FunctionCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'strtolowerAndStrtoupperOfLiterals' => [
+                'code' => '<?php
+                    $lower = strtolower("Hello");
+                    $upper = strtoupper(rand(0, 1) ? "get" : "Post");
+                    $accented = strtolower("ÄRGER");',
+                'assertions' => [
+                    '$lower===' => "'hello'",
+                    '$upper===' => "'GET'|'POST'",
+                    '$accented===' => "'Ärger'",
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'strtolowerOfANonAsciiLiteralBeforePhp82' => [
+                'code' => '<?php
+                    $accented = strtolower("ÄRGER");',
+                'assertions' => [
+                    '$accented===' => 'non-empty-lowercase-string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'negatedArrayIsListKeepsAnArrayThatMayBeAList' => [
                 'code' => '<?php
                     /** @param array<int, int> $a */
@@ -224,7 +246,7 @@ final class FunctionCallTest extends TestCase
                     $json = encode([1]);
                     $upper = up("x");',
                 'assertions' => [
-                    '$upper===' => 'non-falsy-string',
+                    '$upper===' => "'X'",
                 ],
             ],
             'fullyQualifiedCallOfAFunctionWhoseNameAnotherIsImportedAs' => [
@@ -1914,6 +1936,22 @@ final class FunctionCallTest extends TestCase
                     $a = [$foo => 15];
                     extract($a);
                     takesInt($foo);',
+            ],
+            'possiblyUndefinedVariableAfterExtractCheckedWithIsset' => [
+                'code' => '<?php
+                    function takesInt(int $_i): void {}
+
+                    /** @param array<string, mixed> $vars */
+                    function f(array $vars): void {
+                        extract($vars);
+                        if (rand(0, 1)) {
+                            $a = 1;
+                        }
+                        if (isset($a)) {
+                            takesInt($a);
+                        }
+                        takesInt($a ?? 0);
+                    }',
             ],
             'extractSkipExtr' => [
                 'code' => '<?php
@@ -4378,6 +4416,67 @@ final class FunctionCallTest extends TestCase
                     }
                 ',
             ],
+            'noNeverReturnErrorNativeTypeBeforePhp81' => [
+                'code' => '<?php
+                    function foo(): string {
+                        exit;
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'noNeverReturnErrorNativeTypeOverridableMethod' => [
+                'code' => '<?php
+                    class A {
+                        public function foo(): string {
+                            exit;
+                        }
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'noNeverReturnErrorTraitMethodUsedByFinalClass' => [
+                'code' => '<?php
+                    trait T {
+                        /**
+                         * @return string
+                         */
+                        public function foo() {
+                            exit;
+                        }
+                    }
+
+                    final class A {
+                        use T;
+                    }
+
+                    class B {
+                        use T;
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'noNeverReturnErrorNativeTraitMethodUsedByFinalClass' => [
+                'code' => '<?php
+                    trait T {
+                        public function foo(): string {
+                            exit;
+                        }
+                    }
+
+                    final class A {
+                        use T;
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'noInvalidReturnTypeVoidNeverExplicit' => [
                 'code' => '<?php
                     /**
@@ -4840,6 +4939,20 @@ final class FunctionCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'possiblyUndefinedVariableAfterExtractIsMixed' => [
+                'code' => '<?php
+                    function takesInt(int $_i): void {}
+
+                    /** @param array<string, mixed> $vars */
+                    function f(array $vars): void {
+                        extract($vars);
+                        if (rand(0, 1)) {
+                            $a = 1;
+                        }
+                        takesInt($a);
+                    }',
+                'error_message' => 'MixedArgument',
+            ],
             'negatedArrayIsListOfAList' => [
                 'code' => '<?php
                     function f(): void {
@@ -4895,6 +5008,15 @@ final class FunctionCallTest extends TestCase
                     function f(string $k): void {
                         $l = strtolower($k);
                         if ($l === \'c\') {}
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+            ],
+            'strtoupperOfDocblockLiteralsKeepsFromDocblock' => [
+                'code' => '<?php
+                    /** @param \'a\'|\'b\' $k */
+                    function f(string $k): void {
+                        $u = strtoupper($k);
+                        if ($u === \'C\') {}
                     }',
                 'error_message' => 'DocblockTypeContradiction',
             ],
@@ -6045,6 +6167,56 @@ final class FunctionCallTest extends TestCase
                     $a();',
                 'error_message' => 'PossiblyInvalidFunctionCall',
             ],
+            'assignmentOfVoidOrNeverReturn' => [
+                'code' => '<?php
+                    /**
+                     * @return void|never
+                     */
+                    function foo() {
+                        if (rand(0, 1)) {
+                            exit;
+                        }
+                    }
+
+                    $a = foo();',
+                'error_message' => 'AssignmentToVoid',
+            ],
+            'assignmentOfVoidOrNeverTernary' => [
+                'code' => '<?php
+                    function foo(): void {}
+
+                    /**
+                     * @return never
+                     */
+                    function bar() {
+                        exit;
+                    }
+
+                    $a = rand(0, 1) ? foo() : bar();',
+                'error_message' => 'AssignmentToVoid',
+            ],
+            'voidOrNeverParam' => [
+                'code' => '<?php
+                    /**
+                     * @param void|never $i
+                     */
+                    function foo($i): void {}',
+                'error_message' => 'ParadoxicalCondition',
+            ],
+            'assignmentOfConditionalVoidOrNeverReturn' => [
+                'code' => '<?php
+                    /**
+                     * @return ($ok is true ? void : never)
+                     */
+                    function check(bool $ok) {
+                        if (!$ok) {
+                            exit(1);
+                        }
+                    }
+
+                    $a = check((bool) rand(0, 1));',
+                'error_message' => 'AssignmentToVoid',
+            ],
             'varExportAssignmentToVoid' => [
                 'code' => '<?php
                     $a = var_export(["a"]);',
@@ -6608,6 +6780,50 @@ final class FunctionCallTest extends TestCase
 
                     foo();',
                 'error_message' => 'InvalidReturnType',
+            ],
+            'shouldReturnNeverNotNativeString' => [
+                'code' => '<?php
+                    function finalFunc(): string {
+                        exit;
+                    }',
+                'error_message' => 'InvalidReturnType',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'shouldReturnNeverNotNativeStringFinalMethod' => [
+                'code' => '<?php
+                    final class A {
+                        public function foo(): string {
+                            exit;
+                        }
+                    }',
+                'error_message' => 'InvalidReturnType',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'shouldReturnNeverNotNativeStringClosure' => [
+                'code' => '<?php
+                    $f = function (): string {
+                        exit;
+                    };',
+                'error_message' => 'InvalidReturnType',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'shouldReturnNeverNotNativeStringPrivateTraitMethod' => [
+                'code' => '<?php
+                    trait T {
+                        private function foo(): string {
+                            exit;
+                        }
+                    }
+
+                    class A {
+                        use T;
+                    }',
+                'error_message' => 'InvalidReturnType',
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
             'DontAcceptArrayWithShapesNotContained' => [
                 'code' => '<?php

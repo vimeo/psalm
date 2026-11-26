@@ -111,6 +111,51 @@ final class ClassTemplateExtendsTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'nonTemplatedParentMethodsImplementAnInterfaceOfTheChild' => [
+                'code' => '<?php
+                    interface Entity {}
+
+                    /**
+                     * @template T of Entity
+                     */
+                    interface EntityDao {
+                        /**
+                         * @return T|null
+                         */
+                        public function selectById(int $yId);
+
+                        /**
+                         * @param T $yObj
+                         * @return T
+                         */
+                        public function insert($yObj);
+                    }
+
+                    final class Car implements Entity {}
+
+                    class GeneratedCarDao {
+                        /**
+                         * @return Car
+                         */
+                        public function selectById(int $yId) {
+                            return new Car();
+                        }
+
+                        /**
+                         * @param Car $yObj
+                         * @return Car
+                         */
+                        public function insert($yObj) {
+                            return $yObj;
+                        }
+                    }
+
+                    /**
+                     * @implements EntityDao<Car>
+                     */
+                    final class CarDao extends GeneratedCarDao implements EntityDao {
+                    }',
+            ],
             'traitMethodImplementingATemplatedInterfaceMethodTakesTheBoundType' => [
                 'code' => '<?php
                     /** @template T */
@@ -618,6 +663,8 @@ final class ClassTemplateExtendsTest extends TestCase
                 'assertions' => [
                     '$items===' => 'list<int>',
                 ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'inheritedDocblockReturnTypeResolvesThroughSubclassTemplates' => [
                 'code' => '<?php
@@ -655,6 +702,8 @@ final class ClassTemplateExtendsTest extends TestCase
                 'assertions' => [
                     '$list===' => 'list<string>',
                 ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'inheritedDocblockReturnTypeResolvesSwappedTemplates' => [
                 'code' => '<?php
@@ -695,6 +744,8 @@ final class ClassTemplateExtendsTest extends TestCase
                 'assertions' => [
                     '$pair===' => 'list{int, string}',
                 ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'newResolvesATemplateNotGivenToTheParentToItsBound' => [
                 'code' => '<?php
@@ -715,6 +766,9 @@ final class ClassTemplateExtendsTest extends TestCase
                     function make(): Table {
                         return new Table([1]);
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'interface' => [
                 'code' => '<?php
@@ -8534,6 +8588,8 @@ final class ClassTemplateExtendsTest extends TestCase
                         takesBox($composed->value);
                     }',
                 'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:22:34 - Argument 1 of takesBox expects Box<object>, but Box<stdClass> provided',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'nonGenericChildBindsItsGenericParentToTheTypeItExtendsOnItsCallables' => [
                 'code' => '<?php

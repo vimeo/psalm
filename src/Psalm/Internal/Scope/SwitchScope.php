@@ -56,6 +56,14 @@ final class SwitchScope
     public array $negated_clauses = [];
 
     /**
+     * The negations of the conditions of cases that fall through: they hold where a later condition is compared, but
+     * not in the body it shares with them
+     *
+     * @var list<Clause>
+     */
+    public array $fall_through_negated_clauses = [];
+
+    /**
      * @var array<string, bool>|null
      */
     public ?array $new_assigned_var_ids = null;

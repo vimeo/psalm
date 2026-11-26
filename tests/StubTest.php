@@ -424,6 +424,96 @@ final class StubTest extends DeferredAnalyzerTestCase
         $this->analyzeFile($file_path, new Context());
     }
 
+    public function testStubbedClassHasTheInterfaceMethodsItLeavesOut(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+
+                    <stubs>
+                        <file name="tests/fixtures/stubs/class_leaving_out_interface_methods.phpstub" />
+                    </stubs>
+                </psalm>',
+            ),
+        );
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @param StubbedCollection<string> $collection */
+                function read(StubbedCollection $collection): void {
+                    $count = $collection->count();
+                    /** @psalm-check-type-exact $count = int */
+
+                    $first = $collection[0];
+                    /** @psalm-check-type-exact $first = string */
+
+                    $collection[] = "a";
+
+                    foreach ($collection as $key => $value) {
+                        /** @psalm-check-type-exact $key = int */
+                        /** @psalm-check-type-exact $value = string */
+                    }
+                }
+
+                /** @extends StubbedCollection<int> */
+                final class IntCollection extends StubbedCollection {}
+
+                function readInts(IntCollection $collection): void {
+                    $first = $collection[0];
+                    /** @psalm-check-type-exact $first = int */
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testStubbedClassChecksTheInterfaceMethodsItLeavesOut(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('InvalidArgument');
+
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+
+                    <stubs>
+                        <file name="tests/fixtures/stubs/class_leaving_out_interface_methods.phpstub" />
+                    </stubs>
+                </psalm>',
+            ),
+        );
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @param StubbedCollection<string> $collection */
+                function write(StubbedCollection $collection): void {
+                    $collection[] = 1;
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
     public function testStubFileClass(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
@@ -2346,6 +2436,126 @@ final class StubTest extends DeferredAnalyzerTestCase
         $this->project_analyzer->consolidateAnalyzedData();
     }
 
+    public function testStubWithoutConstructorKeepsTheInheritedConstructor(): void
+    {
+        $this->analyzeChildOfClassStubbedWithoutConstructor(
+            '<?php
+                namespace App;
+
+                final class MyRequest extends \Vendor\Request {
+                    /** @var \Closure */
+                    protected $resolver;
+                }',
+        );
+    }
+
+    public function testStubWithoutConstructorKeepsThePropertiesTheRealConstructorInitializes(): void
+    {
+        $this->analyzeChildOfClassStubbedWithoutConstructor(
+            '<?php
+                namespace App;
+
+                final class MyRequest extends \Vendor\Request {}',
+        );
+    }
+
+    public function testConstructorOfStubbedAncestorCalledByItsName(): void
+    {
+        $this->analyzeChildOfClassStubbedWithoutConstructor(
+            '<?php
+                namespace App;
+
+                final class MyRequest extends \Vendor\Request {
+                    public string $own;
+
+                    public function __construct() {
+                        \Vendor\Request::__construct();
+                        $this->own = "";
+                    }
+                }',
+        );
+    }
+
+    public function testStubOfBuiltinClassWithoutConstructorKeepsMissingConstructor(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('MissingConstructor');
+
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+
+                    <stubs>
+                        <file name="tests/fixtures/stubs/partial_builtin_class.phpstub" />
+                    </stubs>
+                </psalm>',
+            ),
+        );
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                final class MyDateTime extends DateTime {
+                    public string $foo;
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    private function analyzeChildOfClassStubbedWithoutConstructor(string $code): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+
+                    <stubs>
+                        <file name="tests/fixtures/stubs/class_without_constructor.phpstub" />
+                    </stubs>
+                </psalm>',
+            ),
+        );
+
+        // stubs only override classes declared outside the project directories
+        $this->addFile(
+            (string) getcwd() . '/vendor/Request.php',
+            '<?php
+                namespace Vendor;
+
+                class Request {
+                    public string $real;
+                    public string $query;
+
+                    public function __construct() {
+                        $this->real = "";
+                        $this->query = "";
+                    }
+                }',
+        );
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile($file_path, $code);
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
     public function testStubOverridingMissingClass(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
@@ -2834,6 +3044,39 @@ final class StubTest extends DeferredAnalyzerTestCase
         );
     }
 
+    public function testDateIntervalConstructorStillDeclaresItsThrows(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                    checkForThrowsDocblock="true"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                </psalm>',
+            ),
+        );
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                function i(): DateInterval {
+                    return new DateInterval("P1D");
+                }',
+        );
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('MissingThrowsDocblock');
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
     private function analyzeWithThrowingBuiltinFunctionStubs(string $code): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
@@ -2858,6 +3101,80 @@ final class StubTest extends DeferredAnalyzerTestCase
         $file_path = (string) getcwd() . '/src/somefile.php';
 
         $this->addFile($file_path, $code);
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    /**
+     * @psalm-pure
+     * @return iterable<string, array{string, ?string}>
+     */
+    public static function providerChildOfStubbedParentWithProperties(): iterable
+    {
+        yield 'redeclared public property, initialized by the parent constructor' => [
+            '<?php
+                final class Xyz extends \Foo\Bar {
+                    /** @var string */
+                    public $hello;
+
+                    public function __construct() {
+                        parent::__construct("b");
+                    }
+                }',
+            null,
+        ];
+
+        yield 'private property shadowing one of the parent' => [
+            '<?php
+                final class Xyz extends \Foo\Bar {
+                    /** @var string */
+                    private $world;
+
+                    public function __construct() {
+                        parent::__construct("b");
+                    }
+                }',
+            'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29 - Property Xyz::$world',
+        ];
+
+        yield 'parent constructor not called' => [
+            '<?php
+                final class Xyz extends \Foo\Bar {
+                    public function __construct() {}
+                }',
+            'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:29 - Property Xyz::$hello',
+        ];
+    }
+
+    #[DataProvider('providerChildOfStubbedParentWithProperties')]
+    public function testChildOfStubbedParentWithProperties(string $code, ?string $error_message): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+
+                    <stubs>
+                        <file name="tests/fixtures/stubs/ParentClassWithProperty.phpstub" />
+                    </stubs>
+                </psalm>',
+            ),
+        );
+
+        $file_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'somefile.php';
+
+        $this->addFile($file_path, $code);
+
+        if ($error_message !== null) {
+            $this->expectException(CodeException::class);
+            $this->expectExceptionMessage($error_message);
+        }
 
         $this->analyzeFile($file_path, new Context());
     }

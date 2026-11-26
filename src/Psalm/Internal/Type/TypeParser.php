@@ -2627,13 +2627,8 @@ final class TypeParser
             return new TArray([Type::getNever($from_docblock), Type::getNever($from_docblock)], $from_docblock);
         }
 
+        $fallback_params = null;
         if ($extra_params) {
-            if ($is_list && count($extra_params) !== 1) {
-                throw new TypeParseTreeException('Must have exactly one extra field!');
-            }
-            if (!$is_list && count($extra_params) !== 2) {
-                throw new TypeParseTreeException('Must have exactly two extra fields!');
-            }
             $final_extra_params = $is_list ? [Type::getListKey(true)] : [];
             foreach ($extra_params as $child_tree) {
                 $child_type = self::getTypeFromTree(
@@ -2649,7 +2644,12 @@ final class TypeParser
                 }
                 $final_extra_params []= $child_type;
             }
-            $extra_params = $final_extra_params;
+            if (count($final_extra_params) !== 2) {
+                throw new TypeParseTreeException(
+                    $is_list ? 'Must have exactly one extra field!' : 'Must have exactly two extra fields!',
+                );
+            }
+            $fallback_params = $final_extra_params;
         }
         return $callable
             ? TKeyedArray::makeCallable(
@@ -2660,7 +2660,7 @@ final class TypeParser
             ) : TKeyedArray::make(
                 $properties,
                 $class_strings,
-                $extra_params ?? ($sealed
+                $fallback_params ?? ($sealed
                     ? null
                     : [$is_list ? Type::getListKey() : Type::getArrayKey(), Type::getMixed()]
                 ),
@@ -2668,6 +2668,41 @@ final class TypeParser
                 $from_docblock,
             )
         ;
+    }
+
+    /**
+     * The shape of the objects having both shapes
+     *
+     * @throws TypeParseTreeException when no value has both types of a property
+     */
+    public static function mergeObjectShapes(
+        Codebase $codebase,
+        TObjectWithProperties $first,
+        TObjectWithProperties $second,
+    ): TObjectWithProperties {
+        $properties = $first->properties;
+
+        foreach ($second->properties as $name => $type) {
+            if (!isset($properties[$name])) {
+                $properties[$name] = $type;
+
+                continue;
+            }
+
+            $intersected_type = Type::intersectUnionTypes($properties[$name], $type, $codebase);
+
+            if ($intersected_type === null) {
+                throw new TypeParseTreeException(
+                    'Incompatible intersection types for "' . $name . '", '
+                    . $properties[$name]->getId() . ' and ' . $type->getId()
+                    . ' provided',
+                );
+            }
+
+            $properties[$name] = $intersected_type;
+        }
+
+        return $first->setProperties($properties)->setMethods([...$first->methods, ...$second->methods]);
     }
 
     /**
@@ -2715,6 +2750,19 @@ final class TypeParser
             }
 
             $any_object_type_found = true;
+
+            // every object shape has the key `object`: their properties are those of all of them
+            if ($intersection_type instanceof TObjectWithProperties
+                && ($other_shape = $keyed_intersection_types[$intersection_type->getKey()] ?? null)
+                    instanceof TObjectWithProperties
+            ) {
+                $keyed_intersection_types[$intersection_type->getKey()] = self::mergeObjectShapes(
+                    $codebase,
+                    $other_shape,
+                    $intersection_type,
+                );
+                continue;
+            }
 
             if ($intersection_type instanceof TIterable
                 || $intersection_type instanceof TNamedObject

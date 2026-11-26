@@ -297,6 +297,43 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
     }
 
     /**
+     * After a call of the callable, the variables of analyzeVarIdsWrittenByCall() may hold what a closure leaves in
+     * them, whatever this scope assigned to them since the closure was made
+     *
+     * @param array<string, true> $var_ids
+     */
+    public static function addTypesWrittenByCall(
+        StatementsAnalyzer $statements_analyzer,
+        Context $context,
+        PhpParser\Node\Expr $callable,
+        array $var_ids,
+    ): void {
+        if (!$var_ids) {
+            return;
+        }
+
+        $codebase = $statements_analyzer->getCodebase();
+
+        foreach ($statements_analyzer->node_data->getType($callable)?->getAtomicTypes() ?? [] as $closure) {
+            if (!$closure instanceof TClosure) {
+                continue;
+            }
+
+            foreach ($closure->byref_use_types as $use_name => $written_type) {
+                $var_id = '$' . $use_name;
+
+                if (isset($var_ids[$var_id], $context->vars_in_scope[$var_id])) {
+                    $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
+                        $context->vars_in_scope[$var_id],
+                        $written_type,
+                        $codebase,
+                    );
+                }
+            }
+        }
+    }
+
+    /**
      * Type `@param-closure-this` bound `$this` to at this call site, as stamped on the node by
      * {@see \Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentsAnalyzer}.
      *
