@@ -18,7 +18,8 @@ final class HasIntOrStringArrayAccess extends Assertion
     use UnserializeMemoryUsageSuppressionTrait;
 
     /**
-     * @param bool $int_key whether the key is an int, which a string also has a character at
+     * @param bool $int_key whether the key is an int and the last offset checked, which a string also has a
+     *     character at
      */
     public function __construct(public readonly bool $int_key = false)
     {

@@ -987,9 +987,10 @@ class Reconciler
                                 $new_types[$base_key][] = [new HasStringArrayAccess()];
                             } else {
                                 $new_types[$base_key][] = [new HasIntOrStringArrayAccess(
-                                    is_int($array_key)
-                                        || preg_match('/^-?\d+$/', $array_key) === 1
-                                        || ($existing_types[$array_key] ?? null)?->isInt() === true,
+                                    !$key_parts
+                                        && (is_int($array_key)
+                                            || preg_match('/^-?\d+$/', $array_key) === 1
+                                            || ($existing_types[$array_key] ?? null)?->isInt() === true),
                                 )];
                             }
 

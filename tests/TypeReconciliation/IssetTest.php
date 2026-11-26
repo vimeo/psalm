@@ -2588,6 +2588,32 @@ final class IssetTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'stringOffsetUnderAnIntOffsetCheckedWithIssetIsReadWithoutIssue' => [
+                'code' => '<?php
+                    function f(array $r): string {
+                        if (isset($r["messages"][0]["messageId"])) {
+                            return (string) $r["messages"][0]["messageId"];
+                        }
+
+                        return "";
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedArrayAccess'],
+                'php_version' => '8.0',
+            ],
+            'propertyUnderAnIntOffsetCheckedWithIssetIsReadWithoutIssue' => [
+                'code' => '<?php
+                    function f(array $u): string {
+                        if (isset($u["x"][0]->current)) {
+                            return (string) $u["x"][0]->current;
+                        }
+
+                        return "";
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedArrayAccess', 'MixedPropertyFetch'],
+                'php_version' => '8.0',
+            ],
             'parentOfAStringVariableOffsetCheckedWithIssetStaysMixed' => [
                 'code' => '<?php
                     function f(array $a, string $k): void {
