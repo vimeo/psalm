@@ -310,68 +310,18 @@ final class SwitchCaseAnalyzer
         $switch_scope->leftover_statements = [];
         $switch_scope->leftover_case_equality_expr = null;
 
-        $case_clauses = [];
-
-        if ($case_equality_expr) {
-            $case_equality_expr_id = spl_object_id($case_equality_expr);
-            $case_clauses = FormulaGenerator::getFormula(
-                $case_equality_expr_id,
-                $case_equality_expr_id,
-                $case_equality_expr,
-                $context->self,
-                $statements_analyzer,
-                $codebase,
-                false,
-                false,
-            );
-        }
-
-        // what the earlier conditions said of a variable the case assigns is not true of the new value
-        $entry_clauses = FormulaGenerator::withoutClausesOfVarsAssignedIn(
+        self::addCaseClauses(
+            $statements_analyzer,
+            $codebase,
+            $stmt,
+            $case,
+            $case_context,
+            $context,
+            $switch_scope,
+            $switch_var_id,
             $entry_formula,
             $case_equality_expr,
-            $context->self,
-            $statements_analyzer->node_data,
         );
-
-        if ($case_clauses && $case->cond) {
-            // this will see whether any of the clauses in set A conflict with the clauses in set B
-            AlgebraAnalyzer::checkForParadox(
-                $entry_clauses,
-                $case_clauses,
-                $statements_analyzer,
-                $case->cond,
-                [],
-            );
-
-            if (count($entry_clauses) + count($case_clauses) < 50) {
-                $case_context->clauses = Algebra::simplifyCNF([...$entry_clauses, ...$case_clauses]);
-            } else {
-                $case_context->clauses = [...$entry_clauses, ...$case_clauses];
-            }
-        } else {
-            $case_context->clauses = $entry_clauses;
-        }
-
-        self::reconcileCaseClauses($statements_analyzer, $stmt, $case, $case_context, $context, $switch_var_id);
-
-        if ($case_clauses && $case_equality_expr) {
-            try {
-                $negated_case_clauses = FormulaGenerator::getNegatedFormula(
-                    $case_clauses,
-                    $case_equality_expr,
-                    spl_object_id($case_equality_expr),
-                    $context->self,
-                    $statements_analyzer,
-                    $codebase,
-                    true,
-                );
-            } catch (ComplicatedExpressionException) {
-                $negated_case_clauses = [];
-            }
-
-            $switch_scope->negated_clauses = [...$switch_scope->negated_clauses, ...$negated_case_clauses];
-        }
 
         $statements_analyzer->analyze($case_stmts, $case_context);
 
@@ -548,6 +498,87 @@ final class SwitchCaseAnalyzer
         unset($case_context->case_scope);
 
         return null;
+    }
+
+    /**
+     * Sets the clauses known inside the case, and adds its negation to those of the cases after it
+     *
+     * @param list<Clause> $entry_formula
+     */
+    private static function addCaseClauses(
+        StatementsAnalyzer $statements_analyzer,
+        Codebase $codebase,
+        PhpParser\Node\Stmt\Switch_ $stmt,
+        PhpParser\Node\Stmt\Case_ $case,
+        Context $case_context,
+        Context $context,
+        SwitchScope $switch_scope,
+        ?string $switch_var_id,
+        array $entry_formula,
+        ?PhpParser\Node\Expr $case_equality_expr,
+    ): void {
+        $case_clauses = [];
+
+        if ($case_equality_expr) {
+            $case_equality_expr_id = spl_object_id($case_equality_expr);
+            $case_clauses = FormulaGenerator::getFormula(
+                $case_equality_expr_id,
+                $case_equality_expr_id,
+                $case_equality_expr,
+                $context->self,
+                $statements_analyzer,
+                $codebase,
+                false,
+                false,
+            );
+        }
+
+        // what the earlier conditions said of a variable the case assigns is not true of the new value
+        $entry_clauses = FormulaGenerator::withoutClausesOfVarsAssignedIn(
+            $entry_formula,
+            $case_equality_expr,
+            $context->self,
+            $statements_analyzer->node_data,
+        );
+
+        if ($case_clauses && $case->cond) {
+            // this will see whether any of the clauses in set A conflict with the clauses in set B
+            AlgebraAnalyzer::checkForParadox(
+                $entry_clauses,
+                $case_clauses,
+                $statements_analyzer,
+                $case->cond,
+                [],
+            );
+
+            if (count($entry_clauses) + count($case_clauses) < 50) {
+                $case_context->clauses = Algebra::simplifyCNF([...$entry_clauses, ...$case_clauses]);
+            } else {
+                $case_context->clauses = [...$entry_clauses, ...$case_clauses];
+            }
+        } else {
+            $case_context->clauses = $entry_clauses;
+        }
+
+        self::reconcileCaseClauses($statements_analyzer, $stmt, $case, $case_context, $context, $switch_var_id);
+
+        if ($case_clauses && $case_equality_expr) {
+            try {
+                $negated_case_clauses = FormulaGenerator::getNegatedFormula(
+                    $case_clauses,
+                    $case_equality_expr,
+                    spl_object_id($case_equality_expr),
+                    $context->self,
+                    $statements_analyzer,
+                    $codebase,
+                    true,
+                );
+            } catch (ComplicatedExpressionException) {
+                $negated_case_clauses = [];
+            }
+
+            $switch_scope->negated_clauses = [...$switch_scope->negated_clauses, ...$negated_case_clauses];
+        }
     }
 
     private static function addFallThroughNegation(

@@ -602,7 +602,7 @@ final class ClassTemplateCovarianceTest extends TestCase
 
                     run(new Container(new TypeA()));',
             ],
-            'inlineCovariantModifierIgnored' => [
+            'inlineVarianceOfAReturnType' => [
                 'code' => '<?php
                     /**
                      * @template-covariant T
@@ -621,7 +621,7 @@ final class ClassTemplateCovarianceTest extends TestCase
                         return new Container();
                     }',
             ],
-            'inlineContravariantModifierIgnored' => [
+            'inlineContravariantArgumentOfAParam' => [
                 'code' => '<?php
                     /**
                      * @template T
