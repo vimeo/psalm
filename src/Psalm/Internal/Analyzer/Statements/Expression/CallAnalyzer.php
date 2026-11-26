@@ -58,6 +58,7 @@ use Psalm\Storage\Assertion\IsNotLooselyEqual;
 use Psalm\Storage\Assertion\IsType;
 use Psalm\Storage\Assertion\Truthy;
 use Psalm\Storage\ClassLikeStorage;
+use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\FunctionStorage;
 use Psalm\Storage\MethodStorage;
@@ -72,6 +73,7 @@ use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function array_any;
+use function array_count_values;
 use function array_filter;
 use function array_keys;
 use function array_map;
@@ -323,6 +325,8 @@ abstract class CallAnalyzer
 
     /**
      * @param  list<PhpParser\Node\Arg>   $args
+     * @param  list<MethodIdentifier> $intersection_method_ids the method as the other members of an intersection
+     *                                                         receiver declare it
      */
     public static function checkMethodArgs(
         ?MethodIdentifier $method_id,
@@ -333,6 +337,7 @@ abstract class CallAnalyzer
         StatementsAnalyzer $statements_analyzer,
         bool $static_is_called_class = false,
         ?FunctionLikeStorage $overload = null,
+        array $intersection_method_ids = [],
     ): bool {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -469,6 +474,18 @@ abstract class CallAnalyzer
             );
         }
 
+        if ($intersection_method_ids) {
+            $method_params = self::widenIntersectionParams(
+                $codebase,
+                $statements_analyzer,
+                $method_params,
+                $intersection_method_ids,
+                $args,
+                $context,
+                $code_location,
+            );
+        }
+
         if (ArgumentsAnalyzer::checkArgumentsMatch(
             $statements_analyzer,
             $args,
@@ -494,6 +511,146 @@ abstract class CallAnalyzer
         }
 
         return true;
+    }
+
+    /**
+     * An object of an intersection type implements the method of every member, so an argument may fit any of their
+     * declarations: a parameter whose own declaration doesn't accept its argument takes the argument's type when each
+     * of its parts fits one of the declarations
+     *
+     * @param  list<FunctionLikeParameter> $method_params
+     * @param  list<MethodIdentifier> $intersection_method_ids
+     * @param  list<PhpParser\Node\Arg> $args
+     * @return list<FunctionLikeParameter>
+     */
+    private static function widenIntersectionParams(
+        Codebase $codebase,
+        StatementsAnalyzer $statements_analyzer,
+        array $method_params,
+        array $intersection_method_ids,
+        array $args,
+        Context $context,
+        CodeLocation $code_location,
+    ): array {
+        $declared_params = [];
+
+        foreach ($intersection_method_ids as $other_method_id) {
+            $other_class_storage = $codebase->classlike_storage_provider->get($other_method_id->fq_class_name);
+
+            $declared_params[] = [
+                $other_class_storage,
+                $codebase->methods->getMethodParams(
+                    $other_method_id,
+                    $statements_analyzer,
+                    $args,
+                    $context,
+                    $code_location,
+                ),
+            ];
+        }
+
+        $param_offsets = [];
+
+        foreach ($args as $argument_offset => $arg) {
+            if ($arg->unpack) {
+                continue;
+            }
+
+            $param_offsets[$argument_offset] = $argument_offset;
+
+            if ($arg->name !== null) {
+                unset($param_offsets[$argument_offset]);
+
+                foreach ($method_params as $offset => $method_param) {
+                    if ($method_param->name === $arg->name->name) {
+                        $param_offsets[$argument_offset] = $offset;
+                        break;
+                    }
+                }
+            }
+        }
+
+        // a parameter several arguments go to (a named argument repeating a positional one) keeps its declared type
+        $argument_counts = array_count_values($param_offsets);
+
+        foreach ($param_offsets as $argument_offset => $i) {
+            $arg = $args[$argument_offset];
+            $param = $method_params[$i] ?? null;
+            $arg_type = $statements_analyzer->node_data->getType($arg->value);
+
+            if ($argument_counts[$i] > 1
+                || $param === null
+                || $param->type === null
+                || $param->by_ref
+                || $param->is_variadic
+                || $param->type->hasTemplate()
+                || $arg_type === null
+                || $arg_type->hasMixed()
+                || $arg_type->hasTemplate()
+                || UnionTypeComparator::isContainedBy($codebase, $arg_type, $param->type)
+            ) {
+                continue;
+            }
+
+            $declared_types = [$param->type];
+
+            foreach ($declared_params as [$other_class_storage, $other_params]) {
+                $other_param = $other_params[$i] ?? null;
+
+                // the other declaration may name its parameters in another order
+                if ($arg->name !== null) {
+                    $other_param = null;
+
+                    foreach ($other_params as $candidate_param) {
+                        if ($candidate_param->name === $arg->name->name) {
+                            $other_param = $candidate_param;
+                            break;
+                        }
+                    }
+                }
+
+                if ($other_param === null
+                    || $other_param->by_ref
+                    || $other_param->is_variadic
+                    || $other_param->type?->hasTemplate()
+                ) {
+                    continue;
+                }
+
+                $declared_types[] = $other_param->type
+                    ? TypeExpander::expandUnion(
+                        $codebase,
+                        $other_param->type,
+                        $other_class_storage->name,
+                        $other_class_storage->name,
+                        $other_class_storage->parent_class,
+                    )
+                    : Type::getMixed();
+            }
+
+            foreach ($arg_type->getAtomicTypes() as $arg_atomic_type) {
+                $arg_part_type = new Union([$arg_atomic_type]);
+
+                if (!array_any(
+                    $declared_types,
+                    static fn(Union $declared_type): bool => UnionTypeComparator::isContainedBy(
+                        $codebase,
+                        $arg_part_type,
+                        $declared_type,
+                    ),
+                )) {
+                    continue 2;
+                }
+            }
+
+            $param = clone $param;
+            $param->type = $arg_type;
+            $param->signature_type = null;
+            $method_params[$i] = $param;
+        }
+
+        // only existing offsets were replaced
+        return array_values($method_params);
     }
 
     /**
