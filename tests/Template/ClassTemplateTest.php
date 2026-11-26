@@ -2367,6 +2367,39 @@ final class ClassTemplateTest extends TestCase
                         );
                     }',
             ],
+            'inferredClosureParamHoldsAnyInstanceOfAClassArgumentWithoutArguments' => [
+                'code' => '<?php
+                    interface Item {}
+
+                    /** @template TObject as Entity */
+                    abstract class Mapper {}
+
+                    /** @template-covariant TMapper as Mapper */
+                    class Entity implements Item {}
+
+                    /** @extends Mapper<Order> */
+                    final class OrderMapper extends Mapper {}
+
+                    /** @extends Entity<OrderMapper> */
+                    final class Order extends Entity {}
+
+                    /**
+                     * @param array<array-key, Entity> $entities
+                     * @return array<array-key, bool>
+                     */
+                    function areOrders(array $entities): array {
+                        return array_map(
+                            static function (Item $entity): bool {
+                                if ($entity instanceof Order) {
+                                    return true;
+                                }
+
+                                return false;
+                            },
+                            $entities,
+                        );
+                    }',
+            ],
             'templateEmptyParamCoercion' => [
                 'code' => '<?php
                     namespace NS;

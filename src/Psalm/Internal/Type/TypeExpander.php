@@ -691,6 +691,10 @@ final class TypeExpander
             || $return_type instanceof TGenericObject
             || $return_type instanceof TIterable
         ) {
+            // the arguments of a generic object are kept as they are, as are those just given to a class used without
+            // any: a bare `Bar` in `Foo<Bar>` holds any `Bar`, while `Bar<bound>` holds only those of an invariant bound
+            $expand_type_params_generic = $expand_generic && !$return_type instanceof TGenericObject;
+
             $type_params = $return_type->type_params;
             foreach ($type_params as &$type_param) {
                 $type_param = self::expandUnion(
@@ -702,7 +706,7 @@ final class TypeExpander
                     $evaluate_class_constants,
                     $evaluate_conditional_types,
                     $final,
-                    $expand_generic,
+                    $expand_type_params_generic,
                     $expand_templates,
                     $throw_on_unresolvable_constant,
                 );
