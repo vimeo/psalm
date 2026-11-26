@@ -32,7 +32,7 @@ final class DocComment
         'no-seal-properties', 'no-seal-methods',
         'ignore-falsable-return', 'variadic', 'pure',
         'ignore-variable-method', 'ignore-variable-property', 'internal',
-        'taint-sink', 'taint-source', 'assert-untainted', 'scope-this',
+        'taint-sink', 'taint-source', 'no-taint-source', 'assert-untainted', 'scope-this',
         'mutation-free', 'external-mutation-free', 'immutable', 'readonly', 'purity-from-template',
         'purity-template', 'capabilities',
         'allow-private-mutation', 'readonly-allow-private-mutation',

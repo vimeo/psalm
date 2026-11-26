@@ -46,6 +46,32 @@ function show(QueryInput $input): void {
 }
 ```
 
+An override that returns no input, like a request class that a queue fills with the values its own code gave, opts
+out with `@psalm-no-taint-source`. The methods overriding it opt out too, unless they have a `@psalm-taint-source`
+of their own. A call through the parent type is still a source, and what the override's body returns is still followed.
+
+```php
+<?php
+abstract class Request {
+    /** @psalm-taint-source input */
+    abstract public function get(string $name): string;
+}
+
+final class QueuedRequest extends Request {
+    /** @param array<string, string> $vars */
+    public function __construct(private array $vars) {}
+
+    /** @psalm-no-taint-source */
+    public function get(string $name): string {
+        return $this->vars[$name] ?? '';
+    }
+}
+
+function show(QueuedRequest $request): void {
+    echo $request->get('page'); // no issue
+}
+```
+
 ## Custom taints declared in the configuration
 
 Custom taints can be declared in `psalm.xml`, so that the annotations can name them without a plugin registering
