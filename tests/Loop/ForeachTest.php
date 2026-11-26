@@ -2959,7 +2959,8 @@ final class ForeachTest extends TestCase
 
                     unset($v);',
                 'assertions' => [
-                    '$a===' => "non-empty-array<int, 'x'|1|2|5>",
+                    // what the closure leaves: its body saw the literals of the capture widened
+                    '$a===' => "non-empty-array<int, 'x'|int>",
                 ],
             ],
             'foreachByReferenceReplacesTheItemTypesWhenAClosureCapturedTheArrayByValue' => [
