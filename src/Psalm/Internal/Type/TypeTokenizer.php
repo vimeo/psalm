@@ -445,6 +445,23 @@ final class TypeTokenizer
     }
 
     /**
+     * The tokens of the values `empty()` is true for, at the offset of the `empty` or `falsy` they replace
+     *
+     * @return non-empty-list<array{string, int}>
+     * @psalm-pure
+     */
+    private static function getFalsyTokens(int $offset): array
+    {
+        $falsy_tokens = [];
+
+        foreach (self::FALSY_TOKENS as $falsy_token) {
+            $falsy_tokens[] = [$falsy_token, $offset];
+        }
+
+        return $falsy_tokens;
+    }
+
+    /**
      * @param array<string, mixed>|null       $template_type_map
      * @param array<string, TypeAlias>|null   $type_aliases
      * @return list<array{0: string, 1: int, 2?: string}>
@@ -543,20 +560,9 @@ final class TypeTokenizer
             }
 
             // in an assertion, `empty` and `falsy` are the values `empty()` is true for, not `never`
-            if ($allow_assertions
-                && ($string_type_token[0] === 'empty' || $string_type_token[0] === 'falsy')
-            ) {
-                $falsy_tokens = [];
-
-                foreach (self::FALSY_TOKENS as $falsy_token) {
-                    $falsy_tokens[] = [$falsy_token, $string_type_token[1]];
-                }
-
-                array_splice($type_tokens, $i, 1, $falsy_tokens);
-
-                $i += count($falsy_tokens) - 1;
-                $l += count($falsy_tokens) - 1;
-
+            if ($allow_assertions && ($string_type_token[0] === 'empty' || $string_type_token[0] === 'falsy')) {
+                array_splice($type_tokens, $i, 1, self::getFalsyTokens($string_type_token[1]));
+                $l = count($type_tokens);
                 continue;
             }
 
