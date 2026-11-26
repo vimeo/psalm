@@ -515,6 +515,23 @@ final class GeneratorTest extends TestCase
                     '$r===' => 'null',
                 ],
             ],
+            'generatorDeclaredVoidReturnTypeReadsAsNull' => [
+                'code' => '<?php
+                    /** @return Generator<int, string, mixed, void> */
+                    function inner(): Generator { yield "a"; }
+
+                    /** @return Generator<int, string, mixed, null> */
+                    function outer(): Generator {
+                        $x = yield from inner();
+                        /** @psalm-check-type-exact $x = null */;
+                        return $x;
+                    }
+
+                    $r = inner()->getReturn();',
+                'assertions' => [
+                    '$r===' => 'null',
+                ],
+            ],
             'generatorReturnWithIntersectionReturnType' => [
                 'code' => '<?php
                     /** @return Traversable&Generator<int, int, mixed, int> */
@@ -866,7 +883,8 @@ final class GeneratorTest extends TestCase
                         yield 1;
                         return 1;
                     }',
-                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:32',
+                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:32'
+                    . ' - No return values are expected',
             ],
             'generatorReturnDoesNotMatchIntersectionWithGeneratorFirst' => [
                 'code' => '<?php
