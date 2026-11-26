@@ -195,6 +195,7 @@ final class Pool
         // When a worker dies, amphp fails its task and then throws from the event loop while it closes the worker,
         // which would end the await() below before the failed task says which file the worker died on.
         $uncaught = null;
+        $previous_error_handler = EventLoop::getErrorHandler();
         EventLoop::setErrorHandler(static function (Throwable $e) use (&$uncaught): void {
             $uncaught ??= $e;
         });
@@ -204,7 +205,7 @@ final class Pool
             // destroyed
             await($results);
         } finally {
-            EventLoop::setErrorHandler(null);
+            EventLoop::setErrorHandler($previous_error_handler);
         }
 
         if ($uncaught !== null) {
