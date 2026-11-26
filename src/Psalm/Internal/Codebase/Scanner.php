@@ -719,8 +719,9 @@ final class Scanner
             throw new UnexpectedValueException('Should not be rescanning ' . $file_path);
         }
 
-        if (!$this->file_provider->fileExists($file_path) && $this->config->mustBeIgnored($file_path)) {
-            // this should not happen, but might if the file was temporary
+        if (!$this->file_provider->fileExists($file_path)) {
+            // deleted since it was queued, as shouldScan() skips a file that doesn't exist; if it is back by the
+            // analysis, Analyzer::analyzeFiles() reports it
             return;
         }
 

@@ -50,6 +50,47 @@ final class PsalmFileChangedDuringRunEndToEndTest extends PsalmEndToEndTestCase
         );
     }
 
+    public function testAFileRemovedWhileAnotherIsScannedAndRestoredBeforeTheAnalysisIsReportedInOneLine(): void
+    {
+        $this->initProjectOfSixClasses(
+            <<<'PHP'
+                <?php
+
+                namespace Repro;
+
+                use Psalm\Plugin\EventHandler\AfterClassLikeVisitInterface;
+                use Psalm\Plugin\EventHandler\AfterCodebasePopulatedInterface;
+                use Psalm\Plugin\EventHandler\Event\AfterClassLikeVisitEvent;
+                use Psalm\Plugin\EventHandler\Event\AfterCodebasePopulatedEvent;
+
+                final class RemoveAndRestoreFile implements
+                    AfterClassLikeVisitInterface,
+                    AfterCodebasePopulatedInterface
+                {
+                    public static function afterClassLikeVisit(AfterClassLikeVisitEvent $event): void
+                    {
+                        // C3 is queued for the scan when C1 is visited, and gone when its turn comes
+                        if ($event->getStorage()->name === 'C1') {
+                            rename(dirname(__DIR__) . '/src/C3.php', __DIR__ . '/C3.php.away');
+                        }
+                    }
+
+                    public static function afterCodebasePopulated(AfterCodebasePopulatedEvent $event): void
+                    {
+                        rename(__DIR__ . '/C3.php.away', dirname(__DIR__) . '/src/C3.php');
+                    }
+                }
+                PHP,
+        );
+
+        $result = $this->runPsalmExpectingExitCode1(1);
+
+        $this->assertSame(
+            PHP_EOL . 'src/C3.php changed while Psalm was running. Run Psalm again.' . PHP_EOL,
+            $result['STDERR'],
+        );
+    }
+
     /**
      * @return iterable<string, array{int, string}>
      * @psalm-pure
