@@ -51,6 +51,7 @@ use Psalm\Type\Atomic\TNonFalsyLowercaseString;
 use Psalm\Type\Atomic\TNonspecificLiteralInt;
 use Psalm\Type\Atomic\TNonspecificLiteralString;
 use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Atomic\TNumeric;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
@@ -1875,7 +1876,7 @@ trait UnionTrait
         }
 
         // numeric types can't be tainted (except sleep & the custom taints not added to `input`), neither can bool
-        if ($atomic instanceof TInt || $atomic instanceof TFloat) {
+        if ($atomic instanceof TInt || $atomic instanceof TFloat || $atomic instanceof TNumeric) {
             return $input_taints & ~TaintKind::NUMERIC_ONLY;
         }
 
@@ -1889,7 +1890,7 @@ trait UnionTrait
             return TaintKind::ARRAY_ONLY;
         }
 
-        // neither can any other scalar, such as scalar, array-key or numeric
+        // neither can any other scalar, such as scalar or array-key
         if ($atomic instanceof Scalar) {
             return TaintKind::ARRAY_ONLY;
         }

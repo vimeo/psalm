@@ -5760,6 +5760,49 @@ final class TaintTest extends TestCase
                     // an int can never be a NoSQL query document
                     query((int) $_GET["username"]);',
             ],
+            'htmlSinkNotTaintedByScalarNarrowing' => [
+                'code' => '<?php
+                    /** @psalm-taint-sink html $s */
+                    function render($s): void {}
+
+                    /** @psalm-taint-source input */
+                    function input(): mixed {
+                        return null;
+                    }
+
+                    $int = input();
+                    if (is_int($int)) {
+                        render($int);
+                    }
+                    $nullable_int = input();
+                    if (is_int($nullable_int) || $nullable_int === null) {
+                        render($nullable_int);
+                    }
+                    $float_or_bool = input();
+                    if (is_float($float_or_bool) || is_bool($float_or_bool)) {
+                        render($float_or_bool);
+                    }
+                    $literal = input();
+                    if ($literal === "a" || $literal === "b") {
+                        render($literal);
+                    }
+                    $numeric = input();
+                    if (is_numeric($numeric)) {
+                        render($numeric);
+                    }',
+            ],
+            'htmlSinkNotTaintedThroughNumericParam' => [
+                'code' => '<?php
+                    /** @psalm-taint-sink html $s */
+                    function render($s): void {}
+
+                    /** @param numeric $n */
+                    function show($n): void {
+                        render($n);
+                    }
+
+                    show($_GET["n"]);',
+            ],
             'nosqlSinkNotTaintedByFloatCast' => [
                 'code' => '<?php
                     /** @psalm-taint-sink nosql $filter */
@@ -21787,6 +21830,110 @@ final class TaintTest extends TestCase
                     function mysleep($s): void {}
                     mysleep((float) $_GET["seconds"]);',
                 'error_message' => 'TaintedSleep',
+            ],
+            'sleepSurvivesIntNarrowing' => [
+                'code' => '<?php
+                    /** @psalm-taint-source input */
+                    function input(): mixed {
+                        return null;
+                    }
+
+                    $seconds = input();
+                    if (is_int($seconds)) {
+                        sleep($seconds);
+                    }',
+                'error_message' => 'TaintedSleep',
+            ],
+            'sleepSurvivesNullableIntNarrowing' => [
+                'code' => '<?php
+                    /** @psalm-taint-sink sleep $s */
+                    function mysleep($s): void {}
+
+                    /** @psalm-taint-source input */
+                    function input(): mixed {
+                        return null;
+                    }
+
+                    $seconds = input();
+                    if (is_int($seconds) || $seconds === null) {
+                        mysleep($seconds);
+                    }',
+                'error_message' => 'TaintedSleep',
+            ],
+            'sleepSurvivesBoolNarrowing' => [
+                'code' => '<?php
+                    /** @psalm-taint-sink sleep $s */
+                    function mysleep($s): void {}
+
+                    /** @psalm-taint-source input */
+                    function input(): mixed {
+                        return null;
+                    }
+
+                    $seconds = input();
+                    if (is_bool($seconds)) {
+                        mysleep($seconds);
+                    }',
+                'error_message' => 'TaintedSleep',
+            ],
+            'sleepSurvivesNumericNarrowing' => [
+                'code' => '<?php
+                    /** @psalm-taint-source input */
+                    function input(): mixed {
+                        return null;
+                    }
+
+                    $seconds = input();
+                    if (is_numeric($seconds)) {
+                        sleep((int) $seconds);
+                    }',
+                'error_message' => 'TaintedSleep',
+            ],
+            'htmlSurvivesNarrowingToArrayOrInt' => [
+                'code' => '<?php
+                    /** @psalm-taint-sink html $s */
+                    function render($s): void {}
+
+                    /** @psalm-taint-source input */
+                    function input(): mixed {
+                        return null;
+                    }
+
+                    // the array part of the value still holds the input
+                    $value = input();
+                    if (is_array($value) || is_int($value)) {
+                        render($value);
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'htmlSurvivesNarrowingToObjectOrFalse' => [
+                'code' => '<?php
+                    final class Html {}
+
+                    /** @psalm-taint-sink html $s */
+                    function render($s): void {}
+
+                    /** @psalm-taint-source input */
+                    function input(): mixed {
+                        return null;
+                    }
+
+                    $value = input();
+                    if ($value instanceof Html || $value === false) {
+                        render($value);
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'htmlSurvivesNarrowingToLiteralStringOrArray' => [
+                'code' => '<?php
+                    /** @psalm-taint-sink html $s */
+                    function render($s): void {}
+
+                    $value = $_GET["value"];
+                    if ($value === "a" || is_array($value)) {
+                        render($value);
+                    }',
+                'error_message' => 'TaintedHtml',
             ],
             'sqlSurvivesStringCast' => [
                 'code' => '<?php
