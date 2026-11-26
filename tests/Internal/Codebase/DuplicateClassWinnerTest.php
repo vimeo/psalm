@@ -102,6 +102,37 @@ if (!class_exists(Lazy::class, false)) {
     }
 
     /**
+     * Declarations in files whose issues are not reported are alternatives, like polyfills of a dependency: the
+     * one in the smallest path is kept, and the classes extending it are still analysed.
+     *
+     * @param list<string> $arrival the processes, in the order they finished in (w1 scanned a, w2 scanned b)
+     */
+    #[DataProvider('providerArrival')]
+    public function testPoolMergeOfDeclarationsInUnreportedFilesIsNotADuplicate(array $arrival): void
+    {
+        $this->dir = (string) getcwd() . DIRECTORY_SEPARATOR . 'vendor' . DIRECTORY_SEPARATOR . 'duplicate_class'
+            . DIRECTORY_SEPARATOR;
+
+        $processes = [
+            'w1' => $this->scanAlone('a'),
+            'w2' => $this->scanAlone('b'),
+        ];
+
+        foreach ($arrival as $process) {
+            [$file_path, $classlike_storages] = $processes[$process];
+            $codebase = $this->project_analyzer->getCodebase();
+            $codebase->classlike_storage_provider->addMore($classlike_storages);
+            $codebase->scanner->addThreadData([[], [], [], [], [], ['lib\lazy' => $file_path], [], [], [], [], []]);
+        }
+
+        $kept = ClassLikeStorageProvider::getAll()['lib\lazy'];
+
+        self::assertSame($processes['w1'][1]['lib\lazy'], $kept);
+        self::assertFalse($kept->has_visitor_issues);
+        self::assertSame([], IssueBuffer::getIssuesData());
+    }
+
+    /**
      * @return iterable<string, array{list<string>}>
      * @psalm-pure
      */

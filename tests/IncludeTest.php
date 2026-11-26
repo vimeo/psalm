@@ -1782,6 +1782,91 @@ final class IncludeTest extends TestCase
     }
 
     /**
+     * A dependency's class is scanned, not analysed, and so are the files its file requires: each file a ternary
+     * can require is.
+     *
+     * @param array<string, string> $required_files the files beside the dependency's file
+     */
+    #[DataProvider('providerFilesRequiredByADependency')]
+    public function testFilesRequiredByADependencyAreScanned(string $require, array $required_files): void
+    {
+        $dir = (string) getcwd() . DIRECTORY_SEPARATOR . 'vendor' . DIRECTORY_SEPARATOR . 'lib' . DIRECTORY_SEPARATOR;
+
+        foreach ($required_files as $file_name => $contents) {
+            $this->file_provider->registerFile($dir . $file_name, $contents);
+        }
+
+        $this->addFile($dir . 'A.php', '<?php
+            namespace Lib;
+            ' . $require . '
+            class A extends Base {}');
+        $this->addFile((string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'Mine.php', '<?php
+            final class Mine extends Lib\A {
+                public function f(): int {
+                    $this->both();
+                    return "not an int";
+                }
+            }');
+
+        $this->assertSame(
+            [
+                'src' . DIRECTORY_SEPARATOR . 'Mine.php: InvalidReturnStatement@5',
+                'src' . DIRECTORY_SEPARATOR . 'Mine.php: InvalidReturnType@3',
+            ],
+            $this->analyzeFilesInOrder(['src' . DIRECTORY_SEPARATOR . 'Mine.php']),
+        );
+    }
+
+    /**
+     * @return iterable<string, array{require: string, required_files: array<string, string>}>
+     * @psalm-pure
+     */
+    public static function providerFilesRequiredByADependency(): iterable
+    {
+        $base = '<?php
+            namespace Lib;
+            if (!class_exists(Base::class, false)) {
+                class Base { public function both(): void {} }
+            }';
+
+        yield 'ternary' => [
+            'require' => 'require PHP_VERSION_ID < 80200 ? __DIR__ . "/Old.php" : __DIR__ . "/New.php";',
+            'required_files' => ['Old.php' => $base, 'New.php' => $base],
+        ];
+
+        yield 'short ternary' => [
+            'require' => 'require getenv("BASE_FILE") ?: __DIR__ . "/New.php";',
+            'required_files' => ['New.php' => $base],
+        ];
+
+        yield 'nested ternary' => [
+            'require' => 'require PHP_VERSION_ID < 80000
+                ? __DIR__ . "/Old.php"
+                : (PHP_VERSION_ID < 80200 ? __DIR__ . "/Mid.php" : __DIR__ . "/New.php");',
+            'required_files' => ['Old.php' => $base, 'Mid.php' => $base, 'New.php' => $base],
+        ];
+
+        yield 'ternary with a branch to a missing file' => [
+            'require' => 'require PHP_VERSION_ID < 80200 ? __DIR__ . "/Missing.php" : __DIR__ . "/New.php";',
+            'required_files' => ['New.php' => $base],
+        ];
+
+        yield 'if and else requiring a file each' => [
+            'require' => 'if (PHP_VERSION_ID < 80200) {
+                require __DIR__ . "/Old.php";
+            } else {
+                require __DIR__ . "/New.php";
+            }',
+            'required_files' => ['Old.php' => $base, 'New.php' => $base],
+        ];
+
+        yield 'one file' => [
+            'require' => 'require __DIR__ . "/New.php";',
+            'required_files' => ['New.php' => $base],
+        ];
+    }
+
+    /**
      * The constructor of the parent initializes its property through a helper, in a file that requires the
      * child's file: collecting what the helper does must not be cut short by the include cycle.
      */

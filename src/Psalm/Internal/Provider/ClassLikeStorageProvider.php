@@ -6,6 +6,7 @@ namespace Psalm\Internal\Provider;
 
 use InvalidArgumentException;
 use LogicException;
+use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Issue\DuplicateClass;
 use Psalm\IssueBuffer;
 use Psalm\Storage\ClassLikeStorage;
@@ -118,6 +119,8 @@ final class ClassLikeStorageProvider
      */
     public function addMore(array $more, array $earlier, int $analysis_php_version_id): void
     {
+        $analyzer = ProjectAnalyzer::getInstance()->getCodebase()->analyzer;
+
         foreach ($more as $k => $storage) {
             if (isset(self::$storage[$k])) {
                 $duplicate_storage = self::$storage[$k];
@@ -145,14 +148,19 @@ final class ClassLikeStorageProvider
                         ? [$storage, $location, $duplicate_location]
                         : [$duplicate_storage, $duplicate_location, $location];
 
-                    IssueBuffer::maybeAdd(
-                        new DuplicateClass(
-                            'Class ' . $kept->name . ' has already been defined in ' . $kept_location->file_path,
-                            $dropped_location,
-                        ),
-                    );
+                    // declarations in files that are not analysed are alternatives, see ClassLikeNodeScanner
+                    if ($analyzer->canReportIssues($location->file_path)
+                        || $analyzer->canReportIssues($duplicate_location->file_path)
+                    ) {
+                        IssueBuffer::maybeAdd(
+                            new DuplicateClass(
+                                'Class ' . $kept->name . ' has already been defined in ' . $kept_location->file_path,
+                                $dropped_location,
+                            ),
+                        );
 
-                    $kept->has_visitor_issues = true;
+                        $kept->has_visitor_issues = true;
+                    }
 
                     if (!$new_is_kept) {
                         continue;

@@ -215,6 +215,20 @@ final class ClassLikeNodeScanner
                         || $duplicate_storage->stmt_location->file_path !== $this->file_path
                         || $class_location->getHash() !== $duplicate_storage->stmt_location->getHash())
                     ) {
+                        // declarations in files that are not analysed (dependencies) are alternatives, one per PHP
+                        // or dependency version (`if (!class_exists(...))`): the first one is kept as is. This file
+                        // is not cached, so that it declares the class again if the other one goes.
+                        $analyzer = $this->codebase->analyzer;
+
+                        if (!$analyzer->canReportIssues($this->file_path)
+                            && !($duplicate_storage->location
+                                && $analyzer->canReportIssues($duplicate_storage->location->file_path))
+                        ) {
+                            $this->file_storage->has_visitor_issues = true;
+
+                            return false;
+                        }
+
                         IssueBuffer::maybeAdd(
                             new DuplicateClass(
                                 'Class ' . $fq_classlike_name . ' has already been defined'
