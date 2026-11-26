@@ -4103,7 +4103,7 @@ final class MethodCallTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.1',
             ],
-            'psalmOverloadOfAnInheritedConstructorReportsTooFewArguments' => [
+            'psalmOverloadOfAnInheritedConstructorIsSelectedByTheArguments' => [
                 'code' => '<?php
                     class Base {
                         /**
@@ -4116,9 +4116,9 @@ final class MethodCallTest extends TestCase
 
                     final class Child extends Base {}
 
-                    new Child();',
-                'error_message' => 'TooFewArguments - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:21 - '
-                    . 'Too few arguments for Child::__construct - expecting first to be passed',
+                    new Child("a", "b");',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:31 - '
+                    . 'Argument 1 of Child::__construct expects int, but \'a\' provided',
                 'error_levels' => [],
                 'php_version' => '8.1',
             ],
