@@ -87,6 +87,7 @@ final class TaskCrashedException extends RuntimeException
         return new self(
             $path,
             'Psalm crashed on ' . Config::getInstance()->shortenFileName($path) . PHP_EOL
+                . 'The worker process died: out of memory, a segfault or a signal.' . PHP_EOL
                 . $throwable::class . ': ' . $throwable->getMessage(),
             $throwable,
         );

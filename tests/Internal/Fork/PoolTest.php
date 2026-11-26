@@ -6,6 +6,7 @@ namespace Psalm\Tests\Internal\Fork;
 
 use Amp\Parallel\Worker\TaskFailureException;
 use Override;
+use PHPUnit\Framework\Attributes\RunInSeparateProcess;
 use PHPUnit\Framework\TestCase;
 use Psalm\Internal\Fork\Pool;
 use Psalm\Internal\Fork\TaskCrashedException;
@@ -115,19 +116,32 @@ final class PoolTest extends TestCase
         EventLoop::run();
     }
 
+    // amphp leaves an unhandled future behind for the worker that died, which its event loop reports once it is
+    // destroyed: the other tests must not be there to receive it
+    #[RunInSeparateProcess]
     public function testAWorkerThatIsGoneIsReportedOnceWithoutATrace(): void
     {
         new TestConfig();
         $pool = new Pool(2, 1000.0, new VoidProgress());
 
+        // more tasks than workers, so that submit() waits for a free worker while one dies
+        $files = ['a', 'b', 'c', 'die'];
+        for ($i = 0; $i < 36; ++$i) {
+            $files[] = "f$i";
+        }
+
         try {
-            $pool->run(['a', 'die', 'b'], ThrowOnBoomTask::class, static function (): void {
+            $pool->run($files, ThrowOnBoomTask::class, static function (): void {
             });
             $this->fail('The lost worker should have been reported');
         } catch (TaskCrashedException $e) {
             $this->assertSame('die', $e->path);
-            $this->assertStringStartsWith('Psalm crashed on die' . PHP_EOL, $e->getMessage());
-            $this->assertSame(1, substr_count($e->getMessage(), PHP_EOL));
+            $this->assertStringStartsWith(
+                'Psalm crashed on die' . PHP_EOL
+                    . 'The worker process died: out of memory, a segfault or a signal.' . PHP_EOL,
+                $e->getMessage(),
+            );
+            $this->assertSame(2, substr_count($e->getMessage(), PHP_EOL));
             $this->assertStringNotContainsString('#0', $e->getMessage());
         }
 
