@@ -22,6 +22,8 @@ final class FromDocblockSetter extends MutableTypeVisitor
      */
     public function __construct(
         private readonly bool $from_docblock,
+        /** @var ?class-string<Atomic> the only atomics to set, with the rest left as they are */
+        private readonly ?string $only_atomic_class = null,
     ) {
     }
     /**
@@ -31,6 +33,9 @@ final class FromDocblockSetter extends MutableTypeVisitor
     protected function enterNode(TypeNode &$type): ?int
     {
         if (!$type instanceof Atomic && !$type instanceof Union && !$type instanceof MutableUnion) {
+            return null;
+        }
+        if ($this->only_atomic_class !== null && !$type instanceof $this->only_atomic_class) {
             return null;
         }
         if ($type->from_docblock === $this->from_docblock) {

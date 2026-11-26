@@ -12,6 +12,7 @@ use Psalm\Exception\TypeParseTreeException;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\TypeVisitor\FromDocblockSetter;
 use Psalm\Internal\TypeVisitor\TemplateDefaultFiller;
 use Psalm\Internal\TypeVisitor\TemplateTypeCollector;
 use Psalm\Internal\TypeVisitor\TypeScanner;
@@ -21,6 +22,7 @@ use Psalm\StatementsSource;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Type;
+use Psalm\Type\Atomic\TResource;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
@@ -438,7 +440,10 @@ final class TemplateDefaults
                 continue;
             }
 
-            $default = $default->setFromDocblock(true);
+            // `resource` is only valid where the type is written in a docblock
+            $mutable_default = $default->getBuilder();
+            (new FromDocblockSetter(true, TResource::class))->traverse($mutable_default);
+            $default = $mutable_default->freeze();
 
             $type_scanner->traverseArray($default->getAtomicTypes());
 
