@@ -480,7 +480,27 @@ final class TypeChecker extends TypeVisitor
       
         $param_variances = [];
         foreach ($atomic->type_params as $i => $type_param) {
-            $param_variances[] = $class_storage->getTemplateVariance($i);
+            $declared_variance = $class_storage->getTemplateVariance($i);
+            // a `covariant` or `contravariant` argument is in that position, whatever the template is declared as
+            $variance = match ($atomic->getProjection($i)) {
+                TypeArgumentProjection::Covariant => TemplateVariance::Covariant,
+                TypeArgumentProjection::Contravariant => TemplateVariance::Contravariant,
+                default => $declared_variance,
+            };
+
+            if ($variance !== $declared_variance && $declared_variance !== TemplateVariance::Invariant) {
+                IssueBuffer::maybeAdd(
+                    new InvalidTemplateParam(
+                        'The ' . strtolower($variance->name) . ' argument of ' . $atomic->getId()
+                            . ' conflicts with template param ' . ($expected_type_param_keys[$i] ?? $i)
+                            . ' of ' . $class_storage->name . ', which is ' . strtolower($declared_variance->name),
+                        $this->code_location,
+                    ),
+                    $this->suppressed_issues,
+                );
+            }
+
+            $param_variances[] = $variance;
 
             if (isset($expected_type_param_keys[$i])) {
                 $expected_template_name = $expected_type_param_keys[$i];

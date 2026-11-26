@@ -179,6 +179,14 @@ final class ParseTreeCreator
 
                 case 'covariant':
                 case 'contravariant':
+                    // the variance of a type argument (`Foo<covariant Bar>`); anywhere else the keyword says nothing
+                    if ($this->current_leaf instanceof GenericTree && !$this->current_leaf->terminated) {
+                        $this->current_leaf->projections[count($this->current_leaf->children)]
+                            = $type_token[0] === 'covariant'
+                                ? TypeArgumentProjection::Covariant
+                                : TypeArgumentProjection::Contravariant;
+                    }
+
                     if ($this->t + 1 < $this->type_token_count
                         && $this->type_tokens[$this->t + 1][0] === ' '
                     ) {

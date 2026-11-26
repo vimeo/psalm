@@ -15,6 +15,7 @@ use Psalm\Internal\TypeVisitor\ContainsStaticVisitor;
 use Psalm\Internal\TypeVisitor\TemplateBoundNarrower;
 use Psalm\Storage\Assertion\IsType;
 use Psalm\Storage\Capabilities;
+use Psalm\Storage\TemplateVariance;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
@@ -68,6 +69,8 @@ use function count;
 use function is_string;
 use function reset;
 use function strtolower;
+
+use const ARRAY_FILTER_USE_BOTH;
 
 /**
  * @internal
@@ -719,6 +722,20 @@ final class TypeExpander
                 && $codebase->classlike_storage_provider->has($return_type->value)
             ) {
                 $class_storage = $codebase->classlike_storage_provider->get($return_type->value);
+
+                // the variance of the template's declaration written again (`Source<covariant X>` for
+                // `@template-covariant T`) is the same type as without it
+                $return_type = $return_type->setProjections(array_filter(
+                    $return_type->getProjections(),
+                    static fn(TypeArgumentProjection $projection, int $offset): bool => match ($projection) {
+                        TypeArgumentProjection::Covariant
+                            => $class_storage->getTemplateVariance($offset) !== TemplateVariance::Covariant,
+                        TypeArgumentProjection::Contravariant
+                            => $class_storage->getTemplateVariance($offset) !== TemplateVariance::Contravariant,
+                        default => true,
+                    },
+                    ARRAY_FILTER_USE_BOTH,
+                ));
 
                 $type_params = StarProjection::boundStars(
                     $return_type,

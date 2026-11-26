@@ -95,7 +95,36 @@ final class GenericTypeComparator
                 continue;
             }
 
-            $input_is_star = isset($input_star_offsets[$i]);
+            $input_projection = $input_star_offsets[$i] ?? null;
+            $input_is_star = $input_projection === TypeArgumentProjection::Star;
+            $container_is_covariant = $container_type_params_covariant[$i] ?? false;
+            $container_is_contravariant = isset($container_type_params_contravariant[$i]);
+
+            // a `covariant X` or `contravariant X` input fits only an argument of the same variance, compared below
+            if (($input_projection === TypeArgumentProjection::Covariant && !$container_is_covariant)
+                || ($input_projection === TypeArgumentProjection::Contravariant && !$container_is_contravariant)
+            ) {
+                // a left out argument holds any
+                if ($container_projection === TypeArgumentProjection::Omitted) {
+                    continue;
+                }
+
+                $all_types_contain = false;
+
+                if ($atomic_comparison_result) {
+                    // an invariant `Foo<Y>` is one of the input's types: a coercion when `Y` is within `X` (for
+                    // `covariant X`) or around it (for `contravariant X`)
+                    $param_comparison_result = new TypeComparisonResult();
+                    $param_comparison_result->type_coerced = !$container_is_covariant
+                        && !$container_is_contravariant
+                        && ($input_projection === TypeArgumentProjection::Covariant
+                            ? UnionTypeComparator::isContainedBy($codebase, $container_param, $input_param)
+                            : UnionTypeComparator::isContainedBy($codebase, $input_param, $container_param));
+                    $atomic_comparison_result->mergeFailedPart($param_comparison_result);
+                }
+
+                continue;
+            }
 
             $contravariant = false;
 
@@ -155,7 +184,7 @@ final class GenericTypeComparator
                 }
 
                 // a `*` is one unknown type, not a mixed value: `U<*>` is a parent type of each `U<X>` whose `X` it
-                // may be, whatever the bound
+                // may be, whatever the bound, also where the bound is the `mixed` of an unbound template
                 if ($input_is_star) {
                     $param_comparison_result->type_coerced = UnionTypeComparator::isContainedBy(
                         $codebase,
@@ -163,6 +192,7 @@ final class GenericTypeComparator
                         $input_param,
                     );
                     $param_comparison_result->type_coerced_from_mixed = false;
+                    $param_comparison_result->type_coerced_from_as_mixed = false;
                 }
 
                 if ($atomic_comparison_result) {

@@ -1305,8 +1305,10 @@ final class AssertionReconciler extends Reconciler
                 ) {
                     $inferred = $parent->type_params[$offset];
 
-                    if ($parent->getProjection($offset) === TypeArgumentProjection::Star) {
-                        $projections[count($type_params)] = TypeArgumentProjection::Star;
+                    $projection = $parent->getProjection($offset);
+
+                    if ($projection?->isUnknown()) {
+                        $projections[count($type_params)] = $projection;
                     }
 
                     break;
@@ -1343,7 +1345,11 @@ final class AssertionReconciler extends Reconciler
         ))->setProjections($projections);
 
         // a `*` passed down holds the bound of the child's template, with the child's other arguments applied
-        return StarProjection::resolve($narrowed, $codebase, array_keys($projections));
+        return StarProjection::resolve(
+            $narrowed,
+            $codebase,
+            array_keys($projections, TypeArgumentProjection::Star, true),
+        );
     }
 
     /**
@@ -1917,11 +1923,11 @@ final class AssertionReconciler extends Reconciler
     ): ?Atomic {
         if ($type_2_atomic::class === TNamedObject::class
             && $type_1_atomic instanceof TGenericObject
-            && $type_1_atomic->hasStarProjection()
+            && $type_1_atomic->hasUnknownArgument()
         ) {
-            // what a `*` leaves unknown stays unknown: `Pair<int, *>` narrowed to `Pair` is still a `Pair<int, *>`
-            // (with the intersection asserted next to it), and narrowed to a `Child` that `@extends Pair<int, T>` is a
-            // `Child<*>`, not one of the template's bound
+            // what a `*`, `covariant` or `contravariant` argument leaves unknown stays unknown: `Pair<int, *>` narrowed
+            // to `Pair` is still a `Pair<int, *>` (with the intersection asserted next to it). Narrowed to a `Child`
+            // that `@extends Pair<int, T>`, a `*` makes a `Child<*>`, not one of the template's bound
             return strtolower($type_2_atomic->value) === strtolower($type_1_atomic->value)
                 ? $type_1_atomic->setIntersectionTypes([...$type_1_atomic->extra_types, ...$type_2_atomic->extra_types])
                 : self::inferTemplateParamsFromParent($codebase, $type_2_atomic, $type_1_atomic, true);
