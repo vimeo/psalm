@@ -293,18 +293,18 @@ final class CrashReportTest extends TestCase
         );
         $this->assertSame('crash.yml', $fields['template']);
         $this->assertSame('Crash: RuntimeException: Undefined array key "X"', $fields['title']);
-        // the separators after the prefix are the platform's
-        $this->assertSame(
-            'RuntimeException: PHP Error: Undefined array key "X"'
-                . ' in <project>/tests/Internal/Crash/CrashReportTest.php:12',
-            str_replace('\\', '/', $fields['exception']),
+        // the separators after the prefix and the ends of lines are the platform's
+        $exception = str_replace(['\\', "\r\n"], ['/', "\n"], $fields['exception']);
+        $this->assertMatchesRegularExpression(
+            '~^RuntimeException: PHP Error: Undefined array key "X"'
+                . ' in <project>/tests/Internal/Crash/CrashReportTest\.php:12'
+                . '\n  at <project>/tests/Internal/Crash/CrashReportTest\.php:\d+$~',
+            $exception,
         );
-        // where it was thrown and 10 frames
-        $this->assertCount(11, explode("\n", $fields['frames']));
-        $this->assertStringStartsWith(
-            'at <project>/tests/Internal/Crash/CrashReportTest.php:',
-            str_replace('\\', '/', $fields['frames']),
-        );
+        // the exception, where it was thrown and 10 frames
+        $frames = str_replace(['\\', "\r\n"], ['/', "\n"], $fields['frames']);
+        $this->assertCount(12, explode("\n", $frames));
+        $this->assertStringStartsWith($exception . "\n#0 ", $frames);
         foreach (array_filter([dirname(__DIR__, 3), $home === '' ? '' : $home . '/', sys_get_temp_dir()]) as $private) {
             $this->assertStringNotContainsString($private, $url);
             $this->assertStringNotContainsString(rawurlencode($private), $url);
@@ -312,8 +312,8 @@ final class CrashReportTest extends TestCase
 
         $long = (new CrashReport(new RuntimeException(str_repeat('x', 20_000)), null, []))->getPsalmIssueUrl();
         $this->assertLessThanOrEqual(7_500, strlen($long));
-        $this->assertStringEndsWith(
-            'xxx...',
+        $this->assertStringContainsString(
+            'xxx...' . PHP_EOL . '  at ',
             self::getQuery($long, 'https://github.com/vimeo/psalm/issues/new?')['exception'],
         );
     }

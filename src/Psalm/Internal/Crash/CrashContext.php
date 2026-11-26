@@ -13,6 +13,7 @@ use Throwable;
 use WeakMap;
 
 use function serialize;
+use function str_starts_with;
 use function unserialize;
 
 /**
@@ -48,12 +49,17 @@ final class CrashContext
     public ?string $function_like = null;
 
     /**
-     * The innermost hook wins: the exception goes through the hooks that called the one that threw.
+     * The innermost hook wins: the exception goes through the hooks that called the one that threw. Psalm's own
+     * hooks (the taint handlers of Config::initializePlugins()) are not a plugin.
      *
      * @param class-string $handler
      */
     public static function recordHook(Throwable $e, string $hook, string $handler): void
     {
+        if (str_starts_with($handler, 'Psalm\\Internal\\')) {
+            return;
+        }
+
         $context = self::get($e);
         if ($context->handler === null) {
             $context->hook = $hook;
