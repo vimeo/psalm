@@ -211,6 +211,64 @@ final class PsalmMcpEndToEndTest extends PsalmEndToEndTestCase
         $this->assertStringContainsString('Exit code 2: issues found.', $output);
     }
 
+    public function testAPingIsAnsweredWhileTheWholeProjectIsChecked(): void
+    {
+        $this->initPsalm();
+        $this->startServer();
+
+        $this->send(['jsonrpc' => '2.0', 'id' => 1, 'method' => 'tools/call', 'params' => [
+            'name' => 'psalm_check',
+            'arguments' => (object) [],
+        ]]);
+        $this->send(['jsonrpc' => '2.0', 'id' => 2, 'method' => 'ping']);
+
+        $this->assertSame(['jsonrpc' => '2.0', 'id' => 2, 'result' => []], $this->readResponse());
+
+        $response = $this->readResponse();
+        $this->assertSame(1, self::at($response, 'id'));
+        $this->assertStringContainsString('Exit code 2: issues found.', self::string($response, 'result', 'content', 0, 'text'));
+    }
+
+    public function testACancelledCheckIsStoppedAndGetsNoResponse(): void
+    {
+        $this->initPsalm();
+        $this->startServer();
+
+        $this->send(['jsonrpc' => '2.0', 'id' => 1, 'method' => 'tools/call', 'params' => [
+            'name' => 'psalm_check',
+            'arguments' => (object) [],
+        ]]);
+        $this->send(['jsonrpc' => '2.0', 'method' => 'notifications/cancelled', 'params' => ['requestId' => 1]]);
+        // it waits for the first check to stop
+        $this->send(['jsonrpc' => '2.0', 'id' => 2, 'method' => 'tools/call', 'params' => [
+            'name' => 'psalm_check',
+            'arguments' => (object) [],
+        ]]);
+        $this->send(['jsonrpc' => '2.0', 'id' => 3, 'method' => 'ping']);
+
+        $this->assertSame(3, self::at($this->readResponse(), 'id'));
+        $this->assertSame(2, self::at($this->readResponse(), 'id'));
+    }
+
+    public function testClosingTheInputStopsTheCheckThatRuns(): void
+    {
+        $this->initPsalm();
+        $this->startServer();
+
+        $this->send(['jsonrpc' => '2.0', 'id' => 1, 'method' => 'tools/call', 'params' => [
+            'name' => 'psalm_check',
+            'arguments' => (object) [],
+        ]]);
+        $this->send(['jsonrpc' => '2.0', 'id' => 2, 'method' => 'ping']);
+        $this->assertSame(2, self::at($this->readResponse(), 'id'));
+
+        if (is_resource($this->stdin)) {
+            fclose($this->stdin);
+        }
+
+        $this->assertNull($this->readLine(), 'the check was answered');
+    }
+
     public function testWithoutAConfigTheToolsSayHowToCreateOne(): void
     {
         $this->startServer();
@@ -371,6 +429,37 @@ final class PsalmMcpEndToEndTest extends PsalmEndToEndTestCase
         $id = ++$this->id;
         $this->send(['jsonrpc' => '2.0', 'id' => $id, 'method' => $method, 'params' => (object) $params]);
 
+        $response = $this->readResponse();
+        $this->assertSame($id, self::at($response, 'id'));
+        /** @var mixed $result */
+        $result = self::at($response, 'result');
+        $this->assertIsArray($result);
+
+        return $result;
+    }
+
+    /**
+     * @return array<array-key, mixed>
+     */
+    private function readResponse(): array
+    {
+        $line = $this->readLine();
+        if ($line === null) {
+            throw new RuntimeException('psalm-mcp stopped: ' . (string) file_get_contents($this->stderr));
+        }
+
+        /** @var mixed $response */
+        $response = json_decode($line, true, 512, JSON_THROW_ON_ERROR);
+        $this->assertIsArray($response, $line);
+
+        return $response;
+    }
+
+    /**
+     * The next line of the output, null once the server closed it
+     */
+    private function readLine(): ?string
+    {
         if (!isset($this->pipes[1])) {
             throw new RuntimeException('psalm-mcp is not running');
         }
@@ -382,18 +471,8 @@ final class PsalmMcpEndToEndTest extends PsalmEndToEndTestCase
         }
 
         $line = fgets($this->pipes[1]);
-        if ($line === false) {
-            throw new RuntimeException('psalm-mcp stopped: ' . (string) file_get_contents($this->stderr));
-        }
 
-        /** @var mixed $response */
-        $response = json_decode($line, true, 512, JSON_THROW_ON_ERROR);
-        $this->assertSame($id, self::at($response, 'id'));
-        /** @var mixed $result */
-        $result = self::at($response, 'result');
-        $this->assertIsArray($result, $line);
-
-        return $result;
+        return $line === false ? null : $line;
     }
 
     private function notify(string $method): void

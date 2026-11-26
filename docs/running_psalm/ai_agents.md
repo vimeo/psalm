@@ -90,6 +90,7 @@ ERROR: PossiblyNullReference - src/Greeter.php:8:23 - Cannot call method getName
 ```
 
 Without `paths`, it runs `psalm` on the whole project, which also reports unused code and taint paths between files.
+The server answers other calls while that run lasts, and stops it if the agent cancels the call.
 
 `psalm_inspect` with `file: "src/Greeter.php", line: 8, text: "getName"` shows the type Psalm infers there, and what
 the name refers to:

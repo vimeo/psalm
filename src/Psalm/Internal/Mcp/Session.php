@@ -4,6 +4,13 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Mcp;
 
+use Amp\Cancellation;
+use Amp\CancelledException;
+use Amp\Process\Process;
+use Amp\Process\ProcessException;
+use Amp\Sync\LocalMutex;
+use Amp\Sync\Mutex;
+use Closure;
 use InvalidArgumentException;
 use LanguageServerProtocol\Position;
 use LanguageServerProtocol\Range;
@@ -15,7 +22,6 @@ use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\BaselineMatcher;
 use Psalm\Internal\CacheMode;
 use Psalm\Internal\Cli\ProjectBootstrap;
-use Psalm\Internal\Cli\Psalm;
 use Psalm\Internal\CliUtils;
 use Psalm\Internal\Composer;
 use Psalm\Internal\LanguageServer\PHPMarkdownContent;
@@ -34,31 +40,28 @@ use Psalm\Report\ConsoleReport;
 use Psalm\Report\ReportOptions;
 use Throwable;
 
+use function Amp\ByteStream\buffer;
+use function Amp\async;
 use function array_keys;
 use function array_slice;
 use function clearstatcache;
 use function count;
 use function explode;
-use function fclose;
 use function filemtime;
 use function filesize;
 use function hash_file;
 use function implode;
 use function is_dir;
 use function is_file;
-use function is_resource;
 use function is_string;
 use function ksort;
 use function ltrim;
 use function preg_replace;
-use function proc_close;
-use function proc_open;
 use function realpath;
 use function rtrim;
 use function str_repeat;
 use function str_replace;
 use function str_starts_with;
-use function stream_get_contents;
 use function strlen;
 use function strpos;
 use function strrpos;
@@ -114,9 +117,18 @@ final class Session
     private array $analyzed_in = [];
 
     /**
+     * Held while a tool uses the codebase, which analyses files in fibers when it has several threads
+     */
+    private readonly Mutex $codebase_mutex;
+
+    /**
+     * Held while `psalm` checks the whole project, so that two runs don't share its cache and memory
+     */
+    private readonly Mutex $project_mutex;
+
+    /**
      * @param array<string,array<string,array{o:int, s: list<string>}>> $issue_baseline
      * @param list<string> $psalm_command the `psalm` run that checks the whole project
-     * @psalm-capabilities read-props
      */
     public function __construct(
         private readonly ProjectAnalyzer $project_analyzer,
@@ -126,6 +138,8 @@ final class Session
     ) {
         $this->codebase = $project_analyzer->getCodebase();
         $this->config = $this->codebase->config;
+        $this->codebase_mutex = new LocalMutex();
+        $this->project_mutex = new LocalMutex();
     }
 
     /**
@@ -159,15 +173,14 @@ final class Session
             $codebase->reportUnusedCode();
         }
 
-        $threads = Psalm::getThreads($options, $config, false);
-
+        // one thread, like the language server: a worker forked while the server reads stdin would read it too
         $project_analyzer = new ProjectAnalyzer(
             $config,
             $providers,
             null,
             [],
-            $threads,
-            Psalm::getThreads($options, $config, true),
+            1,
+            1,
             $progress,
             $codebase,
         );
@@ -194,12 +207,78 @@ final class Session
      *
      * @param list<string> $paths
      */
-    public function check(array $paths, bool $show_info): string
+    public function check(array $paths, bool $show_info, Cancellation $cancellation): string
     {
         if ($paths === []) {
-            return $this->checkProject($show_info);
+            return self::exclusive(
+                $this->project_mutex,
+                $cancellation,
+                fn(): string => $this->checkProject($show_info, $cancellation),
+            );
         }
 
+        return self::exclusive(
+            $this->codebase_mutex,
+            $cancellation,
+            fn(): string => $this->checkFiles($paths, $show_info),
+        );
+    }
+
+    /**
+     * What Psalm knows about the code at a position: the type of each expression there, and the declaration
+     * and location of the class, function, method, property or constant it refers to
+     */
+    public function inspect(string $file, int $line, ?int $column, ?string $text, Cancellation $cancellation): string
+    {
+        return self::exclusive(
+            $this->codebase_mutex,
+            $cancellation,
+            fn(): string => $this->inspectPosition($file, $line, $column, $text),
+        );
+    }
+
+    /**
+     * Where a class, function, method, property or class constant is used in the project
+     */
+    public function references(
+        ?string $symbol,
+        ?string $file,
+        ?int $line,
+        ?int $column,
+        ?string $text,
+        Cancellation $cancellation,
+    ): string {
+        return self::exclusive(
+            $this->codebase_mutex,
+            $cancellation,
+            fn(): string => $this->findReferences($symbol, $file, $line, $column, $text),
+        );
+    }
+
+    /**
+     * @template T
+     * @param Closure(): T $work
+     * @return T
+     */
+    private static function exclusive(Mutex $mutex, Cancellation $cancellation, Closure $work): mixed
+    {
+        $lock = $mutex->acquire();
+
+        try {
+            // the client may have cancelled the request while it waited
+            $cancellation->throwIfRequested();
+
+            return $work();
+        } finally {
+            $lock->release();
+        }
+    }
+
+    /**
+     * @param list<string> $paths
+     */
+    private function checkFiles(array $paths, bool $show_info): string
+    {
         $this->sync();
 
         $files = [];
@@ -256,11 +335,7 @@ final class Session
             . ' is checked (call this tool without paths).';
     }
 
-    /**
-     * What Psalm knows about the code at a position: the type of each expression there, and the declaration
-     * and location of the class, function, method, property or constant it refers to
-     */
-    public function inspect(string $file, int $line, ?int $column, ?string $text): string
+    private function inspectPosition(string $file, int $line, ?int $column, ?string $text): string
     {
         $file_path = $this->resolveFile($file);
         $this->analyzeForQuery($file_path);
@@ -317,10 +392,7 @@ final class Session
         return implode("\n\n", $output);
     }
 
-    /**
-     * Where a class, function, method, property or class constant is used in the project
-     */
-    public function references(
+    private function findReferences(
         ?string $symbol,
         ?string $file,
         ?int $line,
@@ -610,23 +682,34 @@ final class Session
      * Runs `psalm` on the whole project, so that the result is the one CI gets: with unused code, taint paths
      * between files and the project's cache
      */
-    private function checkProject(bool $show_info): string
+    private function checkProject(bool $show_info, Cancellation $cancellation): string
     {
         $command = $this->psalm_command;
         $command[] = '--show-info=' . ($show_info ? 'true' : 'false');
 
-        // one pipe, so that a full stderr can't block the run while its stdout is read
-        $descriptors = [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['redirect', 1]];
-        $process = proc_open($command, $descriptors, $pipes, $this->base_dir);
-
-        if (!is_resource($process) || !isset($pipes[0], $pipes[1])) {
-            throw new ToolError('Could not run ' . implode(' ', $command));
+        try {
+            $process = Process::start($command, $this->base_dir);
+        } catch (ProcessException $e) {
+            throw new ToolError('Could not run ' . implode(' ', $command) . ': ' . $e->getMessage());
         }
 
-        fclose($pipes[0]);
-        $output = trim((string) stream_get_contents($pipes[1]));
-        fclose($pipes[1]);
-        $exit_code = proc_close($process);
+        $process->getStdin()->close();
+
+        // both at once, so that a full pipe can't block the run
+        $stdout = async(static fn(): string => buffer($process->getStdout()));
+        $stderr = async(static fn(): string => buffer($process->getStderr()));
+
+        try {
+            $exit_code = $process->join($cancellation);
+        } catch (CancelledException $e) {
+            $process->kill();
+            $stdout->ignore();
+            $stderr->ignore();
+
+            throw $e;
+        }
+
+        $output = trim($stdout->await() . "\n" . $stderr->await());
 
         if ($exit_code !== 0 && $exit_code !== 2) {
             throw new ToolError('Psalm failed (exit code ' . $exit_code . '), this says nothing about the code:'

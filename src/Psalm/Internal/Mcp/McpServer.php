@@ -4,24 +4,34 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Mcp;
 
+use Amp\ByteStream\ReadableResourceStream;
+use Amp\ByteStream\StreamException;
+use Amp\ByteStream\WritableResourceStream;
+use Amp\Cancellation;
+use Amp\CancelledException;
+use Amp\DeferredCancellation;
+use Amp\Future;
 use JsonException;
 use Psalm\Config\IssueHandler;
 use Psalm\Internal\CliUtils;
+use Revolt\EventLoop;
+use Revolt\EventLoop\Driver\StreamSelectDriver;
 use Throwable;
 use stdClass;
 
+use function Amp\async;
+use function array_filter;
 use function array_is_list;
 use function array_key_exists;
 use function array_map;
+use function array_pop;
 use function array_values;
 use function class_exists;
 use function constant;
 use function defined;
 use function dirname;
-use function fflush;
-use function fgets;
+use function explode;
 use function file_get_contents;
-use function fwrite;
 use function in_array;
 use function is_array;
 use function is_bool;
@@ -40,7 +50,8 @@ use const JSON_UNESCAPED_SLASHES;
 use const JSON_UNESCAPED_UNICODE;
 
 /**
- * A Model Context Protocol server: JSON-RPC messages, one per line, on stdin and stdout
+ * A Model Context Protocol server: JSON-RPC messages, one per line, on stdin and stdout. Each message is handled in
+ * its own fiber, so that a ping or a cancellation is answered while Psalm checks the project.
  *
  * @see https://modelcontextprotocol.io/specification
  * @internal
@@ -59,6 +70,13 @@ final class McpServer
     to the project root. Lines and columns start at 1.
     TXT;
 
+    /**
+     * The requests in progress, by id, to cancel them
+     *
+     * @var array<string, DeferredCancellation>
+     */
+    private array $requests = [];
+
     public function __construct(
         private readonly ?Session $session,
         private readonly ?string $unavailable_reason,
@@ -66,19 +84,56 @@ final class McpServer
     }
 
     /**
+     * Serves the client until it closes the input
+     *
      * @param resource $input
      * @param resource $output
      */
     public function run($input, $output): void
     {
-        while (($line = fgets($input)) !== false) {
-            $response = $this->handleLine($line);
-
-            if ($response !== null) {
-                fwrite($output, $response . "\n");
-                fflush($output);
-            }
+        // the analysis forks its workers while this loop runs, which a driver with a native handle can't do (see Pool)
+        if (EventLoop::getDriver()->getHandle() !== null) {
+            EventLoop::setDriver(new StreamSelectDriver());
         }
+
+        $input = new ReadableResourceStream($input);
+        $output = new WritableResourceStream($output);
+
+        /** @var array<int, Future<void>> $handlers */
+        $handlers = [];
+        $buffer = '';
+
+        do {
+            $chunk = $input->read();
+            $buffer .= $chunk ?? "\n";
+            $lines = explode("\n", $buffer);
+            $buffer = array_pop($lines);
+
+            foreach ($lines as $line) {
+                $handlers[] = async(function () use ($line, $output): void {
+                    $response = $this->handleLine($line);
+
+                    if ($response === null) {
+                        return;
+                    }
+
+                    try {
+                        $output->write($response . "\n");
+                    } catch (StreamException) {
+                        // the client is gone
+                    }
+                });
+            }
+
+            $handlers = array_filter($handlers, static fn(Future $handler): bool => !$handler->isComplete());
+        } while ($chunk !== null);
+
+        // closing the input is how a client stops the server
+        foreach ($this->requests as $request) {
+            $request->cancel();
+        }
+
+        Future\awaitAll($handlers);
     }
 
     /**
@@ -101,14 +156,10 @@ final class McpServer
 
         // batches were part of the 2025-03-26 revision
         if (is_array($message) && $message !== [] && array_is_list($message)) {
-            $responses = [];
-            /** @var mixed $item */
-            foreach ($message as $item) {
-                $response = $this->handleMessage($item);
-                if ($response !== null) {
-                    $responses[] = $response;
-                }
-            }
+            $responses = array_values(array_filter(Future\await(array_map(
+                fn(mixed $item): Future => async($this->handleMessage(...), $item),
+                $message,
+            ))));
 
             return $responses === [] ? null : self::encode($responses);
         }
@@ -133,6 +184,10 @@ final class McpServer
         }
 
         if (!array_key_exists('id', $message)) {
+            if ($message['method'] === 'notifications/cancelled') {
+                $this->cancel($message['params'] ?? null);
+            }
+
             // notifications: initialized, cancelled, roots changed, … need no answer
             return null;
         }
@@ -151,19 +206,49 @@ final class McpServer
             return self::error($id, McpError::INVALID_PARAMS, 'Invalid params');
         }
 
+        $key = self::getRequestKey($id);
+        $request = new DeferredCancellation();
+        $this->requests[$key] = $request;
+
         try {
             $result = match ($message['method']) {
                 'initialize' => $this->initialize($params),
                 'ping' => new stdClass(),
                 'tools/list' => ['tools' => self::getToolDefinitions()],
-                'tools/call' => $this->callTool($params),
+                'tools/call' => $this->callTool($params, $request->getCancellation()),
                 default => throw new McpError(McpError::METHOD_NOT_FOUND, 'Method not found: ' . $message['method']),
             };
         } catch (McpError $e) {
             return self::error($id, $e->getCode(), $e->getMessage());
+        } catch (CancelledException) {
+            return null;
+        } finally {
+            if (($this->requests[$key] ?? null) === $request) {
+                unset($this->requests[$key]);
+            }
         }
 
-        return ['jsonrpc' => '2.0', 'id' => $id, 'result' => $result];
+        // a cancelled request gets no response, also if it was too late to stop it
+        return $request->isCancelled() ? null : ['jsonrpc' => '2.0', 'id' => $id, 'result' => $result];
+    }
+
+    private function cancel(mixed $params): void
+    {
+        /** @var mixed $id */
+        $id = is_array($params) ? $params['requestId'] ?? null : null;
+
+        if (is_int($id) || is_string($id)) {
+            ($this->requests[self::getRequestKey($id)] ?? null)?->cancel();
+        }
+    }
+
+    /**
+     * @psalm-pure
+     */
+    private static function getRequestKey(int|string $id): string
+    {
+        // the request 1 isn't the request "1"
+        return (is_int($id) ? 'n' : 's') . $id;
     }
 
     /**
@@ -190,7 +275,7 @@ final class McpServer
      * @param array<array-key, mixed> $params
      * @return array<string, mixed>
      */
-    private function callTool(array $params): array
+    private function callTool(array $params, Cancellation $cancellation): array
     {
         $name = $params['name'] ?? null;
         /** @var mixed $arguments */
@@ -209,8 +294,10 @@ final class McpServer
         }
 
         try {
-            $text = $this->runTool($name, $arguments);
+            $text = $this->runTool($name, $arguments, $cancellation);
             $is_error = false;
+        } catch (CancelledException $e) {
+            throw $e;
         } catch (ToolError $e) {
             $text = $e->getMessage();
             $is_error = true;
@@ -229,7 +316,7 @@ final class McpServer
     /**
      * @param array<array-key, mixed> $arguments
      */
-    private function runTool(string $name, array $arguments): string
+    private function runTool(string $name, array $arguments, Cancellation $cancellation): string
     {
         if ($name === 'psalm_explain') {
             return self::explain(self::getString($arguments, 'issue') ?? throw new ToolError('`issue` is required.'));
@@ -243,12 +330,14 @@ final class McpServer
             'psalm_check' => $this->session->check(
                 self::getPaths($arguments),
                 self::getBool($arguments, 'show_info') ?? false,
+                $cancellation,
             ),
             'psalm_inspect' => $this->session->inspect(
                 self::getString($arguments, 'file') ?? throw new ToolError('`file` is required.'),
                 self::getInt($arguments, 'line') ?? throw new ToolError('`line` is required.'),
                 self::getInt($arguments, 'column'),
                 self::getString($arguments, 'text'),
+                $cancellation,
             ),
             default => $this->session->references(
                 self::getString($arguments, 'symbol'),
@@ -256,6 +345,7 @@ final class McpServer
                 self::getInt($arguments, 'line'),
                 self::getInt($arguments, 'column'),
                 self::getString($arguments, 'text'),
+                $cancellation,
             ),
         };
     }
