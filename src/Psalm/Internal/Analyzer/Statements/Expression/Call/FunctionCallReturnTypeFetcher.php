@@ -47,6 +47,7 @@ use Psalm\Plugin\EventHandler\Event\AfterFunctionCallAnalysisEvent;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\FunctionStorage;
+use Psalm\Storage\MethodStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
@@ -495,6 +496,7 @@ final class FunctionCallReturnTypeFetcher
      *    analyzed body and registers any @psalm-taint-sink parameters as sinks.
      *
      * @param non-empty-lowercase-string $callable_id
+     * @param array<string, DataFlowNode> $bound_receivers
      */
     public static function taintCallableReturnType(
         StatementsAnalyzer $statements_analyzer,
@@ -502,6 +504,7 @@ final class FunctionCallReturnTypeFetcher
         PhpParser\Node\Expr $real_stmt,
         string $callable_id,
         Context $context,
+        array $bound_receivers = [],
     ): void {
         if ($stmt->isFirstClassCallable()) {
             return;
@@ -605,6 +608,10 @@ final class FunctionCallReturnTypeFetcher
             $node_location,
         ) ? $node_location : null;
 
+        foreach ($bound_receivers as $bound_receiver) {
+            self::taintBoundReceiver($graph, $storage, $target_id, $specialization_location, $bound_receiver);
+        }
+
         // Return value: taint sources (@psalm-taint-source), argument-to-return flows
         // (@psalm-flow), and the implicit param->return flow of an analyzed function body.
         // The body links its per-argument entry nodes (getForMethodArgument) to this return
@@ -670,6 +677,29 @@ final class FunctionCallReturnTypeFetcher
         );
 
         $statements_analyzer->node_data->setType($real_stmt, $stmt_type);
+    }
+
+    private static function taintBoundReceiver(
+        TaintFlowGraph $graph,
+        FunctionLikeStorage $storage,
+        string $target_id,
+        ?CodeLocation $specialization_location,
+        ?DataFlowNode $bound_receiver,
+    ): void {
+        if (!$storage instanceof MethodStorage || $storage->is_static || !$storage->specialize_call
+            || !$storage->location || !$specialization_location
+            || $bound_receiver === null
+        ) {
+            return;
+        }
+
+        $receiver = DataFlowNode::getForAssignment(
+            '$this in ' . (string) MethodIdentifier::wrap($target_id),
+            $storage->location,
+            DataFlowNode::getSpecializationKey($specialization_location),
+        );
+        $graph->addNode($receiver);
+        $graph->addPath($bound_receiver, $receiver, '=');
     }
 
     /**
@@ -805,6 +835,7 @@ final class FunctionCallReturnTypeFetcher
                     $specialization_location,
                     $callable_id,
                     $callable_location,
+                    $atomic instanceof TClosure ? $atomic->bound_receiver : null,
                 );
             }
         }
@@ -822,6 +853,7 @@ final class FunctionCallReturnTypeFetcher
         ?CodeLocation $specialization_location,
         string $callable_id,
         CodeLocation $callable_location,
+        ?DataFlowNode $bound_receiver,
     ): void {
         $return_node = DataFlowNode::getForCallableParamReturn(
             $cased_method_id,
@@ -842,6 +874,14 @@ final class FunctionCallReturnTypeFetcher
                 $callable_storage,
                 $callable_location,
             ) ? $callable_location : null;
+
+            self::taintBoundReceiver(
+                $graph,
+                $callable_storage,
+                $target_id,
+                $callable_specialization_location,
+                $bound_receiver,
+            );
 
             $callable_return_node = DataFlowNode::getForMethodReturn(
                 $target_id,

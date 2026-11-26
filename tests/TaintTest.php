@@ -5273,6 +5273,30 @@ final class TaintTest extends TestCase
                     $tainted = new Url((string) $_GET["url"]);
                     fetch(new Url("https://example.com/"));',
             ],
+            'literalMethodOfTaintedReceiver' => [
+                'code' => '<?php // --taint-analysis
+                    final readonly class Loader {
+                        public function __construct(private string $p) {}
+                        public function name(): string { return "safe"; }
+                    }
+                    $o = new Loader((string) $_GET["x"]);
+                    echo call_user_func([$o, "name"]);
+                    $m = [$o, "name"];
+                    echo $m();',
+                'php_version' => '8.2',
+            ],
+            'boundMethodOfCleanReceiver' => [
+                'code' => '<?php // --taint-analysis
+                    final readonly class Loader {
+                        public function __construct(private string $p) {}
+                        public function name(): string { return $this->p; }
+                    }
+                    $dirty = (new Loader((string) $_GET["x"]))->name(...);
+                    $clean = (new Loader("safe"))->name(...);
+                    $dirty();
+                    echo $clean();',
+                'php_version' => '8.2',
+            ],
             'dontTaintAReadonlyObjectBuiltFromAnotherCallsArgument' => [
                 // A readonly object cannot change after its construction: its properties hold its own taints
                 'code' => '<?php // --taint-analysis
@@ -11344,6 +11368,52 @@ final class TaintTest extends TestCase
                     echo $second->text;',
                 'error_message' => 'TaintedHtml',
                 'php_version' => '8.1',
+            ],
+            'taintReadonlyPropertyInitializedAfterConstruction' => [
+                'code' => '<?php // --taint-analysis
+                    final readonly class LateInit {
+                        public function __construct(public string $value) {}
+                        /** @param array{value: string} $data */
+                        public function __unserialize(array $data): void { $this->value = $data["value"]; }
+                    }
+                    $obj = (new ReflectionClass(LateInit::class))->newInstanceWithoutConstructor();
+                    $obj->__unserialize(["value" => (string) $_GET["x"]]);
+                    echo $obj->value;',
+                'error_message' => 'TaintedHtml',
+                'php_version' => '8.2',
+            ],
+            'boundMethodOfTaintedReceiverPassedAsCallback' => [
+                'code' => '<?php // --taint-analysis
+                    final readonly class Loader {
+                        public function __construct(private string $p) {}
+                        public function name(): string { return $this->p; }
+                    }
+                    /** @param callable():string $callback */
+                    function run(callable $callback): string { return $callback(); }
+                    echo run((new Loader((string) $_GET["x"]))->name(...));',
+                'error_message' => 'TaintedHtml',
+                'php_version' => '8.2',
+            ],
+            'taintedMethodNameWithObjectReceiver' => [
+                'code' => '<?php // --taint-analysis
+                    final readonly class Loader {
+                        public function name(): string { return "safe"; }
+                    }
+                    $callback = [new Loader(), (string) $_GET["method"]];
+                    $callback();',
+                'error_message' => 'TaintedCallable',
+                'php_version' => '8.2',
+            ],
+            'boundMethodOfTaintedReceiver' => [
+                'code' => '<?php // --taint-analysis
+                    final readonly class Loader {
+                        public function __construct(private string $p) {}
+                        public function name(): string { return $this->p; }
+                    }
+                    $f = (new Loader((string) $_GET["x"]))->name(...);
+                    echo $f();',
+                'error_message' => 'TaintedHtml',
+                'php_version' => '8.2',
             ],
             'taintReadonlyPropertyOnFactoryResult' => [
                 'code' => '<?php // --taint-analysis

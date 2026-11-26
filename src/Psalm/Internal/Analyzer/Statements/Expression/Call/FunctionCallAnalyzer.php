@@ -589,6 +589,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                 $real_stmt,
                 $callable_id,
                 $context,
+                $function_call_info->bound_receivers[$callable_id] ?? [],
             );
         }
 
@@ -1815,7 +1816,10 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                         // of them is re-dispatched on invocation (an over-approximation, which is
                         // the sound direction for taint). Callables with no known id contribute
                         // nothing to re-dispatch and are simply skipped.
-                        $function_call_info->addCallableId($var_type_part->callable_id);
+                        $function_call_info->addCallableId(
+                            $var_type_part->callable_id,
+                            $var_type_part instanceof TClosure ? $var_type_part->bound_receiver : null,
+                        );
                     }
 
                     $function_call_info->function_exists = true;
@@ -1971,7 +1975,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                     $statements_analyzer->getSuppressedIssues(),
                     'TaintedInput',
                 )
-                && !self::isOnlyObjects($stmt_name_type)
+                && !self::hasFixedCallableTarget($stmt_name_type)
             ) {
                 assert($statements_analyzer->data_flow_graph !== null);
                 $arg_location = new CodeLocation($statements_analyzer->getSource(), $function_name);
@@ -2745,14 +2749,21 @@ final class FunctionCallAnalyzer extends CallAnalyzer
     }
 
     /**
-     * Only a string or an array can name the function a call calls: a closure or an invokable object can't be
-     * chosen by the client, whatever data it was built from.
+     * Data held by an object cannot select the method invoked on it when its name is fixed.
      *
      * @psalm-pure
      */
-    private static function isOnlyObjects(Union $type): bool
+    private static function hasFixedCallableTarget(Union $type): bool
     {
         foreach ($type->getAtomicTypes() as $atomic) {
+            if ($atomic instanceof TKeyedArray
+                && isset($atomic->properties[0], $atomic->properties[1])
+                && $atomic->properties[0]->isObjectType()
+                && $atomic->properties[1]->isSingleStringLiteral()
+            ) {
+                continue;
+            }
+
             if (!$atomic instanceof TNamedObject && !$atomic instanceof TObject) {
                 return false;
             }

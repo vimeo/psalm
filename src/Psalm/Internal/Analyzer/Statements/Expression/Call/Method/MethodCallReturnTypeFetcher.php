@@ -93,6 +93,21 @@ final class MethodCallReturnTypeFetcher
                     $statements_analyzer,
                 );
 
+                $receiver_nodes = $statements_analyzer->node_data->getType($stmt->var)?->parent_nodes ?? [];
+                if ($method_storage->specialize_call && !$method_storage->is_static && $receiver_nodes !== []
+                    && ($graph = $statements_analyzer->getTaintFlowGraphWithSuppressed())
+                ) {
+                    $receiver = DataFlowNode::getForAssignment(
+                        'bound receiver of ' . $cased_method_id,
+                        new CodeLocation($statements_analyzer, $stmt),
+                    );
+                    $graph->addNode($receiver);
+                    foreach ($receiver_nodes as $parent_node) {
+                        $graph->addPath($parent_node, $receiver, '=');
+                    }
+                    $closure = $closure->withBoundReceiver($receiver, strtolower((string) $method_id));
+                }
+
                 return self::getFirstClassCallableType(
                     $codebase,
                     $stmt,
@@ -572,9 +587,7 @@ final class MethodCallReturnTypeFetcher
                 $parent_nodes = $receiver_type->parent_nodes;
 
                 $var_node = $var_id !== null
-                    && ($method_id->method_name === "__construct"
-                        || !$codebase->classlike_storage_provider->get($method_id->fq_class_name)
-                            ->cannot_change_once_constructed)
+                    && (!$method_storage->preserves_receiver_taints || $added_taints !== 0 || $removed_taints !== 0)
                     ? DataFlowNode::getForAssignment($var_id, new CodeLocation($statements_analyzer, $var_expr))
                     : null;
 
@@ -661,8 +674,8 @@ final class MethodCallReturnTypeFetcher
                         $removed_taints,
                     );
 
-                    // a stubbed method has no body to take `$this` through: the object keeps what it has
-                    if ($method_storage->stubbed) {
+                    // A stub or a method that preserves the receiver passes its incoming taints through.
+                    if ($method_storage->stubbed || $method_storage->preserves_receiver_taints) {
                         $taint_flow_graph->addPath(
                             InheritedMethodTaints::withMethodSuffix(
                                 $declaring_method_id,

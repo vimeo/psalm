@@ -772,7 +772,15 @@ final class Populator
         // construction rather than those of every object of its class
         if (!$storage->specialize_instance && $this->cannotChangeOnceConstructed($storage)) {
             $storage->specialize_instance = true;
-            $storage->cannot_change_once_constructed = true;
+            foreach ($storage->methods as $name => $method) {
+                // Readonly properties can be initialized late and can hold mutable objects.
+                if (!$method->is_static && $name !== '__construct'
+                    && ($method->writes_only_this_properties || $method->isMutationFree())
+                    && $method->this_property_mutations === null
+                ) {
+                    $method->preserves_receiver_taints = true;
+                }
+            }
         }
 
         if ($storage->specialize_instance) {
