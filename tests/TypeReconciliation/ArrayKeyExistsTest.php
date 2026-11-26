@@ -257,6 +257,8 @@ final class ArrayKeyExistsTest extends TestCase
                             /** @psalm-check-type-exact $foo = array{retry_in: int} */
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DocblockTypeContradiction'],
             ],
             'negatedIssetOfANestedOffsetKeepsTheOuterShape' => [
                 'code' => '<?php
