@@ -481,7 +481,12 @@ final class ReturnAnalyzer
                 // a docblock type that the signature rules out is reported where the function is checked; what the
                 // body returns is checked against what PHP enforces
                 if ($storage->signature_return_type
-                    && ReturnTypeAnalyzer::isDocblockReturnTypeRejected($codebase, $storage, $context->self)
+                    && ReturnTypeAnalyzer::isDocblockReturnTypeRejected(
+                        $codebase,
+                        $storage,
+                        $context->self,
+                        $statements_analyzer->getSource() instanceof ClosureAnalyzer,
+                    )
                 ) {
                     $declared_return_type = $storage->signature_return_type;
                 }

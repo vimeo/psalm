@@ -285,6 +285,40 @@ final class AnnotationTest extends TestCase
         );
     }
 
+    public function testReturnOfAClosureWithAMismatchingDocblockIsCheckedAgainstItsDocblock(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                $c = /** @return int */ function (): string {
+                    return "a";
+                };
+
+                $d = /** @return int */ fn(): string => "a";
+
+                echo $c() . $d();',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        self::assertSame(
+            [
+                ['InvalidReturnStatement', 3],
+                ['InvalidReturnType', 2],
+                ['InvalidReturnStatement', 6],
+                ['InvalidReturnType', 6],
+            ],
+            array_map(
+                static fn(IssueData $issue): array => [$issue->type, $issue->line_from],
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
+        );
+    }
+
     public function testValidDocblockReturnTypeContainedBySignatureIsStillChecked(): void
     {
         $this->project_analyzer->getConfig()->throw_exception = false;

@@ -209,6 +209,7 @@ final class ReturnTypeAnalyzer
                 $codebase,
                 $function_like_storage,
                 $fq_class_name ?? $source->getFQCLN(),
+                $function instanceof Closure || $function instanceof ArrowFunction,
             )
         ) {
             $return_type = $function_like_storage->signature_return_type;
@@ -1168,14 +1169,18 @@ final class ReturnTypeAnalyzer
 
     /**
      * Whether the docblock return type of a function-like is ruled out by its signature type, which is reported as a
-     * MismatchingDocblockReturnType: the docblock type is then rejected and the signature type is the declared one
+     * MismatchingDocblockReturnType: the docblock type is then rejected and the signature type is the declared one.
+     * That is only where checkReturnType() reports it: not for a closure or an arrow function.
      */
     public static function isDocblockReturnTypeRejected(
         Codebase $codebase,
         FunctionLikeStorage $storage,
         ?string $self_class,
+        bool $is_closure,
     ): bool {
-        if (!$storage->return_type
+        if ($is_closure
+            || !$storage->return_type
+            || !$storage->return_type_location
             || !$storage->signature_return_type
             || $storage->signature_return_type === $storage->return_type
         ) {
