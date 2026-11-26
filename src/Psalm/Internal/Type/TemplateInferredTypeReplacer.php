@@ -369,19 +369,47 @@ final class TemplateInferredTypeReplacer
             $atomic_type instanceof TTemplateParamClass,
             $atomic_type instanceof TTemplateKeyOf,
             $atomic_type instanceof TTemplateValueOf,
+            $atomic_type instanceof TTemplateParam
+                => $template_result->isStarInput($atomic_type->param_name, $atomic_type->defining_class)
+                    ? self::isNeverTemplateAsInput(
+                        $atomic_type->param_name,
+                        $atomic_type->defining_class,
+                        $template_result,
+                    )
+                    : $atomic_type instanceof TTemplateParam
+                        && self::isBoundedByAStarTemplate($atomic_type->as, $template_result),
+            $atomic_type instanceof TTemplateIndexedAccess
+                => self::isNeverTemplateAsInput(
+                    $atomic_type->array_param_name,
+                    $atomic_type->defining_class,
+                    $template_result,
+                ) || self::isNeverTemplateAsInput(
+                    $atomic_type->offset_param_name,
+                    $atomic_type->defining_class,
+                    $template_result,
+                ),
+            // unlike the types above, these do not grow with the template: what they give for the `X` of a
+            // `contravariant X` may not be what they give for the unknown type around it
             $atomic_type instanceof TTemplatePropertiesOf,
             $atomic_type instanceof TConditional
                 => $template_result->isStarInput($atomic_type->param_name, $atomic_type->defining_class),
-            $atomic_type instanceof TTemplateParam
-                => $template_result->isStarInput($atomic_type->param_name, $atomic_type->defining_class)
-                    ? $template_result->getStarInputBound($atomic_type->param_name, $atomic_type->defining_class)
-                        ->isNever()
-                    : self::isBoundedByAStarTemplate($atomic_type->as, $template_result),
-            $atomic_type instanceof TTemplateIndexedAccess
-                => $template_result->isStarInput($atomic_type->array_param_name, $atomic_type->defining_class)
-                    || $template_result->isStarInput($atomic_type->offset_param_name, $atomic_type->defining_class),
             default => false,
         };
+    }
+
+    /**
+     * Whether no value is of a template bound to a `*`, a `covariant` or a `contravariant` argument as an input: what
+     * is written to a `contravariant X` is `X`
+     *
+     * @psalm-pure
+     */
+    private static function isNeverTemplateAsInput(
+        string $template_name,
+        string $defining_class,
+        TemplateResult $template_result,
+    ): bool {
+        return $template_result->isStarInput($template_name, $defining_class)
+            && $template_result->getStarInputBound($template_name, $defining_class)->isNever();
     }
 
     /**

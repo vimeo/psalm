@@ -146,64 +146,19 @@ final class MissingMethodCallHandler
         $mixin_type = $mixin['type'] ?? null;
 
         if ($stmt->isFirstClassCallable()) {
-            $found_method_and_class_storage = isset($pseudo_method_class_storage->pseudo_methods[$method_name_lc])
-                ? self::findPseudoMethodAndClassStorages($codebase, $pseudo_method_class_storage, $method_name_lc)
-                : null;
-
-            if ($found_method_and_class_storage) {
-                $result->has_valid_method_call_type = true;
-                $result->existent_method_ids[$method_id->__toString()] = true;
-                $result->return_type = self::createFirstClassCallableReturnType(
-                    $statements_analyzer,
-                    $codebase,
-                    $context,
-                    $stmt,
-                    $method_id,
-                    new TClosure(
-                        $found_method_and_class_storage[0]->params,
-                        $found_method_and_class_storage[0]->return_type,
-                        $found_method_and_class_storage[0]->capabilities,
-                    ),
-                    $found_method_and_class_storage[0]->template_types ?? [],
-                    $found_method_and_class_storage[1],
-                    $pseudo_method_class_storage,
-                    $mixin_type ?? $lhs_type_part,
-                );
-            } elseif (!$class_storage->hasSealedMethods($config)) {
-                // PHP creates the callable of a method the class forwards to `__call`
-                $result->has_valid_method_call_type = true;
-                $result->existent_method_ids[$method_id->__toString()] = true;
-
-                $call_method_id = new MethodIdentifier($fq_class_name, '__call');
-                $call_declaring_id = $codebase->methods->getDeclaringMethodId($call_method_id);
-
-                if ($call_declaring_id !== null && $codebase->methods->hasStorage($call_declaring_id)) {
-                    $call_storage = $codebase->methods->getStorage($call_declaring_id);
-                    $call_self_class = $fq_class_name;
-
-                    $result->return_type = self::createFirstClassCallableReturnType(
-                        $statements_analyzer,
-                        $codebase,
-                        $context,
-                        $stmt,
-                        $call_method_id,
-                        new TClosure(
-                            null,
-                            $codebase->getMethodReturnType($call_method_id, $call_self_class),
-                            $call_storage->capabilities,
-                        ),
-                        $call_storage->template_types ?? [],
-                        $codebase->classlike_storage_provider->get($call_declaring_id->fq_class_name),
-                        $class_storage,
-                        $lhs_type_part,
-                    );
-                } else {
-                    $result->return_type = Type::getClosure();
-                }
-            } else {
-                $result->non_existent_magic_method_ids[] = $method_id->__toString();
-                $result->return_type = Type::getClosure();
-            }
+            self::handleFirstClassCallable(
+                $statements_analyzer,
+                $codebase,
+                $stmt,
+                $method_id,
+                $class_storage,
+                $pseudo_method_class_storage,
+                $context,
+                $config,
+                $result,
+                $lhs_type_part,
+                $mixin_type,
+            );
 
             return null;
         }
@@ -445,6 +400,82 @@ final class MissingMethodCallHandler
                 ),
             ],
         );
+    }
+
+    private static function handleFirstClassCallable(
+        StatementsAnalyzer $statements_analyzer,
+        Codebase $codebase,
+        PhpParser\Node\Expr\MethodCall $stmt,
+        MethodIdentifier $method_id,
+        ClassLikeStorage $class_storage,
+        ClassLikeStorage $pseudo_method_class_storage,
+        Context $context,
+        Config $config,
+        AtomicMethodCallAnalysisResult $result,
+        ?Atomic $lhs_type_part,
+        ?TNamedObject $mixin_type,
+    ): void {
+        $fq_class_name = $method_id->fq_class_name;
+        $method_name_lc = $method_id->method_name;
+
+        $found_method_and_class_storage = isset($pseudo_method_class_storage->pseudo_methods[$method_name_lc])
+            ? self::findPseudoMethodAndClassStorages($codebase, $pseudo_method_class_storage, $method_name_lc)
+            : null;
+
+        if ($found_method_and_class_storage) {
+            $result->has_valid_method_call_type = true;
+            $result->existent_method_ids[$method_id->__toString()] = true;
+            $result->return_type = self::createFirstClassCallableReturnType(
+                $statements_analyzer,
+                $codebase,
+                $context,
+                $stmt,
+                $method_id,
+                new TClosure(
+                    $found_method_and_class_storage[0]->params,
+                    $found_method_and_class_storage[0]->return_type,
+                    $found_method_and_class_storage[0]->capabilities,
+                ),
+                $found_method_and_class_storage[0]->template_types ?? [],
+                $found_method_and_class_storage[1],
+                $pseudo_method_class_storage,
+                $mixin_type ?? $lhs_type_part,
+            );
+        } elseif (!$class_storage->hasSealedMethods($config)) {
+            // PHP creates the callable of a method the class forwards to `__call`
+            $result->has_valid_method_call_type = true;
+            $result->existent_method_ids[$method_id->__toString()] = true;
+
+            $call_method_id = new MethodIdentifier($fq_class_name, '__call');
+            $call_declaring_id = $codebase->methods->getDeclaringMethodId($call_method_id);
+
+            if ($call_declaring_id !== null && $codebase->methods->hasStorage($call_declaring_id)) {
+                $call_storage = $codebase->methods->getStorage($call_declaring_id);
+                $call_self_class = $fq_class_name;
+
+                $result->return_type = self::createFirstClassCallableReturnType(
+                    $statements_analyzer,
+                    $codebase,
+                    $context,
+                    $stmt,
+                    $call_method_id,
+                    new TClosure(
+                        null,
+                        $codebase->getMethodReturnType($call_method_id, $call_self_class),
+                        $call_storage->capabilities,
+                    ),
+                    $call_storage->template_types ?? [],
+                    $codebase->classlike_storage_provider->get($call_declaring_id->fq_class_name),
+                    $class_storage,
+                    $lhs_type_part,
+                );
+            } else {
+                $result->return_type = Type::getClosure();
+            }
+        } else {
+            $result->non_existent_magic_method_ids[] = $method_id->__toString();
+            $result->return_type = Type::getClosure();
+        }
     }
 
     /**
