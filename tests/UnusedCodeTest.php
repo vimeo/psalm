@@ -73,8 +73,12 @@ final class UnusedCodeTest extends TestCase
      * @param array<string> $error_levels
      */
     #[DataProvider('providerInvalidCodeParse')]
-    public function testInvalidCode(string $code, string $error_message, array $error_levels = []): void
-    {
+    public function testInvalidCode(
+        string $code,
+        string $error_message,
+        array $error_levels = [],
+        ?string $php_version = null,
+    ): void {
         if (strpos($this->getTestName(), 'SKIPPED-') !== false) {
             $this->markTestSkipped();
         }
@@ -86,6 +90,10 @@ final class UnusedCodeTest extends TestCase
 
         foreach ($error_levels as $error_level) {
             $this->project_analyzer->getCodebase()->config->setCustomErrorLevel($error_level, Config::REPORT_SUPPRESS);
+        }
+
+        if ($php_version !== null) {
+            $this->project_analyzer->setPhpVersion($php_version, 'tests');
         }
 
         $this->addFile(
@@ -1091,9 +1099,6 @@ final class UnusedCodeTest extends TestCase
                     }
 
                     echo count((new Row(1))->notes([new ChildRow(1, "a")]));',
-                'assertions' => [],
-                'ignored_issues' => [],
-                'php_version' => '8.0',
             ],
             'propertiesReadAsColumnsByArrayColumnAreUsed' => [
                 'code' => '<?php
@@ -1110,9 +1115,6 @@ final class UnusedCodeTest extends TestCase
                     }
 
                     echo count(names([new Row(1, "a")]));',
-                'assertions' => [],
-                'ignored_issues' => [],
-                'php_version' => '8.0',
             ],
             'preIncrementAsArrayAssignmentKey' => [
                 'code' => '<?php
@@ -2307,9 +2309,6 @@ final class UnusedCodeTest extends TestCase
                     $test = new Test(1, "ame");
                     echo $test->id;
                     echo $test->name;',
-                'assertions' => [],
-                'ignored_issues' => [],
-                'php_version' => '8.0',
             ],
             'unusedNoReturnFunctionCall' => [
                 'code' => '<?php
@@ -2892,9 +2891,6 @@ final class UnusedCodeTest extends TestCase
 
                     $greeter = new Greeter("World");
                     unset($greeter);',
-                'assertions' => [],
-                'ignored_issues' => [],
-                'php_version' => '8.0',
             ],
             'privateMethodCalledOnlyFromDestructorIsUsed' => [
                 'code' => '<?php
@@ -3209,9 +3205,6 @@ final class UnusedCodeTest extends TestCase
                     }
 
                     new Test(true);',
-                'assertions' => [],
-                'ignored_issues' => [],
-                'php_version' => '8.0',
             ],
             'variableReadThroughAVariableVariableInAnIfIsUsed' => [
                 'code' => <<<'PHP'
@@ -3459,9 +3452,6 @@ final class UnusedCodeTest extends TestCase
 
                     $foo = new Foo(" foo ");
                     echo $foo->foo;',
-                'assertions' => [],
-                'ignored_issues' => [],
-                'php_version' => '8.0',
             ],
             'privateMethodOnlyCalledFromPropertyHook' => [
                 'code' => '<?php
@@ -3491,7 +3481,7 @@ final class UnusedCodeTest extends TestCase
     }
 
     /**
-     * @return array<string,array{code:string,error_message:string,error_levels?:list<string>}>
+     * @return array<string,array{code:string,error_message:string,error_levels?:list<string>,php_version?:string}>
      * @psalm-pure
      */
     public static function providerInvalidCodeParse(): array
@@ -3513,7 +3503,6 @@ final class UnusedCodeTest extends TestCase
 
                     echo count(secrets([new Row(1, "a")]));',
                 'error_message' => 'UnusedProperty',
-                'error_levels' => [],
                 'php_version' => '8.0',
             ],
             'protectedPropertyOfAChildReadAsAColumnFromASiblingScopeIsUnused' => [
@@ -3540,7 +3529,6 @@ final class UnusedCodeTest extends TestCase
 
                     echo count((new Sibling(1))->notes([new ChildRow(1, "a")]));',
                 'error_message' => 'Cannot find any references to property ChildRow::$note',
-                'error_levels' => [],
                 'php_version' => '8.0',
             ],
             'propertyNotReadAsAColumnByArrayColumnIsUnused' => [
@@ -3559,7 +3547,6 @@ final class UnusedCodeTest extends TestCase
 
                     echo count(names([new Row(1, "a", "b")]));',
                 'error_message' => 'PossiblyUnusedProperty',
-                'error_levels' => [],
                 'php_version' => '8.0',
             ],
             'variableAssignedAfterAVariableVariableIsStillChecked' => [
@@ -4749,7 +4736,6 @@ final class UnusedCodeTest extends TestCase
 
                     new Test(true, false);',
                 'error_message' => 'PossiblyUnusedProperty',
-                'error_levels' => [],
                 'php_version' => '8.0',
             ],
             'assignmentBeforeAnUncaughtThrowInATryFinallyIsNotSeenAfterTheTry' => [
