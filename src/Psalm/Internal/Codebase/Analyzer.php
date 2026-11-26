@@ -239,6 +239,16 @@ final class Analyzer
         return isset($this->files_with_analysis_results[$file_path]);
     }
 
+    /**
+     * A file of the project, or analysed: its class declarations are not alternatives to those of a dependency
+     *
+     * @psalm-mutation-free
+     */
+    public function isOwnCodeFile(string $file_path): bool
+    {
+        return isset($this->files_with_analysis_results[$file_path]) || $this->config->isInProjectDirs($file_path);
+    }
+
     public function analyzeFiles(
         ProjectAnalyzer $project_analyzer,
         int $pool_size,

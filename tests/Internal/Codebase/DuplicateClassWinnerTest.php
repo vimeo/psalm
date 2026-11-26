@@ -102,6 +102,101 @@ if (!class_exists(Lazy::class, false)) {
     }
 
     /**
+     * Declarations in files whose issues are not reported are alternatives, like polyfills of a dependency: the
+     * one in the smallest path is kept, and the classes extending it are still analysed.
+     *
+     * @param list<string> $arrival the processes, in the order they finished in (w1 scanned a, w2 scanned b)
+     */
+    #[DataProvider('providerArrival')]
+    public function testPoolMergeOfDeclarationsInUnreportedFilesIsNotADuplicate(array $arrival): void
+    {
+        $this->dir = (string) getcwd() . DIRECTORY_SEPARATOR . 'vendor' . DIRECTORY_SEPARATOR . 'duplicate_class'
+            . DIRECTORY_SEPARATOR;
+
+        $processes = [
+            'w1' => $this->scanAlone('a'),
+            'w2' => $this->scanAlone('b'),
+        ];
+
+        foreach ($arrival as $process) {
+            [$file_path, $classlike_storages] = $processes[$process];
+            $codebase = $this->project_analyzer->getCodebase();
+            $codebase->classlike_storage_provider->addMore(
+                $classlike_storages,
+                [],
+                $codebase->analysis_php_version_id,
+            );
+            $codebase->scanner->addThreadData([[], [], [], [], [], ['lib\lazy' => $file_path], [], [], [], [], []]);
+        }
+
+        $kept = ClassLikeStorageProvider::getAll()['lib\lazy'];
+
+        self::assertSame($processes['w1'][1]['lib\lazy'], $kept);
+        self::assertFalse($kept->has_visitor_issues);
+        self::assertSame([], IssueBuffer::getIssuesData());
+    }
+
+    /**
+     * The project's declaration wins over a dependency's, even in a larger path, and is not a duplicate.
+     *
+     * @param list<string> $arrival the processes, in the order they finished in (w1 scanned a, w2 scanned b)
+     */
+    #[DataProvider('providerArrival')]
+    public function testPoolMergeKeepsTheProjectDeclarationOverADependencyOne(array $arrival): void
+    {
+        $processes = [
+            'w1' => $this->scanAlone('a', (string) getcwd() . DIRECTORY_SEPARATOR . 'lib' . DIRECTORY_SEPARATOR),
+            'w2' => $this->scanAlone('b'),
+        ];
+
+        foreach ($arrival as $process) {
+            [$file_path, $classlike_storages] = $processes[$process];
+            $codebase = $this->project_analyzer->getCodebase();
+            $codebase->classlike_storage_provider->addMore(
+                $classlike_storages,
+                [],
+                $codebase->analysis_php_version_id,
+            );
+            $codebase->scanner->addThreadData([[], [], [], [], [], ['lib\lazy' => $file_path], [], [], [], [], []]);
+        }
+
+        $kept = ClassLikeStorageProvider::getAll()['lib\lazy'];
+
+        self::assertSame($processes['w2'][1]['lib\lazy'], $kept);
+        self::assertFalse($kept->has_visitor_issues);
+        self::assertSame(
+            $this->dir . 'b.php',
+            $this->project_analyzer->getCodebase()->scanner->getClassLikeFilePath('lib\lazy'),
+        );
+        self::assertSame([], IssueBuffer::getIssuesData());
+    }
+
+    /**
+     * The project's declaration replaces a dependency's that the merging process scanned before the pool.
+     */
+    public function testPoolMergeKeepsTheProjectDeclarationOverADependencyOneScannedBeforeThePool(): void
+    {
+        [$worker_file, $worker_storages] = $this->scanAlone('b');
+        $codebase = $this->project_analyzer->getCodebase();
+        $earlier_file = (string) getcwd() . DIRECTORY_SEPARATOR . 'lib' . DIRECTORY_SEPARATOR . 'a.php';
+
+        $this->file_provider->registerFile($earlier_file, self::SOURCES['a']);
+        $codebase->scanner->addFileToShallowScan($earlier_file);
+        $codebase->scanner->scanFiles($codebase->classlikes);
+        $earlier = ClassLikeStorageProvider::getAll();
+
+        $codebase->classlike_storage_provider->addMore($worker_storages, $earlier, $codebase->analysis_php_version_id);
+        $codebase->scanner->addThreadData([[], [], [], [], [], ['lib\lazy' => $worker_file], [], [], [], [], []]);
+
+        $kept = ClassLikeStorageProvider::getAll()['lib\lazy'];
+
+        self::assertSame($worker_storages['lib\lazy'], $kept);
+        self::assertFalse($kept->has_visitor_issues);
+        self::assertSame($worker_file, $codebase->scanner->getClassLikeFilePath('lib\lazy'));
+        self::assertSame([], IssueBuffer::getIssuesData());
+    }
+
+    /**
      * @return iterable<string, array{list<string>}>
      * @psalm-pure
      */
@@ -256,10 +351,10 @@ if (!class_exists(Lazy::class, false)) {
      *
      * @return array{string, array<string, ClassLikeStorage>}
      */
-    private function scanAlone(string $key): array
+    private function scanAlone(string $key, ?string $dir = null): array
     {
         $codebase = $this->project_analyzer->getCodebase();
-        $file_path = $this->dir . $key . '.php';
+        $file_path = ($dir ?? $this->dir) . $key . '.php';
 
         $this->file_provider->registerFile($file_path, self::SOURCES[$key]);
         $codebase->scanner->addFileToShallowScan($file_path);

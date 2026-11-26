@@ -87,8 +87,14 @@ final class ReturnTypeAnalyzer
             && $fq_class_name !== null
             && !$storage->final
             && $storage->visibility !== ClassLikeAnalyzer::VISIBILITY_PRIVATE
-            && !$codebase->classlike_storage_provider->get($fq_class_name)->final
-            && !$codebase->classlike_storage_provider->get($fq_class_name)->anonymous;
+            && (
+                // a return type declared in a trait also applies to the other classes using it, final or not
+                ($storage->return_type !== null
+                    && $storage->defining_fqcln !== null
+                    && $codebase->classlike_storage_provider->get($storage->defining_fqcln)->is_trait)
+                || (!$codebase->classlike_storage_provider->get($fq_class_name)->final
+                    && !$codebase->classlike_storage_provider->get($fq_class_name)->anonymous)
+            );
     }
 
     /**
@@ -579,7 +585,9 @@ final class ReturnTypeAnalyzer
             && !$inferred_yield_types
             && (!$function_like_storage || !$function_like_storage->has_yield)
         ) {
-            if ($declared_return_type->isVoid() || $declared_return_type->isNever()) {
+            if (($declared_return_type->isVoid() && !$declared_return_type->explicit_never)
+                || $declared_return_type->isNever()
+            ) {
                 return null;
             }
 
@@ -607,7 +615,9 @@ final class ReturnTypeAnalyzer
                 return null;
             }
 
-            if (!$declared_return_type->from_docblock || !$declared_return_type->isNullable()) {
+            if (!$declared_return_type->isVoid()
+                && (!$declared_return_type->from_docblock || !$declared_return_type->isNullable())
+            ) {
                 if (IssueBuffer::accepts(
                     new InvalidReturnType(
                         'No return statements were found for method ' . $cased_method_id .
@@ -639,7 +649,8 @@ final class ReturnTypeAnalyzer
 
         if (!$declared_return_type->hasMixed()) {
             if ($inferred_return_type->isVoid()
-                && ($declared_return_type->isVoid() || ($function_like_storage && $function_like_storage->has_yield))
+                && (($declared_return_type->isVoid() && !$declared_return_type->explicit_never)
+                    || ($function_like_storage && $function_like_storage->has_yield))
             ) {
                 return null;
             }
@@ -672,7 +683,7 @@ final class ReturnTypeAnalyzer
                 // a generator function returns its Generator even if its body never ends
                 && !$function_like_storage?->has_yield
                 // never return type only available from PHP 8.1 in non-docblock
-                && ($declared_return_type->from_docblock || $codebase->analysis_php_version_id >= 8_10_00)
+                && ($declared_return_type->from_docblock || $codebase->analysis_php_version_id >= 8_01_00)
                 // no error for single throw, as extending a class might not work without errors
                 // https://3v4l.org/vCSF4#v8.1.12
                 && !ScopeAnalyzer::onlyThrows($function_stmts)

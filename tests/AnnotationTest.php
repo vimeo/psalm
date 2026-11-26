@@ -2255,6 +2255,9 @@ final class AnnotationTest extends TestCase
 
                     new UserRole(new stdClass(), new stdClass());
                     ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'promotedPropertiesDocumentationForPropertyAndSignature' => [
                 'code' => '<?php
@@ -2268,6 +2271,9 @@ final class AnnotationTest extends TestCase
                         ) {
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'globalDocBlock' => [
                 'code' => '<?php
@@ -3830,6 +3836,8 @@ final class AnnotationTest extends TestCase
                     new UserRole("a");
                     ',
                 'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'promotedPropertiesDocumentationFailsWhenSendingBadTypeAgainstProperty' => [
                 'code' => '<?php
@@ -3845,6 +3853,8 @@ final class AnnotationTest extends TestCase
                     new UserRole("a");
                     ',
                 'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'promotedPropertyDuplicateDoc' => [
                 'code' => '<?php
@@ -3859,6 +3869,8 @@ final class AnnotationTest extends TestCase
                     }
                     ',
                 'error_message' => 'InvalidDocblock',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'promotedPropertyWithParamDocblockAndSignatureType' => [
                 'code' => '<?php
@@ -3877,6 +3889,8 @@ final class AnnotationTest extends TestCase
 
                     echo $a->licenseType;',
                 'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'malformedConditionalReturnTypeDoesNotCrash' => [
                 'code' => '<?php

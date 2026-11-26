@@ -5045,6 +5045,8 @@ final class CallableTest extends TestCase
                         protected static function runLoop(): void {}
                     }',
                 'error_message' => 'expects a public static callable',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'undefinedCallableMethodArray' => [
                 'code' => '<?php
@@ -6373,6 +6375,8 @@ final class CallableTest extends TestCase
                         protected function runLoop(): void {}
                     }',
                 'error_message' => 'expects a public callable',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'emptyStringIsNotCallable' => [
                 'code' => '<?php

@@ -2483,6 +2483,20 @@ final class TypeParseTest extends TestCase
         yield 'nullable array-key' => ['array-key|null', 8_00_00, 'int|string|null', true];
         yield 'array-key and string' => ['array-key|string', 8_00_00, 'int|string', true];
         yield 'key-of' => ['key-of<array{a: int}>', 8_00_00, null, false];
+        yield 'true before PHP 8.2' => ['true', 8_01_00, 'bool', false];
+        yield 'true' => ['true', 8_02_00, 'true', true];
+        yield 'false before PHP 8.2' => ['false', 8_01_00, 'bool', false];
+        yield 'false' => ['false', 8_02_00, 'false', true];
+        yield 'null before PHP 8.2' => ['null', 8_01_00, null, false];
+        yield 'null' => ['null', 8_02_00, 'null', true];
+        yield 'nullable true before PHP 8.2' => ['true|null', 8_01_00, 'bool|null', false];
+        yield 'nullable true' => ['true|null', 8_02_00, 'true|null', true];
+        yield 'nullable false' => ['false|null', 8_02_00, 'false|null', true];
+        yield 'string|true before PHP 8.2' => ['string|true', 8_01_00, 'string|bool', false];
+        yield 'string|true' => ['string|true', 8_02_00, 'string|true', true];
+        yield 'string|false' => ['string|false', 8_02_00, 'string|false', true];
+        yield 'string|false before PHP 8.2' => ['string|false', 8_00_00, 'string|false', true];
+        yield 'nullable false before PHP 8.2' => ['false|null', 8_01_00, 'bool|null', false];
     }
 
     #[DataProvider('nativeTypeProvider')]

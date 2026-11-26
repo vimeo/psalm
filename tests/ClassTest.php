@@ -268,6 +268,9 @@ final class ClassTest extends TestCase
                         $b = new $class(1);
                         return new $class(val: 1, name: "a");
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'classStringNewOfAnIntersectionKeepsTheIntersection' => [
                 'code' => '<?php
@@ -295,6 +298,8 @@ final class ClassTest extends TestCase
                 'assertions' => [
                     '$x===' => 'A&I',
                 ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'classStringNewOfAnAbstractClassIsNotAnAbstractInstantiation' => [
                 'code' => '<?php
@@ -311,6 +316,9 @@ final class ClassTest extends TestCase
                     function f(string $class): A {
                         return new $class(1);
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'classStringNewOfGenericClassKeepsTheTemplateArguments' => [
                 'code' => '<?php
@@ -330,6 +338,9 @@ final class ClassTest extends TestCase
                     function f(string $class): Box {
                         return new $class(1);
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'instanceofIterableDoesNotNarrowTheVariable' => [
                 'code' => <<<'PHP'
@@ -458,6 +469,9 @@ final class ClassTest extends TestCase
                     }
 
                     $child = new Child("name", 5);',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'consistentConstructorClassKeepsTheConstructorOfItsParent' => [
                 'code' => '<?php
@@ -2224,6 +2238,8 @@ final class ClassTest extends TestCase
                         return new $class();
                     }',
                 'error_message' => 'TooFewArguments',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'classStringNewOfAClassWithoutConsistentConstructorOnlyReportsTheUnsafeInstantiation' => [
                 'code' => '<?php
@@ -2238,6 +2254,8 @@ final class ClassTest extends TestCase
                         return new $class("x");
                     }',
                 'error_message' => 'UnsafeInstantiation',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'classStringNewWithTooManyArguments' => [
                 'code' => '<?php
@@ -2255,6 +2273,8 @@ final class ClassTest extends TestCase
                         return new $class(1, 2);
                     }',
                 'error_message' => 'TooManyArguments',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'classStringNewWithWrongArgumentType' => [
                 'code' => '<?php
@@ -2272,6 +2292,8 @@ final class ClassTest extends TestCase
                         return new $class("x");
                     }',
                 'error_message' => 'InvalidScalarArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'instanceofIterableIsReportedOnlyAsAReservedWord' => [
                 'code' => '<?php
@@ -2556,6 +2578,8 @@ final class ClassTest extends TestCase
 
                     $child = new Child(true);',
                 'error_message' => 'InvalidScalarArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'consistentConstructorClassWithoutAParentConstructorTakesNoArguments' => [
                 'code' => '<?php
