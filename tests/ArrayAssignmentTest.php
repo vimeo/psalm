@@ -626,7 +626,7 @@ final class ArrayAssignmentTest extends TestCase
                 'assertions' => [
                     '$a===' => 'list{5, ...<int>}',
                     '$b===' => 'list{0: 5, 1?: 2}',
-                    '$c===' => 'list{5}',
+                    '$c===' => 'array{0: 5}',
                 ],
             ],
             'assignToTheItemOfAnArrayAFunctionReturnsByReference' => [
