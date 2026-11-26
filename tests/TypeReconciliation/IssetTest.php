@@ -148,6 +148,41 @@ final class IssetTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'negatedIssetAlternativeAddsMixedOffsetWithoutNull' => [
+                'code' => '<?php
+                    function getArray(): array {
+                        return [];
+                    }
+
+                    $a = getArray();
+                    $a["t"] = "x";
+
+                    if (isset($a["k"]) && is_array($a["k"])) {
+                        $a["k"] = "json";
+                    }',
+                'assertions' => [
+                    '$a===' => 'array{k?: \'json\'|mixed, t: \'x\', ...<array-key, mixed>}',
+                ],
+            ],
+            'negatedIssetThenAssignmentOnArrayOrObject' => [
+                'code' => '<?php
+                    interface Definition {}
+
+                    /** @return Definition|array */
+                    function getDefinition() {
+                        return [];
+                    }
+
+                    $a = getDefinition();
+
+                    if (!isset($a["w"])) {
+                        $a["w"] = 0;
+                    }',
+                'assertions' => [
+                    '$a===' => 'Definition|array{w: 0|mixed, ...<array-key, mixed>}',
+                ],
+                'ignored_issues' => ['PossiblyInvalidArrayAccess', 'PossiblyInvalidArrayAssignment'],
+            ],
             'nullCoalesceOnNullsafePropertyFetch' => [
                 'code' => '<?php
                     final class U {

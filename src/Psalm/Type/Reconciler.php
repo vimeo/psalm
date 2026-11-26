@@ -2571,8 +2571,11 @@ class Reconciler
             } elseif ($atomic_type instanceof TArray) {
                 $value_type = $atomic_type->type_params[1];
                 $possibly_undefined = true;
-            } else {
+            } elseif ($atomic_type instanceof TNull) {
                 continue;
+            } else {
+                // an assignment to an offset of a value that may not be an array leaves the array type as it is
+                return null;
             }
 
             $offset_type = $offset_type ? Type::combineUnionTypes($offset_type, $value_type) : $value_type;
@@ -2583,8 +2586,8 @@ class Reconciler
         }
 
         // an offset that can hold null may be null where isset() is false, also when it is optional (the reconciled
-        // type then reads it as not set); one that can't is not set there
-        if ($offset_type->isNullable() || $offset_type->hasMixed()) {
+        // type then reads it as not set); one that can't is not set there. A mixed type stands for null already.
+        if (($offset_type->isNullable() || $offset_type->hasMixed()) && !$result_type->hasMixed()) {
             $result_type = Type::combineUnionTypes($result_type, Type::getNull());
         } elseif ($result_type->isNullable()) {
             $builder = $result_type->getBuilder();
