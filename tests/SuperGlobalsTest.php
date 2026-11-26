@@ -92,6 +92,19 @@ final class SuperGlobalsTest extends TestCase
             ],
         ];
 
+        yield 'SERVER keys that are empty in CLI are possibly undefined strings' => [
+            'code' => '<?php
+                $document_root = $_SERVER["DOCUMENT_ROOT"] ?? null;
+                $script_filename = $_SERVER["SCRIPT_FILENAME"] ?? null;
+                $path_translated = $_SERVER["PATH_TRANSLATED"] ?? null;
+            ',
+            'assertions' => [
+                '$document_root===' => 'null|string',
+                '$script_filename===' => 'null|string',
+                '$path_translated===' => 'null|string',
+            ],
+        ];
+
         yield 'globalSuperGlobalKeepsItsType' => [
             'code' => '<?php
                 function printers(): string {
