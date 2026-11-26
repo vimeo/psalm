@@ -1870,14 +1870,24 @@ trait UnionTrait
         // a value the code wrote, or null, cannot hold what the client sends
         if ($atomic instanceof TLiteralString
             || $atomic instanceof TNonspecificLiteralString
+            || $atomic instanceof TLiteralInt
+            || $atomic instanceof TNonspecificLiteralInt
+            || $atomic instanceof TLiteralFloat
+            || $atomic instanceof TTrue
+            || $atomic instanceof TFalse
             || $atomic instanceof TNull
         ) {
             return $input_taints;
         }
 
         // numeric types can't be tainted (except sleep & the custom taints not added to `input`), neither can bool
-        if ($atomic instanceof TInt || $atomic instanceof TFloat || $atomic instanceof TNumeric) {
+        if ($atomic instanceof TInt || $atomic instanceof TFloat) {
             return $input_taints & ~TaintKind::NUMERIC_ONLY;
+        }
+
+        // a numeric string can also hold whitespace, such as a newline
+        if ($atomic instanceof TNumeric) {
+            return $input_taints & ~(TaintKind::NUMERIC_ONLY | TaintKind::INPUT_SHELL | TaintKind::INPUT_HEADER);
         }
 
         if ($atomic instanceof TBool) {

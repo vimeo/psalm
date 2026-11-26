@@ -5791,6 +5791,33 @@ final class TaintTest extends TestCase
                         render($numeric);
                     }',
             ],
+            'sleepSinkNotTaintedByLiteralNarrowing' => [
+                'code' => '<?php
+                    /** @psalm-taint-sink sleep $s */
+                    function mysleep($s): void {}
+
+                    /** @psalm-taint-source input */
+                    function input(): mixed {
+                        return null;
+                    }
+
+                    $int = input();
+                    if ($int === 5) {
+                        sleep($int);
+                    }
+                    $listed = input();
+                    if (in_array($listed, [1, 2, 3], true)) {
+                        sleep($listed);
+                    }
+                    $float = input();
+                    if ($float === 1.5) {
+                        mysleep($float);
+                    }
+                    $true = input();
+                    if ($true === true) {
+                        mysleep($true);
+                    }',
+            ],
             'htmlSinkNotTaintedThroughNumericParam' => [
                 'code' => '<?php
                     /** @psalm-taint-sink html $s */
@@ -21888,6 +21915,47 @@ final class TaintTest extends TestCase
                         sleep((int) $seconds);
                     }',
                 'error_message' => 'TaintedSleep',
+            ],
+            'shellSurvivesNumericNarrowing' => [
+                'code' => '<?php
+                    /** @psalm-taint-source input */
+                    function input(): mixed {
+                        return null;
+                    }
+
+                    // "1\n" is numeric
+                    $value = input();
+                    if (is_numeric($value)) {
+                        shell_exec("echo " . $value . " done");
+                    }',
+                'error_message' => 'TaintedShell',
+            ],
+            'shellSurvivesNumericParam' => [
+                'code' => '<?php
+                    /** @param numeric $n */
+                    function run($n): void {
+                        shell_exec("echo " . $n . " done");
+                    }
+
+                    run($_GET["n"]);',
+                'error_message' => 'TaintedShell',
+            ],
+            'customTaintSurvivesIntNarrowing' => [
+                'code' => '<?php
+                    /** @psalm-taint-source alpha */
+                    function input(): mixed {
+                        return null;
+                    }
+
+                    /** @psalm-taint-sink alpha $s */
+                    function sink($s): void {}
+
+                    // like an int cast, an int narrowing only removes the taints of `input`
+                    $value = input();
+                    if (is_int($value)) {
+                        sink($value);
+                    }',
+                'error_message' => 'TaintedCustom',
             ],
             'htmlSurvivesNarrowingToArrayOrInt' => [
                 'code' => '<?php
