@@ -3846,6 +3846,57 @@ final class ForeachTest extends TestCase
                     }
                 PHP,
             ],
+            'foreachOverNeverReportsNothingForWhatTheBodyDoesWithTheItem' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class User {
+                        public int $id = 0;
+
+                        public function name(): string {
+                            return '';
+                        }
+                    }
+
+                    /** @return list<never> */
+                    function nothing(): array {
+                        return [];
+                    }
+
+                    function takesUser(User $user): void {
+                        echo $user->id;
+                    }
+
+                    function f(): int {
+                        foreach (nothing() as $key => $user) {
+                            $copy = $user;
+                            echo $copy->id, $user->id, $user->name(), $user['a'], $user + 1, 'a' . $user;
+                            echo (string) $user;
+                            takesUser($user);
+                            $users = [$user];
+                            $users[$user] = 1;
+                            foreach ($user as $inner) {
+                                echo $inner;
+                            }
+                            if ($user instanceof User) {
+                                echo $key + 1;
+                            }
+                            $closure = fn() => $user->id;
+                            $user->id = 5;
+                            echo json_encode([$user, $closure]);
+
+                            return $user;
+                        }
+
+                        return 0;
+                    }
+
+                    function g(): void {
+                        foreach (nothing() as [$a, $b]) {
+                            echo count($a), count($b);
+                        }
+                    }
+                PHP,
+            ],
             'foreachOverAnEmptyListOrAListOfIntsHasIntItems' => [
                 'code' => <<<'PHP'
                     <?php
@@ -4868,6 +4919,132 @@ final class ForeachTest extends TestCase
                     }
                 PHP,
                 'error_message' => 'InvalidScalarArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:14:25',
+            ],
+            'foreachOverAListOfNeverStillReportsUndefinedFunctionOfTheBody' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @return list<never> */
+                    function nothing(): array {
+                        return [];
+                    }
+
+                    function f(): void {
+                        foreach (nothing() as $item) {
+                            echo count($item);
+                            undefined_function();
+                        }
+                    }
+                PHP,
+                'error_message' => 'UndefinedFunction',
+            ],
+            'foreachOverAStaleEmptyPropertyStillReportsUndefinedFunctionOfTheBody' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Collector {
+                        /** @var list<int> */
+                        public array $ids = [];
+                    }
+
+                    function fill(Collector $c): void {
+                        $c->ids[] = 1;
+                    }
+
+                    function f(): void {
+                        $c = new Collector();
+                        $c->ids = [];
+                        fill($c);
+
+                        foreach ($c->ids as $item) {
+                            echo count($item);
+                            undefined_function();
+                        }
+                    }
+                PHP,
+                'error_message' => 'UndefinedFunction',
+            ],
+            'foreachOverAListOfNeverStillReportsUndefinedVariableOfTheBody' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @return list<never> */
+                    function nothing(): array {
+                        return [];
+                    }
+
+                    function f(): void {
+                        foreach (nothing() as $item) {
+                            echo count($item);
+                            echo $undefined;
+                        }
+                    }
+                PHP,
+                'error_message' => 'UndefinedVariable',
+            ],
+            'foreachOverAStaleEmptyPropertyStillReportsUndefinedVariableOfTheBody' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Collector {
+                        /** @var list<int> */
+                        public array $ids = [];
+                    }
+
+                    function fill(Collector $c): void {
+                        $c->ids[] = 1;
+                    }
+
+                    function f(): void {
+                        $c = new Collector();
+                        $c->ids = [];
+                        fill($c);
+
+                        foreach ($c->ids as $item) {
+                            echo count($item);
+                            echo $undefined;
+                        }
+                    }
+                PHP,
+                'error_message' => 'UndefinedVariable',
+            ],
+            'foreachOverAListOfNeverStillReportsInvalidArgumentOfTheBody' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @return list<never> */
+                    function nothing(): array {
+                        return [];
+                    }
+
+                    function f(): void {
+                        foreach (nothing() as $item) {
+                            echo count($item);
+                            echo strlen([]);
+                        }
+                    }
+                PHP,
+                'error_message' => 'InvalidArgument',
+            ],
+            'foreachOverAStaleEmptyPropertyStillReportsInvalidArgumentOfTheBody' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Collector {
+                        /** @var list<int> */
+                        public array $ids = [];
+                    }
+
+                    function fill(Collector $c): void {
+                        $c->ids[] = 1;
+                    }
+
+                    function f(): void {
+                        $c = new Collector();
+                        $c->ids = [];
+                        fill($c);
+
+                        foreach ($c->ids as $item) {
+                            echo count($item);
+                            echo strlen([]);
+                        }
+                    }
+                PHP,
+                'error_message' => 'InvalidArgument',
             ],
             'foreachOverAnEmptyListOrAListOfIntsStillChecksItsInts' => [
                 'code' => <<<'PHP'

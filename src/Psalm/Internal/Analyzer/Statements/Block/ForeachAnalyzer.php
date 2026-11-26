@@ -45,14 +45,25 @@ use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\TypeVisitor\ClassStringMapBoundReplacer;
 use Psalm\Internal\TypeVisitor\TypeVariableResolver;
 use Psalm\Issue\ImpureMethodCall;
+use Psalm\Issue\InvalidArrayAccess;
+use Psalm\Issue\InvalidArrayOffset;
+use Psalm\Issue\InvalidCast;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InvalidIterator;
+use Psalm\Issue\InvalidPropertyAssignment;
+use Psalm\Issue\MissingClosureReturnType;
+use Psalm\Issue\MixedArgument;
+use Psalm\Issue\MixedAssignment;
+use Psalm\Issue\MixedMethodCall;
+use Psalm\Issue\MixedPropertyFetch;
+use Psalm\Issue\NoValue;
 use Psalm\Issue\NullIterator;
 use Psalm\Issue\PossibleRawObjectIteration;
 use Psalm\Issue\PossiblyFalseIterator;
 use Psalm\Issue\PossiblyInvalidIterator;
 use Psalm\Issue\PossiblyNullIterator;
 use Psalm\Issue\RawObjectIteration;
+use Psalm\Issue\RedundantCondition;
 use Psalm\Issue\UnnecessaryVarAnnotation;
 use Psalm\IssueBuffer;
 use Psalm\Node\Expr\VirtualMethodCall;
@@ -112,6 +123,23 @@ use const ARRAY_FILTER_USE_BOTH;
  */
 final class ForeachAnalyzer
 {
+    /**
+     * The issues the uses of an item that is never raise, as never is not a type anything is done with
+     */
+    private const ISSUES_OF_A_NEVER_ITEM = [
+        InvalidArrayAccess::class => true,
+        InvalidArrayOffset::class => true,
+        InvalidCast::class => true,
+        InvalidPropertyAssignment::class => true,
+        MissingClosureReturnType::class => true,
+        MixedArgument::class => true,
+        MixedAssignment::class => true,
+        MixedMethodCall::class => true,
+        MixedPropertyFetch::class => true,
+        NoValue::class => true,
+        RedundantCondition::class => true,
+    ];
+
     /**
      * @return  false|null
      */
@@ -359,7 +387,7 @@ final class ForeachAnalyzer
             $value_type = new Union([new TMixed()], ['by_ref' => $stmt->byRef]);
         }
 
-        // nothing is iterated: the body is never entered, so it cannot misuse what it gets, an item that is never
+        // nothing is iterated: the item is never, and what the body does with it is not reported
         $iterates_nothing = $value_type->isNever() || $key_type?->isNever() === true;
 
         if ($iterates_nothing) {
@@ -484,9 +512,7 @@ final class ForeachAnalyzer
         );
 
         if ($iterates_nothing) {
-            // the body is analysed for what it does to the variables, but what it reports is dead code
-            IssueBuffer::clearRecordingLevel();
-            IssueBuffer::stopRecording();
+            self::reportWhatIsNotDueToANeverItem();
         }
 
         if ($loop_result === false) {
@@ -532,6 +558,22 @@ final class ForeachAnalyzer
         }
 
         return null;
+    }
+
+    /**
+     * Stops the recording of the issues of a loop body analysed with an item that is never, and reports the ones
+     * that are not due to the item
+     */
+    private static function reportWhatIsNotDueToANeverItem(): void
+    {
+        $recorded_issues = IssueBuffer::clearRecordingLevel();
+        IssueBuffer::stopRecording();
+
+        foreach ($recorded_issues as $recorded_issue) {
+            if (!isset(self::ISSUES_OF_A_NEVER_ITEM[$recorded_issue::class])) {
+                IssueBuffer::bubbleUp($recorded_issue);
+            }
+        }
     }
 
     /**
