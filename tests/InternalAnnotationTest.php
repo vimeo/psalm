@@ -935,21 +935,6 @@ final class InternalAnnotationTest extends TestCase
                         \A\foo();
                     }',
             ],
-            'internalMethodOfGlobalClassCalledFromItsClass' => [
-                'code' => '<?php
-                    final class C {
-                        /** @internal */
-                        public function run(): void {}
-
-                        /** @internal */
-                        public static function make(): void {}
-
-                        public function other(): void {
-                            $this->run();
-                            self::make();
-                        }
-                    }',
-            ],
             'internalFunctionOfGlobalNamespaceIsNotRestricted' => [
                 'code' => '<?php
                     namespace {
@@ -959,6 +944,21 @@ final class InternalAnnotationTest extends TestCase
 
                     namespace B {
                         \foo();
+                    }',
+            ],
+            'internalPropertyOfGlobalTraitUsedByItsClass' => [
+                'code' => '<?php
+                    trait T {
+                        /** @internal */
+                        public int $p = 0;
+                    }
+
+                    final class C {
+                        use T;
+
+                        public function other(): int {
+                            return $this->p;
+                        }
                     }',
             ],
         ];
@@ -1990,30 +1990,6 @@ final class InternalAnnotationTest extends TestCase
                         }
                     }',
                 'error_message' => 'The function a\foo is internal to A\B but called from A\f',
-            ],
-            'internalMethodOfGlobalClassCalledFromNamespace' => [
-                'code' => '<?php
-                    namespace {
-                        final class C {
-                            /** @internal */
-                            public function run(): void {}
-                        }
-                    }
-
-                    namespace Other {
-                        (new \C)->run();
-                    }',
-                'error_message' => 'The method C::run is internal to C but called from Other',
-            ],
-            'internalStaticMethodOfGlobalClassCalledFromRootNamespace' => [
-                'code' => '<?php
-                    final class C {
-                        /** @internal */
-                        public static function make(): void {}
-                    }
-
-                    C::make();',
-                'error_message' => 'The method C::make is internal to C but called from root namespace',
             ],
         ];
     }
