@@ -639,14 +639,16 @@ class Reconciler
                             continue;
                         }
 
-                        if ((!isset($new_types[$new_key]) || str_contains($new_key, '[' . $key . ']'))
+                        // the cheap checks come first: the call below copies the whole scope
+                        if ($is_real
+                            && str_contains($new_key, $key)
+                            && (!isset($new_types[$new_key]) || str_contains($new_key, '[' . $key . ']'))
                             && self::dependsOnNarrowedVar(
                                 $codebase,
                                 $new_key,
                                 $key,
                                 [$key => $result_type] + $existing_types,
                             )
-                            && $is_real
                         ) {
                             // Fix any references to the type before removing it.
                             $references_to_fix = array_keys($reference_graph[$new_key] ?? []);
@@ -1123,6 +1125,10 @@ class Reconciler
         string $narrowed_var_id,
         array $types,
     ): bool {
+        if (!str_contains($var_id, $narrowed_var_id)) {
+            return false;
+        }
+
         $index = '[' . $narrowed_var_id . ']';
 
         if (preg_match('/' . preg_quote($narrowed_var_id, '/') . '[\]\[\-]/', str_replace($index, '[]', $var_id))) {
