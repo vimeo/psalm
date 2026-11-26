@@ -1259,6 +1259,20 @@ final class UnusedCodeTest extends TestCase
                         }
                     }',
             ],
+            'variableUsedOnlyInTheBodyOfALoopOverNothingIsUsed' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-api
+                     * @param list<never> $nothing
+                     */
+                    function f(array $nothing): void {
+                        $prefix = "item";
+
+                        foreach ($nothing as $item) {
+                            echo $prefix, count($item);
+                        }
+                    }',
+            ],
             'unusedVariableSuppressedInAClosure' => [
                 'code' => '<?php
                     /** @psalm-api */

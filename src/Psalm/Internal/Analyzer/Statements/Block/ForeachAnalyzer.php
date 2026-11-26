@@ -359,6 +359,13 @@ final class ForeachAnalyzer
             $value_type = new Union([new TMixed()], ['by_ref' => $stmt->byRef]);
         }
 
+        // nothing is iterated: the body is never entered, so it cannot misuse what it gets, an item that is never
+        $iterates_nothing = $value_type->isNever() || $key_type?->isNever() === true;
+
+        if ($iterates_nothing) {
+            IssueBuffer::startRecording();
+        }
+
         if ($stmt->byRef
             && $stmt->valueVar instanceof PhpParser\Node\Expr\Variable
             && is_string($stmt->valueVar->name)
@@ -457,47 +464,7 @@ final class ForeachAnalyzer
             $foreach_context->vars_in_scope[$var_comment->var_id] = $comment_type;
         }
 
-        if (!$stmt->byRef
-            && $iterator_type !== null
-            && $iterator_type->parent_nodes
-            && ArrayAssignmentAnalyzer::hasElementsOfItsOwn($iterator_type)
-            && $stmt->keyVar instanceof PhpParser\Node\Expr\Variable
-            && is_string($stmt->keyVar->name)
-            && $stmt->valueVar instanceof PhpParser\Node\Expr\Variable
-            && is_string($stmt->valueVar->name)
-            && isset($foreach_context->vars_in_scope['$' . $stmt->keyVar->name])
-            && isset($foreach_context->vars_in_scope['$' . $stmt->valueVar->name])
-        ) {
-            $key_node_ids = ArrayAssignmentAnalyzer::getValueNodeIds(
-                $foreach_context->vars_in_scope['$' . $stmt->keyVar->name],
-            );
-            $value_node_ids = ArrayAssignmentAnalyzer::getValueNodeIds(
-                $foreach_context->vars_in_scope['$' . $stmt->valueVar->name],
-            );
-
-            if ($key_node_ids !== [] && $value_node_ids !== []) {
-                $foreach_context->foreach_element_copies['$' . $stmt->valueVar->name] = [
-                    '$' . $stmt->keyVar->name,
-                    $key_node_ids,
-                    $value_node_ids,
-                    $iterator_type->parent_nodes,
-                ];
-            }
-        }
-
-        if ($foreach_marker !== null
-            && $stmt->keyVar instanceof PhpParser\Node\Expr\Variable
-            && is_string($stmt->keyVar->name)
-            && isset($foreach_context->vars_in_scope['$' . $stmt->keyVar->name])
-        ) {
-            $key_node_ids = ArrayAssignmentAnalyzer::getValueNodeIds(
-                $foreach_context->vars_in_scope['$' . $stmt->keyVar->name],
-            );
-
-            if ($key_node_ids !== []) {
-                $foreach_context->foreach_keys['$' . $stmt->keyVar->name] = [$key_node_ids, $foreach_marker];
-            }
-        }
+        self::trackKeyAndValueNodes($stmt, $iterator_type, $foreach_marker, $foreach_context);
 
         $loop_scope = new LoopScope($foreach_context, $context);
 
@@ -505,7 +472,7 @@ final class ForeachAnalyzer
 
         $stmt->setAttribute('alwaysEntered', $iterator_type !== null && $always_non_empty_array);
 
-        if (LoopAnalyzer::analyze(
+        $loop_result = LoopAnalyzer::analyze(
             $statements_analyzer,
             $stmt->stmts,
             [],
@@ -514,7 +481,15 @@ final class ForeachAnalyzer
             $inner_loop_context,
             false,
             $always_non_empty_array,
-        ) === false) {
+        );
+
+        if ($iterates_nothing) {
+            // the body is analysed for what it does to the variables, but what it reports is dead code
+            IssueBuffer::clearRecordingLevel();
+            IssueBuffer::stopRecording();
+        }
+
+        if ($loop_result === false) {
             return false;
         }
 
@@ -557,6 +532,58 @@ final class ForeachAnalyzer
         }
 
         return null;
+    }
+
+    /**
+     * What the key and the value variables of a foreach take from the iterated value, for the data flow
+     */
+    private static function trackKeyAndValueNodes(
+        PhpParser\Node\Stmt\Foreach_ $stmt,
+        ?Union $iterator_type,
+        ?string $foreach_marker,
+        Context $foreach_context,
+    ): void {
+        if (!$stmt->byRef
+            && $iterator_type !== null
+            && $iterator_type->parent_nodes
+            && ArrayAssignmentAnalyzer::hasElementsOfItsOwn($iterator_type)
+            && $stmt->keyVar instanceof PhpParser\Node\Expr\Variable
+            && is_string($stmt->keyVar->name)
+            && $stmt->valueVar instanceof PhpParser\Node\Expr\Variable
+            && is_string($stmt->valueVar->name)
+            && isset($foreach_context->vars_in_scope['$' . $stmt->keyVar->name])
+            && isset($foreach_context->vars_in_scope['$' . $stmt->valueVar->name])
+        ) {
+            $key_node_ids = ArrayAssignmentAnalyzer::getValueNodeIds(
+                $foreach_context->vars_in_scope['$' . $stmt->keyVar->name],
+            );
+            $value_node_ids = ArrayAssignmentAnalyzer::getValueNodeIds(
+                $foreach_context->vars_in_scope['$' . $stmt->valueVar->name],
+            );
+
+            if ($key_node_ids !== [] && $value_node_ids !== []) {
+                $foreach_context->foreach_element_copies['$' . $stmt->valueVar->name] = [
+                    '$' . $stmt->keyVar->name,
+                    $key_node_ids,
+                    $value_node_ids,
+                    $iterator_type->parent_nodes,
+                ];
+            }
+        }
+
+        if ($foreach_marker !== null
+            && $stmt->keyVar instanceof PhpParser\Node\Expr\Variable
+            && is_string($stmt->keyVar->name)
+            && isset($foreach_context->vars_in_scope['$' . $stmt->keyVar->name])
+        ) {
+            $key_node_ids = ArrayAssignmentAnalyzer::getValueNodeIds(
+                $foreach_context->vars_in_scope['$' . $stmt->keyVar->name],
+            );
+
+            if ($key_node_ids !== []) {
+                $foreach_context->foreach_keys['$' . $stmt->keyVar->name] = [$key_node_ids, $foreach_marker];
+            }
+        }
     }
 
     /**
@@ -1390,10 +1417,12 @@ final class ForeachAnalyzer
                 continue;
             }
 
-            // if it's an empty array, we cannot iterate over it
+            // an empty array has no item to iterate over: what the loop body sees of one is never
             if ($iterator_atomic_type instanceof TArray && $iterator_atomic_type->isEmptyArray()) {
                 $always_non_empty_array = false;
                 $has_valid_iterator = true;
+                $value_type = Type::combineUnionTypes($value_type, Type::getNever());
+                $key_type = Type::combineUnionTypes($key_type, Type::getNever());
                 continue;
             }
 

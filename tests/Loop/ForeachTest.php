@@ -3660,6 +3660,211 @@ final class ForeachTest extends TestCase
                     }
                 PHP,
             ],
+            'foreachOverAListTheCovariantTemplateOfNewInferredAsNeverHasNoItem' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @template-covariant T of Countable */
+                    final class Bounded {
+                        /** @return list<T> */
+                        public function all(): array {
+                            return [];
+                        }
+                    }
+
+                    function f(): void {
+                        foreach ((new Bounded())->all() as $x) {
+                            echo count($x);
+                        }
+                    }
+                PHP,
+            ],
+            'foreachOverAnEmptyArrayHasNoItem' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(): void {
+                        foreach ([] as $x) {
+                            echo count($x);
+                        }
+                    }
+                PHP,
+            ],
+            'foreachOverAnEmptyArrayVariableHasNoItem' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(): void {
+                        $items = [];
+
+                        foreach ($items as $item) {
+                            echo count($item);
+                        }
+                    }
+                PHP,
+            ],
+            'foreachOverAListOfNeverHasNoItem' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @return list<never> */
+                    function nothing(): array {
+                        return [];
+                    }
+
+                    function f(): void {
+                        foreach (nothing() as $x) {
+                            echo count($x);
+                        }
+                    }
+                PHP,
+            ],
+            'foreachOverAnArrayOfNeverHasNoKeyAndNoItem' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @return array<string, never> */
+                    function nothing(): array {
+                        return [];
+                    }
+
+                    function f(): void {
+                        foreach (nothing() as $k => $v) {
+                            echo strlen($k), count($v);
+                        }
+                    }
+                PHP,
+            ],
+            'foreachDestructuringAListOfNeverHasNoItem' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @return list<never> */
+                    function nothing(): array {
+                        return [];
+                    }
+
+                    function f(): void {
+                        foreach (nothing() as [$a, $b]) {
+                            echo count($a), count($b);
+                        }
+                    }
+                PHP,
+            ],
+            'foreachOverAnIterableOfNeverHasNoItem' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param iterable<int, never> $items */
+                    function f(iterable $items): void {
+                        foreach ($items as $k => $x) {
+                            echo $k, count($x);
+                        }
+                    }
+                PHP,
+            ],
+            'foreachOverATraversableOfNeverHasNoItem' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param Traversable<int, never> $items */
+                    function f(Traversable $items): void {
+                        foreach ($items as $x) {
+                            echo count($x);
+                        }
+                    }
+                PHP,
+            ],
+            'foreachOverAnIteratorAggregateOfNeverHasNoItem' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @implements IteratorAggregate<int, never> */
+                    final class Nothing implements IteratorAggregate {
+                        public function getIterator(): Iterator {
+                            return new ArrayIterator([]);
+                        }
+                    }
+
+                    function f(Nothing $nothing): void {
+                        foreach ($nothing as $x) {
+                            echo count($x);
+                        }
+                    }
+                PHP,
+            ],
+            'foreachByReferenceOverAnEmptyArrayHasNoItem' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(): void {
+                        $items = [];
+
+                        foreach ($items as &$item) {
+                            $item = count($item);
+                        }
+
+                        unset($item);
+                    }
+                PHP,
+            ],
+            'foreachOverNeverStillGivesTheVariablesTheBodyWritesTheirTypeOfAnyLoop' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @return list<never> */
+                    function nothing(): array {
+                        return [];
+                    }
+
+                    function f(): bool {
+                        $found = false;
+                        $total = 0;
+
+                        foreach (nothing() as $x) {
+                            if (count($x) > 1) {
+                                $found = true;
+                            }
+
+                            $total += count($x);
+                        }
+
+                        /** @psalm-check-type-exact $found = bool */;
+                        /** @psalm-check-type-exact $total = int<0, max> */;
+
+                        return $found;
+                    }
+                PHP,
+            ],
+            'foreachOverAnArrayTheOuterLoopFillsAfterItsFirstIterationStillChecksItsItems' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param list<int> $input */
+                    function f(array $input): int {
+                        $seen = [];
+                        $sum = 0;
+
+                        foreach ($input as $i) {
+                            foreach ($seen as $s) {
+                                /** @psalm-check-type-exact $s = int */;
+                                $sum += $s;
+                            }
+
+                            $seen[] = $i;
+                        }
+
+                        return $sum;
+                    }
+                PHP,
+            ],
+            'foreachOverAnEmptyListOrAListOfIntsHasIntItems' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @return list<never>|list<int> */
+                    function items(): array {
+                        return [];
+                    }
+
+                    function f(): int {
+                        foreach (items() as $item) {
+                            /** @psalm-check-type-exact $item = int */;
+
+                            return $item;
+                        }
+
+                        return 0;
+                    }
+                PHP,
+            ],
         ];
     }
 
@@ -4624,6 +4829,73 @@ final class ForeachTest extends TestCase
                         return $z;
                     }',
                 'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'foreachOverNeverLeavesAVariableOnlyItsBodyAssignsPossiblyUndefined' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @return list<never> */
+                    function nothing(): array {
+                        return [];
+                    }
+
+                    function f(): int {
+                        foreach (nothing() as $x) {
+                            $seen = 1;
+                        }
+
+                        return $seen;
+                    }
+                PHP,
+                'error_message' => 'PossiblyUndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:12:16',
+            ],
+            'foreachOverNeverDoesNotSilenceTheRestOfTheLoopItIsIn' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @return list<never> */
+                    function nothing(): array {
+                        return [];
+                    }
+
+                    /** @param list<int> $ints */
+                    function f(array $ints): void {
+                        foreach ($ints as $i) {
+                            foreach (nothing() as $x) {
+                                echo count($x);
+                            }
+
+                            echo strlen($i);
+                        }
+                    }
+                PHP,
+                'error_message' => 'InvalidScalarArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:14:25',
+            ],
+            'foreachOverAnEmptyListOrAListOfIntsStillChecksItsInts' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @return list<never>|list<int> */
+                    function items(): array {
+                        return [];
+                    }
+
+                    function f(): void {
+                        foreach (items() as $item) {
+                            echo strlen($item);
+                        }
+                    }
+                PHP,
+                'error_message' => 'InvalidScalarArgument',
+            ],
+            'foreachOverAPossiblyEmptyListStillChecksItsItems' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param list<int> $items */
+                    function f(array $items): void {
+                        foreach ($items as $item) {
+                            echo strlen($item);
+                        }
+                    }
+                PHP,
+                'error_message' => 'InvalidScalarArgument',
             ],
         ];
     }
