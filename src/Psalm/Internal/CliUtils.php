@@ -953,9 +953,7 @@ final class CliUtils
             return new DebugProgress();
         }
 
-        // CI takes precedence over AI detection: persistent CI logs still want
-        // per-phase breadcrumbs for humans reviewing the build.
-        if (isset($options['no-progress']) || (!$in_ci && self::runningUnderAiAgent())) {
+        if (self::progressIsSuppressed($options)) {
             return new VoidProgress();
         }
 
@@ -966,6 +964,21 @@ final class CliUtils
         }
 
         return new DefaultProgress();
+    }
+
+    /**
+     * Whether the progress indicator is replaced by silence: `--no-progress`, or an AI agent
+     * driving the shell unless `--long-progress` asks for the breadcrumbs.
+     *
+     * An agent marker wins over CI: some harnesses (Cursor, others) set `CI` for the commands
+     * an agent runs, and an agent has no use for a log of phase transitions.
+     *
+     * @param array<array-key, mixed> $options parsed command line options
+     */
+    public static function progressIsSuppressed(array $options): bool
+    {
+        return isset($options['no-progress'])
+            || (!isset($options['long-progress']) && self::runningUnderAiAgent());
     }
 
     public static function runningInCI(): bool

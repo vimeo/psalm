@@ -188,7 +188,6 @@ final class Psalm
 
     /**
      * @param array<int,string> $argv
-     * @psalm-suppress ComplexMethod Maybe some of the option handling could be moved to its own function...
      */
     public static function run(array $argv): void
     {
@@ -301,11 +300,7 @@ final class Psalm
 
         $config->setIncludeCollector($include_collector);
 
-        $in_ci = CliUtils::runningInCI();        // disable progressbar on CI
-
-        if ($in_ci) {
-            $options['long-progress'] = true;
-        }
+        $in_ci = CliUtils::runningInCI();
 
         $threads = self::getThreads($options, $config, false);
         $scanThreads = self::getThreads($options, $config, true);
@@ -739,17 +734,9 @@ final class Psalm
 
         $show_info = self::initShowInfo($options);
 
-        // CI takes precedence over AI detection: persistent CI logs still want
-        // per-phase breadcrumbs for humans reviewing the build. Agents that
-        // need the CI log quieted can pass --no-progress explicitly.
-        $no_progress = isset($options['no-progress'])
-            || (!$in_ci
-                && !isset($options['long-progress'])
-                && CliUtils::runningUnderAiAgent());
-
         if ($debug) {
             $progress = new DebugProgress();
-        } elseif ($no_progress) {
+        } elseif (CliUtils::progressIsSuppressed($options)) {
             $progress = new VoidProgress();
         } else {
             $show_errors = !$config->error_baseline || isset($options['ignore-baseline']);
@@ -1431,12 +1418,13 @@ final class Psalm
 
             --no-progress
                 Disable the progress indicator.
-                Auto-enabled when an AI coding agent is driving the shell
-                (CI always keeps its phase breadcrumbs).
+                Auto-enabled when an AI coding agent is driving the shell,
+                even if CI is set too.
 
             --long-progress
                 Use a progress indicator suitable for Continuous Integration logs.
                 Auto-enabled in CI and when stderr is not attached to a terminal.
+                Also brings the progress back under an AI coding agent.
 
             --stats
                 Shows a breakdown of Psalm’s ability to infer types in the codebase

@@ -17,6 +17,7 @@ use function file_put_contents;
 use function json_decode;
 use function mkdir;
 use function preg_replace;
+use function realpath;
 use function sort;
 use function str_contains;
 use function str_replace;
@@ -26,6 +27,7 @@ use function tempnam;
 use function unlink;
 use function var_export;
 
+use const DIRECTORY_SEPARATOR;
 use const JSON_THROW_ON_ERROR;
 use const PHP_BINARY;
 use const PHP_EOL;
@@ -182,6 +184,35 @@ final class PsalmEndToEndTest extends PsalmEndToEndTestCase
     {
         yield 'review first' => [['--review', 'report.json', 'code']];
         yield 'review after the report' => [['report.json', '--review', 'code']];
+    }
+
+    /**
+     * @param list<string> $args
+     */
+    #[DataProvider('provideConfigPathsThatAreNotFiles')]
+    public function testAConfigPathThatIsNotAFileIsReportedWithoutACrash(array $args, string $expected_suffix): void
+    {
+        $process = self::newProcess([PHP_BINARY, $this->psalm, ...$args], self::$tmpDir, self::agentEnvVarsToUnset());
+        $process->run();
+
+        $output = $process->getOutput() . $process->getErrorOutput();
+        $this->assertSame(1, $process->getExitCode(), $output);
+        $this->assertStringContainsString(
+            'Cannot read the config file ' . (string) realpath(self::$tmpDir) . $expected_suffix,
+            $process->getErrorOutput(),
+        );
+        $this->assertStringNotContainsString('Uncaught', $output);
+        $this->assertStringNotContainsString('crashed', $output);
+    }
+
+    /**
+     * @return iterable<string, array{list<string>, string}>
+     * @psalm-pure
+     */
+    public static function provideConfigPathsThatAreNotFiles(): iterable
+    {
+        yield 'a directory' => [['-c', 'src'], DIRECTORY_SEPARATOR . 'src'];
+        yield 'an empty path' => [['-c', ''], ''];
     }
 
     public function testPsalm(): void
@@ -831,6 +862,58 @@ final class PsalmEndToEndTest extends PsalmEndToEndTestCase
         // like for issues, so that a following step can upload the report
         yield 'in GitHub Actions' => [['GITHUB_WORKFLOW' => 'CI'], 0];
         yield 'elsewhere' => [['GITHUB_WORKFLOW' => false], 2];
+    }
+
+    /**
+     * @return iterable<string, array{array<string, string>, list<string>, bool}>
+     * @psalm-pure
+     */
+    public static function provideProgressUnderAnAgentAndCi(): iterable
+    {
+        yield 'CI only' => [['CI' => 'true'], [], true];
+        yield 'agent only' => [['CLAUDECODE' => '1'], [], false];
+        yield 'agent and CI: the agent wins' => [['CLAUDECODE' => '1', 'CI' => 'true'], [], false];
+        yield 'agent and CI with --long-progress' => [
+            ['CLAUDECODE' => '1', 'CI' => 'true'],
+            ['--long-progress'],
+            true,
+        ];
+        yield 'CI only with --no-progress' => [['CI' => 'true'], ['--no-progress'], false];
+    }
+
+    /**
+     * @param array<string, string> $env
+     * @param list<string> $args
+     */
+    #[DataProvider('provideProgressUnderAnAgentAndCi')]
+    public function testAnAgentMarkerBeatsCiForTheProgress(array $env, array $args, bool $has_breadcrumbs): void
+    {
+        file_put_contents(
+            self::$tmpDir . '/psalm.xml',
+            '<?xml version="1.0"?>
+            <psalm errorLevel="8" findUnusedCode="false">
+                <projectFiles><directory name="src"/></projectFiles>
+            </psalm>',
+        );
+
+        $unset_ci = [];
+        foreach (['TRAVIS', 'CIRCLECI', 'APPVEYOR', 'JENKINS_URL', 'SCRUTINIZER', 'GITLAB_CI', 'CI', 'GITHUB_WORKFLOW', 'DRONE'] as $name) {
+            $unset_ci[$name] = false;
+        }
+
+        $process = self::newProcess(
+            [PHP_BINARY, $this->psalm, '--no-cache', '--output-format=compact', ...$args],
+            self::$tmpDir,
+            [...self::agentEnvVarsToUnset(), ...$unset_ci, ...$env],
+        );
+        $process->run();
+
+        $this->assertSame(2, $process->getExitCode(), $process->getOutput() . $process->getErrorOutput());
+        if ($has_breadcrumbs) {
+            $this->assertStringContainsString('Scanning files', $process->getErrorOutput());
+        } else {
+            $this->assertStringNotContainsString('Scanning files', $process->getErrorOutput());
+        }
     }
 
     /**
