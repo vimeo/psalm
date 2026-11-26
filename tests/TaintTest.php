@@ -21922,6 +21922,24 @@ final class TaintTest extends TestCase
                     run($_GET["n"]);',
                 'error_message' => 'TaintedShell',
             ],
+            'customTaintSurvivesNarrowingToAnArrayOfInts' => [
+                'code' => '<?php
+                    /** @psalm-taint-source alpha */
+                    function input(): mixed {
+                        return null;
+                    }
+
+                    /** @psalm-taint-sink alpha $s */
+                    function sink($s): void {}
+
+                    /** @psalm-assert array<int, int> $x */
+                    function assertInts(mixed $x): void {}
+
+                    $ids = input();
+                    assertInts($ids);
+                    sink($ids);',
+                'error_message' => 'TaintedCustom',
+            ],
             'htmlSurvivesNarrowingToArrayOrInt' => [
                 'code' => '<?php
                     /** @psalm-taint-sink html $s */

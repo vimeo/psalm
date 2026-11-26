@@ -524,11 +524,13 @@ class Reconciler
                 continue;
             }
 
-            // a value narrowed to a type holding no input (a literal-string a validation asserts) can't carry taints;
-            // neither, as following them through every number costs too much memory, can an int or a bool
+            // a value narrowed to a type holding no input (a literal-string a validation asserts) can't carry taints.
+            // An int or a bool can't either: following their taints through every number costs too much memory
             $input_taints = $codebase->getInputTaints();
             $taints_to_remove = $result_type->getTaintsToRemove($input_taints);
-            $can_carry_taints = ($taints_to_remove | TaintKind::NUMERIC_ONLY | TaintKind::BOOL_ONLY) !== $input_taints;
+            $can_carry_taints = $taints_to_remove !== $input_taints
+                && ($result_type->hasArray()
+                    || ($taints_to_remove | TaintKind::NUMERIC_ONLY | TaintKind::BOOL_ONLY) !== $input_taints);
 
             if ($graph = $statements_analyzer->data_flow_graph) {
                 $parent_nodes = null;
