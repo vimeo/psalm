@@ -301,10 +301,10 @@ final class CrashReportTest extends TestCase
                 . '\n  at <project>/tests/Internal/Crash/CrashReportTest\.php:\d+$~',
             $exception,
         );
-        // the exception, where it was thrown and 10 frames
+        // 10 frames, without the message again
         $frames = str_replace(['\\', "\r\n"], ['/', "\n"], $fields['frames']);
-        $this->assertCount(12, explode("\n", $frames));
-        $this->assertStringStartsWith($exception . "\n#0 ", $frames);
+        $this->assertCount(10, explode("\n", $frames));
+        $this->assertStringStartsWith('#0 <project>/vendor/phpunit/', $frames);
         foreach (array_filter([dirname(__DIR__, 3), $home === '' ? '' : $home . '/', sys_get_temp_dir()]) as $private) {
             $this->assertStringNotContainsString($private, $url);
             $this->assertStringNotContainsString(rawurlencode($private), $url);
@@ -316,6 +316,22 @@ final class CrashReportTest extends TestCase
             'xxx...' . PHP_EOL . '  at ',
             self::getQuery($long, 'https://github.com/vimeo/psalm/issues/new?')['exception'],
         );
+    }
+
+    public function testTheLinkOfAChainKeepsItsMessagesWholeAndTheFramesOfTheInnermostException(): void
+    {
+        $e = new RuntimeException(str_repeat('a', 1_500), 0, new LogicException(str_repeat('b', 1_500)));
+
+        $fields = self::getQuery(
+            (new CrashReport($e, null, []))->getPsalmIssueUrl(),
+            'https://github.com/vimeo/psalm/issues/new?',
+        );
+
+        $this->assertStringContainsString(str_repeat('a', 1_500) . PHP_EOL, $fields['exception']);
+        $this->assertStringContainsString(str_repeat('b', 1_500) . PHP_EOL, $fields['exception']);
+        $this->assertCount(10, explode(PHP_EOL, $fields['frames']));
+        $this->assertStringNotContainsString('aaa', $fields['frames']);
+        $this->assertStringNotContainsString('bbb', $fields['frames']);
     }
 
     public function testACrashInAPluginLinksToItsTrackerWithATitleAndABody(): void

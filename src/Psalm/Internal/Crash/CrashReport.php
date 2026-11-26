@@ -20,6 +20,7 @@ use Throwable;
 use function array_column;
 use function array_map;
 use function array_reverse;
+use function count;
 use function date;
 use function defined;
 use function dirname;
@@ -241,9 +242,9 @@ final class CrashReport
                 'php_version' => PHP_VERSION,
                 'os' => self::describeOs(),
                 'plugins' => $this->describePlugins(),
-                'exception' => $this->renderChain(0, $max_length),
+                'exception' => $this->renderChain(false, $max_length),
                 'context' => $context ?? '',
-                'frames' => $this->renderChain($max_frames, $max_length),
+                'frames' => $this->renderFrames($max_frames),
             ],
         );
     }
@@ -275,7 +276,7 @@ final class CrashReport
                     . '- Psalm: ' . (defined('PSALM_VERSION') ? self::getPsalmVersion() : 'unknown')
                     . ', PHP ' . PHP_VERSION . ', ' . self::describeOs() . "\n"
                     . ($context === null ? '' : '- Context: ' . $context . "\n")
-                    . "\n```\n" . $this->renderChain($max_frames, $max_length)
+                    . "\n```\n" . $this->renderChain(false, $max_length) . PHP_EOL . $this->renderFrames($max_frames)
                     . "\n```\n\n"
                     . 'Psalm wrote a full report to a crash-*.txt file: attach it if it helps.' . "\n",
             ],
@@ -319,6 +320,26 @@ final class CrashReport
         );
 
         return 'Crash: ' . self::cut($this->chain[0]['class'] . ': ' . $message, 200);
+    }
+
+    /**
+     * The first frames of the exception that wraps no other: the frames of the exceptions around it mostly repeat
+     * its stack
+     *
+     * @psalm-capabilities read-props
+     */
+    private function renderFrames(int $max_frames): string
+    {
+        $lines = [];
+        foreach ($this->chain[count($this->chain) - 1]['frames'] as $i => $frame) {
+            if ($i >= $max_frames) {
+                break;
+            }
+
+            $lines[] = self::renderFrame($i, $frame);
+        }
+
+        return implode(PHP_EOL, $lines);
     }
 
     /**
@@ -625,12 +646,12 @@ final class CrashReport
     }
 
     /**
-     * Each exception of the chain: its class and message, where it was thrown and the first frames of its trace.
+     * Each exception of the chain: its class and message, where it was thrown and, for the report file, its frames.
      * The message leaves out the command line that ErrorHandler appends: the report file has it on its own line.
      *
      * @psalm-capabilities read-props
      */
-    private function renderChain(int $max_frames = PHP_INT_MAX, int $max_length = PHP_INT_MAX): string
+    private function renderChain(bool $with_frames = true, int $max_length = PHP_INT_MAX): string
     {
         $rendered = [];
         foreach ($this->chain as $exception) {
@@ -639,11 +660,7 @@ final class CrashReport
                 $exception['class'] . ': ' . self::cut($message, $max_length),
                 '  at ' . $exception['file'] . ':' . $exception['line'],
             ];
-            foreach ($exception['frames'] as $i => $frame) {
-                if ($i >= $max_frames) {
-                    break;
-                }
-
+            foreach ($with_frames ? $exception['frames'] : [] as $i => $frame) {
                 $lines[] = self::renderFrame($i, $frame);
             }
 
