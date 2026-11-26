@@ -1903,11 +1903,13 @@ final class Context
      *
      * @param CapabilitySet $callee_capabilities
      * @param array<string, true> $preserved_methods Memoized results that cannot be affected by this call
+     * @param ?string $object_var_id the object whose properties the callee may write, null for any
      */
     public function removeMutableObjectVars(
         bool $methods_only = false,
         int $callee_capabilities = Capabilities::ALL,
         array $preserved_methods = [],
+        ?string $object_var_id = null,
     ): void {
         $forget_properties
             = ($callee_capabilities & (Capabilities::WRITE_PROPS | Capabilities::WRITE_THIS_PROPS)) !== 0;
@@ -1917,12 +1919,17 @@ final class Context
             return;
         }
 
+        $property_prefix = $object_var_id === null ? null : $object_var_id . '->';
+
         $vars_to_remove = [];
 
         foreach ($this->vars_in_scope as $var_id => $type) {
             if (!isset($preserved_methods[$var_id])
                 && $type->has_mutations
-                && (($forget_properties && str_contains($var_id, '->'))
+                && (($forget_properties
+                        && ($property_prefix === null
+                            ? str_contains($var_id, '->')
+                            : str_starts_with($var_id, $property_prefix)))
                     || ($forget_statics && (str_contains($var_id, '::') || self::isInSuperGlobal($var_id))))
                 && (!$methods_only || strpos($var_id, '()'))
             ) {
@@ -1949,7 +1956,10 @@ final class Context
 
             foreach ($clause->possibilities as $key => $_) {
                 if (!isset($preserved_methods[$key])
-                    && (($forget_properties && str_contains($key, '->'))
+                    && (($forget_properties
+                            && ($property_prefix === null
+                                ? str_contains($key, '->')
+                                : str_starts_with($key, $property_prefix)))
                         || ($forget_statics && (str_contains($key, '::') || self::isInSuperGlobal($key))))
                     && (!$methods_only || strpos($key, '()'))
                 ) {

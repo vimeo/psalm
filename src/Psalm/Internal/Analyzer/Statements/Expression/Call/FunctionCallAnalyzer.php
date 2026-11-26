@@ -1716,6 +1716,20 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                     // a closure created in this scope: what it does to the variables it captured
                     // by reference, and through its by-reference parameters, stays in this scope
                     if ($statements_analyzer->node_data->isPureCompatible($function_name)) {
+                        // its `$this` is the caller's: what it writes of it is forgotten, as after a method
+                        // called on `$this`
+                        if ($var_type_part instanceof TClosure
+                            && ($closure_capabilities & Capabilities::WRITE_THIS_PROPS) !== 0
+                            && !$stmt->isFirstClassCallable()
+                            && isset($context->vars_in_scope['$this'])
+                        ) {
+                            $context->removeMutableObjectVars(
+                                false,
+                                Capabilities::WRITE_THIS_PROPS,
+                                object_var_id: '$this',
+                            );
+                        }
+
                         $closure_capabilities &= ~Capabilities::RECEIVER_LOCAL;
                     }
 
