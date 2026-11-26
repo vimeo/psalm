@@ -65,6 +65,7 @@ use function gc_collect_cycles;
 use function gc_disable;
 use function getenv;
 use function implode;
+use function in_array;
 use function ini_get;
 use function is_array;
 use function is_dir;
@@ -974,6 +975,9 @@ final class Psalm
         $stdout_report_options->show_snippet = !isset($options['show-snippet']) || $options['show-snippet'] !== "false";
         $stdout_report_options->pretty = isset($options['pretty-print']) && $options['pretty-print'] !== "false";
         $stdout_report_options->in_ci = $in_ci;
+        // only the console and compact reports have an agent form
+        $stdout_report_options->agent_output = CliUtils::runningUnderAiAgent()
+            && in_array($output_format, [Report::TYPE_CONSOLE, Report::TYPE_COMPACT], true);
 
         return $stdout_report_options;
     }

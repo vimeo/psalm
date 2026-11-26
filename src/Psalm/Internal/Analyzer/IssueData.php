@@ -53,6 +53,8 @@ final class IssueData
         public readonly ?string $group_key = null,
         /** The ids of the CWE weaknesses the issue flags, the most specific first */
         public readonly array $cwe_ids = [],
+        /** Whether `--alter` can fix the issue */
+        public bool $is_fixable = false,
     ) {
         $this->link = match (true) {
             $documentation_url !== null => $documentation_url,

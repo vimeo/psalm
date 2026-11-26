@@ -2617,6 +2617,10 @@ final class ClassLikes
                                 }
                             } else {
                                 IssueBuffer::addFixableIssue('MissingParamType');
+                                IssueBuffer::markIssueFixable(
+                                    'MissingParamType',
+                                    $method_storage->params[$offset]->location,
+                                );
                             }
                         }
                     }
