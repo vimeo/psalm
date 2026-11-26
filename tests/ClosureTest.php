@@ -791,6 +791,36 @@ final class ClosureTest extends TestCase
                     '$state===' => "array{k: 'idle'}",
                 ],
             ],
+            'calledClosureWritesAByRefCaptureAssignedAfterItWasCreated' => [
+                'code' => '<?php
+                    $set = function (int $value) use (&$total): void {
+                        $total = $value;
+                    };
+                    $total = 0;
+                    $set(5);
+
+                    $seen = [0];
+                    $add = function (int $id) use (&$seen): void {
+                        $seen[] = $id;
+                    };
+                    $seen = [];
+                    array_map($add, [1, 2]);',
+                'assertions' => [
+                    '$total===' => 'int',
+                    '$seen===' => 'list{0?: int, 1?: int, ...<int>}',
+                ],
+            ],
+            'calledClosureLeavesAByRefCaptureItOnlyReadsAsAssigned' => [
+                'code' => '<?php
+                    $get = function () use (&$total): int {
+                        return (int) $total;
+                    };
+                    $total = 0;
+                    $get();',
+                'assertions' => [
+                    '$total===' => '0',
+                ],
+            ],
             'closureByRefWriteInABranchBeforeAReturnIsKept' => [
                 'code' => '<?php
                     $i = 0;

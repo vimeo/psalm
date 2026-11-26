@@ -170,6 +170,8 @@ final class ArgumentsAnalyzer
                 $arg->value,
             );
 
+            ClosureAnalyzer::addTypesWrittenByCall($statements_analyzer, $context, $arg->value, $written_var_ids);
+
             foreach ($written_var_ids as $var_id => $_) {
                 $context->releaseKeysBoundToList($var_id);
                 $context->removeVarFromConflictingClauses(

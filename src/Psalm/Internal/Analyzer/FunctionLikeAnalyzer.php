@@ -1160,6 +1160,22 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     ),
                 );
 
+                // what a call of the closure leaves in the variables it writes through the references: what they hold
+                // where it returns
+                $byref_use_types = [];
+
+                if ($this instanceof ClosureAnalyzer) {
+                    foreach ($this->captured_by_ref_writes as $var_id => $_) {
+                        if (isset($byref_vars[$var_id])) {
+                            $byref_use_types[substr($var_id, 1)] = self::combineByRefPathTypes(
+                                $context->has_returned ? null : $context->vars_in_scope[$var_id] ?? null,
+                                $this->captured_by_ref_types_at_return[$var_id] ?? [],
+                                $codebase,
+                            );
+                        }
+                    }
+                }
+
                 // a closure is a fresh object: its enclosing scope may call it freely
                 $statements_analyzer->node_data->setType(
                     $this->function,
@@ -1173,6 +1189,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                             $closure_atomic->from_docblock,
                             $closure_atomic->callable_id,
                             $closure_atomic->byref_use_scopes,
+                            $byref_use_types,
                         ),
                     ], ['reference_free' => true]),
                 );
