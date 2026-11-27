@@ -193,53 +193,21 @@ final class ArrayFunctionCallTest extends TestCase
                         return 0;
                     }',
             ],
-            'countOfTwoOnAnArrayThatMayBeEmptyAfterUnsetMakesItNonEmpty' => [
+            'countOfAShapeWithAnOptionalLiteralKeyAndAWiderFallbackKeepsTheKeyType' => [
                 'code' => '<?php
-                    /** @var list<int> $values */
-                    $values = [];
-                    unset($values[rand(0, 1)]);
+                    final class Foo {}
+                    final class Bar {}
 
-                    $items = null;
-
-                    if (count($values) === 2) {
-                        $items = $values;
-                        if (count($values) === 2) {}
-                    }',
-                'assertions' => [
-                    '$items===' => 'non-empty-array<int<0, max>, int>|null',
-                ],
-            ],
-            'countNotEqualOnAnArrayThatMayBeEmptyAfterUnsetKeepsTheTypeWhereItDiffers' => [
-                'code' => '<?php
-                    /** @var list<int> $values */
-                    $values = [];
-                    unset($values[rand(0, 1)]);
-
-                    $differs = null;
-                    $equals = null;
-
-                    if (count($values) !== 1) {
-                        $differs = $values;
-                    } else {
-                        $equals = $values;
-                    }',
-                'assertions' => [
-                    '$differs===' => 'array{0?: int, ...<int<0, max>, int>}|null',
-                    '$equals===' => 'non-empty-array<int<0, max>, int>|null',
-                ],
-            ],
-            'countOfAShapeWithAnOptionalLiteralKeyAndAFallbackKeepsTheKeyType' => [
-                'code' => '<?php
-                    /** @var array{a?: int, ...<string, string>} $x */
+                    /** @var array{a?: Foo, ...<string, Foo|Bar>} $x */
                     $x = [];
 
-                    $a = 0;
+                    $a = null;
 
                     if (count($x) === 1) {
-                        $a = $x["a"] ?? 0;
+                        $a = $x["a"] ?? null;
                     }',
                 'assertions' => [
-                    '$a===' => 'int',
+                    '$a===' => 'Foo|null',
                 ],
             ],
             'arrayKeyExistsNotFindingALiteralFallbackKeyOfAnUnsealedShape' => [

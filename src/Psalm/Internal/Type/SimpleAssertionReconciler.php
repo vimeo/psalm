@@ -918,11 +918,16 @@ final class SimpleAssertionReconciler extends Reconciler
                         $generic_params = $array_atomic_type->getGenericArrayType()->type_params;
                         $fallback_params = $array_atomic_type->fallback_params;
                         // count > 0 on a shape with only optional items: at least one item exists, but which
-                        // one is unknown, so use the generic array when it loses nothing (the fallback covers
-                        // every item, as after an unset() of a list item)
-                        if ($generic_params[0]->getId() === $fallback_params[0]->getId()
-                            && $generic_params[1]->getId() === $fallback_params[1]->getId()
-                        ) {
+                        // one is unknown, so use the generic array when every key is a fallback key and every
+                        // item has the fallback type, as after an unset() of a list item
+                        $lossless = $generic_params[0]->getId() === $fallback_params[0]->getId();
+                        foreach ($array_atomic_type->properties as $property) {
+                            if ($property->setPossiblyUndefined(false)->getId() !== $fallback_params[1]->getId()) {
+                                $lossless = false;
+                                break;
+                            }
+                        }
+                        if ($lossless) {
                             $redundant = false;
                             $existing_var_type->removeType('array');
                             $existing_var_type->addType(new TNonEmptyArray($generic_params, $assertion->count));
