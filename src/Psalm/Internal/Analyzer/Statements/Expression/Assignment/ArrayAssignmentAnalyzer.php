@@ -305,6 +305,7 @@ final class ArrayAssignmentAnalyzer
                 $root_type,
                 $offset_already_existed,
                 $parent_var_id,
+                $stmt->var instanceof PhpParser\Node\Expr\ArrayDimFetch,
             );
         } else {
             $new_child_type = $root_type;
@@ -1469,6 +1470,7 @@ final class ArrayAssignmentAnalyzer
         Union $root_type,
         bool $offset_already_existed,
         ?string $parent_var_id,
+        bool $is_nested_write,
     ): Union {
         $templated_assignment = false;
 
@@ -1724,12 +1726,15 @@ final class ArrayAssignmentAnalyzer
         if ($templated_assignment) {
             $new_child_type = $root_type;
         } else {
+            // a written value leaves the values of the other keys as they are, but a nested write is taken to fill
+            // them too, as the nested writes under one key in a loop do
             $new_child_type = Type::combineUnionTypes(
                 $root_type,
                 $array_assignment_type,
                 $codebase,
                 true,
                 true,
+                overwrite_array_values: $is_nested_write,
             );
         }
 

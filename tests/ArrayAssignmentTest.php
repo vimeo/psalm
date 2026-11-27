@@ -4099,6 +4099,91 @@ final class ArrayAssignmentTest extends TestCase
                     }
                 PHP,
             ],
+            'offsetWriteKeepsTheValuesOfTheOtherKeysPossiblyEmpty' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @return array<string, array<int, int>> */
+                    function getArrays(): array {
+                        return [];
+                    }
+                    /** @return array<string, list<int>> */
+                    function getLists(): array {
+                        return [];
+                    }
+                    /** @return array<string, non-empty-list<int>> */
+                    function getNonEmptyLists(): array {
+                        return [];
+                    }
+                    /** @var string $k */
+                    $k = 'a';
+
+                    $a = getArrays();
+                    $a[$k] = [1];
+
+                    $b = getLists();
+                    $b[$k] = [1];
+
+                    $c = getNonEmptyLists();
+                    $c[$k] = [];
+
+                    /** @param array<string, array<int, int>> $d */
+                    function f(array $d, string $k, string $j): void {
+                        $d[$k] = [1];
+                        if (isset($d[$j]) && empty($d[$j])) {
+                            echo "empty";
+                        }
+                    }
+
+                    final class C {
+                        /** @var array<string, list<int>> */
+                        public array $p = [];
+
+                        public function f(string $k, string $j): void {
+                            $this->p[$k] = [1];
+                            if (isset($this->p[$j]) && empty($this->p[$j])) {
+                                echo "empty";
+                            }
+                        }
+                    }
+                PHP,
+                'assertions' => [
+                    '$a===' => 'non-empty-array<string, array<int, int>>',
+                    '$b===' => 'non-empty-array<string, list<int>>',
+                    '$c===' => 'non-empty-array<string, list<int>>',
+                ],
+            ],
+            'offsetWriteOverwritesTheEmptyArrayOfTheWrittenKey' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @var string $k */
+                    $k = 'a';
+
+                    $a = [];
+                    $a[$k] = [];
+                    $a[$k][] = 1;
+
+                    /** @var list<string> $names */
+                    $names = [];
+                    $b = [];
+                    foreach ($names as $name) {
+                        if (!isset($b[$name])) {
+                            $b[$name] = [];
+                        }
+                        $b[$name][] = $name;
+                    }
+
+                    $c = [];
+                    foreach ($names as $name) {
+                        $c[$name] ??= [];
+                        $c[$name][] = $name;
+                    }
+                PHP,
+                'assertions' => [
+                    '$a===' => 'non-empty-array<string, non-empty-list<1>>',
+                    '$b===' => 'array<string, non-empty-list<string>>',
+                    '$c===' => 'array<string, non-empty-list<string>>',
+                ],
+            ],
             'classStringKeyStaysAClassStringWhenMergedWithClassStringKeys' => [
                 'code' => <<<'PHP'
                     <?php

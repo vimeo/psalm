@@ -647,6 +647,8 @@ abstract class Type
      *
      * @param  int    $literal_limit any greater number of literal types than this
      *                               will be merged to a scalar
+     * @param  bool   $overwrite_array_values with $overwrite_empty_array, the arrays the combined arrays hold are
+     *                               overwritten too
      * @psalm-external-mutation-free
      * @psalm-suppress ImpurePropertyAssignment We're not mutating external instances
      * @psalm-suppress InaccessibleProperty We're not mutating external instances
@@ -659,6 +661,7 @@ abstract class Type
         bool $allow_mixed_union = true,
         int $literal_limit = 500,
         ?bool $possibly_undefined = null,
+        bool $overwrite_array_values = true,
     ): Union {
         if ($type_2 === null && $type_1 === null) {
             throw new UnexpectedValueException('At least one type must be provided to combine');
@@ -715,6 +718,7 @@ abstract class Type
                 $overwrite_empty_array,
                 $allow_mixed_union,
                 $literal_limit,
+                $overwrite_array_values,
             );
 
             if (!$type_1->initialized || !$type_2->initialized) {
