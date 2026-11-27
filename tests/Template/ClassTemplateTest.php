@@ -674,6 +674,12 @@ final class ClassTemplateTest extends TestCase
                         /** @return static<int, TKey> */
                         abstract public function keys(): static;
 
+                        /** @return static<TKey, list<TValue>> */
+                        abstract public function lists(): static;
+
+                        /** @return static<int, Coll<TKey, TValue>> */
+                        abstract public function nested(): static;
+
                         /**
                          * @template TNew
                          * @param callable(TValue, TKey): TNew $c
@@ -689,14 +695,36 @@ final class ClassTemplateTest extends TestCase
                          */
                         abstract public function withList(mixed $t, callable $c): void;
 
+                        /**
+                         * @template T1
+                         * @template T2 of T1
+                         * @param T1 $t
+                         * @param callable(T2, TValue): void $c
+                         */
+                        abstract public function chain(mixed $t, callable $c): void;
+
                         public function test(): void {
                             $this->keys()->map(function ($key) {
                                 /** @psalm-check-type-exact $key = array-key */
                                 return $key;
                             });
 
+                            $this->lists()->map(function ($list) {
+                                /** @psalm-check-type-exact $list = list<TValue> */
+                                return $list;
+                            });
+
+                            $this->nested()->map(function ($coll) {
+                                /** @psalm-check-type-exact $coll = Coll<TKey, TValue> */
+                                return $coll;
+                            });
+
                             $this->keys()->withList(1, function ($list, $key): void {
                                 /** @psalm-check-type-exact $list = list<1> */
+                                /** @psalm-check-type-exact $key = array-key */
+                            });
+
+                            $this->keys()->chain(1, function ($one, $key): void {
                                 /** @psalm-check-type-exact $key = array-key */
                             });
                         }
