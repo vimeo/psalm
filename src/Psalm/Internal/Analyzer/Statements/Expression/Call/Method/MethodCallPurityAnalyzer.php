@@ -1142,7 +1142,7 @@ final class MethodCallPurityAnalyzer
     ): array {
         $object_type = $callable instanceof TKeyedArray
             && isset($callable->properties[0])
-            && $callable->properties[0]->isSingle()
+            && $callable->properties[0]->isSingleAtomic()
                 ? $callable->properties[0]->getSingleAtomic()
                 : null;
 
