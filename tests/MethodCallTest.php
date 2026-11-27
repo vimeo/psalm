@@ -3544,6 +3544,78 @@ final class MethodCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'staticIntersectionOnFinalReceiver' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class B {}
+
+                    class P {
+                        /** @return B<static>&static */
+                        public function b() {
+                            throw new Exception();
+                        }
+                    }
+
+                    final class F extends P {}
+
+                    $f = (new F())->b();',
+                'assertions' => [
+                    '$f===' => 'B<F>&F',
+                ],
+            ],
+            'staticOnIntersectionReceiverWithFinalClass' => [
+                'code' => '<?php
+                    interface I {}
+                    interface J {}
+
+                    class P {
+                        /** @return static&I */
+                        public function si() {
+                            throw new Exception();
+                        }
+
+                        /** @return static&J */
+                        public function sj() {
+                            throw new Exception();
+                        }
+
+                        /** @return static */
+                        public function me() {
+                            throw new Exception();
+                        }
+                    }
+
+                    final class D extends P {}
+
+                    $d = (new D())->si()->sj()->me();',
+                'assertions' => [
+                    '$d===' => 'J&I&D',
+                ],
+            ],
+            'staticKeptWhenSubstitutedIntoIntersection' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class B {
+                        /** @return T&B<T> */
+                        public function some() {
+                            throw new Exception();
+                        }
+                    }
+
+                    class P {
+                        /** @return B<static>&static */
+                        public function b() {
+                            throw new Exception();
+                        }
+                    }
+
+                    class C extends P {}
+
+                    $t = (new C())->b()->some();',
+                'assertions' => [
+                    '$t===' => 'C&static&B<C&static>',
+                ],
+            ],
             'resolveFinalInParentCall' => [
                 'code' => '<?php
                     abstract class A {
@@ -4125,6 +4197,31 @@ final class MethodCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'staticOfThisNotReboundByCallOnTemplatedResult' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class B {
+                        /** @return T&B<T> */
+                        public function some() {
+                            throw new Exception();
+                        }
+                    }
+
+                    interface I {}
+
+                    class P {
+                        /** @return B<static&I> */
+                        public function bi() {
+                            throw new Exception();
+                        }
+
+                        public function f(): int {
+                            return $this->bi()->some();
+                        }
+                    }',
+                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:19:36 - '
+                    . 'The inferred type \'I&static&B<I&static&P&static>&P&static\' does not match',
+            ],
             'psalmOverloadOfAConstructorRejectsAMixOfTheSignatures' => [
                 'code' => '<?php
                     final class Version {

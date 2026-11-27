@@ -414,8 +414,7 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                         $class_storage->parent_class,
                         true,
                         false,
-                        $static_type instanceof TNamedObject
-                            && $codebase->classlike_storage_provider->get($static_type->value)->final,
+                        MethodCallReturnTypeFetcher::isFinalReceiver($codebase, $static_type),
                         true,
                     );
                 }
@@ -436,8 +435,7 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                     $class_storage->parent_class,
                     true,
                     false,
-                    $static_type instanceof TNamedObject
-                        && $codebase->classlike_storage_provider->get($static_type->value)->final,
+                    MethodCallReturnTypeFetcher::isFinalReceiver($codebase, $static_type),
                     true,
                 );
 
@@ -525,10 +523,12 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
             // be of a subclass
             $assertion_static_type = $static_type;
 
-            if ($static_type instanceof TNamedObject) {
+            if ($static_type instanceof TNamedObject
+                && !MethodCallReturnTypeFetcher::isFinalReceiver($codebase, $static_type)
+            ) {
                 $static_type_storage = $codebase->classlike_storage_provider->get($static_type->value);
 
-                if (!$static_type_storage->final && !$static_type_storage->is_enum) {
+                if (!$static_type_storage->is_enum) {
                     $assertion_static_type = $static_type->setIsStatic(true);
                 }
             }

@@ -92,8 +92,8 @@ final class TGenericObject extends TNamedObject
     #[Override]
     public function getId(bool $exact = true): string
     {
-        return $this->value . $this->getTypeParamsId($exact) . $this->getIntersectionTypesId($exact)
-            . ($this->is_static ? '&static' : '');
+        return $this->value . $this->getTypeParamsId($exact) . ($this->is_static ? '&static' : '')
+            . $this->getIntersectionTypesId($exact);
     }
 
     /**
