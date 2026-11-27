@@ -457,10 +457,13 @@ function detailsBody(array $p): string
 
         if ($i['changed'] > 0) {
             $shown = array_sum(array_column($i['changed_examples'], 'count'));
-            $hunks = implode("\n\n", array_map(changeHunk(...), $i['changed_examples']));
+            $hunks = implode("\n\n", array_map(
+                static fn(array $g): string => changeHunk($g, $p['source'] ?? null),
+                $i['changed_examples'],
+            ));
             $parts[] = "**Changed in place** ({$i['changed']})"
                 . (str_contains($hunks, '{self}') ? '; `{self}` is the class named after the file' : '')
-                . "\n\n```diff\n{$hunks}\n```"
+                . "\n\n{$hunks}"
                 . ($i['changed'] > $shown ? "\n\n… and " . ($i['changed'] - $shown) . ' more' : '');
         }
 
@@ -468,13 +471,13 @@ function detailsBody(array $p): string
             if ($i["{$kind}_examples"] !== []) {
                 $total = $i["unpaired_{$kind}"];
                 $more = $total - count($i["{$kind}_examples"]);
-                $items = array_map(static fn(array $e): string => '- ' . inlineCode(mb_strimwidth(
-                    "{$e['file']}:{$e['line']} {$e['type']} ({$e['severity']}): "
-                        . shortClassNames([$e['message']])[0],
-                    0,
-                    EXAMPLE_CHARS,
-                    '…',
-                )), $i["{$kind}_examples"]);
+                $items = array_map(static fn(array $e): string => '- '
+                    . locationLink($p['source'] ?? null, "{$e['file']}:{$e['line']}") . ' ' . inlineCode(mb_strimwidth(
+                        "{$e['type']} ({$e['severity']}): " . shortClassNames([$e['message']])[0],
+                        0,
+                        EXAMPLE_CHARS,
+                        '…',
+                    )), $i["{$kind}_examples"]);
                 $parts[] = '**' . ucfirst($kind) . "** ({$total})\n\n" . implode("\n", $items)
                     . ($more > 0 ? "\n- … and {$more} more" : '');
             }
@@ -516,15 +519,16 @@ function detailsBody(array $p): string
 }
 
 /**
- * One hunk for a group of identical in-place changes: `@@ location type @@` (several locations as context lines),
- * then the old messages as `-` lines and the new ones as `+` lines, their shared text trimmed alike.
+ * One hunk for a group of identical in-place changes: its locations, then a `diff` block with `@@ count type @@`,
+ * the old messages as `-` lines and the new ones as `+` lines, their shared text trimmed alike.
  *
  * @param array{
  *     old: list<array{type: string, message: string}>, new: list<array{type: string, message: string}>,
  *     locations: list<string>, count: int
  * } $g
+ * @param array{repo: string, ref: string}|null $source
  */
-function changeHunk(array $g): string
+function changeHunk(array $g, ?array $source): string
 {
     $issues = [...$g['old'], ...$g['new']];
     $messages = shortClassNames(array_column($issues, 'message'));
@@ -532,24 +536,39 @@ function changeHunk(array $g): string
     $segments = changeSegments(array_slice($messages, 0, $oldCount), array_slice($messages, $oldCount));
     $types = array_values(array_unique(array_column($issues, 'type')));
     $type = count($types) === 1 ? " {$types[0]}" : '';
-    if ($g['count'] === 1) {
-        $lines = ["@@ {$g['locations'][0]}{$type} @@"];
-    } else {
-        $more = $g['count'] - count($g['locations']);
-        $lines = [
-            "@@ {$g['count']} places{$type} @@",
-            ...array_map(static fn(string $location): string => "  {$location}", $g['locations']),
-            ...($more > 0 ? ["  … and {$more} more"] : []),
-        ];
-    }
-
+    $more = $g['count'] - count($g['locations']);
+    $locations = implode(' · ', [
+        ...array_map(static fn(string $location): string => locationLink($source, $location), $g['locations']),
+        ...($more > 0 ? ["… and {$more} more"] : []),
+    ]);
+    $lines = ['@@ ' . ($g['count'] === 1 ? '1 place' : "{$g['count']} places") . "{$type} @@"];
     $width = max(array_map(strlen(...), $types));
     foreach ($issues as $k => $issue) {
         $lines[] = ($k < $oldCount ? '- ' : '+ ') . ($type === '' ? str_pad("{$issue['type']}:", $width + 2) : '')
             . changeLine($segments, $k);
     }
 
-    return implode("\n", $lines);
+    return "{$locations}\n\n```diff\n" . implode("\n", $lines) . "\n```";
+}
+
+/**
+ * `file:line` as code, linked to that line of the analysed commit when the project is on GitHub.
+ *
+ * @param array{repo: string, ref: string}|null $source
+ */
+function locationLink(?array $source, string $location): string
+{
+    $code = inlineCode($location);
+    if ($source === null
+        || preg_match('~^(https://github\.com/[^/]+/[^/]+?)(?:\.git)?/?$~', $source['repo'], $repo) !== 1
+        || preg_match('/^(.+):(\d+)$/', $location, $m) !== 1
+    ) {
+        return $code;
+    }
+
+    $path = implode('/', array_map(rawurlencode(...), explode('/', $m[1])));
+
+    return "[{$code}]({$repo[1]}/blob/{$source['ref']}/{$path}#L{$m[2]})";
 }
 
 /**
