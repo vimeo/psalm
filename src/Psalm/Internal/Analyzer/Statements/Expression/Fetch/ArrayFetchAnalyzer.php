@@ -2469,7 +2469,9 @@ final class ArrayFetchAnalyzer
                     $has_valid_offset = true;
 
                     $array_access_type = Type::getMixed();
-                } elseif ($context->inside_by_ref_offset) {
+                } elseif ($context->inside_by_ref_offset
+                    || ($context->inside_isset && $stmt->getAttribute('coalesceAssignmentTarget') === true)
+                ) {
                     // PHP creates the missing offset, as null
                     $has_valid_offset = true;
 

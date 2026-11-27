@@ -917,6 +917,39 @@ final class ArrayAssignmentTest extends TestCase
                     $a = [];
                     Bag::of($a)["k"] = "bar";',
             ],
+            'coalesceAssignmentAddsAKeyMissingFromASealedShape' => [
+                'code' => '<?php
+                    $e = ["a" => 1];
+                    $e["b"] ??= 2;
+
+                    $n = ["a" => 1];
+                    $n["b"]["c"] ??= 2;
+
+                    /** @param array<string, mixed> $r */
+                    function f(array $r): array {
+                        $r["k"] = ["a" => 1];
+                        $r["k"]["b"] ??= 2;
+                        return $r;
+                    }',
+                'assertions' => [
+                    '$e===' => 'array{a: 1, b: 2}',
+                    '$n===' => 'array{a: 1, b: array{c: 2}}',
+                ],
+                'ignored_issues' => ['TypeDoesNotContainType'],
+            ],
+            'coalesceAssignmentKeepsTheValueOfAnOptionalKey' => [
+                'code' => '<?php
+                    /** @return array{a: int, b?: string} */
+                    function get(): array {
+                        return ["a" => 1];
+                    }
+
+                    $e = get();
+                    $e["b"] ??= 2;',
+                'assertions' => [
+                    '$e===' => 'array{a: int, b: 2|string}',
+                ],
+            ],
             'coalesceAssignmentOnTwoOptionalKeysOfAnArrayWithAShapeIntersection' => [
                 'code' => '<?php
                     /** @var array{name?: string, age?: int}&array $data */
@@ -4179,6 +4212,12 @@ final class ArrayAssignmentTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'coalesceAssignmentToAKeyMissingFromASealedShapeIsAlwaysTaken' => [
+                'code' => '<?php
+                    $e = ["a" => 1];
+                    $e["b"] ??= 2;',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:21 - Type null for $e["b"] is never isset',
+            ],
             'nestedWriteUnderAnUnlistedKeyOfAShapeWithAMixedFallback' => [
                 'code' => '<?php
                     /** @param array{meta: array, ...} $payload */
