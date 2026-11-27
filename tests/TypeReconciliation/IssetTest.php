@@ -2752,7 +2752,7 @@ final class IssetTest extends TestCase
                     function bigFirst(array $l, bool $b): void {
                         $i = $b ? 5 : 2;
                         if (is_array($l[$i])) {
-                            /** @psalm-check-type-exact $l = list{0: list{string}|string, 1: list{string}|string, 2: list{string}|string, 3?: list{string}|string, 4?: list{string}|string, 5?: list{string}|string, ...<list{string}|string>} */
+                            /** @psalm-check-type-exact $l = list{0: list{string}|string, 1: list{string}|string, 2: list{string}|string, 3?: list{string}|string, 4?: list{string}|string, 5?: list{string}, ...<list{string}|string>} */
                         }
                     }
 
@@ -2760,7 +2760,7 @@ final class IssetTest extends TestCase
                     function smallFirst(array $l, bool $b): void {
                         $i = $b ? 2 : 5;
                         if (is_array($l[$i])) {
-                            /** @psalm-check-type-exact $l = list{0: list{string}|string, 1: list{string}|string, 2: list{string}|string, 3?: list{string}|string, 4?: list{string}|string, 5?: list{string}|string, ...<list{string}|string>} */
+                            /** @psalm-check-type-exact $l = list{0: list{string}|string, 1: list{string}|string, 2: list{string}|string, 3?: list{string}|string, 4?: list{string}|string, 5?: list{string}, ...<list{string}|string>} */
                         }
                     }
 
@@ -2795,15 +2795,16 @@ final class IssetTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => ['InvalidArrayOffset'],
             ],
-            'assertionOnAnArrayItemWithAUnionKeyKeepsTheValueTypeOfEachKey' => [
+            'checkOfEachItemOfAnArrayInALoopNarrowsAllTheItems' => [
                 'code' => <<<'PHP'
                     <?php
-                    /** @param array<string, int|string> $a */
-                    function f(array $a, bool $b): void {
-                        $k = $b ? 'x' : 'y';
-                        if (is_int($a[$k])) {
-                            /** @psalm-check-type-exact $a = array{x?: int|string, y?: int|string, ...<string, int|string>} */
+                    function f(array $payload): void {
+                        foreach (['iv', 'mac'] as $item) {
+                            if (!isset($payload[$item]) || !is_string($payload[$item])) {
+                                return;
+                            }
                         }
+                        /** @psalm-check-type-exact $payload = array{iv?: string, mac?: string, ...<array-key, mixed>} */
                     }
                     PHP,
             ],

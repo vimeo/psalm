@@ -2877,10 +2877,7 @@ class Reconciler
 
                             $base_atomic_type = TKeyedArray::make(
                                 [
-                                $array_key_offset => count($array_key_offsets) === 1
-                                    ? $result_type
-                                    : Type::combineUnionTypes($fallback_value_type, $result_type)
-                                        ->setPossiblyUndefined(true),
+                                $array_key_offset => $result_type,
                                 ],
                                 null,
                                 $fallback_key_type->isNever() ? null : [$fallback_key_type, $fallback_value_type],
@@ -2895,11 +2892,12 @@ class Reconciler
                             if (count($array_key_offsets) === 1) {
                                 $properties[$array_key_offset] = $result_type;
                             } elseif (!isset($properties[$array_key_offset])) {
-                                $properties[$array_key_offset] = $base_atomic_type->fallback_params
-                                    ? Type::combineUnionTypes(
-                                        $base_atomic_type->fallback_params[1],
-                                        $result_type,
-                                    )->setPossiblyUndefined(true)
+                                // a list has the item at the smallest key whichever key the offset is
+                                $properties[$array_key_offset] = $base_atomic_type->is_list
+                                    && $base_atomic_type->fallback_params
+                                    && $last_list_offset_set !== null
+                                    && ArrayAnalyzer::getLiteralArrayKeyInt($array_key_offset) === $last_list_offset_set
+                                    ? $base_atomic_type->fallback_params[1]
                                     : $result_type;
                             }
 
