@@ -3891,10 +3891,10 @@ final class ArrayFunctionCallTest extends TestCase
                         return array_map("intval", $strings);
                     }',
             ],
-            'SKIPPED-arrayMapZip' => [ // #13932
+            'arrayMapZipOfStrSplit' => [
                 'code' => '<?php
                     /**
-                     * @return array<int, array{string,?string}>
+                     * @return array<int, array{?string,?string}>
                      */
                     function getCharPairs(string $line) : array {
                         $chars = str_split($line);
@@ -4129,6 +4129,49 @@ final class ArrayFunctionCallTest extends TestCase
                     '$b===' => 'list{1}',
                     '$c===' => 'array{test: 1}',
                     '$d===' => 'array<never, never>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '7.4',
+            ],
+            'arrayMapZipNonSealed' => [
+                'code' => '<?php
+                    /** @var list<int> */
+                    $a = [];
+                    /** @var list<string> */
+                    $b = [];
+                    /** @var non-empty-list<float> */
+                    $c = [1.0];
+                    /** @var array<string, bool> */
+                    $d = [];
+                    /** @var list<int>|list<string> */
+                    $e = [];
+                    $lists = array_map(null, $a, $b);
+                    $non_empty = array_map(null, $a, $c);
+                    $map = array_map(null, $d, [1, 2]);
+                    $union = array_map(null, $e, $a);
+                    $empty = array_map(null, [], $b);',
+                'assertions' => [
+                    '$lists===' => 'list<list{int|null, null|string}>',
+                    '$non_empty===' => 'non-empty-list<list{int|null, float|null}>',
+                    '$map===' => 'non-empty-list<list{bool|null, 1|2|null}>',
+                    '$union===' => 'list<list{int|null|string, int|null}>',
+                    '$empty===' => 'list<list{null, null|string}>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '7.4',
+            ],
+            'arrayMapZipOptionalElements' => [
+                'code' => '<?php
+                    $list = random_int(0, 1) ? [1] : [1, 2];
+                    $a = array_map(null, $list, ["a", "b"]);
+                    $b = array_map(null, $list, ["a"]);
+
+                    /** @var array{a?: int, b: string} $shape */
+                    $c = array_map(null, $shape, [1]);',
+                'assertions' => [
+                    '$a===' => "list{list{1, 'a'}, list{2|null, 'b'}}",
+                    '$b===' => "list{0: list{1, 'a'}, 1?: list{2|null, null}}",
+                    '$c===' => 'non-empty-list<list{int|null|string, 1|null}>',
                 ],
                 'ignored_issues' => [],
                 'php_version' => '7.4',

@@ -8,6 +8,7 @@ use Override;
 use PhpParser;
 use PhpParser\NodeFinder;
 use Psalm\CodeLocation;
+use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\AssertionFinder;
@@ -57,6 +58,7 @@ use function count;
 use function explode;
 use function implode;
 use function is_string;
+use function max;
 use function reset;
 use function str_contains;
 use function substr;
@@ -99,54 +101,78 @@ final class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInte
                 return Type::getNever();
             }
 
-            $array_arg_types = [];
-            $orig_types = [];
+            $call_arg_types = [];
 
             foreach ($call_args as $call_arg) {
                 $call_arg_type = $statements_source->node_data->getType($call_arg->value);
 
-                if ($call_arg_type
-                    && $call_arg_type->isSingleAtomic()
+                if (!$call_arg_type || $call_arg->unpack) {
+                    return Type::getArray();
+                }
+
+                $call_arg_types []= $call_arg_type;
+            }
+
+            // a single array comes back as it is
+            if (count($call_arg_types) === 1) {
+                return $call_arg_types[0]->isArray() ? $call_arg_types[0] : Type::getArray();
+            }
+
+            $array_arg_types = [];
+
+            foreach ($call_arg_types as $call_arg_type) {
+                // the n-th element of an array is known only when the keys before it are all set
+                if ($call_arg_type->isSingleAtomic()
                     && ($call_arg_atomic = $call_arg_type->getSingleAtomic()) instanceof TKeyedArray
                     && $call_arg_atomic->fallback_params === null
+                    && ($call_arg_atomic->is_list || !array_filter(
+                        $call_arg_atomic->properties,
+                        static fn(Union $property): bool => $property->possibly_undefined,
+                    ))
                 ) {
                     $array_arg_types []= array_values($call_arg_atomic->properties);
-                    $orig_types []= $call_arg_type;
-                } elseif ($call_arg_type
-                    && $call_arg_type->isSingleAtomic()
+                } elseif ($call_arg_type->isSingleAtomic()
                     && ($call_arg_atomic = $call_arg_type->getSingleAtomic()) instanceof TArray
                     && $call_arg_atomic->isEmptyArray()
                 ) {
                     $array_arg_types []= [];
-                    $orig_types []= $call_arg_type;
                 } else {
-                    return Type::getArray();
+                    return self::getZippedListType($call_arg_types, $statements_source->getCodebase());
                 }
             }
 
-            if (count($orig_types) === 1) {
-                return $orig_types[0];
+            $null = Type::getNull();
+            $zipped_types = [];
+
+            // an element is null where its array is shorter, and the row is there if one of its arrays reaches it
+            $row_count = max(array_map(count(...), $array_arg_types));
+
+            for ($i = 0; $i < $row_count; $i++) {
+                $row_possibly_undefined = true;
+                $columns = [];
+
+                foreach ($array_arg_types as $array_arg_type) {
+                    $column = $array_arg_type[$i] ?? null;
+
+                    if ($column === null) {
+                        $columns []= $null;
+                    } elseif ($column->possibly_undefined) {
+                        $columns []= Type::combineUnionTypes($column->setPossiblyUndefined(false), $null);
+                    } else {
+                        $columns []= $column;
+                        $row_possibly_undefined = false;
+                    }
+                }
+
+                $zipped_types []= (new Union([TKeyedArray::make($columns, null, null, true)]))
+                    ->setPossiblyUndefined($row_possibly_undefined);
             }
 
-            $null = Type::getNull();
-            $array_arg_types = array_map(null, ...$array_arg_types);
-            $array_arg_types = array_map(
-                /** @param non-empty-array<?Union> $sub */
-                static function (array $sub) use ($null) {
-                    $sub = array_map(
-                        static fn(?Union $t) => $t ?? $null,
-                        $sub,
-                    );
-                    return new Union([TKeyedArray::make($sub, null, null, true)]);
-                },
-                $array_arg_types,
-            );
-
-            if (!$array_arg_types) {
+            if (!$zipped_types) {
                 return Type::getEmptyArray();
             }
 
-            return new Union([TKeyedArray::make($array_arg_types, null, null, true)]);
+            return new Union([TKeyedArray::make($zipped_types, null, null, true)]);
         }
 
         $array_arg = $call_args[1] ?? null;
@@ -292,6 +318,47 @@ final class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInte
                 ]),
             ])
             : Type::getList();
+    }
+
+    /**
+     * The list array_map(null, ...) makes of arrays whose elements aren't all known: an element of an array may be
+     * null in a row, as another array may be longer
+     *
+     * @param non-empty-list<Union> $array_types
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    private static function getZippedListType(array $array_types, Codebase $codebase): Union
+    {
+        $null = Type::getNull();
+        $columns = [];
+        $non_empty = false;
+
+        foreach ($array_types as $array_type) {
+            $value_type = null;
+            $array_non_empty = true;
+
+            foreach ($array_type->getAtomicTypes() as $atomic) {
+                foreach ($atomic instanceof TTemplateParam ? $atomic->as->getAtomicTypes() : [$atomic] as $part) {
+                    $array = ArrayType::infer($part);
+
+                    if ($array === null) {
+                        return Type::getArray();
+                    }
+
+                    $value_type = Type::combineUnionTypes($array->value, $value_type, $codebase);
+                    $array_non_empty = $array_non_empty
+                        && ($part instanceof TNonEmptyArray
+                            || ($part instanceof TKeyedArray && $part->isNonEmpty()));
+                }
+            }
+
+            $columns []= Type::combineUnionTypes($value_type->setPossiblyUndefined(false), $null, $codebase);
+            $non_empty = $non_empty || $array_non_empty;
+        }
+
+        $row_type = new Union([TKeyedArray::make($columns, null, null, true)]);
+
+        return $non_empty ? Type::getNonEmptyList($row_type) : Type::getList($row_type);
     }
 
     /**
