@@ -170,6 +170,21 @@ final class IssetTest extends TestCase
                     }
                     PHP,
             ],
+            'offsetOfAnUnsealedShapeThatExistsWhereIssetIsFalseIsDefined' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @var array{a: string, ...<array-key, mixed>} */
+                    $a = ['a' => 'x'];
+                    if (isset($a['b']) || !array_key_exists('b', $a)) {
+                        exit;
+                    }
+                    $b = $a['b'];
+                    PHP,
+                'assertions' => [
+                    '$a===' => 'array{a: string, b: null, ...<array-key, mixed>}',
+                    '$b===' => 'null',
+                ],
+            ],
             'negatedIssetAlternativeKeepsNonEmptyArray' => [
                 'code' => '<?php
                     /** @return non-empty-array<string, int|string|null> */
@@ -3422,6 +3437,18 @@ final class IssetTest extends TestCase
                     }
                     PHP,
                 'error_message' => 'PossiblyUndefinedArrayOffset - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:9',
+            ],
+            'offsetOfAnUnsealedShapeReadWhereIssetIsFalseIsPossiblyUndefined' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array{a: string, ...<array-key, mixed>} $a */
+                    function f(array $a): void {
+                        if (!isset($a['b'])) {
+                            echo (string) $a['b'];
+                        }
+                    }
+                    PHP,
+                'error_message' => 'PossiblyUndefinedArrayOffset - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:23',
             ],
             'appendUnderAnIntOffsetOfADeclaredStringCheckedWithIssetIsReported' => [
                 'code' => '<?php
