@@ -117,6 +117,27 @@ final class ComparisonAssertionTest extends TestCase
                     '$kept===' => 'iterable<int, string>|null',
                 ],
             ],
+            'instanceofAnInterfaceOfACallableIsNotAContradiction' => [
+                'code' => '<?php
+                    interface ResetInterface {}
+
+                    /**
+                     * @param callable(string): ?string $resolver
+                     * @return string
+                     */
+                    function f(callable $resolver): string {
+                        $kind = "plain";
+
+                        if ($resolver instanceof ResetInterface) {
+                            $kind = "reset";
+                        }
+
+                        return $kind;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'getClassIdenticalToAUnionOfClassStringsNarrowsToEachOfThem' => [
                 'code' => '<?php
                     final class A {}

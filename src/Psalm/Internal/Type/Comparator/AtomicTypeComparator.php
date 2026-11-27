@@ -1170,8 +1170,9 @@ final class AtomicTypeComparator
         }
 
         // an interface or a class that isn't final can have a child or an implementation with __invoke()
-        if (($type1_part::class === TCallable::class && self::isExtensibleObject($codebase, $type2_part))
-            || ($type2_part::class === TCallable::class && self::isExtensibleObject($codebase, $type1_part))
+        if ($allow_interface_equality
+            && (($type1_part::class === TCallable::class && self::isExtensibleObject($codebase, $type2_part))
+                || ($type2_part::class === TCallable::class && self::isExtensibleObject($codebase, $type1_part)))
         ) {
             return true;
         }
