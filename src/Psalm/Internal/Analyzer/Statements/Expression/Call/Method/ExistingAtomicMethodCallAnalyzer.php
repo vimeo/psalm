@@ -240,16 +240,22 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
             $template_result->lower_bounds += $inferred_template_result->lower_bounds;
         }
         if ($method_storage && $method_storage->template_types) {
-            // the `as` types of the method's templates name the class templates, which take the receiver's bindings
-            $class_template_result = new TemplateResult([], $class_template_params ?: []);
+            $receiver_bindings = $class_template_params ?? [];
+            $method_template_types = $method_storage->template_types;
 
-            foreach ($method_storage->template_types as $template_name => $type_map) {
-                foreach ($type_map as $defining_id => $as_type) {
-                    $template_result->template_types[$template_name][$defining_id] ??= $class_template_params
-                        ? TemplateInferredTypeReplacer::replace($as_type, $class_template_result, $codebase)
-                        : $as_type;
+            // the `as` types of the method's templates name the class templates, which take the receiver's bindings
+            if ($receiver_bindings !== []) {
+                $receiver_template_result = new TemplateResult([], $receiver_bindings);
+
+                foreach ($method_template_types as $template_name => $type_map) {
+                    foreach ($type_map as $defining_id => $as_type) {
+                        $method_template_types[$template_name][$defining_id]
+                            = TemplateInferredTypeReplacer::replace($as_type, $receiver_template_result, $codebase);
+                    }
                 }
             }
+
+            $template_result->template_types += $method_template_types;
         }
 
         // a template (or intersection) receiver keeps `static` as declared, which the return type expansion resolves;

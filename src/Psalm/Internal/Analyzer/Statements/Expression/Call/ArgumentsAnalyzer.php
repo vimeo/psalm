@@ -1044,8 +1044,8 @@ final class ArgumentsAnalyzer
     }
 
     /**
-     * The `as` type of a template inferred from nothing names the callee's own templates, in the callee's terms (the
-     * receiver's bindings are put in it already): it takes their bounds before $type takes it
+     * The `as` type of a template inferred from nothing has the receiver's bindings already: it takes the bounds of the
+     * callee's own templates it names before $type takes it
      *
      * @param array<string, array<string, Union>> $bounds
      * @param array<string, array<string, Union>> $own_templates
