@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-const RUNS_PER_PROJECT = 4;
+const ROUNDS_PER_PROJECT = 2;
 const JOB_SLACK_MINUTES = 5;
 
 /**
@@ -24,7 +24,7 @@ function memoryLimitMb(string $limit): int
 }
 
 /**
- * Runner budget: one install plus up to four analyses per project.
+ * Runner budget: one install plus up to two rounds per project (base and head run side by side in a round).
  *
  * @param list<string> $members
  * @param array<mixed> $projects
@@ -33,7 +33,7 @@ function jobMinutes(array $members, array $projects, int $installSeconds): int
 {
     $seconds = 0;
     foreach ($members as $name) {
-        $seconds += $installSeconds + RUNS_PER_PROJECT * (int) ($projects[$name]['timeout'] ?? 0);
+        $seconds += $installSeconds + ROUNDS_PER_PROJECT * (int) ($projects[$name]['timeout'] ?? 0);
     }
 
     return (int) ceil($seconds / 60) + JOB_SLACK_MINUTES;

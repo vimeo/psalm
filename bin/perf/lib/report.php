@@ -20,8 +20,8 @@ const VERDICT_ORDER = ['fail' => 0, 'warn' => 1, 'skip' => 2, 'pass' => 3];
 const TABLE_LEGEND = "<details><summary>How to read this table</summary>\n\n"
     . "- **Memory**: Psalm's own peak figure, `threads=1`. More than +5 % fails, unless the PR changes "
     . "`composer.json`.\n"
-    . '- **Wall**: base and head run on the same runner; ±10 % is noise. Above +10 % warns, never fails. '
-    . "*re-run*: a reversed second run was taken and the faster kept.\n"
+    . '- **Wall**: base and head run side by side on the same runner; ±10 % is noise. Above +10 % warns, '
+    . "never fails. *re-run*: a second round was taken and the faster run of each side kept.\n"
     . '- **Issues**: head count over all categories, then $\color{red}{\textsf{+added}}$ '
     . '$\color{green}{\textsf{-removed}}$ against base.' . "\n"
     . '- **Weighted (types)**: type issues weighted by error level (levels 1–8 as is, always-errors 10, strictness '

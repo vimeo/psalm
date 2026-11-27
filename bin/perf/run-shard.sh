@@ -252,6 +252,18 @@ run_once() {
         }' > "$prefix.json"
 }
 
+# run_round <n>: base and head run <n> side by side, so both see the same runner load. Each is single-threaded.
+run_round() {
+    local base_pid head_pid rc=0
+    run_once base "$1" &
+    base_pid=$!
+    run_once head "$1" &
+    head_pid=$!
+    wait "$base_pid" || rc=$?
+    wait "$head_pid" || rc=$?
+    return "$rc"
+}
+
 run_field() { jq -r ".$3" "$RUNDIR/$1-$2.json"; }
 
 # Both first runs ok and wall times differ by more than RERUN_RATIO of base.
@@ -311,12 +323,10 @@ write_result() {
 measure_project() {
     install_project
     write_config
-    run_once base 1
-    run_once head 1
+    run_round 1
     if needs_rerun; then
-        echo "run-shard: $NAME wall times differ by more than $(awk -v r="$RERUN_RATIO" 'BEGIN { printf "%g", r * 100 }') %, re-running in reverse order" >&2
-        run_once head 2
-        run_once base 2
+        echo "run-shard: $NAME wall times differ by more than $(awk -v r="$RERUN_RATIO" 'BEGIN { printf "%g", r * 100 }') %, re-running" >&2
+        run_round 2
     fi
     write_result base "$BASE_SHA"
     write_result head "$HEAD_SHA"
