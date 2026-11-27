@@ -4110,6 +4110,10 @@ final class ArrayAssignmentTest extends TestCase
                     function getLists(): array {
                         return [];
                     }
+                    /** @return array<string, non-empty-list<int>> */
+                    function getNonEmptyLists(): array {
+                        return [];
+                    }
                     /** @return array<string, array{x?: int}> */
                     function getShapes(): array {
                         return [];
@@ -4132,6 +4136,9 @@ final class ArrayAssignmentTest extends TestCase
                     $c = getShapes();
                     $c[$k] = ['x' => 1];
 
+                    $e = getNonEmptyLists();
+                    $e[$k] = [];
+
                     $d = getNestedLists();
                     $d[$j][$k] = [1];
                 PHP,
@@ -4140,6 +4147,7 @@ final class ArrayAssignmentTest extends TestCase
                     '$b===' => 'non-empty-array<string, list<int>>',
                     '$c===' => 'non-empty-array<string, array{x?: int}>',
                     '$d===' => 'non-empty-array<string, non-empty-array<string, list<int>>>',
+                    '$e===' => 'non-empty-array<string, list<int>>',
                 ],
             ],
             'offsetWriteKeepsAnEmptyCheckOnAnotherKey' => [

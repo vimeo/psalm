@@ -447,26 +447,22 @@ final class TypeCombiner
     }
 
     /**
+     * Without $overwrite_array_values, a value written into the array only overwrites an empty array it held
+     *
      * @psalm-pure
      */
     private static function overwritesValues(
         bool $overwrite_empty_array,
         bool $overwrite_array_values,
-        ?Union $type_1,
-        ?Union $type_2,
+        ?Union $existing_type,
     ): bool {
         if (!$overwrite_empty_array || $overwrite_array_values) {
             return $overwrite_empty_array;
         }
 
-        foreach ([$type_1, $type_2] as $type) {
-            $array = $type?->getAtomicTypes()['array'] ?? null;
-            if ($array instanceof TArray && $array->isEmptyArray()) {
-                return true;
-            }
-        }
+        $array = $existing_type?->getAtomicTypes()['array'] ?? null;
 
-        return false;
+        return $array instanceof TArray && $array->isEmptyArray();
     }
 
     /**
@@ -776,7 +772,6 @@ final class TypeCombiner
                         $overwrite_empty_array,
                         $overwrite_array_values,
                         $combination->array_type_params[$i] ?? null,
-                        $type_param,
                     ),
                 );
             }
@@ -830,7 +825,6 @@ final class TypeCombiner
                         $overwrite_empty_array,
                         $overwrite_array_values,
                         $combination->array_type_params[$i] ?? null,
-                        $type_param,
                     ),
                 );
             }
@@ -851,7 +845,6 @@ final class TypeCombiner
                         $overwrite_empty_array,
                         $overwrite_array_values,
                         $combination->class_string_map_value_param,
-                        $type->value_param,
                     ),
                 );
             }
@@ -894,7 +887,6 @@ final class TypeCombiner
                         $overwrite_empty_array,
                         $overwrite_array_values,
                         $combination->builtin_type_params[$type_key][$i] ?? null,
-                        $type_param,
                     ),
                 );
             }
@@ -913,7 +905,6 @@ final class TypeCombiner
                         $overwrite_empty_array,
                         $overwrite_array_values,
                         $combination->object_type_params[$type_key][$i] ?? null,
-                        $type_param,
                     ),
                 );
             }
@@ -962,7 +953,6 @@ final class TypeCombiner
                             $overwrite_empty_array,
                             $overwrite_array_values,
                             $value_type,
-                            $candidate_property_type,
                         ),
                     );
                     if ((!$value_type->possibly_undefined || !$candidate_property_type->possibly_undefined)
@@ -987,7 +977,6 @@ final class TypeCombiner
                         self::overwritesValues(
                             $overwrite_empty_array,
                             $overwrite_array_values,
-                            $combination->objectlike_entries[$candidate_property_name],
                             $combination->objectlike_value_type,
                         ),
                     );
@@ -1023,7 +1012,6 @@ final class TypeCombiner
                     self::overwritesValues(
                         $overwrite_empty_array,
                         $overwrite_array_values,
-                        $type->fallback_params[1],
                         $combination->objectlike_value_type,
                     ),
                 );
@@ -1073,7 +1061,6 @@ final class TypeCombiner
                             $overwrite_empty_array,
                             $overwrite_array_values,
                             $combination->objectlike_entries[$k],
-                            $type->fallback_params[1],
                         ),
                     );
                 }
