@@ -2001,6 +2001,102 @@ final class PluginTest extends DeferredAnalyzerTestCase
         );
     }
 
+    public function testAfterMethodCallPluginsSeeTheWrittenCall(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                ></psalm>',
+            ),
+        );
+
+        $plugin = new class implements AfterMethodCallAnalysisInterface {
+            /** @var list<string> */
+            public static array $calls = [];
+
+            /**
+             * @psalm-capabilities read-globals|write-globals
+             */
+            #[Override]
+            public static function afterMethodCallAnalysis(AfterMethodCallAnalysisEvent $event): void
+            {
+                $expr = $event->getExpr();
+
+                self::$calls[] = $event->getMethodId() . ' ' . $expr::class . ':' . $expr->getLine();
+            }
+        };
+
+        $codebase = $this->project_analyzer->getCodebase();
+        (new PluginRegistrationSocket($codebase->config, $codebase))->registerHooksFromClass(get_class($plugin));
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+            final class Mixin {
+                public static function check(): void {}
+                public function instance(): void {}
+            }
+
+            /** @mixin Mixin */
+            class Assert {
+                /** @param list<mixed> $args */
+                public static function __callStatic(string $name, array $args): void {}
+
+                public function selfCall(): void {}
+
+                public function run(): void {
+                    self::selfCall();
+                    static::selfCall();
+                    $this->selfCall();
+                }
+            }
+
+            class Child extends Assert {
+                public function runParent(): void {
+                    parent::selfCall();
+                }
+            }
+
+            Assert::check();
+            Assert::instance();
+            (new Assert())->selfCall();
+
+            /** @mixin Mixin */
+            class MagicParent {
+                /** @param list<mixed> $args */
+                public function __call(string $name, array $args): void {}
+            }
+
+            final class MagicChild extends MagicParent {
+                public function run(): void {
+                    parent::instance();
+                }
+            }
+            ',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        $this->assertSame(
+            [
+                'Mixin::check PhpParser\Node\Expr\StaticCall:27',
+                'Mixin::instance PhpParser\Node\Expr\StaticCall:28',
+                'Assert::selfcall PhpParser\Node\Expr\MethodCall:29',
+                'Assert::selfcall PhpParser\Node\Expr\StaticCall:15',
+                'Assert::selfcall PhpParser\Node\Expr\StaticCall:16',
+                'Assert::selfcall PhpParser\Node\Expr\MethodCall:17',
+                'Assert::selfcall PhpParser\Node\Expr\StaticCall:23',
+                'Mixin::instance PhpParser\Node\Expr\StaticCall:39',
+            ],
+            $plugin::$calls,
+        );
+    }
+
     public function testAfterEveryFunctionPluginIsCalledInAllCases(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(

@@ -25,6 +25,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MissingMethodCallH
 use Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\NewAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\StaticCallAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\MixinLookup;
@@ -1480,7 +1481,7 @@ final class AtomicStaticCallAnalyzer
             new VirtualVariable($virtual_var_name, $stmt->class->getAttributes()),
             $stmt_name,
             $stmt->args,
-            $stmt->getAttributes(),
+            [...$stmt->getAttributes(), CallAnalyzer::FORWARDED_STATIC_CALL_ATTRIBUTE => $stmt],
         );
 
         if (MethodCallAnalyzer::analyze(
