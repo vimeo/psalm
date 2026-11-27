@@ -1302,11 +1302,12 @@ trait UnionTrait
      */
     public function isBool(): bool
     {
-        if (!$this->isSingle()) {
-            return false;
+        foreach ($this->types as $type) {
+            if (!$type instanceof TBool) {
+                return false;
+            }
         }
-
-        return isset($this->types['bool']);
+        return true;
     }
 
     /**
@@ -1315,11 +1316,12 @@ trait UnionTrait
      */
     public function isArray(): bool
     {
-        if (!$this->isSingle()) {
-            return false;
+        foreach ($this->types as $type) {
+            if (!($type instanceof TArray || $type instanceof TKeyedArray || $type instanceof TClassStringMap)) {
+                return false;
+            }
         }
-
-        return isset($this->types['array']);
+        return true;
     }
 
     /**
