@@ -1364,7 +1364,8 @@ final class ArgumentsAnalyzer
         $class_generic_params = [];
 
         // what replaces the templates in the types of the parameters: a template of the function itself that an
-        // argument outside its bound gave is not replaced, as the bound is compared with the argument then
+        // argument outside its bound gave is not replaced, as the bound is compared with the argument then. Nor is
+        // one given by a type variable: it fits the bound only by recording it as a bound of the variable
         $param_class_generic_params = [];
 
         foreach ($template_result->lower_bounds as $template_name => $type_map) {
@@ -1380,7 +1381,7 @@ final class ArgumentsAnalyzer
                 $bound_comparison = new TypeComparisonResult();
 
                 if ($template_bound === null
-                    || UnionTypeComparator::isContainedBy(
+                    || (UnionTypeComparator::isContainedBy(
                         $codebase,
                         $lower_bound_type,
                         $template_bound,
@@ -1388,6 +1389,8 @@ final class ArgumentsAnalyzer
                         false,
                         $bound_comparison,
                     )
+                        && !$bound_comparison->type_variable_lower_bounds
+                        && !$bound_comparison->type_variable_upper_bounds)
                     || $bound_comparison->type_coerced
                 ) {
                     $param_class_generic_params[$template_name][$class] = $lower_bound_type;

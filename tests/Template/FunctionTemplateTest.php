@@ -3761,6 +3761,60 @@ final class FunctionTemplateTest extends TestCase
                     '$cars===' => 'list<Car>',
                 ],
             ],
+            'methodTemplateBoundTakesAConstructedGenericOfASubtype' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Coll {
+                        /** @param list<T> $items */
+                        public function __construct(public array $items) {}
+                    }
+                    class A {}
+                    class B extends A {}
+                    final class C extends B {}
+
+                    final class Finder {
+                        /**
+                         * @template TB of B
+                         * @param Coll<TB> $coll
+                         * @return TB
+                         */
+                        public function first(Coll $coll): B { return $coll->items[0]; }
+                    }
+
+                    $c = (new Finder)->first(new Coll([new C()]));
+                    $b = (new Finder)->first(new Coll([new B()]));',
+                'assertions' => [
+                    '$c===' => 'C',
+                    '$b===' => 'B',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'methodTemplateBoundTakesATypeVariableFilledWithinItLater' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /** @var list<T> */
+                        public array $items = [];
+                        /** @param T $x */
+                        public function add($x): void { $this->items[] = $x; }
+                    }
+
+                    final class Taker {
+                        /**
+                         * @template TX of int
+                         * @param Box<TX> $box
+                         */
+                        public function take(Box $box): void {}
+                    }
+
+                    $box = new Box();
+                    (new Taker)->take($box);
+                    $box->add(5);',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'conditionalReturnOnArgumentOnlyCoercedToTheBoundKeepsTheBoundPartsItContains' => [
                 'code' => '<?php
                     /** @return array|scalar */
@@ -5427,6 +5481,116 @@ final class FunctionTemplateTest extends TestCase
 
                     (new Garage)->find(Countable::class);',
                 'error_message' => 'InvalidArgument',
+            ],
+            'methodTemplateBoundRejectsAConstructedGenericOutsideIt' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Coll {
+                        /** @param list<T> $items */
+                        public function __construct(public array $items) {}
+                    }
+                    class A {}
+                    final class B extends A {}
+
+                    final class Taker {
+                        /**
+                         * @template TB of B
+                         * @param Coll<TB> $coll
+                         */
+                        public function take(Coll $coll): void {}
+                    }
+
+                    (new Taker)->take(new Coll([new A()]));',
+                'error_message' => 'ArgumentTypeCoercion',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'methodTemplateBoundRejectsATypeVariableFilledOutsideIt' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /** @var list<T> */
+                        public array $items = [];
+                        /** @param T $x */
+                        public function add($x): void { $this->items[] = $x; }
+                    }
+
+                    final class Taker {
+                        /**
+                         * @template TX of int
+                         * @param Box<TX> $box
+                         */
+                        public function take(Box $box): void {}
+                    }
+
+                    $box = new Box();
+                    $box->add("x");
+                    (new Taker)->take($box);',
+                'error_message' => 'IncompatibleTypeParameters',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'overridingMethodTemplateBoundRejectsAConstructedGenericOutsideIt' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Coll {
+                        /** @param list<T> $items */
+                        public function __construct(public array $items) {}
+                    }
+                    class A {}
+                    final class B extends A {}
+
+                    /** @template T of A */
+                    class Foo {
+                        /**
+                         * @template TSub of T
+                         * @param Coll<TSub> $coll
+                         */
+                        public function take(Coll $coll): void {}
+                    }
+
+                    /** @extends Foo<B> */
+                    final class Bar extends Foo {
+                        /**
+                         * @template TSub of B
+                         * @param Coll<TSub> $coll
+                         */
+                        public function take(Coll $coll): void {}
+                    }
+
+                    (new Bar)->take(new Coll([new A()]));',
+                'error_message' => 'ArgumentTypeCoercion',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'inheritedMethodTemplateBoundByAClassTemplateRejectsAConstructedGenericOutsideIt' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Coll {
+                        /** @param list<T> $items */
+                        public function __construct(public array $items) {}
+                    }
+                    class A {}
+                    final class B extends A {}
+
+                    /** @template T of A */
+                    class Foo {
+                        /**
+                         * @template TSub of T
+                         * @param Coll<TSub> $coll
+                         */
+                        public function take(Coll $coll): void {}
+                    }
+
+                    /** @extends Foo<B> */
+                    final class Bar extends Foo {
+                        public function take($coll): void {}
+                    }
+
+                    (new Bar)->take(new Coll([new A()]));',
+                'error_message' => 'ArgumentTypeCoercion',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'templateBoundedByIntCannotBeIdenticalToAString' => [
                 'code' => '<?php
