@@ -3594,6 +3594,37 @@ final class MagicMethodAnnotationTest extends TestCase
                     PHP,
                 'error_message' => 'UndefinedFunction',
             ],
+            'methodParamFollowedByAnotherType' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @method void handle(int $value|string) */
+                    final class Handler {}
+                    PHP,
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:13 - '
+                    . 'handle(int $value|string) is not a valid method: Unexpected token | after the name of a '
+                    . 'parameter in docblock for Handler',
+            ],
+            'methodParamOfTypeThis' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @method void accept($this $value)
+                     * @method string other()
+                     */
+                    final class Receiver {
+                        public function __call(string $name, array $arguments): mixed {
+                            return null;
+                        }
+                    }
+
+                    $receiver = new Receiver();
+                    $receiver->accept(1);
+                    PHP,
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:19 - '
+                    . 'Argument 1 of accept expects Receiver, but 1 provided',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 

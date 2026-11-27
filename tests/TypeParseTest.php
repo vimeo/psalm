@@ -1600,6 +1600,68 @@ final class TypeParseTest extends TestCase
         );
     }
 
+    /**
+     * @return iterable<string, array{string}>
+     * @psalm-pure
+     */
+    public static function malformedCallableParamProvider(): iterable
+    {
+        yield 'union after the name' => ['callable(int $value|string): void'];
+        yield 'intersection after the name' => ['callable(int $value&Countable): void'];
+        yield 'list after the name' => ['callable(int $value[]): void'];
+        yield 'union after a variadic name' => ['callable(int ...$values|string): void'];
+        yield 'union after a by-reference name' => ['callable(int &$value|string): void'];
+        yield 'question mark after the name' => ['callable(int $value?): void'];
+        yield 'constant after the name' => ['callable(int $value::FOO): void'];
+        yield 'second name' => ['callable(int $value $other): void'];
+        yield 'ellipsis after the name' => ['callable(int $value...): void'];
+        yield 'union after a variadic type' => ['callable(int...|string): void'];
+        yield 'union after an optional type' => ['callable(int=|string): void'];
+        yield 'list after a variadic type' => ['callable(int...[]): void'];
+        yield 'variadic name with a default' => ['callable(int ...$values = 1): void'];
+        yield 'question mark after an optional type' => ['callable(int=?): void'];
+        yield 'question mark after a variadic type' => ['callable(int...?): void'];
+        yield 'type after an optional type' => ['callable(int=string): void'];
+        yield 'constant after an optional type' => ['callable(int=::FOO): void'];
+        yield 'condition after a variadic type' => ['callable(int... is int ? A : B): void'];
+        yield 'union in place of a variadic type' => ['callable(...|int): void'];
+        yield 'list in place of a variadic type' => ['callable(...[]): void'];
+        yield 'mismatched brackets in a default' => ['callable(int $value = [1, 2}, string $name): void'];
+    }
+
+    #[DataProvider('malformedCallableParamProvider')]
+    public function testMalformedCallableParamIsInvalid(string $type): void
+    {
+        $this->expectException(TypeParseTreeException::class);
+        Type::parseString($type);
+    }
+
+    /**
+     * @return iterable<string, array{string, string}>
+     * @psalm-pure
+     */
+    public static function callableParamDefaultProvider(): iterable
+    {
+        yield 'empty array' => ['callable(int $value = []): void', 'callable[impure](int=):void'];
+        yield 'array with a comma' => [
+            'callable(int $value = [1, 2], string $name): void',
+            'callable[impure](int=, string):void',
+        ];
+        yield 'nested array with a comma' => [
+            'callable(int $value = [1, [2, 3]], string $name): void',
+            'callable[impure](int=, string):void',
+        ];
+        yield 'array()' => ['callable(int $value = array(1)): void', 'callable[impure](int=):void'];
+        yield 'expression' => ['callable(int $value = 1|2): void', 'callable[impure](int=):void'];
+        yield 'without a value' => ['callable(int $value=): void', 'callable[impure](int=):void'];
+    }
+
+    #[DataProvider('callableParamDefaultProvider')]
+    public function testCallableParamDefaultIsSkipped(string $type, string $expected): void
+    {
+        $this->assertSame($expected, (string) Type::parseString($type));
+    }
+
     public function testCombineLiteralStringWithClassString(): void
     {
         $this->assertSame(
