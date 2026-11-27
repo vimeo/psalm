@@ -240,6 +240,7 @@ final class LoopAnalyzer
             $type_variable_tracker = $statements_analyzer->type_variable_tracker;
             $bounds_before_loop = $type_variable_tracker->snapshotBounds();
             $bounds_at_kept_pass_start = $bounds_before_loop;
+            $variables_holding_no_value = $type_variable_tracker->getVariablesHoldingNoValue();
 
             IssueBuffer::startRecording();
 
@@ -461,6 +462,14 @@ final class LoopAnalyzer
                 $loop_parent_context->vars_possibly_in_scope += $continue_context->vars_possibly_in_scope;
 
                 self::keepNullArrayOffsetsReadOnEveryPath($loop_parent_context, $continue_context, $loop_scope);
+
+                // what a collection built empty got its first value from in this iteration is what a read of it
+                // before that in the body (`$bag->get("a"); $bag->set("a", $x);`) gets in the next one
+                $still_holding_no_value = $type_variable_tracker->getVariablesHoldingNoValue();
+                if (array_diff_key($variables_holding_no_value, $still_holding_no_value) !== []) {
+                    $has_changes = true;
+                }
+                $variables_holding_no_value = $still_holding_no_value;
 
                 // if there are no changes to the types, no need to re-examine
                 if (!$has_changes && !$force_pass) {

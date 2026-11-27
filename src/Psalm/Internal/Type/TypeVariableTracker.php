@@ -168,6 +168,24 @@ final class TypeVariableTracker
     }
 
     /**
+     * The variables no value has reached yet (see TTypeVariable::holdsNoValue())
+     *
+     * @return array<string, true>
+     * @psalm-mutation-free
+     */
+    public function getVariablesHoldingNoValue(): array
+    {
+        $names = [];
+        foreach ($this->bounds as $name => $bounds) {
+            if ((new TTypeVariable($name, $bounds))->holdsNoValue()) {
+                $names[$name] = true;
+            }
+        }
+
+        return $names;
+    }
+
+    /**
      * Drops the bounds recorded between two calls to snapshotBounds() (or since
      * the first one, without the second) by analyses whose results are
      * discarded (a loop pass followed by another one, a pre-analysis) on the

@@ -2622,6 +2622,120 @@ final class TaintTest extends TestCase
     public static function providerValidCodeParse(): array
     {
         return [
+            'receiverPropertyOfAnObjectBuiltEmptyHoldsOnlyWhatTheCodeWrote' => [
+                'code' => '<?php
+                    /**
+                     * @template K as string
+                     * @template V
+                     */
+                    class Bag {
+                        /** @var array<K, V> */
+                        private array $values = [];
+
+                        /**
+                         * @param array<K, V> $values
+                         * @psalm-flow ($values) -> $this->{key}
+                         */
+                        public function __construct(array $values) {
+                            $this->values = $values;
+                        }
+
+                        /**
+                         * @param K $name
+                         * @param V $value
+                         * @return static<K, V>
+                         * @psalm-flow ($value) -> $this->$name
+                         */
+                        public function set(string $name, mixed $value): static {
+                            $this->values[$name] = $value;
+                            return $this;
+                        }
+
+                        /**
+                         * @template TDefault
+                         * @param K $name
+                         * @param TDefault $default
+                         * @return V|TDefault
+                         * @psalm-flow $this->$name -> return
+                         */
+                        public function get(string $name, mixed $default = null): mixed {
+                            return $this->values[$name] ?? $default;
+                        }
+
+                        /**
+                         * @param K $name
+                         * @return V
+                         * @psalm-flow $this->$name -> return
+                         */
+                        public function __get(string $name): mixed {
+                            return $this->values[$name];
+                        }
+                    }
+
+                    function show(): void {
+                        $bag = new Bag([]);
+                        $bag->set("title", "clean");
+                        echo (string) $bag->get("title");
+                    }',
+            ],
+            'receiverPropertiesOfObjectsBuiltEmptyKeptPerInstanceStayApart' => [
+                'code' => '<?php
+                    /**
+                     * @template K as string
+                     * @template V
+                     * @psalm-taint-specialize
+                     */
+                    class Bag {
+                        /** @var array<K, V> */
+                        private array $values = [];
+
+                        /**
+                         * @param array<K, V> $values
+                         * @psalm-flow ($values) -> $this->{key}
+                         */
+                        public function __construct(array $values) {
+                            $this->values = $values;
+                        }
+
+                        /**
+                         * @param K $name
+                         * @param V $value
+                         * @return static<K, V>
+                         * @psalm-flow ($value) -> $this->$name
+                         */
+                        public function set(string $name, mixed $value): static {
+                            return $this;
+                        }
+
+                        /**
+                         * @template TDefault
+                         * @param K $name
+                         * @param TDefault $default
+                         * @return V|TDefault
+                         * @psalm-flow $this->$name -> return
+                         */
+                        public function get(string $name, mixed $default = null): mixed {
+                            return $this->values[$name] ?? $default;
+                        }
+
+                        /**
+                         * @param K $name
+                         * @return V
+                         * @psalm-flow $this->$name -> return
+                         */
+                        public function __get(string $name): mixed {
+                            return $this->values[$name];
+                        }
+                    }
+
+                    function show(): void {
+                        $tainted = new Bag([]);
+                        $clean = new Bag([]);
+                        $tainted->set("title", (string) $_GET["x"]);
+                        $clean->set("title", "clean");
+                        echo (string) $clean->get("title");
+                    }',
+            ],
             'methodNamedByInputNarrowedToALiteral' => [
                 'code' => '<?php
                     final class A {
@@ -13763,6 +13877,713 @@ final class TaintTest extends TestCase
 
                     function show(Model $model): void {
                         echo $model->getTitle();
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'receiverPropertyOfAnObjectBuiltEmptyKeptPerInstance' => [
+                'code' => '<?php
+                    /**
+                     * @template K as string
+                     * @template V
+                     * @psalm-taint-specialize
+                     */
+                    class Bag {
+                        /** @var array<K, V> */
+                        private array $values = [];
+
+                        /**
+                         * @param array<K, V> $values
+                         * @psalm-flow ($values) -> $this->{key}
+                         */
+                        public function __construct(array $values) {
+                            $this->values = $values;
+                        }
+
+                        /**
+                         * @param K $name
+                         * @param V $value
+                         * @return static<K, V>
+                         * @psalm-flow ($value) -> $this->$name
+                         */
+                        public function set(string $name, mixed $value): static {
+                            return $this;
+                        }
+
+                        /**
+                         * @template TDefault
+                         * @param K $name
+                         * @param TDefault $default
+                         * @return V|TDefault
+                         * @psalm-flow $this->$name -> return
+                         */
+                        public function get(string $name, mixed $default = null): mixed {
+                            return $this->values[$name] ?? $default;
+                        }
+
+                        /**
+                         * @param K $name
+                         * @return V
+                         * @psalm-flow $this->$name -> return
+                         */
+                        public function __get(string $name): mixed {
+                            return $this->values[$name];
+                        }
+                    }
+
+                    function show(): void {
+                        $tainted = new Bag([]);
+                        $clean = new Bag([]);
+                        $tainted->set("title", (string) $_GET["x"]);
+                        $clean->set("title", "clean");
+                        echo (string) $tainted->get("title");
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'receiverPropertyOfAnObjectBuiltEmptySetThenGot' => [
+                'code' => '<?php
+                    /**
+                     * @template K as string
+                     * @template V
+                     */
+                    class Bag {
+                        /** @var array<K, V> */
+                        private array $values = [];
+
+                        /**
+                         * @param array<K, V> $values
+                         * @psalm-flow ($values) -> $this->{key}
+                         */
+                        public function __construct(array $values) {
+                            $this->values = $values;
+                        }
+
+                        /**
+                         * @param K $name
+                         * @param V $value
+                         * @return static<K, V>
+                         * @psalm-flow ($value) -> $this->$name
+                         */
+                        public function set(string $name, mixed $value): static {
+                            $this->values[$name] = $value;
+                            return $this;
+                        }
+
+                        /**
+                         * @template TDefault
+                         * @param K $name
+                         * @param TDefault $default
+                         * @return V|TDefault
+                         * @psalm-flow $this->$name -> return
+                         */
+                        public function get(string $name, mixed $default = null): mixed {
+                            return $this->values[$name] ?? $default;
+                        }
+
+                        /**
+                         * @param K $name
+                         * @return V
+                         * @psalm-flow $this->$name -> return
+                         */
+                        public function __get(string $name): mixed {
+                            return $this->values[$name];
+                        }
+                    }
+
+                    function show(): void {
+                        $bag = new Bag([]);
+                        $bag->set("title", (string) $_GET["x"]);
+                        echo (string) $bag->get("title");
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'receiverPropertyOfAnObjectBuiltEmptySetUnderAVariableName' => [
+                'code' => '<?php
+                    /**
+                     * @template K as string
+                     * @template V
+                     */
+                    class Bag {
+                        /** @var array<K, V> */
+                        private array $values = [];
+
+                        /**
+                         * @param array<K, V> $values
+                         * @psalm-flow ($values) -> $this->{key}
+                         */
+                        public function __construct(array $values) {
+                            $this->values = $values;
+                        }
+
+                        /**
+                         * @param K $name
+                         * @param V $value
+                         * @return static<K, V>
+                         * @psalm-flow ($value) -> $this->$name
+                         */
+                        public function set(string $name, mixed $value): static {
+                            $this->values[$name] = $value;
+                            return $this;
+                        }
+
+                        /**
+                         * @template TDefault
+                         * @param K $name
+                         * @param TDefault $default
+                         * @return V|TDefault
+                         * @psalm-flow $this->$name -> return
+                         */
+                        public function get(string $name, mixed $default = null): mixed {
+                            return $this->values[$name] ?? $default;
+                        }
+
+                        /**
+                         * @param K $name
+                         * @return V
+                         * @psalm-flow $this->$name -> return
+                         */
+                        public function __get(string $name): mixed {
+                            return $this->values[$name];
+                        }
+                    }
+
+                    function show(string $name): void {
+                        $bag = new Bag([]);
+                        $bag->set($name, (string) $_GET["x"]);
+                        echo (string) $bag->get("title");
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'receiverPropertyOfAnObjectBuiltEmptyInAnArray' => [
+                'code' => '<?php
+                    /**
+                     * @template K as string
+                     * @template V
+                     */
+                    class Bag {
+                        /** @var array<K, V> */
+                        private array $values = [];
+
+                        /**
+                         * @param array<K, V> $values
+                         * @psalm-flow ($values) -> $this->{key}
+                         */
+                        public function __construct(array $values) {
+                            $this->values = $values;
+                        }
+
+                        /**
+                         * @param K $name
+                         * @param V $value
+                         * @return static<K, V>
+                         * @psalm-flow ($value) -> $this->$name
+                         */
+                        public function set(string $name, mixed $value): static {
+                            $this->values[$name] = $value;
+                            return $this;
+                        }
+
+                        /**
+                         * @template TDefault
+                         * @param K $name
+                         * @param TDefault $default
+                         * @return V|TDefault
+                         * @psalm-flow $this->$name -> return
+                         */
+                        public function get(string $name, mixed $default = null): mixed {
+                            return $this->values[$name] ?? $default;
+                        }
+
+                        /**
+                         * @param K $name
+                         * @return V
+                         * @psalm-flow $this->$name -> return
+                         */
+                        public function __get(string $name): mixed {
+                            return $this->values[$name];
+                        }
+                    }
+
+                    function show(): void {
+                        $bags = ["b" => new Bag([])];
+                        $bags["b"]->set("title", (string) $_GET["x"]);
+                        echo (string) $bags["b"]->get("title");
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'receiverPropertyOfAnObjectBuiltEmptyAliasedInAnArray' => [
+                'code' => '<?php
+                    /**
+                     * @template K as string
+                     * @template V
+                     */
+                    class Bag {
+                        /** @var array<K, V> */
+                        private array $values = [];
+
+                        /**
+                         * @param array<K, V> $values
+                         * @psalm-flow ($values) -> $this->{key}
+                         */
+                        public function __construct(array $values) {
+                            $this->values = $values;
+                        }
+
+                        /**
+                         * @param K $name
+                         * @param V $value
+                         * @return static<K, V>
+                         * @psalm-flow ($value) -> $this->$name
+                         */
+                        public function set(string $name, mixed $value): static {
+                            $this->values[$name] = $value;
+                            return $this;
+                        }
+
+                        /**
+                         * @template TDefault
+                         * @param K $name
+                         * @param TDefault $default
+                         * @return V|TDefault
+                         * @psalm-flow $this->$name -> return
+                         */
+                        public function get(string $name, mixed $default = null): mixed {
+                            return $this->values[$name] ?? $default;
+                        }
+
+                        /**
+                         * @param K $name
+                         * @return V
+                         * @psalm-flow $this->$name -> return
+                         */
+                        public function __get(string $name): mixed {
+                            return $this->values[$name];
+                        }
+                    }
+
+                    function show(): void {
+                        $bag = new Bag([]);
+                        $bags = [$bag];
+                        $bag->set("title", (string) $_GET["x"]);
+                        echo (string) $bags[0]->get("title");
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'receiverPropertyOfAnObjectBuiltEmptySetInAClosure' => [
+                'code' => '<?php
+                    /**
+                     * @template K as string
+                     * @template V
+                     */
+                    class Bag {
+                        /** @var array<K, V> */
+                        private array $values = [];
+
+                        /**
+                         * @param array<K, V> $values
+                         * @psalm-flow ($values) -> $this->{key}
+                         */
+                        public function __construct(array $values) {
+                            $this->values = $values;
+                        }
+
+                        /**
+                         * @param K $name
+                         * @param V $value
+                         * @return static<K, V>
+                         * @psalm-flow ($value) -> $this->$name
+                         */
+                        public function set(string $name, mixed $value): static {
+                            $this->values[$name] = $value;
+                            return $this;
+                        }
+
+                        /**
+                         * @template TDefault
+                         * @param K $name
+                         * @param TDefault $default
+                         * @return V|TDefault
+                         * @psalm-flow $this->$name -> return
+                         */
+                        public function get(string $name, mixed $default = null): mixed {
+                            return $this->values[$name] ?? $default;
+                        }
+
+                        /**
+                         * @param K $name
+                         * @return V
+                         * @psalm-flow $this->$name -> return
+                         */
+                        public function __get(string $name): mixed {
+                            return $this->values[$name];
+                        }
+                    }
+
+                    function show(): void {
+                        $bag = new Bag([]);
+                        $fill = function () use ($bag): void {
+                            $bag->set("title", (string) $_GET["x"]);
+                        };
+                        $fill();
+                        echo (string) $bag->get("title");
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'receiverPropertyOfAnObjectBuiltEmptyCloned' => [
+                'code' => '<?php
+                    /**
+                     * @template K as string
+                     * @template V
+                     */
+                    class Bag {
+                        /** @var array<K, V> */
+                        private array $values = [];
+
+                        /**
+                         * @param array<K, V> $values
+                         * @psalm-flow ($values) -> $this->{key}
+                         */
+                        public function __construct(array $values) {
+                            $this->values = $values;
+                        }
+
+                        /**
+                         * @param K $name
+                         * @param V $value
+                         * @return static<K, V>
+                         * @psalm-flow ($value) -> $this->$name
+                         */
+                        public function set(string $name, mixed $value): static {
+                            $this->values[$name] = $value;
+                            return $this;
+                        }
+
+                        /**
+                         * @template TDefault
+                         * @param K $name
+                         * @param TDefault $default
+                         * @return V|TDefault
+                         * @psalm-flow $this->$name -> return
+                         */
+                        public function get(string $name, mixed $default = null): mixed {
+                            return $this->values[$name] ?? $default;
+                        }
+
+                        /**
+                         * @param K $name
+                         * @return V
+                         * @psalm-flow $this->$name -> return
+                         */
+                        public function __get(string $name): mixed {
+                            return $this->values[$name];
+                        }
+                    }
+
+                    function show(): void {
+                        $bag = new Bag([]);
+                        $bag->set("title", (string) $_GET["x"]);
+                        $copy = clone $bag;
+                        echo (string) $copy->get("title");
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'receiverPropertyOfAnObjectBuiltEmptySetFluently' => [
+                'code' => '<?php
+                    /**
+                     * @template K as string
+                     * @template V
+                     */
+                    class Bag {
+                        /** @var array<K, V> */
+                        private array $values = [];
+
+                        /**
+                         * @param array<K, V> $values
+                         * @psalm-flow ($values) -> $this->{key}
+                         */
+                        public function __construct(array $values) {
+                            $this->values = $values;
+                        }
+
+                        /**
+                         * @param K $name
+                         * @param V $value
+                         * @return static<K, V>
+                         * @psalm-flow ($value) -> $this->$name
+                         */
+                        public function set(string $name, mixed $value): static {
+                            $this->values[$name] = $value;
+                            return $this;
+                        }
+
+                        /**
+                         * @template TDefault
+                         * @param K $name
+                         * @param TDefault $default
+                         * @return V|TDefault
+                         * @psalm-flow $this->$name -> return
+                         */
+                        public function get(string $name, mixed $default = null): mixed {
+                            return $this->values[$name] ?? $default;
+                        }
+
+                        /**
+                         * @param K $name
+                         * @return V
+                         * @psalm-flow $this->$name -> return
+                         */
+                        public function __get(string $name): mixed {
+                            return $this->values[$name];
+                        }
+                    }
+
+                    function show(): void {
+                        $bag = (new Bag([]))->set("title", (string) $_GET["x"]);
+                        echo (string) $bag->get("title");
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'receiverPropertyOfAnObjectBuiltEmptySetInALoop' => [
+                'code' => '<?php
+                    /**
+                     * @template K as string
+                     * @template V
+                     */
+                    class Bag {
+                        /** @var array<K, V> */
+                        private array $values = [];
+
+                        /**
+                         * @param array<K, V> $values
+                         * @psalm-flow ($values) -> $this->{key}
+                         */
+                        public function __construct(array $values) {
+                            $this->values = $values;
+                        }
+
+                        /**
+                         * @param K $name
+                         * @param V $value
+                         * @return static<K, V>
+                         * @psalm-flow ($value) -> $this->$name
+                         */
+                        public function set(string $name, mixed $value): static {
+                            $this->values[$name] = $value;
+                            return $this;
+                        }
+
+                        /**
+                         * @template TDefault
+                         * @param K $name
+                         * @param TDefault $default
+                         * @return V|TDefault
+                         * @psalm-flow $this->$name -> return
+                         */
+                        public function get(string $name, mixed $default = null): mixed {
+                            return $this->values[$name] ?? $default;
+                        }
+
+                        /**
+                         * @param K $name
+                         * @return V
+                         * @psalm-flow $this->$name -> return
+                         */
+                        public function __get(string $name): mixed {
+                            return $this->values[$name];
+                        }
+                    }
+
+                    /** @param list<string> $names */
+                    function show(array $names): void {
+                        $bag = new Bag([]);
+                        foreach ($names as $name) {
+                            echo (string) $bag->get("title");
+                            $bag->set($name, (string) $_GET["x"]);
+                        }
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'receiverPropertyOfAnObjectBuiltEmptySetByTheFunctionItIsPassedTo' => [
+                'code' => '<?php
+                    /**
+                     * @template K as string
+                     * @template V
+                     */
+                    class Bag {
+                        /** @var array<K, V> */
+                        private array $values = [];
+
+                        /**
+                         * @param array<K, V> $values
+                         * @psalm-flow ($values) -> $this->{key}
+                         */
+                        public function __construct(array $values) {
+                            $this->values = $values;
+                        }
+
+                        /**
+                         * @param K $name
+                         * @param V $value
+                         * @return static<K, V>
+                         * @psalm-flow ($value) -> $this->$name
+                         */
+                        public function set(string $name, mixed $value): static {
+                            $this->values[$name] = $value;
+                            return $this;
+                        }
+
+                        /**
+                         * @template TDefault
+                         * @param K $name
+                         * @param TDefault $default
+                         * @return V|TDefault
+                         * @psalm-flow $this->$name -> return
+                         */
+                        public function get(string $name, mixed $default = null): mixed {
+                            return $this->values[$name] ?? $default;
+                        }
+
+                        /**
+                         * @param K $name
+                         * @return V
+                         * @psalm-flow $this->$name -> return
+                         */
+                        public function __get(string $name): mixed {
+                            return $this->values[$name];
+                        }
+                    }
+
+                    function fill(Bag $bag): void {
+                        $bag->set("title", (string) $_GET["x"]);
+                    }
+
+                    function show(): void {
+                        $bag = new Bag([]);
+                        fill($bag);
+                        echo (string) $bag->get("title");
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'receiverPropertyOfAnObjectBuiltWithLiteralsSetByTheFunctionItIsPassedTo' => [
+                'code' => '<?php
+                    /**
+                     * @template K as string
+                     * @template V
+                     */
+                    class Bag {
+                        /** @var array<K, V> */
+                        private array $values = [];
+
+                        /**
+                         * @param array<K, V> $values
+                         * @psalm-flow ($values) -> $this->{key}
+                         */
+                        public function __construct(array $values) {
+                            $this->values = $values;
+                        }
+
+                        /**
+                         * @param K $name
+                         * @param V $value
+                         * @return static<K, V>
+                         * @psalm-flow ($value) -> $this->$name
+                         */
+                        public function set(string $name, mixed $value): static {
+                            $this->values[$name] = $value;
+                            return $this;
+                        }
+
+                        /**
+                         * @template TDefault
+                         * @param K $name
+                         * @param TDefault $default
+                         * @return V|TDefault
+                         * @psalm-flow $this->$name -> return
+                         */
+                        public function get(string $name, mixed $default = null): mixed {
+                            return $this->values[$name] ?? $default;
+                        }
+
+                        /**
+                         * @param K $name
+                         * @return V
+                         * @psalm-flow $this->$name -> return
+                         */
+                        public function __get(string $name): mixed {
+                            return $this->values[$name];
+                        }
+                    }
+
+                    function fill(Bag $bag): void {
+                        $bag->set("title", (string) $_GET["x"]);
+                    }
+
+                    function show(): void {
+                        $bag = new Bag(["title" => "clean"]);
+                        fill($bag);
+                        echo (string) $bag->get("title");
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'receiverPropertyOfAnObjectBuiltWithLiteralsSetThroughAHolder' => [
+                'code' => '<?php
+                    /**
+                     * @template K as string
+                     * @template V
+                     */
+                    class Bag {
+                        /** @var array<K, V> */
+                        private array $values = [];
+
+                        /**
+                         * @param array<K, V> $values
+                         * @psalm-flow ($values) -> $this->{key}
+                         */
+                        public function __construct(array $values) {
+                            $this->values = $values;
+                        }
+
+                        /**
+                         * @param K $name
+                         * @param V $value
+                         * @return static<K, V>
+                         * @psalm-flow ($value) -> $this->$name
+                         */
+                        public function set(string $name, mixed $value): static {
+                            $this->values[$name] = $value;
+                            return $this;
+                        }
+
+                        /**
+                         * @template TDefault
+                         * @param K $name
+                         * @param TDefault $default
+                         * @return V|TDefault
+                         * @psalm-flow $this->$name -> return
+                         */
+                        public function get(string $name, mixed $default = null): mixed {
+                            return $this->values[$name] ?? $default;
+                        }
+
+                        /**
+                         * @param K $name
+                         * @return V
+                         * @psalm-flow $this->$name -> return
+                         */
+                        public function __get(string $name): mixed {
+                            return $this->values[$name];
+                        }
+                    }
+
+                    final class Holder {
+                        /** @param Bag<string, string> $bag */
+                        public function __construct(public Bag $bag) {}
+                    }
+
+                    function show(): void {
+                        $bag = new Bag(["title" => "clean"]);
+                        $holder = new Holder($bag);
+                        $holder->bag->set("title", (string) $_GET["x"]);
+                        echo $bag->get("title");
                     }',
                 'error_message' => 'TaintedHtml',
             ],

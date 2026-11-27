@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Internal\Type\Comparator;
 
 use Psalm\Codebase;
+use Psalm\Internal\Type\TemplateBound;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeArgumentProjection;
 use Psalm\Type\Atomic;
@@ -14,6 +15,7 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Atomic\TVoid;
+use Psalm\Type\Union;
 
 use function count;
 
@@ -95,6 +97,10 @@ final class GenericTypeComparator
             // a `*` holds any argument
             if ($container_projection === TypeArgumentProjection::Star) {
                 continue;
+            }
+
+            if ($atomic_comparison_result) {
+                self::recordHandedTypeVariables($input_param, $container_param, $atomic_comparison_result);
             }
 
             $input_projection = $input_star_offsets[$i] ?? null;
@@ -332,5 +338,35 @@ final class GenericTypeComparator
         }
 
         return false;
+    }
+
+    /**
+     * The object is handed to code that sees the argument as $container_param: what that code may set to it
+     * (`$box->add($x)`) is any value of that type, so a type variable of the argument takes it as a bound, and what
+     * is read from the object afterwards may be any of those. A template of the container is bound to the argument
+     * instead, with the variable in it
+     *
+     * @psalm-capabilities read-props|write-props
+     */
+    private static function recordHandedTypeVariables(
+        Union $input_param,
+        Union $container_param,
+        TypeComparisonResult $atomic_comparison_result,
+    ): void {
+        if ($container_param->hasTemplate()) {
+            return;
+        }
+
+        foreach ($input_param->getAtomicTypes() as $atomic_type) {
+            if (!$atomic_type instanceof TTypeVariable || $container_param->hasType($atomic_type->getKey())) {
+                continue;
+            }
+
+            $bound = new TemplateBound($container_param);
+            // what the object may hold, not a value given to it: no issue reports it
+            $bound->from_invariant_argument_mirror = true;
+
+            $atomic_comparison_result->type_variable_lower_bounds[] = [$atomic_type->name, $bound];
+        }
     }
 }
