@@ -291,7 +291,18 @@ final class AtomicPropertyFetchAnalyzer
                 false,
             );
 
-        if (!$naive_property_exists || $inaccessible_property_read_by_getter) {
+        // a private property of the current class is the one read on its child, whatever the child is intersected with
+        $is_property_of_self_on_child = !$naive_property_exists
+            && PropertyAccessAnalyzer::isPropertyOfSelfOnChild(
+                $statements_analyzer,
+                $stmt,
+                $context,
+                $fq_class_name,
+                $prop_name,
+                false,
+            );
+
+        if ((!$naive_property_exists && !$is_property_of_self_on_child) || $inaccessible_property_read_by_getter) {
             // Resolve explicit shape properties before consulting other class-like types.
             // Keep final classes closed unless they provide a magic getter.
             if ($intersection_types !== []
@@ -442,16 +453,7 @@ final class AtomicPropertyFetchAnalyzer
             );
         }
 
-        if (!$naive_property_exists
-            && PropertyAccessAnalyzer::isPropertyOfSelfOnChild(
-                $statements_analyzer,
-                $stmt,
-                $context,
-                $fq_class_name,
-                $prop_name,
-                false,
-            )
-        ) {
+        if ($is_property_of_self_on_child) {
             $property_id = $context->self . '::$' . $prop_name;
         } elseif (!$naive_property_exists
             || (!$is_static_access

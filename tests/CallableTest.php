@@ -912,6 +912,61 @@ final class CallableTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'instanceofAnInterfaceOfACallableIsPossible' => [
+                'code' => '<?php
+                    interface ShutdownInterface {
+                        public function reset(bool $s): void;
+                    }
+
+                    function f(callable $fn): void {
+                        if ($fn instanceof ShutdownInterface) {
+                            $fn->reset(true);
+                        }
+                    }',
+            ],
+            'callableCheckOfThisInAConstructorKeepsThePropertiesForAChild' => [
+                'code' => '<?php
+                    class Definition {
+                        public function add(array $items): void {}
+                    }
+
+                    class Command {
+                        private Definition $definition;
+                        private ?Closure $code = null;
+
+                        public function __construct(?callable $code = null) {
+                            $this->definition = new Definition();
+
+                            if (is_callable($this) && $code === null) {
+                                $this->code = Closure::fromCallable($this);
+                            }
+
+                            $this->configure();
+                        }
+
+                        protected function configure(): void {}
+
+                        public function setDefinition(array|Definition $definition): void {
+                            if ($definition instanceof Definition) {
+                                $this->definition = $definition;
+                            } else {
+                                $this->definition->add($definition);
+                            }
+                        }
+                    }
+
+                    class DebugCommand extends Command {
+                        protected string $name;
+
+                        protected function configure(): void {
+                            $this->name = "debug";
+                            $this->setDefinition([]);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'callableCanBeIdenticalToAnInterfaceOrANonFinalClass' => [
                 'code' => '<?php
                     interface Handler {}
