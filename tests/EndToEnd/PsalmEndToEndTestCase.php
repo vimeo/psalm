@@ -24,8 +24,6 @@ use function opendir;
 use function readdir;
 use function rmdir;
 use function str_replace;
-use function sys_get_temp_dir;
-use function tempnam;
 use function unlink;
 
 use const DIRECTORY_SEPARATOR;
@@ -47,11 +45,7 @@ abstract class PsalmEndToEndTestCase extends TestCase
     #[Override]
     public static function setUpBeforeClass(): void
     {
-        $tmp_dir = tempnam(sys_get_temp_dir(), 'PsalmEndToEndTest_');
-        assert($tmp_dir !== false);
-        self::$tmpDir = $tmp_dir;
-        unlink(self::$tmpDir);
-        mkdir(self::$tmpDir);
+        self::$tmpDir = self::createTemporaryDirectory('PsalmEndToEndTest_');
 
         $getcwd = getcwd();
         if (!is_string($getcwd)) {

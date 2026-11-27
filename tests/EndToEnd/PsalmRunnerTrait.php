@@ -4,12 +4,18 @@ declare(strict_types=1);
 
 namespace Psalm\Tests\EndToEnd;
 
+use RuntimeException;
 use Symfony\Component\Process\Process;
 
 use function array_merge;
 use function array_unshift;
+use function bin2hex;
 use function in_array;
+use function mkdir;
+use function random_bytes;
+use function sys_get_temp_dir;
 
+use const DIRECTORY_SEPARATOR;
 use const PHP_BINARY;
 
 /** @psalm-mutable */
@@ -62,6 +68,20 @@ trait PsalmRunnerTrait
             'NO_COLOR' => false,
             'FORCE_COLOR' => false,
         ];
+    }
+
+    /**
+     * Not `tempnam()`: on Windows it keeps three characters of the prefix and a 16-bit number, so a name it gave is
+     * given again once that test removed its directory, and tests running in parallel ended up sharing one
+     */
+    protected static function createTemporaryDirectory(string $prefix): string
+    {
+        $dir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . $prefix . bin2hex(random_bytes(8));
+        if (!mkdir($dir)) {
+            throw new RuntimeException("Could not create the directory $dir");
+        }
+
+        return $dir;
     }
 
     /**

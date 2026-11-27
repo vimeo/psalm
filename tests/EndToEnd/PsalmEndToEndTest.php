@@ -23,8 +23,6 @@ use function sort;
 use function str_contains;
 use function str_replace;
 use function substr_count;
-use function sys_get_temp_dir;
-use function tempnam;
 use function unlink;
 use function var_export;
 
@@ -46,10 +44,7 @@ final class PsalmEndToEndTest extends PsalmEndToEndTestCase
 
     public function testVersionIsPrintedWithoutTheAutoloadersOfTheProject(): void
     {
-        $project_dir = tempnam(sys_get_temp_dir(), 'PsalmEndToEndVersion_');
-        assert($project_dir !== false);
-        unlink($project_dir);
-        mkdir($project_dir);
+        $project_dir = self::createTemporaryDirectory('PsalmEndToEndVersion_');
 
         try {
             file_put_contents($project_dir . '/composer.json', '{"require": {}}');
@@ -81,10 +76,8 @@ final class PsalmEndToEndTest extends PsalmEndToEndTestCase
 
     public function testExplainIgnoresTheProjectInTheCurrentDirectory(): void
     {
-        $project_dir = tempnam(sys_get_temp_dir(), 'PsalmEndToEndExplain_');
-        assert($project_dir !== false);
-        unlink($project_dir);
-        mkdir($project_dir . '/vendor', 0777, true);
+        $project_dir = self::createTemporaryDirectory('PsalmEndToEndExplain_');
+        mkdir($project_dir . '/vendor');
 
         try {
             file_put_contents($project_dir . '/composer.json', '{');
@@ -120,10 +113,7 @@ final class PsalmEndToEndTest extends PsalmEndToEndTestCase
 
     public function testInitReportsMissingAutoloadDirectoriesWithoutCrashing(): void
     {
-        $project_dir = tempnam(sys_get_temp_dir(), 'PsalmEndToEndMissingAutoload_');
-        assert($project_dir !== false);
-        unlink($project_dir);
-        mkdir($project_dir);
+        $project_dir = self::createTemporaryDirectory('PsalmEndToEndMissingAutoload_');
 
         try {
             file_put_contents(
@@ -149,10 +139,7 @@ final class PsalmEndToEndTest extends PsalmEndToEndTestCase
 
     public function testEmptyComposerJsonIsAValidProject(): void
     {
-        $project_dir = tempnam(sys_get_temp_dir(), 'PsalmEndToEndEmptyComposerJson_');
-        assert($project_dir !== false);
-        unlink($project_dir);
-        mkdir($project_dir);
+        $project_dir = self::createTemporaryDirectory('PsalmEndToEndEmptyComposerJson_');
 
         try {
             file_put_contents($project_dir . '/composer.json', '{}');
