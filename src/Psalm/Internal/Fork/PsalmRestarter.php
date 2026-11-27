@@ -21,6 +21,9 @@ use function is_int;
 use function preg_replace;
 use function strlen;
 use function strtolower;
+use function uniqid;
+
+use const PHP_OS_FAMILY;
 
 /**
  * @internal
@@ -196,6 +199,12 @@ final class PsalmRestarter extends XdebugHandler
 
         if ((int)ini_get('opcache.memory_consumption') < $requiredMemoryConsumption) {
             $additional_options []= "-dopcache.memory_consumption={$requiredMemoryConsumption}";
+        }
+
+        // On Windows the processes of a user share one opcache unless their cache ids differ: without timestamp
+        // validation, a Psalm process would run the plugins and other files another one cached before they changed
+        if (PHP_OS_FAMILY === 'Windows') {
+            $additional_options []= '-dopcache.cache_id=' . uniqid('psalm-', true);
         }
 
         array_splice(
