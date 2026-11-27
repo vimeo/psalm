@@ -319,7 +319,11 @@ final class Properties
         $pseudo_property_type = self::getPseudoPropertyTypes($class_storage, $property_set)[$key] ?? null;
         $appearing_property_id = $class_storage->appearing_property_ids[$property_name] ?? null;
 
-        if ($pseudo_property_type === null || $appearing_property_id === null) {
+        // without `__get()` or `__set()`, a `@property` can only narrow the type of the property
+        if ($pseudo_property_type === null
+            || $appearing_property_id === null
+            || !isset($class_storage->declaring_method_ids[$property_set ? '__set' : '__get'])
+        ) {
             return $pseudo_property_type;
         }
 
@@ -357,6 +361,42 @@ final class Properties
             && isset(self::getDeclaredPseudoPropertyNames($declaring_class_storage, $property_set)[$key])
                 ? $pseudo_property_type
                 : null;
+    }
+
+    /**
+     * Whether code in the class, or outside any class for null, accesses the property itself rather than going through
+     * `__get()` or `__set()`
+     *
+     * @psalm-capabilities read-props
+     */
+    public function isAccessibleFrom(string $fq_class_name, string $property_name, ?string $calling_class): bool
+    {
+        $class_storage = $this->classlike_storage_provider->get($fq_class_name);
+        $appearing_property_id = $class_storage->appearing_property_ids[$property_name] ?? null;
+        $declaring_class = $class_storage->declaring_property_ids[$property_name] ?? null;
+
+        if ($appearing_property_id === null || $declaring_class === null) {
+            return true;
+        }
+
+        $visibility = $this->classlike_storage_provider->get($declaring_class)->properties[$property_name]->visibility
+            ?? ClassLikeAnalyzer::VISIBILITY_PUBLIC;
+
+        if ($visibility === ClassLikeAnalyzer::VISIBILITY_PUBLIC) {
+            return true;
+        }
+
+        if ($calling_class === null) {
+            return false;
+        }
+
+        // a property of a trait belongs to the class that uses it
+        [$appearing_class] = explode('::$', $appearing_property_id);
+
+        return strtolower($calling_class) === strtolower($appearing_class)
+            || ($visibility === ClassLikeAnalyzer::VISIBILITY_PROTECTED
+                && ($this->classlikes->classExtends($calling_class, $appearing_class)
+                    || $this->classlikes->classExtends($appearing_class, $calling_class)));
     }
 
     /**

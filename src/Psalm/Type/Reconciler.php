@@ -2013,6 +2013,7 @@ class Reconciler
                                             $codebase,
                                             $existing_key_type_part->value,
                                             $name,
+                                            $statements_analyzer,
                                         );
 
                                         if ($name_type === null) {
@@ -2264,25 +2265,41 @@ class Reconciler
         Codebase $codebase,
         string $fq_class_name,
         string $property_name,
+        ?StatementsAnalyzer $statements_analyzer = null,
     ): ?Union {
         $property_id = $fq_class_name . '::$' . $property_name;
 
-        if (!$codebase->propertyExists($property_id, true)) {
-            $declaring_class_storage = $codebase->classlike_storage_provider->get(
+        $property_exists = $codebase->propertyExists($property_id, true);
+
+        // a read of a property the code can't access goes through `__get()`, which the `@property` describes
+        if (!$property_exists
+            || ($statements_analyzer !== null
+                && $codebase->methods->methodExists($codebase, new MethodIdentifier($fq_class_name, '__get'))
+                && !$codebase->properties->isAccessibleFrom(
+                    $fq_class_name,
+                    $property_name,
+                    $statements_analyzer->getFQCLN(),
+                ))
+        ) {
+            $class_storage = $codebase->classlike_storage_provider->get(
                 $fq_class_name,
             );
 
-            $pseudo_property_type = $declaring_class_storage->pseudo_property_get_types['$' . $property_name] ?? null;
+            $pseudo_property_type = $class_storage->pseudo_property_get_types['$' . $property_name] ?? null;
 
-            return $pseudo_property_type
-                ? TypeExpander::expandUnion(
+            if ($pseudo_property_type !== null) {
+                return TypeExpander::expandUnion(
                     $codebase,
                     $pseudo_property_type,
-                    $declaring_class_storage->name,
-                    $declaring_class_storage->name,
-                    $declaring_class_storage->parent_class,
-                )
-                : null;
+                    $class_storage->name,
+                    $class_storage->name,
+                    $class_storage->parent_class,
+                );
+            }
+
+            if (!$property_exists) {
+                return null;
+            }
         }
 
         $declaring_property_class = $codebase->properties->getDeclaringClassForProperty(

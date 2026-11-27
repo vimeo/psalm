@@ -893,6 +893,77 @@ final class MagicPropertyTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'propertyAnnotationOfATraitWithoutMagicNarrowsTheProtectedPropertyOfTheClass' => [
+                'code' => '<?php
+                    interface Container {
+                        public function get(string $id): object;
+                    }
+
+                    /**
+                     * @property Container $container
+                     */
+                    trait UsesContainer {
+                        public function service(): object {
+                            return $this->container->get("a");
+                        }
+                    }
+
+                    final class Service {
+                        use UsesContainer;
+
+                        /** @var mixed */
+                        protected $container;
+
+                        public function other(): object {
+                            return $this->container->get("b");
+                        }
+                    }',
+            ],
+            'propertyAnnotationWithoutMagicNarrowsThePrivatePropertyOfTheClass' => [
+                'code' => '<?php
+                    class Container {}
+                    final class GenericContainer extends Container {
+                        public function singleton(): void {}
+                    }
+
+                    /**
+                     * @property GenericContainer $container
+                     */
+                    final class Discovery {
+                        public function __construct(private Container $container) {}
+
+                        public function apply(): void {
+                            $this->container->singleton();
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['PropertyTypeCoercion'],
+                'php_version' => '8.0',
+            ],
+            'propertyAnnotationDescribesAProtectedPropertyNarrowedFromOutside' => [
+                'code' => '<?php
+                    /**
+                     * @property int $size
+                     */
+                    final class Limit {
+                        protected int|string|null $size = null;
+
+                        public function __get(string $name): mixed {
+                            return 0;
+                        }
+                    }
+
+                    function f(Limit $limit): int {
+                        if ($limit->size && $limit->size < 5) {
+                            return $limit->size;
+                        }
+
+                        return 0;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'propertyAnnotationOfTheClassNarrowsItsPublicProperty' => [
                 'code' => '<?php
                     /**
