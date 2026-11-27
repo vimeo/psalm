@@ -1236,7 +1236,7 @@ final class AssertionFinder
             return false;
         }
 
-        return $type->isBool() && !$type->possibly_undefined;
+        return $type->isBool() && !$type->isTrue() && !$type->isFalse() && !$type->possibly_undefined;
     }
 
     /**

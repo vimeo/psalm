@@ -37,6 +37,7 @@
 - `Psalm\Type\Union#getKey()` and `Psalm\Type\MutableUnion#getKey()` are deprecated: use `getId()` to identify a type, and `Psalm\Type\Atomic#getKey()` for the slot of an atomic type in a union. They will be removed in Psalm 8.
 - [BC] `Psalm\Type\Atomic#getId()` no longer defaults to `getKey()`: a type extending `Atomic` directly must override `getId()`, or it throws a `LogicException`. A type extending one of Psalm's atomic types (`TString`, `TInt`, …) and overriding only `getKey()` now has the id of that type: override `getId()` along with `getKey()`.
 - [BC] `Psalm\Plugin\EventHandler\Event\AfterAnalysisEvent#getBuildInfo()` holds the keys of one CI service, the first one Psalm recognises, instead of a merge of every matching one. Values that are not known are left out instead of being `null`, `''` or, for a Travis CI build without a pull request, `'false'`: read its keys with `??`.
+- [BC] `Psalm\Type\Union#isBool()` and `Psalm\Type\MutableUnion#isBool()` return `true` when every member of the union is a `TBool`, like `isInt()` and `isString()`: `true` and `false` alone are now `bool` (previously only the `bool` type was). Psalm now reports `RedundantCast` for `(bool)` applied to `true` or `false`.
 
 - Backwards compatibility for the plugin API is now covered by a separate metapackage, [psalm/psalm-plugin-api](https://packagist.org/packages/psalm/psalm-plugin-api).  
 
