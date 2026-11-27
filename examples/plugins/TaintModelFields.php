@@ -37,7 +37,9 @@ final class TaintModelFields implements AfterExpressionAnalysisInterface
 
         $node_types = $source->getNodeTypeProvider();
         $receiver_type = $node_types->getType($call->var);
-        $receiver = $receiver_type !== null && $receiver_type->isSingle() ? $receiver_type->getSingleAtomic() : null;
+        $receiver = $receiver_type !== null && $receiver_type->isSingleAtomic()
+            ? $receiver_type->getSingleAtomic()
+            : null;
         $args = $call->getArgs();
         $field_type = isset($args[0]) ? $node_types->getType($args[0]->value) : null;
         if (!$receiver instanceof TNamedObject
