@@ -2831,7 +2831,7 @@ class Reconciler
         $base_key = implode('', $key_parts);
 
         // a list that has an offset has all the offsets before it: when the offset can be several keys, a list has
-        // all the offsets up to the smallest one
+        // all the offsets up to the smallest one it can have
         $key_is_set = !$result_type->possibly_undefined && !$result_type->isNever();
         $last_list_offset_set = null;
         if (count($array_key_offsets) === 1 ? !$result_type->isNever() : $key_is_set) {
@@ -2840,6 +2840,9 @@ class Reconciler
                 if ($int_array_key_offset === false) {
                     $last_list_offset_set = null;
                     break;
+                }
+                if ($int_array_key_offset < 0) {
+                    continue;
                 }
                 $last_list_offset_set = $last_list_offset_set === null
                     ? $int_array_key_offset

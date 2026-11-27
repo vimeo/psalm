@@ -2781,6 +2781,20 @@ final class IssetTest extends TestCase
                     }
                     PHP,
             ],
+            'issetOnAListItemWithAUnionKeyIgnoresTheNegativeKeysForTheItemsItRequires' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param list<string> $l */
+                    function f(array $l, bool $b): void {
+                        $i = $b ? 5 : -1;
+                        if (isset($l[$i])) {
+                            /** @psalm-check-type-exact $l = array{-1?: string, 0: string, 1: string, 2: string, 3: string, 4: string, 5: string, ...<int<0, max>, string>} */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['InvalidArrayOffset'],
+            ],
             'assertionOnAnArrayItemWithAUnionKeyKeepsTheValueTypeOfEachKey' => [
                 'code' => <<<'PHP'
                     <?php
