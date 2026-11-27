@@ -251,6 +251,38 @@ final class SymbolLookupTest extends TestCase
         $this->assertNull($information->description);
     }
 
+    public function testSymbolLookupOfAPromotedPropertyShowsItsDescription(): void
+    {
+        $this->project_analyzer->setPhpVersion('8.0', 'tests');
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                namespace B;
+
+                class A {
+                    public function __construct(
+                        /** Some description */
+                        public int $a = 0,
+                    ) {}
+                }',
+        );
+
+        new FileAnalyzer($this->project_analyzer, 'somefile.php', 'somefile.php');
+
+        $this->analyzeFile('somefile.php', new Context());
+
+        $information = $this->codebase->getMarkupContentForSymbolByReference(
+            new Reference(
+                'somefile.php',
+                'B\A::$a',
+                new Range(new Position(1, 1), new Position(1, 1)),
+            ),
+        );
+        $this->assertNotNull($information);
+        $this->assertSame('B\A::$a', $information->title);
+        $this->assertSame('Some description', $information->description);
+    }
+
     public function testSimpleSymbolLocation(): void
     {
         $this->addFile(
