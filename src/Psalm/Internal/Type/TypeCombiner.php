@@ -2062,6 +2062,11 @@ final class TypeCombiner
      */
     private static function shapeHoldsShape(TKeyedArray $container, TKeyedArray $input, ?Codebase $codebase): bool
     {
+        // the keys of an array that isn't a list may be in another order
+        if ($container->is_list && !$input->is_list) {
+            return false;
+        }
+
         foreach ($input->properties as $key => $input_property) {
             $container_property = $container->properties[$key] ?? null;
             if ($container_property === null
