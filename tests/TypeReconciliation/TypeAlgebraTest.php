@@ -5723,6 +5723,26 @@ final class TypeAlgebraTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'elseOfAnIfTrueIfFalseArrayAssertionKeepsTheNonArrays' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-assert-if-true list<string> $arg
+                     * @psalm-assert-if-false array<string, string> $arg
+                     */
+                    function is_list_or_map(mixed $arg): bool {
+                        return is_array($arg) && array_is_list($arg);
+                    }
+
+                    /** @param array<string, string>|list<string>|null $foo */
+                    function f($foo): void {
+                        if (!is_list_or_map($foo)) {
+                            /** @psalm-check-type-exact $foo = array<string, string>|null */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
         ];
     }
 
