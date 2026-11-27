@@ -2683,17 +2683,19 @@ final class AssignmentAnalyzer
                 )->parent_nodes);
             }
 
-            self::analyze(
-                $statements_analyzer,
-                $var,
-                null,
-                $item_type,
-                $context,
-                $doc_comment,
-            );
-
-            if ($suppress_mixed_assignment) {
-                $statements_analyzer->removeSuppressedIssues(['MixedAssignment']);
+            try {
+                self::analyze(
+                    $statements_analyzer,
+                    $var,
+                    null,
+                    $item_type,
+                    $context,
+                    $doc_comment,
+                );
+            } finally {
+                if ($suppress_mixed_assignment) {
+                    $statements_analyzer->removeSuppressedIssues(['MixedAssignment']);
+                }
             }
 
             return;

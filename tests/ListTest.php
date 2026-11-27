@@ -45,6 +45,27 @@ final class ListTest extends TestCase
                     '$named===' => 'array{u: \'a\'}',
                 ],
             ],
+            'keyedDestructuringIntoAnOffsetWithAnIncrementedKeyEvaluatesTheKeyOnce' => [
+                'code' => '<?php
+                    $i = 0;
+                    $a = [];
+                    ["k" => $a[$i++]] = ["k" => 5];',
+                'assertions' => [
+                    '$i===' => '1',
+                    '$a===' => 'array{0: 5}',
+                ],
+            ],
+            'keyedDestructuringByReferenceIntoAnOffsetUpdatesTheArray' => [
+                'code' => '<?php
+                    /** @var array<array-key, mixed> $source */
+                    $source = [];
+                    $a = ["x" => 0];
+                    ["k" => &$a["x"]] = $source;',
+                'assertions' => [
+                    '$a===' => 'array{x: mixed}',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
             'destructuringWithTrailingEmptyEntries' => [
                 'code' => '<?php
                     ["a" => $a, ] = ["a" => 1];
