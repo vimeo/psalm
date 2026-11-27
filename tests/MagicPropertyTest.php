@@ -754,6 +754,95 @@ final class MagicPropertyTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'protectedPropertyKeepsItsTypeInsideTheClassAndTheAnnotationOfItsTraitOutside' => [
+                'code' => '<?php
+                    /**
+                     * @property string|null $value
+                     */
+                    trait Magic {
+                        public function __get(string $name): mixed {
+                            return null;
+                        }
+                    }
+
+                    final class Single {
+                        use Magic;
+
+                        protected int $value = 0;
+
+                        public function get(): int {
+                            return $this->value;
+                        }
+                    }
+
+                    $value = (new Single())->value;',
+                'assertions' => [
+                    '$value===' => 'null|string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'propertyAnnotationOfTheClassNarrowsItsPublicProperty' => [
+                'code' => '<?php
+                    /**
+                     * @property list<int> $items
+                     */
+                    final class Bag {
+                        public array $items = [];
+                    }
+
+                    $items = (new Bag())->items;',
+                'assertions' => [
+                    '$items===' => 'list<int>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'propertyAnnotationOfTheClassNarrowsThePublicPropertyOfItsTrait' => [
+                'code' => '<?php
+                    trait HasValue {
+                        public string|int $value = 0;
+                    }
+
+                    /**
+                     * @property int $value
+                     */
+                    final class Child {
+                        use HasValue;
+                    }
+
+                    $value = (new Child())->value;',
+                'assertions' => [
+                    '$value===' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'propertyAnnotationOfTheChildNarrowsAPublicPropertyThatTheParentAnnotates' => [
+                'code' => '<?php
+                    /**
+                     * @property string $value
+                     */
+                    abstract class Base {
+                        public mixed $value = "";
+
+                        public function __get(string $name): mixed {
+                            return null;
+                        }
+                    }
+
+                    /**
+                     * @property int $value
+                     */
+                    final class Child extends Base {}
+
+                    $value = (new Child())->value;',
+                'assertions' => [
+                    '$value===' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'propertyAnnotationOfTheChildNarrowsThePropertyOfTheParent' => [
                 'code' => '<?php
                     abstract class Base {
