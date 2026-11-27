@@ -1,6 +1,6 @@
 # Psalm perf and issue-diff harness
 
-Every non-draft PR to `master` or `6.x` that changes more than docs, tests or CI (changes to `perf.yml` count) runs Psalm on a pinned corpus of real projects (`corpus.yml`) with the merge-base (base) and the PR head (head) on the same runner, and reports peak memory, wall time, weighted issues and the exact issues added or removed (job summary and the `perf-report` artifact).
+Every non-draft PR to `master` or `6.x` that changes more than docs, tests or CI (changes to `perf.yml` count) runs Psalm on a pinned corpus of real projects (`corpus.yml`) with the merge-base (base) and the PR head (head) side by side on the same runner, and reports peak memory, wall time, weighted issues and the exact issues added or removed (job summary and the `perf-report` artifact).
 
 - ❌ fail (only this fails the check): Psalm memory more than 5 % above base (not when the PR changes `composer.json`); head timed out or ran out of memory while base used less than half of that limit; any other head crash.
 - ⚠️ warn: a timeout or memory crash with base already above half of the limit, wall time of a project more than 10 % above base after a re-run, wall time summed over the compared projects more than 5 % above base (neither when the PR changes `composer.json`), a missing or invalid result, a setup failure, or 💥 (base crashed or timed out, so the project is not comparable).
@@ -20,6 +20,8 @@ An issue removed and added at the same file, line and column is listed under **C
 The report has a collapsed **Hot files** block, only when some project has a file whose analysis CPU grew by at least 0.2 s and 20 % from base to head: up to 10 such files per project, with the CPU of the scan stages, analysis.files and taint, taken from the first run of each side. It is informational and never changes the verdict. A line below it lists the projects without data and why (an old merge-base or a 6.x PR without `--debug-performance[=PATH]`, a missing or invalid profile).
 
 The profiles of both sides are in the `perf-report` artifact (`profiles/<project>.base.json` and `.head.json`); open them at https://psalm.dev/profile/.
+
+Base and head run side by side (`--threads=1` each), so both see the same runner load and a job takes one analysis per round, not two. Their memory adds up on the runner: drupal, the largest, needs about 12 GB for both sides. If the kernel kills either side out of memory, both run again one after the other, and those runs are judged.
 
 The measured runs are profiled with `--debug-performance=PATH`, which adds the same small CPU and memory cost to both sides. If either side does not support the option, or the PR changes `src/Psalm/Internal/Perf`, neither side is profiled.
 
