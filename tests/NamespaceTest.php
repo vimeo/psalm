@@ -110,6 +110,47 @@ final class NamespaceTest extends TestCase
                     use function B\foo;
                     use const B\FOO;',
             ],
+            'namespaceRelativeNameInDocblock' => [
+                'code' => '<?php
+                    namespace App\Model\Sub {
+                        final class Role {}
+                    }
+
+                    namespace App\Model {
+                        use Vendor\Sub;
+
+                        final class User {}
+
+                        /**
+                         * @param namespace\User $user
+                         * @return Namespace\Sub\Role
+                         */
+                        function roleOf($user) {
+                            return new namespace\Sub\Role();
+                        }
+
+                        $role = roleOf(new User());
+                    }',
+                'assertions' => [
+                    '$role===' => 'App\Model\Sub\Role',
+                ],
+            ],
+            'namespaceRelativeNameInDocblockOfGlobalNamespace' => [
+                'code' => '<?php
+                    namespace {
+                        final class Logger {}
+
+                        /** @return namespace\Logger */
+                        function logger() {
+                            return new Logger();
+                        }
+
+                        $logger = logger();
+                    }',
+                'assertions' => [
+                    '$logger===' => 'Logger',
+                ],
+            ],
         ];
     }
 

@@ -125,7 +125,10 @@ abstract class Type
 
         $imported_namespaces = $aliases->uses;
 
-        if (str_contains($class, '\\')) {
+        // `namespace\Foo` is relative to the current namespace, and imports don't apply to it
+        if (stripos($class, 'namespace\\') === 0) {
+            $class = substr($class, 10);
+        } elseif (str_contains($class, '\\')) {
             $class_parts = explode('\\', $class);
             $first_namespace = array_shift($class_parts);
 
