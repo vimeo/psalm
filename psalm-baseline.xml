@@ -1163,9 +1163,6 @@
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/UnusedAssignmentRemover.php">
-    <PossiblyUndefinedArrayOffset>
-      <code><![CDATA[$token_list[$iter]]]></code>
-    </PossiblyUndefinedArrayOffset>
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[$token_list[$iter]]]></code>
       <code><![CDATA[$token_list[$iter]]]></code>
