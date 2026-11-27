@@ -111,6 +111,27 @@ final class FunctionTemplateTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'indexedAccessOfATemplateShapeByAUnionOfKeys' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array
+                     * @template K of key-of<T>
+                     * @param T $a
+                     * @param K $k
+                     * @return T[K]
+                     */
+                    function get(array $a, $k) {
+                        return $a[$k];
+                    }
+
+                    $a = get(["a" => 1, "b" => "str"], rand(0, 1) ? "a" : "b");
+                    $b = get(["a" => 1, "b" => "str"], "b");
+                ',
+                'assertions' => [
+                    '$a===' => "'str'|1",
+                    '$b===' => "'str'",
+                ],
+            ],
             'classStringOrTemplateIsBoundToTheClassOfAClassString' => [
                 'code' => '<?php
                     final class Foo {}

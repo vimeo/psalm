@@ -1168,28 +1168,14 @@ trait UnionTrait
     }
 
     /**
+     * Whether the union holds exactly one atomic type, which getSingleAtomic() then returns.
+     * A union of literals, like `1|2`, is not single.
+     *
      * @psalm-mutation-free
      */
     public function isSingle(): bool
     {
-        $type_count = count($this->types);
-
-        $int_literal_count = count($this->literal_int_types);
-        $string_literal_count = count($this->literal_string_types);
-        $float_literal_count = count($this->literal_float_types);
-
-        if (($int_literal_count && $string_literal_count)
-            || ($int_literal_count && $float_literal_count)
-            || ($string_literal_count && $float_literal_count)
-        ) {
-            return false;
-        }
-
-        if ($int_literal_count || $string_literal_count || $float_literal_count) {
-            $type_count -= $int_literal_count + $string_literal_count + $float_literal_count - 1;
-        }
-
-        return $type_count === 1;
+        return count($this->types) === 1;
     }
 
     /**
@@ -1197,30 +1183,7 @@ trait UnionTrait
      */
     public function isSingleAndMaybeNullable(): bool
     {
-        $is_nullable = isset($this->types['null']);
-
-        $type_count = count($this->types);
-
-        if ($type_count === 1 && $is_nullable) {
-            return false;
-        }
-
-        $int_literal_count = count($this->literal_int_types);
-        $string_literal_count = count($this->literal_string_types);
-        $float_literal_count = count($this->literal_float_types);
-
-        if (($int_literal_count && $string_literal_count)
-            || ($int_literal_count && $float_literal_count)
-            || ($string_literal_count && $float_literal_count)
-        ) {
-            return false;
-        }
-
-        if ($int_literal_count || $string_literal_count || $float_literal_count) {
-            $type_count -= $int_literal_count + $string_literal_count + $float_literal_count - 1;
-        }
-
-        return ($type_count - (int) $is_nullable) === 1;
+        return count($this->types) - (int) isset($this->types['null']) === 1;
     }
 
     /**

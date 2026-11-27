@@ -134,22 +134,11 @@ final class TemplateInferredTypeReplacer
                             $codebase,
                         );
 
-                    if ($array_template_type->isSingle()
-                        && $offset_template_type->isSingle()
-                        && !$array_template_type->isMixed()
-                        && !$offset_template_type->isMixed()
-                    ) {
-                        $array_template_type = $array_template_type->getSingleAtomic();
-                        $offset_template_type = $offset_template_type->getSingleAtomic();
-
-                        if ($array_template_type instanceof TKeyedArray
-                            && ($offset_template_type instanceof TLiteralString
-                                || $offset_template_type instanceof TLiteralInt)
-                            && isset($array_template_type->properties[$offset_template_type->value])
-                        ) {
-                            $template_type = $array_template_type->properties[$offset_template_type->value];
-                        }
-                    }
+                    $template_type = self::getIndexedAccessType(
+                        $array_template_type,
+                        $offset_template_type,
+                        $codebase,
+                    );
                 }
 
                 if ($template_type) {
@@ -241,6 +230,32 @@ final class TemplateInferredTypeReplacer
                 $codebase,
             )->getAtomicTypes(),
         )->freeze();
+    }
+
+    /**
+     * The type that a shape gives at the literal keys of `$offset_type`, or null if one of them isn't a known offset
+     */
+    public static function getIndexedAccessType(Union $array_type, Union $offset_type, ?Codebase $codebase): ?Union
+    {
+        $array_atomic = $array_type->isSingle() ? $array_type->getSingleAtomic() : null;
+
+        if (!$array_atomic instanceof TKeyedArray || $offset_type->isUnionEmpty()) {
+            return null;
+        }
+
+        $types = [];
+
+        foreach ($offset_type->getAtomicTypes() as $offset_atomic) {
+            if ((!$offset_atomic instanceof TLiteralString && !$offset_atomic instanceof TLiteralInt)
+                || !isset($array_atomic->properties[$offset_atomic->value])
+            ) {
+                return null;
+            }
+
+            $types[] = $array_atomic->properties[$offset_atomic->value];
+        }
+
+        return Type::combineUnionTypeArray($types, $codebase);
     }
 
     /**

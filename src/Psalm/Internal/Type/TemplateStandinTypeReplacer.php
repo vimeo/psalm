@@ -30,8 +30,6 @@ use Psalm\Type\Atomic\TIntersection;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralClassString;
-use Psalm\Type\Atomic\TLiteralInt;
-use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TObjectWithProperties;
@@ -422,28 +420,17 @@ final class TemplateStandinTypeReplacer
                             $codebase,
                         );
 
-                    if ($array_template_type->isSingle()
-                        && $offset_template_type->isSingle()
-                        && !$array_template_type->isMixed()
-                        && !$offset_template_type->isMixed()
-                    ) {
-                        $array_template_type = $array_template_type->getSingleAtomic();
-                        $offset_template_type = $offset_template_type->getSingleAtomic();
+                    $replacement_type = TemplateInferredTypeReplacer::getIndexedAccessType(
+                        $array_template_type,
+                        $offset_template_type,
+                        $codebase,
+                    );
 
+                    if ($replacement_type !== null) {
+                        $include_first = false;
 
-                        if ($array_template_type instanceof TKeyedArray
-                            && ($offset_template_type instanceof TLiteralString
-                                || $offset_template_type instanceof TLiteralInt)
-                            && isset($array_template_type->properties[$offset_template_type->value])
-                        ) {
-                            $include_first = false;
-
-                            $replacement_type
-                                = $array_template_type->properties[$offset_template_type->value];
-
-                            foreach ($replacement_type->getAtomicTypes() as $replacement_atomic_type) {
-                                $atomic_types[] = $replacement_atomic_type;
-                            }
+                        foreach ($replacement_type->getAtomicTypes() as $replacement_atomic_type) {
+                            $atomic_types[] = $replacement_atomic_type;
                         }
                     }
                 }
