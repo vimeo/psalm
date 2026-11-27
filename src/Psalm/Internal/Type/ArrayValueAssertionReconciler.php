@@ -9,7 +9,6 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Storage\Assertion\DoesNotHaveArrayValue;
 use Psalm\Storage\Assertion\HasArrayValue;
 use Psalm\Storage\Assertion\IsIdentical;
-use Psalm\Storage\Assertion\IsLooselyEqual;
 use Psalm\Storage\Assertion\IsNotIdentical;
 use Psalm\Storage\Assertion\IsNotLooselyEqual;
 use Psalm\Storage\Assertion\IsNotType;
@@ -17,8 +16,10 @@ use Psalm\Storage\Assertion\IsType;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TEnumCase;
 use Psalm\Type\Atomic\TFalse;
+use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
@@ -30,7 +31,6 @@ use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
 
-use function array_all;
 use function array_key_first;
 use function count;
 use function is_int;
@@ -83,17 +83,18 @@ final class ArrayValueAssertionReconciler
                     continue;
                 }
 
-                $matched = self::matchElement(
-                    $assertion->value_type,
-                    $assertion->strict,
-                    $atomic_type->type_params[1],
-                    $statements_analyzer,
-                    $inside_loop,
-                );
+                if ($assertion->strict) {
+                    $matched = self::matchStrictElement(
+                        $assertion->value_type,
+                        $atomic_type->type_params[1],
+                        $statements_analyzer,
+                        $inside_loop,
+                    );
 
-                if ($matched === null) {
-                    $changed = true;
-                    continue;
+                    if ($matched === null) {
+                        $changed = true;
+                        continue;
+                    }
                 }
 
                 if (!$atomic_type instanceof TNonEmptyArray) {
@@ -261,13 +262,40 @@ final class ArrayValueAssertionReconciler
         StatementsAnalyzer $statements_analyzer,
         bool $inside_loop,
     ): TKeyedArray|TArray|null {
+        // Non-strict PHP equality has cross-type coercions (numeric strings, PHP 7.4 string==0, SimpleXMLElement),
+        // so only enforce non-emptiness without eliminating properties as non-matching.
+        if (!$assertion->strict) {
+            if ($atomic_type->fallback_params === null && count($atomic_type->properties) === 1) {
+                $only_key = array_key_first($atomic_type->properties);
+                if ($atomic_type->properties[$only_key]->possibly_undefined) {
+                    $properties = $atomic_type->properties;
+                    $properties[$only_key] = $properties[$only_key]->setPossiblyUndefined(false, false);
+
+                    return $atomic_type->setProperties($properties);
+                }
+
+                return $atomic_type;
+            }
+
+            if ($atomic_type->is_list
+                && isset($atomic_type->properties[0])
+                && $atomic_type->properties[0]->possibly_undefined
+            ) {
+                $properties = $atomic_type->properties;
+                $properties[0] = $properties[0]->setPossiblyUndefined(false, false);
+
+                return $atomic_type->setProperties($properties);
+            }
+
+            return $atomic_type;
+        }
+
         $matching_props = [];
 
         foreach ($atomic_type->properties as $prop_key => $prop_type) {
             $stripped = $prop_type->setPossiblyUndefined(false, false);
-            $matched = self::matchElement(
+            $matched = self::matchStrictElement(
                 $assertion->value_type,
-                $assertion->strict,
                 $stripped,
                 $statements_analyzer,
                 $inside_loop,
@@ -279,9 +307,8 @@ final class ArrayValueAssertionReconciler
         }
 
         $fallback_matches = $atomic_type->fallback_params !== null
-            && self::matchElement(
+            && self::matchStrictElement(
                 $assertion->value_type,
-                $assertion->strict,
                 $atomic_type->fallback_params[1],
                 $statements_analyzer,
                 $inside_loop,
@@ -294,12 +321,7 @@ final class ArrayValueAssertionReconciler
         if ($atomic_type->fallback_params === null && count($matching_props) === 1) {
             $only_key = array_key_first($matching_props);
             $properties = $atomic_type->properties;
-            $can_narrow_value = $assertion->strict
-                || $assertion->value_type instanceof TNull
-                || $assertion->value_type instanceof TFalse
-                || $assertion->value_type instanceof TTrue;
-            $new_prop = $can_narrow_value ? $matching_props[$only_key] : $properties[$only_key];
-            $properties[$only_key] = $new_prop->setPossiblyUndefined(false, false);
+            $properties[$only_key] = $matching_props[$only_key]->setPossiblyUndefined(false, false);
 
             if ($atomic_type->is_list && is_int($only_key)) {
                 for ($i = 0; $i < $only_key; $i++) {
@@ -436,9 +458,8 @@ final class ArrayValueAssertionReconciler
         return $rebuilt;
     }
 
-    private static function matchElement(
+    private static function matchStrictElement(
         Atomic $value_type,
-        bool $strict,
         Union $element_type,
         StatementsAnalyzer $statements_analyzer,
         bool $inside_loop,
@@ -447,26 +468,11 @@ final class ArrayValueAssertionReconciler
             return null;
         }
 
-        $codebase = $statements_analyzer->getCodebase();
-
-        // In PHP, loose `in_array(true, [$enum])` returns false even though `$enum == true` is true.
-        if (!$strict
-            && $value_type instanceof TTrue
-            && array_all(
-                $element_type->getAtomicTypes(),
-                static fn(Atomic $atomic): bool => self::isDefinitelyEnum($codebase, $atomic),
-            )
-        ) {
-            return null;
-        }
-
-        $element_assertion = $strict
-            ? ($value_type instanceof TNull
-                || $value_type instanceof TTrue
-                || $value_type instanceof TFalse
-                ? new IsType($value_type)
-                : new IsIdentical($value_type))
-            : new IsLooselyEqual($value_type);
+        $element_assertion = $value_type instanceof TNull
+            || $value_type instanceof TTrue
+            || $value_type instanceof TFalse
+            ? new IsType($value_type)
+            : new IsIdentical($value_type);
 
         $failed = Reconciler::RECONCILIATION_OK;
         $reconciled = AssertionReconciler::reconcile(
@@ -576,25 +582,14 @@ final class ArrayValueAssertionReconciler
     /**
      * @psalm-mutation-free
      */
-    private static function isDefinitelyEnum(Codebase $codebase, Atomic $atomic): bool
-    {
-        if ($atomic instanceof TEnumCase) {
-            return true;
-        }
-
-        if ($atomic instanceof TNamedObject && $codebase->classlike_storage_provider->has($atomic->value)) {
-            return $codebase->classlike_storage_provider->get($atomic->value)->is_enum;
-        }
-
-        return false;
-    }
-
-    /**
-     * @psalm-mutation-free
-     */
     private static function mayBeEnum(Codebase $codebase, Atomic $atomic): bool
     {
-        if ($atomic instanceof TEnumCase || $atomic instanceof TObject || $atomic instanceof TMixed) {
+        if ($atomic instanceof TEnumCase
+            || $atomic instanceof TObject
+            || $atomic instanceof TCallable
+            || $atomic instanceof TIterable
+            || $atomic instanceof TMixed
+        ) {
             return true;
         }
 
@@ -608,7 +603,11 @@ final class ArrayValueAssertionReconciler
             return false;
         }
 
-        if ($atomic instanceof TNamedObject && $codebase->classlike_storage_provider->has($atomic->value)) {
+        if ($atomic instanceof TNamedObject) {
+            if (!$codebase->classlike_storage_provider->has($atomic->value)) {
+                return true;
+            }
+
             $storage = $codebase->classlike_storage_provider->get($atomic->value);
 
             return $storage->is_enum || $storage->is_interface;

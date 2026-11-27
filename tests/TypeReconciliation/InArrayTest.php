@@ -425,16 +425,93 @@ final class InArrayTest extends TestCase
                         case Spades;
                     }
 
-                    /** @param list<Suit|bool> $items */
-                    function test(array $items): void {
+                    /**
+                     * @param list<Suit|bool> $items
+                     * @param list<callable> $callbacks
+                     * @param non-empty-list<callable> $nonEmptyCallbacks
+                     * @param list<iterable> $iterables
+                     */
+                    function test(array $items, array $callbacks, array $nonEmptyCallbacks, array $iterables): void {
                         if (!in_array(true, $items)) {
                             /** @psalm-check-type-exact $items = list<Suit|false> */
                             echo count($items);
+                        }
+
+                        if (!in_array(true, $callbacks)) {
+                            /** @psalm-check-type-exact $callbacks = list<callable> */
+                            echo count($callbacks);
+                        }
+
+                        if (!in_array(true, $nonEmptyCallbacks)) {
+                            /** @psalm-check-type-exact $nonEmptyCallbacks = non-empty-list<callable> */
+                            echo count($nonEmptyCallbacks);
+                        }
+
+                        if (!in_array(true, $iterables)) {
+                            /** @psalm-check-type-exact $iterables = list<iterable<mixed, mixed>> */
+                            echo count($iterables);
                         }
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.1',
+            ],
+            'inArrayNonStrictPositivePreservesLooseMatches' => [
+                'code' => '<?php
+                    /**
+                     * @param list<0> $zeros
+                     * @param list<1> $ones
+                     * @param list<0.0> $zeroFloats
+                     * @param list<SimpleXMLElement> $xmls
+                     * @param list<object> $objects
+                     * @param array{a: 0, b?: string} $shape
+                     */
+                    function test(
+                        array $zeros,
+                        array $ones,
+                        array $zeroFloats,
+                        array $xmls,
+                        array $objects,
+                        array $shape
+                    ): void {
+                        if (in_array("00", $zeros)) {
+                            /** @psalm-check-type-exact $zeros = non-empty-list<0> */
+                            echo count($zeros);
+                        }
+
+                        if (in_array("foo", $zeros)) {
+                            /** @psalm-check-type-exact $zeros = non-empty-list<0> */
+                            echo count($zeros);
+                        }
+
+                        if (in_array("1.0", $ones)) {
+                            /** @psalm-check-type-exact $ones = non-empty-list<1> */
+                            echo count($ones);
+                        }
+
+                        if (in_array("0.0", $zeroFloats)) {
+                            /** @psalm-check-type-exact $zeroFloats = non-empty-list<0.0> */
+                            echo count($zeroFloats);
+                        }
+
+                        if (in_array(0, $xmls)) {
+                            /** @psalm-check-type-exact $xmls = non-empty-list<SimpleXMLElement> */
+                            echo count($xmls);
+                        }
+
+                        if (in_array(0, $objects)) {
+                            /** @psalm-check-type-exact $objects = non-empty-list<object> */
+                            echo count($objects);
+                        }
+
+                        if (in_array("00", $shape)) {
+                            /** @psalm-check-type-exact $shape = array{a: 0, b?: string} */
+                            echo $shape["a"];
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '7.4',
             ],
             'inArrayLiteralAndEnumCaseNarrowArray' => [
                 'code' => '<?php
