@@ -13,6 +13,8 @@ use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
+use const DIRECTORY_SEPARATOR;
+
 final class IssetTest extends TestCase
 {
     use ValidCodeAnalysisTestTrait;
@@ -148,6 +150,26 @@ final class IssetTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'offsetOfAnUnsealedShapeSetWhereIssetIsFalseIsDefined' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array{a: string, ...<array-key, mixed>} $a */
+                    function f(array $a): void {
+                        if (!isset($a['b'])) {
+                            $a['b'] = 'x';
+                        }
+                        if ($a['b'] === 'z') {}
+                    }
+
+                    /** @param array{a: string, ...<array-key, mixed>} $a */
+                    function g(array $a): void {
+                        if (!isset($a['b'])) {
+                            return;
+                        }
+                        if ($a['b'] === 'z') {}
+                    }
+                    PHP,
+            ],
             'negatedIssetAlternativeKeepsNonEmptyArray' => [
                 'code' => '<?php
                     /** @return non-empty-array<string, int|string|null> */
@@ -3361,6 +3383,45 @@ final class IssetTest extends TestCase
                     }
                     PHP,
                 'error_message' => 'PossiblyUndefinedArrayOffset',
+            ],
+            'offsetOfAnUnsealedShapeAfterIssetAndItsElseIsPossiblyUndefined' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array{a: string, ...<array-key, mixed>} $a */
+                    function f(array $a): void {
+                        if (isset($a['b'])) {
+                            assert(is_string($a['b']));
+                        } else {
+                            echo 'not set';
+                        }
+                        if ($a['b'] === 'z') {}
+                    }
+                    PHP,
+                'error_message' => 'PossiblyUndefinedArrayOffset - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:9',
+            ],
+            'offsetOfAnUnsealedShapeAfterIssetWithoutElseIsPossiblyUndefined' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array{a: string, ...<array-key, mixed>} $a */
+                    function f(array $a): void {
+                        if (isset($a['b'])) {}
+                        if ($a['b'] === 'z') {}
+                    }
+                    PHP,
+                'error_message' => 'PossiblyUndefinedArrayOffset - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:9',
+            ],
+            'offsetOfAnUnsealedShapeWhereIssetIsFalseIsPossiblyUndefined' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array{a: string, ...<array-key, mixed>} $a */
+                    function f(array $a): void {
+                        if (!isset($a['b'])) {
+                            echo 'not set';
+                        }
+                        if ($a['b'] === 'z') {}
+                    }
+                    PHP,
+                'error_message' => 'PossiblyUndefinedArrayOffset - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:9',
             ],
             'appendUnderAnIntOffsetOfADeclaredStringCheckedWithIssetIsReported' => [
                 'code' => '<?php

@@ -644,6 +644,8 @@ class Reconciler
                 || $result_type->ignore_isset !== $before_adjustment->ignore_isset;
 
             $key_parts = self::breakUpPathIntoParts($key);
+            $offset_possibly_unset = false;
+
             if ($type_changed || $failed_reconciliation) {
                 $changed_var_ids[$key] = true;
 
@@ -658,6 +660,8 @@ class Reconciler
                 $array_value_type = $has_inverted_isset
                     ? self::getPossiblyUnsetArrayValue($key_parts, $existing_types, $result_type)
                     : $result_type;
+
+                $offset_possibly_unset = $has_inverted_isset && $array_value_type?->possibly_undefined;
 
                 if (str_ends_with($key, ']')
                     && $array_value_type !== null
@@ -729,7 +733,10 @@ class Reconciler
             }
 
             // a variable that was not set before is still possibly undefined where it is asserted not to be set
-            if (!$did_type_exist && $has_inverted_isset && count($key_parts) === 1 && $key[0] === '$') {
+            if ((!$did_type_exist && $has_inverted_isset && count($key_parts) === 1 && $key[0] === '$')
+                // an offset the array may not have is read from the array, which reports it
+                || $offset_possibly_unset
+            ) {
                 $result_type = $result_type->setPossiblyUndefined(true);
             }
 
