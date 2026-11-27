@@ -24,8 +24,9 @@ use const PHP_EOL;
 final class PsalmFileChangedDuringRunEndToEndTest extends PsalmEndToEndTestCase
 {
     /**
-     * A name of its own for each test: Psalm runs with opcache.validate_timestamps=0, and on Windows a Psalm process
-     * of another test (paratest) keeps the opcache of an earlier plugin of the same path alive
+     * A name of its own for each test, as the tests of the class share the directory of setUpBeforeClass(): Psalm
+     * runs with opcache.validate_timestamps=0, and on Windows a Psalm process of another test (paratest) keeps the
+     * opcache of the plugin an earlier test wrote at the same path alive
      */
     private string $plugin_file = 'plugins/plugin.php';
 

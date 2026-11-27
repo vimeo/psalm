@@ -9,6 +9,7 @@ use PHPUnit\Framework\TestCase;
 use Symfony\Component\Process\Process;
 
 use function array_map;
+use function assert;
 use function dirname;
 use function explode;
 use function file_put_contents;
@@ -19,6 +20,8 @@ use function realpath;
 use function rmdir;
 use function str_replace;
 use function str_starts_with;
+use function sys_get_temp_dir;
+use function tempnam;
 use function trim;
 use function unlink;
 
@@ -37,7 +40,10 @@ final class ComposerAutoloaderMachineryTest extends TestCase
     #[Override]
     protected function setUp(): void
     {
-        $tmp = self::createTemporaryDirectory('PsalmComposerMachinery_');
+        $tmp = tempnam(sys_get_temp_dir(), 'PsalmComposerMachinery_');
+        assert($tmp !== false);
+        unlink($tmp);
+        mkdir($tmp);
         $this->project_dir = (string) realpath($tmp);
         mkdir($this->project_dir . '/src');
 
