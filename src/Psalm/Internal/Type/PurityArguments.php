@@ -101,7 +101,7 @@ final class PurityArguments
      * Parameters that do not fit the templates are left alone, for the checks to report them.
      *
      * @param list<Union> $type_params
-     * @return list<Union>
+     * @return ($type_params is non-empty-list ? non-empty-list<Union> : list<Union>)
      * @psalm-mutation-free
      */
     public static function align(array $type_params, ClassLikeStorage $storage): array
