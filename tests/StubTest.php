@@ -2939,6 +2939,139 @@ final class StubTest extends DeferredAnalyzerTestCase
         );
     }
 
+    /**
+     * The project is scanned before the stubs: a class implementing an interface of a stub is populated again once the
+     * stub declares it, and takes the sinks of its methods
+     */
+    public function testProjectClassImplementingAStubInterfaceTakesItsSinks(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('TaintedShell - src/somefile.php:9');
+
+        $this->analyzeWithInterfaceAndTraitStub(
+            '<?php
+                final class LocalRunner implements StubRunner {
+                    public function run(string $command): void {}
+                }
+
+                $command = $_GET["command"];
+                if (is_string($command)) {
+                    // via the class, whose method declares no sink of its own
+                    (new LocalRunner())->run($command);
+                }',
+        );
+    }
+
+    public function testProjectClassImplementingAProjectInterfaceExtendingAStubInterfaceTakesItsSinks(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('TaintedShell - src/somefile.php:10');
+
+        $this->analyzeWithInterfaceAndTraitStub(
+            '<?php
+                interface NamedRunner extends StubRunner {}
+                final class Named implements NamedRunner {
+                    public function run(string $command): void {}
+                }
+
+                $command = $_GET["command"];
+                if (is_string($command)) {
+                    // the class was populated from the interface before the stub declared its parent
+                    (new Named())->run($command);
+                }',
+        );
+    }
+
+    public function testProjectClassUsingAStubTraitTakesItsMethods(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('TaintedShell - src/somefile.php:6');
+
+        $this->analyzeWithInterfaceAndTraitStub(
+            '<?php
+                final class UsesTrait { use StubRunsCommands; }
+
+                $command = $_GET["command"];
+                if (is_string($command)) {
+                    (new UsesTrait())->exec($command);
+                }',
+        );
+    }
+
+    public function testProjectClassExtendingAClassUsingAStubTraitTakesItsMethods(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('TaintedShell - src/somefile.php:7');
+
+        $this->analyzeWithInterfaceAndTraitStub(
+            '<?php
+                class UsesTrait { use StubRunsCommands; }
+                final class Child extends UsesTrait {}
+
+                $command = $_GET["command"];
+                if (is_string($command)) {
+                    (new Child())->exec($command);
+                }',
+        );
+    }
+
+    public function testProjectClassUsingATraitUsingAStubTraitTakesItsMethods(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('TaintedShell - src/somefile.php:7');
+
+        $this->analyzeWithInterfaceAndTraitStub(
+            '<?php
+                trait RunsCommands { use StubRunsCommands; }
+                final class UsesTrait { use RunsCommands; }
+
+                $command = $_GET["command"];
+                if (is_string($command)) {
+                    (new UsesTrait())->exec($command);
+                }',
+        );
+    }
+
+    public function testProjectClassOfAStubInterfaceOrTraitWithoutInput(): void
+    {
+        $this->analyzeWithInterfaceAndTraitStub(
+            '<?php
+                final class LocalRunner implements StubRunner {
+                    public function run(string $command): void {}
+                }
+                final class UsesTrait { use StubRunsCommands; }
+
+                (new LocalRunner())->run("ls");
+                (new UsesTrait())->exec("ls");',
+        );
+    }
+
+    private function analyzeWithInterfaceAndTraitStub(string $code): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+
+                    <stubs>
+                        <file name="tests/fixtures/stubs/interface_and_trait_with_sinks.phpstub" />
+                    </stubs>
+                </psalm>',
+            ),
+        );
+        $this->project_analyzer->trackTaintedInputs();
+
+        $file_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'src/somefile.php';
+        $this->addFile($file_path, $code);
+        $this->analyzeFile($file_path, new Context());
+    }
+
     private function analyzeWithRedeclaredStubMethod(string $code): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
