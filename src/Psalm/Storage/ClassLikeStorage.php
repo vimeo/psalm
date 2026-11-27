@@ -405,11 +405,20 @@ final class ClassLikeStorage implements HasAttributesInterface
     public array $pseudo_property_get_types = [];
 
     /**
-     * The names (`$name`) of the `@property` tags in the docblock of the class itself, not inherited or used
+     * The names (`$name`) of the `@property` and `@property-write` tags in the docblock of the class itself, not
+     * inherited or used
      *
      * @var array<string, true>
      */
-    public array $declared_pseudo_property_names = [];
+    public array $declared_pseudo_property_set_names = [];
+
+    /**
+     * The names (`$name`) of the `@property` and `@property-read` tags in the docblock of the class itself, not
+     * inherited or used
+     *
+     * @var array<string, true>
+     */
+    public array $declared_pseudo_property_get_names = [];
 
     /**
      * @var array<string, string>

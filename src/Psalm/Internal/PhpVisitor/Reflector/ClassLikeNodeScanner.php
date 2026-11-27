@@ -928,14 +928,14 @@ final class ClassLikeNodeScanner
                             $storage->template_types ?: [],
                         );
 
-                        $storage->declared_pseudo_property_names[$property['name']] = true;
-
                         if ($property['tag'] !== 'property-read' && $property['tag'] !== 'psalm-property-read') {
                             $storage->pseudo_property_set_types[$property['name']] = $pseudo_property_type;
+                            $storage->declared_pseudo_property_set_names[$property['name']] = true;
                         }
 
                         if ($property['tag'] !== 'property-write' && $property['tag'] !== 'psalm-property-write') {
                             $storage->pseudo_property_get_types[$property['name']] = $pseudo_property_type;
+                            $storage->declared_pseudo_property_get_names[$property['name']] = true;
                         }
                     } catch (TypeParseTreeException $e) {
                         $storage->docblock_issues[] = new InvalidDocblock(

@@ -342,7 +342,7 @@ final class Properties
         // a public property is never served by `__get()` or `__set()`: a `@property` of the class where it appears,
         // of a subclass, or of the trait that declares it narrows it
         for ($storage = $class_storage;;) {
-            if (isset($storage->declared_pseudo_property_names[$key])) {
+            if (isset(self::getDeclaredPseudoPropertyNames($storage, $property_set)[$key])) {
                 return $pseudo_property_type;
             }
 
@@ -354,7 +354,7 @@ final class Properties
         }
 
         return $declaring_class_storage->is_trait
-            && isset($declaring_class_storage->declared_pseudo_property_names[$key])
+            && isset(self::getDeclaredPseudoPropertyNames($declaring_class_storage, $property_set)[$key])
                 ? $pseudo_property_type
                 : null;
     }
@@ -366,6 +366,17 @@ final class Properties
     private static function getPseudoPropertyTypes(ClassLikeStorage $storage, bool $property_set): array
     {
         return $property_set ? $storage->pseudo_property_set_types : $storage->pseudo_property_get_types;
+    }
+
+    /**
+     * @return array<string, true>
+     * @psalm-capabilities read-props
+     */
+    private static function getDeclaredPseudoPropertyNames(ClassLikeStorage $storage, bool $property_set): array
+    {
+        return $property_set
+            ? $storage->declared_pseudo_property_set_names
+            : $storage->declared_pseudo_property_get_names;
     }
 
     /**

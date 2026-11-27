@@ -838,6 +838,36 @@ final class MagicPropertyTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'writeAnnotationOfTheChildDoesNotNarrowTheReadsOfItsPublicProperty' => [
+                'code' => '<?php
+                    /**
+                     * @property-read string|null $value
+                     */
+                    abstract class Base {
+                        public function __get(string $name): mixed {
+                            return null;
+                        }
+                        public function __set(string $name, mixed $value): void {}
+                    }
+
+                    /**
+                     * @property-write int $value
+                     */
+                    final class Child extends Base {
+                        public int $value = 0;
+
+                        public function get(): int {
+                            return $this->value;
+                        }
+                    }
+
+                    $value = (new Child())->value;',
+                'assertions' => [
+                    '$value===' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'propertyAnnotationThatTheChildRepeatsNarrowsItsPublicProperty' => [
                 'code' => '<?php
                     /**
