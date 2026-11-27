@@ -1656,7 +1656,11 @@ final class TaintFlowResolution
             // a write under a name of what was read under it from an object it can't be set to (see matchNameSlot())
             $next = $foreach_marker !== null
                 && !$this->path_type_effects[$path_type][5]
-                && $this->matchNameSlot($this->open_assignment_slots[$open_assignments], $foreach_marker, false) === false
+                && $this->matchNameSlot(
+                    $this->open_assignment_slots[$open_assignments],
+                    $foreach_marker,
+                    false,
+                ) === false
                 ? self::IGNORED
                 : $this->applyPathType($open_assignments, $path_type);
         } elseif ($made[$observed_family] && $made[$observed_family][count($made[$observed_family]) - 1] < 0) {
@@ -1774,7 +1778,10 @@ final class TaintFlowResolution
                 // A property of a name the flow doesn't know (forgotten in a convergence, ...): still the one of
                 // that name, under any key, as the write under the name puts back what it doesn't know, and of the
                 // class of the marker (see matchNameSlot()).
-                $slot = $this->getSlot($foreach_marker, $this->getPathTypeId('arrayvalue-assignment@' . $foreach_marker));
+                $slot = $this->getSlot(
+                    $foreach_marker,
+                    $this->getPathTypeId('arrayvalue-assignment@' . $foreach_marker),
+                );
             }
         }
 
