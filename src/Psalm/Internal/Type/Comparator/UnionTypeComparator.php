@@ -13,10 +13,12 @@ use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TClassConstant;
+use Psalm\Type\Atomic\TConditional;
 use Psalm\Type\Atomic\TEmptyMixed;
 use Psalm\Type\Atomic\TEnumCase;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TGenericObject;
+use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TKeyOf;
@@ -38,6 +40,7 @@ use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Atomic\TValueOf;
 use Psalm\Type\Union;
 
+use function array_filter;
 use function array_map;
 use function array_merge;
 use function array_pop;
@@ -561,7 +564,10 @@ final class UnionTypeComparator
         array $container_parts,
         ?TypeComparisonResult $union_comparison_result,
     ): array {
-        $input_parts = self::getTypeParts($codebase, $input_type, !self::hasTemplateKeyOrValueOf($container_type));
+        $input_parts = self::withConditionalsSplit(
+            $codebase,
+            self::getTypeParts($codebase, $input_type, !self::hasTemplateKeyOrValueOf($container_type)),
+        );
 
         if ($container_type->hasTemplateOrStatic()) {
             return $input_parts;
@@ -1128,6 +1134,104 @@ final class UnionTypeComparator
         }
 
         return false;
+    }
+
+    /**
+     * Whether a value of the atomic type is of the type a conditional checks, as the conditional resolves it: an object
+     * only castable to a string is not of a string condition, and an int is never of a float one
+     */
+    public static function isOfConditionalType(
+        Codebase $codebase,
+        Atomic $candidate,
+        Union $conditional_type,
+        ?TypeComparisonResult $comparison_result = null,
+    ): bool {
+        $comparison_result ??= new TypeComparisonResult();
+
+        return self::isContainedBy(
+            $codebase,
+            new Union([$candidate]),
+            $conditional_type,
+            false,
+            false,
+            $comparison_result,
+            false,
+            false,
+        )
+            && !$comparison_result->to_string_cast
+            && (!$candidate instanceof TInt || !$conditional_type->isFloat());
+    }
+
+    /**
+     * A conditional is contained if each of its branches is, possibly by different container parts
+     * (`($a is null ? T : TA)` by `T|TA`), so it is compared as the parts of its branches
+     *
+     * @param list<Atomic> $atomic_types
+     * @param array<string, Union> $narrowed_bounds the bounds of the templates the enclosing conditionals are on,
+     *     narrowed for the branch, by `name:defining class`
+     * @return list<Atomic>
+     */
+    private static function withConditionalsSplit(
+        Codebase $codebase,
+        array $atomic_types,
+        array $narrowed_bounds = [],
+    ): array {
+        $split_types = [];
+
+        foreach ($atomic_types as $atomic_type) {
+            if ($atomic_type instanceof TConditional) {
+                $key = $atomic_type->param_name . ':' . $atomic_type->defining_class;
+                $if_bounds = $narrowed_bounds;
+                $else_bounds = $narrowed_bounds;
+
+                // a template the condition is on is within the conditional type in the if branch, outside it in the
+                // else branch
+                if ($atomic_type->subject_type === null) {
+                    $as_type = $narrowed_bounds[$key] ?? $atomic_type->as_type;
+
+                    if (self::isContainedBy($codebase, $atomic_type->conditional_type, $as_type)) {
+                        $if_bounds[$key] = $atomic_type->conditional_type;
+                    }
+
+                    $else_parts = array_filter(
+                        $as_type->getAtomicTypes(),
+                        static fn(Atomic $part): bool => !self::isOfConditionalType(
+                            $codebase,
+                            $part,
+                            $atomic_type->conditional_type,
+                        ),
+                    );
+
+                    if ($else_parts !== [] && count($else_parts) < count($as_type->getAtomicTypes())) {
+                        $else_bounds[$key] = new Union(array_values($else_parts));
+                    }
+                }
+
+                $split_types = [
+                    ...$split_types,
+                    ...self::withConditionalsSplit(
+                        $codebase,
+                        array_values($atomic_type->if_type->getAtomicTypes()),
+                        $if_bounds,
+                    ),
+                    ...self::withConditionalsSplit(
+                        $codebase,
+                        array_values($atomic_type->else_type->getAtomicTypes()),
+                        $else_bounds,
+                    ),
+                ];
+            } elseif ($atomic_type instanceof TTemplateParam
+                && isset($narrowed_bounds[$atomic_type->param_name . ':' . $atomic_type->defining_class])
+            ) {
+                $split_types[] = $atomic_type->replaceAs(
+                    $narrowed_bounds[$atomic_type->param_name . ':' . $atomic_type->defining_class],
+                );
+            } else {
+                $split_types[] = $atomic_type;
+            }
+        }
+
+        return $split_types;
     }
 
     /**

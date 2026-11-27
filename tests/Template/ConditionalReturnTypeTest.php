@@ -11,6 +11,8 @@ use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
+use const DIRECTORY_SEPARATOR;
+
 final class ConditionalReturnTypeTest extends TestCase
 {
     use ValidCodeAnalysisTestTrait;
@@ -772,6 +774,125 @@ final class ConditionalReturnTypeTest extends TestCase
                     '$int2' => 'int',
                     '$bool2' => 'bool',
                 ],
+            ],
+            'inlineVarConditionalWithAClassTemplateInABranchIsTheReturnType' => [
+                'code' => '<?php
+                    /** @template TValue */
+                    final class P {
+                        /**
+                         * @template TA
+                         * @param (callable(): TA)|null $a
+                         * @return ($a is null ? TValue : TA)
+                         */
+                        public function top(?callable $a = null): mixed {
+                            /** @var ($a is null ? TValue : TA) $r */
+                            $r = $this->make();
+
+                            return $r;
+                        }
+
+                        /**
+                         * @template TA
+                         * @param (callable(): TA)|null $a
+                         * @return array<string, ($a is null ? TValue : TA)>
+                         */
+                        public function nested(?callable $a = null): array {
+                            /** @var array<string, ($a is null ? TValue : TA)> $r */
+                            $r = $this->makeArray();
+
+                            return $r;
+                        }
+
+                        private function make(): mixed { throw new Exception(); }
+
+                        /** @return array<string, mixed> */
+                        private function makeArray(): array { throw new Exception(); }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment'],
+                'php_version' => '8.0',
+            ],
+            'inlineVarCallableTypeNamingAParamLikeTheFunctionsParamIsNotAConditional' => [
+                'code' => '<?php
+                    /**
+                     * @param (callable(): int)|null $f
+                     * @return ($f is null ? string : int)
+                     */
+                    function withCond(?callable $f = null): string|int {
+                        /** @var callable(string $f): void $cb */
+                        $cb = static function (string $f): void {};
+                        $cb("a");
+
+                        return $f === null ? "" : 1;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'templateTheConditionIsOnIsOutsideTheConditionalTypeInTheElseBranch' => [
+                'code' => '<?php
+                    /**
+                     * @template TKey of array-key
+                     * @template-covariant TValue
+                     */
+                    interface Enumerable {
+                        /**
+                         * @template TNewKey of array-key|\UnitEnum
+                         * @param (callable(TValue, TKey): TNewKey)|array|string $keyBy
+                         * @return static<($keyBy is (array|string) ? array-key : (TNewKey is \UnitEnum ? array-key : TNewKey)), TValue>
+                         */
+                        public function keyBy($keyBy);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'intIsOutsideAFloatConditionInTheElseBranchOfTheSplit' => [
+                'code' => '<?php
+                    /** @template TKey of int */
+                    interface Box {}
+
+                    interface Make {
+                        /**
+                         * @template T of int|float
+                         * @param T $t
+                         * @return Box<(T is float ? int : T)>
+                         */
+                        public function toKey($t);
+                    }',
+            ],
+            'conditionalOnAParamInAnInlineVarIsTheConditionalOfTheReturnType' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T $value
+                     * @param (callable(): int)|null $f
+                     * @return ($f is null ? T : int)
+                     */
+                    function pick(mixed $value, ?callable $f = null): mixed {
+                        /** @var ($f is null ? T : int) $result */
+                        $result = $f !== null ? $f() : $value;
+
+                        return $result;
+                    }
+
+                    final class Picker {
+                        /**
+                         * @template T
+                         * @param T $value
+                         * @param (callable(): int)|null $f
+                         * @return ($f is null ? T : int)
+                         */
+                        public function pick(mixed $value, ?callable $f = null): mixed {
+                            /** @var ($f is null ? T : int) $result */
+                            $result = $f !== null ? $f() : $value;
+
+                            return $result;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'variableConditionalSyntax' => [
                 'code' => '<?php
@@ -3530,6 +3651,80 @@ final class ConditionalReturnTypeTest extends TestCase
                     . ' array<array-key, (U:Pg as object)&Mdl|(U:Pg as object)>} provided',
                 'error_levels' => [],
                 'php_version' => '8.0',
+            ],
+            'conditionalOnAParamInAnInlineVarNeedsTheReturnTypeToDependOnIt' => [
+                'code' => '<?php
+                    /** @param (callable(): int)|null $f */
+                    function pick(?callable $f = null): void {
+                        /** @var ($f is null ? string : int) $result */
+                        $result = 1;
+                    }',
+                'error_message' => 'InvalidDocblock',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'implementedConditionalReturnTypeWithABranchOutsideTheInheritedOneIsReported' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface Box {
+                        /**
+                         * @template TA
+                         * @param (callable(): TA)|null $a
+                         * @return ($a is null ? T : TA)
+                         */
+                        public function get(?callable $a = null): mixed;
+                    }
+
+                    /** @implements Box<int> */
+                    final class IntBox implements Box {
+                        /**
+                         * @template TA
+                         * @param (callable(): TA)|null $a
+                         * @return ($a is null ? string : TA)
+                         */
+                        #[\Override]
+                        public function get(?callable $a = null): mixed {
+                            return $a === null ? "x" : $a();
+                        }
+                    }',
+                'error_message' => 'ImplementedReturnTypeMismatch - src' . DIRECTORY_SEPARATOR . 'somefile.php:17:36',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
+            'inlineVarConditionalWithABranchOutsideTheParamTypeIsReported' => [
+                'code' => '<?php
+                    /**
+                     * @param (callable(): int)|null $f
+                     * @return ($f is null ? string : int)
+                     */
+                    function concrete(?callable $f = null): string|int {
+                        /** @var ($f is null ? string : int) $r */
+                        $r = $f === null ? "" : 1;
+                        takeInt($r);
+                        return $r;
+                    }
+
+                    function takeInt(int $i): void {}',
+                'error_message' => 'InvalidScalarArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:33',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'templateTheConditionIsOnIsWithinTheConditionalTypeInTheIfBranch' => [
+                'code' => '<?php
+                    /**
+                     * @template TKey of array-key
+                     */
+                    interface Enumerable {
+                        /**
+                         * @template TNewKey of array-key|\UnitEnum
+                         * @param callable(): TNewKey $keyBy
+                         * @return static<(TNewKey is \UnitEnum ? TNewKey : array-key)>
+                         */
+                        public function keyBy(callable $keyBy);
+                    }',
+                'error_message' => 'InvalidTemplateParam',
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
             'conditionalReturnTypeWithoutIsTypeIsReportedInsteadOfCrashing' => [
                 'code' => '<?php

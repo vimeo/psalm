@@ -108,6 +108,17 @@ final class ArgumentAnalyzer
     /** Set on an argument PHP never passes, whose type isn't checked against its parameter */
     public const NOT_PASSED = 'not_passed';
 
+    /**
+     * Builtins converting objects that their parameter types don't say they convert, whose result holds what
+     * __toString returns: true for those converting the values of their array arguments, or the offset of the
+     * argument they convert
+     */
+    private const TO_STRING_RESULT_BUILTINS = [
+        'strval' => 0,
+        'implode' => true,
+        'join' => true,
+    ];
+
     // callable $this
     // some PHP-internal functions (e.g. array_filter) will call the callback within the current context
     // unlike user-defined functions which call the callback in their context
@@ -2119,28 +2130,23 @@ final class ArgumentAnalyzer
         return false;
     }
 
-    private static function processTaintedness(
+    /**
+     * The argument with the objects its parameter converts to strings converted: their __toString calls are signalled,
+     * and what they return goes into the argument. A builtin (named by $builtin_id) without a string parameter that
+     * takes an array of strings (vsprintf, str_replace) converts the objects among its values, and one in
+     * TO_STRING_RESULT_BUILTINS, whose parameter types don't say so, converts them too.
+     */
+    private static function convertArgumentObjects(
         StatementsAnalyzer $statements_analyzer,
-        string $cased_method_id,
-        ?MethodIdentifier $method_id,
+        Context $context,
+        ?string $builtin_id,
         int $argument_offset,
-        CodeLocation $arg_location,
-        CodeLocation $function_call_location,
-        ?FunctionLikeStorage $function_storage,
-        FunctionLikeParameter $function_param,
         Union $input_type,
         PhpParser\Node\Expr $expr,
-        Context $context,
-        bool $specialize_taint,
-        bool $in_call_map,
-        ?string $argument_name = null,
-        ?int $unpacked_argument_offset = null,
-        bool $converts_to_string = false,
-    ): void {
-        $codebase = $statements_analyzer->getCodebase();
-
-        $string_param = $function_param->type && $function_param->type->isString();
-
+        bool $string_param,
+        bool $converts_to_string,
+        bool $is_unpacked,
+    ): Union {
         if (!$input_type->isString() && ($string_param || ($converts_to_string && $input_type->hasObjectType()))) {
             // the argument check reports a bad argument itself, but the implicit __toString call is signalled
             // whether or not a data-flow graph is built
@@ -2164,18 +2170,88 @@ final class ArgumentAnalyzer
             }
         }
 
-        // a builtin taking an array of strings (vsprintf, str_replace) converts the objects among its values
-        if ($converts_to_string && $in_call_map && !$string_param) {
+        if ($builtin_id === null || $string_param) {
+            return $input_type;
+        }
+
+        if ($converts_to_string) {
             $value_type = CastAnalyzer::getArrayValueType($input_type);
 
             if ($value_type && $value_type->hasObjectType()) {
-                CastAnalyzer::castStringAttempt($statements_analyzer, $context, $value_type, $expr, false, false);
+                $string_type = CastAnalyzer::castStringAttempt(
+                    $statements_analyzer,
+                    $context,
+                    $value_type,
+                    $expr,
+                    false,
+                    false,
+                );
+
+                if (!$is_unpacked) {
+                    $input_type = $input_type->setParentNodes([
+                        ...$input_type->parent_nodes,
+                        ...$string_type->parent_nodes,
+                    ]);
+                }
             }
         }
+
+        $to_string_result = self::TO_STRING_RESULT_BUILTINS[strtolower($builtin_id)] ?? null;
+
+        if ($to_string_result === null || $is_unpacked || !$statements_analyzer->data_flow_graph) {
+            return $input_type;
+        }
+
+        $converted_type = $to_string_result === true
+            ? CastAnalyzer::getArrayValueType($input_type)
+            : ($to_string_result === $argument_offset ? $input_type : null);
+
+        if (!$converted_type || !$converted_type->hasObjectType()) {
+            return $input_type;
+        }
+
+        return $input_type->setParentNodes([
+            ...$input_type->parent_nodes,
+            ...CastAnalyzer::getStringConversionParentNodes($statements_analyzer, $context, $expr, $converted_type),
+        ]);
+    }
+
+    private static function processTaintedness(
+        StatementsAnalyzer $statements_analyzer,
+        string $cased_method_id,
+        ?MethodIdentifier $method_id,
+        int $argument_offset,
+        CodeLocation $arg_location,
+        CodeLocation $function_call_location,
+        ?FunctionLikeStorage $function_storage,
+        FunctionLikeParameter $function_param,
+        Union $input_type,
+        PhpParser\Node\Expr $expr,
+        Context $context,
+        bool $specialize_taint,
+        bool $in_call_map,
+        ?string $argument_name = null,
+        ?int $unpacked_argument_offset = null,
+        bool $converts_to_string = false,
+    ): void {
+        $codebase = $statements_analyzer->getCodebase();
+
+        $input_type = self::convertArgumentObjects(
+            $statements_analyzer,
+            $context,
+            $in_call_map ? $cased_method_id : null,
+            $argument_offset,
+            $input_type,
+            $expr,
+            $function_param->type && $function_param->type->isString(),
+            $converts_to_string,
+            $unpacked_argument_offset !== null,
+        );
 
         if (!$graph = $statements_analyzer->getDataFlowGraphWithSuppressed()) {
             return;
         }
+
         $taint_flow_graph = $statements_analyzer->getTaintFlowGraphWithSuppressed();
 
         [$added_taints, $removed_taints] = self::getArgumentTaints(

@@ -439,6 +439,20 @@ final class AtomicTypeComparator
             return true;
         }
 
+        // an object shape intersected with classes has their properties too
+        if ($container_type_part instanceof TObjectWithProperties
+            && $input_type_part instanceof TObjectWithProperties
+            && $input_type_part->extra_types
+        ) {
+            return KeyedArrayComparator::isContainedByObjectWithProperties(
+                $codebase,
+                $input_type_part,
+                $container_type_part,
+                $allow_interface_equality,
+                $atomic_comparison_result,
+            );
+        }
+
         if (($container_type_part instanceof TKeyedArray
                 && $input_type_part instanceof TKeyedArray)
             || ($container_type_part instanceof TObjectWithProperties
@@ -942,6 +956,21 @@ final class AtomicTypeComparator
             }
         }
 
+        // an object `is_callable()` found callable, of a class or interface not declaring __invoke() itself
+        if ($container_type_part instanceof TCallable
+            && $input_type_part instanceof TNamedObject
+            && isset($input_type_part->extra_types['callable-object'])
+        ) {
+            return self::isContainedBy(
+                $codebase,
+                $input_type_part->extra_types['callable-object'],
+                $container_type_part,
+                $allow_interface_equality,
+                $allow_float_int_equality,
+                $atomic_comparison_result,
+            );
+        }
+
         if ($container_type_part instanceof TCallable &&
             (
                 $input_type_part instanceof TLiteralString
@@ -1171,8 +1200,8 @@ final class AtomicTypeComparator
 
         // an interface or a class that isn't final can have a child or an implementation with __invoke()
         if ($allow_interface_equality
-            && (($type1_part::class === TCallable::class && self::isExtensibleObject($codebase, $type2_part))
-                || ($type2_part::class === TCallable::class && self::isExtensibleObject($codebase, $type1_part)))
+            && (self::mayBeTheSameCallableObject($codebase, $type1_part, $type2_part)
+                || self::mayBeTheSameCallableObject($codebase, $type2_part, $type1_part))
         ) {
             return true;
         }
@@ -1347,14 +1376,18 @@ final class AtomicTypeComparator
     }
 
     /**
-     * @psalm-assert-if-true TNamedObject $type
-     * @psalm-mutation-free
+     * Whether a $callable (`callable`, `callable-object`) may be an $object: a child of its class, or an implementation
+     * of its interface, may declare __invoke()
+     *
+     * @psalm-assert-if-true TNamedObject $object
+     * @psalm-capabilities read-props
      */
-    private static function isExtensibleObject(Codebase $codebase, Atomic $type): bool
+    public static function mayBeTheSameCallableObject(Codebase $codebase, Atomic $callable, Atomic $object): bool
     {
-        return $type instanceof TNamedObject
-            && $codebase->classlike_storage_provider->has($type->value)
-            && !$codebase->classlike_storage_provider->get($type->value)->final;
+        return ($callable instanceof TCallableObject || $callable::class === TCallable::class)
+            && $object instanceof TNamedObject
+            && $codebase->classlike_storage_provider->has($object->value)
+            && !$codebase->classlike_storage_provider->get($object->value)->final;
     }
 
     /**

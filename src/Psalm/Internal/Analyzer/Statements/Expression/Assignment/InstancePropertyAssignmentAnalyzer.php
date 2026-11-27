@@ -46,6 +46,7 @@ use Psalm\Issue\NoInterfaceProperties;
 use Psalm\Issue\NullPropertyAssignment;
 use Psalm\Issue\PossiblyInvalidPropertyAssignment;
 use Psalm\Issue\PossiblyNullPropertyAssignment;
+use Psalm\Issue\PropertyTypeCoercion;
 use Psalm\IssueBuffer;
 use Psalm\Node\Expr\VirtualMethodCall;
 use Psalm\Node\Scalar\VirtualString;
@@ -60,13 +61,17 @@ use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TGenericObject;
+use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_all;
+use function array_any;
 use function array_merge;
 use function array_pop;
 use function count;
@@ -131,6 +136,37 @@ final class InstancePropertyAssignmentAnalyzer
             }
 
             $var_id = '$this->' . $prop_name;
+
+            // a subclass may give the template a subclass of the class whose name the default is, which the default
+            // isn't the class-string of
+            if ($class_property_type
+                && array_any(
+                    $class_property_type->getAtomicTypes(),
+                    static fn(Atomic $atomic): bool => $atomic instanceof TTemplateParamClass,
+                )
+                && array_all(
+                    $class_property_type->getAtomicTypes(),
+                    static fn(Atomic $atomic): bool => $atomic instanceof TTemplateParamClass
+                        || $atomic instanceof TNull,
+                )
+                && array_all(
+                    $assignment_value_type->getAtomicTypes(),
+                    static fn(Atomic $atomic): bool => $atomic instanceof TLiteralClassString
+                        && self::isWithinATemplateBound($codebase, $atomic, $class_property_type),
+                )
+            ) {
+                IssueBuffer::maybeAdd(
+                    new PropertyTypeCoercion(
+                        $var_id . ' expects \'' . $class_property_type->getId() . '\','
+                            . ' parent type \'' . $assignment_value_type->getId() . '\' provided',
+                        new CodeLocation($statements_analyzer->getSource(), $stmt->default),
+                        $property_id,
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
+
+                return;
+            }
 
             $assigned_properties = [
                 new AssignedProperty(
@@ -285,6 +321,47 @@ final class InstancePropertyAssignmentAnalyzer
      * AssignmentAnalyzer doesn't charge it again
      */
     public const WRITE_CHARGED = 'psalm-property-write-charged';
+
+    /**
+     * Whether the class a class-string names is within the bound of one of the templates whose class-strings the
+     * type has: outside of them, it is no class-string of the template at all
+     */
+    private static function isWithinATemplateBound(
+        Codebase $codebase,
+        TLiteralClassString $class_string,
+        Union $template_class_strings,
+    ): bool {
+        foreach ($template_class_strings->getAtomicTypes() as $template_class_string) {
+            if (!$template_class_string instanceof TTemplateParamClass) {
+                continue;
+            }
+
+            $bound = $template_class_string->as_type;
+
+            if ($bound === null) {
+                return true;
+            }
+
+            if (strtolower($bound->value) === strtolower($class_string->value)) {
+                // a final bound (or an enum) has no subclass: the template can only be the bound itself
+                if ($codebase->classlike_storage_provider->has($bound->value)
+                    && $codebase->classlike_storage_provider->get($bound->value)->final
+                ) {
+                    continue;
+                }
+
+                return true;
+            }
+
+            if ($codebase->classOrInterfaceExists($class_string->value)
+                && $codebase->classExtendsOrImplements($class_string->value, $bound->value)
+            ) {
+                return true;
+            }
+        }
+
+        return false;
+    }
 
     /**
      * Charges writing a property, and returns whether it did (it can't without a receiver variable)

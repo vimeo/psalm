@@ -1271,10 +1271,11 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
             }
         }
 
-        foreach ($storage->pseudo_property_get_types as $property_name => $property_type) {
+        foreach ($storage->pseudo_property_get_types as $property_name => $_) {
             $property_name = substr($property_name, 1);
+            $property_type = $codebase->properties->getPseudoTypeOfProperty($storage, $property_name, false);
 
-            if (isset($class_context->vars_in_scope['$this->' . $property_name])) {
+            if ($property_type !== null && isset($class_context->vars_in_scope['$this->' . $property_name])) {
                 $fleshed_out_type = !$property_type->isMixed()
                     ? TypeExpander::expandUnion(
                         $codebase,

@@ -973,7 +973,9 @@ final class AtomicStaticCallAnalyzer
 
         $caller_identifier = $statements_analyzer->getFullyQualifiedFunctionMethodOrNamespaceName() ?? '';
 
-        if (!NamespaceAnalyzer::isWithinAny($caller_identifier, $class_storage->internal)) {
+        if (strtolower($fq_class_name) !== strtolower($context->self ?? '')
+            && !NamespaceAnalyzer::isWithinAny($caller_identifier, $class_storage->internal)
+        ) {
             IssueBuffer::maybeAdd(
                 new InternalClass(
                     $fq_class_name . ' is internal to ' . InternalClass::listToPhrase($class_storage->internal)

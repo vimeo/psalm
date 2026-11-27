@@ -7,12 +7,14 @@ namespace Psalm\Internal\Codebase;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ClosureAnalyzer;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\PropertyExistenceProvider;
 use Psalm\Internal\Provider\PropertyTypeProvider;
 use Psalm\Internal\Provider\PropertyVisibilityProvider;
 use Psalm\StatementsSource;
+use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\PropertyStorage;
 use Psalm\Type\Union;
 use UnexpectedValueException;
@@ -263,10 +265,13 @@ final class Properties
         }
 
         if ($storage->type) {
+            $pseudo_property_type = $this->getPseudoTypeOfProperty($class_storage, $property_name, $property_set);
+
+            if ($pseudo_property_type !== null) {
+                return $pseudo_property_type;
+            }
+
             if ($property_set) {
-                if (isset($class_storage->pseudo_property_set_types['$'.$property_name])) {
-                    return $class_storage->pseudo_property_set_types['$'.$property_name];
-                }
                 $setter_param_type = $storage->hook_set?->param_type;
                 // a write from outside the hooks goes through the set hook, one inside them sets the backing value
                 if ($setter_param_type !== null
@@ -274,10 +279,6 @@ final class Properties
                         || !self::isInHookOf($source, $declaring_class_storage->name, $property_name))
                 ) {
                     return $setter_param_type;
-                }
-            } else {
-                if (isset($class_storage->pseudo_property_get_types['$'.$property_name])) {
-                    return $class_storage->pseudo_property_get_types['$'.$property_name];
                 }
             }
 
@@ -297,6 +298,90 @@ final class Properties
         }
 
         return null;
+    }
+
+    /**
+     * The `@property` type that replaces the type of a property of the class, where the property is accessible.
+     *
+     * A `@property` of the class where the property appears, or of one of its ancestors or used traits, describes the
+     * magic property that `__get()` or `__set()` serves where the property is inaccessible, or the magic property of
+     * the ancestor or trait. It doesn't replace the type of the property where the property is accessible. A
+     * `@property` of a subclass of that class narrows the type of the property.
+     *
+     * @psalm-capabilities read-props
+     */
+    public function getPseudoTypeOfProperty(
+        ClassLikeStorage $class_storage,
+        string $property_name,
+        bool $property_set,
+    ): ?Union {
+        $key = '$' . $property_name;
+        $pseudo_property_type = self::getPseudoPropertyTypes($class_storage, $property_set)[$key] ?? null;
+        $appearing_property_id = $class_storage->appearing_property_ids[$property_name] ?? null;
+
+        // without `__get()` or `__set()`, a `@property` can only narrow the type of the property
+        if ($pseudo_property_type === null
+            || $appearing_property_id === null
+            || (!isset($class_storage->declaring_method_ids['__get'])
+                && !isset($class_storage->declaring_method_ids['__set']))
+        ) {
+            return $pseudo_property_type;
+        }
+
+        [$appearing_class] = explode('::$', $appearing_property_id);
+        $appearing_class_storage = $this->classlike_storage_provider->get($appearing_class);
+
+        if (!isset(self::getPseudoPropertyTypes($appearing_class_storage, $property_set)[$key])) {
+            return $pseudo_property_type;
+        }
+
+        $declaring_class_storage = $this->classlike_storage_provider->get(
+            $class_storage->declaring_property_ids[$property_name] ?? $appearing_class,
+        );
+        $property_storage = $declaring_class_storage->properties[$property_name] ?? null;
+
+        if ($property_storage === null || $property_storage->visibility !== ClassLikeAnalyzer::VISIBILITY_PUBLIC) {
+            return null;
+        }
+
+        // a public property is never served by `__get()` or `__set()`: a `@property` of the class where it appears,
+        // of a subclass, or of the trait that declares it narrows it
+        for ($storage = $class_storage;;) {
+            if (isset(self::getDeclaredPseudoPropertyNames($storage, $property_set)[$key])) {
+                return $pseudo_property_type;
+            }
+
+            if (strtolower($storage->name) === strtolower($appearing_class) || $storage->parent_class === null) {
+                break;
+            }
+
+            $storage = $this->classlike_storage_provider->get($storage->parent_class);
+        }
+
+        return $declaring_class_storage->is_trait
+            && isset(self::getDeclaredPseudoPropertyNames($declaring_class_storage, $property_set)[$key])
+                ? $pseudo_property_type
+                : null;
+    }
+
+    /**
+     * @return array<string, Union>
+     * @psalm-capabilities read-props
+     */
+    private static function getPseudoPropertyTypes(ClassLikeStorage $storage, bool $property_set): array
+    {
+        return $property_set ? $storage->pseudo_property_set_types : $storage->pseudo_property_get_types;
+    }
+
+    /**
+     * @return array<string, true>
+     * @psalm-capabilities read-props
+     */
+    private static function getDeclaredPseudoPropertyNames(ClassLikeStorage $storage, bool $property_set): array
+    {
+        return $property_set
+            ? $storage->declared_pseudo_property_set_names
+            : $storage->declared_pseudo_property_get_names;
     }
 
     /**

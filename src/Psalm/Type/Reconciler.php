@@ -6,8 +6,10 @@ namespace Psalm\Type;
 
 use InvalidArgumentException;
 use Psalm\CodeLocation;
+use Psalm\CodeLocation\Raw;
 use Psalm\Codebase;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ArrayAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\ArrayAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\CoalesceAnalyzer;
@@ -19,6 +21,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ArrayFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Clause;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
@@ -2013,6 +2016,8 @@ class Reconciler
                                             $codebase,
                                             $existing_key_type_part->value,
                                             $name,
+                                            $statements_analyzer,
+                                            $code_location,
                                         );
 
                                         if ($name_type === null) {
@@ -2260,29 +2265,100 @@ class Reconciler
         return true;
     }
 
+    /**
+     * Whether the code reads the property through `__get()`, not being able to access it
+     */
+    private static function readsPropertyThroughMagicGetter(
+        Codebase $codebase,
+        string $fq_class_name,
+        string $property_name,
+        StatementsAnalyzer $statements_analyzer,
+        ?CodeLocation $code_location,
+    ): bool {
+        if (!$codebase->methods->methodExists($codebase, new MethodIdentifier($fq_class_name, '__get'))) {
+            return false;
+        }
+
+        $self = $statements_analyzer->getFQCLN();
+
+        $source = $statements_analyzer->getSource();
+
+        while (!$source instanceof ClassLikeAnalyzer && $source !== $source->getSource()) {
+            $source = $source->getSource();
+        }
+
+        // the analysis of a trait doesn't know the class using it: a class of the property, or one of its ancestors,
+        // that uses the trait accesses the property, and another class reads it from outside
+        if ($source instanceof TraitAnalyzer) {
+            $trait_lc = strtolower($source->getFQCLN());
+            $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
+
+            foreach ([$fq_class_name, ...array_values($class_storage->parent_classes)] as $candidate) {
+                if (isset($codebase->classlike_storage_provider->get($candidate)->used_traits[$trait_lc])) {
+                    return false;
+                }
+            }
+
+            $self = null;
+        }
+
+        return ClassLikeAnalyzer::checkPropertyVisibility(
+            $fq_class_name . '::$' . $property_name,
+            new Context($self),
+            $statements_analyzer,
+            $code_location ?? new Raw(
+                '',
+                $statements_analyzer->getFilePath(),
+                $statements_analyzer->getFileName(),
+                0,
+                0,
+            ),
+            [],
+            false,
+        ) !== true;
+    }
+
     private static function getPropertyType(
         Codebase $codebase,
         string $fq_class_name,
         string $property_name,
+        ?StatementsAnalyzer $statements_analyzer = null,
+        ?CodeLocation $code_location = null,
     ): ?Union {
         $property_id = $fq_class_name . '::$' . $property_name;
 
-        if (!$codebase->propertyExists($property_id, true)) {
-            $declaring_class_storage = $codebase->classlike_storage_provider->get(
+        $property_exists = $codebase->propertyExists($property_id, true);
+
+        // a read of a property the code can't access goes through `__get()`, which the `@property` describes
+        if (!$property_exists
+            || ($statements_analyzer !== null
+                && self::readsPropertyThroughMagicGetter(
+                    $codebase,
+                    $fq_class_name,
+                    $property_name,
+                    $statements_analyzer,
+                    $code_location,
+                ))
+        ) {
+            $class_storage = $codebase->classlike_storage_provider->get(
                 $fq_class_name,
             );
 
-            $pseudo_property_type = $declaring_class_storage->pseudo_property_get_types['$' . $property_name] ?? null;
+            $pseudo_property_type = $class_storage->pseudo_property_get_types['$' . $property_name] ?? null;
 
-            return $pseudo_property_type
-                ? TypeExpander::expandUnion(
+            if ($pseudo_property_type !== null) {
+                return TypeExpander::expandUnion(
                     $codebase,
                     $pseudo_property_type,
-                    $declaring_class_storage->name,
-                    $declaring_class_storage->name,
-                    $declaring_class_storage->parent_class,
-                )
-                : null;
+                    $class_storage->name,
+                    $class_storage->name,
+                    $class_storage->parent_class,
+                );
+            }
+
+            if (!$property_exists) {
+                return null;
+            }
         }
 
         $declaring_property_class = $codebase->properties->getDeclaringClassForProperty(

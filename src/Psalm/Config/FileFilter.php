@@ -16,10 +16,12 @@ use function array_filter;
 use function array_map;
 use function array_merge;
 use function array_shift;
+use function array_slice;
 use function assert;
 use function count;
 use function explode;
 use function glob;
+use function implode;
 use function in_array;
 use function is_dir;
 use function is_iterable;
@@ -462,11 +464,11 @@ class FileFilter
     }
 
     /**
-     * @mutation-free
      * @param non-empty-list<non-empty-string> $parts
+     * @param array<string, true> $visited the real directories already searched for the rest of the pattern
      * @return array<string|false>
      */
-    private static function recursiveGlob(array $parts, bool $only_dir): array
+    private static function recursiveGlob(array $parts, bool $only_dir, array &$visited = []): array
     {
         if (count($parts) < 2) {
             if ($only_dir) {
@@ -482,6 +484,19 @@ class FileFilter
         }
 
         $first_dir = self::slashify($parts[0]);
+
+        // a directory reached again through a symlink (a cycle) is not searched again
+        $real_dir = realpath($first_dir);
+        if ($real_dir !== false) {
+            $visited_key = $real_dir . "\0" . implode("\0", array_slice($parts, 1));
+
+            if (isset($visited[$visited_key])) {
+                return [];
+            }
+
+            $visited[$visited_key] = true;
+        }
+
         $paths = glob($first_dir . '*', GLOB_ONLYDIR | GLOB_NOSORT);
         assert($paths !== false);
 
@@ -497,12 +512,12 @@ class FileFilter
         $result = [];
         foreach ($paths as $path) {
             $parts[0] = $path;
-            $result = array_merge($result, self::recursiveGlob($parts, $only_dir));
+            $result = array_merge($result, self::recursiveGlob($parts, $only_dir, $visited));
         }
         array_shift($parts);
         $parts[0] =  $first_dir . $parts[0];
 
-        return array_merge($result, self::recursiveGlob($parts, $only_dir));
+        return array_merge($result, self::recursiveGlob($parts, $only_dir, $visited));
     }
 
     /**

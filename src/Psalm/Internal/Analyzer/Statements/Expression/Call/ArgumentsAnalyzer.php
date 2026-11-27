@@ -1364,7 +1364,9 @@ final class ArgumentsAnalyzer
         $class_generic_params = [];
 
         // what replaces the templates in the types of the parameters: a template of the function itself that an
-        // argument outside its bound gave is not replaced, as the bound is compared with the argument then
+        // argument outside its bound gave is not replaced, as the bound is compared with the argument then. Nor is
+        // one that a type variable gave: the variable fits the bound only by taking it as an upper bound, which
+        // checking the argument records
         $param_class_generic_params = [];
 
         foreach ($template_result->lower_bounds as $template_name => $type_map) {
@@ -1380,7 +1382,7 @@ final class ArgumentsAnalyzer
                 $bound_comparison = new TypeComparisonResult();
 
                 if ($template_bound === null
-                    || UnionTypeComparator::isContainedBy(
+                    || (UnionTypeComparator::isContainedBy(
                         $codebase,
                         $lower_bound_type,
                         $template_bound,
@@ -1388,6 +1390,8 @@ final class ArgumentsAnalyzer
                         false,
                         $bound_comparison,
                     )
+                        && !$bound_comparison->type_variable_lower_bounds
+                        && !$bound_comparison->type_variable_upper_bounds)
                     || $bound_comparison->type_coerced
                 ) {
                     $param_class_generic_params[$template_name][$class] = $lower_bound_type;
@@ -2182,7 +2186,9 @@ final class ArgumentsAnalyzer
                         $template_result,
                         $codebase,
                         $statements_analyzer,
-                        $statements_analyzer->node_data->getType($arg->value),
+                        // a variable that is not defined yet is null in the function
+                        $statements_analyzer->node_data->getType($arg->value)
+                            ?? ($arg->value instanceof PhpParser\Node\Expr\Variable ? Type::getNull() : null),
                         $argument_offset,
                         $context->self,
                         $context->calling_method_id ?: $context->calling_function_id,

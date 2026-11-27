@@ -51,6 +51,10 @@ final class MethodCallProhibitionAnalyzer
             return;
         }
 
+        // a class that reaches the members it declares, from its body or from a trait, can't break their restriction
+        $is_own_method = $context->self !== null
+            && strtolower($method_id->fq_class_name) === strtolower($context->self);
+
         $storage = $codebase_methods->getStorage($method_id);
 
         if ($storage->deprecated) {
@@ -67,7 +71,7 @@ final class MethodCallProhibitionAnalyzer
 
         if (!$context->collect_initializations
         ) {
-            if (!NamespaceAnalyzer::isWithinAny($caller_identifier ?? "", $storage->internal)) {
+            if (!$is_own_method && !NamespaceAnalyzer::isWithinAny($caller_identifier ?? "", $storage->internal)) {
                 IssueBuffer::maybeAdd(
                     new InternalMethod(
                         'The method ' . $codebase_methods->getCasedMethodId($method_id)

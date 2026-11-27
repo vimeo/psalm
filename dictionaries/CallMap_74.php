@@ -83500,7 +83500,7 @@ return array (
   ),
   'soapclient::__setlocation' => 
   array (
-    0 => 'string',
+    0 => 'null|string',
     'new_location=' => 'string',
     -2 => 'none',
   ),

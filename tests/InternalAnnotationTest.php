@@ -28,6 +28,96 @@ final class InternalAnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'traitReachesTheInternalPropertiesOfTheClassUsingIt' => [
+                'code' => '<?php
+                    namespace App\\Greeting {
+                        trait HasGreeting {
+                            public function greet(): string {
+                                $this->count = $this->count + 1;
+                                return $this->name;
+                            }
+                        }
+                    }
+
+                    namespace App\\Internal {
+                        /** @psalm-internal App\\Internal */
+                        final class Greeter {
+                            use \\App\\Greeting\\HasGreeting;
+
+                            public string $name = "x";
+                            public int $count = 0;
+                        }
+                    }',
+            ],
+            'traitReachesTheInternalStaticPropertyOfTheClassUsingIt' => [
+                'code' => '<?php
+                    namespace App\\Greeting {
+                        trait HasGreeting {
+                            public function greet(): string {
+                                return self::$name;
+                            }
+                        }
+                    }
+
+                    namespace App\\Internal {
+                        /** @psalm-internal App\\Internal */
+                        final class Greeter {
+                            use \\App\\Greeting\\HasGreeting;
+
+                            public static string $name = "x";
+                        }
+                    }',
+            ],
+            'traitReachesTheInternalMembersOfTheClassUsingIt' => [
+                'code' => '<?php
+                    namespace App {
+                        trait HasGreeting {
+                            public function greet(): string {
+                                return self::PREFIX . $this->name() . static::suffix() . (new self())->name();
+                            }
+                        }
+                    }
+
+                    namespace Tests {
+                        /** @psalm-internal Tests */
+                        final class Greeter {
+                            use \App\HasGreeting;
+
+                            public const PREFIX = "Hi ";
+
+                            public function name(): string {
+                                return "x";
+                            }
+
+                            public static function suffix(): string {
+                                return "!";
+                            }
+                        }
+                    }',
+            ],
+            'traitInstantiatesTheInternalClassUsingItThroughItsConstructor' => [
+                'code' => '<?php
+                    namespace App {
+                        trait MakesSelf {
+                            public static function makeStatic(): static {
+                                return new static();
+                            }
+
+                            public static function makeSelf(): self {
+                                return new self();
+                            }
+                        }
+                    }
+
+                    namespace Tests {
+                        /** @psalm-internal Tests */
+                        final class Greeter {
+                            use \App\MakesSelf;
+
+                            public function __construct() {}
+                        }
+                    }',
+            ],
             'instancePropertyReadAsStaticIsOnlyUndefined' => [
                 'code' => '<?php
                     namespace A\B {
@@ -974,6 +1064,84 @@ final class InternalAnnotationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'traitInstantiatesTheClassUsingItThroughAnInternalConstructorOfItsParent' => [
+                'code' => '<?php
+                    namespace App {
+                        trait MakesSelf {
+                            public static function make(): static {
+                                return new static();
+                            }
+                        }
+                    }
+
+                    namespace Tests {
+                        class Base {
+                            /** @psalm-internal Tests */
+                            public function __construct() {}
+                        }
+
+                        final class Greeter extends Base {
+                            use \App\MakesSelf;
+                        }
+                    }',
+                'error_message' => 'InternalMethod',
+            ],
+            'internalStaticPropertyReadFromAnotherClass' => [
+                'code' => '<?php
+                    namespace A\\B {
+                        class Foo {
+                            /** @psalm-internal A\\B */
+                            public static int $foo = 0;
+                        }
+                    }
+
+                    namespace A\\C {
+                        final class Bar {
+                            public function f(): int {
+                                return \\A\\B\\Foo::$foo;
+                            }
+                        }
+                    }',
+                'error_message' => 'InternalProperty',
+            ],
+            'internalMethodOfAParentCalledOnThisFromAnotherNamespaceIsReported' => [
+                'code' => '<?php
+                    namespace Lib {
+                        abstract class Base {
+                            /** @psalm-internal Lib */
+                            public function secret(): int {
+                                return 1;
+                            }
+                        }
+                    }
+
+                    namespace App {
+                        final class Child extends \\Lib\\Base {
+                            public function reveal(): int {
+                                return $this->secret();
+                            }
+                        }
+                    }',
+                'error_message' => 'InternalMethod',
+            ],
+            'internalMembersOfAClassReachedFromAnotherNamespaceAreStillReported' => [
+                'code' => '<?php
+                    namespace Tests {
+                        /** @psalm-internal Tests */
+                        final class Greeter {
+                            public function name(): string {
+                                return "x";
+                            }
+                        }
+                    }
+
+                    namespace Other {
+                        function greet(\Tests\Greeter $greeter): string {
+                            return $greeter->name();
+                        }
+                    }',
+                'error_message' => 'InternalMethod',
+            ],
             'internalConstructorCalledFromNamespacedFunction' => [
                 'code' => '<?php
                     namespace A\B {

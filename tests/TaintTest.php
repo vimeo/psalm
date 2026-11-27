@@ -2622,6 +2622,29 @@ final class TaintTest extends TestCase
     public static function providerValidCodeParse(): array
     {
         return [
+            'noTaintOfStrvalAndImplodeOfObjectsWhoseToStringEscapesTheirProperty' => [
+                'code' => '<?php // --taint-analysis
+                    final class Tag {
+                        public string $content = "";
+                        public function __toString(): string {
+                            return htmlspecialchars($this->content, ENT_QUOTES);
+                        }
+                    }
+
+                    final class Plain {
+                        public function __toString(): string {
+                            return "plain";
+                        }
+                    }
+
+                    $tag = new Tag();
+                    $tag->content = (string) $_GET["x"];
+                    echo strval($tag);
+                    echo implode(",", [$tag, new Plain()]);
+                    echo strval(new Plain());
+                    echo vsprintf("<p>%s</p>", [$tag]);
+                    echo str_replace("a", [$tag], "a");',
+            ],
             'methodNamedByInputNarrowedToALiteral' => [
                 'code' => '<?php
                     final class A {
@@ -15819,6 +15842,62 @@ final class TaintTest extends TestCase
                     echo "<p>" . $tag . "</p>";',
                 'error_message' => 'TaintedHtml',
             ],
+            'taintTheStrvalOfAnObjectWhoseToStringReturnsATaintedProperty' => [
+                'code' => '<?php // --taint-analysis
+                    final class Tag {
+                        public string $content = "";
+                        public function __toString(): string {
+                            return $this->content;
+                        }
+                    }
+
+                    $tag = new Tag();
+                    $tag->content = (string) $_GET["x"];
+                    echo strval($tag);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheImplodeOfObjectsWhoseToStringReturnsATaintedProperty' => [
+                'code' => '<?php // --taint-analysis
+                    final class Tag {
+                        public string $content = "";
+                        public function __toString(): string {
+                            return $this->content;
+                        }
+                    }
+
+                    $tag = new Tag();
+                    $tag->content = (string) $_GET["x"];
+                    echo implode(",", [$tag]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheVsprintfOfObjectsWhoseToStringReturnsATaintedProperty' => [
+                'code' => '<?php // --taint-analysis
+                    final class Tag {
+                        public string $content = "";
+                        public function __toString(): string {
+                            return $this->content;
+                        }
+                    }
+
+                    $tag = new Tag();
+                    $tag->content = (string) $_GET["x"];
+                    echo vsprintf("<p>%s</p>", [$tag]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheStrReplaceInObjectsWhoseToStringReturnsATaintedProperty' => [
+                'code' => '<?php // --taint-analysis
+                    final class Tag {
+                        public string $content = "";
+                        public function __toString(): string {
+                            return $this->content;
+                        }
+                    }
+
+                    $tag = new Tag();
+                    $tag->content = (string) $_GET["x"];
+                    echo str_replace("a", [$tag], "a");',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintTheStringPartOfAStringConversionOfAnObjectOrAString' => [
                 'code' => '<?php // --taint-analysis
                     /** @psalm-taint-specialize */
@@ -19433,6 +19512,106 @@ final class TaintTest extends TestCase
                     $run((string) $_GET["bad"]);',
                 'error_message' => 'TaintedShell',
                 'php_version' => '8.1',
+            ],
+            'taintSinkOfAnOverrideOfAMethodWithTemplates' => [
+                'code' => '<?php // --taint-analysis
+                    class P {
+                        /**
+                         * @template T
+                         * @param T $a
+                         * @param positive-int $b
+                         * @return T
+                         */
+                        public function f($a, int $b) {
+                            return $a;
+                        }
+                    }
+
+                    final class C extends P {
+                        /**
+                         * @psalm-taint-sink html $a
+                         */
+                        #[\\Override]
+                        public function f($a, int $b) {
+                            return $a;
+                        }
+                    }
+
+                    (new C())->f((string) $_GET["x"], 1);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintSinkOfAnImplementationOfAnInterfaceMethodWithTemplates' => [
+                'code' => '<?php // --taint-analysis
+                    interface I {
+                        /**
+                         * @template T
+                         * @param T $a
+                         * @return T
+                         */
+                        public function f($a, int $b);
+                    }
+
+                    final class Impl implements I {
+                        /** @psalm-taint-sink html $a */
+                        #[\\Override]
+                        public function f($a, int $b) {
+                            return $a;
+                        }
+                    }
+
+                    (new Impl())->f((string) $_GET["x"], 1);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintSinkOfATraitMethodOverridingAMethodWithTemplates' => [
+                'code' => '<?php // --taint-analysis
+                    class P {
+                        /**
+                         * @template T
+                         * @param T $a
+                         * @return T
+                         */
+                        public function g($a) {
+                            return $a;
+                        }
+                    }
+
+                    trait Tr {
+                        /** @psalm-taint-sink sql $a */
+                        public function g($a) {
+                            return $a;
+                        }
+                    }
+
+                    final class C extends P {
+                        use Tr;
+                    }
+
+                    (new C())->g((string) $_GET["y"]);',
+                'error_message' => 'TaintedSql',
+            ],
+            'taintSinkOfAStaticOverrideOfAMethodWithTemplates' => [
+                'code' => '<?php // --taint-analysis
+                    class P2 {
+                        /**
+                         * @template T
+                         * @param T $a
+                         * @return T
+                         */
+                        public static function s($a) {
+                            return $a;
+                        }
+                    }
+
+                    final class C2 extends P2 {
+                        /** @psalm-taint-sink shell $a */
+                        #[\\Override]
+                        public static function s($a) {
+                            return $a;
+                        }
+                    }
+
+                    C2::s((string) $_GET["z"]);',
+                'error_message' => 'TaintedShell',
             ],
             'taintReturnedByAFirstClassCallableOfAStaticMethod' => [
                 'code' => '<?php // --taint-analysis

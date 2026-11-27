@@ -71,6 +71,16 @@ final class ReferenceConstraintTest extends TestCase
                         }
                     }',
             ],
+            'paramOutOfAByRefParamBindsTheTemplateOfAVariableThatIsNotDefinedYetToNull' => [
+                'code' => '<?php
+                    exec("ls", $output);
+                    $lines = $output;',
+                'assertions' => [
+                    '$lines===' => 'list<string>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'paramOutOfAByRefParamWhoseTemplateItsOwnArgumentBindsIsNotHandledAgain' => [
                 'code' => '<?php
                     function run(string $command): string {

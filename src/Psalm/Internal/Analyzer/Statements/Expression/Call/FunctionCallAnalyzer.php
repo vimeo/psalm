@@ -102,6 +102,7 @@ use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_any;
 use function array_column;
 use function array_filter;
 use function array_map;
@@ -2178,7 +2179,13 @@ final class FunctionCallAnalyzer extends CallAnalyzer
 
                     self::reportCallOfMixed($statements_analyzer, $context, $stmt, $var_type_part, $function_call_info);
                     self::addToTypeOfCall($statements_analyzer, $real_stmt, null);
-                } elseif ($var_type_part instanceof TCallableObject) {
+                } elseif ($var_type_part instanceof TCallableObject
+                    || ($var_type_part instanceof TNamedObject
+                        && array_any(
+                            $var_type_part->extra_types,
+                            static fn(Atomic $extra_type): bool => $extra_type instanceof TCallableObject,
+                        ))
+                ) {
                     $has_valid_function_call_type = true;
                     self::analyzeInvokeCall(
                         $statements_analyzer,

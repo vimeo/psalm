@@ -30,6 +30,7 @@ use Psalm\Storage\Assertion\HasExactCount;
 use Psalm\Storage\Assertion\IsAClass;
 use Psalm\Storage\Assertion\IsClassEqual;
 use Psalm\Storage\Assertion\IsEqualIsset;
+use Psalm\Storage\Assertion\IsIdentical;
 use Psalm\Storage\Assertion\IsIsset;
 use Psalm\Storage\Assertion\IsLooselyEqual;
 use Psalm\Storage\Assertion\IsNotIdentical;
@@ -926,6 +927,7 @@ final class AssertionReconciler extends Reconciler
                 $existing_var_type,
                 new Union([$new_type_part]),
                 $any_scalar_type_match_found,
+                $assertion instanceof IsIdentical,
             );
 
             // a key or a value of the bound of T can be one of key-of<T> or value-of<T>
@@ -1173,6 +1175,7 @@ final class AssertionReconciler extends Reconciler
         Union &$existing_type,
         Union $new_type,
         bool &$any_scalar_type_match_found = false,
+        bool $is_identity = false,
     ): ?Union {
         $matching_atomic_types = [];
 
@@ -1196,6 +1199,7 @@ final class AssertionReconciler extends Reconciler
                             $new_type_part,
                             $codebase,
                             $any_scalar_type_match_found,
+                            $is_identity,
                         ),
                     ];
                 }
@@ -1222,17 +1226,20 @@ final class AssertionReconciler extends Reconciler
         Atomic $type_2_atomic,
         Codebase $codebase,
         bool &$any_scalar_type_match_found,
+        bool $is_identity = false,
     ): array {
         $type_1_parts = AtomicParts::split($type_1_atomic, $type_2_atomic, $codebase);
         $type_2_parts = $type_1_parts === null ? AtomicParts::split($type_2_atomic, $type_1_atomic, $codebase) : null;
 
         if ($type_1_parts === null && $type_2_parts === null) {
-            $refined_type = self::refineWithIntersectionParts(
-                $type_1_atomic,
-                $type_2_atomic,
-                $codebase,
-                $any_scalar_type_match_found,
-            );
+            // `instanceof` of an interface on a callable keeps what it did: only `===` makes the object a callable
+            $refined_type = ($is_identity ? self::getCallableObject($codebase, $type_1_atomic, $type_2_atomic) : null)
+                ?? self::refineWithIntersectionParts(
+                    $type_1_atomic,
+                    $type_2_atomic,
+                    $codebase,
+                    $any_scalar_type_match_found,
+                );
 
             return $refined_type ? [$refined_type] : [];
         }
@@ -1257,6 +1264,7 @@ final class AssertionReconciler extends Reconciler
                             $type_2_part,
                             $codebase,
                             $any_scalar_type_match_found,
+                            $is_identity,
                         )),
                 ];
             }
@@ -1529,6 +1537,25 @@ final class AssertionReconciler extends Reconciler
         }
 
         return [$type_1_atomic, $type_2_atomic];
+    }
+
+    /**
+     * The object of a non-final class or of an interface that a callable may be (a child or an implementation may
+     * declare __invoke()), or null if one of the types isn't a callable and the other such an object
+     *
+     * @psalm-capabilities read-props
+     */
+    private static function getCallableObject(Codebase $codebase, Atomic $type_1, Atomic $type_2): ?TNamedObject
+    {
+        if (AtomicTypeComparator::mayBeTheSameCallableObject($codebase, $type_1, $type_2)) {
+            return $type_2->addIntersectionType(new TCallableObject());
+        }
+
+        if (AtomicTypeComparator::mayBeTheSameCallableObject($codebase, $type_2, $type_1)) {
+            return $type_1->addIntersectionType(new TCallableObject());
+        }
+
+        return null;
     }
 
     /**
