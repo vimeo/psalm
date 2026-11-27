@@ -5530,6 +5530,31 @@ final class FunctionTemplateTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],
+            'methodTemplateBoundRejectsATypeVariableFilledOutsideItLater' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /** @var list<T> */
+                        public array $items = [];
+                        /** @param T $x */
+                        public function add($x): void { $this->items[] = $x; }
+                    }
+
+                    final class Taker {
+                        /**
+                         * @template TX of int
+                         * @param Box<TX> $box
+                         */
+                        public function take(Box $box): void {}
+                    }
+
+                    $box = new Box();
+                    (new Taker)->take($box);
+                    $box->add("x");',
+                'error_message' => 'IncompatibleTypeParameters',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'overridingMethodTemplateBoundRejectsAConstructedGenericOutsideIt' => [
                 'code' => '<?php
                     /** @template T */

@@ -1365,7 +1365,8 @@ final class ArgumentsAnalyzer
 
         // what replaces the templates in the types of the parameters: a template of the function itself that an
         // argument outside its bound gave is not replaced, as the bound is compared with the argument then. Nor is
-        // one given by a type variable: it fits the bound only by recording it as a bound of the variable
+        // one that a type variable gave: the variable fits the bound only by taking it as an upper bound, which
+        // checking the argument records
         $param_class_generic_params = [];
 
         foreach ($template_result->lower_bounds as $template_name => $type_map) {
