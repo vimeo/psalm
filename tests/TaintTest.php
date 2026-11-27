@@ -5752,6 +5752,57 @@ final class TaintTest extends TestCase
                         query(["name" => rand(0, 1) ? ["\$regex" => new Regex((string) $value)] : $value]);
                     }',
             ],
+            'nosqlSinkNotTaintedByScalarNarrowingOfAnIfThatLeaves' => [
+                'code' => '<?php
+                    /** @psalm-taint-sink nosql $filter */
+                    function query(array $filter): void {}
+
+                    /** @psalm-taint-source input */
+                    function input(): mixed {
+                        return null;
+                    }
+
+                    // past an if that leaves unless the value is a scalar, it holds no NoSQL query document
+                    function search(bool $regex): void {
+                        $value = input();
+                        if (!is_scalar($value)) {
+                            return;
+                        }
+                        query(["name" => $regex ? [] : $value]);
+                    }',
+            ],
+            'nosqlSinkNotTaintedByABsonValue' => [
+                'code' => '<?php
+                    use MongoDB\BSON\ObjectId;
+                    use MongoDB\BSON\UTCDateTime;
+
+                    /** @psalm-taint-sink nosql $filter */
+                    function query(array $filter): void {}
+
+                    /** @psalm-taint-source input */
+                    function input(): mixed {
+                        return null;
+                    }
+
+                    final class Call {
+                        /** @param list<ObjectId> $ids */
+                        public function __construct(
+                            public ObjectId $org_id,
+                            public array $ids,
+                            public UTCDateTime $created,
+                        ) {}
+                    }
+
+                    // the driver stores a BSON value as that type, never as a document holding an operator
+                    function find(Call $call): void {
+                        query(["org_id" => $call->org_id]);
+                        query(["_id" => ["\$in" => $call->ids]]);
+                        query(["created" => ["\$lt" => $call->created]]);
+                    }
+
+                    /** @psalm-suppress MixedArgument */
+                    find(new Call(input(), input(), input()));',
+            ],
             'nosqlSinkNotTaintedByIntCast' => [
                 'code' => '<?php
                     /** @psalm-taint-sink nosql $filter */
@@ -14127,6 +14178,48 @@ final class TaintTest extends TestCase
                     }',
                 'error_message' => 'TaintedHtml',
             ],
+            'nosqlSinkTaintedPastAnIfNarrowingAMixedValueThatDoesNotLeave' => [
+                'code' => '<?php
+                    /** @psalm-taint-sink nosql $filter */
+                    function query(array $filter): void {}
+
+                    /** @psalm-taint-source input */
+                    function input(): mixed {
+                        return null;
+                    }
+
+                    // the implicit else keeps the value as it was: it can still be a query document
+                    function search(bool $regex): void {
+                        $value = input();
+                        if (is_scalar($value)) {
+                            echo "scalar";
+                        }
+                        query(["name" => $regex ? [] : $value]);
+                    }',
+                'error_message' => 'TaintedNosql',
+            ],
+            'nosqlSinkTaintedPastANestedIfThatLeavesOnlyOnOneWay' => [
+                'code' => '<?php
+                    /** @psalm-taint-sink nosql $filter */
+                    function query(array $filter): void {}
+
+                    /** @psalm-taint-source input */
+                    function input(): mixed {
+                        return null;
+                    }
+
+                    // only one way past the outer if narrowed the value
+                    function search(bool $regex, bool $check): void {
+                        $value = input();
+                        if ($check) {
+                            if (!is_scalar($value)) {
+                                return;
+                            }
+                        }
+                        query(["name" => $regex ? [] : $value]);
+                    }',
+                'error_message' => 'TaintedNosql',
+            ],
             'nosqlSinkTaintedByAnEqualityOperandInExpr' => [
                 'code' => '<?php
                     final class Collection {
@@ -17913,6 +18006,56 @@ final class TaintTest extends TestCase
 
                     echo first((array) $_GET["names"]);',
                 'error_message' => 'TaintedHtml',
+            ],
+            'taintedNosqlFromABsonRegex' => [
+                'code' => '<?php
+                    use MongoDB\BSON\Regex;
+
+                    /** @psalm-taint-sink nosql $filter */
+                    function query(array $filter): void {}
+
+                    /** @psalm-taint-source input */
+                    function input(): mixed {
+                        return null;
+                    }
+
+                    final class Search {
+                        public function __construct(public Regex $name) {}
+                    }
+
+                    // a regex chooses which documents match
+                    function find(Search $search): void {
+                        query(["name" => $search->name]);
+                    }
+
+                    /** @psalm-suppress MixedArgument */
+                    find(new Search(input()));',
+                'error_message' => 'TaintedNosql',
+            ],
+            'taintedNosqlFromAnObjectImplementingABsonValueInterface' => [
+                'code' => '<?php
+                    use MongoDB\BSON\ObjectIdInterface;
+
+                    /** @psalm-taint-sink nosql $filter */
+                    function query(array $filter): void {}
+
+                    /** @psalm-taint-source input */
+                    function input(): mixed {
+                        return null;
+                    }
+
+                    final class Call {
+                        public function __construct(public ObjectIdInterface $org_id) {}
+                    }
+
+                    // a class of the code implementing it is stored as the document of its properties
+                    function find(Call $call): void {
+                        query(["org_id" => $call->org_id]);
+                    }
+
+                    /** @psalm-suppress MixedArgument */
+                    find(new Call(input()));',
+                'error_message' => 'TaintedNosql',
             ],
             'taintedNosqlKeepsTaintWithoutScalarNarrowing' => [
                 'code' => '<?php

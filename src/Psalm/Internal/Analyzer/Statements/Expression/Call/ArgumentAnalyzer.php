@@ -877,7 +877,7 @@ final class ArgumentAnalyzer
             // the template a conditional return type reads a parameter through stands for the argument itself:
             // an argument that does not fit the parameter is still what the condition is about
             $is_param_itself = str_starts_with($template_type->param_name, 'TGeneratedFromParam')
-                && $declared_param_type->isSingle()
+                && $declared_param_type->isSingleAtomic()
                 && ($declared_atomic = $declared_param_type->getSingleAtomic()) instanceof TTemplateParam
                 && $declared_atomic->param_name === $template_type->param_name
                 && !$arg_type->hasMixed();
@@ -1182,7 +1182,7 @@ final class ArgumentAnalyzer
             $param_type = self::resolveTypeVariablesInCallables($param_type, $input_type, $codebase);
         }
 
-        if ($param_type->hasCallableType() && $param_type->isSingle()) {
+        if ($param_type->hasCallableType() && $param_type->isSingleAtomic()) {
             // we do this replacement early because later we don't have access to the
             // $statements_analyzer, which is necessary to understand string function names
             $input_type = $input_type->getBuilder();
@@ -1618,7 +1618,7 @@ final class ArgumentAnalyzer
                 $method_storage = $codebase->methods->getStorage($potential_method_id);
 
                 $lhs_atomic = $lhs->getSingleAtomic();
-                if ($lhs->isSingle()
+                if ($lhs->isSingleAtomic()
                     && $lhs->hasNamedObjectType()
                     && ($lhs->isStaticObject()
                         || ($lhs_atomic instanceof TNamedObject
@@ -1650,7 +1650,7 @@ final class ArgumentAnalyzer
                             return false;
                         }
                     }
-                } elseif ($lhs->isSingle()) {
+                } elseif ($lhs->isSingleAtomic()) {
                     // a function calling the callback from the class of its method reaches the non-public ones
                     $non_public_reachable = !self::isCalledOutsideOfTheClassScope(
                         $potential_method_id,
@@ -1739,7 +1739,7 @@ final class ArgumentAnalyzer
         foreach ($param_type->getAtomicTypes() as $param_type_part) {
             if ($param_type_part instanceof TClassString
                 && $input_expr instanceof PhpParser\Node\Scalar\String_
-                && $param_type->isSingle()
+                && $param_type->isSingleAtomic()
             ) {
                 if (ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
                     $statements_analyzer,
@@ -2623,7 +2623,9 @@ final class ArgumentAnalyzer
 
         if ($unpacked_argument_offset !== null && $function_param->is_variadic) {
             $unpacked_type = $statements_analyzer->node_data->getType($expr);
-            $unpacked_array = $unpacked_type && $unpacked_type->isSingle() ? $unpacked_type->getSingleAtomic() : null;
+            $unpacked_array = $unpacked_type && $unpacked_type->isSingleAtomic()
+                ? $unpacked_type->getSingleAtomic()
+                : null;
 
             if (!$unpacked_array instanceof TKeyedArray || $unpacked_array->fallback_params !== null) {
                 $arguments = [[$param_offset, null, true, null]];

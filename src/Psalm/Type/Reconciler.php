@@ -17,6 +17,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\ClassConstAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ArrayFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
 use Psalm\Internal\DataFlow\DataFlowNode;
@@ -98,11 +99,11 @@ use function count;
 use function explode;
 use function implode;
 use function in_array;
-use function is_int;
 use function is_numeric;
 use function is_string;
 use function key;
 use function ksort;
+use function min;
 use function preg_match;
 use function preg_quote;
 use function reset;
@@ -197,6 +198,8 @@ class Reconciler
 
         $old_new_types = $new_types;
 
+        $types_before_reconciling = $existing_types;
+
         $new_types = self::addNestedAssertions(
             $new_types,
             $existing_types,
@@ -272,6 +275,8 @@ class Reconciler
 
             $has_object_array_access = false;
 
+            $offsets_are_set = false;
+
             $result_type = $existing_types[$key] ?? self::getValueForKey(
                 $codebase,
                 $key,
@@ -284,6 +289,8 @@ class Reconciler
                 $has_empty,
                 $inside_loop,
                 $has_object_array_access,
+                $offsets_are_set,
+                $types_before_reconciling,
                 $statements_analyzer,
             );
 
@@ -382,6 +389,31 @@ class Reconciler
                         $new_type_part_part = $nested_negated ? new Falsy() : new Truthy();
                     } else {
                         $has_unnested_alternative = true;
+                    }
+
+                    // the isset of an offset that the keyed array has, and that isn't null, is always true (and its
+                    // negation never is)
+                    if ($offsets_are_set
+                        && $report_location
+                        && ($new_type_part_part instanceof IsIsset
+                            || ($new_type_part_part instanceof IsNotIsset && !$negated))
+                        && $result_type
+                        && !$is_equality
+                        && !$inside_loop
+                        && !$result_type->possibly_undefined
+                        && !$result_type->isNullable()
+                        && !$result_type->hasMixed()
+                    ) {
+                        self::triggerIssueForImpossible(
+                            $result_type,
+                            $result_type->getId(),
+                            $key,
+                            $new_type_part_part,
+                            $new_type_part_part instanceof IsIsset,
+                            $negated,
+                            $report_location,
+                            $suppressed_issues,
+                        );
                     }
 
                     if ($record_alternatives) {
@@ -996,12 +1028,7 @@ class Reconciler
                             if (is_string($array_key) && str_contains($array_key, '\'')) {
                                 $new_types[$base_key][] = [new HasStringArrayAccess()];
                             } else {
-                                $new_types[$base_key][] = [new HasIntOrStringArrayAccess(
-                                    !$key_parts
-                                        && (is_int($array_key)
-                                            || preg_match('/^-?\d+$/', $array_key) === 1
-                                            || ($existing_types[$array_key] ?? null)?->isInt() === true),
-                                )];
+                                $new_types[$base_key][] = [new HasIntOrStringArrayAccess()];
                             }
 
                             $base_key = $new_base_key;
@@ -1554,6 +1581,7 @@ class Reconciler
      *
      * @param array<string, Union>  $existing_keys
      * @param array<string,mixed>       $new_assertions
+     * @param array<string, Union>  $types_before_reconciling
      * @psalm-suppress ComplexMethod
      */
     private static function getValueForKey(
@@ -1568,8 +1596,12 @@ class Reconciler
         bool $has_empty,
         bool $inside_loop,
         bool &$has_object_array_access,
+        bool &$offsets_are_set,
+        array $types_before_reconciling,
         ?StatementsAnalyzer $statements_analyzer = null,
     ): ?Union {
+        $offsets_are_set = false;
+
         $key_parts = self::breakUpPathIntoParts($key);
 
         if (count($key_parts) === 1) {
@@ -1593,6 +1625,7 @@ class Reconciler
         }
 
         $base_key = array_shift($key_parts);
+        $key_parts_root = $base_key;
 
         if ($base_key[0] !== '$' && count($key_parts) > 1 && $key_parts[0] === '::$') {
             array_shift($key_parts);
@@ -1636,6 +1669,14 @@ class Reconciler
             $existing_keys[$base_key] = $class_constant;
         }
 
+        // whether every offset of the key is a key that a keyed array always has: PHP may leave out the ones of
+        // the globals that it provides, and drops the null or false that an internal function can return
+        $is_root = true;
+
+        $all_offsets_are_set = !VariableFetchAnalyzer::isSuperGlobal($key_parts_root)
+            && $key_parts_root !== '$argv'
+            && $key_parts_root !== '$argc';
+
         while ($key_parts) {
             $divider = array_shift($key_parts);
 
@@ -1678,6 +1719,8 @@ class Reconciler
 
                     $atomic_types = $existing_keys[$base_key]->getAtomicTypes();
 
+                    $offset_is_set = true;
+
                     while ($atomic_types) {
                         $existing_key_type_part = array_shift($atomic_types);
 
@@ -1687,6 +1730,8 @@ class Reconciler
                             $atomic_types = array_merge($atomic_types, $existing_key_type_part->as->getAtomicTypes());
                             continue;
                         }
+
+                        $part_has_offset = false;
 
                         if ($existing_key_type_part instanceof TArray) {
                             $new_base_type_candidate = $existing_key_type_part->type_params[1];
@@ -1780,12 +1825,17 @@ class Reconciler
                         } else {
                             $array_properties = $existing_key_type_part->properties;
                             $new_base_type_candidate = null;
+                            $part_has_offset = true;
 
                             foreach ($lookup_keys as $lookup_key) {
                                 $key_parts_key = $lookup_key;
                                 if ($lookup_key[0] === '\'' || $lookup_key[0] === '"') {
                                     $key_parts_key = ExpressionIdentifier::unquoteOffset($lookup_key);
                                 }
+
+                                $part_has_offset = $part_has_offset
+                                    && isset($array_properties[$key_parts_key])
+                                    && !$array_properties[$key_parts_key]->possibly_undefined;
 
                                 if (isset($array_properties[$key_parts_key])) {
                                     $value_type = $array_properties[$key_parts_key];
@@ -1817,6 +1867,7 @@ class Reconciler
                             }
                         }
 
+                        $offset_is_set = $offset_is_set && $part_has_offset;
                         $has_array_part = $has_array_part
                             || !($existing_key_type_part instanceof TNull || $existing_key_type_part instanceof TFalse);
 
@@ -1847,10 +1898,25 @@ class Reconciler
                             ? $new_base_type
                             : Type::combineUnionTypes($new_base_type, $object_value_type, $codebase);
                     }
+
+                    if ($is_root) {
+                        // the assertions of the offset have removed null and whatever else cannot have the offset
+                        // from the array by now: what counts is the type it had before
+                        $offset_is_set = isset($types_before_reconciling[$base_key])
+                            && self::hasOffsetThatIsAlwaysSet($types_before_reconciling[$base_key], $array_key);
+                    }
+
+                    $all_offsets_are_set = $all_offsets_are_set && $offset_is_set;
+                } else {
+                    // it is not known where the type of the offset comes from
+                    $all_offsets_are_set = false;
                 }
 
                 $base_key = $new_base_key;
+                $is_root = false;
             } elseif ($divider === '->' || $divider === '::$') {
+                $all_offsets_are_set = false;
+
                 $property_name = (string) array_shift($key_parts);
                 $new_base_key = $base_key . $divider . $property_name;
 
@@ -1986,7 +2052,53 @@ class Reconciler
             return null;
         }
 
+        $offsets_are_set = $all_offsets_are_set;
+
         return $existing_keys[$base_key];
+    }
+
+    /**
+     * Every part of the type is a keyed array that has the offset, which isn't possibly undefined. The null or false
+     * that a callmap drops from the return type of a function is still there at runtime, so it counts too.
+     *
+     * @psalm-pure
+     */
+    private static function hasOffsetThatIsAlwaysSet(Union $type, string $array_key): bool
+    {
+        // an array that may not be defined has no offset to be set
+        if ($type->possibly_undefined
+            || $type->possibly_undefined_from_try
+            || $type->isNullable()
+            || $type->isFalsable()
+            || $type->ignore_nullable_issues
+            || $type->ignore_falsable_issues
+            || $array_key[0] === '$'
+            || ($array_key[0] !== '\'' && ArrayAnalyzer::getLiteralArrayKeyInt($array_key) === false)
+        ) {
+            return false;
+        }
+
+        $property_name = $array_key[0] === '\'' || $array_key[0] === '"' ? substr($array_key, 1, -1) : $array_key;
+
+        $atomic_types = $type->getAtomicTypes();
+
+        while ($atomic_types) {
+            $atomic_type = array_shift($atomic_types);
+
+            if ($atomic_type instanceof TTemplateParam) {
+                $atomic_types = array_merge($atomic_types, $atomic_type->as->getAtomicTypes());
+                continue;
+            }
+
+            if (!$atomic_type instanceof TKeyedArray
+                || !isset($atomic_type->properties[$property_name])
+                || $atomic_type->properties[$property_name]->possibly_undefined
+            ) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private static function getStaticPropertyType(
@@ -2718,6 +2830,26 @@ class Reconciler
 
         $base_key = implode('', $key_parts);
 
+        // a list that has an offset has all the offsets before it: when the offset can be several keys, a list has
+        // all the offsets up to the smallest one it can have
+        $key_is_set = !$result_type->possibly_undefined && !$result_type->isNever();
+        $last_list_offset_set = null;
+        if (count($array_key_offsets) === 1 ? !$result_type->isNever() : $key_is_set) {
+            foreach ($array_key_offsets as $array_key_offset) {
+                $int_array_key_offset = ArrayAnalyzer::getLiteralArrayKeyInt($array_key_offset);
+                if ($int_array_key_offset === false) {
+                    $last_list_offset_set = null;
+                    break;
+                }
+                if ($int_array_key_offset < 0) {
+                    continue;
+                }
+                $last_list_offset_set = $last_list_offset_set === null
+                    ? $int_array_key_offset
+                    : min($last_list_offset_set, $int_array_key_offset);
+            }
+        }
+
         $result_type = $result_type->setPossiblyUndefined(
             $result_type->possibly_undefined || count($array_key_offsets) > 1,
         );
@@ -2730,6 +2862,17 @@ class Reconciler
                         && !$base_atomic_type->isEmptyArray())
                     || $base_atomic_type instanceof TClassStringMap
                     ) {
+                        // a list has no negative key, so the offset is one of the others
+                        if ($base_atomic_type instanceof TKeyedArray
+                            && $base_atomic_type->is_list
+                            && count($array_key_offsets) > 1
+                            && ($int_array_key_offset = ArrayAnalyzer::getLiteralArrayKeyInt($array_key_offset))
+                                !== false
+                            && $int_array_key_offset < 0
+                        ) {
+                            break;
+                        }
+
                         $new_base_type = $existing_types[$base_key];
 
                         // a key the array always has cannot be left without a value: no array of that shape can be
@@ -2757,18 +2900,20 @@ class Reconciler
 
                             // only one of the keys the offset can be holds what the assertion says, and which one is
                             // not known: the items it may be keep the types they have
-                            if (count($array_key_offsets) === 1 || !isset($properties[$array_key_offset])) {
+                            if (count($array_key_offsets) === 1) {
                                 $properties[$array_key_offset] = $result_type;
+                            } elseif (!isset($properties[$array_key_offset])) {
+                                // a list has the item at the smallest key whichever key the offset is
+                                $properties[$array_key_offset] = $base_atomic_type->is_list
+                                    && $base_atomic_type->fallback_params
+                                    && $last_list_offset_set !== null
+                                    && ArrayAnalyzer::getLiteralArrayKeyInt($array_key_offset) === $last_list_offset_set
+                                    ? $base_atomic_type->fallback_params[1]
+                                    : $result_type;
                             }
 
-                            // a list that has an offset has all the offsets before it
-                            if ($base_atomic_type->is_list
-                                && !$result_type->possibly_undefined
-                                && !$result_type->isNever()
-                                && ($int_array_key_offset = ArrayAnalyzer::getLiteralArrayKeyInt($array_key_offset))
-                                    !== false
-                            ) {
-                                for ($x = 0; $x < $int_array_key_offset; $x++) {
+                            if ($base_atomic_type->is_list && $key_is_set && $last_list_offset_set !== null) {
+                                for ($x = 0; $x <= $last_list_offset_set; $x++) {
                                     if (isset($properties[$x]) && $properties[$x]->possibly_undefined) {
                                         $properties[$x] = $properties[$x]->isNever()
                                             && $base_atomic_type->fallback_params
@@ -2788,11 +2933,11 @@ class Reconciler
                             ) {
                                 if ($base_atomic_type->fallback_params
                                     && ArrayAnalyzer::getLiteralArrayKeyInt($array_key_offset) !== false) {
-                                    $fallback = $base_atomic_type->fallback_params[1]->setPossiblyUndefined(
-                                        $result_type->isNever(),
-                                    );
+                                    $fallback = $base_atomic_type->fallback_params[1];
                                     for ($x = 0; $x < $array_key_offset; $x++) {
-                                        $properties[$x] ??= $fallback;
+                                        $properties[$x] ??= $fallback->setPossiblyUndefined(
+                                            $last_list_offset_set === null || $x > $last_list_offset_set,
+                                        );
                                     }
                                     ksort($properties);
                                     $base_atomic_type = $base_atomic_type->setProperties($properties);

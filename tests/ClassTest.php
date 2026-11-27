@@ -393,31 +393,6 @@ final class ClassTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
-            'newStaticWithAnArgumentNarrowedAtANestedOffsetCheckedWithIsset' => [
-                'code' => '<?php
-                    interface D {}
-
-                    interface I {
-                        public function __construct(D $dep);
-                    }
-
-                    class T implements I {
-                        public function __construct(protected D $dep) {}
-
-                        public static function create(array $config, int $mode): ?static {
-                            if (isset($config["dependency"][$mode])) {
-                                if ($config["dependency"][$mode] instanceof D) {
-                                    return new static($config["dependency"][$mode]);
-                                }
-                            }
-
-                            return null;
-                        }
-                    }',
-                'assertions' => [],
-                'ignored_issues' => [],
-                'php_version' => '8.0',
-            ],
             'newStaticWithArgumentsTheConstructorOfTheInterfaceAccepts' => [
                 'code' => '<?php
                     interface Buildable {

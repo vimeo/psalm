@@ -24,6 +24,7 @@ use Psalm\IssueBuffer;
 use Psalm\Storage\Assertion;
 use Psalm\Storage\Assertion\ArrayKeyExists;
 use Psalm\Storage\Assertion\Falsy;
+use Psalm\Storage\Assertion\HasArrayValue;
 use Psalm\Storage\Assertion\HasAtLeastCount;
 use Psalm\Storage\Assertion\HasExactCount;
 use Psalm\Storage\Assertion\IsAClass;
@@ -281,6 +282,16 @@ final class AssertionReconciler extends Reconciler
             );
         }
 
+        if ($assertion instanceof HasArrayValue) {
+            return ArrayValueAssertionReconciler::reconcileHasArrayValue(
+                $assertion,
+                $existing_var_type,
+                $statements_analyzer,
+                $inside_loop,
+                $failed_reconciliation,
+            );
+        }
+
         $assertion_type = $assertion->getAtomicType();
 
         if ($assertion_type instanceof TLiteralInt
@@ -399,7 +410,7 @@ final class AssertionReconciler extends Reconciler
             return [$template_of];
         }
 
-        $template = $template_of->as->isSingle() ? $template_of->as->getSingleAtomic() : null;
+        $template = $template_of->as->isSingleAtomic() ? $template_of->as->getSingleAtomic() : null;
         $key_type = TKeyOf::getArrayKeyType($template_of->as);
         $value_type = TValueOf::getValueType($template_of->as, $codebase);
 
@@ -752,7 +763,7 @@ final class AssertionReconciler extends Reconciler
         }
 
         if ($new_type_part instanceof TTemplateParam
-            && $new_type_part->as->isSingle()
+            && $new_type_part->as->isSingleAtomic()
         ) {
             $new_as_atomic = $new_type_part->as->getSingleAtomic();
 
@@ -1296,7 +1307,7 @@ final class AssertionReconciler extends Reconciler
             foreach ($extended_params as $parent_template_name => $extended_type) {
                 $offset = array_search($parent_template_name, $parent_template_names, true);
 
-                if ($offset === false || !isset($parent->type_params[$offset]) || !$extended_type->isSingle()) {
+                if ($offset === false || !isset($parent->type_params[$offset]) || !$extended_type->isSingleAtomic()) {
                     continue;
                 }
 
@@ -1974,7 +1985,7 @@ final class AssertionReconciler extends Reconciler
                 $codebase,
             );
 
-            return $intersection !== null && $intersection->isSingle() ? $intersection->getSingleAtomic() : null;
+            return $intersection !== null && $intersection->isSingleAtomic() ? $intersection->getSingleAtomic() : null;
         } else {
             return $type_2_atomic;
         }

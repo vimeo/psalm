@@ -302,6 +302,7 @@ final class IssetTest extends TestCase
                 'assertions' => [
                     '$a===' => 'array{k: string}',
                 ],
+                'ignored_issues' => ['RedundantConditionGivenDocblockType'],
             ],
             'negatedIssetKeepsRequiredNullableOffset' => [
                 'code' => '<?php
@@ -717,7 +718,7 @@ final class IssetTest extends TestCase
                         }
 
                         if (isset($a[$k])) {
-                            /** @psalm-check-type-exact $a = list<int> */
+                            /** @psalm-check-type-exact $a = list{0: int, 1: int, 2?: int, ...<int>} */
                         }
 
                         if (isset($a[0])) {
@@ -2744,6 +2745,77 @@ final class IssetTest extends TestCase
                 'ignored_issues' => ['RedundantCondition', 'RedundantConditionGivenDocblockType', 'TypeDoesNotContainType'],
                 'php_version' => '8.1',
             ],
+            'assertionOnAListItemWithAUnionKeyOnlyRequiresTheItemsUpToTheSmallestKey' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param list<array{string}|string> $l */
+                    function bigFirst(array $l, bool $b): void {
+                        $i = $b ? 5 : 2;
+                        if (is_array($l[$i])) {
+                            /** @psalm-check-type-exact $l = list{0: list{string}|string, 1: list{string}|string, 2: list{string}|string, 3?: list{string}|string, 4?: list{string}|string, 5?: list{string}, ...<list{string}|string>} */
+                        }
+                    }
+
+                    /** @param list<array{string}|string> $l */
+                    function smallFirst(array $l, bool $b): void {
+                        $i = $b ? 2 : 5;
+                        if (is_array($l[$i])) {
+                            /** @psalm-check-type-exact $l = list{0: list{string}|string, 1: list{string}|string, 2: list{string}|string, 3?: list{string}|string, 4?: list{string}|string, 5?: list{string}, ...<list{string}|string>} */
+                        }
+                    }
+
+                    /** @param list<string> $l */
+                    function issetBigFirst(array $l, bool $b): void {
+                        $i = $b ? 5 : 2;
+                        if (isset($l[$i])) {
+                            /** @psalm-check-type-exact $l = list{0: string, 1: string, 2: string, 3?: string, 4?: string, 5?: string, ...<string>} */
+                        }
+                    }
+
+                    /** @param list<string> $l */
+                    function notIsset(array $l, bool $b): void {
+                        $i = $b ? 5 : 2;
+                        if (!isset($l[$i])) {
+                            /** @psalm-check-type-exact $l = list<string> */
+                        }
+                    }
+                    PHP,
+            ],
+            'issetOnAListItemWithAUnionKeyIgnoresTheNegativeKeysForTheItemsItRequires' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param list<string> $l */
+                    function negativeLast(array $l, bool $b): void {
+                        $i = $b ? 5 : -1;
+                        if (isset($l[$i])) {
+                            /** @psalm-check-type-exact $l = list{string, string, string, string, string, string, ...<string>} */
+                        }
+                    }
+
+                    /** @param list<string> $l */
+                    function negativeFirst(array $l, bool $b): void {
+                        $i = $b ? -1 : 5;
+                        if (isset($l[$i])) {
+                            /** @psalm-check-type-exact $l = list{string, string, string, string, string, string, ...<string>} */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['InvalidArrayOffset'],
+            ],
+            'checkOfEachItemOfAnArrayInALoopNarrowsAllTheItems' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(array $payload): void {
+                        foreach (['iv', 'mac'] as $item) {
+                            if (!isset($payload[$item]) || !is_string($payload[$item])) {
+                                return;
+                            }
+                        }
+                        /** @psalm-check-type-exact $payload = array{iv?: string, mac?: string, ...<array-key, mixed>} */
+                    }
+                    PHP,
+            ],
             'comparisonOfAnItemWithAUnionKeyKeepsTheOtherItemsDefined' => [
                 'code' => <<<'PHP'
                     <?php
@@ -2845,52 +2917,6 @@ final class IssetTest extends TestCase
                 'ignored_issues' => ['MixedAssignment'],
                 'php_version' => '8.0',
             ],
-            'offsetOfAnOffsetCheckedWithIssetIsNarrowedByAnInnerIf' => [
-                'code' => '<?php
-                    interface D {}
-
-                    function f(array $config, int $mode): void {
-                        if (isset($config["x"][$mode])) {
-                            if ($config["x"][$mode] instanceof D) {
-                                $d = $config["x"][$mode];
-                                /** @psalm-check-type-exact $d = D */;
-                            }
-                        }
-                    }',
-                'assertions' => [],
-                'ignored_issues' => [],
-                'php_version' => '8.0',
-            ],
-            'parentOfAnIntOffsetCheckedWithIssetIsNotMixed' => [
-                'code' => '<?php
-                    function f(array $a): string {
-                        if (!isset($a["x"][3])) {
-                            return "";
-                        }
-
-                        return (string) $a["x"][3];
-                    }',
-                'assertions' => [],
-                'ignored_issues' => [],
-                'php_version' => '8.0',
-            ],
-            'parentOfANegativeOrNumericStringOffsetCheckedWithIssetIsNotMixed' => [
-                'code' => '<?php
-                    /** @param int<0, 5> $i */
-                    function f(array $a, int $i): void {
-                        if (isset($a["x"][-1], $a["y"]["3"], $a["z"][$i])) {
-                            $x = $a["x"];
-                            $y = $a["y"];
-                            $z = $a["z"];
-                            /** @psalm-check-type-exact $x = ArrayAccess|non-empty-array<array-key, mixed>|non-empty-string */;
-                            /** @psalm-check-type-exact $y = ArrayAccess|non-empty-array<array-key, mixed>|non-empty-string */;
-                            /** @psalm-check-type-exact $z = ArrayAccess|non-empty-array<array-key, mixed>|non-empty-string */;
-                        }
-                    }',
-                'assertions' => [],
-                'ignored_issues' => [],
-                'php_version' => '8.0',
-            ],
             'parentOfAnIntOffsetCheckedWithIssetMayBeAString' => [
                 'code' => '<?php
                     function f(array $a): string {
@@ -2930,16 +2956,135 @@ final class IssetTest extends TestCase
                 'ignored_issues' => ['MixedArrayAccess', 'MixedPropertyFetch'],
                 'php_version' => '8.0',
             ],
-            'parentOfAStringVariableOffsetCheckedWithIssetStaysMixed' => [
+            'appendUnderAnIntOffsetCheckedWithIssetIsWrittenWithoutIssue' => [
                 'code' => '<?php
-                    function f(array $a, string $k): void {
-                        if (isset($a["x"][$k])) {
-                            $p = $a["x"];
-                            /** @psalm-check-type-exact $p = mixed */;
+                    function f(array $a, int $p): array {
+                        if (isset($a["x"][$p])) {
+                            $a["x"][$p][] = 1;
+                        }
+
+                        return $a;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedArrayAssignment'],
+                'php_version' => '8.0',
+            ],
+            'offsetUnderAnIntOffsetCheckedWithIssetIsWrittenWithoutIssue' => [
+                'code' => '<?php
+                    function f(array $a): array {
+                        if (isset($a["x"][0])) {
+                            $a["x"][0]["y"] = 1;
+                        }
+
+                        return $a;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedArrayAssignment'],
+                'php_version' => '8.0',
+            ],
+            'offsetUnderAnIntOffsetCheckedWithIssetIsReadWithoutIssue' => [
+                'code' => '<?php
+                    function f(array $a, int $p): string {
+                        if (isset($a["x"][$p])) {
+                            return (string) $a["x"][$p]["y"];
+                        }
+
+                        return "";
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedArrayAccess'],
+                'php_version' => '8.0',
+            ],
+            'parentOfAnOffsetThatMayBeIntCheckedWithIssetStaysMixed' => [
+                'code' => '<?php
+                    function f(array $a, string $k, int $i): void {
+                        if (isset($a["x"][$k], $a["y"][$i], $a["z"][3])) {
+                            $x = $a["x"];
+                            $y = $a["y"];
+                            $z = $a["z"];
+                            /** @psalm-check-type-exact $x = mixed */;
+                            /** @psalm-check-type-exact $y = mixed */;
+                            /** @psalm-check-type-exact $z = mixed */;
                         }
                     }',
                 'assertions' => [],
                 'ignored_issues' => ['MixedAssignment'],
+                'php_version' => '8.0',
+            ],
+            'appendAfterAnIntOffsetIsSetOnEveryBranchIsWrittenWithoutIssue' => [
+                'code' => '<?php
+                    final class Hooks {
+                        private array $hooks = [];
+
+                        public function register(string $hook, callable $callback, int $priority = 0): void {
+                            if (!isset($this->hooks[$hook])) {
+                                $this->hooks[$hook] = [$priority => []];
+                            } elseif (!isset($this->hooks[$hook][$priority])) {
+                                $this->hooks[$hook][$priority] = [];
+                            }
+
+                            $this->hooks[$hook][$priority][] = $callback;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedArrayAssignment'],
+                'php_version' => '8.0',
+            ],
+            'appendAfterAnEarlyReturnOnAnIntOffsetNotSetIsWrittenWithoutIssue' => [
+                'code' => '<?php
+                    function f(array $a, int $p): array {
+                        if (!isset($a["x"][$p])) {
+                            return $a;
+                        }
+
+                        $a["x"][$p][] = 1;
+
+                        return $a;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedArrayAssignment'],
+                'php_version' => '8.0',
+            ],
+            'appendAtAnotherIntOffsetThanTheOneCheckedWithIssetIsWrittenWithoutIssue' => [
+                'code' => '<?php
+                    function f(array $a, int $p, int $q): array {
+                        if (isset($a["x"][$p])) {
+                            $a["x"][$q][] = 1;
+                        }
+
+                        return $a;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedArrayAssignment'],
+                'php_version' => '8.0',
+            ],
+            'appendUnderACopyOfAParentCheckedWithIssetIsWrittenWithoutIssue' => [
+                'code' => '<?php
+                    function f(array $a, int $p): array {
+                        if (isset($a["x"][$p])) {
+                            $x = $a["x"];
+                            $x[$p][] = 1;
+
+                            return ["x" => $x];
+                        }
+
+                        return [];
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment', 'MixedArrayAccess', 'MixedArrayAssignment'],
+                'php_version' => '8.0',
+            ],
+            'offsetBesideANestedIntOffsetCheckedWithIssetIsWrittenWithoutIssue' => [
+                'code' => '<?php
+                    function f(array $a, int $p, int $q): array {
+                        if (isset($a["x"][$p][$q])) {
+                            $a["x"][$p]["z"] = 1;
+                        }
+
+                        return $a;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedArrayAssignment'],
                 'php_version' => '8.0',
             ],
             'issetOfIntOffsetSetsPossiblyUndefinedMixedVariable' => [
@@ -3203,6 +3348,32 @@ final class IssetTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'listItemAfterTheSmallestKeyOfAUnionKeyAssertionIsPossiblyUndefined' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param list<string> $l */
+                    function f(array $l, bool $b): string {
+                        $i = $b ? 5 : 2;
+                        if (isset($l[$i])) {
+                            return $l[4];
+                        }
+                        return '';
+                    }
+                    PHP,
+                'error_message' => 'PossiblyUndefinedArrayOffset',
+            ],
+            'appendUnderAnIntOffsetOfADeclaredStringCheckedWithIssetIsReported' => [
+                'code' => '<?php
+                    /** @param array{x: non-empty-array|non-empty-string|ArrayAccess} $a */
+                    function f(array $a, int $p): void {
+                        if (isset($a["x"][$p])) {
+                            $a["x"][$p][] = 1;
+                        }
+                    }',
+                'error_message' => 'PossiblyInvalidArrayOffset',
+                'error_levels' => ['MixedArrayAssignment'],
+                'php_version' => '8.0',
+            ],
             'coalesceOnANullsafeCallKeepsArgumentIssues' => [
                 'code' => '<?php
                     final class R {

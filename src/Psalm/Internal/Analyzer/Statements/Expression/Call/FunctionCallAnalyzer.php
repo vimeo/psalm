@@ -7,6 +7,7 @@ namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
+use Psalm\Config;
 use Psalm\Context;
 use Psalm\Internal\Algebra;
 use Psalm\Internal\Algebra\FormulaGenerator;
@@ -272,6 +273,8 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                     }
                 } else {
                     // an unknown function may do anything
+                    $function_call_info->addCallable(Capabilities::ALL);
+
                     $statements_analyzer->signalMutation(
                         Capabilities::ALL,
                         $context,
@@ -622,6 +625,13 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             );
         }
 
+        self::forgetWhatCallablesMayWrite(
+            $context,
+            $config,
+            $function_call_info->callable_capabilities,
+            $function_call_info->kept_memoized_results ?? [],
+        );
+
         if ($function_call_info->function_storage) {
             GlobalAnalyzer::readGlobalsWrittenBy($statements_analyzer, $context, $function_call_info->function_storage);
         }
@@ -813,6 +823,38 @@ final class FunctionCallAnalyzer extends CallAnalyzer
     }
 
     /**
+     * Forgets the memoized results of methods the callable values a call ran may have changed: of any object when they
+     * may write properties, of `$this` when they may write those of the caller's `$this`. Without remembered property
+     * assignments, the properties themselves too, as after a call of a named function.
+     *
+     * @param CapabilitySet $capabilities
+     * @param array<string, true> $kept_memoized_results memoized results the callables cannot change
+     */
+    private static function forgetWhatCallablesMayWrite(
+        Context $context,
+        Config $config,
+        int $capabilities,
+        array $kept_memoized_results,
+    ): void {
+        $methods_only = $config->remember_property_assignments_after_call || $context->collect_initializations;
+
+        $context->removeMutableObjectVars(
+            $methods_only,
+            $capabilities & ~Capabilities::WRITE_THIS_PROPS,
+            $kept_memoized_results,
+        );
+
+        if (($capabilities & Capabilities::WRITE_THIS_PROPS) !== 0) {
+            $context->removeMutableObjectVars(
+                $methods_only,
+                Capabilities::WRITE_THIS_PROPS,
+                $kept_memoized_results,
+                '$this',
+            );
+        }
+    }
+
+    /**
      * The capabilities a callable array `[$object, $method]` whose method isn't known requires: any method of the
      * object may run, `__call()` too, which only the class contract of each part of its type caps (see
      * MethodCallPurityAnalyzer::getClassContractCapabilities()). A method writing the object's own properties writes
@@ -841,7 +883,36 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             $capabilities |= MethodCallPurityAnalyzer::getClassContractCapabilities($codebase, $object_type);
         }
 
-        if ($capabilities === Capabilities::ALL) {
+        return self::getCallableArrayReceiverCapabilities(
+            $statements_analyzer,
+            $context,
+            $callable,
+            $function_name,
+            $capabilities,
+        );
+    }
+
+    /**
+     * The capabilities calling a method that may use $capabilities through the callable array `[$object, $method]`
+     * requires, given its object: what the method writes of its own object it writes of the caller's `$this` only
+     * when the object is that `$this` (see MethodCallPurityAnalyzer::getReceiverCallCapabilities()). Of another
+     * callable (`'C::m'`), the method has no object.
+     *
+     * @param CapabilitySet $capabilities
+     * @return CapabilitySet
+     */
+    private static function getCallableArrayReceiverCapabilities(
+        StatementsAnalyzer $statements_analyzer,
+        Context $context,
+        Atomic $callable,
+        PhpParser\Node\Expr $function_name,
+        int $capabilities,
+    ): int {
+        if ($capabilities === Capabilities::ALL
+            || !$callable instanceof TKeyedArray
+            || !isset($callable->properties[0])
+            || count($callable->properties) !== 2
+        ) {
             return $capabilities;
         }
 
@@ -970,8 +1041,27 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         if ($potential_method_id && $codebase->methods->hasStorage($potential_method_id)) {
             $potential_method_storage = $codebase->methods->getStorage($potential_method_id);
 
-            $statements_analyzer->signalMutation(
+            $capabilities = self::getCallableArrayReceiverCapabilities(
+                $statements_analyzer,
+                $context,
+                $var_type_part,
+                $function_name,
                 $potential_method_storage->capabilities,
+            );
+
+            $function_call_info->addCallable(
+                $capabilities,
+                MethodCallPurityAnalyzer::getMemoizedResultsKeptByCallableCall(
+                    $context,
+                    $codebase,
+                    $var_type_part,
+                    $function_name,
+                    $potential_method_storage,
+                ),
+            );
+
+            $statements_analyzer->signalMutation(
+                $capabilities,
                 $context,
                 'method ' . (string) $potential_method_id,
                 ImpureMethodCall::class,
@@ -988,8 +1078,18 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         ) {
             // a method of another part of an intersection
             foreach ($intersection_method_storages as $intersection_method_storage) {
-                $statements_analyzer->signalMutation(
+                $capabilities = self::getCallableArrayReceiverCapabilities(
+                    $statements_analyzer,
+                    $context,
+                    $var_type_part,
+                    $function_name,
                     $intersection_method_storage->capabilities,
+                );
+
+                $function_call_info->addCallable($capabilities);
+
+                $statements_analyzer->signalMutation(
+                    $capabilities,
                     $context,
                     'method ' . $intersection_method_storage->defining_fqcln . '::'
                         . (string) $intersection_method_storage->cased_name,
@@ -1003,19 +1103,23 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         } elseif (!$has_new_function_name) {
             // a callable string or array whose target is unknown may do anything, but a method of an
             // object whose class contract caps them all
-            $statements_analyzer->signalMutation(
-                ByRefArgumentAnalyzer::adjustUnknownParamsCapabilities(
+            $capabilities = ByRefArgumentAnalyzer::adjustUnknownParamsCapabilities(
+                $statements_analyzer,
+                $context,
+                self::getCallableArrayContractCapabilities(
                     $statements_analyzer,
+                    $codebase,
                     $context,
-                    self::getCallableArrayContractCapabilities(
-                        $statements_analyzer,
-                        $codebase,
-                        $context,
-                        $var_type_part,
-                        $function_name,
-                    ),
-                    $stmt->isFirstClassCallable() ? [] : $stmt->getArgs(),
+                    $var_type_part,
+                    $function_name,
                 ),
+                $stmt->isFirstClassCallable() ? [] : $stmt->getArgs(),
+            );
+
+            $function_call_info->addCallable($capabilities);
+
+            $statements_analyzer->signalMutation(
+                $capabilities,
                 $context,
                 'function call on ' . $var_type_part->getId(),
                 ImpureFunctionCall::class,
@@ -1035,7 +1139,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
     {
         if (!$callable instanceof TKeyedArray
             || !isset($callable->properties[0], $callable->properties[1])
-            || !$callable->properties[0]->isSingle()
+            || !$callable->properties[0]->isSingleAtomic()
             || !$callable->properties[1]->isSingleStringLiteral()
         ) {
             return [];
@@ -1299,7 +1403,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         Context $context,
         ?Union $callee_type,
     ): ?array {
-        $closure = $callee_type !== null && $callee_type->isSingle() ? $callee_type->getSingleAtomic() : null;
+        $closure = $callee_type !== null && $callee_type->isSingleAtomic() ? $callee_type->getSingleAtomic() : null;
 
         if (!$closure instanceof TClosure
             || $closure->callable_id === null
@@ -1760,6 +1864,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         Context $context,
         PhpParser\Node\Expr\FuncCall $stmt,
         TMixed $var_type_part,
+        FunctionCallInfo $function_call_info,
     ): void {
         IssueBuffer::maybeAdd(
             new MixedFunctionCall(
@@ -1768,6 +1873,8 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             ),
             $statements_analyzer->getSuppressedIssues(),
         );
+
+        $function_call_info->addCallable(Capabilities::ALL);
 
         $statements_analyzer->signalMutation(
             Capabilities::ALL,
@@ -1799,6 +1906,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             $stmt,
             $function_name,
             $var_type_part,
+            $function_call_info,
         );
 
         if ($function_name instanceof PhpParser\Node\Expr\Variable
@@ -1848,7 +1956,9 @@ final class FunctionCallAnalyzer extends CallAnalyzer
     }
 
     /**
-     * The capabilities of calling the closure, and the checks of the global state its arguments pass it
+     * The capabilities of calling the closure, and the checks of the global state its arguments pass it. What it may
+     * write is recorded in $function_call_info: what it writes of its own object is what it writes of the caller's
+     * `$this` only for a closure created in this scope, else of another object.
      *
      * @return CapabilitySet
      */
@@ -1858,6 +1968,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         PhpParser\Node\Expr\FuncCall $stmt,
         PhpParser\Node\Expr $function_name,
         TClosure|TCallable $closure,
+        FunctionCallInfo $function_call_info,
     ): int {
         // the purity of the closure, where a purity template the enclosing function-like
         // inherits its purity from requires nothing: that is deferred to its callers
@@ -1902,7 +2013,50 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             );
         }
 
+        $function_call_info->addCallable(...(self::getFreshClosureMemoizedEffects(
+            $statements_analyzer,
+            $context,
+            $stmt,
+            $function_name,
+            $closure,
+        ) ?? [MethodCallPurityAnalyzer::getCapabilitiesForReceiver($closure_capabilities, false, false)]));
+
         return $closure_capabilities;
+    }
+
+    /**
+     * Of a closure created in this scope, what calling it forgets of the memoized results when what its body does is
+     * known: as much as its calls and writes would where it is called (see
+     * MethodCallPurityAnalyzer::getMemoizedResultsKeptByClosureCall())
+     *
+     * @return array{CapabilitySet, array<string, true>}|null
+     */
+    private static function getFreshClosureMemoizedEffects(
+        StatementsAnalyzer $statements_analyzer,
+        Context $context,
+        PhpParser\Node\Expr\FuncCall $stmt,
+        PhpParser\Node\Expr $function_name,
+        TClosure|TCallable $closure,
+    ): ?array {
+        $codebase = $statements_analyzer->getCodebase();
+
+        // without remembered property assignments, its calls of named functions forget them
+        if (!$closure instanceof TClosure
+            || $closure->callable_id === null
+            || $stmt->isFirstClassCallable()
+            || !$codebase->config->remember_property_assignments_after_call
+            || !$statements_analyzer->node_data->isPureCompatible($function_name)
+        ) {
+            return null;
+        }
+
+        $closure_storage = $codebase->file_storage_provider
+            ->get($statements_analyzer->getFilePath())
+            ->functions[$closure->callable_id] ?? null;
+
+        return $closure_storage === null
+            ? null
+            : MethodCallPurityAnalyzer::getMemoizedResultsKeptByClosureCall($context, $codebase, $closure_storage);
     }
 
     /**
@@ -2007,7 +2161,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                 } elseif ($var_type_part instanceof TMixed) {
                     $has_valid_function_call_type = true;
 
-                    self::reportCallOfMixed($statements_analyzer, $context, $stmt, $var_type_part);
+                    self::reportCallOfMixed($statements_analyzer, $context, $stmt, $var_type_part, $function_call_info);
                     self::addToTypeOfCall($statements_analyzer, $real_stmt, null);
                 } elseif ($var_type_part instanceof TCallableObject) {
                     $has_valid_function_call_type = true;
@@ -2025,6 +2179,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                 ) {
                     // this is fine, but the callee is unknown, so it may do anything
                     $has_valid_function_call_type = true;
+                    $function_call_info->addCallable(Capabilities::ALL);
 
                     $statements_analyzer->signalMutation(
                         Capabilities::ALL,

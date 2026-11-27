@@ -1194,7 +1194,7 @@ final class ForeachAnalyzer
         if ($stmt->expr instanceof PhpParser\Node\Expr\PropertyFetch
             && $stmt->expr->name instanceof PhpParser\Node\Identifier
             && ($object_type = $statements_analyzer->node_data->getType($stmt->expr->var))
-            && $object_type->isSingle()
+            && $object_type->isSingleAtomic()
             && ($object_atomic_type = $object_type->getSingleAtomic()) instanceof TNamedObject
         ) {
             $codebase = $statements_analyzer->getCodebase();

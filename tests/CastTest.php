@@ -634,6 +634,28 @@ final class CastTest extends TestCase
             'error_message' => 'Redundant cast (string) applied to non-empty-string given docblock-provided type',
         ];
 
+        yield 'redundantBoolCastOnTrue' => [
+            'code' => '<?php
+                function f(bool $b): bool {
+                    if ($b) {
+                        return (bool) $b;
+                    }
+                    return false;
+                }',
+            'error_message' => 'Redundant cast (bool) applied to true',
+        ];
+
+        yield 'redundantBoolCastOnFalse' => [
+            'code' => '<?php
+                function f(bool $b): bool {
+                    if (!$b) {
+                        return (bool) $b;
+                    }
+                    return true;
+                }',
+            'error_message' => 'Redundant cast (bool) applied to false',
+        ];
+
         yield 'unsetCastIsRemovedInPhpEight' => [
             'code' => '<?php
                 $foo = 1;

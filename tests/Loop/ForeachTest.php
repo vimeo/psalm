@@ -3394,7 +3394,7 @@ final class ForeachTest extends TestCase
                             $results[$elem]++;
                         }
 
-                        return isset($results['one']) && $results['one'] == 4;
+                        return $results['one'] == 4;
                     }
 
                     class Counter {

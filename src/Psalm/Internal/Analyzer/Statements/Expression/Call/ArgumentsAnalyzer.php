@@ -584,7 +584,7 @@ final class ArgumentsAnalyzer
         $unpacked_type = $statements_analyzer->node_data->getType($arg->value);
 
         if (!$unpacked_type
-            || !$unpacked_type->isSingle()
+            || !$unpacked_type->isSingleAtomic()
             || !($unpacked_atomic = $unpacked_type->getSingleAtomic()) instanceof TKeyedArray
             || $unpacked_atomic->fallback_params !== null
         ) {
@@ -1813,6 +1813,29 @@ final class ArgumentsAnalyzer
             return null;
         }
 
+        if (($method_id === 'array_walk' || $method_id === 'array_walk_recursive')
+            && isset($function_params[0], $function_params[1])
+            && !array_any($args, static fn(PhpParser\Node\Arg $arg): bool => $arg->unpack)
+            && ($array_arg = self::getArgForParam($args, $function_params, $function_params[0]->name))
+            && ($array_type = $statements_analyzer->node_data->getType($array_arg->value))
+            && ($callback_arg = self::getArgForParam($args, $function_params, $function_params[1]->name))
+            && ($callback_type = $statements_analyzer->node_data->getType($callback_arg->value))
+        ) {
+            $extra_arg = isset($function_params[2])
+                ? self::getArgForParam($args, $function_params, $function_params[2]->name)
+                : null;
+
+            ArrayFunctionArgumentsAnalyzer::checkArrayWalkCallback(
+                $statements_analyzer,
+                $context,
+                $method_id,
+                $array_type,
+                $callback_arg,
+                $callback_type,
+                $extra_arg ? $statements_analyzer->node_data->getType($extra_arg->value) ?? Type::getMixed() : null,
+            );
+        }
+
         if ($method_id === 'get_class' && $args === []) {
             //get_class without args only works when inside a class
             if (!$context->self) {
@@ -2924,7 +2947,7 @@ final class ArgumentsAnalyzer
                             return;
                         }
 
-                        if ($arg_value_type->isSingle()
+                        if ($arg_value_type->isSingleAtomic()
                             && ($atomic_arg_type = $arg_value_type->getSingleAtomic()) instanceof TKeyedArray
                             && !$atomic_arg_type->is_list
                             // integer keys name no parameter: they pass as many arguments as there are keys
@@ -3041,8 +3064,8 @@ final class ArgumentsAnalyzer
                     // a default that is one of the own atomic types of the parameter (`null` for `T|null`) says
                     // nothing about a template that an argument bound already, and that has no default of its own
                     // to fall back to
-                    if ($default_type->isSingle()
-                        && !$param->type->isSingle()
+                    if ($default_type->isSingleAtomic()
+                        && !$param->type->isSingleAtomic()
                         && isset($param->type->getAtomicTypes()[$default_type->getSingleAtomic()->getKey()])
                         && array_all(
                             $param->type->getTemplateTypes(),

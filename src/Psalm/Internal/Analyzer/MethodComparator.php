@@ -678,7 +678,7 @@ final class MethodComparator
                     $next_type = $binding_classlike_storage
                         ->template_extended_params[$bound_atomic->defining_class][$bound_atomic->param_name] ?? null;
 
-                    if ($next_type === null || !$next_type->isSingle()) {
+                    if ($next_type === null || !$next_type->isSingleAtomic()) {
                         break;
                     }
 

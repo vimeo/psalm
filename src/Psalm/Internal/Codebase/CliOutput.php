@@ -199,7 +199,7 @@ final class CliOutput
             if ($param->is_optional
                 || $param->is_variadic
                 || $param->signature_type === null
-                || !$param->signature_type->isSingle()
+                || !$param->signature_type->isSingleAtomic()
             ) {
                 continue;
             }

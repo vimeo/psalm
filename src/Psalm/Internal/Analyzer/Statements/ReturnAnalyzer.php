@@ -94,7 +94,7 @@ final class ReturnAnalyzer
 
         $template_type_map = $statements_analyzer->getTemplateTypeMap() ?? [];
 
-        if (!$literal_type->isSingle()) {
+        if (!$literal_type->isSingleAtomic()) {
             return null;
         }
 
@@ -105,7 +105,7 @@ final class ReturnAnalyzer
         }
 
         foreach ($context->vars_in_scope as $var_type) {
-            if ($var_type->isSingle()
+            if ($var_type->isSingleAtomic()
                 && !$var_type->possibly_undefined
                 && ($template_param = $var_type->getSingleAtomic()) instanceof TTemplateParam
                 && $template_param->as->getId() === $literal_type->getId()
@@ -833,7 +833,11 @@ final class ReturnAnalyzer
 
         $return_type = TypeCombiner::combine($return_types, $codebase);
 
-        return $return_type->hasMixed() ? null : $return_type;
+        // a generator declared with TReturn void may return null
+        return $return_type->hasMixed()
+            || ($return_type->hasType('void') && $statements_analyzer->node_data->getType($stmt)?->isNull())
+            ? null
+            : $return_type;
     }
 
     /**
@@ -1026,7 +1030,7 @@ final class ReturnAnalyzer
         }
 
         // cannot infer if we have union/intersection types
-        if (!$parent_fn_storage->return_type->isSingle()) {
+        if (!$parent_fn_storage->return_type->isSingleAtomic()) {
             return;
         }
 
