@@ -508,7 +508,6 @@
       <code><![CDATA[$expr->getArgs()[0]]]></code>
       <code><![CDATA[$expr->getArgs()[1]]]></code>
       <code><![CDATA[$expr->getArgs()[1]]]></code>
-      <code><![CDATA[$expr->getArgs()[1]]]></code>
       <code><![CDATA[$get_debug_type_expr->getArgs()[0]]]></code>
       <code><![CDATA[$gettype_expr->getArgs()[0]]]></code>
     </PossiblyUndefinedIntArrayOffset>
@@ -519,7 +518,6 @@
       <code><![CDATA[$array_root]]></code>
       <code><![CDATA[$count_equality_position]]></code>
       <code><![CDATA[$false_position]]></code>
-      <code><![CDATA[$first_var_name]]></code>
       <code><![CDATA[$first_var_name]]></code>
       <code><![CDATA[$first_var_name]]></code>
       <code><![CDATA[$first_var_name]]></code>

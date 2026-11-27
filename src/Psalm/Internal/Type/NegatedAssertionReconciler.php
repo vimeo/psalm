@@ -11,6 +11,7 @@ use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Storage\Assertion;
+use Psalm\Storage\Assertion\DoesNotHaveArrayValue;
 use Psalm\Storage\Assertion\IsClassNotEqual;
 use Psalm\Storage\Assertion\IsNotCountable;
 use Psalm\Storage\Assertion\IsNotIdentical;
@@ -77,6 +78,16 @@ final class NegatedAssertionReconciler extends Reconciler
             $existing_var_type,
             $statements_analyzer->getCodebase(),
         );
+
+        if ($assertion instanceof DoesNotHaveArrayValue) {
+            return ArrayValueAssertionReconciler::reconcileDoesNotHaveArrayValue(
+                $assertion,
+                $existing_var_type,
+                $statements_analyzer,
+                $inside_loop,
+                $failed_reconciliation,
+            );
+        }
 
         $original_var_type = $existing_var_type;
 
