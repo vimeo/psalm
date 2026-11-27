@@ -33591,12 +33591,12 @@ return array (
     array (
       'old' => 
       array (
-        0 => 'string',
+        0 => 'null|string',
         'new_location=' => 'string',
       ),
       'new' => 
       array (
-        0 => 'string',
+        0 => 'null|string',
         'location=' => 'null|string',
       ),
     ),

@@ -78804,7 +78804,7 @@ return array (
   ),
   'soapclient::__setlocation' => 
   array (
-    0 => 'string',
+    0 => 'null|string',
     'location=' => 'null|string',
     -2 => 'none',
   ),
