@@ -55,6 +55,7 @@ use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_all;
 use function count;
 use function in_array;
 use function preg_match;
@@ -586,30 +587,19 @@ final class ConcatAnalyzer
      */
     private static function getResultTypeFromKnownOperand(Union $known_operand): ?Union
     {
-        if (!$known_operand->isSingle()) {
+        if ($known_operand->isUnionEmpty()) {
             return null;
         }
 
-        $known_operands_atomic = $known_operand->getSingleAtomic();
-        $result_type = null;
-
-        if ($known_operand->isNonEmptyString()) {
-            $result_type = Type::getNonEmptyString();
+        if (array_all(
+            $known_operand->getAtomicTypes(),
+            static fn(Atomic $atomic): bool => $atomic instanceof TNonFalsyString
+                || ($atomic instanceof TLiteralString && $atomic->value),
+        )) {
+            return Type::getNonFalsyString();
         }
 
-        if ($known_operands_atomic instanceof TNonFalsyString) {
-            $result_type = Type::getNonFalsyString();
-        }
-
-        if ($known_operands_atomic instanceof TLiteralString) {
-            if ($known_operands_atomic->value) {
-                $result_type = Type::getNonFalsyString();
-            } elseif ($known_operands_atomic->value !== '') {
-                $result_type = Type::getNonEmptyString();
-            }
-        }
-
-        return $result_type;
+        return $known_operand->isNonEmptyString() ? Type::getNonEmptyString() : null;
     }
 
     private static function analyzeOperand(

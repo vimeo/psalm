@@ -1508,7 +1508,7 @@ final class NewAnalyzer extends CallAnalyzer
         Context $context,
         Union $stmt_class_type,
     ): ?string {
-        if (!$stmt_class_type->isSingle()) {
+        if (!$stmt_class_type->isSingleAtomic()) {
             return null;
         }
 
@@ -1730,7 +1730,7 @@ final class NewAnalyzer extends CallAnalyzer
                         $generated_type = new TObject();
 
                         if ($lhs_type_part->as_type->hasObjectType()
-                            && $lhs_type_part->as_type->isSingle()
+                            && $lhs_type_part->as_type->isSingleAtomic()
                         ) {
                             foreach ($lhs_type_part->as_type->getAtomicTypes() as $typeof_type_atomic) {
                                 if ($typeof_type_atomic instanceof TNamedObject) {

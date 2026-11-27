@@ -23,6 +23,23 @@ final class ArrayKeyExistsTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'arrayKeyExistsOfATemplateOfIntOrStringNarrowsItToTheKeys' => [
+                'code' => '<?php
+                    /**
+                     * @template T of int|string
+                     * @param T $key
+                     */
+                    function f($key): string {
+                        $items = [971 => "x", 972 => "y"];
+
+                        // the key can also be the string that PHP casts to an int key
+                        if (array_key_exists($key, $items) && is_string($key)) {
+                            return $items[$key];
+                        }
+
+                        return "z";
+                    }',
+            ],
             'arrayKeyExistsOfAKeyThatIsNotAnIntOrAStringKeepsItsType' => [
                 'code' => '<?php
                     function ofMixed(mixed $key): void {
@@ -257,6 +274,8 @@ final class ArrayKeyExistsTest extends TestCase
                             /** @psalm-check-type-exact $foo = array{retry_in: int} */
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DocblockTypeContradiction'],
             ],
             'negatedIssetOfANestedOffsetKeepsTheOuterShape' => [
                 'code' => '<?php

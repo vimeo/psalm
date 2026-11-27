@@ -205,7 +205,7 @@ final class PurityWildcardInference
 
             foreach ($storage->template_extended_params ?? [] as $ancestor => $extended_params) {
                 foreach ($extended_params as $ancestor_template_name => $type) {
-                    $atomic = $type->isSingle() ? $type->getSingleAtomic() : null;
+                    $atomic = $type->isSingleAtomic() ? $type->getSingleAtomic() : null;
 
                     if ($atomic instanceof TTemplateParam
                         && isset($templates[$atomic->param_name . '@' . strtolower($atomic->defining_class)])

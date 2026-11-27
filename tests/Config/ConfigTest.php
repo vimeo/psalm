@@ -357,7 +357,6 @@ final class ConfigTest extends DeferredAnalyzerTestCase
         $last_error = error_get_last();
         $check_symlink_error =
             !is_array($last_error) ||
-            !isset($last_error['message']) ||
             !in_array($last_error['message'], $no_symlinking_error);
 
         @symlink(dirname(__DIR__, 1) . '/fixtures/symlinktest/a', dirname(__DIR__, 1) . '/fixtures/symlinktest/ignored/b');

@@ -1046,10 +1046,10 @@ abstract class Type
         bool $allow_interface_equality,
         bool $allow_float_int_equality,
     ): TTemplateKeyOf|TTemplateValueOf|null {
-        if ($type_1->isSingle() && !self::hasTemplateKeyOrValueOf($type_2)) {
+        if ($type_1->isSingleAtomic() && !self::hasTemplateKeyOrValueOf($type_2)) {
             $template_of = $type_1->getSingleAtomic();
             $other_type = $type_2;
-        } elseif ($type_2->isSingle() && !self::hasTemplateKeyOrValueOf($type_1)) {
+        } elseif ($type_2->isSingleAtomic() && !self::hasTemplateKeyOrValueOf($type_1)) {
             $template_of = $type_2->getSingleAtomic();
             $other_type = $type_1;
         } else {
@@ -1060,7 +1060,7 @@ abstract class Type
             return null;
         }
 
-        $template = $template_of->as->isSingle() ? $template_of->as->getSingleAtomic() : null;
+        $template = $template_of->as->isSingleAtomic() ? $template_of->as->getSingleAtomic() : null;
 
         if (!$template instanceof TTemplateParam) {
             return null;

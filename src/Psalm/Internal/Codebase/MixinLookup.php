@@ -282,7 +282,7 @@ final class MixinLookup
             $storage->final,
         );
 
-        $bound_mixin = $bound_mixin->isSingle() ? $bound_mixin->getSingleAtomic() : null;
+        $bound_mixin = $bound_mixin->isSingleAtomic() ? $bound_mixin->getSingleAtomic() : null;
 
         return $bound_mixin instanceof TNamedObject ? $bound_mixin : null;
     }

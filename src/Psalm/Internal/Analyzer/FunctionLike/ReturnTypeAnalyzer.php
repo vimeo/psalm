@@ -1434,7 +1434,7 @@ final class ReturnTypeAnalyzer
      */
     private static function getGeneratorReturnType(Union $return_type): ?Union
     {
-        if (!$return_type->isSingle()) {
+        if (!$return_type->isSingleAtomic()) {
             return null;
         }
 

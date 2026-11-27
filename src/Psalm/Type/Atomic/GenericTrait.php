@@ -166,7 +166,6 @@ trait GenericTrait
         //no need for special format if the key is not determined
         if ($this instanceof TArray &&
             count($type_params) === 2 &&
-            isset($type_params[0]) &&
             $type_params[0]->isArrayKey()
         ) {
             //we remove the key for display
@@ -176,7 +175,6 @@ trait GenericTrait
 
         if ($this instanceof TArray &&
             count($type_params) === 1 &&
-            isset($type_params[0]) &&
             $type_params[0]->isMixed()
         ) {
             //when the value of an array is mixed, no need for namespaced phpdoc

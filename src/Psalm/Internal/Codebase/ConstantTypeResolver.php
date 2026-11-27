@@ -380,7 +380,7 @@ final class ConstantTypeResolver
             ) {
                 $union = $var_type->properties[$offset_type->value] ?? null;
 
-                if ($union && $union->isSingle()) {
+                if ($union && $union->isSingleAtomic()) {
                     return $union->getSingleAtomic();
                 }
             }

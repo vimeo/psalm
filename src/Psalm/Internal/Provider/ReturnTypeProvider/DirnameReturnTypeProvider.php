@@ -9,10 +9,8 @@ use Psalm\Internal\Analyzer\Statements\Expression\IncludeAnalyzer;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
-use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Union;
 
-use function array_values;
 use function count;
 use function dirname;
 
@@ -81,15 +79,11 @@ final class DirnameReturnTypeProvider implements FunctionReturnTypeProviderInter
         if (isset($call_args[1])) {
             $type = $node_type_provider->getType($call_args[1]->value);
 
-            if ($type !== null && $type->isSingle()) {
-                $atomic_type = array_values($type->getAtomicTypes())[0];
-                if ($atomic_type instanceof TLiteralInt &&
-                    $atomic_type->value > 0) {
-                    $dir_level = $atomic_type->value;
-                } else {
-                    return $fallback_type;
-                }
+            if ($type === null || !$type->isSingleIntLiteral() || $type->getSingleIntLiteral()->value < 1) {
+                return $fallback_type;
             }
+
+            $dir_level = $type->getSingleIntLiteral()->value;
         }
 
         $evaled_path = IncludeAnalyzer::getPathTo(

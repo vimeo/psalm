@@ -81,7 +81,7 @@ final class CallPurityResolver
         if ($bound !== null) {
             $arg_type = $statements_analyzer->node_data->getType($arg->value);
 
-            if ($arg_type === null || !$arg_type->isSingle()) {
+            if ($arg_type === null || !$arg_type->isSingleAtomic()) {
                 return null;
             }
 

@@ -302,6 +302,7 @@ final class IssetTest extends TestCase
                 'assertions' => [
                     '$a===' => 'array{k: string}',
                 ],
+                'ignored_issues' => ['RedundantConditionGivenDocblockType'],
             ],
             'negatedIssetKeepsRequiredNullableOffset' => [
                 'code' => '<?php

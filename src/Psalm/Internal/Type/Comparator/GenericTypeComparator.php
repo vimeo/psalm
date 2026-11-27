@@ -150,7 +150,7 @@ final class GenericTypeComparator
             // the bound the comparison below gives it
             if (!$contravariant
                 && ($input_param->isNever()
-                    || ($input_param->isSingle()
+                    || ($input_param->isSingleAtomic()
                         && ($input_variable = $input_param->getSingleAtomic()) instanceof TTypeVariable
                         && $input_variable->isNeverBound()))
             ) {
