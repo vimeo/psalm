@@ -303,10 +303,10 @@ final class Properties
     /**
      * The `@property` type that replaces the type of a property of the class, where the property is accessible.
      *
-     * A `@property` of the class where the property appears, or of one of its ancestors, describes the magic property
-     * that `__get()` or `__set()` serves where a non-public property is inaccessible. A `@property` of an ancestor
-     * describes the magic property of the ancestor. Neither replaces the type of the property where it is accessible.
-     * The other `@property` tags narrow the type of the property.
+     * A `@property` of the class where the property appears, or of one of its ancestors or used traits, describes the
+     * magic property that `__get()` or `__set()` serves where the property is inaccessible, or the magic property of
+     * the ancestor or trait. It doesn't replace the type of the property where the property is accessible. A
+     * `@property` of a subclass of that class narrows the type of the property.
      *
      * @psalm-capabilities read-props
      */
@@ -325,37 +325,38 @@ final class Properties
 
         [$appearing_class] = explode('::$', $appearing_property_id);
         $appearing_class_storage = $this->classlike_storage_provider->get($appearing_class);
-        $appearing_pseudo_property_type = self::getPseudoPropertyTypes($appearing_class_storage, $property_set)[$key]
-            ?? null;
 
-        if ($appearing_pseudo_property_type === null) {
+        if (!isset(self::getPseudoPropertyTypes($appearing_class_storage, $property_set)[$key])) {
             return $pseudo_property_type;
         }
 
-        $declaring_class = $class_storage->declaring_property_ids[$property_name] ?? $appearing_class;
-        $property_storage = $this->classlike_storage_provider->get($declaring_class)->properties[$property_name]
-            ?? null;
+        $declaring_class_storage = $this->classlike_storage_provider->get(
+            $class_storage->declaring_property_ids[$property_name] ?? $appearing_class,
+        );
+        $property_storage = $declaring_class_storage->properties[$property_name] ?? null;
 
         if ($property_storage === null || $property_storage->visibility !== ClassLikeAnalyzer::VISIBILITY_PUBLIC) {
             return null;
         }
 
-        // a public property is never served by `__get()` or `__set()`
-        if (!$pseudo_property_type->equals($appearing_pseudo_property_type)
-            || $appearing_class_storage->parent_class === null
-        ) {
-            return $pseudo_property_type;
+        // a public property is never served by `__get()` or `__set()`: a `@property` of the class where it appears,
+        // of a subclass, or of the trait that declares it narrows it
+        for ($storage = $class_storage;;) {
+            if (isset($storage->declared_pseudo_property_names[$key])) {
+                return $pseudo_property_type;
+            }
+
+            if (strtolower($storage->name) === strtolower($appearing_class) || $storage->parent_class === null) {
+                break;
+            }
+
+            $storage = $this->classlike_storage_provider->get($storage->parent_class);
         }
 
-        $parent_pseudo_property_type = self::getPseudoPropertyTypes(
-            $this->classlike_storage_provider->get($appearing_class_storage->parent_class),
-            $property_set,
-        )[$key] ?? null;
-
-        return $parent_pseudo_property_type !== null
-            && $parent_pseudo_property_type->equals($appearing_pseudo_property_type)
-            ? null
-            : $pseudo_property_type;
+        return $declaring_class_storage->is_trait
+            && isset($declaring_class_storage->declared_pseudo_property_names[$key])
+                ? $pseudo_property_type
+                : null;
     }
 
     /**
