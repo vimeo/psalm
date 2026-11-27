@@ -93,6 +93,7 @@ use function preg_match;
 use function reset;
 use function str_contains;
 use function str_ends_with;
+use function str_starts_with;
 use function strtolower;
 use function strtoupper;
 use function substr;
@@ -834,19 +835,19 @@ final class ArgumentsAnalyzer
             );
         };
 
-        $own_templates = $template_result->template_types;
+        $receiver_bound = $template_result->receiver_bound_template_types;
 
         /** @param array<string, array<string, Union>> $bounds */
         $replace = static function (
             Union $type,
             array $bounds,
         ) use (
-            $own_templates,
             $uninferred,
+            $receiver_bound,
             $replace_once,
         ): Union {
             $resolved = [];
-            self::resolveUninferredBounds($type, $bounds, $own_templates, $uninferred, $resolved, $replace_once);
+            self::resolveUninferredBounds($type, $bounds, $uninferred, $receiver_bound, $resolved, $replace_once);
 
             return $replace_once($type, $bounds);
         };
@@ -1044,20 +1045,21 @@ final class ArgumentsAnalyzer
     }
 
     /**
-     * The `as` type of a template inferred from nothing has the receiver's bindings already: it takes the bounds of the
-     * callee's own templates it names before $type takes it
+     * The `as` type of a template inferred from nothing is in the callee's terms, and takes the bounds of the templates
+     * it names before $type takes it. One with the receiver's bindings already ($receiver_bound) only takes those of
+     * the function-like templates: the class templates it names are the caller's.
      *
      * @param array<string, array<string, Union>> $bounds
-     * @param array<string, array<string, Union>> $own_templates
      * @param array<string, array<string, true>> $uninferred
+     * @param array<string, array<string, true>> $receiver_bound
      * @param array<string, array<string, true>> $resolved
      * @param callable(Union, array<string, array<string, Union>>): Union $replace_once
      */
     private static function resolveUninferredBounds(
         Union $type,
         array &$bounds,
-        array $own_templates,
         array $uninferred,
+        array $receiver_bound,
         array &$resolved,
         callable $replace_once,
     ): void {
@@ -1077,22 +1079,24 @@ final class ArgumentsAnalyzer
             self::resolveUninferredBounds(
                 $bounds[$k][$kk],
                 $bounds,
-                $own_templates,
                 $uninferred,
+                $receiver_bound,
                 $resolved,
                 $replace_once,
             );
 
-            $own_bounds = [];
-            foreach ($own_templates as $own_k => $template_map) {
-                foreach ($template_map as $own_kk => $_) {
-                    if (isset($bounds[$own_k][$own_kk])) {
-                        $own_bounds[$own_k][$own_kk] = $bounds[$own_k][$own_kk];
+            $as_bounds = $bounds;
+            if (isset($receiver_bound[$k][$kk])) {
+                foreach ($bounds as $as_k => $template_map) {
+                    foreach ($template_map as $defining_id => $_) {
+                        if (!str_starts_with($defining_id, 'fn-')) {
+                            unset($as_bounds[$as_k][$defining_id]);
+                        }
                     }
                 }
             }
 
-            $bounds[$k][$kk] = $replace_once($bounds[$k][$kk], $own_bounds);
+            $bounds[$k][$kk] = $replace_once($bounds[$k][$kk], $as_bounds);
         }
     }
 

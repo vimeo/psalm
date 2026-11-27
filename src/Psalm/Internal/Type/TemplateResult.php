@@ -55,6 +55,14 @@ final class TemplateResult
     public bool $of_receiver = false;
 
     /**
+     * The templates whose `as` type in $template_types has the receiver's bindings already: the class templates it
+     * names are the caller's
+     *
+     * @var array<string, array<string, true>>
+     */
+    public array $receiver_bound_template_types = [];
+
+    /**
      * The class a `new` expression constructs: its templates stand for the new object's type arguments, even in
      * code of that class, where they are otherwise the types of the object the code runs for
      */

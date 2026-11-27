@@ -251,6 +251,7 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                     foreach ($type_map as $defining_id => $as_type) {
                         $method_template_types[$template_name][$defining_id]
                             = TemplateInferredTypeReplacer::replace($as_type, $receiver_template_result, $codebase);
+                        $template_result->receiver_bound_template_types[$template_name][$defining_id] = true;
                     }
                 }
             }

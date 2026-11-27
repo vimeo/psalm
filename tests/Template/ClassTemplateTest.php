@@ -774,6 +774,45 @@ final class ClassTemplateTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'closureParamOfAnInheritedMethodWithAParamConditionalTakesTheReceiverBindings' => [
+                'code' => '<?php
+                    /**
+                     * @template TKey of array-key
+                     * @template-covariant TValue
+                     */
+                    interface Enumerable {
+                        /**
+                         * @template TGroupKey of array-key
+                         * @param (callable(TValue, TKey): TGroupKey)|string $groupBy
+                         * @return static<($groupBy is string ? array-key : TGroupKey), static<TKey, TValue>>
+                         */
+                        public function groupBy($groupBy);
+                    }
+
+                    /**
+                     * @template TKey of array-key
+                     * @template-covariant TValue
+                     * @implements Enumerable<TKey, TValue>
+                     */
+                    abstract class Coll implements Enumerable {
+                        /** {@inheritDoc} */
+                        #[Override]
+                        abstract public function groupBy($groupBy);
+                    }
+
+                    final class Model {}
+
+                    /** @param Coll<int, Model> $models */
+                    function test(Coll $models): void {
+                        $models->groupBy(function ($model): string {
+                            /** @psalm-check-type-exact $model = Model */
+                            return "";
+                        });
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
             'newOfTheClassItselfInsideItsMethodAcceptsAnotherTemplate' => [
                 'code' => '<?php
                     /** @template T */
