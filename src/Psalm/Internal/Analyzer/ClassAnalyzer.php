@@ -297,7 +297,9 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
 
         $storage = $this->storage;
 
-        if ($storage->has_visitor_issues) {
+        if ($storage->has_visitor_issues
+            || ($class->name && !self::isStorageDeclaration($storage, $class, $this->getFilePath()))
+        ) {
             return;
         }
 
@@ -693,6 +695,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                         $trait_file_analyzer,
                         $fq_trait_name,
                         $trait_aliases,
+                        $this->parent_fq_class_name,
                     );
 
                     $fq_trait_name_lc = strtolower($fq_trait_name);
@@ -1972,6 +1975,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 $trait_file_analyzer,
                 $fq_trait_name_resolved,
                 $trait_aliases,
+                $this->parent_fq_class_name,
             );
 
             foreach ($trait_node->stmts as $trait_stmt) {

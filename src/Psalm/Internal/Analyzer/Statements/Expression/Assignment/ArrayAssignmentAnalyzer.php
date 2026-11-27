@@ -72,6 +72,7 @@ use function implode;
 use function is_int;
 use function is_string;
 use function preg_match;
+use function reset;
 use function sort;
 use function spl_object_id;
 use function str_contains;
@@ -304,6 +305,7 @@ final class ArrayAssignmentAnalyzer
                 $root_type,
                 $offset_already_existed,
                 $parent_var_id,
+                $stmt->var instanceof PhpParser\Node\Expr\ArrayDimFetch,
             );
         } else {
             $new_child_type = $root_type;
@@ -1468,6 +1470,7 @@ final class ArrayAssignmentAnalyzer
         Union $root_type,
         bool $offset_already_existed,
         ?string $parent_var_id,
+        bool $is_nested_write,
     ): Union {
         $templated_assignment = false;
 
@@ -1483,7 +1486,7 @@ final class ArrayAssignmentAnalyzer
                     $key_type = Type::getArrayKey();
                 }
 
-                if ($key_type->isSingle()) {
+                if ($key_type->isSingleAtomic()) {
                     $key_type_type = $key_type->getSingleAtomic();
 
                     if (($key_type_type instanceof TIntRange
@@ -1493,9 +1496,9 @@ final class ArrayAssignmentAnalyzer
                     }
 
                     if ($key_type_type instanceof TTemplateParam
-                        && $key_type_type->as->isSingle()
-                        && $root_type->isSingle()
-                        && $value_type->isSingle()
+                        && $key_type_type->as->isSingleAtomic()
+                        && $root_type->isSingleAtomic()
+                        && $value_type->isSingleAtomic()
                     ) {
                         $key_type_as_type = $key_type_type->as->getSingleAtomic();
                         $value_atomic_type = $value_type->getSingleAtomic();
@@ -1723,12 +1726,13 @@ final class ArrayAssignmentAnalyzer
         if ($templated_assignment) {
             $new_child_type = $root_type;
         } else {
-            $new_child_type = Type::combineUnionTypes(
+            // a written value leaves the values of the other keys as they are, but a nested write is taken to fill
+            // them too, as the nested writes under one key in a loop do
+            $new_child_type = Type::combineArrayWithWrite(
                 $root_type,
                 $array_assignment_type,
                 $codebase,
-                true,
-                true,
+                $is_nested_write,
             );
         }
 
@@ -1935,7 +1939,7 @@ final class ArrayAssignmentAnalyzer
             if ($is_last) {
                 // we need this slight hack as the type we're putting it has to be
                 // different from the type we're getting out
-                if ($array_type->isSingle() && $array_type->hasClassStringMap()) {
+                if ($array_type->isSingleAtomic() && $array_type->hasClassStringMap()) {
                     $assignment_type = $child_stmt_type;
                 }
 
@@ -2102,12 +2106,12 @@ final class ArrayAssignmentAnalyzer
 
                 $new_child_type = $child_shape
                     ? $child_stmt_type->setTypes([$child_shape])
-                    : Type::combineUnionTypes(
+                    // the deepest array holds the written value, as the root of a write that is not nested does
+                    : Type::combineArrayWithWrite(
                         $child_stmt_type,
                         $array_assignment_type,
                         $codebase,
-                        true,
-                        true,
+                        $previous_child_stmt !== null,
                     );
             }
             if ($new_child_type->hasNull() || $new_child_type->possibly_undefined) {
@@ -2248,6 +2252,10 @@ final class ArrayAssignmentAnalyzer
                 }
 
                 if ($key !== $written_key) {
+                    if (self::isDifferentLiteralKey($key, $written_key_type)) {
+                        continue 2;
+                    }
+
                     $key_types[$key] ??= self::getArrayKeysOfOffsetType(
                         self::getTypeOfOffset($context, substr($key, 1, -1)),
                     );
@@ -2271,6 +2279,37 @@ final class ArrayAssignmentAnalyzer
                 $context->removeVarFromConflictingClauses($var_id);
             }
         }
+    }
+
+    /**
+     * Whether the offset of a var id is a literal key that differs from the only key the written offset may be:
+     * those two never alias, which spares comparing their types
+     *
+     * @psalm-pure
+     */
+    private static function isDifferentLiteralKey(string $offset_key, Union $written_key_type): bool
+    {
+        // not isSingle(): that takes several literals of one kind for a single type
+        $written_atomics = $written_key_type->getAtomicTypes();
+
+        if (count($written_atomics) !== 1) {
+            return false;
+        }
+
+        $written_atomic = reset($written_atomics);
+
+        if ($written_atomic instanceof TLiteralInt) {
+            $written_key = $written_atomic->value;
+        } elseif ($written_atomic instanceof TLiteralString) {
+            $int_key = ArrayAnalyzer::getLiteralArrayKeyInt($written_atomic->value);
+            $written_key = $int_key === false ? $written_atomic->value : $int_key;
+        } else {
+            return false;
+        }
+
+        $literal_key = self::getLiteralKeyOfOffset(substr($offset_key, 1, -1));
+
+        return $literal_key !== null && $literal_key !== $written_key;
     }
 
     /**

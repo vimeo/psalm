@@ -266,8 +266,8 @@ final class BinaryOpAnalyzer
                 && $statements_analyzer->getCodebase()->config->strict_binary_operands
                 && $stmt_left_type
                 && $stmt_right_type
-                && (($stmt_left_type->isSingle() && $stmt_left_type->hasBool())
-                    || ($stmt_right_type->isSingle() && $stmt_right_type->hasBool()))
+                && (($stmt_left_type->isSingleAtomic() && $stmt_left_type->hasBool())
+                    || ($stmt_right_type->isSingleAtomic() && $stmt_right_type->hasBool()))
             ) {
                 IssueBuffer::maybeAdd(
                     new InvalidOperand(

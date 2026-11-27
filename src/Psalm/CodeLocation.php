@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Psalm;
 
-use Exception;
 use LogicException;
 use PhpParser;
 use Psalm\CodeLocation\DocblockTypeLocation;
@@ -17,7 +16,6 @@ use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 use ReflectionClass;
 use UnexpectedValueException;
 
-use function explode;
 use function max;
 use function mb_strcut;
 use function min;
@@ -25,13 +23,14 @@ use function ord;
 use function preg_match;
 use function preg_quote;
 use function preg_replace;
+use function rtrim;
 use function str_replace;
 use function strlen;
 use function strpos;
 use function strrpos;
+use function strspn;
 use function substr;
 use function substr_count;
-use function trim;
 
 use const PREG_OFFSET_CAPTURE;
 
@@ -79,8 +78,6 @@ class CodeLocation
     private ?string $text = null;
 
     public ?int $docblock_start = null;
-
-    private ?int $docblock_start_line_number = null;
 
     protected ?int $docblock_line_number = null;
 
@@ -135,7 +132,6 @@ class CodeLocation
         $doc_comment = $stmt->getDocComment();
 
         $this->docblock_start = $doc_comment ? $doc_comment->getStartFilePos() : null;
-        $this->docblock_start_line_number = $doc_comment ? $doc_comment->getStartLine() : null;
 
         $this->preview_start = $this->docblock_start ?: $this->file_start;
 
@@ -283,39 +279,53 @@ class CodeLocation
 
         $this->preview_end = $preview_end;
 
-        if ($this->docblock_line_number &&
-            $this->docblock_start_line_number &&
-            $this->preview_start < $this->selection_start
-        ) {
-            $preview_lines = explode(
-                "\n",
-                self::cutAtCharBoundary(
-                    $file_contents,
-                    $this->preview_start,
-                    $this->selection_start - $this->preview_start - 1,
-                ),
+        if ($this->docblock_line_number) {
+            // Counted back from the node's line: the doc comment need not be the node's (a closure's is on its
+            // statement, and a class location is its name)
+            $newline_pos = $this->file_start > 0
+                ? strrpos($file_contents, "\n", $this->file_start - 1 - $file_length)
+                : false;
+            $line_start = $newline_pos === false ? 0 : $newline_pos + 1;
+
+            for ($line = $this->raw_line_number; $line > $this->docblock_line_number && $line_start > 0; --$line) {
+                $newline_pos = $line_start > 1
+                    ? strrpos($file_contents, "\n", $line_start - 2 - $file_length)
+                    : false;
+                $line_start = $newline_pos === false ? 0 : $newline_pos + 1;
+            }
+
+            $line_end = strpos($file_contents, "\n", $line_start);
+            $key_line = substr(
+                $file_contents,
+                $line_start,
+                min($line_end === false ? $file_length : $line_end, $this->file_start) - $line_start,
             );
 
-            $preview_offset = 0;
+            // On a line holding code too, the tag is in the last doc comment before the node, up to its end
+            $comment_start = (int) strrpos($key_line, '/**');
 
-            $comment_line_offset = $this->docblock_line_number - $this->docblock_start_line_number;
+            // The selection starts at the content, past the indentation and the comment's `/**` or `*`
+            preg_match('@\G\s*(?:/\*\*|\*(?!/))?\s*@', $key_line, $matches, 0, $comment_start);
+            $indentation = $comment_start + strlen($matches[0] ?? '');
 
-            for ($i = 0; $i < $comment_line_offset; ++$i) {
-                $preview_offset += strlen($preview_lines[$i]) + 1;
+            $comment_end = strpos($key_line, '*/', $indentation);
+            $content = $comment_end === false
+                ? rtrim(substr($key_line, $indentation))
+                // Without the extra stars of a `**/` end, but keeping a `STATUS_*` wildcard
+                : (string) preg_replace(
+                    '@\s+\*+$@',
+                    '',
+                    rtrim(substr($key_line, $indentation, $comment_end - $indentation)),
+                );
+
+            if ($content === '') {
+                // A line without content (a `/**` or `*/` alone): select the line itself
+                $indentation = strspn($key_line, " \t");
+                $content = rtrim(substr($key_line, $indentation));
             }
 
-            if (!isset($preview_lines[$i])) {
-                throw new Exception('Should have offset');
-            }
-
-            $key_line = $preview_lines[$i];
-
-            $indentation = (int)strpos($key_line, '@');
-
-            $key_line = trim((string) preg_replace('@\**/\s*@', '', mb_strcut($key_line, $indentation)));
-
-            $this->selection_start = $preview_offset + $indentation + $this->preview_start;
-            $this->selection_end = $this->selection_start + strlen($key_line);
+            $this->selection_start = $line_start + $indentation;
+            $this->selection_end = $this->selection_start + strlen($content);
         }
 
         if ($this->regex_type !== null) {

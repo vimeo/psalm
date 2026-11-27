@@ -69,6 +69,70 @@ final class ParseTreeCreator
         $this->current_leaf = $this->parse_tree;
     }
 
+    /**
+     * Whether the `$name` token at `$i` is the name of a parameter of a callable type, as parseCallableParam() and
+     * handleAmpersand() read it: it follows the parameter's type (`int $x`, `int ...$x`, `int... $x`, `int &$x`,
+     * `int &...$x`, `int= $x`) directly inside the parentheses of a `callable` or `Closure`
+     *
+     * @param array<int, array{0: string, 1: int, 2?: string}> $type_tokens
+     * @psalm-pure
+     */
+    public static function isCallableParamName(array $type_tokens, int $i): bool
+    {
+        $j = $i - 1;
+
+        while (in_array($type_tokens[$j][0] ?? null, [' ', '...', '&', '='], true)) {
+            --$j;
+        }
+
+        // a name follows the end of a type: `(int | $x)` and `(Closure(): $x)` refer to `$x`
+        if ($j === $i - 1
+            || in_array(
+                $type_tokens[$j][0] ?? '(',
+                ['(', ',', '|', ':', '?', '<', '{', '[', '::', 'is', 'is not'],
+                true,
+            )
+        ) {
+            return false;
+        }
+
+        // the bracket the name is directly inside
+        $depth = 0;
+
+        for (; $j >= 0; --$j) {
+            $token = $type_tokens[$j][0] ?? '';
+
+            if ($token === ')' || $token === ']' || $token === '>' || $token === '}') {
+                ++$depth;
+            } elseif ($token === '(' || $token === '[' || $token === '<' || $token === '{') {
+                if ($depth > 0) {
+                    --$depth;
+
+                    continue;
+                }
+
+                if ($token !== '(') {
+                    return false;
+                }
+
+                // `Closure[pure](...)`: the purity stands between the keyword and the parameters
+                $k = $j - 1;
+
+                if (($type_tokens[$k][0] ?? '') === ']') {
+                    do {
+                        --$k;
+                    } while ($k >= 0 && ($type_tokens[$k][0] ?? '') !== '[');
+
+                    --$k;
+                }
+
+                return in_array($type_tokens[$k][0] ?? '', self::CALLABLE_KEYWORDS, true);
+            }
+        }
+
+        return false;
+    }
+
     public function create(): ParseTree
     {
         while ($this->t < $this->type_token_count) {

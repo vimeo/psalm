@@ -664,6 +664,155 @@ final class ClassTemplateTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'receiverOfTheClassWithTheClassOwnTemplateAsATypeArgumentKeepsItInAClosureParam' => [
+                'code' => '<?php
+                    /**
+                     * @template TKey of array-key
+                     * @template TValue
+                     */
+                    abstract class Coll {
+                        /** @return static<int, TKey> */
+                        abstract public function keys(): static;
+
+                        /** @return static<TKey, list<TValue>> */
+                        abstract public function lists(): static;
+
+                        /** @return static<int, Coll<TKey, TValue>> */
+                        abstract public function nested(): static;
+
+                        /**
+                         * @template TNew
+                         * @param callable(TValue, TKey): TNew $c
+                         * @return static<TKey, TNew>
+                         */
+                        abstract public function map(callable $c): static;
+
+                        /**
+                         * @template T
+                         * @template TArr of list<T>
+                         * @param T $t
+                         * @param callable(TArr, TValue): void $c
+                         */
+                        abstract public function withList(mixed $t, callable $c): void;
+
+                        /**
+                         * @template T1
+                         * @template T2 of T1
+                         * @param T1 $t
+                         * @param callable(T2, TValue): void $c
+                         */
+                        abstract public function chain(mixed $t, callable $c): void;
+
+                        public function test(): void {
+                            $this->keys()->map(function ($key) {
+                                /** @psalm-check-type-exact $key = array-key */
+                                return $key;
+                            });
+
+                            $this->lists()->map(function ($list) {
+                                /** @psalm-check-type-exact $list = list<TValue> */
+                                return $list;
+                            });
+
+                            $this->nested()->map(function ($coll) {
+                                /** @psalm-check-type-exact $coll = Coll<TKey, TValue> */
+                                return $coll;
+                            });
+
+                            $this->keys()->withList(1, function ($list, $key): void {
+                                /** @psalm-check-type-exact $list = list<1> */
+                                /** @psalm-check-type-exact $key = array-key */
+                            });
+
+                            $this->keys()->chain(1, function ($one, $key): void {
+                                /** @psalm-check-type-exact $key = array-key */
+                            });
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'methodTemplateBoundedByAClassTemplateTakesTheReceiverBindings' => [
+                'code' => '<?php
+                    /**
+                     * @template TKey of array-key
+                     * @template TValue
+                     */
+                    abstract class Coll {
+                        /** @return static<int, TKey> */
+                        abstract public function keys(): static;
+
+                        /**
+                         * @template TA of array<TKey, TValue>
+                         * @param callable(key-of<TA>, value-of<TA>): void $c
+                         */
+                        abstract public function kv(callable $c): void;
+
+                        /**
+                         * @template TNew of TValue
+                         * @param callable(TNew): void $c
+                         */
+                        abstract public function narrow(callable $c): void;
+
+                        public function test(): void {
+                            $this->keys()->narrow(function ($key): void {
+                                /** @psalm-check-type-exact $key = array-key */
+                            });
+                        }
+                    }
+
+                    /** @param Coll<string, Exception> $c */
+                    function test(Coll $c): void {
+                        $c->kv(function (string $key, Exception $value): void {});
+                        $c->kv(function ($key, $value): void {
+                            /** @psalm-check-type-exact $key = string */
+                            /** @psalm-check-type-exact $value = Exception */
+                        });
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'closureParamOfAnInheritedMethodWithAParamConditionalTakesTheReceiverBindings' => [
+                'code' => '<?php
+                    /**
+                     * @template TKey of array-key
+                     * @template-covariant TValue
+                     */
+                    interface Enumerable {
+                        /**
+                         * @template TGroupKey of array-key
+                         * @param (callable(TValue, TKey): TGroupKey)|string $groupBy
+                         * @return static<($groupBy is string ? array-key : TGroupKey), static<TKey, TValue>>
+                         */
+                        public function groupBy($groupBy);
+                    }
+
+                    /**
+                     * @template TKey of array-key
+                     * @template-covariant TValue
+                     * @implements Enumerable<TKey, TValue>
+                     */
+                    abstract class Coll implements Enumerable {
+                        /** {@inheritDoc} */
+                        #[Override]
+                        abstract public function groupBy($groupBy);
+                    }
+
+                    final class Model {}
+
+                    /** @param Coll<int, Model> $models */
+                    function test(Coll $models): void {
+                        $models->groupBy(function ($model): string {
+                            /** @psalm-check-type-exact $model = Model */
+                            return "";
+                        });
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
             'newOfTheClassItselfInsideItsMethodAcceptsAnotherTemplate' => [
                 'code' => '<?php
                     /** @template T */
@@ -7157,7 +7306,7 @@ final class ClassTemplateTest extends TestCase
                      * @template T = Missing
                      */
                     final class C {}',
-                'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:33 - Class, interface or enum named Missing does not exist',
+                'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:24 - Class, interface or enum named Missing does not exist',
             ],
             'partialGenericNextToASelfNamingDefaultChecksItsDefaults' => [
                 'code' => '<?php
@@ -8078,7 +8227,7 @@ final class ClassTemplateTest extends TestCase
                      * @template T of int = string
                      */
                     abstract class Bad {}',
-                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:36 - The default string of template T is not within its bound int',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:24 - The default string of template T is not within its bound int',
             ],
             'classTemplateDefaultUsingLaterTemplate' => [
                 'code' => '<?php
@@ -8087,7 +8236,7 @@ final class ClassTemplateTest extends TestCase
                      * @template U = int
                      */
                     abstract class Fwd {}',
-                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:36 - The default of template T uses template U, which is not declared before it',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:24 - The default of template T uses template U, which is not declared before it',
             ],
             'interfaceTemplateDefaultOutsideBoundNamingEarlierTemplate' => [
                 'code' => '<?php
@@ -8096,7 +8245,7 @@ final class ClassTemplateTest extends TestCase
                      * @template U of T = stdClass
                      */
                     interface Corr {}',
-                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:31 - The default stdClass of template U is not within its bound T:Corr as object',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:24 - The default stdClass of template U is not within its bound T:Corr as object',
             ],
             'traitTemplateDefaultUsingItself' => [
                 'code' => '<?php
@@ -8104,7 +8253,7 @@ final class ClassTemplateTest extends TestCase
                      * @template T = list<T>
                      */
                     trait SelfRef {}',
-                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:27 - The default of template T uses template T, which is not declared before it',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:24 - The default of template T uses template T, which is not declared before it',
             ],
             'partialGenericArgumentIsCheckedAgainstNestedDefault' => [
                 'code' => '<?php
@@ -8242,7 +8391,7 @@ final class ClassTemplateTest extends TestCase
                      * @template T of int =
                      */
                     final class A {}',
-                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:33 - Missing default after = for template T in docblock for A',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:24 - Missing default after = for template T in docblock for A',
             ],
             'methodParamBoundByTheReceiverIsInvariantOnAnArgument' => [
                 'code' => '<?php

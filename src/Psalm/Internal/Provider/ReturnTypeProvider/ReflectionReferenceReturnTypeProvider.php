@@ -159,7 +159,7 @@ final class ReflectionReferenceReturnTypeProvider implements MethodReturnTypePro
     private static function getLiteralKey(StatementsAnalyzer $source, Expr $expr): int|string|null
     {
         $type = $source->node_data->getType($expr);
-        if ($type === null || !$type->isSingle()) {
+        if ($type === null || !$type->isSingleAtomic()) {
             return null;
         }
 

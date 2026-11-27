@@ -113,7 +113,8 @@
     "autoload-dev": {
         "psr-4": {
             "Psalm\\Tests\\": "tests/"
-        }
+        },
+        "exclude-from-classmap": ["tests/fixtures/"]
     },
     "minimum-stability": "dev",
     "prefer-stable": true,

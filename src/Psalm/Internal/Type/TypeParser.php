@@ -1173,7 +1173,7 @@ final class TypeParser
                 throw new TypeParseTreeException($generic_type_value . ' requires exactly one parameter.');
             }
 
-            $template_param = $generic_params[0]->isSingle() ? $generic_params[0]->getSingleAtomic() : null;
+            $template_param = $generic_params[0]->isSingleAtomic() ? $generic_params[0]->getSingleAtomic() : null;
 
             if ($template_param instanceof TTemplateParam
                 && isset($template_type_map[$param_name = $template_param->param_name])
@@ -1262,7 +1262,7 @@ final class TypeParser
             $atomic_types = [];
 
             foreach ($generic_params as $generic_param_offset => $generic_param) {
-                if (!$generic_param->isSingle()) {
+                if (!$generic_param->isSingleAtomic()) {
                     throw new TypeParseTreeException(
                         'int-mask types must all be non-union',
                     );
@@ -1272,7 +1272,10 @@ final class TypeParser
 
                 $atomic_type = reset($generic_param_atomics);
 
-                if ($atomic_type instanceof TNamedObject) {
+                // only a bare name is the name of a global constant, not a generic, an intersection or a callable
+                if ($atomic_type instanceof TNamedObject
+                    && ($parse_tree->children[$generic_param_offset] ?? null) instanceof Value
+                ) {
                     if (defined($atomic_type->value)) {
                         // silenced, as reading a deprecated constant (ASSERT_ACTIVE) emits E_DEPRECATED
                         /** @var mixed */
@@ -1300,7 +1303,7 @@ final class TypeParser
                 }
 
                 if (!$atomic_type instanceof TLiteralInt
-                    && !$atomic_type instanceof TGlobalConstant
+                    && !($atomic_type instanceof TGlobalConstant && !str_contains($atomic_type->const_name, '*'))
                     && !($atomic_type instanceof TClassConstant
                         && !str_contains($atomic_type->const_name, '*'))
                 ) {
@@ -2458,7 +2461,7 @@ final class TypeParser
 
         if (!$offset_defining_class
             && isset($offset_template_data[''])
-            && $offset_template_data['']->isSingle()
+            && $offset_template_data['']->isSingleAtomic()
         ) {
             $offset_template_type = $offset_template_data['']->getSingleAtomic();
 

@@ -155,6 +155,179 @@ final class CallableTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'callOfACallableArrayOrMethodStringReturnsWhatTheMethodReturns' => [
+                'code' => '<?php
+                    final class A {
+                        public function pub(int $i): int {
+                            return $i * 2;
+                        }
+                        public static function st(int $i): int {
+                            return $i * 2;
+                        }
+                    }
+                    $a = new A();
+                    $userFuncArray = call_user_func([$a, "pub"], 1);
+                    $userFuncString = call_user_func("A::st", 1);
+                    $userFuncArrayArgs = call_user_func_array([$a, "pub"], [1]);
+                    $arrayCall = [$a, "pub"](1);
+                    $classStringArrayCall = [A::class, "st"](1);
+                    $f = "A::st";
+                    $stringCall = $f(1);',
+                'assertions' => [
+                    '$userFuncArray===' => 'int',
+                    '$userFuncString===' => 'int',
+                    '$userFuncArrayArgs===' => 'int',
+                    '$arrayCall===' => 'int',
+                    '$classStringArrayCall===' => 'int',
+                    '$stringCall===' => 'int',
+                ],
+            ],
+            'callOfACallableArrayResolvesTheTemplatesAndStaticOfItsMethod' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /** @param T $v */
+                        public function __construct(private mixed $v) {}
+                        /** @return T */
+                        public function get(): mixed {
+                            return $this->v;
+                        }
+                    }
+                    class Maker {
+                        final public function __construct() {}
+                        public static function create(): static {
+                            return new static();
+                        }
+                    }
+                    final class Sub extends Maker {}
+                    $box = new Box(5);
+                    $value = [$box, "get"]();
+                    $made = call_user_func([Sub::class, "create"]);',
+                'assertions' => [
+                    '$value===' => '5',
+                    '$made===' => 'Sub',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'callOfAUnionWithACallablePartOfUnknownReturnTypeIsMixed' => [
+                'code' => '<?php
+                    interface Engine {
+                        public function render(string $f): string|Stringable;
+                    }
+                    function e(): Engine {
+                        throw new RuntimeException();
+                    }
+                    function c(): Closure {
+                        return fn(string $s): int => 1;
+                    }
+                    /** @return array{Engine, string} */
+                    function dyn(): array {
+                        return [e(), "render"];
+                    }
+                    $e = e();
+                    $c = c();
+                    $dyn = dyn();
+                    $b = rand(0, 1) === 1;
+                    $withClosureObject = ($b ? [$e, "render"] : $c)("x");
+                    $withDynamicMethod = ($b ? [$e, "render"] : $dyn)("x");',
+                'assertions' => [
+                    '$withClosureObject===' => 'mixed',
+                    '$withDynamicMethod===' => 'mixed',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+                'php_version' => '8.0',
+            ],
+            'callOfAUnionWithACallableStringIsMixedUnlessAPartHasASignature' => [
+                'code' => '<?php
+                    interface Engine {
+                        public function render(string $f): string|Stringable;
+                    }
+                    function e(): Engine {
+                        throw new RuntimeException();
+                    }
+                    /** @return callable-string */
+                    function cs(): string {
+                        return "strlen";
+                    }
+                    $e = e();
+                    $cs = cs();
+                    $b = rand(0, 1) === 1;
+                    /** @var callable(string):int $typed */
+                    $typed = "strlen";
+                    $withString = ($b ? [$e, "render"] : $cs)("x");
+                    $withStringFirst = ($b ? $cs : [$e, "render"])("x");
+                    $withSignature = ($b ? $typed : $cs)("x");
+                    $withSignatureFirst = ($b ? $cs : $typed)("x");',
+                'assertions' => [
+                    '$withString===' => 'mixed',
+                    '$withStringFirst===' => 'mixed',
+                    '$withSignature===' => 'int',
+                    '$withSignatureFirst===' => 'int',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+                'php_version' => '8.0',
+            ],
+            'callOfACallableArrayGivesTheMethodTemplatesTheirBounds' => [
+                'code' => '<?php
+                    final class A {
+                        /**
+                         * @template T
+                         * @param T $x
+                         * @return T
+                         */
+                        public function id(mixed $x): mixed {
+                            return $x;
+                        }
+                        /**
+                         * @template T of int|string
+                         * @param T $x
+                         * @return list<T>
+                         */
+                        public function wrap(int|string $x): array {
+                            return [$x];
+                        }
+                    }
+                    $a = new A();
+                    $unbounded = [$a, "id"]("x");
+                    $bounded = [$a, "wrap"]("x");',
+                'assertions' => [
+                    '$unbounded===' => 'mixed',
+                    '$bounded===' => 'list<int|string>',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+                'php_version' => '8.0',
+            ],
+            'callableObjectSignatureConstantIsResolved' => [
+                'code' => '<?php
+                    final class A {
+                        const FOO = 1;
+
+                        /** @return object&callable(): self::FOO */
+                        public function f(): object {
+                            return function (): int { return 1; };
+                        }
+                    }
+
+                    $y = (new A)->f()();
+                ',
+                'assertions' => [
+                    '$y===' => '1',
+                ],
+            ],
+            'callableObjectSignatureWithStaticConstant' => [
+                'code' => '<?php
+                    class A {
+                        const FOO = 1;
+
+                        /** @param object&callable(): static::FOO $o */
+                        public function f(object $o): void {}
+
+                        /** @param class-string<object&callable(): static::FOO> $c */
+                        public function g(string $c): void {}
+                    }
+                ',
+            ],
             'isCallableOnAShapeWhoseOtherElementsAreOptionalKeepsTheCallableArray' => [
                 'code' => '<?php
                     /**
@@ -4560,6 +4733,134 @@ final class CallableTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'callableParamInReturnNamedLikeFunctionParam' => [
+                'code' => '<?php
+                    /**
+                     * @return Closure(int ...$values): int
+                     */
+                    function makeSum(int ...$values): Closure {
+                        return fn (int ...$values): int => array_sum($values);
+                    }
+
+                    /**
+                     * @return Closure(int &$count): void
+                     */
+                    function makeIncrement(int $count): Closure {
+                        return function (int &$count): void {
+                            $count++;
+                        };
+                    }
+
+                    /**
+                     * @return Closure(int &...$counts): void
+                     */
+                    function makeIncrementAll(int $counts): Closure {
+                        return function (int &...$counts): void {};
+                    }
+
+                    /**
+                     * @return callable[pure](int ...$values): int
+                     */
+                    function makePureSum(int ...$values): callable {
+                        return static fn (int ...$values): int => array_sum($values);
+                    }
+
+                    $sum = makeSum();
+                    $increment = makeIncrement(0);
+                    $increment_all = makeIncrementAll(0);
+                    $pure_sum = makePureSum();',
+                'assertions' => [
+                    '$sum===' => 'Closure[impure](int...):int',
+                    '$increment===' => 'Closure[impure](int &$_):void',
+                    '$increment_all===' => 'Closure[impure](int &...$_):void',
+                    '$pure_sum===' => 'callable[pure](int...):int',
+                ],
+            ],
+            'conditionalReturnOnAParamNamedLikeACallableParam' => [
+                'code' => '<?php
+                    /**
+                     * @return ($strict is true ? Closure(int $strict): int : Closure(mixed $strict): int)
+                     */
+                    function makeParser(bool $strict): Closure {
+                        return $strict
+                            ? fn (int $strict): int => $strict
+                            : fn (mixed $strict): int => (int) $strict;
+                    }
+
+                    $strict_parser = makeParser(true);
+                    $loose_parser = makeParser(false);',
+                'assertions' => [
+                    '$strict_parser===' => 'Closure[impure](int):int',
+                    '$loose_parser===' => 'Closure[impure](mixed):int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'callableParamNamedLikeFunctionParamWithDefaultNestedOrAlias' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-type Handler = callable(int ...$values): void
+                     */
+                    final class Registry {
+                        /**
+                         * @return Handler
+                         */
+                        public static function handler(int ...$values): callable {
+                            return static function (int ...$values): void {};
+                        }
+                    }
+
+                    /**
+                     * @return Closure(int $step = 1): int
+                     */
+                    function makeCounter(int $step): Closure {
+                        return fn (int $step = 1): int => $step;
+                    }
+
+                    /**
+                     * @return Closure(Closure(int &$item): void $each): void
+                     */
+                    function makeWalker(int $item, Closure $each): Closure {
+                        return function (Closure $each): void {};
+                    }
+
+                    $handler = Registry::handler();
+                    $counter = makeCounter(2);
+                    $walker = makeWalker(1, fn (int &$item): null => null);',
+                'assertions' => [
+                    '$handler===' => 'callable[impure](int...):void',
+                    '$counter===' => 'Closure[impure](int=):int',
+                    '$walker===' => 'Closure[impure](Closure[impure](int &$_):void):void',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'functionParamReferenceInsideCallableParamsAfterAnOperator' => [
+                'code' => '<?php
+                    /**
+                     * @return Closure(int | $name): void
+                     */
+                    function makeGreeter(string $name): Closure {
+                        return function (int|string $value): void {};
+                    }
+
+                    /**
+                     * @return Closure(Closure(): $name): void
+                     */
+                    function makeRunner(string $name): Closure {
+                        return function (Closure $producer): void {};
+                    }
+
+                    $greet = makeGreeter("Ann");
+                    $greet("Ann");
+                    $run = makeRunner("Ann");',
+                'assertions' => [
+                    '$greet===' => 'Closure[impure](\'Ann\'|int):void',
+                    '$run===' => 'Closure[impure](Closure[impure]():\'Ann\'):void',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
@@ -4570,6 +4871,47 @@ final class CallableTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'untypedFunctionParamNamedLikeACallableParam' => [
+                'code' => '<?php
+                    /**
+                     * @return array<int, callable(int $signal): void>|null
+                     */
+                    function initializeSignal($signal) {
+                        return null;
+                    }',
+                'error_message' => 'MissingParamType',
+            ],
+            'untypedFunctionParamNamedLikeAnOptionalCallableParam' => [
+                'code' => '<?php
+                    /**
+                     * @return Closure(int=$count): void
+                     */
+                    function makeCounter($count): Closure {
+                        return function (int $count = 0): void {};
+                    }',
+                'error_message' => 'MissingParamType',
+            ],
+            'callableObjectWithUndefinedParamClass' => [
+                'code' => '<?php
+                    /** @param object&callable(Missing): void $o */
+                    function f(object $o): void {}
+                ',
+                'error_message' => 'UndefinedDocblockClass',
+            ],
+            'callableObjectWithUndefinedReturnClass' => [
+                'code' => '<?php
+                    /** @param object&callable(): Missing $o */
+                    function f(object $o): void {}
+                ',
+                'error_message' => 'UndefinedDocblockClass',
+            ],
+            'classStringOfCallableObjectWithUndefinedParamClass' => [
+                'code' => '<?php
+                    /** @param class-string<object&callable(Missing): void> $c */
+                    function f(string $c): void {}
+                ',
+                'error_message' => 'UndefinedDocblockClass',
+            ],
             'isCallableOnAListOfIntsIsNeverTrue' => [
                 'code' => '<?php
                     /** @param list<int> $list */

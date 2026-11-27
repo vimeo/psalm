@@ -29,6 +29,8 @@ All plugin API versions with a list of contained breaking changes will be listed
 Stub files provide a way to override third-party type information when you cannot add Psalm's extended docblocks to the upstream source files directly.
 By convention, stub files have `.phpstub` extension to avoid IDEs treating them as actual php code.
 
+A `@return` tag or `@psalm-overload` tags in a stub method's docblock replace the original method's `@return $this` and `@psalm-overload` tags.
+
 ## Generating stubs
 
 Dev-require the library you want to tweak types for, e.g.

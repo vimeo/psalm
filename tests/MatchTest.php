@@ -12,6 +12,7 @@ use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
 use function array_map;
+use function hrtime;
 use function implode;
 use function range;
 
@@ -761,5 +762,40 @@ final class MatchTest extends TestCase
                 IssueBuffer::getIssuesDataForFile($file_path),
             ),
         );
+    }
+
+    public function testMatchWithMoreArmsThanTheMaximumShapedArraySizeIsNotAnalysedArmByArmOfThoseBefore(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $this->project_analyzer->setPhpVersion('8.1', 'tests');
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                enum Id: int {
+                    ' . implode("\n", array_map(static fn(int $i): string => "case ID_$i = $i;", range(1, 300))) . '
+                }
+
+                function label(Id $id): int {
+                    return match ($id) {
+                        ' . implode("\n", array_map(static fn(int $i): string => "Id::ID_$i => $i,", range(1, 299))) . '
+                    };
+                }',
+        );
+
+        $start = hrtime(true);
+        $this->analyzeFile($file_path, new Context());
+        $nanoseconds = hrtime(true) - $start;
+
+        self::assertSame(
+            ['UnhandledMatchCondition'],
+            array_map(
+                static fn(IssueData $issue): string => $issue->type,
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
+        );
+        // narrowing the subject in each arm by the arms before it takes more than ten seconds
+        self::assertLessThan(5_000_000_000, $nanoseconds);
     }
 }

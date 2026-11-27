@@ -41,7 +41,7 @@ final class ArrayPadReturnTypeProvider implements FunctionReturnTypeProviderInte
             && ($array_arg_type = $type_provider->getType($call_args[0]->value))
             && ($size_arg_type = $type_provider->getType($call_args[1]->value))
             && ($value_arg_type = $type_provider->getType($call_args[2]->value))
-            && $array_arg_type->isSingle()
+            && $array_arg_type->isSingleAtomic()
             && $array_arg_type->hasArray()
             && ($array_type = ArrayType::infer($array_arg_type->getArray()))
         ) {

@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Psalm\Test\Config\Plugin;
+namespace Psalm\Tests\Config\Plugin;
 
 use Override;
 use Psalm\Plugin\PluginEntryPointInterface;
 use Psalm\Plugin\RegistrationInterface;
-use Psalm\Test\Config\Plugin\Hook\CallableArgParamsProvider;
-use Psalm\Test\Config\Plugin\Hook\MagicFunctionProvider;
+use Psalm\Tests\Config\Plugin\Hook\CallableArgParamsProvider;
+use Psalm\Tests\Config\Plugin\Hook\MagicFunctionProvider;
 use SimpleXMLElement;
 
 /** @psalm-suppress UnusedClass */

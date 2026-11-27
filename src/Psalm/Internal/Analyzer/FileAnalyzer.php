@@ -347,9 +347,17 @@ class FileAnalyzer extends SourceAnalyzer
                 }
             } else {
                 if ($stmt instanceof PhpParser\Node\Stmt\If_) {
-                    foreach ($stmt->stmts as $if_stmt) {
-                        if ($if_stmt instanceof PhpParser\Node\Stmt\ClassLike) {
-                            $this->populateClassLikeAnalyzers($if_stmt);
+                    $branches = [$stmt, ...$stmt->elseifs];
+
+                    if ($stmt->else) {
+                        $branches[] = $stmt->else;
+                    }
+
+                    foreach ($branches as $branch) {
+                        foreach ($branch->stmts as $if_stmt) {
+                            if ($if_stmt instanceof PhpParser\Node\Stmt\ClassLike) {
+                                $this->populateClassLikeAnalyzers($if_stmt);
+                            }
                         }
                     }
                 }
@@ -375,6 +383,9 @@ class FileAnalyzer extends SourceAnalyzer
                 return;
             }
 
+            if (!$this->isStorageDeclaration($stmt, $stmt->name->name)) {
+                return;
+            }
 
             $class_analyzer = new ClassAnalyzer($stmt, $this, $stmt->name->name);
 
@@ -387,7 +398,9 @@ class FileAnalyzer extends SourceAnalyzer
             }
 
             // this can happen when stubbing
-            if (!$this->codebase->interfaceExists($stmt->name->name)) {
+            if (!$this->codebase->interfaceExists($stmt->name->name)
+                || !$this->isStorageDeclaration($stmt, $stmt->name->name)
+            ) {
                 return;
             }
 
@@ -397,6 +410,15 @@ class FileAnalyzer extends SourceAnalyzer
 
             $this->interface_analyzers_to_analyze[strtolower($fq_class_name)] = $class_analyzer;
         }
+    }
+
+    private function isStorageDeclaration(PhpParser\Node\Stmt\ClassLike $stmt, string $fq_class_name): bool
+    {
+        return ClassLikeAnalyzer::isStorageDeclaration(
+            $this->codebase->classlike_storage_provider->get($fq_class_name),
+            $stmt,
+            $this->file_path,
+        );
     }
 
     /**

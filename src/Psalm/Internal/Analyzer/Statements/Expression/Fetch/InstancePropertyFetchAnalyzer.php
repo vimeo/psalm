@@ -39,9 +39,11 @@ use Psalm\Type\Atomic\TTemplateValueOf;
 use Psalm\Type\Atomic\TValueOf;
 use Psalm\Type\Union;
 
+use function array_any;
 use function array_merge;
 use function array_shift;
 use function array_values;
+use function count;
 use function strtolower;
 
 /**
@@ -67,6 +69,23 @@ final class InstancePropertyFetchAnalyzer
         return $name_type && $name_type->isSingleStringLiteral()
             ? $name_type->getSingleStringLiteral()->value
             : null;
+    }
+
+    /**
+     * @return list<string>
+     * @psalm-capabilities read-props
+     */
+    private static function getLiteralPropertyNames(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\PropertyFetch $stmt,
+    ): array {
+        if ($stmt->name instanceof PhpParser\Node\Identifier
+            || !($name_type = $statements_analyzer->node_data->getType($stmt->name))
+        ) {
+            return [];
+        }
+
+        return ExpressionIdentifier::getLiteralPropertyNames($name_type);
     }
 
     public static function analyze(
@@ -100,6 +119,9 @@ final class InstancePropertyFetchAnalyzer
         $receiver_state = NullsafeChainState::of($stmt->var);
 
         $prop_name = self::getPropertyName($statements_analyzer, $stmt);
+        $prop_names = $prop_name !== null
+            ? [$prop_name]
+            : ($in_assignment ? [] : self::getLiteralPropertyNames($statements_analyzer, $stmt));
 
         $codebase = $statements_analyzer->getCodebase();
 
@@ -224,7 +246,7 @@ final class InstancePropertyFetchAnalyzer
             }
         }
 
-        if (!$prop_name) {
+        if ($prop_names === [] || $prop_names === ['']) {
             if ($stmt_var_type->hasObjectType() && !$context->ignore_variable_property) {
                 foreach ($stmt_var_type->getAtomicTypes() as $type) {
                     if ($type instanceof TNamedObject) {
@@ -255,40 +277,43 @@ final class InstancePropertyFetchAnalyzer
         $has_valid_fetch_type = false;
         $missing_in_isset = false;
 
-        $var_atomic_types = $stmt_var_type->getAtomicTypes();
+        // a name that is one of several literals reads the property of each of them
+        foreach ($prop_names as $prop_name) {
+            $var_atomic_types = $stmt_var_type->getAtomicTypes();
 
-        while ($lhs_type_part = array_shift($var_atomic_types)) {
-            if ($lhs_type_part instanceof TTemplateParam) {
-                $var_atomic_types = array_merge($var_atomic_types, $lhs_type_part->as->getAtomicTypes());
-                continue;
+            while ($lhs_type_part = array_shift($var_atomic_types)) {
+                if ($lhs_type_part instanceof TTemplateParam) {
+                    $var_atomic_types = array_merge($var_atomic_types, $lhs_type_part->as->getAtomicTypes());
+                    continue;
+                }
+
+                AtomicPropertyFetchAnalyzer::analyze(
+                    $statements_analyzer,
+                    $stmt,
+                    $context,
+                    $in_assignment,
+                    $var_id,
+                    $stmt_var_id,
+                    $stmt_var_type,
+                    $lhs_type_part,
+                    $prop_name,
+                    $has_valid_fetch_type,
+                    $invalid_fetch_types,
+                    $is_static_access,
+                    $missing_in_isset,
+                );
             }
-
-            AtomicPropertyFetchAnalyzer::analyze(
-                $statements_analyzer,
-                $stmt,
-                $context,
-                $in_assignment,
-                $var_id,
-                $stmt_var_id,
-                $stmt_var_type,
-                $lhs_type_part,
-                $prop_name,
-                $has_valid_fetch_type,
-                $invalid_fetch_types,
-                $is_static_access,
-                $missing_in_isset,
-            );
         }
 
         $stmt_type = $statements_analyzer->node_data->getType($stmt);
 
         // the value of an enum of a template type is one of the values of that type
-        if ($prop_name === 'value'
+        if ($prop_names === ['value']
             && !$in_assignment
             && $stmt_type !== null
-            && $stmt_var_type->isSingle()
+            && $stmt_var_type->isSingleAtomic()
             && ($template = $stmt_var_type->getSingleAtomic()) instanceof TTemplateParam
-            && $template->as->isSingle()
+            && $template->as->isSingleAtomic()
             && $template->as->getSingleAtomic() instanceof TNamedObject
             && TValueOf::getValueType($template->as, $codebase) !== null
         ) {
@@ -300,9 +325,9 @@ final class InstancePropertyFetchAnalyzer
             $statements_analyzer->node_data->setType($stmt, $stmt_type);
         }
 
-        // a member of the union that has no such property gives null to isset(), whatever the others give
+        // a member of the union (or a name) that has no such property gives null to isset(), whatever the others give
         if ($missing_in_isset
-            && !$stmt_var_type->isSingle()
+            && (!$stmt_var_type->isSingleAtomic() || count($prop_names) > 1)
             && $stmt_type
             && !$stmt_type->isNullable()
             && !$stmt_type->hasMixed()
@@ -346,7 +371,10 @@ final class InstancePropertyFetchAnalyzer
         if ($context->inside_isset
             && ($stmt_type = $statements_analyzer->node_data->getType($stmt))
             && !$stmt_type->ignore_isset
-            && self::isLeftUninitialized($codebase, $stmt_var_type, $prop_name)
+            && array_any(
+                $prop_names,
+                static fn(string $name): bool => self::isLeftUninitialized($codebase, $stmt_var_type, $name),
+            )
         ) {
             $stmt_type = $stmt_type->setProperties(['ignore_isset' => true, 'initialized' => false]);
             $statements_analyzer->node_data->setType($stmt, $stmt_type);
@@ -397,7 +425,7 @@ final class InstancePropertyFetchAnalyzer
         Union $object_type,
         ?string $property_name,
     ): bool {
-        if ($property_name === null || !$object_type->isSingle()) {
+        if ($property_name === null || !$object_type->isSingleAtomic()) {
             return false;
         }
 

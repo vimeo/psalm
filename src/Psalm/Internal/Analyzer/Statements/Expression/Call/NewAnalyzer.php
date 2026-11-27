@@ -55,6 +55,7 @@ use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Storage\Capabilities;
 use Psalm\Storage\ClassLikeStorage;
+use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Storage\TemplateVariance;
 use Psalm\Type;
@@ -605,6 +606,33 @@ final class NewAnalyzer extends CallAnalyzer
     }
 
     /**
+     * The `@psalm-overload` of the constructor that the arguments select, null when it has none or the arguments
+     * are only accepted by the constructor's own signature
+     */
+    private static function getConstructorOverload(
+        StatementsAnalyzer $statements_analyzer,
+        MethodIdentifier $method_id,
+        PhpParser\Node\Expr\New_ $stmt,
+        Context $context,
+    ): ?FunctionLikeStorage {
+        $codebase = $statements_analyzer->getCodebase();
+        $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
+        $declaring_storage = $declaring_method_id ? $codebase->methods->getStorage($declaring_method_id) : null;
+        $overloads = $declaring_storage ? $declaring_storage->overloads : [];
+
+        return $overloads !== []
+            ? OverloadSelector::selectOrReal(
+                $statements_analyzer,
+                $codebase,
+                $stmt->getArgs(),
+                $context,
+                $overloads,
+                $declaring_storage,
+            )
+            : null;
+    }
+
+    /**
      * Reports the instantiation of a class deprecated, internal to other code, or only running from the command line
      */
     private static function checkInstantiationProhibitions(
@@ -765,6 +793,8 @@ final class NewAnalyzer extends CallAnalyzer
                 $context,
                 new CodeLocation($statements_analyzer->getSource(), $stmt),
                 $statements_analyzer,
+                false,
+                self::getConstructorOverload($statements_analyzer, $method_id, $stmt, $context),
             ) !== false;
 
             if ($from_static) {
@@ -1508,7 +1538,7 @@ final class NewAnalyzer extends CallAnalyzer
         Context $context,
         Union $stmt_class_type,
     ): ?string {
-        if (!$stmt_class_type->isSingle()) {
+        if (!$stmt_class_type->isSingleAtomic()) {
             return null;
         }
 
@@ -1730,7 +1760,7 @@ final class NewAnalyzer extends CallAnalyzer
                         $generated_type = new TObject();
 
                         if ($lhs_type_part->as_type->hasObjectType()
-                            && $lhs_type_part->as_type->isSingle()
+                            && $lhs_type_part->as_type->isSingleAtomic()
                         ) {
                             foreach ($lhs_type_part->as_type->getAtomicTypes() as $typeof_type_atomic) {
                                 if ($typeof_type_atomic instanceof TNamedObject) {

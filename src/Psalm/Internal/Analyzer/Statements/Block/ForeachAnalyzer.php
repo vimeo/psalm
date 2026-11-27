@@ -513,6 +513,8 @@ final class ForeachAnalyzer
 
         $stmt->setAttribute('alwaysEntered', $iterator_type !== null && $always_non_empty_array);
 
+        $vars_possibly_in_scope_before_loop = $context->vars_possibly_in_scope;
+
         $loop_result = LoopAnalyzer::analyze(
             $statements_analyzer,
             $stmt->stmts,
@@ -564,6 +566,13 @@ final class ForeachAnalyzer
             ...$foreach_context->vars_possibly_in_scope,
             ...$context->vars_possibly_in_scope,
         ];
+
+        LoopAnalyzer::addVarsPossiblyDefinedInLoop(
+            $context,
+            $inner_loop_context,
+            $loop_scope,
+            $vars_possibly_in_scope_before_loop,
+        );
 
         if ($context->collect_exceptions) {
             $context->mergeExceptions($foreach_context);
@@ -1194,7 +1203,7 @@ final class ForeachAnalyzer
         if ($stmt->expr instanceof PhpParser\Node\Expr\PropertyFetch
             && $stmt->expr->name instanceof PhpParser\Node\Identifier
             && ($object_type = $statements_analyzer->node_data->getType($stmt->expr->var))
-            && $object_type->isSingle()
+            && $object_type->isSingleAtomic()
             && ($object_atomic_type = $object_type->getSingleAtomic()) instanceof TNamedObject
         ) {
             $codebase = $statements_analyzer->getCodebase();

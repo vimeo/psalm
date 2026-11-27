@@ -58,6 +58,21 @@ final class UnusedVariableTest extends TestCase
     public static function providerValidCodeParse(): array
     {
         return [
+            'methodNameOfAStaticCallOnAStringIsUsed' => [
+                'code' => '<?php
+                    function f(string $class): void {
+                        $name = "run";
+                        $class::$name();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['InvalidStringClass'],
+            ],
+            'methodNameOfAStaticCallOnAnUndefinedClassIsUsed' => [
+                'code' => '<?php
+                    $name = "run";
+                    /** @psalm-suppress UndefinedClass */
+                    MissingLibrary::$name();',
+            ],
             'variableIncrementedInTheConditionOfAnIfInALoopIsUsed' => [
                 'code' => '<?php
                     /**
@@ -3648,6 +3663,23 @@ final class UnusedVariableTest extends TestCase
                             foreach ($list as $item) {
                                 $found = $item;
                                 break;
+                            }
+                        }
+
+                        return is_string($found ?? null) ? "found" : "";
+                    }',
+                'error_message' => 'UnusedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:29',
+            ],
+            'overwrittenAssignmentInTheIfIsUnusedWhenTheElseAssignsInANestedIf' => [
+                'code' => '<?php
+                    /** @param list<string> $list */
+                    function f(array $list, bool $b): string {
+                        if ($b) {
+                            $found = "dead";
+                            $found = "a";
+                        } else {
+                            if ($list) {
+                                $found = $list[0];
                             }
                         }
 
