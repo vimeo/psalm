@@ -378,6 +378,23 @@ final class ArrayFunctionCallTest extends TestCase
                     '$y===' => 'array{a: int, b?: int, c?: int}|null',
                 ],
             ],
+            'implodeOfAShapeWithAUnionOfLiterals' => [
+                'code' => '<?php
+                    $a = implode(",", ["x", rand(0, 1) ? "a" : "b"]);
+                ',
+                'assertions' => [
+                    '$a===' => 'non-empty-literal-string',
+                ],
+            ],
+            'arraySpliceWithAUnionOfStringLiteralsAsReplacement' => [
+                'code' => '<?php
+                    $a = ["x", "y"];
+                    array_splice($a, 0, 1, rand(0, 1) ? "a" : "b");
+                ',
+                'assertions' => [
+                    '$a===' => "array<int, 'a'|'b'|'x'|'y'>",
+                ],
+            ],
             'arrayKeyExistsNotFindingALiteralFallbackKeyOfAnUnsealedShape' => [
                 'code' => '<?php
                     /**

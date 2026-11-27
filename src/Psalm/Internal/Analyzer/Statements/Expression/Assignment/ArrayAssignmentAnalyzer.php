@@ -1483,7 +1483,7 @@ final class ArrayAssignmentAnalyzer
                     $key_type = Type::getArrayKey();
                 }
 
-                if ($key_type->isSingle()) {
+                if ($key_type->isSingleAtomic()) {
                     $key_type_type = $key_type->getSingleAtomic();
 
                     if (($key_type_type instanceof TIntRange
@@ -1493,9 +1493,9 @@ final class ArrayAssignmentAnalyzer
                     }
 
                     if ($key_type_type instanceof TTemplateParam
-                        && $key_type_type->as->isSingle()
-                        && $root_type->isSingle()
-                        && $value_type->isSingle()
+                        && $key_type_type->as->isSingleAtomic()
+                        && $root_type->isSingleAtomic()
+                        && $value_type->isSingleAtomic()
                     ) {
                         $key_type_as_type = $key_type_type->as->getSingleAtomic();
                         $value_atomic_type = $value_type->getSingleAtomic();
@@ -1935,7 +1935,7 @@ final class ArrayAssignmentAnalyzer
             if ($is_last) {
                 // we need this slight hack as the type we're putting it has to be
                 // different from the type we're getting out
-                if ($array_type->isSingle() && $array_type->hasClassStringMap()) {
+                if ($array_type->isSingleAtomic() && $array_type->hasClassStringMap()) {
                     $assignment_type = $child_stmt_type;
                 }
 

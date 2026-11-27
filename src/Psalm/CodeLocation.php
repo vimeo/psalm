@@ -23,13 +23,14 @@ use function ord;
 use function preg_match;
 use function preg_quote;
 use function preg_replace;
+use function rtrim;
 use function str_replace;
 use function strlen;
 use function strpos;
 use function strrpos;
+use function strspn;
 use function substr;
 use function substr_count;
-use function trim;
 
 use const PREG_OFFSET_CAPTURE;
 
@@ -301,17 +302,30 @@ class CodeLocation
             );
 
             // On a line holding code too, the tag is in the last doc comment before the node, up to its end
-            $comment_start = strrpos($key_line, '/**');
-            $indentation = (int)strpos($key_line, '@', $comment_start === false ? 0 : $comment_start);
+            $comment_start = (int) strrpos($key_line, '/**');
+
+            // The selection starts at the content, past the indentation and the comment's `/**` or `*`
+            preg_match('@\G\s*(?:/\*\*|\*(?!/))?\s*@', $key_line, $matches, 0, $comment_start);
+            $indentation = $comment_start + strlen($matches[0] ?? '');
+
             $comment_end = strpos($key_line, '*/', $indentation);
-            if ($comment_end !== false) {
-                $key_line = substr($key_line, 0, $comment_end);
+            $content = $comment_end === false
+                ? rtrim(substr($key_line, $indentation))
+                // Without the extra stars of a `**/` end, but keeping a `STATUS_*` wildcard
+                : (string) preg_replace(
+                    '@\s+\*+$@',
+                    '',
+                    rtrim(substr($key_line, $indentation, $comment_end - $indentation)),
+                );
+
+            if ($content === '') {
+                // A line without content (a `/**` or `*/` alone): select the line itself
+                $indentation = strspn($key_line, " \t");
+                $content = rtrim(substr($key_line, $indentation));
             }
 
-            $key_line = trim((string) preg_replace('@\**/\s*@', '', substr($key_line, $indentation)));
-
             $this->selection_start = $line_start + $indentation;
-            $this->selection_end = $this->selection_start + strlen($key_line);
+            $this->selection_end = $this->selection_start + strlen($content);
         }
 
         if ($this->regex_type !== null) {

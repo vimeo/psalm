@@ -736,7 +736,7 @@ final class FunctionLikeDocblockScanner
             $type_aliases,
         );
 
-        if (!$type->isSingle()
+        if (!$type->isSingleAtomic()
             || !$type->getSingleAtomic() instanceof TConditional
             || !Capabilities::isPurityType($type)
         ) {
@@ -789,7 +789,7 @@ final class FunctionLikeDocblockScanner
                     if ('$' . $param_storage->name === $token_body) {
                         if (!isset($param_type_mapping[$token_body])) {
                             $template_name = 'TGeneratedFromParam' . $j;
-                            $param_atomic = $param_storage->type?->isSingle()
+                            $param_atomic = $param_storage->type?->isSingleAtomic()
                                 ? $param_storage->type->getSingleAtomic()
                                 : null;
                             // a stub re-scanning the method replaces its params, so the generated template of the

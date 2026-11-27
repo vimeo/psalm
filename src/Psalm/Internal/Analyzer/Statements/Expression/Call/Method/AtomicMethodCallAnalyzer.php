@@ -85,7 +85,7 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
             && !$lhs_type_part->as->isMixed()
         ) {
             // every type of a union bound has to have the method
-            if (!$lhs_type_part->as->isSingle()) {
+            if (!$lhs_type_part->as->isSingleAtomic()) {
                 foreach ($lhs_type_part->as->getAtomicTypes() as $bound_atomic_type) {
                     self::analyze(
                         $statements_analyzer,

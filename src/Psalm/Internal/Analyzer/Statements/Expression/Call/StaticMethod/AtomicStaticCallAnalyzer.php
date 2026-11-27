@@ -152,7 +152,7 @@ final class AtomicStaticCallAnalyzer
             $fq_class_name = 'object';
 
             if ($lhs_type_part->as_type->hasObjectType()
-                && $lhs_type_part->as_type->isSingle()
+                && $lhs_type_part->as_type->isSingleAtomic()
             ) {
                 foreach ($lhs_type_part->as_type->getAtomicTypes() as $typeof_type_atomic) {
                     if ($typeof_type_atomic instanceof TNamedObject) {

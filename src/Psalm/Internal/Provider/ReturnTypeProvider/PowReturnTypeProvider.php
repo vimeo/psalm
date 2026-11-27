@@ -8,6 +8,7 @@ use Override;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
+use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIntRange;
@@ -15,6 +16,7 @@ use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Union;
 
+use function array_values;
 use function count;
 use function is_int;
 
@@ -23,6 +25,8 @@ use function is_int;
  */
 final class PowReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
+    private const MAX_COMBINATIONS = 64;
+
     /**
      * @return array<lowercase-string>
      * @psalm-pure
@@ -42,14 +46,45 @@ final class PowReturnTypeProvider implements FunctionReturnTypeProviderInterface
             return null;
         }
 
-        $first_arg = $event->getStatementsSource()->getNodeTypeProvider()->getType($call_args[0]->value);
-        $second_arg = $event->getStatementsSource()->getNodeTypeProvider()->getType($call_args[1]->value);
+        $source = $event->getStatementsSource();
+        $first_atomic_types = self::getAtomicTypes($source->getNodeTypeProvider()->getType($call_args[0]->value));
+        $second_atomic_types = self::getAtomicTypes($source->getNodeTypeProvider()->getType($call_args[1]->value));
 
+        // the result of a union is the union of the results of each of its types
+        if (count($first_atomic_types) * count($second_atomic_types) > self::MAX_COMBINATIONS) {
+            $first_atomic_types = [null];
+            $second_atomic_types = [null];
+        }
+
+        $result_types = [];
+
+        foreach ($first_atomic_types as $first_atomic_type) {
+            foreach ($second_atomic_types as $second_atomic_type) {
+                $result_types[] = self::getResultType($first_atomic_type, $second_atomic_type);
+            }
+        }
+
+        return Type::combineUnionTypeArray($result_types, $source->getCodebase());
+    }
+
+    /**
+     * @return non-empty-list<?Atomic> null for an unknown type
+     * @psalm-pure
+     */
+    private static function getAtomicTypes(?Union $type): array
+    {
+        return $type === null || $type->isUnionEmpty() ? [null] : array_values($type->getAtomicTypes());
+    }
+
+    /**
+     * @psalm-pure
+     */
+    private static function getResultType(?Atomic $first_atomic_type, ?Atomic $second_atomic_type): Union
+    {
         $first_arg_literal = null;
         $first_arg_is_int = false;
         $first_arg_is_float = false;
-        if ($first_arg !== null && $first_arg->isSingle()) {
-            $first_atomic_type = $first_arg->getSingleAtomic();
+        if ($first_atomic_type !== null) {
             if ($first_atomic_type instanceof TInt) {
                 $first_arg_is_int = true;
             } elseif ($first_atomic_type instanceof TFloat) {
@@ -68,8 +103,7 @@ final class PowReturnTypeProvider implements FunctionReturnTypeProviderInterface
         $second_arg_is_negative = false;
         $second_arg_can_be_negative = false;
         $second_arg_is_positive = false;
-        if ($second_arg !== null && $second_arg->isSingle()) {
-            $second_atomic_type = $second_arg->getSingleAtomic();
+        if ($second_atomic_type !== null) {
             if ($second_atomic_type instanceof TInt) {
                 $second_arg_is_int = true;
                 if ($second_atomic_type instanceof TLiteralInt) {

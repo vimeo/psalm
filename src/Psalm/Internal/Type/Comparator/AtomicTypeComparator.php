@@ -1107,7 +1107,7 @@ final class AtomicTypeComparator
                     foreach ($iterable_params as $traversable_template => $iterable_param) {
                         $standing_for = $extended_params[$traversable_template];
 
-                        if ($standing_for->isSingle()
+                        if ($standing_for->isSingleAtomic()
                             && $standing_for->getSingleAtomic() instanceof TTemplateParam
                             && $standing_for->getSingleAtomic()->param_name === $template_name
                         ) {
@@ -1120,7 +1120,7 @@ final class AtomicTypeComparator
                     $purity_standing_for = $extended_params['TPurity'] ?? null;
 
                     if ($purity_standing_for !== null
-                        && $purity_standing_for->isSingle()
+                        && $purity_standing_for->isSingleAtomic()
                         && $purity_standing_for->getSingleAtomic() instanceof TTemplateParam
                         && $purity_standing_for->getSingleAtomic()->param_name === $template_name
                     ) {

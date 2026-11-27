@@ -5711,6 +5711,52 @@ final class TypeAlgebraTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'assignedAlwaysTrueCallKeepsItsClauses' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @psalm-assert-if-true string $m
+                     * @return ($m is string ? true : false)
+                     */
+                    function isStr(mixed $m): bool {
+                        return is_string($m);
+                    }
+
+                    function f(string $s): void {
+                        $y = isStr($s);
+                        if (!$y) {
+                            echo strlen($s);
+                        }
+                    }
+                    PHP,
+                'error_message' => 'NoValue',
+                'error_levels' => ['DocblockTypeContradiction'],
+                'php_version' => '8.0',
+            ],
+            'identityWithTrueOfTrueVarReportsTheIdentity' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(bool $b): void {
+                        if ($b) {
+                            if ($b === true) {}
+                        }
+                    }
+                    PHP,
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:4:13 - Type true for $b is always true',
+            ],
+            'identityWithFalseOfFalseVarReportsTheIdentity' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(bool $b): void {
+                        if (!$b) {
+                            if ($b !== false) {}
+                        }
+                    }
+                    PHP,
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:4:13 - Type false for $b is always false, so its negation can never be true',
+            ],
             'propertyNotInitializedYetIsCheckedWhenAnOffsetWriteInitializesIt' => [
                 'code' => '<?php
                     interface EntityType {}

@@ -11,6 +11,7 @@ use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Storage\Assertion;
+use Psalm\Storage\Assertion\DoesNotHaveArrayValue;
 use Psalm\Storage\Assertion\IsClassNotEqual;
 use Psalm\Storage\Assertion\IsNotCountable;
 use Psalm\Storage\Assertion\IsNotIdentical;
@@ -77,6 +78,16 @@ final class NegatedAssertionReconciler extends Reconciler
             $existing_var_type,
             $statements_analyzer->getCodebase(),
         );
+
+        if ($assertion instanceof DoesNotHaveArrayValue) {
+            return ArrayValueAssertionReconciler::reconcileDoesNotHaveArrayValue(
+                $assertion,
+                $existing_var_type,
+                $statements_analyzer,
+                $inside_loop,
+                $failed_reconciliation,
+            );
+        }
 
         $original_var_type = $existing_var_type;
 
@@ -224,7 +235,7 @@ final class NegatedAssertionReconciler extends Reconciler
             // an object of a final class is of exactly that class: one whose class isn't that one is not of it
             $codebase = $statements_analyzer->getCodebase();
 
-            if (!$existing_var_type->isSingle()
+            if (!$existing_var_type->isSingleAtomic()
                 && $codebase->classlike_storage_provider->has($assertion->type)
                 && $codebase->classlike_storage_provider->get($assertion->type)->final
             ) {
