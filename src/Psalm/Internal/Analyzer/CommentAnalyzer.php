@@ -131,7 +131,7 @@ final class CommentAnalyzer
         $param_templates = [];
 
         foreach ($storage->params as $param) {
-            $param_type = $param->type?->isSingle() ? $param->type->getSingleAtomic() : null;
+            $param_type = $param->type?->isSingleAtomic() ? $param->type->getSingleAtomic() : null;
 
             if ($param_type instanceof TTemplateParam
                 && str_starts_with($param_type->param_name, 'TGeneratedFromParam')
