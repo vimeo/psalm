@@ -155,6 +155,149 @@ final class CallableTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'callOfACallableArrayOrMethodStringReturnsWhatTheMethodReturns' => [
+                'code' => '<?php
+                    final class A {
+                        public function pub(int $i): int {
+                            return $i * 2;
+                        }
+                        public static function st(int $i): int {
+                            return $i * 2;
+                        }
+                    }
+                    $a = new A();
+                    $userFuncArray = call_user_func([$a, "pub"], 1);
+                    $userFuncString = call_user_func("A::st", 1);
+                    $userFuncArrayArgs = call_user_func_array([$a, "pub"], [1]);
+                    $arrayCall = [$a, "pub"](1);
+                    $classStringArrayCall = [A::class, "st"](1);
+                    $f = "A::st";
+                    $stringCall = $f(1);',
+                'assertions' => [
+                    '$userFuncArray===' => 'int',
+                    '$userFuncString===' => 'int',
+                    '$userFuncArrayArgs===' => 'int',
+                    '$arrayCall===' => 'int',
+                    '$classStringArrayCall===' => 'int',
+                    '$stringCall===' => 'int',
+                ],
+            ],
+            'callOfACallableArrayResolvesTheTemplatesAndStaticOfItsMethod' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /** @param T $v */
+                        public function __construct(private mixed $v) {}
+                        /** @return T */
+                        public function get(): mixed {
+                            return $this->v;
+                        }
+                    }
+                    class Maker {
+                        final public function __construct() {}
+                        public static function create(): static {
+                            return new static();
+                        }
+                    }
+                    final class Sub extends Maker {}
+                    $box = new Box(5);
+                    $value = [$box, "get"]();
+                    $made = call_user_func([Sub::class, "create"]);',
+                'assertions' => [
+                    '$value===' => '5',
+                    '$made===' => 'Sub',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'callOfAUnionWithACallablePartOfUnknownReturnTypeIsMixed' => [
+                'code' => '<?php
+                    interface Engine {
+                        public function render(string $f): string|Stringable;
+                    }
+                    function e(): Engine {
+                        throw new RuntimeException();
+                    }
+                    function c(): Closure {
+                        return fn(string $s): int => 1;
+                    }
+                    /** @return array{Engine, string} */
+                    function dyn(): array {
+                        return [e(), "render"];
+                    }
+                    $e = e();
+                    $c = c();
+                    $dyn = dyn();
+                    $b = rand(0, 1) === 1;
+                    $withClosureObject = ($b ? [$e, "render"] : $c)("x");
+                    $withDynamicMethod = ($b ? [$e, "render"] : $dyn)("x");',
+                'assertions' => [
+                    '$withClosureObject===' => 'mixed',
+                    '$withDynamicMethod===' => 'mixed',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+                'php_version' => '8.0',
+            ],
+            'callOfAUnionWithACallableStringIsMixedUnlessAPartHasASignature' => [
+                'code' => '<?php
+                    interface Engine {
+                        public function render(string $f): string|Stringable;
+                    }
+                    function e(): Engine {
+                        throw new RuntimeException();
+                    }
+                    /** @return callable-string */
+                    function cs(): string {
+                        return "strlen";
+                    }
+                    $e = e();
+                    $cs = cs();
+                    $b = rand(0, 1) === 1;
+                    /** @var callable(string):int $typed */
+                    $typed = "strlen";
+                    $withString = ($b ? [$e, "render"] : $cs)("x");
+                    $withStringFirst = ($b ? $cs : [$e, "render"])("x");
+                    $withSignature = ($b ? $typed : $cs)("x");
+                    $withSignatureFirst = ($b ? $cs : $typed)("x");',
+                'assertions' => [
+                    '$withString===' => 'mixed',
+                    '$withStringFirst===' => 'mixed',
+                    '$withSignature===' => 'int',
+                    '$withSignatureFirst===' => 'int',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+                'php_version' => '8.0',
+            ],
+            'callOfACallableArrayGivesTheMethodTemplatesTheirBounds' => [
+                'code' => '<?php
+                    final class A {
+                        /**
+                         * @template T
+                         * @param T $x
+                         * @return T
+                         */
+                        public function id(mixed $x): mixed {
+                            return $x;
+                        }
+                        /**
+                         * @template T of int|string
+                         * @param T $x
+                         * @return list<T>
+                         */
+                        public function wrap(int|string $x): array {
+                            return [$x];
+                        }
+                    }
+                    $a = new A();
+                    $unbounded = [$a, "id"]("x");
+                    $bounded = [$a, "wrap"]("x");',
+                'assertions' => [
+                    '$unbounded===' => 'mixed',
+                    '$bounded===' => 'list<int|string>',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+                'php_version' => '8.0',
+            ],
             'callableObjectSignatureConstantIsResolved' => [
                 'code' => '<?php
                     final class A {
