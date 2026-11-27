@@ -86,3 +86,5 @@ Alternatively, you can use Composer to install the Phar:
 ```bash
 composer require --dev psalm/phar
 ```
+
+To run Psalm in CI alongside other linters, [MegaLinter](https://megalinter.io/) (an open-source linters aggregator) also ships Psalm, see its [Psalm page](https://megalinter.io/latest/descriptors/php_psalm/). It uses your `psalm.xml`, but runs its own pinned Psalm version rather than the one locked in your `composer.json` (`vendor/bin/psalm`).
