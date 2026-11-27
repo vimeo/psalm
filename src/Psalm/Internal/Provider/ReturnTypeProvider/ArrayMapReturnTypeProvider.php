@@ -106,14 +106,14 @@ final class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInte
                 $call_arg_type = $statements_source->node_data->getType($call_arg->value);
 
                 if ($call_arg_type
-                    && $call_arg_type->isSingle()
+                    && $call_arg_type->isSingleAtomic()
                     && ($call_arg_atomic = $call_arg_type->getSingleAtomic()) instanceof TKeyedArray
                     && $call_arg_atomic->fallback_params === null
                 ) {
                     $array_arg_types []= array_values($call_arg_atomic->properties);
                     $orig_types []= $call_arg_type;
                 } elseif ($call_arg_type
-                    && $call_arg_type->isSingle()
+                    && $call_arg_type->isSingleAtomic()
                     && ($call_arg_atomic = $call_arg_type->getSingleAtomic()) instanceof TArray
                     && $call_arg_atomic->isEmptyArray()
                 ) {
@@ -192,7 +192,7 @@ final class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInte
             }
 
             // an invokable object maps through its __invoke, unless the arguments are yet to bind its return type
-            if ($function_call_type->isSingle()
+            if ($function_call_type->isSingleAtomic()
                 && ($callback = $function_call_type->getSingleAtomic()) instanceof TNamedObject
                 && !$callback instanceof TClosure
                 && ($invoke = CallableTypeComparator::getCallableFromAtomic(

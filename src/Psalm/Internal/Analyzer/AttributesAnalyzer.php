@@ -445,7 +445,7 @@ final class AttributesAnalyzer
         }
 
         $arg_type = $statements_analyzer->getNodeTypeProvider()->getType($arg->value);
-        if ($arg_type === null || !$arg_type->isSingle() || !$arg_type->hasLiteralString()) {
+        if ($arg_type === null || !$arg_type->isSingleAtomic() || !$arg_type->hasLiteralString()) {
             return;
         }
 

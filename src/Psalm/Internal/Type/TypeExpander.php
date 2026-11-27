@@ -437,7 +437,7 @@ final class TypeExpander
 
             // `T as (T as X)`, from a `static` bound read on a receiver typed T, is `T as X`
             $bound = $new_as_type->getSingleAtomic();
-            if ($new_as_type->isSingle()
+            if ($new_as_type->isSingleAtomic()
                 && $bound instanceof TTemplateParam
                 && $bound->param_name === $return_type->param_name
                 && $bound->defining_class === $return_type->defining_class
@@ -1331,7 +1331,7 @@ final class TypeExpander
         if ($evaluate_conditional_types) {
             $assertion = null;
 
-            if ($return_type->conditional_type->isSingle()) {
+            if ($return_type->conditional_type->isSingleAtomic()) {
                 foreach ($return_type->conditional_type->getAtomicTypes() as $condition_atomic_type) {
                     $candidate = self::expandAtomic(
                         $codebase,
@@ -1546,7 +1546,7 @@ final class TypeExpander
      */
     private static function isTheConditionalTemplate(TConditional $conditional, Union $branch): bool
     {
-        if (!$branch->isSingle()) {
+        if (!$branch->isSingleAtomic()) {
             return false;
         }
 

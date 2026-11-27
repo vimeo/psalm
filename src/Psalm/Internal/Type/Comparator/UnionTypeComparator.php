@@ -14,6 +14,7 @@ use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TEmptyMixed;
+use Psalm\Type\Atomic\TEnumCase;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TIntRange;
@@ -94,9 +95,9 @@ final class UnionTypeComparator
         $container_type_parts = self::getTypeParts($codebase, $container_type);
         $compare_iterable_directly = self::hasIterableOrSymbolicPart($container_type_parts);
 
-        // the container's int and string literals by key and its other parts, split once an input literal needs them
-        $container_literals = null;
-        $other_container_parts = [];
+        // the container's int and string literals, and its enum cases, by key and its other parts: split once an
+        // input literal or enum case needs them
+        $container_parts_by_key = [];
 
         $input_atomic_types = array_reverse(self::getInputParts(
             $codebase,
@@ -216,33 +217,11 @@ final class UnionTypeComparator
             $unconditional_match = false;
             $part_by_reference_mismatch = null;
 
-            $container_parts_to_compare = $container_type_parts;
-
-            if ($input_type_part::class === TLiteralInt::class || $input_type_part::class === TLiteralString::class) {
-                // only the container's int or string literal with the same key can contain the input, and comparing it
-                // with the other ones has no effect: skip them
-                if ($container_literals === null) {
-                    $container_literals = [];
-
-                    foreach ($container_type_parts as $container_type_part) {
-                        if ($container_type_part::class === TLiteralInt::class
-                            || $container_type_part::class === TLiteralString::class
-                        ) {
-                            $container_literals[$container_type_part->getKey()] = $container_type_part;
-                        } else {
-                            $other_container_parts[] = $container_type_part;
-                        }
-                    }
-                }
-
-                $container_parts_to_compare = $other_container_parts;
-
-                $same_literal = $container_literals[$input_type_part->getKey()] ?? null;
-
-                if ($same_literal !== null) {
-                    $container_parts_to_compare[] = $same_literal;
-                }
-            }
+            $container_parts_to_compare = self::getPartsThatCanContain(
+                $input_type_part,
+                $container_type_parts,
+                $container_parts_by_key,
+            );
 
             foreach ($container_parts_to_compare as $container_type_part) {
                 if ($ignore_null
@@ -1127,7 +1106,7 @@ final class UnionTypeComparator
      */
     private static function isMixedOfOppositeTruthiness(Union $mixed, Union $other): bool
     {
-        if (!$mixed->isSingle()) {
+        if (!$mixed->isSingleAtomic()) {
             return false;
         }
 
@@ -1200,5 +1179,54 @@ final class UnionTypeComparator
         }
 
         return $atomic_types;
+    }
+
+    /**
+     * Only the container's int or string literal, or enum case, with the same key can contain such an input, and
+     * comparing it with the other ones has no effect: they are left out.
+     *
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     * @param array<Atomic> $container_type_parts
+     * @param array<int, array{array<string, Atomic>, list<Atomic>}> $container_parts_by_key
+     * @return array<Atomic>
+     */
+    private static function getPartsThatCanContain(
+        Atomic $input_type_part,
+        array $container_type_parts,
+        array &$container_parts_by_key,
+    ): array {
+        if ($input_type_part::class === TLiteralInt::class || $input_type_part::class === TLiteralString::class) {
+            $enum_cases = 0;
+        } elseif ($input_type_part::class === TEnumCase::class && !$input_type_part->extra_types) {
+            $enum_cases = 1;
+        } else {
+            return $container_type_parts;
+        }
+
+        if (!isset($container_parts_by_key[$enum_cases])) {
+            $by_key = [];
+            $other_parts = [];
+
+            foreach ($container_type_parts as $part) {
+                if ($enum_cases
+                    ? $part::class === TEnumCase::class && !$part->extra_types
+                    : $part::class === TLiteralInt::class || $part::class === TLiteralString::class
+                ) {
+                    $by_key[$part->getKey()] = $part;
+                } else {
+                    $other_parts[] = $part;
+                }
+            }
+
+            $container_parts_by_key[$enum_cases] = [$by_key, $other_parts];
+        }
+
+        [$by_key, $parts] = $container_parts_by_key[$enum_cases];
+
+        if (isset($by_key[$input_type_part->getKey()])) {
+            $parts[] = $by_key[$input_type_part->getKey()];
+        }
+
+        return $parts;
     }
 }

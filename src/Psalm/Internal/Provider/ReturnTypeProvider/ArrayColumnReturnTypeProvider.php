@@ -115,7 +115,7 @@ final class ArrayColumnReturnTypeProvider implements FunctionReturnTypeProviderI
 
         // calculate row shape
         if (($first_arg_type = $statements_source->node_data->getType($call_args[0]->value))
-            && $first_arg_type->isSingle()
+            && $first_arg_type->isSingleAtomic()
             && $first_arg_type->hasArray()
         ) {
             $input_array = $first_arg_type->getArray();
@@ -398,7 +398,7 @@ final class ArrayColumnReturnTypeProvider implements FunctionReturnTypeProviderI
         Context $context,
         CodeLocation $code_location,
     ): ?Atomic {
-        if ($row_type && $row_type->isSingle()) {
+        if ($row_type && $row_type->isSingleAtomic()) {
             if ($row_type->hasArray()) {
                 return $row_type->getArray();
             } elseif ($row_type->hasObjectType()) {

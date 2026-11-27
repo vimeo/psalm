@@ -304,6 +304,26 @@ final class ArrayAssignmentTest extends TestCase
                         /** @psalm-check-type-exact $a = array{0: "v"|2, a: "v"|1, ...<K, "v">} */;
                     }',
             ],
+            'writeUnderALiteralKeyKeepsTheOffsetsOfOtherLiteralKeysAndForgetsTheSameKey' => [
+                'code' => '<?php
+                    $a = [];
+                    $a["x"] = 1;
+                    $a["y"] = "b";
+                    $a["01"] = true;
+                    $a[1] = 2.5;
+                    $a["1"] = "s";
+                    $a[-1] = null;
+                    $kept = $a["x"];
+                    $kept2 = $a["01"];
+                    $same = $a[1];
+                    $same2 = $a["1"];',
+                'assertions' => [
+                    '$kept===' => '1',
+                    '$kept2===' => 'true',
+                    '$same===' => "'s'",
+                    '$same2===' => "'s'",
+                ],
+            ],
             'writeUnderAStringKeyMayReachTheIntKeyOfItsDecimalString' => [
                 'code' => '<?php
                     /**

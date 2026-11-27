@@ -378,7 +378,7 @@ final class Populator
         // the extended params chain the templates (Traversable's is Iterator's, which is the class's own)
         $purity = $storage->template_extended_params['Traversable']['TPurity'] ?? null;
 
-        while ($purity !== null && $purity->isSingle()) {
+        while ($purity !== null && $purity->isSingleAtomic()) {
             $purity_atomic = $purity->getSingleAtomic();
 
             if (!$purity_atomic instanceof TTemplateParam) {

@@ -532,7 +532,7 @@ final class ArrayAnalyzer
 
                     $added_taints = 0;
                     $removed_taints = 0;
-                    if ($item_value_type->isSingle() && $item_value_type->hasLiteralValue()) {
+                    if ($item_value_type->allSpecificLiterals()) {
                         // literal values carry no taint
                         $removed_taints = TaintKind::ALL;
                     } elseif ($taint_flow_graph) {
@@ -580,7 +580,7 @@ final class ArrayAnalyzer
 
                     $added_taints = 0;
                     $removed_taints = 0;
-                    if ($item_key_type->isSingle() && $item_key_type->hasLiteralValue()) {
+                    if ($item_key_type->allSpecificLiterals()) {
                         // literal keys carry no taint
                         $removed_taints = TaintKind::ALL;
                     } elseif ($taint_flow_graph) {

@@ -120,7 +120,7 @@ final class YieldFromAnalyzer
 
         $declared_return_type = $source->getFunctionLikeStorage($statements_analyzer)->return_type;
 
-        if ($declared_return_type === null || !$declared_return_type->isSingle()) {
+        if ($declared_return_type === null || !$declared_return_type->isSingleAtomic()) {
             return;
         }
 

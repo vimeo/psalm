@@ -50,10 +50,12 @@ use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TResource;
+use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_all;
 use function array_filter;
 use function array_pop;
 use function array_shift;
@@ -700,9 +702,11 @@ final class ArrayFunctionArgumentsAnalyzer
         $replacement_arg_type = $statements_analyzer->node_data->getType($replacement_arg);
 
         if ($replacement_arg_type
-            && !$replacement_arg_type->hasArray()
             && $replacement_arg_type->hasString()
-            && $replacement_arg_type->isSingle()
+            && array_all(
+                $replacement_arg_type->getAtomicTypes(),
+                static fn(Atomic $atomic): bool => $atomic instanceof TString,
+            )
         ) {
             $replacement_arg_type = new Union([
                 new TArray([Type::getInt(), $replacement_arg_type]),

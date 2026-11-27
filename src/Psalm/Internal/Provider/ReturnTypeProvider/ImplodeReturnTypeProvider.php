@@ -146,7 +146,7 @@ final class ImplodeReturnTypeProvider implements FunctionReturnTypeProviderInter
      */
     private static function joinLiterals(Union $separator_type, Union $array_type): ?string
     {
-        if (!$separator_type->isSingleStringLiteral() || !$array_type->isSingle()) {
+        if (!$separator_type->isSingleStringLiteral() || !$array_type->isSingleAtomic()) {
             return null;
         }
 
@@ -159,7 +159,7 @@ final class ImplodeReturnTypeProvider implements FunctionReturnTypeProviderInter
         $pieces = [];
 
         foreach ($array_atomic_type->properties as $property) {
-            if ($property->possibly_undefined || !$property->isSingle()) {
+            if ($property->possibly_undefined || !$property->isSingleAtomic()) {
                 return null;
             }
 

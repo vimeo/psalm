@@ -154,7 +154,7 @@ final class SimpleAssertionReconciler extends Reconciler
         // `non-empty-mixed` is only known to be truthy, and the type asserted for it stays truthy
         if ($reconciled_type
             && $assertion instanceof IsType
-            && $existing_var_type->isSingle()
+            && $existing_var_type->isSingleAtomic()
             && $existing_var_type->getSingleAtomic() instanceof TNonEmptyMixed
             && !$reconciled_type->hasMixed()
         ) {
@@ -575,7 +575,7 @@ final class SimpleAssertionReconciler extends Reconciler
             );
         }
 
-        if ($existing_var_type->isSingle()
+        if ($existing_var_type->isSingleAtomic()
             && $existing_var_type->hasTemplate()
         ) {
             $types = $existing_var_type->getAtomicTypes();
@@ -2010,7 +2010,7 @@ final class SimpleAssertionReconciler extends Reconciler
     ): Union {
         $new_var_type = $assertion->type;
 
-        if ($new_var_type->isSingle() && $new_var_type->getSingleAtomic() instanceof TClassConstant) {
+        if ($new_var_type->isSingleAtomic() && $new_var_type->getSingleAtomic() instanceof TClassConstant) {
             // Can't do assertion on const with non-literal type
             return $existing_var_type;
         }
@@ -3396,7 +3396,7 @@ final class SimpleAssertionReconciler extends Reconciler
     {
         $bound = $template->as;
 
-        while ($bound->isSingle()) {
+        while ($bound->isSingleAtomic()) {
             $atomic = $bound->getSingleAtomic();
 
             if (!$atomic instanceof TTemplateParam) {

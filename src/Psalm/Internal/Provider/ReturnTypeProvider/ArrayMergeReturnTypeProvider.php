@@ -63,7 +63,7 @@ final class ArrayMergeReturnTypeProvider implements FunctionReturnTypeProviderIn
 
             foreach ($call_args as $call_arg) {
                 $call_arg_type = $statements_source->node_data->getType($call_arg->value);
-                $keyed_array = $call_arg_type && !$call_arg->unpack && $call_arg_type->isSingle()
+                $keyed_array = $call_arg_type && !$call_arg->unpack && $call_arg_type->isSingleAtomic()
                     ? $call_arg_type->getSingleAtomic()
                     : null;
 
