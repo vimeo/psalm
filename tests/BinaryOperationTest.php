@@ -733,7 +733,7 @@ final class BinaryOperationTest extends TestCase
         $this->addFile(
             'somefile.php',
             '<?php
-                /** @var ' . implode('|', range(0, 99)) . ' */
+                /** @var ' . implode('|', range(0, 249)) . ' */
                 $a = $GLOBALS["a"];
 
                 $sum = $a + $a;',
@@ -745,9 +745,9 @@ final class BinaryOperationTest extends TestCase
         $this->analyzeFile('somefile.php', $context);
         $nanoseconds = hrtime(true) - $start;
 
-        $this->assertSame(implode('|', range(0, 198)), $context->vars_in_scope['$sum']->getId());
-        // combining each of the 10 000 results into the results before it takes tens of seconds
-        $this->assertLessThan(10_000_000_000, $nanoseconds);
+        $this->assertSame(implode('|', range(0, 498)), $context->vars_in_scope['$sum']->getId());
+        // combining each of the 62 500 results into the hundreds of results before it takes tens of seconds
+        $this->assertLessThan(5_000_000_000, $nanoseconds);
     }
 
     /**
@@ -823,6 +823,18 @@ final class BinaryOperationTest extends TestCase
                 'assertions' => [
                     '$nonNegative===' => 'int<0, max>',
                     '$withNegatives===' => 'literal-int',
+                ],
+            ],
+            'arithmeticOnUnionsOfLiteralsWidensByTheFirstResultsPastTheLiteralLimit' => [
+                'code' => '<?php
+                    /** @var ' . implode('|', [...range(1000, 1028), -5000]) . ' */
+                    $a = $GLOBALS["a"];
+                    /** @var ' . implode('|', range(0, 870, 30)) . ' */
+                    $b = $GLOBALS["b"];
+
+                    $difference = $a - $b;',
+                'assertions' => [
+                    '$difference===' => 'int<-5870, max>',
                 ],
             ],
             'concatOfAMixedAndAUnionOfStringLiterals' => [

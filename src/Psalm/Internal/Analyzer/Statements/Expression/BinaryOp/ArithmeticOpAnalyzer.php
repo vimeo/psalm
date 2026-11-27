@@ -311,7 +311,11 @@ final class ArithmeticOpAnalyzer
             return;
         }
 
-        $result_type = Type::combineUnionTypes(TypeCombiner::combine(array_values($literal_results)), $result_type);
+        // the result comes first, as when each literal is combined into it: past the literal limit, the literals it
+        // widens by are the ones seen first
+        $result_type = $result_type === null
+            ? TypeCombiner::combine(array_values($literal_results))
+            : Type::combineUnionTypes($result_type, new Union(array_values($literal_results)));
         $literal_results = [];
     }
 
@@ -403,6 +407,11 @@ final class ArithmeticOpAnalyzer
                 // collected so far goes through all of it every time
                 foreach ($calculated_type->getAtomicTypes() as $key => $calculated_type_part) {
                     $literal_results[$key] = $calculated_type_part;
+                }
+
+                // the result keeps no more literals than the literal limit of the combination
+                if (count($literal_results) >= 500) {
+                    self::combineLiteralResults($literal_results, $result_type);
                 }
 
                 $has_valid_left_operand = true;
