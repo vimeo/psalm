@@ -60,7 +60,6 @@ use function key;
 use function reset;
 use function strpos;
 use function strtolower;
-use function substr;
 
 /**
  * @internal
@@ -1295,12 +1294,12 @@ final class Populator
         $storage->pseudo_property_get_types += self::localizeInheritedTypes(
             $storage,
             $parent_storage,
-            self::withoutRedeclaredProperties($storage, $parent_storage, $parent_storage->pseudo_property_get_types),
+            $parent_storage->pseudo_property_get_types,
         );
         $storage->pseudo_property_set_types += self::localizeInheritedTypes(
             $storage,
             $parent_storage,
-            self::withoutRedeclaredProperties($storage, $parent_storage, $parent_storage->pseudo_property_set_types),
+            $parent_storage->pseudo_property_set_types,
         );
 
         $parent_storage->dependent_classlikes[strtolower($storage->name)] = true;
@@ -1329,33 +1328,6 @@ final class Populator
 
         foreach ($types as &$type) {
             $localizer->traverse($type);
-        }
-
-        return $types;
-    }
-
-    /**
-     * The `@property` types of the parent, without those of the properties the class or a used trait declares: these
-     * hide the magic property of the parent
-     *
-     * @param array<string, Union> $types
-     * @return array<string, Union>
-     * @psalm-capabilities read-props
-     */
-    private static function withoutRedeclaredProperties(
-        ClassLikeStorage $storage,
-        ClassLikeStorage $parent_storage,
-        array $types,
-    ): array {
-        foreach ($types as $name => $_) {
-            $property_name = substr($name, 1);
-            $declaring_class = $storage->declaring_property_ids[$property_name] ?? null;
-
-            if ($declaring_class !== null
-                && $declaring_class !== ($parent_storage->declaring_property_ids[$property_name] ?? null)
-            ) {
-                unset($types[$name]);
-            }
         }
 
         return $types;

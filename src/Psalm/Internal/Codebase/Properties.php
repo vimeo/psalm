@@ -13,6 +13,7 @@ use Psalm\Internal\Provider\PropertyExistenceProvider;
 use Psalm\Internal\Provider\PropertyTypeProvider;
 use Psalm\Internal\Provider\PropertyVisibilityProvider;
 use Psalm\StatementsSource;
+use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\PropertyStorage;
 use Psalm\Type\Union;
 use UnexpectedValueException;
@@ -263,10 +264,13 @@ final class Properties
         }
 
         if ($storage->type) {
+            $pseudo_property_type = $this->getPseudoTypeOfProperty($class_storage, $property_name, $property_set);
+
+            if ($pseudo_property_type !== null) {
+                return $pseudo_property_type;
+            }
+
             if ($property_set) {
-                if (isset($class_storage->pseudo_property_set_types['$'.$property_name])) {
-                    return $class_storage->pseudo_property_set_types['$'.$property_name];
-                }
                 $setter_param_type = $storage->hook_set?->param_type;
                 // a write from outside the hooks goes through the set hook, one inside them sets the backing value
                 if ($setter_param_type !== null
@@ -274,10 +278,6 @@ final class Properties
                         || !self::isInHookOf($source, $declaring_class_storage->name, $property_name))
                 ) {
                     return $setter_param_type;
-                }
-            } else {
-                if (isset($class_storage->pseudo_property_get_types['$'.$property_name])) {
-                    return $class_storage->pseudo_property_get_types['$'.$property_name];
                 }
             }
 
@@ -297,6 +297,45 @@ final class Properties
         }
 
         return null;
+    }
+
+    /**
+     * The `@property` type that replaces the type of a property of the class. A `@property` of the class where the
+     * property appears, or of one of its ancestors, only describes the magic property that `__get()` or `__set()`
+     * serves where the property is inaccessible: there the property keeps its own type.
+     *
+     * @psalm-capabilities read-props
+     */
+    public function getPseudoTypeOfProperty(
+        ClassLikeStorage $class_storage,
+        string $property_name,
+        bool $property_set,
+    ): ?Union {
+        $pseudo_property_types = $property_set
+            ? $class_storage->pseudo_property_set_types
+            : $class_storage->pseudo_property_get_types;
+
+        if (!isset($pseudo_property_types['$' . $property_name])) {
+            return null;
+        }
+
+        $appearing_property_id = $class_storage->appearing_property_ids[$property_name] ?? null;
+
+        if ($appearing_property_id === null) {
+            return $pseudo_property_types['$' . $property_name];
+        }
+
+        [$appearing_class] = explode('::$', $appearing_property_id);
+
+        $appearing_class_storage = $this->classlike_storage_provider->get($appearing_class);
+
+        $appearing_pseudo_property_types = $property_set
+            ? $appearing_class_storage->pseudo_property_set_types
+            : $appearing_class_storage->pseudo_property_get_types;
+
+        return isset($appearing_pseudo_property_types['$' . $property_name])
+            ? null
+            : $pseudo_property_types['$' . $property_name];
     }
 
     /**

@@ -675,6 +675,85 @@ final class MagicPropertyTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'protectedPropertyOfTheChildKeepsItsTypeInsideAndTheParentAnnotationOutside' => [
+                'code' => '<?php
+                    /**
+                     * @property string|null $value
+                     */
+                    abstract class Base {
+                        public function __get(string $name): mixed {
+                            return null;
+                        }
+                        public function __set(string $name, mixed $value): void {}
+                    }
+
+                    final class Child extends Base {
+                        protected int $value = 0;
+
+                        public function fill(): void {
+                            $this->value = 5;
+                        }
+
+                        public function get(): int {
+                            return $this->value;
+                        }
+                    }
+
+                    $child = new Child();
+                    $value = $child->value;
+                    $child->value = "a";',
+                'assertions' => [
+                    '$value===' => 'null|string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'privatePropertyOfTheChildKeepsItsTypeInsideAndTheParentWriteAnnotationOutside' => [
+                'code' => '<?php
+                    /**
+                     * @property-write int $value
+                     */
+                    abstract class Base {
+                        public function __set(string $name, mixed $value): void {}
+                    }
+
+                    final class Child extends Base {
+                        private string $value = "";
+
+                        public function fill(): void {
+                            $this->value = "a";
+                        }
+                    }
+
+                    (new Child())->value = 5;',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'protectedPropertyKeepsItsTypeInsideTheClassAndItsAnnotationOutside' => [
+                'code' => '<?php
+                    /**
+                     * @property string|null $value
+                     */
+                    final class Single {
+                        protected int $value = 0;
+
+                        public function __get(string $name): mixed {
+                            return null;
+                        }
+
+                        public function get(): int {
+                            return $this->value;
+                        }
+                    }
+
+                    $value = (new Single())->value;',
+                'assertions' => [
+                    '$value===' => 'null|string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'propertyAnnotationOfTheChildNarrowsThePropertyOfTheParent' => [
                 'code' => '<?php
                     abstract class Base {
