@@ -6,6 +6,7 @@ namespace Psalm\Internal\Codebase;
 
 use PhpParser\Node;
 use PhpParser\Node\Arg;
+use PhpParser\Node\Expr\CallLike;
 use PhpParser\Node\Expr\Closure;
 use PhpParser\Node\Expr\Eval_;
 use PhpParser\Node\Expr\FuncCall;
@@ -892,6 +893,31 @@ final class ReceiverPropertyTaints
 
         $stmts = $source->getFunctionNode()->getStmts();
         if ($hash === null || $stmts === null || $stmts === []) {
+            return null;
+        }
+
+        // without another call given the variable, no write under it can put back what a read under it gets, nor
+        // can a write under it set what a read under it got: the read would only keep the flows of the properties
+        // apart in the rest of the function (see TaintFlowResolution::holdsName()) for nothing
+        $var_name = $name_expr->name;
+        $calls = (new NodeFinder())->find(
+            $stmts,
+            static function (Node $node) use ($var_name): bool {
+                if (!$node instanceof CallLike || $node->isFirstClassCallable()) {
+                    return false;
+                }
+
+                foreach ($node->getArgs() as $arg) {
+                    if ($arg->value instanceof Variable && $arg->value->name === $var_name) {
+                        return true;
+                    }
+                }
+
+                return false;
+            },
+        );
+
+        if (count($calls) < 2) {
             return null;
         }
 

@@ -8351,6 +8351,91 @@ final class TaintTest extends TestCase
                         echo implode(",", $category->filter);
                     }',
             ],
+            'propertyReadAndSetUnderTheSameNameThroughAParentClassAmongManyGoesBackToIt' => [
+                'code' => '<?php
+                    class Record {
+                        /** @psalm-flow ($value) -> $this->$name */
+                        public function __set(string $name, string $value): void {}
+
+                        /** @psalm-flow $this->$name -> return */
+                        public function __get(string $name): string {
+                            return "";
+                        }
+
+                        /** @psalm-flow $this->$name -> return */
+                        public function get(string $name): string {
+                            return "";
+                        }
+
+                        /** @psalm-flow ($value) -> $this->$name */
+                        public function set(string $name, string $value): void {}
+                    }
+
+                    /** @property string $p1 */
+                    final class A1 extends Record {}
+
+                    /** @property string $p2 */
+                    final class A2 extends Record {}
+
+                    /** @property string $p3 */
+                    final class A3 extends Record {}
+
+                    /** @property string $p4 */
+                    final class A4 extends Record {}
+
+                    /** @property string $p5 */
+                    final class A5 extends Record {}
+
+                    /** @property string $p6 */
+                    final class A6 extends Record {}
+
+                    /** @property string $p7 */
+                    final class A7 extends Record {}
+
+                    /** @property string $p8 */
+                    final class A8 extends Record {}
+
+                    /** @property string $p9 */
+                    final class A9 extends Record {}
+
+                    /** @property string $p10 */
+                    final class A10 extends Record {}
+
+                    /** @property string $p11 */
+                    final class A11 extends Record {}
+
+                    /** @property string $p12 */
+                    final class A12 extends Record {}
+
+                    /**
+                     * @property string $b
+                     * @property string $p1
+                     */
+                    final class B extends Record {}
+
+                    function store(A1 $a1, A2 $a2, A3 $a3, A4 $a4, A5 $a5, A6 $a6, A7 $a7, A8 $a8, A9 $a9, A10 $a10, A11 $a11, A12 $a12): void {
+                        $a1->p1 = (string) $_GET["x"];
+                        $a2->p2 = (string) $_GET["x"];
+                        $a3->p3 = (string) $_GET["x"];
+                        $a4->p4 = (string) $_GET["x"];
+                        $a5->p5 = (string) $_GET["x"];
+                        $a6->p6 = (string) $_GET["x"];
+                        $a7->p7 = (string) $_GET["x"];
+                        $a8->p8 = (string) $_GET["x"];
+                        $a9->p9 = (string) $_GET["x"];
+                        $a10->p10 = (string) $_GET["x"];
+                        $a11->p11 = (string) $_GET["x"];
+                        $a12->p12 = (string) $_GET["x"];
+                    }
+
+                    function touchField(Record $object, string $name): void {
+                        $object->set($name, $object->get($name) . "!");
+                    }
+
+                    function show(B $object): void {
+                        echo $object->b;
+                    }',
+            ],
             'propertyReadAndSetUnderTheSameNameInALoopNotAssigningIt' => [
                 'code' => '<?php
                     final class Model {
@@ -14264,6 +14349,178 @@ final class TaintTest extends TestCase
 
                     function show(Category $category): void {
                         echo implode(",", $category->filter);
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'propertyCopiedUnderTheSameNameThroughAParentClassTaintsThatPropertyOfAnotherClass' => [
+                'code' => '<?php
+                    class Record {
+                        /** @psalm-flow ($value) -> $this->$name */
+                        public function __set(string $name, string $value): void {}
+
+                        /** @psalm-flow $this->$name -> return */
+                        public function __get(string $name): string {
+                            return "";
+                        }
+
+                        /** @psalm-flow $this->$name -> return */
+                        public function get(string $name): string {
+                            return "";
+                        }
+
+                        /** @psalm-flow ($value) -> $this->$name */
+                        public function set(string $name, string $value): void {}
+                    }
+
+                    /** @property string $p1 */
+                    final class A1 extends Record {}
+
+                    /** @property string $p2 */
+                    final class A2 extends Record {}
+
+                    /** @property string $p3 */
+                    final class A3 extends Record {}
+
+                    /** @property string $p4 */
+                    final class A4 extends Record {}
+
+                    /** @property string $p5 */
+                    final class A5 extends Record {}
+
+                    /** @property string $p6 */
+                    final class A6 extends Record {}
+
+                    /** @property string $p7 */
+                    final class A7 extends Record {}
+
+                    /** @property string $p8 */
+                    final class A8 extends Record {}
+
+                    /** @property string $p9 */
+                    final class A9 extends Record {}
+
+                    /** @property string $p10 */
+                    final class A10 extends Record {}
+
+                    /** @property string $p11 */
+                    final class A11 extends Record {}
+
+                    /** @property string $p12 */
+                    final class A12 extends Record {}
+
+                    /**
+                     * @property string $b
+                     * @property string $p1
+                     */
+                    final class B extends Record {}
+
+                    function store(A1 $a1, A2 $a2, A3 $a3, A4 $a4, A5 $a5, A6 $a6, A7 $a7, A8 $a8, A9 $a9, A10 $a10, A11 $a11, A12 $a12): void {
+                        $a1->p1 = (string) $_GET["x"];
+                        $a2->p2 = (string) $_GET["x"];
+                        $a3->p3 = (string) $_GET["x"];
+                        $a4->p4 = (string) $_GET["x"];
+                        $a5->p5 = (string) $_GET["x"];
+                        $a6->p6 = (string) $_GET["x"];
+                        $a7->p7 = (string) $_GET["x"];
+                        $a8->p8 = (string) $_GET["x"];
+                        $a9->p9 = (string) $_GET["x"];
+                        $a10->p10 = (string) $_GET["x"];
+                        $a11->p11 = (string) $_GET["x"];
+                        $a12->p12 = (string) $_GET["x"];
+                    }
+
+                    function copyField(Record $from, Record $to, string $name): void {
+                        $to->set($name, $from->get($name) . "!");
+                    }
+
+                    function show(B $object): void {
+                        echo $object->p1;
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'propertyReadAndSetUnderTheSameNameThroughAParentClassStaysTainted' => [
+                'code' => '<?php
+                    class Record {
+                        /** @psalm-flow ($value) -> $this->$name */
+                        public function __set(string $name, string $value): void {}
+
+                        /** @psalm-flow $this->$name -> return */
+                        public function __get(string $name): string {
+                            return "";
+                        }
+
+                        /** @psalm-flow $this->$name -> return */
+                        public function get(string $name): string {
+                            return "";
+                        }
+
+                        /** @psalm-flow ($value) -> $this->$name */
+                        public function set(string $name, string $value): void {}
+                    }
+
+                    /** @property string $p1 */
+                    final class A1 extends Record {}
+
+                    /** @property string $p2 */
+                    final class A2 extends Record {}
+
+                    /** @property string $p3 */
+                    final class A3 extends Record {}
+
+                    /** @property string $p4 */
+                    final class A4 extends Record {}
+
+                    /** @property string $p5 */
+                    final class A5 extends Record {}
+
+                    /** @property string $p6 */
+                    final class A6 extends Record {}
+
+                    /** @property string $p7 */
+                    final class A7 extends Record {}
+
+                    /** @property string $p8 */
+                    final class A8 extends Record {}
+
+                    /** @property string $p9 */
+                    final class A9 extends Record {}
+
+                    /** @property string $p10 */
+                    final class A10 extends Record {}
+
+                    /** @property string $p11 */
+                    final class A11 extends Record {}
+
+                    /** @property string $p12 */
+                    final class A12 extends Record {}
+
+                    /**
+                     * @property string $b
+                     * @property string $p1
+                     */
+                    final class B extends Record {}
+
+                    function store(A1 $a1, A2 $a2, A3 $a3, A4 $a4, A5 $a5, A6 $a6, A7 $a7, A8 $a8, A9 $a9, A10 $a10, A11 $a11, A12 $a12): void {
+                        $a1->p1 = (string) $_GET["x"];
+                        $a2->p2 = (string) $_GET["x"];
+                        $a3->p3 = (string) $_GET["x"];
+                        $a4->p4 = (string) $_GET["x"];
+                        $a5->p5 = (string) $_GET["x"];
+                        $a6->p6 = (string) $_GET["x"];
+                        $a7->p7 = (string) $_GET["x"];
+                        $a8->p8 = (string) $_GET["x"];
+                        $a9->p9 = (string) $_GET["x"];
+                        $a10->p10 = (string) $_GET["x"];
+                        $a11->p11 = (string) $_GET["x"];
+                        $a12->p12 = (string) $_GET["x"];
+                    }
+
+                    function touchField(Record $object, string $name): void {
+                        $object->set($name, $object->get($name) . "!");
+                    }
+
+                    function show(A12 $object): void {
+                        echo $object->p12;
                     }',
                 'error_message' => 'TaintedHtml',
             ],

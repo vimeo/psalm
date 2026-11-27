@@ -35,6 +35,7 @@ use function str_contains;
 use function str_ends_with;
 use function str_starts_with;
 use function strlen;
+use function strpbrk;
 use function strpos;
 use function strtolower;
 use function substr;
@@ -425,6 +426,15 @@ final class TaintFlowResolution
      * @var array<string, array{string, string, string}>
      */
     private array $name_markers = [];
+
+    /**
+     * Node id => [the marker of the name alone (see parseNameMarker()) of its edges into properties set by name
+     * (TaintFlowGraph::NAME_PUT_PREFIX), those edges by the key of their property, its other edges], or false if
+     * it has none (see getNameSlotEdges())
+     *
+     * @var array<string, array{string, array<string, array<string, Path>>, array<string, Path>}|false>
+     */
+    private array $name_put_edges = [];
 
     /**
      * Two lowercase class names => whether an object may be of both (see mayBeOfBoth())
@@ -1966,6 +1976,81 @@ final class TaintFlowResolution
     }
 
     /**
+     * The edges of node $from_id that a flow with element slot $slot can take, if they are fewer than all of them: of
+     * a property read under the name of the edges into the properties set by name of the node (a write under it, see
+     * ReceiverPropertyTaints::addWriteByName()), and under a key known exactly, only the edge into the property of
+     * that key, and the edges of other types, take it (see applyNamePathType()). A write under a name of an object
+     * with many properties has as many edges, which every flow reaching it would else try.
+     *
+     * @return array<string, Path>|null
+     * @psalm-external-mutation-free
+     */
+    private function getNameSlotEdges(string $from_id, int $slot): ?array
+    {
+        $read_marker = $this->slots[$slot][0];
+        $assignment = $this->slots[$slot][1];
+
+        if ($assignment < 0 || !str_starts_with($read_marker, TaintFlowGraph::NAME_MARKER_PREFIX)) {
+            return null;
+        }
+
+        if (!isset($this->name_put_edges[$from_id])) {
+            $this->name_put_edges[$from_id] = $this->indexNamePutEdges($from_id);
+        }
+
+        $index = $this->name_put_edges[$from_id];
+        if ($index === false) {
+            return null;
+        }
+
+        [$name, $edges_by_key, $other_edges] = $index;
+        $class = $this->getClass($assignment, self::ARRAY_FAMILY);
+        $key = substr($class, 1);
+
+        // a key of another name, or one known by its start only, or one of a few, may be that of any edge
+        if (($this->name_markers[$read_marker] ??= self::parseNameMarker($read_marker))[0] !== $name
+            || !str_starts_with($class, ":'")
+            || !str_ends_with($class, "'")
+            || strpbrk(substr($key, 1, -1), "'*|") !== false
+        ) {
+            return null;
+        }
+
+        return $other_edges + ($edges_by_key[$key] ?? []);
+    }
+
+    /**
+     * @return array{string, array<string, array<string, Path>>, array<string, Path>}|false
+     * @psalm-external-mutation-free
+     */
+    private function indexNamePutEdges(string $from_id): array|false
+    {
+        $name = null;
+        $edges_by_key = [];
+        $other_edges = [];
+
+        foreach ($this->forward_edges[$from_id] ?? [] as $to_id => $path) {
+            if (!str_starts_with($path->type, TaintFlowGraph::NAME_PUT_PREFIX)) {
+                $other_edges[$to_id] = $path;
+
+                continue;
+            }
+
+            [, $key, $marker] = $this->name_path_types[$this->getPathTypeId($path->type)];
+            $edge_name = ($this->name_markers[$marker] ??= self::parseNameMarker($marker))[0];
+
+            if ($name !== null && $edge_name !== $name) {
+                return false;
+            }
+
+            $name = $edge_name;
+            $edges_by_key[$key][$to_id] = $path;
+        }
+
+        return $name === null ? false : [$name, $edges_by_key, $other_edges];
+    }
+
+    /**
      * Whether the flows of state $state hold a property read under a name (see TaintFlowGraph::NAME_MARKER_PREFIX)
      * that a write under it puts back into that property: they aren't walked in a convergence (see
      * enterConvergence()), which, past MAX_CONVERGENCE_KEYS of them, can't tell apart the names of the flows
@@ -2611,8 +2696,10 @@ final class TaintFlowResolution
         $added = $this->state_added[$state];
 
         $input_taints = $this->codebase->getInputTaints();
+        $slot = $this->open_assignment_slots[$open_assignments];
+        $edges = $slot >= 0 ? $this->getNameSlotEdges($from_id, $slot) : null;
 
-        foreach ($this->forward_edges[$from_id] as $to_id => $path) {
+        foreach ($edges ?? $this->forward_edges[$from_id] as $to_id => $path) {
             $removed_taints = $path->removed_taints;
             $path_added = $path->added_taints;
 
