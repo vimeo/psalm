@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Type;
 
-use Psalm\Codebase;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Storage\Assertion\DoesNotHaveArrayValue;
 use Psalm\Storage\Assertion\HasArrayValue;
@@ -16,16 +15,10 @@ use Psalm\Storage\Assertion\IsType;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
-use Psalm\Type\Atomic\TCallable;
-use Psalm\Type\Atomic\TEnumCase;
 use Psalm\Type\Atomic\TFalse;
-use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TMixed;
-use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNull;
-use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Reconciler;
@@ -508,46 +501,6 @@ final class ArrayValueAssertionReconciler
             return null;
         }
 
-        $codebase = $statements_analyzer->getCodebase();
-
-        // Loose `in_array(true, $arr)` returns false for enum values, so types that may be enums must be kept.
-        if (!$strict && $value_type instanceof TTrue) {
-            $kept_for_enum = [];
-            $other = [];
-
-            foreach ($element_type->getAtomicTypes() as $atomic) {
-                if (self::mayBeEnum($codebase, $atomic)) {
-                    $kept_for_enum[] = $atomic;
-                } else {
-                    $other[] = $atomic;
-                }
-            }
-
-            if ($kept_for_enum !== []) {
-                if ($other === []) {
-                    return $element_type;
-                }
-
-                $narrowed_other = self::excludeElement(
-                    $value_type,
-                    false,
-                    new Union($other, ['from_docblock' => $element_type->from_docblock]),
-                    $statements_analyzer,
-                    $inside_loop,
-                );
-
-                if ($narrowed_other === null) {
-                    return new Union($kept_for_enum, ['from_docblock' => $element_type->from_docblock]);
-                }
-
-                return Type::combineUnionTypes(
-                    new Union($kept_for_enum, ['from_docblock' => $element_type->from_docblock]),
-                    $narrowed_other,
-                    $codebase,
-                );
-            }
-        }
-
         $element_assertion = $strict
             ? ($value_type instanceof TNull
                 || $value_type instanceof TTrue
@@ -577,42 +530,5 @@ final class ArrayValueAssertionReconciler
         }
 
         return $reconciled;
-    }
-
-    /**
-     * @psalm-mutation-free
-     */
-    private static function mayBeEnum(Codebase $codebase, Atomic $atomic): bool
-    {
-        if ($atomic instanceof TEnumCase
-            || $atomic instanceof TObject
-            || $atomic instanceof TCallable
-            || $atomic instanceof TIterable
-            || $atomic instanceof TMixed
-        ) {
-            return true;
-        }
-
-        if ($atomic instanceof TTemplateParam) {
-            foreach ($atomic->as->getAtomicTypes() as $as_atomic) {
-                if (self::mayBeEnum($codebase, $as_atomic)) {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        if ($atomic instanceof TNamedObject) {
-            if (!$codebase->classlike_storage_provider->has($atomic->value)) {
-                return true;
-            }
-
-            $storage = $codebase->classlike_storage_provider->get($atomic->value);
-
-            return $storage->is_enum || $storage->is_interface;
-        }
-
-        return false;
     }
 }

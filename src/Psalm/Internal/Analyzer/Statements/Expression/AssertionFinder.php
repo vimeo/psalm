@@ -3996,7 +3996,7 @@ final class AssertionFinder
      */
     private static function getInArraySingletonNeedle(Union $needle_type): ?Atomic
     {
-        if (!$needle_type->isSingle()) {
+        if (count($needle_type->getAtomicTypes()) !== 1) {
             return null;
         }
 

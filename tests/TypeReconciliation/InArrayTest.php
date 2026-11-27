@@ -428,22 +428,22 @@ final class InArrayTest extends TestCase
                     /**
                      * @param list<Suit|bool> $items
                      * @param list<callable> $callbacks
-                     * @param non-empty-list<callable> $nonEmptyCallbacks
+                     * @param non-empty-list<callable|false> $nonEmptyCallbacks
                      * @param list<iterable> $iterables
                      */
                     function test(array $items, array $callbacks, array $nonEmptyCallbacks, array $iterables): void {
                         if (!in_array(true, $items)) {
-                            /** @psalm-check-type-exact $items = list<Suit|false> */
+                            /** @psalm-check-type-exact $items = list<false> */
                             echo count($items);
                         }
 
                         if (!in_array(true, $callbacks)) {
-                            /** @psalm-check-type-exact $callbacks = list<callable> */
+                            /** @psalm-check-type-exact $callbacks = array<never, never> */
                             echo count($callbacks);
                         }
 
                         if (!in_array(true, $nonEmptyCallbacks)) {
-                            /** @psalm-check-type-exact $nonEmptyCallbacks = non-empty-list<callable> */
+                            /** @psalm-check-type-exact $nonEmptyCallbacks = non-empty-list<false> */
                             echo count($nonEmptyCallbacks);
                         }
 
@@ -648,6 +648,19 @@ final class InArrayTest extends TestCase
                         }
                     }',
             ],
+            'inArrayMultiLiteralNeedleDoesNotNarrowHaystack' => [
+                'code' => '<?php
+                    /**
+                     * @param \'a\'|\'b\' $x
+                     * @param list<\'a\'|\'b\'> $arr
+                     */
+                    function f(string $x, array $arr): void {
+                        if (!in_array($x, $arr, true)) {
+                            /** @psalm-check-type-exact $arr = list<\'a\'|\'b\'> */
+                            echo count($arr);
+                        }
+                    }',
+            ],
         ];
     }
 
@@ -820,6 +833,20 @@ final class InArrayTest extends TestCase
                         takesNonEmptyStrings($arr);
                     }',
                 'error_message' => 'ArgumentTypeCoercion',
+            ],
+            'inArrayMultiLiteralIntNeedleChecksConstantList' => [
+                'code' => '<?php
+                    class LoadChecker {
+                        private const AVAILABLE = [0, 1, 2];
+
+                        /** @param 0|1|2 $load */
+                        public function check(int $load): void {
+                            if (!in_array($load, self::AVAILABLE, true)) {
+                                throw new \InvalidArgumentException();
+                            }
+                        }
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
             ],
         ];
     }
