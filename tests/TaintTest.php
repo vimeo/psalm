@@ -5048,6 +5048,12 @@ final class TaintTest extends TestCase
                     ["author" => $author, "text" => $text] = getComment();
                     echo $text;',
             ],
+            'dontTaintTheOtherOffsetsADestructuringByKeyAssigns' => [
+                'code' => '<?php // --taint-analysis
+                    $c = [];
+                    ["k" => $c["x"], "j" => $c["y"]] = ["k" => "safe", "j" => (string) $_GET["z"]];
+                    echo $c["x"];',
+            ],
             'dontTaintTheOtherItemsDestructuredByIntegerKeys' => [
                 'code' => '<?php // --taint-analysis
                     function getComment(): array {
@@ -9036,6 +9042,32 @@ final class TaintTest extends TestCase
                     foreach ([get()] as [$first, $second]) {
                         echo (string) $second;
                     }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'itemDestructuredFromAMixedValueIntoAnOffsetIsTainted' => [
+                'code' => '<?php
+                    function get(): mixed {
+                        return ["safe", $_GET["x"]];
+                    }
+
+                    $a = [];
+                    [$a["p"], $a["q"]] = get();
+                    echo (string) $a["q"];',
+                'error_message' => 'TaintedHtml',
+            ],
+            'itemDestructuredFromAMixedValueIntoAPropertyIsTainted' => [
+                'code' => '<?php
+                    class Holder {
+                        public mixed $p = null;
+                    }
+
+                    function get(): mixed {
+                        return [$_GET["x"]];
+                    }
+
+                    $h = new Holder();
+                    [$h->p] = get();
+                    echo (string) $h->p;',
                 'error_message' => 'TaintedHtml',
             ],
             'itemDestructuredFromAnArrayAccessObjectIsTainted' => [
@@ -15621,6 +15653,20 @@ final class TaintTest extends TestCase
 
                     ["author" => $author, "text" => $text] = getComment();
                     echo $author;',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheOffsetADestructuringByKeyAssigns' => [
+                'code' => '<?php // --taint-analysis
+                    $a = [];
+                    ["k" => $a["x"]] = $_GET;
+                    echo $a["x"];',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheItemAppendedByADestructuringByKey' => [
+                'code' => '<?php // --taint-analysis
+                    $b = [];
+                    ["k" => $b[]] = $_GET;
+                    echo $b[0];',
                 'error_message' => 'TaintedHtml',
             ],
             'taintTheItemDestructuredByAnIntegerKey' => [
