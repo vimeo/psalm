@@ -4,14 +4,24 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Codebase;
 
+use PhpParser\Node;
 use PhpParser\Node\Arg;
+use PhpParser\Node\ClosureUse;
 use PhpParser\Node\Expr;
+use PhpParser\Node\Expr\Closure;
+use PhpParser\Node\Expr\Eval_;
+use PhpParser\Node\Expr\FuncCall;
+use PhpParser\Node\Expr\Include_;
 use PhpParser\Node\Expr\New_;
 use PhpParser\Node\Expr\Variable;
 use PhpParser\Node\Name;
+use PhpParser\Node\Stmt\Global_;
+use PhpParser\Node\Stmt\Static_;
+use PhpParser\NodeFinder;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\ArrayAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -21,10 +31,13 @@ use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
+use WeakMap;
 
+use function array_any;
 use function array_keys;
 use function array_pop;
 use function count;
+use function in_array;
 use function is_string;
 use function str_starts_with;
 use function strtolower;
@@ -67,6 +80,14 @@ use function substr;
  */
 final class ReceiverPropertyTaints
 {
+    /**
+     * Of each function analyzed, whether its variables are only written where the analysis sees it (see
+     * seesEveryWriteOfItsVariables())
+     *
+     * @var ?WeakMap<Node, bool>
+     */
+    private static ?WeakMap $sees_every_write = null;
+
     /**
      * Records a flow into a property of `$this` (`($value) -> $this->$name`) or out of it (`$this->$name -> return`)
      *
@@ -698,38 +719,45 @@ final class ReceiverPropertyTaints
     /**
      * Records that $var_id, just assigned $value at $location, holds an object it constructs, of the class it names,
      * when it does (see Context::$exact_objects)
-     *
-     * @psalm-capabilities read-props|write-props
      */
     public static function recordExactObject(
+        StatementsAnalyzer $statements_analyzer,
         Context $context,
         string $var_id,
         ?Expr $value,
         CodeLocation $location,
     ): void {
+        unset($context->exact_objects[$var_id]);
+
+        if (!$value instanceof New_ || !self::constructsExactly($value)) {
+            return;
+        }
+
+        // the class `new` constructs, which a docblock type of the variable doesn't change
+        $new_type = $statements_analyzer->node_data->getType($value);
+        $new_atomic = $new_type !== null && $new_type->isSingleAtomic() ? $new_type->getSingleAtomic() : null;
         $type = $context->vars_in_scope[$var_id];
         $atomic = $type->isSingleAtomic() ? $type->getSingleAtomic() : null;
 
-        if (!$value instanceof New_
-            || !self::constructsExactly($value)
+        if (!$new_atomic instanceof TNamedObject
+            || $new_atomic->extra_types
             || !$atomic instanceof TNamedObject
-            || $atomic->extra_types
+            || strtolower($atomic->value) !== strtolower($new_atomic->value)
+            || !self::seesEveryWriteOfItsVariables($statements_analyzer)
         ) {
-            unset($context->exact_objects[$var_id]);
-
             return;
         }
 
         $context->exact_objects[$var_id] = [
             DataFlowNode::getForAssignment($var_id, $location)->id,
-            strtolower($atomic->value),
+            strtolower($new_atomic->value),
         ];
     }
 
     /**
      * Whether the object a method of $class is called on is of that class, not of one extending it: it is constructed
      * there (`(new Foo)->set()`), or held by a variable whose value is still only the one of the assignment that gave
-     * it that object, and that isn't a reference
+     * it that object, and that no reference is bound to
      *
      * @psalm-mutation-free
      */
@@ -743,6 +771,7 @@ final class ReceiverPropertyTaints
             || !isset($context->exact_objects[$var_id], $context->vars_in_scope[$var_id])
             || isset($context->references_in_scope[$var_id])
             || isset($context->references_to_external_scope[$var_id])
+            || ($context->referenced_counts[$var_id] ?? 0) > 0
         ) {
             return false;
         }
@@ -751,6 +780,45 @@ final class ReceiverPropertyTaints
 
         return array_keys($context->vars_in_scope[$var_id]->parent_nodes) === [$assignment_node_id]
             && $exact_class === strtolower($class);
+    }
+
+    /**
+     * Whether the statements analyzed are those of a function, method or closure whose variables only its own
+     * assignments the analysis sees write: not those of a file, whose variables an included file or another scope
+     * writes, nor of one with `global`, `static`, a variable variable, `extract()`, `parse_str()`, `compact()`,
+     * `include`, `eval` or a closure taking a variable by reference
+     */
+    private static function seesEveryWriteOfItsVariables(StatementsAnalyzer $statements_analyzer): bool
+    {
+        $source = $statements_analyzer->getSource();
+        if (!$source instanceof FunctionLikeAnalyzer) {
+            return false;
+        }
+
+        $function = $source->getFunctionLikeNode();
+        self::$sees_every_write ??= new WeakMap();
+        $memoized = self::$sees_every_write[$function] ?? null;
+        if ($memoized !== null) {
+            return $memoized;
+        }
+
+        $hidden_write = (new NodeFinder())->findFirst(
+            $function->getStmts() ?? [],
+            static fn(Node $node): bool => $node instanceof Global_
+                || $node instanceof Static_
+                || $node instanceof Include_
+                || $node instanceof Eval_
+                || ($node instanceof Variable && !is_string($node->name))
+                || ($node instanceof FuncCall
+                    && $node->name instanceof Name
+                    && in_array(strtolower($node->name->toString()), ['extract', 'parse_str', 'compact'], true))
+                || ($node instanceof Closure
+                    && array_any($node->uses, static fn(ClosureUse $use): bool => $use->byRef)),
+        );
+
+        self::$sees_every_write[$function] = $hidden_write === null;
+
+        return $hidden_write === null;
     }
 
     /**

@@ -3646,7 +3646,13 @@ final class AssignmentAnalyzer
             );
 
             if ($assign_var instanceof PhpParser\Node\Expr\Variable) {
-                ReceiverPropertyTaints::recordExactObject($context, $var_id, $assign_value, $var_location);
+                ReceiverPropertyTaints::recordExactObject(
+                    $statements_analyzer,
+                    $context,
+                    $var_id,
+                    $assign_value,
+                    $var_location,
+                );
             }
 
             // the start of a string assigned, for the keys of the keyed stores it is used as
