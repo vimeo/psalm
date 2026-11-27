@@ -200,7 +200,8 @@ final class AssertionReconciler extends Reconciler
                 $negated,
             );
 
-            return $existing_var_type;
+            // the ids are equal, but the assertion may have changed a flag (`isset()` drops possibly_undefined)
+            return $result_type ?? $existing_var_type;
         }
 
         // a shape is narrowed to no more than the shapes as one are

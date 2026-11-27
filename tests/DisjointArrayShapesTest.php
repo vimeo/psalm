@@ -229,6 +229,22 @@ final class DisjointArrayShapesTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'issetOfAnOffsetOfAStaticConstantMakesItSet' => [
+                'code' => '<?php
+                    class Handler {
+                        protected const MAP = ["view" => ["read"], "revert" => ["write", "update"]];
+
+                        public function check(string $operation): string {
+                            if (isset(static::MAP[$operation])) {
+                                return static::MAP[$operation][0];
+                            }
+
+                            return "";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingClassConstType'],
+            ],
             'issetOnACountedShapeWithOnlyOptionalKeysLeavesTheOtherKey' => [
                 'code' => '<?php
                     /** @param array{a?: int, b?: string} $x */
