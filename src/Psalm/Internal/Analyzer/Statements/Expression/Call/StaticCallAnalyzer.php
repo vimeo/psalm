@@ -22,6 +22,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\NullsafeChainState;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\ConditionalTaintSinks;
+use Psalm\Internal\Codebase\ConditionalTaintSources;
 use Psalm\Internal\Codebase\DatabaseTaints;
 use Psalm\Internal\Codebase\ReceiverPropertyTaints;
 use Psalm\Internal\Codebase\TaintFlowGraph;
@@ -842,6 +843,16 @@ final class StaticCallAnalyzer extends CallAnalyzer
                 $stmt->getArgs(),
                 $cased_method_id,
                 $node_location,
+            );
+
+            $return_type_candidate = ConditionalTaintSources::taintCall(
+                $statements_analyzer,
+                $taint_flow_graph,
+                $method_storage,
+                $stmt->getArgs(),
+                $cased_method_id,
+                $node_location,
+                $return_type_candidate,
             );
 
             // a method of `$this` called through its class or a parent class (`parent::set()`): the receiver is

@@ -18,6 +18,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\CombinedFlowGraph;
 use Psalm\Internal\Codebase\ConditionalTaintSinks;
+use Psalm\Internal\Codebase\ConditionalTaintSources;
 use Psalm\Internal\Codebase\DatabaseTaints;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Codebase\ReceiverPropertyTaints;
@@ -888,6 +889,16 @@ final class MethodCallReturnTypeFetcher
             $args,
             $cased_method_id,
             $node_location,
+        );
+
+        $return_type_candidate = ConditionalTaintSources::taintCall(
+            $statements_analyzer,
+            $taint_flow_graph,
+            $method_storage,
+            $args,
+            $cased_method_id,
+            $node_location,
+            $return_type_candidate,
         );
 
         $return_type_candidate = ReceiverPropertyTaints::taintCall(

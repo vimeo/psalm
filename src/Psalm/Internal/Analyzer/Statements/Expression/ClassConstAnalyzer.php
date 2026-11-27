@@ -21,6 +21,7 @@ use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Codebase\PhpDeprecations;
+use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TypeExpander;
@@ -858,6 +859,19 @@ final class ClassConstAnalyzer
             }
         } elseif (!$late_static_binding) {
             $context->vars_in_scope[$const_id] = $stmt_type;
+        }
+
+        if ($const_storage !== null
+            && $const_storage->taint_source_types !== 0
+            && ($graph = $statements_analyzer->getTaintFlowGraphWithSuppressed())
+        ) {
+            $source = DataFlowNode::getForTaint(
+                $const_id,
+                new CodeLocation($statements_analyzer->getSource(), $stmt),
+                $const_storage->taint_source_types,
+            );
+            $graph->addSource($source);
+            $stmt_type = $stmt_type->addParentNodes([$source->id => $source]);
         }
 
         $statements_analyzer->node_data->setType($stmt, $stmt_type);

@@ -90,6 +90,7 @@ use function array_values;
 use function assert;
 use function count;
 use function end;
+use function explode;
 use function implode;
 use function in_array;
 use function is_array;
@@ -1699,6 +1700,7 @@ final class ClassLikeNodeScanner
         $deprecated = false;
         $description = null;
         $since_php_version_id = null;
+        $taint_source_types = 0;
         $config = $this->config;
 
         if ($comment && $comment->getText() && ($config->use_docblock_types || $config->use_docblock_property_types)) {
@@ -1712,6 +1714,26 @@ final class ClassLikeNodeScanner
             $since_php_version_id = $this->parseSincePhpVersionId($comments);
 
             $description = $comments->description;
+
+            foreach ($comments->tags['psalm-taint-source'] ?? [] as $source) {
+                $taint_type = explode(' ', trim($source))[0];
+                $source_location = new CodeLocation($this->file_scanner, $stmt, null, true);
+                if ($taint_type === '' || $taint_type[0] === '(') {
+                    $storage->docblock_issues[] = new InvalidDocblock(
+                        '@psalm-taint-source of a constant expects a taint',
+                        $source_location,
+                    );
+
+                    continue;
+                }
+
+                $taint_source_types |= FunctionLikeDocblockParser::registerTaint(
+                    $this->codebase,
+                    $taint_type,
+                    $source_location,
+                    $this->file_storage->scan_issues,
+                ) ?? 0;
+            }
 
             try {
                 $var_comments = CommentAnalyzer::getTypeFromComment(
@@ -1858,6 +1880,7 @@ final class ClassLikeNodeScanner
                     $this->aliases,
                     $this->codebase->analysis_php_version_id,
                 ),
+                $taint_source_types,
             );
 
             if ($this->codebase->analysis_php_version_id >= 8_03_00

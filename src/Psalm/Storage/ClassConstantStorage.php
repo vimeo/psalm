@@ -59,6 +59,10 @@ final class ClassConstantStorage implements HasAttributesInterface
          * The type the constant declares natively (PHP 8.3)
          */
         public readonly ?Union $signature_type = null,
+        /**
+         * The taints of its value (`@psalm-taint-source`), such as a secret key hardcoded in the class
+         */
+        public readonly int $taint_source_types = 0,
     ) {
     }
 

@@ -530,6 +530,13 @@ final class FunctionLikeDocblockParser
 
         if (isset($parsed_docblock->tags['psalm-taint-source'])) {
             foreach ($parsed_docblock->tags['psalm-taint-source'] as $param) {
+                if (str_starts_with(trim($param), '(')) {
+                    $line_parts = CommentAnalyzer::splitDocLine(trim($param));
+                    $info->conditional_taint_sources[] = CommentAnalyzer::sanitizeDocblockType($line_parts[0]);
+
+                    continue;
+                }
+
                 $param_parts = preg_split('/\s+/', trim($param));
                 if ($param_parts === false) {
                     throw new AssertionError(preg_last_error_msg());

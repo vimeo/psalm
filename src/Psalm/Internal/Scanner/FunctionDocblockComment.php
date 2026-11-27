@@ -146,6 +146,13 @@ final class FunctionDocblockComment
     public int $taint_source_types = 0;
 
     /**
+     * `@psalm-taint-source (<conditional>)`: the conditional types of the taints of what each call returns
+     *
+     * @var list<string>
+     */
+    public array $conditional_taint_sources = [];
+
+    /**
      * The taints of the sources under keys of what the function-like returns: `@psalm-taint-source input return['key']`
      *
      * @var list<array{non-empty-list<string>, int}>

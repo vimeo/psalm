@@ -340,6 +340,14 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
     public array $conditional_taint_sinks = [];
 
     /**
+     * `@psalm-taint-source (<conditional>)`: the conditional types of the taints of what the function-like returns,
+     * which each call resolves with its arguments
+     *
+     * @var list<Union>
+     */
+    public array $conditional_taint_sources = [];
+
+    /**
      * @var array<int, string>
      */
     public array $return_source_params = [];
