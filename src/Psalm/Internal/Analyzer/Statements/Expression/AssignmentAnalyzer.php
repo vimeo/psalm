@@ -39,6 +39,7 @@ use Psalm\Internal\Codebase\CanonicalPaths;
 use Psalm\Internal\Codebase\CombinedFlowGraph;
 use Psalm\Internal\Codebase\DataFlowGraph;
 use Psalm\Internal\Codebase\DatabaseTaints;
+use Psalm\Internal\Codebase\ReceiverPropertyTaints;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\TaintStore;
 use Psalm\Internal\Codebase\TaintValidations;
@@ -3748,6 +3749,16 @@ final class AssignmentAnalyzer
                 $added_taints,
                 $codebase->getInputTaints(),
             );
+
+            if ($assign_var instanceof PhpParser\Node\Expr\Variable) {
+                ReceiverPropertyTaints::recordExactObject(
+                    $statements_analyzer,
+                    $context,
+                    $var_id,
+                    $assign_value,
+                    $var_location,
+                );
+            }
 
             // the start of a string assigned, for the keys of the keyed stores it is used as
             $taint_flow_graph = $statements_analyzer->getTaintFlowGraphWithSuppressed();

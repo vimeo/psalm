@@ -901,6 +901,7 @@ final class MethodCallReturnTypeFetcher
             $context,
             $node_location,
             $return_type_candidate,
+            ReceiverPropertyTaints::isExactReceiver($context, $var_id, $var_expr, $method_id->fq_class_name),
         );
 
         $added_taints |= $result_added_taints;

@@ -166,6 +166,17 @@ final class Context
     public array $foreach_element_copies = [];
 
     /**
+     * The variables holding an object the code constructed with `new` of a class it names, whose class is then that
+     * one, not a class extending it (see ReceiverPropertyTaints::isExactReceiver()): variable id => [the id of the
+     * node of the assignment, the class]. A variable holding anything else than what that assignment gave it has other
+     * parent nodes
+     *
+     * @internal
+     * @var array<string, array{string, lowercase-string}>
+     */
+    public array $exact_objects = [];
+
+    /**
      * The foreach loops whose element values an assignment under the key of the element in their body may put
      * back under that key (see ArrayAssignmentAnalyzer::getForeachMarker()): key variable id => [ids of the
      * parent nodes the loop gave it, the marker of the loop (see ForeachAnalyzer::getForeachMarker())]
