@@ -401,8 +401,10 @@ final class ConfigTest extends DeferredAnalyzerTestCase
         $root = sys_get_temp_dir() . '/psalm_symlink_cycle_' . uniqid();
         mkdir($root . '/app', 0777, true);
         mkdir($root . '/vendor/some/package/tests-app/example/vendor/some', 0777, true);
+        mkdir($root . '/vendor/some/package/src');
         file_put_contents($root . '/app/a.php', '<?php');
         file_put_contents($root . '/vendor/some/package/b.php', '<?php');
+        file_put_contents($root . '/vendor/some/package/src/c.php', '<?php');
 
         // vendor/some/package/tests-app/example/vendor/some/package is vendor/some/package again
         if (!@symlink('../../../../', $root . '/vendor/some/package/tests-app/example/vendor/some/package')) {
@@ -419,7 +421,7 @@ final class ConfigTest extends DeferredAnalyzerTestCase
                             <directory name="app" />
                             <directory name="vendor" />
                             <ignoreFiles>
-                                <directory name="**/**/vendor" />
+                                <directory name="vendor/**/src" />
                             </ignoreFiles>
                         </projectFiles>
                     </psalm>',
@@ -429,11 +431,14 @@ final class ConfigTest extends DeferredAnalyzerTestCase
             $config = $this->project_analyzer->getConfig();
 
             $this->assertTrue($config->isInProjectDirs($root . '/app/a.php'));
-            $this->assertFalse($config->isInProjectDirs($root . '/vendor/some/package/tests-app/example/vendor/x.php'));
+            $this->assertTrue($config->isInProjectDirs($root . '/vendor/some/package/b.php'));
+            $this->assertFalse($config->isInProjectDirs($root . '/vendor/some/package/src/c.php'));
         } finally {
             unlink($root . '/vendor/some/package/tests-app/example/vendor/some/package');
+            unlink($root . '/vendor/some/package/src/c.php');
             unlink($root . '/vendor/some/package/b.php');
             unlink($root . '/app/a.php');
+            rmdir($root . '/vendor/some/package/src');
             rmdir($root . '/vendor/some/package/tests-app/example/vendor/some');
             rmdir($root . '/vendor/some/package/tests-app/example/vendor');
             rmdir($root . '/vendor/some/package/tests-app/example');
