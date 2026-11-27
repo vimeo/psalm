@@ -335,6 +335,59 @@ final class DisjointArrayShapesTest extends TestCase
 
                     g(f(["a" => 1]));',
             ],
+            'shapeWithNoKeyLeftAfterNotIssetIsTheEmptyArray' => [
+                'code' => '<?php
+                    /** @return array{a?: int}|array{b: string} */
+                    function f(): array {
+                        return [];
+                    }
+
+                    $x = f();
+                    if (isset($x["a"])) {
+                        exit;
+                    }',
+                'assertions' => [
+                    '$x===' => 'array{b?: string}',
+                ],
+            ],
+            'shapeOfIntsIsNotHeldByAShapeOfFloats' => [
+                'code' => '<?php
+                    /** @return array{a: float, z?: int}|array{a: int}|array{b: string} */
+                    function f(): array {
+                        return ["a" => 1];
+                    }
+
+                    $x = f();
+                    if (isset($x["z"])) {
+                        exit;
+                    }',
+                'assertions' => [
+                    '$x===' => 'array{a: float|int}|array{b: string}',
+                ],
+            ],
+            'unionOfShapesReturnedByAClosureIsInParentheses' => [
+                'code' => '<?php
+                    /** @return Closure():(array{a: int}|array{b: string}) */
+                    function f(): Closure {
+                        return static fn(): array => ["a" => 1];
+                    }
+
+                    $c = f();',
+                'assertions' => [
+                    '$c===' => 'Closure[impure]():(array{a: int}|array{b: string})',
+                ],
+            ],
+            'countIsNotRedundantWhenOneShapeMayHaveFewerItems' => [
+                'code' => '<?php
+                    /** @param array{a: int, b: int}|array{c: int, d?: int, e?: int} $x */
+                    function f(array $x): int {
+                        if (count($x) >= 2) {
+                            return 1;
+                        }
+
+                        return 0;
+                    }',
+            ],
         ];
     }
 

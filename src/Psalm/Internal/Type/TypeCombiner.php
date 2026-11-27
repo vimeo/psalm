@@ -2008,7 +2008,16 @@ final class TypeCombiner
                 || ($input_property->possibly_undefined && !$container_property->possibly_undefined)
                 || ($input_property->getId() !== $container_property->getId()
                     && (!$codebase
-                        || !UnionTypeComparator::isContainedBy($codebase, $input_property, $container_property)))
+                        || !UnionTypeComparator::isContainedBy(
+                            $codebase,
+                            $input_property,
+                            $container_property,
+                            false,
+                            false,
+                            null,
+                            false,
+                            false,
+                        )))
             ) {
                 return false;
             }

@@ -160,7 +160,8 @@ trait CallableTrait
         $return_type_string = '';
 
         if ($this->return_type !== null) {
-            $return_type_multiple = count($this->return_type->getAtomicTypes()) > 1;
+            $return_type_multiple = count($this->return_type->getAtomicTypes()) > 1
+                || $this->return_type->hasDisjointShapes();
             $return_type_string = ':' . ($return_type_multiple ? '(' : '')
                 . $this->return_type->getId() . ($return_type_multiple ? ')' : '');
         }
@@ -218,7 +219,8 @@ trait CallableTrait
         }
 
         if ($this->return_type !== null) {
-            $return_type_multiple = count($this->return_type->getAtomicTypes()) > 1;
+            $return_type_multiple = count($this->return_type->getAtomicTypes()) > 1
+                || $this->return_type->hasDisjointShapes();
 
             $return_type_string = ':' . ($return_type_multiple ? '(' : '') . $this->return_type->toNamespacedString(
                 $namespace,
@@ -268,7 +270,8 @@ trait CallableTrait
         }
 
         if ($this->return_type !== null) {
-            $return_type_multiple = count($this->return_type->getAtomicTypes()) > 1;
+            $return_type_multiple = count($this->return_type->getAtomicTypes()) > 1
+                || $this->return_type->hasDisjointShapes();
             $return_type_string = ':' . ($return_type_multiple ? '(' : '')
                 . $this->return_type->getId($exact) . ($return_type_multiple ? ')' : '');
         }

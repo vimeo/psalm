@@ -2761,8 +2761,7 @@ class Reconciler
                 } elseif ($property->possibly_undefined) {
                     $properties = $shape->properties;
                     unset($properties[$offset]);
-                    // an array with no items is no shape
-                    $shapes[] = $properties ? $shape->setProperties($properties) : $shape;
+                    $shapes[] = $properties ? $shape->setProperties($properties) : Type::getEmptyArrayAtomic();
                 }
                 continue;
             }

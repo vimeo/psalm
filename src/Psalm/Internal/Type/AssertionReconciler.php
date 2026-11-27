@@ -185,8 +185,30 @@ final class AssertionReconciler extends Reconciler
             $result_type = Type::combineUnionTypes($shape_result_type, $result_type, $codebase);
         }
 
-        // no shape is narrowed: the assertion is as redundant as it is for one of them
+        // no shape is narrowed: the assertion is redundant when it is for each of them
         if (!$changed && $code_location && $key !== null) {
+            foreach ($shapes as $shape) {
+                IssueBuffer::startRecording();
+                self::reconcileUnion(
+                    $assertion,
+                    $existing_var_type->getBuilder()->addType($shape)->freeze(),
+                    $key,
+                    $statements_analyzer,
+                    $inside_loop,
+                    $template_type_map,
+                    $code_location,
+                    $suppressed_issues,
+                    $shape_failed_reconciliation,
+                    $negated,
+                );
+                $shape_issues = IssueBuffer::clearRecordingLevel();
+                IssueBuffer::stopRecording();
+
+                if (!$shape_issues) {
+                    return $result_type ?? $existing_var_type;
+                }
+            }
+
             self::reconcileUnion(
                 $assertion,
                 $existing_var_type->getBuilder()->addType($shapes[0])->freeze(),
