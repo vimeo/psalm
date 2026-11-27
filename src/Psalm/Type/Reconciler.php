@@ -6,6 +6,7 @@ namespace Psalm\Type;
 
 use InvalidArgumentException;
 use Psalm\CodeLocation;
+use Psalm\CodeLocation\Raw;
 use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
@@ -2292,14 +2293,19 @@ class Reconciler
         // a read of a property the code can't access goes through `__get()`, which the `@property` describes
         if (!$property_exists
             || ($statements_analyzer !== null
-                && $code_location !== null
                 && $codebase->methods->methodExists($codebase, new MethodIdentifier($fq_class_name, '__get'))
                 && !self::isInTrait($statements_analyzer)
                 && ClassLikeAnalyzer::checkPropertyVisibility(
                     $property_id,
                     new Context($statements_analyzer->getFQCLN()),
                     $statements_analyzer,
-                    $code_location,
+                    $code_location ?? new Raw(
+                        '',
+                        $statements_analyzer->getFilePath(),
+                        $statements_analyzer->getFileName(),
+                        0,
+                        0,
+                    ),
                     [],
                     false,
                 ) !== true)
