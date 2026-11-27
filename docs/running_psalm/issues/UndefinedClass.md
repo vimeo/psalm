@@ -8,4 +8,4 @@ Emitted when referencing a class that does not exist
 $a = new A();
 ```
 
-Is also emitted when using extension classes not added to the `composer.json` requirements or to the [enableExtensions](https://psalm.dev/docs/running_psalm/configuration/#enableextensions) config key.  
+Is also emitted for a class of an extension Psalm has no stub for, when the PHP running Psalm doesn't load the extension. The use of an extension `composer.json` doesn't declare is reported as [MissingExtensionRequirement](MissingExtensionRequirement.md).

@@ -95,8 +95,6 @@ metadata:
   infers as pure get specialized per call, and `error_log()` doesn't prevent it. To test
   shared-node behaviour, use `@psalm-impure`, or a non-final public method or static
   method writing a static property.
-- `PDO::query` isn't a sink in a bare scratch project (extension not loaded). Use
-  `shell_exec` for a non-html sink.
 - Two `@psalm-taint-escape (cond ? ...)` annotations on one function make every call
   remove both kinds, whatever the arguments.
 - `@psalm-suppress TaintedHtml` (or any specific `Tainted*`) in a docblock does nothing.
@@ -136,9 +134,8 @@ metadata:
 
 - A builtin that isn't stubbed (e.g. `Closure`) takes params straight from the call map,
   so sinks on reflected `MethodStorage` are never seen: use `InternalTaintSinkMap`.
-- `stubs/extensions/*.phpstub` load only when the extension is enabled (composer `ext-*`
-  or `<enableExtensions>`), so sinks for simplexml/dom/soap/… must **also** go in
-  `InternalTaintSinkMap`.
+- `stubs/extensions/*.phpstub` load when the scanned code uses one of their classes,
+  functions or constants, so a sink of a stubbed extension goes in its stub only.
 - URL-fetching sinks get `file|ssrf|url_component|url_path`; host-only sinks
   (fsockopen) get `ssrf` only.
 - Report dedupe is per (sink, predecessor, origin): SSRF hides url_component and url_path,

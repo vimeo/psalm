@@ -309,6 +309,57 @@ final class MissingExtensionRequirementTest extends TestCase
     }
 
     /**
+     * The stub of the extension refines the class of a library implementing it, which still doesn't make the extension
+     * optional
+     */
+    public function testClassOfAStubALibraryDeclares(): void
+    {
+        $this->addLibraryOfProtobufStubClass();
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+        $this->addFile($file_path, '<?php
+            function f(): Google\\Protobuf\\Internal\\Message {
+                return new Google\\Protobuf\\Internal\\Message();
+            }');
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('Google\\Protobuf\\Internal\\Message is part of the ext-protobuf extension');
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testClassOfAStubALibraryDeclaresWithItsExtension(): void
+    {
+        $this->project_analyzer->getConfig()->declared_extensions = ['protobuf' => true];
+        $this->addLibraryOfProtobufStubClass();
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+        $this->addFile($file_path, '<?php
+            function f(): int {
+                $message = new Google\\Protobuf\\Internal\\Message();
+                $message->clear();
+                return $message->libraryOnly();
+            }');
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    private function addLibraryOfProtobufStubClass(): void
+    {
+        // outside the project directories, as libraries are: a stub doesn't refine the classes of those
+        $this->addFile((string) getcwd() . '/vendor/protobuf.php', '<?php
+            namespace Google\\Protobuf\\Internal;
+
+            class Message {
+                public function clear(): void {}
+
+                public function libraryOnly(): int {
+                    return 1;
+                }
+            }');
+    }
+
+    /**
      * @psalm-pure
      */
     #[Override]
@@ -410,6 +461,44 @@ final class MissingExtensionRequirementTest extends TestCase
                 'code' => '<?php
                     function f(): ?ZipArchive {
                         return class_exists(ZipArchive::class) ? new ZipArchive() : null;
+                    }',
+            ],
+            'extensionOfAStubLoaded' => [
+                'code' => '<?php
+                    function f(): ?Decimal\\Decimal {
+                        return extension_loaded("decimal") ? new Decimal\\Decimal("1") : null;
+                    }',
+            ],
+            'classOfAStubExists' => [
+                'code' => '<?php
+                    function f(): ?Decimal\\Decimal {
+                        return class_exists(Decimal\\Decimal::class) ? new Decimal\\Decimal("1") : null;
+                    }',
+            ],
+            'functionOfAStubExists' => [
+                'code' => '<?php
+                    function f(): array {
+                        return function_exists("xdebug_get_code_coverage") ? xdebug_get_code_coverage() : [];
+                    }',
+            ],
+            'classOfAStubTheProjectDeclares' => [
+                'code' => '<?php
+                    final class Redis {
+                        public function get(string $key): string {
+                            return $key;
+                        }
+                    }
+                    echo (new Redis())->get("k");',
+            ],
+            'functionsOfAStubTheProjectDeclares' => [
+                'code' => '<?php
+                    if (!function_exists("zstd_compress")) {
+                        function zstd_compress(string $data, int $level = 3): string {
+                            return $data . $level;
+                        }
+                    }
+                    function xdebug_get_code_coverage(): array {
+                        return [];
                     }',
             ],
             'closureOfAGuardedBranch' => [
@@ -581,6 +670,20 @@ final class MissingExtensionRequirementTest extends TestCase
                 'error_message' => 'socket_create is part of the ext-sockets extension',
                 'error_levels' => [],
                 'php_version' => '8.0',
+            ],
+            'classOfAnExtensionOnlyItsStubDeclares' => [
+                'code' => '<?php
+                    function f(): Decimal\\Decimal {
+                        return new Decimal\\Decimal("1");
+                    }',
+                'error_message' => 'Decimal\\Decimal is part of the ext-decimal extension',
+            ],
+            'functionOfAnExtensionOnlyItsStubDeclares' => [
+                'code' => '<?php
+                    function f(): array {
+                        return xdebug_get_code_coverage();
+                    }',
+                'error_message' => 'xdebug_get_code_coverage is part of the ext-xdebug extension',
             ],
             'composerNameOfOpcache' => [
                 'code' => '<?php

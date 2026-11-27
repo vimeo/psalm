@@ -847,7 +847,7 @@ Optional. Same format as `<projectFiles>`. Directories Psalm should load but not
 Optional. A list of extensions to search over. See [Checking non-PHP files](checking_non_php_files.md) to understand how to extend this.
 
 #### &lt;enableExtensions&gt;
-Optional. A list of extensions to enable. By default, only extensions required by your composer.json will be enabled.
+Optional. Extensions the project uses besides those `composer.json` declares, so that [MissingExtensionRequirement](issues/MissingExtensionRequirement.md) doesn't report their use.
 ```xml
 <enableExtensions>
   <extension name="decimal"/>
@@ -857,12 +857,7 @@ Optional. A list of extensions to enable. By default, only extensions required b
 ```
 
 #### &lt;disableExtensions&gt;
-Optional. A list of extensions to disable. By default, only extensions required by your composer.json will be enabled.
-```xml
-<disableExtensions>
-  <extension name="gmp"/>
-</disableExtensions>
-```
+Deprecated, and ignored. Psalm loads the stub of an extension it has one for (`stubs/extensions`) when the code uses one of its classes, functions or constants (the language server loads all of them), whether or not `composer.json` requires the extension.
 
 #### &lt;plugins&gt;
 Optional. A list of `<plugin filename="path_to_plugin.php" />` entries. See the [Plugins](plugins/using_plugins.md) section for more information.
@@ -927,7 +922,7 @@ plugins add, so that an annotation a stub gets wrong isn't silently dropped.
 
 Psalm also ships stubs for some libraries, loaded when your code uses them (see [loadLibraryStubs](#loadlibrarystubs)).
 
-Note: some extension stubs are already built into Psalm, and can be enabled by requiring the extension in your `composer.json` or by using the [enableExtensions](https://psalm.dev/docs/running_psalm/configuration/#enableextensions) config key.  
+Psalm also ships stubs for some extensions, loaded when your code uses them (see [disableExtensions](#disableextensions)).
 
 #### &lt;ignoreExceptions&gt;
 Optional. A list of exceptions to not report for `checkForThrowsDocblock` or `checkForThrowsInGlobalScope`. The `class` tag will make Psalm ignore only instances of the specified class, while `classAndDescendants` will make Psalm also ignore subclasses. If an exception has `onlyGlobalScope` set to `true`, only `checkForThrowsInGlobalScope` is ignored for that exception, e.g.

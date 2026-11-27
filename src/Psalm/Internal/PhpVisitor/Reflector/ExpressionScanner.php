@@ -92,6 +92,10 @@ final class ExpressionScanner
         } elseif ($node instanceof PhpParser\Node\Expr\FuncCall && $node->name instanceof PhpParser\Node\Name) {
             $function_id = $node->name->toString();
 
+            foreach (self::getFunctionIds($node->name, $aliases) as $id) {
+                $file_storage->referenced_functions_and_constants[$id] = true;
+            }
+
             if (InternalCallMapHandler::inCallMap($function_id)) {
                 self::registerClassMapFunctionCall(
                     $codebase,
@@ -103,6 +107,10 @@ final class ExpressionScanner
                     $functionlike_storage,
                     $skip_if_descendants,
                 );
+            }
+        } elseif ($node instanceof PhpParser\Node\Expr\ConstFetch) {
+            foreach (self::getFunctionIds($node->name, $aliases, true) as $id) {
+                $file_storage->referenced_functions_and_constants[$id] = true;
             }
         }
     }
@@ -170,13 +178,16 @@ final class ExpressionScanner
     }
 
     /**
-     * The ids of the functions the name of a function call may refer to: one declared in the namespace, or else
-     * the global one
+     * The ids of the functions the name of a function call may refer to, or of the constants the name of a constant
+     * fetch may: one declared in the namespace, or else the global one
      *
      * @return list<lowercase-string>
      */
-    private static function getFunctionIds(PhpParser\Node\Name $name, Aliases $aliases): array
-    {
+    private static function getFunctionIds(
+        PhpParser\Node\Name $name,
+        Aliases $aliases,
+        bool $is_constant = false,
+    ): array {
         if ($name->isFullyQualified()) {
             return [strtolower($name->toString())];
         }
@@ -187,8 +198,11 @@ final class ExpressionScanner
             : '';
 
         if ($name->isUnqualified()) {
-            if (isset($aliases->functions[$first])) {
-                return [strtolower($aliases->functions[$first])];
+            $imported = $is_constant
+                ? $aliases->constants[$name->toString()] ?? null
+                : $aliases->functions[$first] ?? null;
+            if ($imported !== null) {
+                return [strtolower($imported)];
             }
 
             return $namespace_prefix === '' ? [$first] : [strtolower($namespace_prefix . $name->toString()), $first];

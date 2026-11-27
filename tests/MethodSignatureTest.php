@@ -39,6 +39,10 @@ final class MethodSignatureTest extends TestCase
             '<?php
                 use Ds\\Collection;
 
+                function size(Collection $c): int {
+                    return $c->count();
+                }
+
                 final class Bag {
                     /** @psalm-mutation-free */
                     public function isEmpty(): int {
@@ -101,17 +105,12 @@ final class MethodSignatureTest extends TestCase
 
     public function testMismatchingParamShowsExactCallMapGuideType(): void
     {
-        // with the extension stub disabled, the callmap type of the guide method is not overridden by a stub
+        // without the extension stub, the callmap type of the guide method is not overridden by a stub
+        $config = TestConfig::loadFromXML(dirname(__DIR__), '<?xml version="1.0"?><psalm></psalm>');
+        self::assertInstanceOf(TestConfig::class, $config);
+        $config->disableExtension('dom');
         $this->project_analyzer = new ProjectAnalyzer(
-            TestConfig::loadFromXML(
-                dirname(__DIR__),
-                '<?xml version="1.0"?>
-                <psalm>
-                    <disableExtensions>
-                        <extension name="dom"/>
-                    </disableExtensions>
-                </psalm>',
-            ),
+            $config,
             new Providers(
                 $this->file_provider,
                 new FakeParserCacheProvider(),

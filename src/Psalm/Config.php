@@ -20,7 +20,12 @@ use InvalidArgumentException;
 use JsonException;
 use LogicException;
 use OutOfBoundsException;
+use PhpParser\Node\Arg;
+use PhpParser\Node\Expr\FuncCall;
+use PhpParser\Node\Name;
+use PhpParser\Node\Scalar\String_;
 use PhpParser\Node\Stmt\ClassLike;
+use PhpParser\Node\Stmt\Const_;
 use PhpParser\Node\Stmt\Function_;
 use PhpParser\NodeFinder;
 use PhpParser\NodeTraverser;
@@ -45,6 +50,7 @@ use Psalm\Internal\Lz4Serializer;
 use Psalm\Internal\Perf;
 use Psalm\Internal\Provider\AddRemoveTaints\HtmlFunctionTainter;
 use Psalm\Internal\Provider\AddRemoveTaints\JsonFunctionTainter;
+use Psalm\Internal\Provider\FileStorageProvider;
 use Psalm\Internal\Scanner\FileScanner;
 use Psalm\Internal\ZstdSerializer;
 use Psalm\Issue\ArgumentIssue;
@@ -515,6 +521,9 @@ final class Config
      */
     private static array $library_stubs = [];
 
+    /** @var array<string, list<lowercase-string>> */
+    private static array $extension_stub_symbols = [];
+
     public bool $resolve_from_config_file = true;
 
     public bool $restrict_return_types = false;
@@ -655,12 +664,10 @@ final class Config
     public ?int $lowest_composer_php_version_id = null;
 
     /**
-     * A list of php extensions supported by Psalm.
-     * Where key - extension name (without ext- prefix), value - whether to load extension’s stub.
-     * Values:
-     *  - true: ext enabled explicitly or bundled with PHP (should load stubs)
-     *  - false: ext disabled explicitly (should not load stubs)
-     *  - null: state is unknown (e.g. config not processed yet) or ext neither explicitly enabled or disabled.
+     * The extensions Psalm has a stub for in stubs/extensions, by name (without `ext-`). Values:
+     *  - true: composer.json requires the extension, or `<enableExtensions>` lists it: its stub is loaded
+     *  - false: its stub isn't loaded, for a test of a class the callmap describes
+     *  - null: neither: its stub is loaded if the scanned code uses one of its symbols, or by the language server
      *
      * @psalm-readonly-allow-private-mutation
      * @var array<string, bool|null>
@@ -779,6 +786,13 @@ final class Config
 
     /** @var list<string> */
     public array $config_warnings = [];
+
+    /**
+     * The extension of each loaded stub of stubs/extensions, by the path the scanner gives it
+     *
+     * @var array<string, string>
+     */
+    private array $extension_stub_paths = [];
 
     /**
      * @internal
@@ -1140,7 +1154,7 @@ final class Config
         $deprecated_attributes = [];
 
         /** @var list<string> */
-        $deprecated_elements = [];
+        $deprecated_elements = ['disableExtensions'];
 
         $psalm_element_item = $dom_document->getElementsByTagName('psalm')->item(0);
         assert($psalm_element_item !== null);
@@ -1379,14 +1393,6 @@ final class Config
             }
         }
 
-        if (isset($config_xml->disableExtensions) && isset($config_xml->disableExtensions->extension)) {
-            foreach ($config_xml->disableExtensions->extension as $extension) {
-                assert(isset($extension["name"]));
-                $extensionName = (string) $extension["name"];
-                assert(array_key_exists($extensionName, $config->php_extensions));
-                $config->php_extensions[$extensionName] = false;
-            }
-        }
 
         if (isset($config_xml['phpVersion'])) {
             $config->configured_php_version = (string) $config_xml['phpVersion'];
@@ -3173,14 +3179,28 @@ final class Config
             $this->internal_stubs[] = $stubsDir . 'Php86Functions.phpstub';
         }
 
+        // also the stubs of the extensions composer.json doesn't require, if the scanned code uses one of their
+        // symbols: MissingExtensionRequirement reports that use. The language server visits the stubs once, before
+        // the code it later sees changing, so it loads all of them.
         $ext_stubs_dir = $dir_lvl_2 . DIRECTORY_SEPARATOR . "stubs" . DIRECTORY_SEPARATOR . "extensions";
+        $referenced_symbols = null;
+        $extension_stubs = [];
         foreach ($this->php_extensions as $ext => $enabled) {
+            $stub_path = $ext_stubs_dir . DIRECTORY_SEPARATOR . "$ext.phpstub";
+            if ($enabled === null && $codebase->language_server) {
+                $enabled = true;
+            } elseif ($enabled === null) {
+                $referenced_symbols ??= self::getReferencedSymbols();
+                $enabled = array_any(
+                    self::getExtensionStubSymbols($stub_path),
+                    static fn(string $symbol): bool => isset($referenced_symbols[$symbol]),
+                );
+            }
             if ($enabled) {
-                $this->internal_stubs[] = $ext_stubs_dir . DIRECTORY_SEPARATOR . "$ext.phpstub";
+                $extension_stubs[$stub_path] = $ext;
             }
         }
-
-        $this->internal_stubs = [...$this->internal_stubs, ...$library_stubs];
+        $this->internal_stubs = [...$this->internal_stubs, ...array_keys($extension_stubs), ...$library_stubs];
 
         foreach ($this->internal_stubs as $stub_path) {
             if (!file_exists($stub_path)) {
@@ -3208,14 +3228,18 @@ final class Config
         }
 
         $user_stub_paths = [];
-        foreach ($stub_files as $file_path) {
-            $is_user_stub = isset($this->stub_files[$file_path]);
-            $file_path = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $file_path);
+        $this->extension_stub_paths = [];
+        foreach ($stub_files as $original_path) {
+            $is_user_stub = isset($this->stub_files[$original_path]);
+            $file_path = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $original_path);
             // fix mangled phar paths on Windows
             if (str_starts_with($file_path, 'phar:\\\\')) {
                 $file_path = 'phar://' . substr($file_path, 7);
             }
             $codebase->scanner->addStubFileToDeepScan($file_path);
+            if (isset($extension_stubs[$original_path])) {
+                $this->extension_stub_paths[$file_path] = $extension_stubs[$original_path];
+            }
             if ($is_user_stub) {
                 $user_stub_paths[] = $file_path;
             }
@@ -3259,6 +3283,69 @@ final class Config
                 yield $extras[$package]['psalm']['pluginClass'];
             }
         }
+    }
+
+    /**
+     * The class-likes, functions and constants the scanned files reference, lowercase: also the parents, interfaces
+     * and traits of their class-likes
+     *
+     * @return array<lowercase-string, true>
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    private static function getReferencedSymbols(): array
+    {
+        $symbols = [];
+        foreach (FileStorageProvider::getAll() as $file_storage) {
+            $symbols += $file_storage->referenced_functions_and_constants;
+            foreach ($file_storage->referenced_classlikes
+                + $file_storage->required_classes
+                + $file_storage->required_interfaces as $classlike_lc => $_) {
+                $symbols[$classlike_lc] = true;
+            }
+        }
+
+        return $symbols;
+    }
+
+    /**
+     * The class-likes, functions and constants the stub of an extension declares, lowercase
+     *
+     * @return list<lowercase-string>
+     */
+    private static function getExtensionStubSymbols(string $stub_path): array
+    {
+        if (isset(self::$extension_stub_symbols[$stub_path])) {
+            return self::$extension_stub_symbols[$stub_path];
+        }
+
+        $stmts = (new NodeTraverser(new NameResolver()))->traverse(
+            (new ParserFactory())->createForHostVersion()->parse((string) file_get_contents($stub_path)) ?? [],
+        );
+
+        $symbols = [];
+        $finder = new NodeFinder();
+        $declarations = [
+            ...$finder->findInstanceOf($stmts, ClassLike::class),
+            ...$finder->findInstanceOf($stmts, Function_::class),
+        ];
+        foreach ($finder->findInstanceOf($stmts, Const_::class) as $const_stmt) {
+            $declarations = [...$declarations, ...$const_stmt->consts];
+        }
+        foreach ($declarations as $declaration) {
+            if ($declaration->namespacedName !== null) {
+                $symbols[] = strtolower($declaration->namespacedName->toString());
+            }
+        }
+        foreach ($finder->findInstanceOf($stmts, FuncCall::class) as $call) {
+            $name = $call->args[0] ?? null;
+            if ($call->name instanceof Name && $call->name->toLowerString() === 'define'
+                && $name instanceof Arg && $name->value instanceof String_
+            ) {
+                $symbols[] = strtolower($name->value->value);
+            }
+        }
+
+        return self::$extension_stub_symbols[$stub_path] = $symbols;
     }
 
     /**
@@ -3992,6 +4079,17 @@ final class Config
     public function getStubFiles(): array
     {
         return $this->stub_files;
+    }
+
+    /**
+     * The extension whose stub of stubs/extensions is at $file_path
+     *
+     * @internal
+     * @psalm-mutation-free
+     */
+    public function getExtensionOfStub(string $file_path): ?string
+    {
+        return $this->extension_stub_paths[$file_path] ?? null;
     }
 
     /**

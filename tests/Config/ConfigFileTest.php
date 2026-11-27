@@ -244,7 +244,7 @@ final class ConfigFileTest extends DeferredAnalyzerTestCase
     {
         file_put_contents($this->file_path, trim('
             <?xml version="1.0"?>
-            <psalm>
+            <psalm xmlns="https://getpsalm.org/schema/config">
                 <enableExtensions>
                     <extension name="mysqli"/>
                     <extension name="pdo"/>
@@ -259,8 +259,14 @@ final class ConfigFileTest extends DeferredAnalyzerTestCase
         $config_file = new ConfigFile((string)getcwd(), $this->file_path);
         $config = $config_file->getConfig();
 
-        $this->assertFalse($config->php_extensions["mysqli"]);
-        $this->assertFalse($config->php_extensions["pdo"]);
+        // the stub of an extension is loaded when the code uses it: disableExtensions is deprecated and ignored
+        $this->assertTrue($config->php_extensions["mysqli"]);
+        $this->assertTrue($config->php_extensions["pdo"]);
+        $this->assertCount(1, $config->config_issues);
+        $this->assertStringContainsString(
+            'Element "disableExtensions" is deprecated',
+            $config->config_issues[0]->message,
+        );
     }
 
     public function testInvalidExtension(): void

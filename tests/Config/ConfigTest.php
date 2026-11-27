@@ -2632,49 +2632,106 @@ final class ConfigTest extends DeferredAnalyzerTestCase
     }
 
     /**
-     * @return array<string, array{0: string, 1: string, 2: string, 3?: string}>
+     * A config of the project of this repository, which tests often use, without TestConfig loading only the
+     * extension stubs a test uses
+     */
+    private function getProjectAnalyzerWithAConfigOfThisRepository(string $php_version): ProjectAnalyzer
+    {
+        $config = Config::loadFromXML(
+            dirname(__DIR__, 2),
+            '<?xml version="1.0"?>
+            <psalm errorLevel="1">
+                <projectFiles>
+                    <directory name="src" />
+                </projectFiles>
+            </psalm>',
+        );
+        $config->throw_exception = true;
+
+        $project_analyzer = $this->getProjectAnalyzerWithConfig($config);
+        $project_analyzer->setPhpVersion($php_version, 'tests');
+
+        return $project_analyzer;
+    }
+
+    /**
+     * @return array<string, array{string, list<string>, list<string>}>
      * @psalm-pure
      */
-    public static function providerSinksOfExtensionsWithoutTheirStubs(): array
+    public static function providerStubsOfTheExtensionsTheCodeUses(): array
     {
         return [
-            'PDO::query' => ['PDO', 'query', 'TaintedSql'],
-            'PDO::exec' => ['PDO', 'exec', 'TaintedSql'],
-            'PDO::prepare' => ['PDO', 'prepare', 'TaintedSql'],
-            'PDOStatement::fetchObject' => ['PDOStatement', 'fetchObject', 'TaintedCallable'],
-            'mysqli::execute_query' => ['mysqli', 'execute_query', 'TaintedSql'],
-            'mysqli_result::fetch_object' => ['mysqli_result', 'fetch_object', 'TaintedCallable'],
-            'DOMXPath::query' => ['DOMXPath', 'query', 'TaintedXpath'],
-            'DOMXPath::evaluate' => ['DOMXPath', 'evaluate', 'TaintedXpath'],
-            'SimpleXMLElement::xpath' => ['SimpleXMLElement', 'xpath', 'TaintedXpath'],
-            // a value in a string literal of the query keeps the taint of what can end it
-            'DOMXPath::query in a string literal' => ['DOMXPath', 'query', 'TaintedXpath', '"//u[@id=\'" . $input . "\']"'],
-            'DOMXPath::evaluate in a string literal'
-                => ['DOMXPath', 'evaluate', 'TaintedXpath', '"//u[@id=\'" . $input . "\']"'],
-            'SimpleXMLElement::xpath in a string literal'
-                => ['SimpleXMLElement', 'xpath', 'TaintedXpath', '"//u[@id=\'" . $input . "\']"'],
-            'SoapClient::__setLocation' => ['SoapClient', '__setLocation', 'TaintedSSRF'],
+            'class' => ['function f(Redis $r): void {}', ['redis'], ['mongodb']],
+            'class of a docblock' => ['/** @param Redis $r */ function f($r): void {}', ['redis'], []],
+            'function' => ['xdebug_get_code_coverage();', ['xdebug'], ['redis']],
+            'function from a namespace' => ['namespace A; xdebug_get_code_coverage();', ['xdebug'], []],
+            'constant' => ['echo ZSTD_COMPRESS_LEVEL_DEFAULT;', ['zstd'], ['redis']],
+            'imported constant' => [
+                'namespace A; use const ZSTD_COMPRESS_LEVEL_DEFAULT as LEVEL; echo LEVEL;',
+                ['zstd'],
+                [],
+            ],
+            'constant of a define()' => ['echo PGSQL_CONNECT_FORCE_NEW;', ['pgsql'], []],
+            'class a builtin function returns' => ['$db = mysqli_connect("localhost");', ['mysqli'], []],
+            'parent class' => ['final class Db extends PDO {}', ['pdo'], []],
+            'interface' => ['abstract class Key implements Ds\\Hashable {}', ['ds'], []],
+            'parent interface' => ['interface Key extends Ds\\Hashable {}', ['ds'], []],
+            'nothing' => ['echo 1;', [], ['redis', 'mongodb', 'xdebug', 'zstd', 'mysqli', 'pgsql']],
         ];
     }
 
     /**
-     * The extension stubs are only loaded when composer.json requires their extension, which projects often leave
-     * out for the bundled ones: the sinks of their functions still apply
+     * @param list<string> $loaded
+     * @param list<string> $not_loaded
      */
-    #[DataProvider('providerSinksOfExtensionsWithoutTheirStubs')]
-    public function testSinksOfExtensionsWithoutTheirStubs(
-        string $class,
-        string $method,
-        string $error,
-        string $argument = '$input',
-    ): void {
-        if (!class_exists($class)) {
-            // without its stub, Psalm only knows the class of an extension that PHP loads
-            $this->markTestSkipped('The extension of ' . $class . ' is not loaded');
-        }
+    #[DataProvider('providerStubsOfTheExtensionsTheCodeUses')]
+    public function testStubsOfTheExtensionsTheCodeUses(string $code, array $loaded, array $not_loaded): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithAConfigOfThisRepository('8.4');
+        $config = $this->project_analyzer->getConfig();
+        $codebase = $this->project_analyzer->getCodebase();
 
+        $file_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'somefile.php';
+        $this->addFile($file_path, '<?php ' . $code);
+        $codebase->addFilesToAnalyze([$file_path => $file_path]);
+        $codebase->scanFiles();
+        $config->visitStubFiles($codebase);
+
+        foreach ($loaded as $extension) {
+            $this->assertContains(self::getExtensionStubPath($extension), $config->internal_stubs);
+        }
+        foreach ($not_loaded as $extension) {
+            $this->assertNotContains(self::getExtensionStubPath($extension), $config->internal_stubs);
+        }
+    }
+
+    /**
+     * The language server visits the stubs once, before the code it sees changing uses an extension
+     */
+    public function testLanguageServerLoadsTheStubOfEveryExtension(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithAConfigOfThisRepository('8.4');
+        $config = $this->project_analyzer->getConfig();
+        $codebase = $this->project_analyzer->getCodebase();
+        $codebase->language_server = true;
+
+        $file_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'somefile.php';
+        $this->addFile($file_path, '<?php echo 1;');
+        $codebase->addFilesToAnalyze([$file_path => $file_path]);
+        $codebase->scanFiles();
+        $config->visitStubFiles($codebase);
+
+        $this->assertContains(self::getExtensionStubPath('redis'), $config->internal_stubs);
+        $this->assertContains(self::getExtensionStubPath('mongodb'), $config->internal_stubs);
+    }
+
+    /**
+     * disableExtensions is deprecated: the stub of an extension the code uses is loaded
+     */
+    public function testStubOfADisabledExtensionIsLoaded(): void
+    {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
-            TestConfig::loadFromXML(
+            Config::loadFromXML(
                 dirname(__DIR__, 2),
                 '<?xml version="1.0"?>
                 <psalm>
@@ -2682,36 +2739,191 @@ final class ConfigTest extends DeferredAnalyzerTestCase
                         <directory name="src" />
                     </projectFiles>
                     <disableExtensions>
-                        <extension name="pdo" />
-                        <extension name="mysqli" />
-                        <extension name="dom" />
-                        <extension name="simplexml" />
-                        <extension name="soap" />
+                        <extension name="redis" />
                     </disableExtensions>
                 </psalm>',
             ),
         );
-        $this->project_analyzer->setPhpVersion('8.4', 'tests');
+        $config = $this->project_analyzer->getConfig();
+        $codebase = $this->project_analyzer->getCodebase();
+
+        $file_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'somefile.php';
+        $this->addFile($file_path, '<?php function f(Redis $r, Decimal\\Decimal $d): void {}');
+        $codebase->addFilesToAnalyze([$file_path => $file_path]);
+        $codebase->scanFiles();
+        $config->visitStubFiles($codebase);
+
+        $this->assertContains(self::getExtensionStubPath('redis'), $config->internal_stubs);
+        $this->assertContains(self::getExtensionStubPath('decimal'), $config->internal_stubs);
+    }
+
+    /**
+     * @psalm-pure
+     */
+    private static function getExtensionStubPath(string $extension): string
+    {
+        return dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'extensions'
+            . DIRECTORY_SEPARATOR . $extension . '.phpstub';
+    }
+
+    /**
+     * @return array<string, array{string, string, string}>
+     * @psalm-pure
+     */
+    public static function providerSinksOfExtensionsComposerJsonDoesntRequire(): array
+    {
+        return [
+            'PDO::query' => ['PDO $pdo', '$pdo->query($input)', 'TaintedSql'],
+            'PDO::exec' => ['PDO $pdo', '$pdo->exec($input)', 'TaintedSql'],
+            'PDO::prepare' => ['PDO $pdo', '$pdo->prepare($input)', 'TaintedSql'],
+            'PDOStatement::fetchObject' => ['PDOStatement $s', '$s->fetchObject($input)', 'TaintedCallable'],
+            'mysqli::execute_query' => ['mysqli $db', '$db->execute_query($input)', 'TaintedSql'],
+            'mysqli_execute_query' => ['mysqli $db', 'mysqli_execute_query($db, $input)', 'TaintedSql'],
+            'mysqli_result::fetch_object' => ['mysqli_result $r', '$r->fetch_object($input)', 'TaintedCallable'],
+            'mysqli_fetch_object' => ['mysqli_result $r', 'mysqli_fetch_object($r, $input)', 'TaintedCallable'],
+            // a value in a string literal of the query keeps the taint of what can end it
+            'DOMXPath::query in a string literal'
+                => ['DOMXPath $x', '$x->query("//u[@id=\'" . $input . "\']")', 'TaintedXpath'],
+            'DOMXPath::evaluate in a string literal'
+                => ['DOMXPath $x', '$x->evaluate("//u[@id=\'" . $input . "\']")', 'TaintedXpath'],
+            'SimpleXMLElement::xpath in a string literal'
+                => ['SimpleXMLElement $x', '$x->xpath("//u[@id=\'" . $input . "\']")', 'TaintedXpath'],
+            'SoapClient::__setLocation' => ['SoapClient $c', '$c->__setLocation($input)', 'TaintedSSRF'],
+            'MongoDB\\Driver\\Query::__construct'
+                => ['', 'new MongoDB\\Driver\\Query(json_decode($input, true))', 'TaintedNosql'],
+            'MongoDB\\Driver\\Command::__construct'
+                => ['', 'new MongoDB\\Driver\\Command(json_decode($input, true))', 'TaintedNosql'],
+            'MongoDB\\Driver\\BulkWrite::insert'
+                => ['MongoDB\\Driver\\BulkWrite $w', '$w->insert(json_decode($input, true))', 'TaintedNosql'],
+            'MongoDB\\Driver\\BulkWrite::update'
+                => ['MongoDB\\Driver\\BulkWrite $w', '$w->update([], json_decode($input, true))', 'TaintedNosql'],
+            'MongoDB\\Driver\\BulkWrite::delete'
+                => ['MongoDB\\Driver\\BulkWrite $w', '$w->delete(json_decode($input, true))', 'TaintedNosql'],
+        ];
+    }
+
+    /**
+     * The extensions of these sinks, which the composer.json of this repository doesn't require, may also be missing
+     * from the PHP running the tests
+     */
+    #[DataProvider('providerSinksOfExtensionsComposerJsonDoesntRequire')]
+    public function testSinksOfExtensionsComposerJsonDoesntRequire(string $param, string $call, string $error): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithAConfigOfThisRepository('8.4');
+        $this->project_analyzer->getConfig()->declared_extensions = null;
         $this->project_analyzer->trackTaintedInputs();
 
         $file_path = (string) getcwd() . '/src/somefile.php';
         $this->addFile(
             $file_path,
             '<?php
-                /** @psalm-suppress ArgumentTypeCoercion, PossiblyUnusedReturnValue, UnusedFunctionCall */
-                function run(' . $class . ' $object): void {
+                /** @psalm-suppress ArgumentTypeCoercion, MixedArgument, PossiblyUnusedReturnValue, UnusedFunctionCall */
+                function run(' . $param . '): void {
                     $input = $_GET["input"] ?? "";
                     if (!is_string($input)) {
                         return;
                     }
-                    $object->' . $method . '(' . $argument . ');
+                    ' . $call . ';
                 }',
         );
 
         $this->expectException(CodeException::class);
-        $this->expectExceptionMessageMatches('/\b' . $error . '\b/');
+        $this->expectExceptionMessageMatches('/^' . $error . '\b/');
 
         $this->analyzeFile($file_path, new Context());
+    }
+
+    /**
+     * The code names only its own class, whose parent is the one of the extension
+     */
+    public function testSinkOfTheParentOfAClass(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithAConfigOfThisRepository('8.4');
+        $this->project_analyzer->getConfig()->declared_extensions = null;
+        $this->project_analyzer->trackTaintedInputs();
+
+        $file_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'somefile.php';
+        $this->addFile(
+            $file_path,
+            '<?php
+                final class Db extends PDO {}
+
+                /** @psalm-suppress PossiblyUnusedReturnValue, UnusedMethodCall */
+                function run(Db $db): void {
+                    $input = $_GET["input"] ?? "";
+                    if (is_string($input)) {
+                        $db->query($input);
+                    }
+                }',
+        );
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessageMatches('/^TaintedSql\b/');
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testClassOfAnExtensionComposerJsonDoesntRequire(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithAConfigOfThisRepository('8.4');
+
+        $file_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'somefile.php';
+        $this->addFile(
+            $file_path,
+            '<?php
+                function connect(): Redis {
+                    return new Redis();
+                }',
+        );
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage(
+            'MissingExtensionRequirement - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:32'
+                . ' - Redis is part of the ext-redis extension',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testClassOfAnExtensionComposerJsonDoesntRequireBeforeItsPhpVersion(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithAConfigOfThisRepository('8.1');
+
+        $file_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'somefile.php';
+        $this->addFile(
+            $file_path,
+            '<?php
+                function connect(): object {
+                    return Pdo\\Sqlite::connect("sqlite::memory:");
+                }',
+        );
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage(
+            'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:28 - Pdo\\Sqlite is not defined for the'
+                . ' analysed PHP version 8.1 (it was introduced in PHP 8.4)',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testFetchOfAPdoStatementComposerJsonDoesntRequire(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithAConfigOfThisRepository('8.4');
+        $this->project_analyzer->getConfig()->declared_extensions = null;
+
+        $file_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'somefile.php';
+        $this->addFile(
+            $file_path,
+            '<?php
+                $statement = (new PDO("sqlite::memory:"))->query("SELECT 1");
+                $row = $statement === false ? false : $statement->fetch(PDO::FETCH_ASSOC);',
+        );
+
+        $context = new Context();
+        $this->analyzeFile($file_path, $context);
+
+        $this->assertSame('array<string, null|scalar>|false', $context->vars_in_scope['$row']->getId());
     }
 
     /**

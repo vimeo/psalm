@@ -29,6 +29,14 @@ final class FileStorage
     public array $referenced_classlikes = [];
 
     /**
+     * The functions and constants the code calls or fetches, lowercase: in a namespace, both the namespaced name and
+     * the global one it falls back to
+     *
+     * @var array<lowercase-string, true>
+     */
+    public array $referenced_functions_and_constants = [];
+
+    /**
      * @var array<lowercase-string, string>
      */
     public array $required_classes = [];
