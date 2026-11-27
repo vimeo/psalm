@@ -244,14 +244,28 @@ final class MissingExtensionRequirementTest extends TestCase
 
     public function testExtensionADeclaredExtensionRequiresFromTheLowestPhpComposerAllows(): void
     {
-        $this->project_analyzer->getConfig()->declared_extensions = ['xmlwriter' => true, 'xsl' => true];
+        $this->project_analyzer->getConfig()->declared_extensions = ['xmlwriter' => true];
+        $this->project_analyzer->getConfig()->lowest_composer_php_version_id = 8_04_00;
+        $this->project_analyzer->setPhpVersion('8.4', 'tests');
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+        $this->addFile($file_path, '<?php
+            function f(): void {
+                libxml_use_internal_errors(true);
+            }');
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testDomRequiredByXslFromTheLowestPhpComposerAllows(): void
+    {
+        $this->project_analyzer->getConfig()->declared_extensions = ['xsl' => true];
         $this->project_analyzer->getConfig()->lowest_composer_php_version_id = 8_04_00;
         $this->project_analyzer->setPhpVersion('8.4', 'tests');
 
         $file_path = (string) getcwd() . '/src/somefile.php';
         $this->addFile($file_path, '<?php
             function f(): DOMDocument {
-                libxml_use_internal_errors(true);
                 return new DOMDocument();
             }');
 

@@ -136,6 +136,7 @@ final class ExtensionRequirementAnalyzer
 
     /**
      * @param array<string, true> $declared_extensions
+     * @psalm-capabilities read-props
      */
     private static function isDeclaredOrChecked(
         string $extension,

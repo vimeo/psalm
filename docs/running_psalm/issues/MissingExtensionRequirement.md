@@ -71,7 +71,7 @@ function digest(string $s): string {
 }
 ```
 
-An extension that a declared or checked extension can't be loaded without needs no declaration either: `libxml` for
+Psalm doesn't report an extension that a declared or checked extension requires: `libxml` for
 `dom`, `SimpleXML`, `xmlreader` and `xsl` (`xmlwriter` and `soap` from PHP 8.4), `dom` for `xsl` from PHP 8.3, `PDO`
 for its drivers:
 
