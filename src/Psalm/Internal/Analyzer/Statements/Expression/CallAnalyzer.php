@@ -113,6 +113,9 @@ use function substr;
  */
 abstract class CallAnalyzer
 {
+    /** Set on the instance call a static call is analysed as, to the static call */
+    public const FORWARDED_STATIC_CALL_ATTRIBUTE = 'psalmForwardedStaticCall';
+
     public static function collectSpecialInformation(
         FunctionLikeAnalyzer $source,
         string $method_name,
@@ -1395,8 +1398,11 @@ abstract class CallAnalyzer
         $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
 
         if ($appearing_method_id !== null && $declaring_method_id !== null) {
+            /** @var PhpParser\Node\Expr\StaticCall|null $written_stmt set by AtomicStaticCallAnalyzer */
+            $written_stmt = $stmt->getAttribute(self::FORWARDED_STATIC_CALL_ATTRIBUTE);
+
             $event = new AfterMethodCallAnalysisEvent(
-                $stmt,
+                $written_stmt ?? $stmt,
                 (string) $method_id,
                 (string) $appearing_method_id,
                 (string) $declaring_method_id,
