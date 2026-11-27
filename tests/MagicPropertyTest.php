@@ -613,6 +613,570 @@ final class MagicPropertyTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'propertyOfTheChildHidesThePropertyAnnotationOfTheParent' => [
+                'code' => '<?php
+                    /**
+                     * @property string|null $value
+                     */
+                    abstract class Base {
+                        public function __get(string $name): mixed {
+                            return null;
+                        }
+                        public function __set(string $name, mixed $value): void {}
+                    }
+
+                    class Child extends Base {
+                        public int $value = 0;
+
+                        public function fill(): void {
+                            $this->value = 5;
+                        }
+                    }
+
+                    final class GrandChild extends Child {}
+
+                    $value = (new Child())->value;
+                    $grandChildValue = (new GrandChild())->value;',
+                'assertions' => [
+                    '$value===' => 'int',
+                    '$grandChildValue===' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'propertyOfATraitHidesThePropertyAnnotationOfTheParent' => [
+                'code' => '<?php
+                    /**
+                     * @property string|null $value
+                     */
+                    abstract class Base {
+                        public function __get(string $name): mixed {
+                            return null;
+                        }
+                        public function __set(string $name, mixed $value): void {}
+                    }
+
+                    trait HasValue {
+                        public int $value = 0;
+                    }
+
+                    final class Child extends Base {
+                        use HasValue;
+
+                        public function fill(): void {
+                            $this->value = 5;
+                        }
+                    }
+
+                    $value = (new Child())->value;',
+                'assertions' => [
+                    '$value===' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'protectedPropertyOfTheChildKeepsItsTypeInsideAndTheParentAnnotationOutside' => [
+                'code' => '<?php
+                    /**
+                     * @property string|null $value
+                     */
+                    abstract class Base {
+                        public function __get(string $name): mixed {
+                            return null;
+                        }
+                        public function __set(string $name, mixed $value): void {}
+                    }
+
+                    final class Child extends Base {
+                        protected int $value = 0;
+
+                        public function fill(): void {
+                            $this->value = 5;
+                        }
+
+                        public function get(): int {
+                            return $this->value;
+                        }
+                    }
+
+                    $child = new Child();
+                    $value = $child->value;
+                    $child->value = "a";',
+                'assertions' => [
+                    '$value===' => 'null|string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'privatePropertyOfTheChildKeepsItsTypeInsideAndTheParentWriteAnnotationOutside' => [
+                'code' => '<?php
+                    /**
+                     * @property-write int $value
+                     */
+                    abstract class Base {
+                        public function __set(string $name, mixed $value): void {}
+                    }
+
+                    final class Child extends Base {
+                        private string $value = "";
+
+                        public function fill(): void {
+                            $this->value = "a";
+                        }
+                    }
+
+                    (new Child())->value = 5;',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'protectedPropertyKeepsItsTypeInsideTheClassAndItsAnnotationOutside' => [
+                'code' => '<?php
+                    /**
+                     * @property string|null $value
+                     */
+                    final class Single {
+                        protected int $value = 0;
+
+                        public function __get(string $name): mixed {
+                            return null;
+                        }
+
+                        public function get(): int {
+                            return $this->value;
+                        }
+                    }
+
+                    $value = (new Single())->value;',
+                'assertions' => [
+                    '$value===' => 'null|string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'protectedPropertyKeepsItsTypeInsideTheClassAndTheAnnotationOfItsTraitOutside' => [
+                'code' => '<?php
+                    /**
+                     * @property string|null $value
+                     */
+                    trait Magic {
+                        public function __get(string $name): mixed {
+                            return null;
+                        }
+                    }
+
+                    final class Single {
+                        use Magic;
+
+                        protected int $value = 0;
+
+                        public function get(): int {
+                            return $this->value;
+                        }
+                    }
+
+                    $value = (new Single())->value;',
+                'assertions' => [
+                    '$value===' => 'null|string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'propertyOfTheChildHidesThePropertyAnnotationOfAGenericParent' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @property T|null $value
+                     */
+                    abstract class Base {
+                        public function __get(string $name): mixed {
+                            return null;
+                        }
+                    }
+
+                    /** @extends Base<string> */
+                    final class Child extends Base {
+                        public int $value = 0;
+
+                        public function get(): int {
+                            return $this->value;
+                        }
+                    }
+
+                    $value = (new Child())->value;',
+                'assertions' => [
+                    '$value===' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'publicPropertyOfTheClassHidesThePropertyAnnotationOfItsTrait' => [
+                'code' => '<?php
+                    /**
+                     * @property string|null $value
+                     */
+                    trait Magic {
+                        public function __get(string $name): mixed {
+                            return null;
+                        }
+                    }
+
+                    final class Single {
+                        use Magic;
+
+                        public int $value = 0;
+
+                        public function get(): int {
+                            return $this->value;
+                        }
+                    }
+
+                    $value = (new Single())->value;',
+                'assertions' => [
+                    '$value===' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'writeAnnotationOfTheChildDoesNotNarrowTheReadsOfItsPublicProperty' => [
+                'code' => '<?php
+                    /**
+                     * @property-read string|null $value
+                     */
+                    abstract class Base {
+                        public function __get(string $name): mixed {
+                            return null;
+                        }
+                        public function __set(string $name, mixed $value): void {}
+                    }
+
+                    /**
+                     * @property-write int $value
+                     */
+                    final class Child extends Base {
+                        public int $value = 0;
+
+                        public function get(): int {
+                            return $this->value;
+                        }
+                    }
+
+                    $value = (new Child())->value;',
+                'assertions' => [
+                    '$value===' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'propertyAnnotationThatTheChildRepeatsNarrowsItsPublicProperty' => [
+                'code' => '<?php
+                    /**
+                     * @property string $value
+                     */
+                    abstract class Base {
+                        public function __get(string $name): mixed {
+                            return null;
+                        }
+                    }
+
+                    /**
+                     * @property string $value
+                     */
+                    final class Child extends Base {
+                        public mixed $value = "";
+                    }
+
+                    $value = (new Child())->value;',
+                'assertions' => [
+                    '$value===' => 'string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'propertyAnnotationOfATraitWithoutMagicNarrowsTheProtectedPropertyOfTheClass' => [
+                'code' => '<?php
+                    interface Container {
+                        public function get(string $id): object;
+                    }
+
+                    /**
+                     * @property Container $container
+                     */
+                    trait UsesContainer {
+                        public function service(): object {
+                            return $this->container->get("a");
+                        }
+                    }
+
+                    final class Service {
+                        use UsesContainer;
+
+                        /** @var mixed */
+                        protected $container;
+
+                        public function other(): object {
+                            return $this->container->get("b");
+                        }
+                    }',
+            ],
+            'propertyAnnotationWithoutMagicNarrowsThePrivatePropertyOfTheClass' => [
+                'code' => '<?php
+                    class Container {}
+                    final class GenericContainer extends Container {
+                        public function singleton(): void {}
+                    }
+
+                    /**
+                     * @property GenericContainer $container
+                     */
+                    final class Discovery {
+                        public function __construct(private Container $container) {}
+
+                        public function apply(): void {
+                            $this->container->singleton();
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['PropertyTypeCoercion'],
+                'php_version' => '8.0',
+            ],
+            'propertyAnnotationDescribesAProtectedPropertyNarrowedFromOutside' => [
+                'code' => '<?php
+                    /**
+                     * @property int $size
+                     */
+                    final class Limit {
+                        protected int|string|null $size = null;
+
+                        public function __get(string $name): mixed {
+                            return 0;
+                        }
+                    }
+
+                    function f(Limit $limit): int {
+                        if ($limit->size && $limit->size < 5) {
+                            return $limit->size;
+                        }
+
+                        return 0;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'propertyOfTheChildHidesTheAnnotationOfAParentWithOnlyAMagicGetter' => [
+                'code' => '<?php
+                    /**
+                     * @property object|false|null $connection
+                     */
+                    abstract class FileTransfer {
+                        public function __get(string $name): mixed {
+                            return null;
+                        }
+                    }
+
+                    final class SSH extends FileTransfer {
+                        /** @var resource|false */
+                        protected $connection = false;
+
+                        /** @param resource|false $connection */
+                        public function connect($connection): void {
+                            $this->connection = $connection;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'protectedPropertyRedeclaredBySiblingIsReadDirectlyFromAnotherChild' => [
+                'code' => '<?php
+                    /**
+                     * @property string $value
+                     */
+                    abstract class Base {
+                        protected int|string $value = 0;
+
+                        public function __get(string $name): mixed {
+                            return "";
+                        }
+                    }
+
+                    final class Other extends Base {
+                        protected int|string $value = 1;
+                    }
+
+                    final class Reader extends Base {
+                        public function read(Other $other): int {
+                            if ($other->value && is_int($other->value)) {
+                                return $other->value;
+                            }
+
+                            return 0;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'protectedPropertyIsReadDirectlyFromATraitOfTheClass' => [
+                'code' => '<?php
+                    trait Reads {
+                        public function read(self $other): int {
+                            if ($other->value && is_int($other->value)) {
+                                return $other->value;
+                            }
+
+                            return 0;
+                        }
+                    }
+
+                    /**
+                     * @property string $value
+                     */
+                    final class Holder {
+                        use Reads;
+
+                        protected int|string $value = 0;
+
+                        public function __get(string $name): mixed {
+                            return "";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'propertyAnnotationDescribesAProtectedPropertyNarrowedInAnUnrelatedTrait' => [
+                'code' => '<?php
+                    /**
+                     * @property int $size
+                     */
+                    final class Limit {
+                        protected int|string|null $size = null;
+
+                        public function __get(string $name): mixed {
+                            return 0;
+                        }
+                    }
+
+                    trait UsesLimit {
+                        public function read(Limit $limit): int {
+                            if ($limit->size && $limit->size < 5) {
+                                return $limit->size;
+                            }
+
+                            return 0;
+                        }
+                    }
+
+                    final class Reader {
+                        use UsesLimit;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'propertyAnnotationOfTheClassNarrowsItsPublicProperty' => [
+                'code' => '<?php
+                    /**
+                     * @property list<int> $items
+                     */
+                    final class Bag {
+                        public array $items = [];
+                    }
+
+                    $items = (new Bag())->items;',
+                'assertions' => [
+                    '$items===' => 'list<int>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'propertyAnnotationOfTheClassNarrowsThePublicPropertyOfItsTrait' => [
+                'code' => '<?php
+                    trait HasValue {
+                        public string|int $value = 0;
+                    }
+
+                    /**
+                     * @property int $value
+                     */
+                    final class Child {
+                        use HasValue;
+                    }
+
+                    $value = (new Child())->value;',
+                'assertions' => [
+                    '$value===' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'propertyAnnotationOfTheChildNarrowsAPublicPropertyThatTheParentAnnotates' => [
+                'code' => '<?php
+                    /**
+                     * @property string $value
+                     */
+                    abstract class Base {
+                        public mixed $value = "";
+
+                        public function __get(string $name): mixed {
+                            return null;
+                        }
+                    }
+
+                    /**
+                     * @property int $value
+                     */
+                    final class Child extends Base {}
+
+                    $value = (new Child())->value;',
+                'assertions' => [
+                    '$value===' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'propertyAnnotationOfTheChildNarrowsThePropertyOfTheParent' => [
+                'code' => '<?php
+                    abstract class Base {
+                        /** @var mixed */
+                        public $value;
+                    }
+
+                    /**
+                     * @property int $value
+                     */
+                    final class Child extends Base {}
+
+                    $value = (new Child())->value;',
+                'assertions' => [
+                    '$value===' => 'int',
+                ],
+            ],
+            'propertyAnnotationOfTheParentDescribesItsInheritedProperty' => [
+                'code' => '<?php
+                    /**
+                     * @property-read int $value
+                     */
+                    abstract class Base {
+                        /** @var int|string */
+                        protected $value = 0;
+
+                        public function __get(string $name): mixed {
+                            return $this->$name;
+                        }
+                    }
+
+                    final class Child extends Base {}
+
+                    $value = (new Child())->value;',
+                'assertions' => [
+                    '$value===' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'valueOfPseudoPropertyIsNarrowedByAnEqualityCheck' => [
                 'code' => '<?php
                     enum Foo: string {
