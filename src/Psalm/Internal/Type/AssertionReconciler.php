@@ -227,28 +227,11 @@ final class AssertionReconciler extends Reconciler
             return $result_type ?? $existing_var_type;
         }
 
-        return $result_type ?? $merged_result_type;
-    }
-
-    /**
-     * Whether an array of the shape may also have the keys the other shape has and it lacks: its fallback takes
-     * them, or each of them may be missing
-     *
-     * @psalm-pure
-     */
-    private static function allowsTheKeysOf(TKeyedArray $shape, TKeyedArray $other): bool
-    {
-        if ($shape->fallback_params !== null) {
-            return true;
-        }
-
-        foreach ($other->properties as $key => $property) {
-            if (!isset($shape->properties[$key]) && !$property->possibly_undefined) {
-                return false;
-            }
-        }
-
-        return true;
+        // a shape is narrowed to no more than the shapes as one are
+        return $result_type !== null
+            && UnionTypeComparator::isContainedBy($codebase, $result_type, $merged_result_type)
+            ? $result_type
+            : $merged_result_type;
     }
 
     /**
@@ -998,14 +981,10 @@ final class AssertionReconciler extends Reconciler
 
             foreach ($existing_var_type->getAtomicTypes() as $existing_var_type_part) {
                 if ($existing_var_type_part instanceof TKeyedArray) {
-                    // shapes of no common key are both an array of their keys when each allows the other's
                     if (!array_intersect_key(
                         $existing_var_type_part->properties,
                         $new_type_part->properties,
-                    )
-                        && self::allowsTheKeysOf($existing_var_type_part, $new_type_part)
-                        && self::allowsTheKeysOf($new_type_part, $existing_var_type_part)
-                    ) {
+                    )) {
                         $acceptable_atomic_types[] = $existing_var_type_part->setProperties(array_merge(
                             $existing_var_type_part->properties,
                             $new_type_part->properties,

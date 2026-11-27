@@ -5367,20 +5367,6 @@ final class AssertAnnotationTest extends TestCase
                         takesAnArrayB($foo);
                     }',
             ],
-            'assertionOfAnUnsealedShapeOfNoCommonKeyOnAnUnsealedShapeHasTheKeysOfBoth' => [
-                'code' => '<?php
-                    /** @psalm-assert-if-true array{world: string, ...<string, string>} $arg */
-                    function isWorld(array $arg): bool {
-                        return isset($arg["world"]);
-                    }
-
-                    /** @param array{hello: string, ...<string, string>} $foo */
-                    function f(array $foo): void {
-                        if (isWorld($foo)) {
-                            /** @psalm-check-type-exact $foo = array{hello: string, world: string, ...<string, string>} */;
-                        }
-                    }',
-            ],
             'assertTemplateKeyedArrayTemplateKeyedArrayIfTrueFalseCompareFalsy' => [
                 'code' => '<?php
                     /**
@@ -6193,19 +6179,6 @@ final class AssertAnnotationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
-            'assertionOfASealedShapeOfNoCommonKeyOnASealedShapeIsImpossible' => [
-                'code' => '<?php
-                    /** @psalm-assert-if-true array{world: string} $arg */
-                    function isWorld(array $arg): bool {
-                        return isset($arg["world"]);
-                    }
-
-                    /** @param array{hello: string} $foo */
-                    function f(array $foo): void {
-                        if (isWorld($foo)) {}
-                    }',
-                'error_message' => 'TypeDoesNotContainType',
-            ],
             'assertNonEmptyArrayOnAnEmptyArray' => [
                 'code' => '<?php
                     /**
