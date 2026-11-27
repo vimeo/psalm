@@ -2900,8 +2900,12 @@ final class ArgumentsAnalyzer
         );
 
         if (!$template_types) {
-            // the parameters are still written to through a `*`
-            return $template_result !== null && $template_result->star_bindings !== [] ? $template_result : null;
+            // the parameters are still written to through a `*`, or refer to templates of the methods an override
+            // inherits their types from
+            return $template_result !== null
+                && ($template_result->star_bindings !== [] || $template_result->template_types)
+                ? $template_result
+                : null;
         }
 
         if (!$template_result) {

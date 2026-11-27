@@ -784,20 +784,49 @@ final class Populator
     }
 
     /**
+     * Whether the return type of an overridden method uses a template of it that only the params the overriding method
+     * documents itself bind: nothing could infer the template at the call sites then.
+     *
      * @psalm-mutation-free
      */
-    private static function returnTypeUsesAMethodTemplate(FunctionLikeStorage $method_storage): bool
-    {
-        if ($method_storage->return_type === null
-            || $method_storage->template_types === null
-            || $method_storage->template_types === []
+    private static function returnTypeUsesATemplateBoundByRedocumentedParams(
+        MethodStorage $method_storage,
+        FunctionLikeStorage $overridden_method_storage,
+    ): bool {
+        if ($overridden_method_storage->return_type === null
+            || $overridden_method_storage->template_types === null
+            || $overridden_method_storage->template_types === []
         ) {
             return false;
         }
 
+        $inherited_templates = [];
+        $redocumented_templates = [];
+
+        foreach ($method_storage->params as $i => $param) {
+            $overridden_param = $overridden_method_storage->params[$i] ?? null;
+
+            if (!$overridden_param || !$overridden_param->type || !$overridden_param->has_docblock_type) {
+                continue;
+            }
+
+            foreach ($overridden_param->type->getTemplateTypes() as $template_type) {
+                $key = $template_type->param_name . ':' . $template_type->defining_class;
+
+                if ($param->has_docblock_type) {
+                    $redocumented_templates[$key] = true;
+                } else {
+                    $inherited_templates[$key] = true;
+                }
+            }
+        }
+
         return array_any(
-            $method_storage->return_type->getTemplateTypes(),
-            static fn(TTemplateParam $template): bool => isset($method_storage->template_types[$template->param_name]),
+            $overridden_method_storage->return_type->getTemplateTypes(),
+            static fn(TTemplateParam $template): bool
+                => isset($overridden_method_storage->template_types[$template->param_name][$template->defining_class])
+                && isset($redocumented_templates[$template->param_name . ':' . $template->defining_class])
+                && !isset($inherited_templates[$template->param_name . ':' . $template->defining_class]),
         );
     }
 
@@ -998,14 +1027,17 @@ final class Populator
                         ?? $declaring_class_storage->pseudo_static_methods[$declaring_method_name];
 
                     // a method documenting its params takes the return type of the overridden one only when that
-                    // documents it, with no template of its own: the params of the method don't bind it
+                    // documents it, and no template of it is bound only by params the method documents itself
                     if (($declaring_method_storage->has_docblock_param_types
                             || $declaring_method_storage->has_docblock_return_type)
                         && !$method_storage->has_docblock_return_type
                         && $inherited_return_type !== null
                         && (!$method_storage->has_docblock_param_types
                             || ($declaring_method_storage->has_docblock_return_type
-                                && !self::returnTypeUsesAMethodTemplate($declaring_method_storage)))
+                                && !self::returnTypeUsesATemplateBoundByRedocumentedParams(
+                                    $method_storage,
+                                    $declaring_method_storage,
+                                )))
                     ) {
                         if (!isset($storage->documenting_method_ids[$method_name])
                             || (string) $storage->documenting_method_ids[$method_name]

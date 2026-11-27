@@ -390,7 +390,16 @@ abstract class CallAnalyzer
                 $declaring_class_storage = $class_storage;
             }
 
-            $method_storage = $codebase->methods->getStorage($declaring_method_id);
+            $method_storage = $declared_method_storage = $codebase->methods->getStorage($declaring_method_id);
+
+            // the exceptions of the called method, not of the method its storage is replaced with below
+            if (!$context->isSuppressingExceptions($statements_analyzer)) {
+                $context->mergeFunctionExceptions(
+                    $method_storage,
+                    $code_location,
+                    $statements_analyzer->getCodebase(),
+                );
+            }
 
             // the class using a trait holds the docblock its method inherits
             $documenting_class_storage = $declaring_class_storage->is_trait ? $class_storage : $declaring_class_storage;
@@ -424,15 +433,44 @@ abstract class CallAnalyzer
                         continue;
                     }
 
+                    // a template that only the parameters the override documents bind stays unbound
                     foreach ($method_storage->params as $i => $param) {
-                        if (!$param->has_docblock_type
-                            && ($overridden_method_storage->params[$i]->has_docblock_type ?? false)
-                        ) {
-                            foreach ($overridden_method_storage->template_types ?? [] as $name => $by_class) {
-                                $inherited_template_types[$name] = ($inherited_template_types[$name] ?? []) + $by_class;
-                            }
+                        $overridden_param_type = $overridden_method_storage->params[$i]->type ?? null;
 
-                            break;
+                        if ($param->has_docblock_type
+                            || !$overridden_param_type
+                            || !($overridden_method_storage->params[$i]->has_docblock_type ?? false)
+                        ) {
+                            continue;
+                        }
+
+                        foreach ($overridden_param_type->getTemplateTypes() as $template_type) {
+                            $bound = $overridden_method_storage->template_types
+                                [$template_type->param_name][$template_type->defining_class] ?? null;
+
+                            if ($bound !== null) {
+                                $inherited_template_types[$template_type->param_name][$template_type->defining_class]
+                                    = $bound;
+                            }
+                        }
+                    }
+                }
+
+                // the templates of an inherited return type are inferred by the call too, not left to the caller
+                if (!$declared_method_storage->has_docblock_return_type
+                    && isset($documenting_class_storage->documenting_method_ids[$method_name])
+                ) {
+                    $documenting_method_storage = $codebase->methods->getStorage(
+                        $documenting_class_storage->documenting_method_ids[$method_name],
+                    );
+
+                    foreach ($documenting_method_storage->return_type?->getTemplateTypes() ?? [] as $template_type) {
+                        $bound = $documenting_method_storage->template_types
+                            [$template_type->param_name][$template_type->defining_class] ?? null;
+
+                        if ($bound !== null) {
+                            $inherited_template_types[$template_type->param_name][$template_type->defining_class]
+                                = $bound;
                         }
                     }
                 }
@@ -446,14 +484,6 @@ abstract class CallAnalyzer
                         }
                     }
                 }
-            }
-
-            if (!$context->isSuppressingExceptions($statements_analyzer)) {
-                $context->mergeFunctionExceptions(
-                    $method_storage,
-                    $code_location,
-                    $statements_analyzer->getCodebase(),
-                );
             }
         }
 
