@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Mcp;
 
-use Amp\ByteStream\ReadableResourceStream;
 use Amp\ByteStream\StreamException;
 use Amp\Cancellation;
 use Amp\CancelledException;
@@ -15,7 +14,6 @@ use Psalm\Internal\Cli\IssueDocs;
 use Psalm\Internal\CliUtils;
 use Revolt\EventLoop;
 use Revolt\EventLoop\Driver\StreamSelectDriver;
-use RuntimeException;
 use Throwable;
 use stdClass;
 
@@ -33,13 +31,10 @@ use function in_array;
 use function is_array;
 use function is_bool;
 use function is_int;
-use function is_resource;
 use function is_string;
 use function json_decode;
 use function json_encode;
 use function preg_match;
-use function proc_close;
-use function proc_open;
 use function str_replace;
 use function trim;
 
@@ -47,10 +42,7 @@ use const JSON_INVALID_UTF8_SUBSTITUTE;
 use const JSON_THROW_ON_ERROR;
 use const JSON_UNESCAPED_SLASHES;
 use const JSON_UNESCAPED_UNICODE;
-use const PHP_BINARY;
 use const PHP_OS_FAMILY;
-use const STDERR;
-use const STDIN;
 
 /**
  * A Model Context Protocol server: JSON-RPC messages, one per line, on stdin and stdout. Each message is handled in
@@ -96,27 +88,12 @@ final class McpServer
             EventLoop::setDriver(new StreamSelectDriver());
         }
 
-        $relay = null;
-
-        if (PHP_OS_FAMILY === 'Windows') {
-            // the event loop can wait for a socket on Windows, but a read from a pipe blocks it: a child process copies
-            // stdin to a socket
-            $relay = proc_open(
-                [PHP_BINARY, '-n', '-r', 'stream_copy_to_stream(STDIN, STDOUT);'],
-                [0 => STDIN, 1 => ['socket'], 2 => STDERR],
-                $pipes,
-            );
-
-            if (!is_resource($relay) || !isset($pipes[1])) {
-                throw new RuntimeException('Could not start the process that relays stdin');
-            }
-
-            $input = new ReadableResourceStream($pipes[1]);
-        } else {
-            $input = getStdin();
-        }
-
+        $input = getStdin();
         $output = getStdout();
+
+        // on Windows, a read from a pipe blocks the event loop until the next message comes, so a response could only
+        // be written after it: each message is handled before the next one is read
+        $one_at_a_time = PHP_OS_FAMILY === 'Windows';
 
         /** @var array<int, Future<void>> $handlers */
         $handlers = [];
@@ -129,7 +106,7 @@ final class McpServer
             $buffer = array_pop($lines);
 
             foreach ($lines as $line) {
-                $handlers[] = async(function () use ($line, $output): void {
+                $handler = async(function () use ($line, $output): void {
                     $response = $this->handleLine($line);
 
                     if ($response === null) {
@@ -142,6 +119,12 @@ final class McpServer
                         // the client is gone
                     }
                 });
+
+                if ($one_at_a_time) {
+                    $handler->await();
+                } else {
+                    $handlers[] = $handler;
+                }
             }
 
             $handlers = array_filter($handlers, static fn(Future $handler): bool => !$handler->isComplete());
@@ -153,10 +136,6 @@ final class McpServer
         }
 
         Future\awaitAll($handlers);
-
-        if ($relay !== null) {
-            proc_close($relay);
-        }
     }
 
     /**
