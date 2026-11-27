@@ -42,6 +42,7 @@ final class SarifReport extends Report
         'TaintedFile' => '7.5',
         'TaintedSSRF' => '7.5',
         'TaintedLlmPrompt' => '7.5',
+        'TaintedLlmResponse' => '7.5',
         'TaintedUserSecret' => '7.5',
         'TaintedSystemSecret' => '7.5',
         'TaintedHtml' => '6.1',

@@ -380,6 +380,7 @@ These issues are only reported when their corresponding feature is enabled (e.g.
  - [TaintedInput](issues/TaintedInput.md)
  - [TaintedLdap](issues/TaintedLdap.md)
  - [TaintedLlmPrompt](issues/TaintedLlmPrompt.md)
+ - [TaintedLlmResponse](issues/TaintedLlmResponse.md)
  - [TaintedNosql](issues/TaintedNosql.md)
  - [TaintedRedirect](issues/TaintedRedirect.md)
  - [TaintedSSRF](issues/TaintedSSRF.md)

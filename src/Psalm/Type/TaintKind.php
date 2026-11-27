@@ -44,8 +44,10 @@ final class TaintKind
     public const INPUT_URL_SCHEME = (1 << 23);
     /** What can end a string literal of an XPath query: a quote */
     public const INPUT_XPATH_LITERAL = (1 << 24);
-    public const USER_SECRET = (1 << 25);
-    public const SYSTEM_SECRET = (1 << 26);
+    /** What an LLM is given as its own earlier reply (an assistant turn of the conversation) */
+    public const INPUT_LLM_RESPONSE = (1 << 25);
+    public const USER_SECRET = (1 << 26);
+    public const SYSTEM_SECRET = (1 << 27);
 
     /**
      * Bitmask of all INPUT_* taint types. Used as the default taint for
@@ -54,7 +56,7 @@ final class TaintKind
      * Excludes USER_SECRET and SYSTEM_SECRET, which represent
      * sensitive data leaking out rather than untrusted data flowing in.
      */
-    public const ALL_INPUT = (1 << 25) - 1;
+    public const ALL_INPUT = (1 << 26) - 1;
 
     /** @internal */
     public const NUMERIC_ONLY = self::INPUT_SLEEP;
@@ -74,7 +76,7 @@ final class TaintKind
     public const ALL = -1;
 
     /** @internal Keep this synced with the above */
-    public const BUILTIN_TAINT_COUNT = 27;
+    public const BUILTIN_TAINT_COUNT = 28;
 
 
     // Map of taint kind names to their bitmask values, used in taint annotations
@@ -110,6 +112,7 @@ final class TaintKind
         'user_secret' => self::USER_SECRET,
         'system_secret' => self::SYSTEM_SECRET,
         'llm_prompt' => self::INPUT_LLM_PROMPT,
+        'llm_response' => self::INPUT_LLM_RESPONSE,
 
         'input_except_sleep' => self::ALL_INPUT & ~self::INPUT_SLEEP,
 

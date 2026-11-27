@@ -5701,6 +5701,46 @@ final class TaintTest extends TestCase
                     $agent = new LlmAgent();
                     $agent->prompt(sanitize_for_llm((string) $_GET["question"]));',
             ],
+            'llmResponseOfTheModelEscaped' => [
+                'code' => '<?php
+                    final class AssistantMessage {
+                        /** @psalm-taint-sink llm_response $content */
+                        public function __construct(public string $content) {}
+                    }
+
+                    /** @psalm-taint-escape llm_response */
+                    function replyText(string $body): string {
+                        return $body;
+                    }
+
+                    new AssistantMessage(replyText((string) curl_exec(curl_init("https://llm.example.com"))));',
+            ],
+            'llmResponseSinkIgnoresLlmPromptOnlyTaint' => [
+                'code' => '<?php
+                    final class AssistantMessage {
+                        /** @psalm-taint-sink llm_response $content */
+                        public function __construct(public string $content) {}
+                    }
+
+                    /** @psalm-taint-source llm_prompt */
+                    function instructions(): string {
+                        return "";
+                    }
+
+                    new AssistantMessage(instructions());',
+            ],
+            'llmPromptSinkIgnoresLlmResponseOnlyTaint' => [
+                'code' => '<?php
+                    /** @psalm-taint-sink llm_prompt $prompt */
+                    function prompt(string $prompt): void {}
+
+                    /** @psalm-taint-source llm_response */
+                    function forgedTurn(): string {
+                        return "";
+                    }
+
+                    prompt(forgedTurn());',
+            ],
             'nosqlSinkNotTaintedByString' => [
                 'code' => '<?php
                     /** @psalm-taint-sink nosql $filter */
@@ -17642,6 +17682,43 @@ final class TaintTest extends TestCase
                     $agent = new LlmAgent();
                     $agent->prompt(buildPrompt((string) $_GET["topic"]));',
                 'error_message' => 'TaintedLlmPrompt',
+            ],
+            'taintedLlmResponseFromClientHistory' => [
+                'code' => '<?php
+                    final class AssistantMessage {
+                        /** @psalm-taint-sink llm_response $content */
+                        public function __construct(public string $content) {}
+                    }
+
+                    foreach ((array) ($_POST["history"] ?? []) as $turn) {
+                        if ("assistant" === ($turn["role"] ?? null)) {
+                            new AssistantMessage((string) ($turn["content"] ?? ""));
+                        }
+                    }',
+                'error_message' => 'TaintedLlmResponse',
+            ],
+            'taintedLlmPromptOfTheModelReplyKeptWhenLlmResponseEscaped' => [
+                'code' => '<?php
+                    /** @psalm-taint-sink llm_prompt $prompt */
+                    function prompt(string $prompt): void {}
+
+                    /** @psalm-taint-escape llm_response */
+                    function replyText(string $body): string {
+                        return $body;
+                    }
+
+                    prompt(replyText((string) curl_exec(curl_init("https://llm.example.com"))));',
+                'error_message' => 'TaintedLlmPrompt',
+            ],
+            'taintedHtmlOfTheModelReplyKeptWhenLlmResponseEscaped' => [
+                'code' => '<?php
+                    /** @psalm-taint-escape llm_response */
+                    function replyText(string $body): string {
+                        return $body;
+                    }
+
+                    echo replyText((string) curl_exec(curl_init("https://llm.example.com")));',
+                'error_message' => 'TaintedHtml',
             ],
             'taintedInputFromPhpInputViaFileGetContents' => [
                 'code' => '<?php

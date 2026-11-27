@@ -519,6 +519,7 @@
             <xs:element name="TaintedInput" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedLdap" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedLlmPrompt" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="TaintedLlmResponse" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedNosql" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedRedirect" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedShell" type="IssueHandlerType" minOccurs="0" />

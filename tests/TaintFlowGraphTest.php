@@ -741,7 +741,7 @@ final class TaintFlowGraphTest extends TestCase
 
         // the flows of the unescaped taints and of those the calls keep, whatever the number of calls
         $this->assertSame([$sink_line, $sink_line], $html_lines);
-        $this->assertSame(2 * 21, $taint_issues);
+        $this->assertSame(2 * 22, $taint_issues);
         $this->assertLessThan(2_000_000_000, $nanoseconds);
     }
 }
