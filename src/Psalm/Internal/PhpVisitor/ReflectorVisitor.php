@@ -362,7 +362,7 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
                 foreach ($attr_group->attrs as $attr) {
                     $attr_name = $attr->name instanceof PhpParser\Node\Name\FullyQualified
                         ? $attr->name->toString()
-                        : Type::getFQCLNFromString($attr->name->toString(), $this->aliases);
+                        : Type::getFQCLNFromString($attr->name->toCodeString(), $this->aliases);
                     $deprecated = $deprecated
                         || $attr_name === 'Deprecated'
                         || $attr_name === 'Psalm\\Deprecated'

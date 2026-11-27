@@ -55,7 +55,12 @@ final class ConstFetchAnalyzer
         PhpParser\Node\Expr\ConstFetch $stmt,
         Context $context,
     ): void {
-        $const_name = $stmt->name->toString();
+        // `namespace\FOO` names a constant of the current namespace, and `use const` doesn't apply to it
+        $is_fully_qualified = $stmt->name instanceof PhpParser\Node\Name\FullyQualified
+            || $stmt->name instanceof PhpParser\Node\Name\Relative;
+        $const_name = $stmt->name instanceof PhpParser\Node\Name\Relative
+            ? Type::getFQCLNFromString($stmt->name->toCodeString(), $statements_analyzer->getAliases())
+            : $stmt->name->toString();
 
         switch (strtolower($const_name)) {
             case 'null':
@@ -94,7 +99,7 @@ final class ConstFetchAnalyzer
                 $const_type = self::getConstType(
                     $statements_analyzer,
                     $const_name,
-                    $stmt->name instanceof PhpParser\Node\Name\FullyQualified,
+                    $is_fully_qualified,
                     $context,
                 );
 
@@ -108,7 +113,7 @@ final class ConstFetchAnalyzer
                 $aliased_constants = $statements_analyzer->getAliases()->constants;
                 if (isset($aliased_constants[$const_name])) {
                     $fq_const_name = $aliased_constants[$const_name];
-                } elseif ($stmt->name instanceof PhpParser\Node\Name\FullyQualified) {
+                } elseif ($is_fully_qualified) {
                     $fq_const_name = $const_name;
                 } else {
                     $fq_const_name = Type::getFQCLNFromString($const_name, $statements_analyzer->getAliases());
@@ -120,7 +125,7 @@ final class ConstFetchAnalyzer
                     $const_type
                         ? $fq_const_name
                         : '*'
-                            . ($stmt->name instanceof PhpParser\Node\Name\FullyQualified
+                            . ($is_fully_qualified
                                 ? '\\'
                                 : $statements_analyzer->getNamespace() . '-')
                             . $const_name,
