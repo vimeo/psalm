@@ -305,9 +305,8 @@ class CodeLocation
             $comment_start = (int) strrpos($key_line, '/**');
 
             // The selection starts at the content, past the indentation and the comment's `/**` or `*`
-            $indentation = preg_match('@\G\s*(?:/\*\*|\*(?!/))?\s*@', $key_line, $matches, 0, $comment_start)
-                ? $comment_start + strlen($matches[0])
-                : $comment_start;
+            preg_match('@\G\s*(?:/\*\*|\*(?!/))?\s*@', $key_line, $matches, 0, $comment_start);
+            $indentation = $comment_start + strlen($matches[0] ?? '');
 
             $comment_end = strpos($key_line, '*/', $indentation);
             $content = $comment_end === false
