@@ -13,6 +13,7 @@ use function bin2hex;
 use function in_array;
 use function mkdir;
 use function random_bytes;
+use function realpath;
 use function sys_get_temp_dir;
 
 use const DIRECTORY_SEPARATOR;
@@ -71,12 +72,14 @@ trait PsalmRunnerTrait
     }
 
     /**
-     * Not `tempnam()`: on Windows it keeps three characters of the prefix and a 16-bit number, so a name it gave is
-     * given again once that test removed its directory, and tests running in parallel ended up sharing one
+     * Not `tempnam()`: on Windows it keeps three characters of the prefix and a 16-bit number, so its names repeat.
+     * `realpath()`: on Windows `sys_get_temp_dir()` can be a short name (`RUNNER~1`), which Psalm prints expanded and
+     * an ini file can't hold
      */
     protected static function createTemporaryDirectory(string $prefix): string
     {
-        $dir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . $prefix . bin2hex(random_bytes(8));
+        $dir = (realpath(sys_get_temp_dir()) ?: sys_get_temp_dir()) . DIRECTORY_SEPARATOR . $prefix
+            . bin2hex(random_bytes(8));
         if (!mkdir($dir)) {
             throw new RuntimeException("Could not create the directory $dir");
         }
