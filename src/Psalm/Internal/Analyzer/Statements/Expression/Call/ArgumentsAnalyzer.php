@@ -834,10 +834,19 @@ final class ArgumentsAnalyzer
             );
         };
 
+        $own_templates = $template_result->template_types;
+
         /** @param array<string, array<string, Union>> $bounds */
-        $replace = static function (Union $type, array $bounds) use ($uninferred, $replace_once): Union {
+        $replace = static function (
+            Union $type,
+            array $bounds,
+        ) use (
+            $own_templates,
+            $uninferred,
+            $replace_once,
+        ): Union {
             $resolved = [];
-            self::resolveUninferredBounds($type, $bounds, $uninferred, $resolved, $replace_once);
+            self::resolveUninferredBounds($type, $bounds, $own_templates, $uninferred, $resolved, $replace_once);
 
             return $replace_once($type, $bounds);
         };
@@ -1035,10 +1044,11 @@ final class ArgumentsAnalyzer
     }
 
     /**
-     * The `as` type of a template inferred from nothing is in the callee's terms: it takes the bounds of the
-     * templates it names before $type takes it
+     * The `as` type of a template inferred from nothing names the callee's own templates, in the callee's terms (the
+     * receiver's bindings are put in it already): it takes their bounds before $type takes it
      *
      * @param array<string, array<string, Union>> $bounds
+     * @param array<string, array<string, Union>> $own_templates
      * @param array<string, array<string, true>> $uninferred
      * @param array<string, array<string, true>> $resolved
      * @param callable(Union, array<string, array<string, Union>>): Union $replace_once
@@ -1046,6 +1056,7 @@ final class ArgumentsAnalyzer
     private static function resolveUninferredBounds(
         Union $type,
         array &$bounds,
+        array $own_templates,
         array $uninferred,
         array &$resolved,
         callable $replace_once,
@@ -1063,9 +1074,25 @@ final class ArgumentsAnalyzer
 
             $resolved[$k][$kk] = true;
 
-            self::resolveUninferredBounds($bounds[$k][$kk], $bounds, $uninferred, $resolved, $replace_once);
+            self::resolveUninferredBounds(
+                $bounds[$k][$kk],
+                $bounds,
+                $own_templates,
+                $uninferred,
+                $resolved,
+                $replace_once,
+            );
 
-            $bounds[$k][$kk] = $replace_once($bounds[$k][$kk], $bounds);
+            $own_bounds = [];
+            foreach ($own_templates as $own_k => $template_map) {
+                foreach ($template_map as $own_kk => $_) {
+                    if (isset($bounds[$own_k][$own_kk])) {
+                        $own_bounds[$own_k][$own_kk] = $bounds[$own_k][$own_kk];
+                    }
+                }
+            }
+
+            $bounds[$k][$kk] = $replace_once($bounds[$k][$kk], $own_bounds);
         }
     }
 

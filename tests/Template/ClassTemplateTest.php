@@ -733,6 +733,47 @@ final class ClassTemplateTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'methodTemplateBoundedByAClassTemplateTakesTheReceiverBindings' => [
+                'code' => '<?php
+                    /**
+                     * @template TKey of array-key
+                     * @template TValue
+                     */
+                    abstract class Coll {
+                        /** @return static<int, TKey> */
+                        abstract public function keys(): static;
+
+                        /**
+                         * @template TA of array<TKey, TValue>
+                         * @param callable(key-of<TA>, value-of<TA>): void $c
+                         */
+                        abstract public function kv(callable $c): void;
+
+                        /**
+                         * @template TNew of TValue
+                         * @param callable(TNew): void $c
+                         */
+                        abstract public function narrow(callable $c): void;
+
+                        public function test(): void {
+                            $this->keys()->narrow(function ($key): void {
+                                /** @psalm-check-type-exact $key = array-key */
+                            });
+                        }
+                    }
+
+                    /** @param Coll<string, Exception> $c */
+                    function test(Coll $c): void {
+                        $c->kv(function (string $key, Exception $value): void {});
+                        $c->kv(function ($key, $value): void {
+                            /** @psalm-check-type-exact $key = string */
+                            /** @psalm-check-type-exact $value = Exception */
+                        });
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'newOfTheClassItselfInsideItsMethodAcceptsAnotherTemplate' => [
                 'code' => '<?php
                     /** @template T */

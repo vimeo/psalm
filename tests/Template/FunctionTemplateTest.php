@@ -114,8 +114,9 @@ final class FunctionTemplateTest extends TestCase
             'closureParamWithTemplatesNamingKeyOfAnotherTemplateNotInItsType' => [
                 'code' => '<?php
                     /**
-                     * @template TArr of array
                      * @template TKey of key-of<TArr>
+                     * @template TArr of TInput
+                     * @template TInput of array
                      * @template TDict of array<TKey, mixed>
                      * @param callable(string): void $c
                      * @param TArr $arr
