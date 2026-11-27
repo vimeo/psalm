@@ -10,6 +10,7 @@ use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
+use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\SimpleTypeInferer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
@@ -17,6 +18,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\ConstantTypeResolver;
 use Psalm\Internal\Codebase\PhpDeprecations;
 use Psalm\Internal\DataFlow\DataFlowNode;
+use Psalm\Internal\PhpVisitor\ConstantFetchFinder;
 use Psalm\Internal\Provider\FileStorageProvider;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Scanner\UnresolvedConstantComponent;
@@ -32,6 +34,7 @@ use ReflectionProperty;
 
 use function array_key_exists;
 use function array_pop;
+use function count;
 use function dirname;
 use function explode;
 use function implode;
@@ -160,6 +163,31 @@ final class ConstFetchAnalyzer
 
                 if ($const_type || $is_dated_native) {
                     self::checkAvailability($statements_analyzer, $stmt, $context, $global_const_name, $fq_const_name);
+                }
+
+                if ($const_type
+                    && $context->check_consts
+                    && !$context->hasVariable($fq_const_name)
+                    && !$context->hasVariable($const_name)
+                ) {
+                    $declaration = self::getDeclarationAfter(
+                        $statements_analyzer,
+                        $const_name,
+                        $stmt->name instanceof PhpParser\Node\Name\FullyQualified,
+                        $statements_analyzer->getAliases(),
+                        $stmt,
+                    );
+
+                    if ($declaration !== null) {
+                        IssueBuffer::maybeAdd(
+                            new UndefinedConstant(
+                                'Const ' . $const_name . ' is not defined before line ' . $declaration->getStartLine()
+                                    . ', where it is declared',
+                                new CodeLocation($statements_analyzer->getSource(), $stmt),
+                            ),
+                            $statements_analyzer->getSuppressedIssues(),
+                        );
+                    }
                 }
 
                 if ($const_type) {
@@ -520,6 +548,300 @@ final class ConstFetchAnalyzer
 
         return self::getGlobalConstType($codebase, $fq_const_name, $const_name)
             ?? self::getGlobalConstType($codebase, $const_name, $const_name);
+    }
+
+    /**
+     * The `const` statement further down the file that declares a constant the top-level code of the file needs at
+     * $node, or null when the constant is defined by then
+     */
+    public static function getDeclarationAfter(
+        StatementsAnalyzer $statements_analyzer,
+        string $const_name,
+        bool $is_fully_qualified,
+        Aliases $aliases,
+        PhpParser\Node $node,
+    ): ?PhpParser\Node\Const_ {
+        $declarations = $statements_analyzer->getFileAnalyzer()->getDeclaredConstants();
+
+        if (!$declarations || !self::isTopLevel($statements_analyzer)) {
+            return null;
+        }
+
+        if (isset($aliases->constants[$const_name])) {
+            $names = [$aliases->constants[$const_name]];
+        } elseif ($is_fully_qualified || str_contains($const_name, '\\')) {
+            $names = [$is_fully_qualified ? $const_name : Type::getFQCLNFromString($const_name, $aliases)];
+        } else {
+            // an unqualified name is the constant of the namespace if it is defined, else the global one
+            $names = [Type::getFQCLNFromString($const_name, $aliases), $const_name];
+        }
+
+        $later_declaration = null;
+
+        $codebase = $statements_analyzer->getCodebase();
+
+        foreach ($names as $i => $name) {
+            $declaration = $declarations[$name] ?? null;
+
+            if ($declaration === null) {
+                // the constant of the namespace is looked up by its own name, without the global one it falls back to
+                $is_defined = $i < count($names) - 1
+                    ? self::isDeclaredInCode($codebase, $name)
+                        || $codebase->getUnresolvedGlobalConstant($name) !== null
+                        || self::getGlobalConstType($codebase, $name, $name) !== null
+                    : self::getConstType($statements_analyzer, $name, true, null) !== null;
+
+                if ($is_defined) {
+                    return null;
+                }
+            } elseif ($declaration->getStartFilePos() < $node->getStartFilePos()) {
+                return null;
+            } else {
+                $later_declaration ??= $declaration;
+            }
+        }
+
+        return $later_declaration;
+    }
+
+    /**
+     * Reports a constant declared further down the file that evaluating the constants of a class-like declared in the
+     * file needs at $stmt: those of $const_name (`Foo::BAR`), or all of them and the default values of its properties
+     * (`new Foo`, `Foo::$bar`)
+     */
+    public static function checkClassLikeConstantsDeclaredLater(
+        StatementsAnalyzer $statements_analyzer,
+        Context $context,
+        PhpParser\Node\Expr $stmt,
+        string $fq_class_name,
+        ?string $const_name,
+    ): void {
+        if (!$context->check_consts
+            || !$statements_analyzer->getFileAnalyzer()->getDeclaredConstants()
+            || !self::isTopLevel($statements_analyzer)
+        ) {
+            return;
+        }
+
+        $initializers = [];
+        $visited = [];
+
+        if ($const_name === null) {
+            self::collectClassLikeInitializers($statements_analyzer, $fq_class_name, $initializers, $visited);
+        } else {
+            self::collectClassConstantInitializer(
+                $statements_analyzer,
+                $fq_class_name,
+                $const_name,
+                $initializers,
+                $visited,
+            );
+        }
+
+        $codebase = $statements_analyzer->getCodebase();
+
+        for ($i = 0; $i < count($initializers); $i++) {
+            [$expr, $declaring_class_name] = $initializers[$i];
+
+            $declaring_storage = $codebase->classlike_storage_provider->get($declaring_class_name);
+            $aliases = $declaring_storage->aliases ?? new Aliases();
+
+            foreach (ConstantFetchFinder::find($expr) as $fetch) {
+                if ($fetch instanceof PhpParser\Node\Expr\ClassConstFetch) {
+                    if (!$fetch->class instanceof PhpParser\Node\Name
+                        || !$fetch->name instanceof PhpParser\Node\Identifier
+                    ) {
+                        continue;
+                    }
+
+                    $fetched_class_name = match (strtolower($fetch->class->getFirst())) {
+                        'self', 'static' => $declaring_storage->name,
+                        'parent' => $declaring_storage->parent_class,
+                        default => $codebase->classlikes->getUnAliasedName(
+                            ClassLikeAnalyzer::getFQCLNFromNameObject($fetch->class, $aliases),
+                        ),
+                    };
+
+                    if ($fetched_class_name !== null) {
+                        self::collectClassConstantInitializer(
+                            $statements_analyzer,
+                            $fetched_class_name,
+                            $fetch->name->name,
+                            $initializers,
+                            $visited,
+                        );
+                    }
+
+                    continue;
+                }
+
+                $fetched_const_name = $fetch->name->toString();
+
+                if (in_array(strtolower($fetched_const_name), ['true', 'false', 'null'], true)) {
+                    continue;
+                }
+
+                $declaration = self::getDeclarationAfter(
+                    $statements_analyzer,
+                    $fetched_const_name,
+                    $fetch->name instanceof PhpParser\Node\Name\FullyQualified,
+                    $aliases,
+                    $stmt,
+                );
+
+                if ($declaration !== null) {
+                    IssueBuffer::maybeAdd(
+                        new UndefinedConstant(
+                            'Const ' . $fetched_const_name . ' is not defined before line '
+                                . $declaration->getStartLine() . ', where it is declared, and '
+                                . ($const_name === null
+                                    ? 'class ' . $fq_class_name
+                                    : $fq_class_name . '::' . $const_name)
+                                . ' needs it',
+                            new CodeLocation($statements_analyzer->getSource(), $stmt),
+                        ),
+                        $statements_analyzer->getSuppressedIssues(),
+                    );
+
+                    return;
+                }
+            }
+        }
+    }
+
+    /**
+     * Code at the top level of a file runs in the order it is written, unlike the code of its functions
+     *
+     * @psalm-capabilities read-props
+     */
+    private static function isTopLevel(StatementsAnalyzer $statements_analyzer): bool
+    {
+        $source = $statements_analyzer->getSource();
+
+        return ($source instanceof FileAnalyzer || $source instanceof NamespaceAnalyzer)
+            && !$statements_analyzer->getCodebase()->config->hoist_constants;
+    }
+
+    /**
+     * The initializers PHP evaluates for a class-like the first time it is instantiated or its static properties are
+     * used: the values of its constants and the default values of its properties, inherited ones included
+     *
+     * @param list<array{PhpParser\Node\Expr, string}> $initializers
+     * @param array<string, true> $visited
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    private static function collectClassLikeInitializers(
+        StatementsAnalyzer $statements_analyzer,
+        string $fq_class_name,
+        array &$initializers,
+        array &$visited,
+    ): void {
+        $codebase = $statements_analyzer->getCodebase();
+
+        if (isset($visited[strtolower($fq_class_name)])
+            || !$codebase->classlike_storage_provider->has($fq_class_name)
+        ) {
+            return;
+        }
+
+        $visited[strtolower($fq_class_name)] = true;
+
+        $storage = $codebase->classlike_storage_provider->get($fq_class_name);
+        $node = $statements_analyzer->getFileAnalyzer()->getDeclaredClassLike($storage->name);
+
+        if ($node !== null) {
+            foreach ($node->stmts as $class_stmt) {
+                if ($class_stmt instanceof PhpParser\Node\Stmt\ClassConst) {
+                    foreach ($class_stmt->consts as $const) {
+                        $visited[strtolower($storage->name) . '::' . $const->name->name] = true;
+                        $initializers[] = [$const->value, $storage->name];
+                    }
+                } elseif ($class_stmt instanceof PhpParser\Node\Stmt\Property) {
+                    foreach ($class_stmt->props as $prop) {
+                        if ($prop->default !== null) {
+                            $initializers[] = [$prop->default, $storage->name];
+                        }
+                    }
+                }
+            }
+        }
+
+        foreach ([
+            ...($storage->parent_class !== null ? [$storage->parent_class] : []),
+            ...$storage->direct_class_interfaces,
+            ...$storage->direct_interface_parents,
+            ...$storage->used_traits,
+        ] as $ancestor_name) {
+            self::collectClassLikeInitializers($statements_analyzer, $ancestor_name, $initializers, $visited);
+        }
+    }
+
+    /**
+     * The value of a class constant (or enum case), declared in the class-like or inherited
+     *
+     * @param list<array{PhpParser\Node\Expr, string}> $initializers
+     * @param array<string, true> $visited
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    private static function collectClassConstantInitializer(
+        StatementsAnalyzer $statements_analyzer,
+        string $fq_class_name,
+        string $const_name,
+        array &$initializers,
+        array &$visited,
+    ): bool {
+        $codebase = $statements_analyzer->getCodebase();
+        $const_id = strtolower($fq_class_name) . '::' . $const_name;
+
+        if (isset($visited[$const_id]) || !$codebase->classlike_storage_provider->has($fq_class_name)) {
+            return false;
+        }
+
+        $visited[$const_id] = true;
+
+        $storage = $codebase->classlike_storage_provider->get($fq_class_name);
+        $node = $statements_analyzer->getFileAnalyzer()->getDeclaredClassLike($storage->name);
+
+        if ($node !== null) {
+            foreach ($node->stmts as $class_stmt) {
+                if ($class_stmt instanceof PhpParser\Node\Stmt\ClassConst) {
+                    foreach ($class_stmt->consts as $const) {
+                        if ($const->name->name === $const_name) {
+                            $initializers[] = [$const->value, $storage->name];
+
+                            return true;
+                        }
+                    }
+                } elseif ($class_stmt instanceof PhpParser\Node\Stmt\EnumCase
+                    && $class_stmt->name->name === $const_name
+                ) {
+                    if ($class_stmt->expr !== null) {
+                        $initializers[] = [$class_stmt->expr, $storage->name];
+                    }
+
+                    return true;
+                }
+            }
+        }
+
+        foreach ([
+            ...($storage->parent_class !== null ? [$storage->parent_class] : []),
+            ...$storage->direct_class_interfaces,
+            ...$storage->direct_interface_parents,
+            ...$storage->used_traits,
+        ] as $ancestor_name) {
+            if (self::collectClassConstantInitializer(
+                $statements_analyzer,
+                $ancestor_name,
+                $const_name,
+                $initializers,
+                $visited,
+            )) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

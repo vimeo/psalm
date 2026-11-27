@@ -106,6 +106,20 @@ class FileAnalyzer extends SourceAnalyzer
     private ?Union $return_type = null;
 
     /**
+     * The constants the file declares with a top-level `const` statement, by name
+     *
+     * @var array<string, PhpParser\Node\Const_>
+     */
+    private array $declared_constants = [];
+
+    /**
+     * The class-likes declared at the top level of the file, by lowercase name, when it declares constants
+     *
+     * @var array<lowercase-string, PhpParser\Node\Stmt\ClassLike>
+     */
+    private array $declared_classlikes = [];
+
+    /**
      * @psalm-mutation-free
      */
     public function __construct(
@@ -174,6 +188,13 @@ class FileAnalyzer extends SourceAnalyzer
                     break;
                 }
             }
+        }
+
+        $this->indexDeclarations($stmts);
+
+        // the class-likes are only looked up for the constants their initializers need
+        if (!$this->declared_constants) {
+            $this->declared_classlikes = [];
         }
 
         $leftover_stmts = $this->populateCheckers($stmts);
@@ -367,6 +388,42 @@ class FileAnalyzer extends SourceAnalyzer
         }
 
         return $leftover_stmts;
+    }
+
+    /**
+     * @param array<int, PhpParser\Node\Stmt> $stmts
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    private function indexDeclarations(array $stmts, string $namespace_prefix = ''): void
+    {
+        foreach ($stmts as $stmt) {
+            if ($stmt instanceof PhpParser\Node\Stmt\Namespace_) {
+                $this->indexDeclarations($stmt->stmts, $stmt->name ? $stmt->name->toString() . '\\' : '');
+            } elseif ($stmt instanceof PhpParser\Node\Stmt\Const_) {
+                foreach ($stmt->consts as $const) {
+                    $this->declared_constants[$namespace_prefix . $const->name->name] = $const;
+                }
+            } elseif ($stmt instanceof PhpParser\Node\Stmt\ClassLike && $stmt->name) {
+                $this->declared_classlikes[strtolower($namespace_prefix . $stmt->name->name)] = $stmt;
+            }
+        }
+    }
+
+    /**
+     * @return array<string, PhpParser\Node\Const_>
+     * @psalm-mutation-free
+     */
+    public function getDeclaredConstants(): array
+    {
+        return $this->declared_constants;
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    public function getDeclaredClassLike(string $fq_class_name): ?PhpParser\Node\Stmt\ClassLike
+    {
+        return $this->declared_classlikes[strtolower($fq_class_name)] ?? null;
     }
 
     private function populateClassLikeAnalyzers(PhpParser\Node\Stmt\ClassLike $stmt): void

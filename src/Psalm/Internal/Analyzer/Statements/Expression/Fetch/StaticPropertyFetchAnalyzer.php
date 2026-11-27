@@ -103,6 +103,14 @@ final class StaticPropertyFetchAnalyzer
                 return true;
             }
 
+            ConstFetchAnalyzer::checkClassLikeConstantsDeclaredLater(
+                $statements_analyzer,
+                $context,
+                $stmt,
+                $fq_class_name,
+                null,
+            );
+
             if ($context->check_classes
                 && !ClassLikeAnalyzer::checkTraitMemberAccess($statements_analyzer, $fq_class_name, $stmt->class)
             ) {

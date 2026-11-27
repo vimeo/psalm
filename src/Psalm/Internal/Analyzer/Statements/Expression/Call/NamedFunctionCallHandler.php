@@ -375,7 +375,14 @@ final class NamedFunctionCallHandler
                         $context,
                     );
 
-                    if (!$const_type) {
+                    // a constant declared further down the file is not defined yet
+                    if (!$const_type || ConstFetchAnalyzer::getDeclarationAfter(
+                        $statements_analyzer,
+                        $fq_const_name,
+                        true,
+                        $statements_analyzer->getAliases(),
+                        $stmt,
+                    ) !== null) {
                         ConstFetchAnalyzer::setConstType(
                             $statements_analyzer,
                             $fq_const_name,
