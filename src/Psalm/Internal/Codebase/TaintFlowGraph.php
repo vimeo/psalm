@@ -1305,6 +1305,8 @@ final class TaintFlowGraph extends DataFlowGraph
             unset($reverse);
         }
 
+        $this->removeWhatNoSecretReaches();
+
         // Remove all specializations without an outgoing edge
         foreach ($this->specializations as $k => &$map) {
             foreach ($map as $kk => $specialized_id) {
@@ -1316,8 +1318,6 @@ final class TaintFlowGraph extends DataFlowGraph
                 unset($this->specializations[$k]);
             }
         } unset($map);
-
-        $this->removeComparisonSinksNoSecretReaches();
 
         Perf\Collector::step('taint.resolve');
         Perf\Collector::taint(
@@ -1354,19 +1354,17 @@ final class TaintFlowGraph extends DataFlowGraph
     }
 
     /**
-     * Removes the sinks of the comparisons no secret can reach (see addComparisonSinks()) before the resolution: most
-     * comparisons never see one, and the resolution replays a sink inside a function-like for each of its calls. The
-     * nodes a secret may reach are found ignoring the calls and the keys it goes through, so they are more than those
-     * the resolution finds.
+     * Removes what only secrets go through where no secret can reach, before the resolution: the sinks of the
+     * comparisons (see addComparisonSinks()) and the paths only secrets take, such as those of hashes. Most
+     * comparisons never see a secret, and the resolution replays a sink inside a function-like for each of its calls;
+     * a path from a node keeps its specializations (see connectSinksAndSources()), which changes how flows of user
+     * input leave them. The nodes a secret may reach are found ignoring the calls and the keys it goes through, so
+     * they are more than those the resolution finds.
      *
      * @psalm-capabilities read-props|write-this-props|write-props
      */
-    private function removeComparisonSinksNoSecretReaches(): void
+    private function removeWhatNoSecretReaches(): void
     {
-        if ($this->comparison_sinks === []) {
-            return;
-        }
-
         /** @var array<string, int> $reached */
         $reached = [];
         $queue = [];
@@ -1424,9 +1422,31 @@ final class TaintFlowGraph extends DataFlowGraph
             }
         }
 
+        $removed_sinks = [];
         foreach ($this->comparison_sinks as $sink_id => [$comparison_id]) {
             if (!isset($reached_comparisons[$comparison_id])) {
-                unset($this->sinks[$sink_id], $this->comparison_sinks[$sink_id]);
+                $removed_sinks[$sink_id] = true;
+                unset($this->sinks[$sink_id], $this->nodes[$sink_id], $this->comparison_sinks[$sink_id]);
+            }
+        }
+
+        foreach ($this->forward_edges as $from_id => $destinations) {
+            $from_reached = isset($reached[$from_id]);
+            $kept = [];
+            foreach ($destinations as $to_id => $path) {
+                if (!isset($removed_sinks[$to_id])
+                    && ($from_reached
+                        || $path->added_taints !== 0
+                        || (~$path->removed_taints & ~self::COMPARED_SECRETS) !== 0)
+                ) {
+                    $kept[$to_id] = $path;
+                }
+            }
+
+            if ($kept === []) {
+                unset($this->forward_edges[$from_id]);
+            } elseif (count($kept) !== count($destinations)) {
+                $this->forward_edges[$from_id] = $kept;
             }
         }
     }
