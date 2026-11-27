@@ -1192,6 +1192,7 @@ final class LoopAnalyzer
                 $inner_loop_context,
                 $loop_scope,
                 $vars_possibly_in_scope_before_loop,
+                $while_true,
             );
         } elseif ($pre_context) {
             $context->vars_possibly_in_scope = $pre_context->vars_possibly_in_scope;
@@ -1585,14 +1586,17 @@ final class LoopAnalyzer
      *
      * @param array<string, bool> $vars_possibly_in_scope_before_loop the ones possibly defined before the loop with
      *                                                                 no known type keep none
+     * @param bool $is_only_left_by_break whether the loop is only left by a break (`while (true)`)
      */
     public static function addVarsPossiblyDefinedInLoop(
         Context $context,
         Context $inner_context,
         LoopScope $loop_scope,
         array $vars_possibly_in_scope_before_loop,
+        bool $is_only_left_by_break = false,
     ): void {
-        $is_left_after_an_iteration = $loop_scope->final_actions !== [ScopeAnalyzer::ACTION_BREAK];
+        $is_left_after_an_iteration = !$is_only_left_by_break
+            && $loop_scope->final_actions !== [ScopeAnalyzer::ACTION_BREAK];
 
         foreach ($context->vars_possibly_in_scope as $var_id => $_) {
             if (isset($context->vars_in_scope[$var_id])

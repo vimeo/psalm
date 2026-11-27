@@ -57,13 +57,30 @@ final class WhileTest extends TestCase
                         $x = $i;
                     }
                     /** @psalm-check-type-exact $x? = int<0, max> */;
+                }
+
+                function notFromTheEndOfALoopOnlyLeftByABreak(): void {
+                    while (true) {
+                        $x = 1;
+                        if (rand(0, 1)) {
+                            unset($x);
+                            break;
+                        }
+                        if (rand(0, 1)) {
+                            continue;
+                        }
+                    }
+                    echo $x;
                 }',
         );
 
         $this->analyzeFile($file_path, new Context());
 
         self::assertSame(
-            [],
+            [
+                'PossiblyUndefinedVariable 42:26',
+                'MixedArgument 42:26',
+            ],
             array_map(
                 static fn(IssueData $issue): string
                     => $issue->type . ' ' . $issue->line_from . ':' . $issue->column_from,

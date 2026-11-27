@@ -230,6 +230,7 @@ final class DoAnalyzer
             $inner_loop_context,
             $loop_scope,
             $vars_possibly_in_scope_before_loop,
+            $is_only_left_by_break,
         );
 
         if ($context->collect_exceptions) {
