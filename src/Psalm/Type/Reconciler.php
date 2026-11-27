@@ -918,8 +918,8 @@ class Reconciler
 
             $array_key = implode('', array_slice($key_parts, 0, -3));
 
-            // array_key_exists() is only true for a non-empty array, or before PHP 8 an object too. The first assertion
-            // makes the loop below add the isset ones on the keys the array is nested in
+            // array_key_exists() is only true for a non-empty array, or before PHP 8 an object too. The non-empty
+            // assertion makes the loop below add the isset ones on the keys the array is nested in
             $array_type = self::getPathType($array_key, $existing_types);
 
             // the offset of an object is left to it, and a value that can't be a non-empty array is left as it is where
@@ -958,8 +958,9 @@ class Reconciler
                 }
             }
 
+            // after the array's own assertions: the offsets of the active ones stay where they are
             if ($array_assertions) {
-                $new_types[$array_key] = array_merge($array_assertions, $new_types[$array_key] ?? []);
+                $new_types[$array_key] = array_merge($new_types[$array_key] ?? [], $array_assertions);
             }
         }
 

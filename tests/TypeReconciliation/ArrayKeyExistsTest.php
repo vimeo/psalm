@@ -1061,6 +1061,20 @@ final class ArrayKeyExistsTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'arrayKeyExistsOnTheRightOfAnOrDoesNotReportTheNegatedLeft' => [
+                'code' => '<?php
+                    /** @param bool|list<string>|array{fields: list<string>} $facets */
+                    function f($facets): bool {
+                        return $facets === true || (is_array($facets) && array_key_exists("fields", $facets));
+                    }
+
+                    function g(bool|array $x): bool {
+                        return $x === true || (is_array($x) && array_key_exists("a", $x));
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'issetMakesATemplateOfAnyTypeArrayAccessible' => [
                 'code' => '<?php
                     /**
