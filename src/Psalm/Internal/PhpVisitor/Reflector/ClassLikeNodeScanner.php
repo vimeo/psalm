@@ -837,7 +837,9 @@ final class ClassLikeNodeScanner
             if ($docblock_info->extension_requirement !== null) {
                 try {
                     $requirement_type = $this->parseRequirement($docblock_info->extension_requirement);
-                    $requirement_atomic = $requirement_type->isSingle() ? $requirement_type->getSingleAtomic() : null;
+                    $requirement_atomic = $requirement_type->isSingleAtomic()
+                        ? $requirement_type->getSingleAtomic()
+                        : null;
 
                     $storage->extension_requirement = $this->getRequirementName($docblock_info->extension_requirement);
                     $storage->extension_requirement_type = $requirement_atomic instanceof TGenericObject
@@ -855,7 +857,9 @@ final class ClassLikeNodeScanner
                 try {
                     $requirement_name = $this->getRequirementName($implementation_requirement);
                     $requirement_type = $this->parseRequirement($implementation_requirement);
-                    $requirement_atomic = $requirement_type->isSingle() ? $requirement_type->getSingleAtomic() : null;
+                    $requirement_atomic = $requirement_type->isSingleAtomic()
+                        ? $requirement_type->getSingleAtomic()
+                        : null;
 
                     $storage->implementation_requirements[] = $requirement_name;
 
@@ -1067,7 +1071,7 @@ final class ClassLikeNodeScanner
                     $storage->template_types ?: [],
                 );
 
-                if ($mixin_type->isSingle()) {
+                if ($mixin_type->isSingleAtomic()) {
                     $mixin_type = $mixin_type->getSingleAtomic();
 
                     if ($mixin_type instanceof TNamedObject) {
@@ -1544,7 +1548,7 @@ final class ClassLikeNodeScanner
         }
 
         // a union is still read member by member, so the parents it names don't also miss their arguments
-        if (!$union_type->isSingle()) {
+        if (!$union_type->isSingleAtomic()) {
             $storage->docblock_issues[] = new InvalidDocblock(
                 $tag . ' cannot be a union type',
                 new CodeLocation($this->file_scanner, $node, null, true),
@@ -1601,7 +1605,8 @@ final class ClassLikeNodeScanner
     }
 
     /**
-     * Reports a `*` argument, which cannot bind a template of the parent (`@extends Box<*>`), as PHPStan does
+     * Reports a `*`, `covariant` or `contravariant` argument, which cannot bind a template of the parent
+     * (`@extends Box<*>`), as PHPStan does
      */
     private function reportStarArgument(
         ClassLikeStorage $storage,
@@ -1609,12 +1614,13 @@ final class ClassLikeNodeScanner
         TGenericObject $atomic_type,
         string $tag,
     ): bool {
-        if (!$atomic_type->hasStarProjection()) {
+        if (!$atomic_type->hasUnknownArgument()) {
             return false;
         }
 
         $storage->docblock_issues[] = new InvalidDocblock(
-            'The * type argument of ' . $atomic_type->getId() . ' is not allowed in ' . $tag,
+            ($atomic_type->hasStarProjection() ? 'The * type argument' : 'The variance of a type argument')
+                . ' of ' . $atomic_type->getId() . ' is not allowed in ' . $tag,
             new CodeLocation($this->file_scanner, $node, null, true),
         );
 
@@ -1801,7 +1807,7 @@ final class ClassLikeNodeScanner
             if ($inferred_type
                 && !(
                     $const->value instanceof Concat
-                    && $inferred_type->isSingle()
+                    && $inferred_type->isSingleAtomic()
                     && $inferred_type->getSingleAtomic()::class === TString::class
                 )
             ) {
@@ -2895,7 +2901,7 @@ final class ClassLikeNodeScanner
     {
         $type = $this->parseRequirement($docblock_type);
 
-        $atomic_type = $type->isSingle() ? $type->getSingleAtomic() : null;
+        $atomic_type = $type->isSingleAtomic() ? $type->getSingleAtomic() : null;
 
         return $atomic_type instanceof TNamedObject ? $atomic_type->value : (string) $type;
     }

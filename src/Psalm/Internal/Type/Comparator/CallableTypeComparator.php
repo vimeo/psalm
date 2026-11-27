@@ -452,7 +452,7 @@ final class CallableTypeComparator
             );
 
             // a receiver of a template type is the type it is bound by
-            if ($callable_object instanceof TTemplateParam && $callable_object->as->isSingle()) {
+            if ($callable_object instanceof TTemplateParam && $callable_object->as->isSingleAtomic()) {
                 $callable_object = $callable_object->as->getSingleAtomic();
             }
 
@@ -806,7 +806,7 @@ final class CallableTypeComparator
             $method_id = self::getCallableMethodIdFromTKeyedArray($input_type_part, $codebase);
             if ($method_id && $method_id !== 'not-callable') {
                 $callable_object = isset($input_type_part->properties[0])
-                    && $input_type_part->properties[0]->isSingle()
+                    && $input_type_part->properties[0]->isSingleAtomic()
                     ? $input_type_part->properties[0]->getSingleAtomic()
                     : null;
 
@@ -1043,7 +1043,7 @@ final class CallableTypeComparator
             if (in_array($class_name_lc, ['self', 'parent', 'static'], true)) {
                 return false;
             }
-        } elseif (!$class_type->isSingle()
+        } elseif (!$class_type->isSingleAtomic()
             || !($object_type = $class_type->getSingleAtomic()) instanceof TNamedObject
             || $object_type->extra_types
             // the object can be of a subclass that declares the method
@@ -1172,7 +1172,7 @@ final class CallableTypeComparator
                         );
                     } elseif ($lhs_atomic_type instanceof TTemplateParam) {
                         $lhs_template_type = $lhs_atomic_type->as;
-                        if ($lhs_template_type->isSingle()) {
+                        if ($lhs_template_type->isSingleAtomic()) {
                             $lhs_template_atomic_type = $lhs_template_type->getSingleAtomic();
                             $member_id = null;
                             if ($lhs_template_atomic_type instanceof TNamedObject) {
@@ -1210,7 +1210,7 @@ final class CallableTypeComparator
             if ($codebase) {
                 $class_name = $codebase->classlikes->getUnAliasedName($class_name);
             }
-        } elseif ($lhs->isSingle()) {
+        } elseif ($lhs->isSingleAtomic()) {
             foreach ($lhs->getAtomicTypes() as $lhs_atomic_type) {
                 if ($lhs_atomic_type instanceof TNamedObject) {
                     $class_name = $lhs_atomic_type->value;
@@ -1226,7 +1226,7 @@ final class CallableTypeComparator
                     }
                 } elseif ($lhs_atomic_type instanceof TTemplateParam) {
                     $lhs_template_type = $lhs_atomic_type->as;
-                    if ($lhs_template_type->isSingle()) {
+                    if ($lhs_template_type->isSingleAtomic()) {
                         $lhs_template_atomic_type = $lhs_template_type->getSingleAtomic();
                         if ($lhs_template_atomic_type instanceof TNamedObject) {
                             $class_name = $lhs_template_atomic_type->value;

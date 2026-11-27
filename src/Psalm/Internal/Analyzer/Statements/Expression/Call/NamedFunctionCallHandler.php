@@ -679,7 +679,7 @@ final class NamedFunctionCallHandler
                     'the array argument of ' . $function_id . '()',
                 );
 
-                if ($first_arg_type->isSingle()) {
+                if ($first_arg_type->isSingleAtomic()) {
                     IssueBuffer::maybeAdd(
                         new RawObjectIteration(
                             'Possibly undesired iteration over object properties',
@@ -713,7 +713,7 @@ final class NamedFunctionCallHandler
                 }
 
                 if ($third_arg_type
-                    && $third_arg_type->isSingle()
+                    && $third_arg_type->isSingleAtomic()
                     && $third_arg_type->isFalse()
                 ) {
                     if ($first_arg_type->from_docblock) {
@@ -775,7 +775,7 @@ final class NamedFunctionCallHandler
             || (isset($args[1]) && $args[1]->name !== null && $args[1]->name->name !== 'flags')
             || self::getExtractFlag($statements_analyzer, $args) === false
             || !($array_type = $statements_analyzer->node_data->getType($args[0]->value))
-            || !$array_type->isSingle()
+            || !$array_type->isSingleAtomic()
         ) {
             return null;
         }
@@ -802,7 +802,7 @@ final class NamedFunctionCallHandler
             && isset($args[0])
             && !$args[0]->unpack
             && ($array_type_union = $statements_analyzer->node_data->getType($args[0]->value))
-            && $array_type_union->isSingle()
+            && $array_type_union->isSingleAtomic()
         ) {
             foreach ($array_type_union->getAtomicTypes() as $array_type) {
                 if ($array_type instanceof TKeyedArray) {
@@ -958,7 +958,7 @@ final class NamedFunctionCallHandler
                     if ($class_type instanceof TNamedObject) {
                         $class_string_types[] = new TClassString($class_type->value, $class_type);
                     } elseif ($class_type instanceof TTemplateParam
-                        && $class_type->as->isSingle()
+                        && $class_type->as->isSingleAtomic()
                     ) {
                         $as_atomic_type = $class_type->as->getSingleAtomic();
 
@@ -1555,7 +1555,7 @@ final class NamedFunctionCallHandler
      */
     private static function lacksSessionIdMethods(StatementsAnalyzer $statements_analyzer, ?Union $type): bool
     {
-        if ($type === null || !$type->isSingle()) {
+        if ($type === null || !$type->isSingleAtomic()) {
             return false;
         }
 

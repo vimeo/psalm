@@ -51,6 +51,20 @@ final class PowReturnTypeProviderTest extends TestCase
                 '$i===' => 'float(8)',
             ],
         ];
+        yield 'powOfAUnionOfIntLiterals' => [
+            'code' => '<?php
+                $bits = rand(0, 1) ? 8 : 11;
+
+                $a = pow(rand(0, 1) ? 2 : 3, 2);
+                $b = pow(2, $bits - 1) - 1;
+                $c = pow(2, rand(0, 1) ? -1 : 2);
+            ',
+            'assertions' => [
+                '$a===' => '4|9',
+                '$b===' => '127|1023',
+                '$c===' => '4|float(0.5)',
+            ],
+        ];
         yield 'intPowerAgreesWithThePowOperator' => [
             'code' => '<?php
                 function getInt(): int {

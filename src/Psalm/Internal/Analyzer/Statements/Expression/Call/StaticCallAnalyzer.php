@@ -147,7 +147,7 @@ final class StaticCallAnalyzer extends CallAnalyzer
                 } elseif ($context->self) {
                     if ($stmt->class->getFirst() === 'static' && isset($context->vars_in_scope['$this'])) {
                         $lhs_type = $context->vars_in_scope['$this'];
-                        $this_atomic = $lhs_type->isSingle() ? $lhs_type->getSingleAtomic() : null;
+                        $this_atomic = $lhs_type->isSingleAtomic() ? $lhs_type->getSingleAtomic() : null;
                         $fq_class_name = $this_atomic instanceof TNamedObject ? $this_atomic->value : $context->self;
                     } else {
                         $fq_class_name = $context->self;
@@ -163,6 +163,8 @@ final class StaticCallAnalyzer extends CallAnalyzer
                 }
 
                 if ($context->isPhantomClass($fq_class_name)) {
+                    self::analyzeMethodName($statements_analyzer, $stmt, $context);
+
                     return true;
                 }
             } else {
@@ -184,6 +186,8 @@ final class StaticCallAnalyzer extends CallAnalyzer
                 }
 
                 if ($context->isPhantomClass($fq_class_name)) {
+                    self::analyzeMethodName($statements_analyzer, $stmt, $context);
+
                     ArgumentsAnalyzer::analyze(
                         $statements_analyzer,
                         $stmt->isFirstClassCallable() ? [] : $stmt->getArgs(),
@@ -238,6 +242,8 @@ final class StaticCallAnalyzer extends CallAnalyzer
                 }
 
                 if (!$does_class_exist) {
+                    self::analyzeMethodName($statements_analyzer, $stmt, $context);
+
                     // PHP resolves the class first: the arguments of a call of a class that is missing are never
                     // evaluated, but where the classes aren't checked the call may well run
                     if (!$context->check_classes) {
@@ -320,6 +326,8 @@ final class StaticCallAnalyzer extends CallAnalyzer
                 $statements_analyzer->node_data->getType($stmt->class) ?? Type::getMixed(),
             );
         }
+
+        self::analyzeMethodName($statements_analyzer, $stmt, $context);
 
         if (!$lhs_type) {
             if (ArgumentsAnalyzer::analyze(
@@ -502,6 +510,32 @@ final class StaticCallAnalyzer extends CallAnalyzer
 
         return strtolower($declaring_class) === strtolower($ancestor_storage->name)
             || $ancestor_storage->properties[$property_name]->visibility !== ClassLikeAnalyzer::VISIBILITY_PRIVATE;
+    }
+
+    /**
+     * A dynamic method name is analysed whatever the class is: a string, mixed or phantom class included.
+     */
+    private static function analyzeMethodName(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\StaticCall $stmt,
+        Context $context,
+    ): void {
+        if (!$stmt->name instanceof PhpParser\Node\Expr) {
+            return;
+        }
+
+        $was_inside_general_use = $context->inside_general_use;
+        $context->inside_general_use = true;
+        // the name is read even in isset mode
+        $was_inside_isset = $context->inside_isset;
+        $context->inside_isset = false;
+
+        ExpressionAnalyzer::analyze($statements_analyzer, $stmt->name, $context);
+
+        $context->inside_general_use = $was_inside_general_use;
+        $context->inside_isset = $was_inside_isset;
+
+        self::addMethodNameSink($statements_analyzer, $stmt, $stmt->name, $context);
     }
 
     private static function analyzeParentPropertyHookCall(

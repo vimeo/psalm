@@ -371,7 +371,7 @@ final class ClassConstAnalyzer
                         $lhs_atomic_type,
                     );
                 } elseif ($lhs_atomic_type instanceof TTemplateParam
-                    && $lhs_atomic_type->as->isSingle()) {
+                    && $lhs_atomic_type->as->isSingleAtomic()) {
                     $as_atomic_type = $lhs_atomic_type->as->getSingleAtomic();
 
                     if ($as_atomic_type instanceof TObject) {

@@ -584,7 +584,7 @@ final class ArgumentsAnalyzer
         $unpacked_type = $statements_analyzer->node_data->getType($arg->value);
 
         if (!$unpacked_type
-            || !$unpacked_type->isSingle()
+            || !$unpacked_type->isSingleAtomic()
             || !($unpacked_atomic = $unpacked_type->getSingleAtomic()) instanceof TKeyedArray
             || $unpacked_atomic->fallback_params !== null
         ) {
@@ -2924,7 +2924,7 @@ final class ArgumentsAnalyzer
                             return;
                         }
 
-                        if ($arg_value_type->isSingle()
+                        if ($arg_value_type->isSingleAtomic()
                             && ($atomic_arg_type = $arg_value_type->getSingleAtomic()) instanceof TKeyedArray
                             && !$atomic_arg_type->is_list
                             // integer keys name no parameter: they pass as many arguments as there are keys
@@ -3041,8 +3041,8 @@ final class ArgumentsAnalyzer
                     // a default that is one of the own atomic types of the parameter (`null` for `T|null`) says
                     // nothing about a template that an argument bound already, and that has no default of its own
                     // to fall back to
-                    if ($default_type->isSingle()
-                        && !$param->type->isSingle()
+                    if ($default_type->isSingleAtomic()
+                        && !$param->type->isSingleAtomic()
                         && isset($param->type->getAtomicTypes()[$default_type->getSingleAtomic()->getKey()])
                         && array_all(
                             $param->type->getTemplateTypes(),

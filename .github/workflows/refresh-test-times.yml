@@ -1,0 +1,83 @@
+name: Refresh the CI test times
+
+# bin/ci/test_times.json balances the unit test runners (see bin/ci/generate_testsuites.php). It goes stale as
+# tests change, so this takes the timings of the latest green run of the branch's head at the time (a push, or
+# its run dispatched after a merge) and commits them. The run may be of an older commit than the one the times are
+# committed on: a test file added since counts as a median one until the next refresh, one removed is dropped.
+on:
+  schedule:
+    - cron: '41 3 * * 1'
+  # on a fork, or to refresh another branch: run it from that branch
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  refresh-test-times:
+    permissions:
+      contents: write # to push the new times
+      actions: write # to download the artifacts of a run, and to dispatch the workflows the push doesn't trigger
+    if: github.repository == 'vimeo/psalm' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v6
+        with:
+          persist-credentials: false
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
+        with:
+          php-version: '8.4'
+          coverage: none
+
+      - name: Download the test times of the latest green run of the branch
+        env:
+          BRANCH: ${{ github.ref_name }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          run_id="$(gh run list --workflow ci.yml --branch "$BRANCH" --status success --limit 50 --json databaseId,event \
+            --jq '[.[] | select(.event == "push" or .event == "workflow_dispatch")][0].databaseId // empty')"
+          if [ -z "$run_id" ]; then
+            echo "::error::No successful run of ci.yml on $BRANCH"
+            exit 1
+          fi
+          echo "Using ci.yml run $run_id"
+          gh run download "$run_id" --pattern 'test-times-*' --dir "$RUNNER_TEMP/test-times"
+
+      - name: Update the test times
+        run: php bin/ci/update_test_times.php "$RUNNER_TEMP"/test-times/test-times-*/junit.xml
+
+      - name: Commit the new times
+        id: commit
+        env:
+          MESSAGE: Refresh the CI test times
+        run: |
+          if git diff --quiet; then
+            echo "The test times did not change"
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -qam "$MESSAGE"
+          echo "committed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Push the new times
+        if: steps.commit.outputs.committed == 'true'
+        env:
+          BRANCH: ${{ github.ref_name }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh auth setup-git
+          if ! git push origin "HEAD:refs/heads/$BRANCH"; then
+            # the branch moved while this ran
+            git pull --rebase origin "$BRANCH"
+            git push origin "HEAD:refs/heads/$BRANCH"
+          fi
+
+          # Pushes made with the workflow's token don't trigger workflows: the unit tests, the only ones that read
+          # the file, are dispatched on the new head (bin/ci/auto-release.php waits for them)
+          for workflow in ci.yml windows-ci.yml; do
+            gh workflow run "$workflow" --repo "$GITHUB_REPOSITORY" --ref "$BRANCH"
+          done

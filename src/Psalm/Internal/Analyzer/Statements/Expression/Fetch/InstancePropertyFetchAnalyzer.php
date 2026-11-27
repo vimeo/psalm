@@ -311,9 +311,9 @@ final class InstancePropertyFetchAnalyzer
         if ($prop_names === ['value']
             && !$in_assignment
             && $stmt_type !== null
-            && $stmt_var_type->isSingle()
+            && $stmt_var_type->isSingleAtomic()
             && ($template = $stmt_var_type->getSingleAtomic()) instanceof TTemplateParam
-            && $template->as->isSingle()
+            && $template->as->isSingleAtomic()
             && $template->as->getSingleAtomic() instanceof TNamedObject
             && TValueOf::getValueType($template->as, $codebase) !== null
         ) {
@@ -327,7 +327,7 @@ final class InstancePropertyFetchAnalyzer
 
         // a member of the union (or a name) that has no such property gives null to isset(), whatever the others give
         if ($missing_in_isset
-            && (!$stmt_var_type->isSingle() || count($prop_names) > 1)
+            && (!$stmt_var_type->isSingleAtomic() || count($prop_names) > 1)
             && $stmt_type
             && !$stmt_type->isNullable()
             && !$stmt_type->hasMixed()
@@ -425,7 +425,7 @@ final class InstancePropertyFetchAnalyzer
         Union $object_type,
         ?string $property_name,
     ): bool {
-        if ($property_name === null || !$object_type->isSingle()) {
+        if ($property_name === null || !$object_type->isSingleAtomic()) {
             return false;
         }
 

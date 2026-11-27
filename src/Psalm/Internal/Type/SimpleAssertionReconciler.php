@@ -154,7 +154,7 @@ final class SimpleAssertionReconciler extends Reconciler
         // `non-empty-mixed` is only known to be truthy, and the type asserted for it stays truthy
         if ($reconciled_type
             && $assertion instanceof IsType
-            && $existing_var_type->isSingle()
+            && $existing_var_type->isSingleAtomic()
             && $existing_var_type->getSingleAtomic() instanceof TNonEmptyMixed
             && !$reconciled_type->hasMixed()
         ) {
@@ -575,7 +575,7 @@ final class SimpleAssertionReconciler extends Reconciler
             );
         }
 
-        if ($existing_var_type->isSingle()
+        if ($existing_var_type->isSingleAtomic()
             && $existing_var_type->hasTemplate()
         ) {
             $types = $existing_var_type->getAtomicTypes();
@@ -840,7 +840,11 @@ final class SimpleAssertionReconciler extends Reconciler
             $array_atomic_type = $existing_var_type->getArray();
             $redundant = true;
 
-            if ($array_atomic_type instanceof TArray) {
+            if ($array_atomic_type instanceof TArray && $array_atomic_type->isEmptyArray()) {
+                // Impossible
+                $existing_var_type->removeType('array');
+                $redundant = false;
+            } elseif ($array_atomic_type instanceof TArray) {
                 if (!$array_atomic_type instanceof TNonEmptyArray
                     || $array_atomic_type->count !== $assertion->count
                 ) {
@@ -1987,7 +1991,7 @@ final class SimpleAssertionReconciler extends Reconciler
     ): Union {
         $new_var_type = $assertion->type;
 
-        if ($new_var_type->isSingle() && $new_var_type->getSingleAtomic() instanceof TClassConstant) {
+        if ($new_var_type->isSingleAtomic() && $new_var_type->getSingleAtomic() instanceof TClassConstant) {
             // Can't do assertion on const with non-literal type
             return $existing_var_type;
         }
@@ -2144,6 +2148,11 @@ final class SimpleAssertionReconciler extends Reconciler
                 if ($atomic_assertion_type instanceof TNonEmptyArray) {
                     if (!$type instanceof TNonEmptyArray) {
                         $redundant = false;
+                    }
+
+                    // an empty array is never non-empty
+                    if ($type->isEmptyArray()) {
+                        continue;
                     }
 
                     $array_types[] = new TNonEmptyArray(
@@ -2456,7 +2465,7 @@ final class SimpleAssertionReconciler extends Reconciler
 
         foreach ($existing_var_atomic_types as $type) {
             if ($type->isArrayAccessibleWithStringKey($codebase)) {
-                if ($type::class === TArray::class) {
+                if ($type::class === TArray::class && !$type->isEmptyArray()) {
                     $array_types[] = new TNonEmptyArray($type->type_params);
                 } elseif ($type instanceof TKeyedArray && $type->is_list) {
                     $properties = $type->properties;
@@ -2499,7 +2508,7 @@ final class SimpleAssertionReconciler extends Reconciler
      * @param Reconciler::RECONCILIATION_* $failed_reconciliation
      */
     private static function reconcileIntArrayAccess(
-        HasIntOrStringArrayAccess $assertion,
+        Assertion $assertion,
         Codebase $codebase,
         Union $existing_var_type,
         ?string $key,
@@ -2514,21 +2523,14 @@ final class SimpleAssertionReconciler extends Reconciler
         $existing_var_atomic_types = $existing_var_type->getAtomicTypes();
 
         if ($existing_var_type->hasMixed()) {
-            // a string only has characters at int offsets: with a key that may be a string, the parent stays mixed
-            return $assertion->int_key
-                ? new Union([
-                    new TNonEmptyArray([Type::getArrayKey(), Type::getMixed()]),
-                    new TNamedObject('ArrayAccess'),
-                    new TNonEmptyString(),
-                ])
-                : Type::getMixed();
+            return Type::getMixed();
         }
 
         $array_types = [];
 
         foreach ($existing_var_atomic_types as $type) {
             if ($type->isArrayAccessibleWithIntOrStringKey($codebase)) {
-                if ($type::class === TArray::class) {
+                if ($type::class === TArray::class && !$type->isEmptyArray()) {
                     $array_types[] = new TNonEmptyArray($type->type_params);
                 } elseif ($type::class === TString::class) {
                     // a string with a character at an offset has one
@@ -3368,7 +3370,7 @@ final class SimpleAssertionReconciler extends Reconciler
     {
         $bound = $template->as;
 
-        while ($bound->isSingle()) {
+        while ($bound->isSingleAtomic()) {
             $atomic = $bound->getSingleAtomic();
 
             if (!$atomic instanceof TTemplateParam) {

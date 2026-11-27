@@ -832,7 +832,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
                         $context,
                     );
 
-                    $this_type = $var_comment->var_id === '$this' && $var_comment->type?->isSingle()
+                    $this_type = $var_comment->var_id === '$this' && $var_comment->type?->isSingleAtomic()
                         ? $var_comment->type->getSingleAtomic()
                         : null;
 
@@ -1237,6 +1237,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
                         array_combine($var_list, $loc_list),
                         $var_id,
                         $original_location,
+                        fn(PhpParser\Node\Expr\Variable $var): bool => $this->isUsedWrite($var, $context),
                     );
                 }
 
@@ -1247,6 +1248,25 @@ final class StatementsAnalyzer extends SourceAnalyzer
                 );
             }
         }
+    }
+
+    /**
+     * Whether the value a write gives the variable is read afterwards, as for an assignment checked above
+     */
+    private function isUsedWrite(PhpParser\Node\Expr\Variable $var, Context $context): bool
+    {
+        if (!is_string($var->name) || !$this->variable_use_graph) {
+            return true;
+        }
+
+        $var_id = '$' . $var->name;
+
+        return isset($this->byref_uses[$var_id])
+            || isset($context->referenced_globals[$var_id])
+            || VariableFetchAnalyzer::isSuperGlobal($var_id)
+            || $this->variable_use_graph->isVariableUsed(
+                DataFlowNode::getForAssignment($var_id, new CodeLocation($this->getSource(), $var)),
+            );
     }
 
     /**

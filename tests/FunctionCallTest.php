@@ -4270,6 +4270,55 @@ final class FunctionCallTest extends TestCase
                     '$a===' => 'float(10.36)',
                 ],
             ],
+            'roundOfAUnionOfFloatLiterals' => [
+                'code' => '<?php
+                    $a = round(rand(0, 1) ? 1.5 : 2.5);
+                ',
+                'assertions' => [
+                    '$a===' => 'float',
+                ],
+            ],
+            'roundIsALiteralOnlyWhenThePrecisionAndModeAreKnown' => [
+                'code' => '<?php
+                    function getInt(): int {
+                        return 2;
+                    }
+
+                    $a = round(1.234, getInt());
+                    $b = round(1.234, rand(0, 1) ? 1 : 2);
+                    $c = round(1.25, 1, PHP_ROUND_HALF_DOWN);
+                    $d = round(1.25, 1);
+                ',
+                'assertions' => [
+                    '$a===' => 'float',
+                    '$b===' => 'float',
+                    '$c===' => 'float(1.2)',
+                    '$d===' => 'float(1.3)',
+                ],
+            ],
+            'randWithAUnionOfIntLiteralsAsMinimum' => [
+                'code' => '<?php
+                    $a = rand(rand(0, 1) ? 5 : 1, 10);
+                ',
+                'assertions' => [
+                    '$a===' => 'int<min, 10>',
+                ],
+            ],
+            'dirnameIsALiteralOnlyWhenTheLevelIsKnown' => [
+                'code' => '<?php
+                    /** @return positive-int */
+                    function getLevel(): int {
+                        return 2;
+                    }
+
+                    $a = dirname("/a/b/c/d", rand(0, 1) ? 1 : 3);
+                    $b = dirname("/a/b/c/d", getLevel());
+                ',
+                'assertions' => [
+                    '$a===' => 'non-falsy-string',
+                    '$b===' => 'non-falsy-string',
+                ],
+            ],
             'allowConstructorAfterEnumExists' => [
                 'code' => '<?php
                     function foo(string $s) : void {
@@ -4939,6 +4988,27 @@ final class FunctionCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'possiblyFalseArgumentMessageNamesTheFalseValue' => [
+                'code' => '<?php
+                    function takesString(string $s): void {}
+
+                    /** @return string|false */
+                    function maybeString() {
+                        return rand(0, 1) ? "a" : false;
+                    }
+
+                    takesString(maybeString());',
+                'error_message' => 'PossiblyFalseArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:33 - '
+                    . 'Argument 1 of takesString cannot be false, possibly false value provided',
+            ],
+            'falseArgumentMessageNamesTheFalseValue' => [
+                'code' => '<?php
+                    function takesString(string $s): void {}
+
+                    takesString(false);',
+                'error_message' => 'Argument 1 of takesString cannot be false, false value provided to parameter '
+                    . 'with type string',
+            ],
             'possiblyUndefinedVariableAfterExtractIsMixed' => [
                 'code' => '<?php
                     function takesInt(int $_i): void {}

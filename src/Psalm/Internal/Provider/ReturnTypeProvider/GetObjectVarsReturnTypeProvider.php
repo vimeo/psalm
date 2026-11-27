@@ -56,7 +56,7 @@ final class GetObjectVarsReturnTypeProvider implements FunctionReturnTypeProvide
     ): Atomic {
         self::$fallback ??= new TArray([Type::getString(), Type::getMixed()]);
 
-        if ($first_arg_type->isSingle()) {
+        if ($first_arg_type->isSingleAtomic()) {
             $atomics = $first_arg_type->getAtomicTypes();
             $object_type = reset($atomics);
 

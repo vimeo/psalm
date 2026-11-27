@@ -18,8 +18,11 @@ use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\IncludeCollector;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Provider\Providers;
+use Psalm\Plugin\EventHandler\Event\MethodReturnTypeProviderEvent;
 use Psalm\Storage\Capabilities;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
+use Psalm\Type;
+use Psalm\Type\Union;
 
 use function array_values;
 use function assert;
@@ -2203,6 +2206,108 @@ final class StubTest extends DeferredAnalyzerTestCase
         $this->analyzeFile($file_path, new Context());
     }
 
+    private function analyzeWithPartialUserlandStubs(string $code): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+
+                    <stubs>
+                        <file name="tests/fixtures/stubs/partial_userland_classes.phpstub" />
+                    </stubs>
+                </psalm>',
+            ),
+            '8.0',
+        );
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                namespace Foo;
+
+                interface PartiallyStubbedInterface {
+                    /** @param array<string, mixed> $context */
+                    public function denormalize(mixed $data, array $context = []): mixed;
+
+                    /** @param array<string, mixed> $context */
+                    public function supportsDenormalization(mixed $data, array $context = []): bool;
+                }
+
+                class PartiallyStubbedResponse {
+                    public function setContent(?string $content): void {}
+
+                    public function setStatus(int|string $code): void {}
+
+                    /** @param array<string, mixed> $headers */
+                    public function setHeaders(array $headers): void {}
+                }
+                ' . $code,
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testWiderParamOfAnInterfaceMethodLeftOutOfAStub(): void
+    {
+        $this->analyzeWithPartialUserlandStubs('
+            final class Denormalizer implements PartiallyStubbedInterface {
+                public function denormalize(mixed $data, array $context = []): mixed {
+                    return null;
+                }
+
+                public function supportsDenormalization(mixed $data, array $context = []): bool {
+                    return true;
+                }
+            }');
+    }
+
+    public function testWiderParamOfAMethodLeftOutOfAStub(): void
+    {
+        $this->analyzeWithPartialUserlandStubs('
+            final class Response extends PartiallyStubbedResponse {
+                public function setContent(mixed $content): void {}
+            }');
+    }
+
+    public function testWiderParamOfAStubbedMethod(): void
+    {
+        $this->analyzeWithPartialUserlandStubs('
+            final class Response extends PartiallyStubbedResponse {
+                public function setHeaders(array $headers): void {}
+            }');
+    }
+
+    public function testNarrowerParamOfAMethodLeftOutOfAStub(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('MethodSignatureMismatch');
+
+        $this->analyzeWithPartialUserlandStubs('
+            final class Response extends PartiallyStubbedResponse {
+                public function setStatus(int $code): void {}
+            }');
+    }
+
+    public function testFloatParamOverridingAnIntParamLeftOutOfAStub(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('MethodSignatureMismatch');
+
+        $this->analyzeWithPartialUserlandStubs('
+            final class Response extends PartiallyStubbedResponse {
+                public function setStatus(float|string $code): void {}
+            }');
+    }
+
     public function testStubbedMethodWithConditionalReturnOverridingSource(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
@@ -2859,6 +2964,219 @@ final class StubTest extends DeferredAnalyzerTestCase
         $file_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'src/somefile.php';
         $this->addFile($file_path, $code);
         $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testStubReturnReplacesTheReturnThisOfTheScannedMethod(): void
+    {
+        $context = $this->analyzeWithStubsRedeclaringReceiverMethods('$x = $r->using(stdClass::class);');
+
+        $this->assertContextVars(
+            ['$x===' => 'StubbedRelation<int|stdClass>&static', '$r===' => 'StubbedRelation<stdClass>'],
+            $context,
+        );
+    }
+
+    public function testReturnTypeProviderAnswersForAStubbedMethodThatReturnedThis(): void
+    {
+        $context = $this->analyzeWithStubsRedeclaringReceiverMethods(
+            '$x = $r->using(stdClass::class);',
+            Type::getInt(),
+        );
+
+        $this->assertContextVars(['$x===' => 'int'], $context);
+    }
+
+    public function testLaterStubReturnReplacesTheReturnThisOfAnEarlierStub(): void
+    {
+        $context = $this->analyzeWithStubsRedeclaringReceiverMethods('$x = $r->usingTwice(stdClass::class);');
+
+        $this->assertContextVars(['$x===' => 'StubbedRelation<int|stdClass>&static'], $context);
+    }
+
+    public function testStubReturnReplacesTheReturnThisTheScannedBodyProves(): void
+    {
+        $context = $this->analyzeWithStubsRedeclaringReceiverMethods('$x = $r->with(1.5);');
+
+        $this->assertContextVars(['$x===' => 'StubbedRelation<int>'], $context);
+    }
+
+    public function testOverrideOfAStubbedMethodNoLongerReturningThisMayReturnAnotherObject(): void
+    {
+        $this->analyzeWithStubsRedeclaringReceiverMethods(
+            '/** @extends StubbedRelation<int> */
+            final class CopyingRelation extends StubbedRelation
+            {
+                public function chain()
+                {
+                    return new self();
+                }
+            }',
+        );
+    }
+
+    public function testStubKeepsItsOwnReturnThisAndThisOut(): void
+    {
+        $context = $this->analyzeWithStubsRedeclaringReceiverMethods('$x = $r->usingKept(stdClass::class);');
+
+        $this->assertContextVars(
+            ['$x===' => 'StubbedRelation<float|stdClass>', '$r===' => 'StubbedRelation<float|stdClass>'],
+            $context,
+        );
+    }
+
+    public function testStubWithoutReturnTypeKeepsTheReturnThisOfTheScannedMethod(): void
+    {
+        $this->analyzeWithStubsRedeclaringReceiverMethods(
+            '/** @extends StubbedRelation<int> */
+            final class ChainingRelation extends StubbedRelation
+            {
+                /** @psalm-external-mutation-free */
+                public function setTwice(): void
+                {
+                    $this->setA(1)->setA(2);
+                }
+            }',
+        );
+    }
+
+    public function testStubReturnReplacesTheOverloadsOfTheScannedMethod(): void
+    {
+        $context = $this->analyzeWithStubsRedeclaringReceiverMethods('$x = $r->pick(1);');
+
+        $this->assertContextVars(['$x===' => 'float'], $context);
+    }
+
+    public function testStubOverloadsReplaceTheOverloadsOfTheScannedMethod(): void
+    {
+        $context = $this->analyzeWithStubsRedeclaringReceiverMethods('$x = $r->pickOwn(1);');
+
+        $this->assertContextVars(['$x===' => 'bool'], $context);
+    }
+
+    public function testStubWithoutReturnTypeKeepsTheOverloadsOfTheScannedMethod(): void
+    {
+        $context = $this->analyzeWithStubsRedeclaringReceiverMethods('$x = $r->pickKept(1);');
+
+        $this->assertContextVars(['$x===' => 'int'], $context);
+    }
+
+    /**
+     * Analyzes `$code` after a `StubbedRelation<string> $r`, with a scanned `StubbedRelation` redeclared by two stubs
+     */
+    private function analyzeWithStubsRedeclaringReceiverMethods(
+        string $code,
+        ?Union $provided_return_type = null,
+    ): Context {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+
+                    <stubs>
+                        <file name="tests/fixtures/stubs/redeclared_receiver_methods.phpstub" />
+                        <file name="tests/fixtures/stubs/redeclared_receiver_methods_later.phpstub" />
+                    </stubs>
+                </psalm>',
+            ),
+        );
+
+        if ($provided_return_type !== null) {
+            $this->project_analyzer->getCodebase()->methods->return_type_provider->registerClosure(
+                'StubbedRelation',
+                static fn(MethodReturnTypeProviderEvent $event): ?Union
+                    => $event->getMethodNameLowercase() === 'using' ? $provided_return_type : null,
+            );
+        }
+
+        // stubs only override classes declared outside the project directories
+        $this->addFile(
+            (string) getcwd() . DIRECTORY_SEPARATOR . 'vendor/receiver_methods.php',
+            '<?php
+                /** @template T */
+                class StubbedRelation
+                {
+                    /**
+                     * @template N
+                     * @param class-string<N> $c
+                     * @return $this
+                     * @psalm-this-out StubbedRelation<N>
+                     */
+                    public function using($c) { return $this; }
+
+                    /**
+                     * @template N
+                     * @param class-string<N> $c
+                     * @return $this
+                     * @psalm-this-out StubbedRelation<N>
+                     */
+                    public function usingKept($c) { return $this; }
+
+                    public function usingTwice($c) { return $this; }
+
+                    /**
+                     * @template N
+                     * @param N $v
+                     * @psalm-this-out StubbedRelation<N>
+                     */
+                    final public function with($v) { return $this; }
+
+                    /**
+                     * @return $this
+                     */
+                    public function chain() { return $this; }
+
+                    /**
+                     * @psalm-overload (int $x): int
+                     * @psalm-overload (string $x): string
+                     * @param int|string $x
+                     * @return int|string
+                     */
+                    public function pick($x) { return $x; }
+
+                    /**
+                     * @psalm-overload (int $x): int
+                     * @psalm-overload (string $x): string
+                     * @param int|string $x
+                     * @return int|string
+                     */
+                    public function pickOwn($x) { return $x; }
+
+                    /**
+                     * @psalm-overload (int $x): int
+                     * @psalm-overload (string $x): string
+                     */
+                    public function pickKept(int|string $x): int|string { return $x; }
+
+                    /** @var int */
+                    public $a = 0;
+
+                    /**
+                     * @return $this
+                     * @psalm-external-mutation-free
+                     */
+                    public function setA(int $a) { $this->a = $a; return $this; }
+                }',
+        );
+
+        $file_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'src/somefile.php';
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @var StubbedRelation<string> $r */
+                $r = new StubbedRelation();
+                ' . $code,
+        );
+
+        $context = new Context();
+        $this->analyzeFile($file_path, $context);
+
+        return $context;
     }
 
     private function analyzeWithLibraryStubs(string $code, bool $load_library_stubs = true): Config

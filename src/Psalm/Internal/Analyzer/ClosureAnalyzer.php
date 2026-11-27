@@ -351,7 +351,7 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
 
         if ($stmt->static
             || !$bound_this_type instanceof Union
-            || !$bound_this_type->isSingle()
+            || !$bound_this_type->isSingleAtomic()
         ) {
             return null;
         }
@@ -512,7 +512,7 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
         } elseif (!$statements_analyzer->isStatic() && !$closure_analyzer->isStatic()) {
             if ($context->self) {
                 $outer_this_atomic = isset($context->vars_in_scope['$this'])
-                    && $context->vars_in_scope['$this']->isSingle()
+                    && $context->vars_in_scope['$this']->isSingleAtomic()
                     ? $context->vars_in_scope['$this']->getSingleAtomic()
                     : null;
 
