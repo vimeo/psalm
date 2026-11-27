@@ -1093,6 +1093,7 @@ final class NewAnalyzer extends CallAnalyzer
                 $fq_class_name,
                 $code_location,
                 $stmt_type,
+                ReceiverPropertyTaints::constructsExactly($stmt),
             );
         }
 

@@ -5,7 +5,10 @@ declare(strict_types=1);
 namespace Psalm\Internal\Codebase;
 
 use PhpParser\Node\Arg;
+use PhpParser\Node\Expr;
+use PhpParser\Node\Expr\New_;
 use PhpParser\Node\Expr\Variable;
+use PhpParser\Node\Name;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
@@ -16,6 +19,7 @@ use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\MethodStorage;
+use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
 
 use function array_keys;
@@ -50,6 +54,10 @@ use function substr;
  * object of a subclass gets set as one of its parent classes. A property of `@property` tags isn't inherited the way
  * declared properties are: a write also sets it in the subclasses with the tag, and a read also gets what is set
  * through them and through the parent classes with the tag.
+ *
+ * An object the code constructs with `new` of a class it names is of that class, not of one extending it: what is set
+ * to it under a name not known exactly goes to the properties of that class only, and to its node of other names (see
+ * isExactReceiver()).
  *
  * The properties of an object whose taints are kept per instance (`@psalm-taint-specialize`) are that object's: what
  * is set goes into the variable holding it, and what is read comes from it. Their flows by key are those of any
@@ -169,6 +177,7 @@ final class ReceiverPropertyTaints
      * @param array<string, DataFlowNode> $receiver_parent_nodes the nodes of the object the method is called on
      * @param ?string $var_id the variable holding the object, whose taints the call changes when they are kept per
      *                        instance
+     * @param bool $exact_receiver whether the object is of $receiver_class, not of a class extending it
      */
     public static function taintCall(
         StatementsAnalyzer $statements_analyzer,
@@ -181,6 +190,7 @@ final class ReceiverPropertyTaints
         Context $context,
         CodeLocation $call_location,
         Union $return_type,
+        bool $exact_receiver = false,
     ): Union {
         if ($storage->taint_property_writes === []
             && $storage->taint_property_reads === []
@@ -295,6 +305,7 @@ final class ReceiverPropertyTaints
             null,
             $context,
             $call_location,
+            $exact_receiver,
         );
 
         return $return_type;
@@ -305,6 +316,7 @@ final class ReceiverPropertyTaints
      * $object_type holding what is set, when the taints of the properties of the class are kept per instance
      *
      * @param array<array-key, Arg> $args
+     * @param bool $exact whether the object is of $class, not of a class extending it (`new static`)
      */
     public static function taintConstruction(
         StatementsAnalyzer $statements_analyzer,
@@ -314,6 +326,7 @@ final class ReceiverPropertyTaints
         string $class,
         CodeLocation $call_location,
         Union $object_type,
+        bool $exact,
     ): Union {
         if ($storage->taint_property_writes === []
             && $storage->taint_keyed_property_writes === []
@@ -341,6 +354,7 @@ final class ReceiverPropertyTaints
             $object_node,
             null,
             $call_location,
+            $exact,
         ) && $class_storage->specialize_instance) {
             $graph->addNode($object_node);
             $object_type = $object_type->addParentNodes([$object_node->id => $object_node]);
@@ -367,6 +381,7 @@ final class ReceiverPropertyTaints
         ?DataFlowNode $object_node,
         ?Context $context,
         CodeLocation $call_location,
+        bool $exact,
     ): bool {
         $codebase = $statements_analyzer->getCodebase();
         $sets_any = false;
@@ -415,7 +430,7 @@ final class ReceiverPropertyTaints
                     $call_location,
                 );
             } else {
-                self::addWrite($codebase, $graph, $class_storage, $names, $write_node);
+                self::addWrite($codebase, $graph, $class_storage, $names, $write_node, $exact);
             }
         }
 
@@ -433,7 +448,7 @@ final class ReceiverPropertyTaints
                     $graph->addPath($array_node, $write_node, '=');
                 }
 
-                self::addKeyedWrite($codebase, $graph, $class_storage, $write_node);
+                self::addKeyedWrite($codebase, $graph, $class_storage, $write_node, $exact);
 
                 continue;
             }
@@ -465,7 +480,7 @@ final class ReceiverPropertyTaints
                     $call_location,
                 );
             } else {
-                self::addWrite($codebase, $graph, $class_storage, $names, $write_node);
+                self::addWrite($codebase, $graph, $class_storage, $names, $write_node, $exact);
             }
         }
 
@@ -496,7 +511,7 @@ final class ReceiverPropertyTaints
                 }
             } elseif (self::addValuePaths($statements_analyzer, $graph, $args, $args_by_param, $params, $write_node)) {
                 $sets_any = true;
-                self::addKeyedWrite($codebase, $graph, $class_storage, $write_node);
+                self::addKeyedWrite($codebase, $graph, $class_storage, $write_node, $exact);
             }
         }
 
@@ -635,7 +650,7 @@ final class ReceiverPropertyTaints
                 $location,
             );
         } else {
-            self::addWrite($codebase, $graph, $class_storage, [[true, $name]], $write_node);
+            self::addWrite($codebase, $graph, $class_storage, [[true, $name]], $write_node, false);
         }
     }
 
@@ -667,6 +682,75 @@ final class ReceiverPropertyTaints
         } else {
             self::addRead($codebase, $graph, $class_storage, [[true, $name]], $fetch_node);
         }
+    }
+
+    /**
+     * Whether `new` constructs an object of the class it names (`new Foo`, `new self`), not of a class extending it
+     * (`new static`, `new $class`)
+     *
+     * @psalm-mutation-free
+     */
+    public static function constructsExactly(New_ $new): bool
+    {
+        return $new->class instanceof Name && strtolower($new->class->toString()) !== 'static';
+    }
+
+    /**
+     * Records that $var_id, just assigned $value at $location, holds an object it constructs, of the class it names,
+     * when it does (see Context::$exact_objects)
+     *
+     * @psalm-capabilities read-props|write-props
+     */
+    public static function recordExactObject(
+        Context $context,
+        string $var_id,
+        ?Expr $value,
+        CodeLocation $location,
+    ): void {
+        $type = $context->vars_in_scope[$var_id];
+        $atomic = $type->isSingleAtomic() ? $type->getSingleAtomic() : null;
+
+        if (!$value instanceof New_
+            || !self::constructsExactly($value)
+            || !$atomic instanceof TNamedObject
+            || $atomic->extra_types
+        ) {
+            unset($context->exact_objects[$var_id]);
+
+            return;
+        }
+
+        $context->exact_objects[$var_id] = [
+            DataFlowNode::getForAssignment($var_id, $location)->id,
+            strtolower($atomic->value),
+        ];
+    }
+
+    /**
+     * Whether the object a method of $class is called on is of that class, not of one extending it: it is constructed
+     * there (`(new Foo)->set()`), or held by a variable whose value is still only the one of the assignment that gave
+     * it that object, and that isn't a reference
+     *
+     * @psalm-mutation-free
+     */
+    public static function isExactReceiver(Context $context, ?string $var_id, Expr $receiver, string $class): bool
+    {
+        if ($receiver instanceof New_) {
+            return self::constructsExactly($receiver);
+        }
+
+        if ($var_id === null
+            || !isset($context->exact_objects[$var_id], $context->vars_in_scope[$var_id])
+            || isset($context->references_in_scope[$var_id])
+            || isset($context->references_to_external_scope[$var_id])
+        ) {
+            return false;
+        }
+
+        [$assignment_node_id, $exact_class] = $context->exact_objects[$var_id];
+
+        return array_keys($context->vars_in_scope[$var_id]->parent_nodes) === [$assignment_node_id]
+            && $exact_class === strtolower($class);
     }
 
     /**
@@ -789,10 +873,11 @@ final class ReceiverPropertyTaints
         ClassLikeStorage $class_storage,
         array $names,
         DataFlowNode $write_node,
+        bool $exact,
     ): void {
         $ancestors = self::getAncestors($codebase, $class_storage);
 
-        foreach (self::getPropertyNames($codebase, $class_storage, $names) as $prop_name) {
+        foreach (self::getPropertyNames($codebase, $class_storage, $names, $exact) as $prop_name) {
             self::addPropertyWrite(
                 $codebase,
                 $graph,
@@ -801,6 +886,7 @@ final class ReceiverPropertyTaints
                 $prop_name,
                 $write_node,
                 'property-assignment',
+                $exact,
             );
         }
 
@@ -810,7 +896,7 @@ final class ReceiverPropertyTaints
         $known_names = null;
         foreach ($names as $name) {
             if ($name[0]) {
-                $known_names ??= self::getKnownPropertyNames($codebase, $class_storage);
+                $known_names ??= self::getKnownPropertyNames($codebase, $class_storage, $exact);
                 if (isset($known_names[$name[1]])) {
                     continue;
                 }
@@ -837,10 +923,11 @@ final class ReceiverPropertyTaints
         TaintFlowGraph $graph,
         ClassLikeStorage $class_storage,
         DataFlowNode $write_node,
+        bool $exact,
     ): void {
         $ancestors = self::getAncestors($codebase, $class_storage);
 
-        foreach (self::getKnownPropertyNames($codebase, $class_storage) as $prop_name => $_) {
+        foreach (self::getKnownPropertyNames($codebase, $class_storage, $exact) as $prop_name => $_) {
             self::addPropertyWrite(
                 $codebase,
                 $graph,
@@ -849,6 +936,7 @@ final class ReceiverPropertyTaints
                 $prop_name,
                 $write_node,
                 'arrayvalue-fetch-\'' . $prop_name . '\'',
+                $exact,
             );
         }
 
@@ -860,6 +948,8 @@ final class ReceiverPropertyTaints
 
     /**
      * @param list<ClassLikeStorage> $ancestors
+     * @param bool $exact whether the object is of the class, not of one extending it: what the subclasses hold isn't
+     *                    set
      * @psalm-capabilities read-props|write-props
      */
     private static function addPropertyWrite(
@@ -870,11 +960,12 @@ final class ReceiverPropertyTaints
         string $prop_name,
         DataFlowNode $write_node,
         string $path_type,
+        bool $exact,
     ): void {
         $property_storages = [
             $class_storage,
             ...$ancestors,
-            ...self::getSubclassesHolding($codebase, $class_storage, $prop_name),
+            ...($exact ? [] : self::getSubclassesHolding($codebase, $class_storage, $prop_name)),
         ];
 
         foreach ($property_storages as $storage) {
@@ -884,7 +975,7 @@ final class ReceiverPropertyTaints
         }
 
         // what the subclasses read of a property they inherit (see InstancePropertyAssignmentAnalyzer)
-        if (!$class_storage->final) {
+        if (!$class_storage->final && !$exact) {
             $inherited_property_node = DataFlowNode::getForInheritedProperty($class_storage->name . '::$' . $prop_name);
             $graph->addNode($inherited_property_node);
             $graph->addPath($write_node, $inherited_property_node, $path_type);
@@ -904,7 +995,7 @@ final class ReceiverPropertyTaints
     ): void {
         $ancestors = self::getAncestors($codebase, $class_storage);
 
-        foreach (self::getPropertyNames($codebase, $class_storage, $names) as $prop_name) {
+        foreach (self::getPropertyNames($codebase, $class_storage, $names, false) as $prop_name) {
             self::addPropertyRead(
                 $codebase,
                 $graph,
@@ -938,7 +1029,7 @@ final class ReceiverPropertyTaints
     ): void {
         $ancestors = self::getAncestors($codebase, $class_storage);
 
-        foreach (self::getKnownPropertyNames($codebase, $class_storage) as $prop_name => $_) {
+        foreach (self::getKnownPropertyNames($codebase, $class_storage, false) as $prop_name => $_) {
             self::addPropertyRead(
                 $codebase,
                 $graph,
@@ -1003,14 +1094,19 @@ final class ReceiverPropertyTaints
 
     /**
      * The properties the names can be: one known exactly is that property, one whose start only is known is each
-     * instance property starting with it of the class and of the classes extending it
+     * instance property starting with it of the class and of the classes extending it, or of the class only when
+     * $exact
      *
      * @param list<array{bool, string}> $names
      * @return list<string>
      * @psalm-capabilities read-props
      */
-    private static function getPropertyNames(Codebase $codebase, ClassLikeStorage $class_storage, array $names): array
-    {
+    private static function getPropertyNames(
+        Codebase $codebase,
+        ClassLikeStorage $class_storage,
+        array $names,
+        bool $exact,
+    ): array {
         $property_names = [];
         $known_names = null;
 
@@ -1021,7 +1117,7 @@ final class ReceiverPropertyTaints
                 continue;
             }
 
-            $known_names ??= self::getKnownPropertyNames($codebase, $class_storage);
+            $known_names ??= self::getKnownPropertyNames($codebase, $class_storage, $exact);
             foreach ($known_names as $prop_name => $_) {
                 if (str_starts_with($prop_name, $known)) {
                     $property_names[$prop_name] = true;
@@ -1033,16 +1129,19 @@ final class ReceiverPropertyTaints
     }
 
     /**
-     * The names of the instance properties of the class and of the classes extending it, declared or of `@property`
-     * tags, and those of `@property` tags of the classes and interfaces it extends
+     * The names of the instance properties of the class and of the classes extending it (not when $exact), declared
+     * or of `@property` tags, and those of `@property` tags of the classes and interfaces it extends
      *
      * @return array<string, true>
      * @psalm-capabilities read-props
      */
-    private static function getKnownPropertyNames(Codebase $codebase, ClassLikeStorage $class_storage): array
-    {
+    private static function getKnownPropertyNames(
+        Codebase $codebase,
+        ClassLikeStorage $class_storage,
+        bool $exact,
+    ): array {
         $names = [];
-        $subclasses = self::getSubclasses($codebase, $class_storage);
+        $subclasses = $exact ? [] : self::getSubclasses($codebase, $class_storage);
 
         foreach ([$class_storage, ...$subclasses] as $storage) {
             foreach ($storage->declaring_property_ids as $prop_name => $declaring_class) {

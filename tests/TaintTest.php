@@ -2622,6 +2622,179 @@ final class TaintTest extends TestCase
     public static function providerValidCodeParse(): array
     {
         return [
+            'receiverPropertySetUnderAnyNameOfAnObjectOfTheClassItIsConstructedWith' => [
+                'code' => '<?php
+                    class Bag {
+                        /** @var array<string, mixed> */
+                        private array $values = [];
+
+                        /**
+                         * @param array<string, mixed> $values
+                         * @psalm-flow ($values) -> $this->{key}
+                         */
+                        final public function __construct(array $values) {
+                            $this->values = $values;
+                        }
+
+                        /** @psalm-flow ($value) -> $this->$name */
+                        public function set(string $name, mixed $value): void {
+                            $this->values[$name] = $value;
+                        }
+
+                        /** @psalm-flow $this->$name -> return */
+                        public function get(string $name): mixed {
+                            return $this->values[$name] ?? null;
+                        }
+
+                        /** @param array<string, mixed> $values */
+                        public static function make(array $values): static {
+                            return new static($values);
+                        }
+                    }
+
+                    final class Query extends Bag {
+                        public string $category = "";
+                    }
+
+                    function show(Query $query): void {
+                        echo $query->category;
+                    }
+
+                    function render(string $name): void {
+                        $bag = new Bag([]);
+                        $bag->set($name, (string) $_GET["x"]);
+                    }',
+            ],
+            'receiverPropertySetUnderAnyNameInALoopOfAnObjectOfTheClassItIsConstructedWith' => [
+                'code' => '<?php
+                    class Bag {
+                        /** @var array<string, mixed> */
+                        private array $values = [];
+
+                        /**
+                         * @param array<string, mixed> $values
+                         * @psalm-flow ($values) -> $this->{key}
+                         */
+                        final public function __construct(array $values) {
+                            $this->values = $values;
+                        }
+
+                        /** @psalm-flow ($value) -> $this->$name */
+                        public function set(string $name, mixed $value): void {
+                            $this->values[$name] = $value;
+                        }
+
+                        /** @psalm-flow $this->$name -> return */
+                        public function get(string $name): mixed {
+                            return $this->values[$name] ?? null;
+                        }
+
+                        /** @param array<string, mixed> $values */
+                        public static function make(array $values): static {
+                            return new static($values);
+                        }
+                    }
+
+                    final class Query extends Bag {
+                        public string $category = "";
+                    }
+
+                    function show(Query $query): void {
+                        echo $query->category;
+                    }
+
+                    /** @param list<string> $names */
+                    function render(array $names): void {
+                        $bag = new Bag([]);
+                        foreach ($names as $name) {
+                            $bag->set($name, (string) $_GET["x"]);
+                        }
+                    }',
+            ],
+            'receiverPropertySetUnderAnyNameOfAnObjectConstructedThere' => [
+                'code' => '<?php
+                    class Bag {
+                        /** @var array<string, mixed> */
+                        private array $values = [];
+
+                        /**
+                         * @param array<string, mixed> $values
+                         * @psalm-flow ($values) -> $this->{key}
+                         */
+                        final public function __construct(array $values) {
+                            $this->values = $values;
+                        }
+
+                        /** @psalm-flow ($value) -> $this->$name */
+                        public function set(string $name, mixed $value): void {
+                            $this->values[$name] = $value;
+                        }
+
+                        /** @psalm-flow $this->$name -> return */
+                        public function get(string $name): mixed {
+                            return $this->values[$name] ?? null;
+                        }
+
+                        /** @param array<string, mixed> $values */
+                        public static function make(array $values): static {
+                            return new static($values);
+                        }
+                    }
+
+                    final class Query extends Bag {
+                        public string $category = "";
+                    }
+
+                    function show(Query $query): void {
+                        echo $query->category;
+                    }
+
+                    function render(string $name): void {
+                        (new Bag([]))->set($name, (string) $_GET["x"]);
+                    }',
+            ],
+            'receiverPropertiesSetByTheConstructorOfTheClassItNames' => [
+                'code' => '<?php
+                    class Bag {
+                        /** @var array<string, mixed> */
+                        private array $values = [];
+
+                        /**
+                         * @param array<string, mixed> $values
+                         * @psalm-flow ($values) -> $this->{key}
+                         */
+                        final public function __construct(array $values) {
+                            $this->values = $values;
+                        }
+
+                        /** @psalm-flow ($value) -> $this->$name */
+                        public function set(string $name, mixed $value): void {
+                            $this->values[$name] = $value;
+                        }
+
+                        /** @psalm-flow $this->$name -> return */
+                        public function get(string $name): mixed {
+                            return $this->values[$name] ?? null;
+                        }
+
+                        /** @param array<string, mixed> $values */
+                        public static function make(array $values): static {
+                            return new static($values);
+                        }
+                    }
+
+                    final class Query extends Bag {
+                        public string $category = "";
+                    }
+
+                    function show(Query $query): void {
+                        echo $query->category;
+                    }
+
+                    function render(string $name): void {
+                        $bag = new Bag([$name => (string) $_GET["x"]]);
+                    }',
+            ],
             'methodNamedByInputNarrowedToALiteral' => [
                 'code' => '<?php
                     final class A {
@@ -13716,6 +13889,420 @@ final class TaintTest extends TestCase
 
                     function show(Model $model): void {
                         echo $model->getTitle();
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'receiverPropertySetUnderAnyNameOfAnObjectOfTheClassReadThroughAParameter' => [
+                'code' => '<?php
+                    class Bag {
+                        /** @var array<string, mixed> */
+                        private array $values = [];
+
+                        /**
+                         * @param array<string, mixed> $values
+                         * @psalm-flow ($values) -> $this->{key}
+                         */
+                        final public function __construct(array $values) {
+                            $this->values = $values;
+                        }
+
+                        /** @psalm-flow ($value) -> $this->$name */
+                        public function set(string $name, mixed $value): void {
+                            $this->values[$name] = $value;
+                        }
+
+                        /** @psalm-flow $this->$name -> return */
+                        public function get(string $name): mixed {
+                            return $this->values[$name] ?? null;
+                        }
+
+                        /** @param array<string, mixed> $values */
+                        public static function make(array $values): static {
+                            return new static($values);
+                        }
+                    }
+
+                    final class Query extends Bag {
+                        public string $category = "";
+                    }
+
+                    function show(Query $query): void {
+                        echo $query->category;
+                    }
+
+                    function read(Bag $bag): void {
+                        echo (string) $bag->get("category");
+                    }
+
+                    function render(string $name): void {
+                        $bag = new Bag([]);
+                        $bag->set($name, (string) $_GET["x"]);
+                        read($bag);
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'receiverPropertySetUnderAnyNameOfAnObjectOfTheClassReadThere' => [
+                'code' => '<?php
+                    class Bag {
+                        /** @var array<string, mixed> */
+                        private array $values = [];
+
+                        /**
+                         * @param array<string, mixed> $values
+                         * @psalm-flow ($values) -> $this->{key}
+                         */
+                        final public function __construct(array $values) {
+                            $this->values = $values;
+                        }
+
+                        /** @psalm-flow ($value) -> $this->$name */
+                        public function set(string $name, mixed $value): void {
+                            $this->values[$name] = $value;
+                        }
+
+                        /** @psalm-flow $this->$name -> return */
+                        public function get(string $name): mixed {
+                            return $this->values[$name] ?? null;
+                        }
+
+                        /** @param array<string, mixed> $values */
+                        public static function make(array $values): static {
+                            return new static($values);
+                        }
+                    }
+
+                    final class Query extends Bag {
+                        public string $category = "";
+                    }
+
+                    function show(Query $query): void {
+                        echo $query->category;
+                    }
+
+                    function render(string $name): void {
+                        $bag = new Bag([]);
+                        $bag->set($name, (string) $_GET["x"]);
+                        echo (string) $bag->get("category");
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'receiverPropertySetUnderAnyNameOfAnObjectOfASubclassItIsConstructedWith' => [
+                'code' => '<?php
+                    class Bag {
+                        /** @var array<string, mixed> */
+                        private array $values = [];
+
+                        /**
+                         * @param array<string, mixed> $values
+                         * @psalm-flow ($values) -> $this->{key}
+                         */
+                        final public function __construct(array $values) {
+                            $this->values = $values;
+                        }
+
+                        /** @psalm-flow ($value) -> $this->$name */
+                        public function set(string $name, mixed $value): void {
+                            $this->values[$name] = $value;
+                        }
+
+                        /** @psalm-flow $this->$name -> return */
+                        public function get(string $name): mixed {
+                            return $this->values[$name] ?? null;
+                        }
+
+                        /** @param array<string, mixed> $values */
+                        public static function make(array $values): static {
+                            return new static($values);
+                        }
+                    }
+
+                    final class Query extends Bag {
+                        public string $category = "";
+                    }
+
+                    function show(Query $query): void {
+                        echo $query->category;
+                    }
+
+                    function render(string $name): void {
+                        $query = new Query([]);
+                        $query->set($name, (string) $_GET["x"]);
+                        show($query);
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'receiverPropertySetUnderAnyNameOfAnObjectAssignedAnotherOne' => [
+                'code' => '<?php
+                    class Bag {
+                        /** @var array<string, mixed> */
+                        private array $values = [];
+
+                        /**
+                         * @param array<string, mixed> $values
+                         * @psalm-flow ($values) -> $this->{key}
+                         */
+                        final public function __construct(array $values) {
+                            $this->values = $values;
+                        }
+
+                        /** @psalm-flow ($value) -> $this->$name */
+                        public function set(string $name, mixed $value): void {
+                            $this->values[$name] = $value;
+                        }
+
+                        /** @psalm-flow $this->$name -> return */
+                        public function get(string $name): mixed {
+                            return $this->values[$name] ?? null;
+                        }
+
+                        /** @param array<string, mixed> $values */
+                        public static function make(array $values): static {
+                            return new static($values);
+                        }
+                    }
+
+                    final class Query extends Bag {
+                        public string $category = "";
+                    }
+
+                    function show(Query $query): void {
+                        echo $query->category;
+                    }
+
+                    function render(string $name, Query $query): void {
+                        $bag = new Bag([]);
+                        if (rand(0, 1)) {
+                            $bag = $query;
+                        }
+                        $bag->set($name, (string) $_GET["x"]);
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'receiverPropertySetUnderAnyNameOfAnObjectReassignedInALoop' => [
+                'code' => '<?php
+                    class Bag {
+                        /** @var array<string, mixed> */
+                        private array $values = [];
+
+                        /**
+                         * @param array<string, mixed> $values
+                         * @psalm-flow ($values) -> $this->{key}
+                         */
+                        final public function __construct(array $values) {
+                            $this->values = $values;
+                        }
+
+                        /** @psalm-flow ($value) -> $this->$name */
+                        public function set(string $name, mixed $value): void {
+                            $this->values[$name] = $value;
+                        }
+
+                        /** @psalm-flow $this->$name -> return */
+                        public function get(string $name): mixed {
+                            return $this->values[$name] ?? null;
+                        }
+
+                        /** @param array<string, mixed> $values */
+                        public static function make(array $values): static {
+                            return new static($values);
+                        }
+                    }
+
+                    final class Query extends Bag {
+                        public string $category = "";
+                    }
+
+                    function show(Query $query): void {
+                        echo $query->category;
+                    }
+
+                    /** @param list<string> $names */
+                    function render(array $names, Query $query): void {
+                        $bag = new Bag([]);
+                        foreach ($names as $name) {
+                            $bag->set($name, (string) $_GET["x"]);
+                            $bag = $query;
+                        }
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'receiverPropertySetUnderAnyNameOfAParameter' => [
+                'code' => '<?php
+                    class Bag {
+                        /** @var array<string, mixed> */
+                        private array $values = [];
+
+                        /**
+                         * @param array<string, mixed> $values
+                         * @psalm-flow ($values) -> $this->{key}
+                         */
+                        final public function __construct(array $values) {
+                            $this->values = $values;
+                        }
+
+                        /** @psalm-flow ($value) -> $this->$name */
+                        public function set(string $name, mixed $value): void {
+                            $this->values[$name] = $value;
+                        }
+
+                        /** @psalm-flow $this->$name -> return */
+                        public function get(string $name): mixed {
+                            return $this->values[$name] ?? null;
+                        }
+
+                        /** @param array<string, mixed> $values */
+                        public static function make(array $values): static {
+                            return new static($values);
+                        }
+                    }
+
+                    final class Query extends Bag {
+                        public string $category = "";
+                    }
+
+                    function show(Query $query): void {
+                        echo $query->category;
+                    }
+
+                    function render(string $name, Bag $bag): void {
+                        $bag->set($name, (string) $_GET["x"]);
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'receiverPropertySetUnderAnyNameOfAReference' => [
+                'code' => '<?php
+                    class Bag {
+                        /** @var array<string, mixed> */
+                        private array $values = [];
+
+                        /**
+                         * @param array<string, mixed> $values
+                         * @psalm-flow ($values) -> $this->{key}
+                         */
+                        final public function __construct(array $values) {
+                            $this->values = $values;
+                        }
+
+                        /** @psalm-flow ($value) -> $this->$name */
+                        public function set(string $name, mixed $value): void {
+                            $this->values[$name] = $value;
+                        }
+
+                        /** @psalm-flow $this->$name -> return */
+                        public function get(string $name): mixed {
+                            return $this->values[$name] ?? null;
+                        }
+
+                        /** @param array<string, mixed> $values */
+                        public static function make(array $values): static {
+                            return new static($values);
+                        }
+                    }
+
+                    final class Query extends Bag {
+                        public string $category = "";
+                    }
+
+                    function show(Query $query): void {
+                        echo $query->category;
+                    }
+
+                    function render(string $name, Query $query): void {
+                        $bag = new Bag([]);
+                        $alias = &$bag;
+                        $alias = $query;
+                        $bag->set($name, (string) $_GET["x"]);
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'receiverPropertySetUnderAnyNameOfAnObjectAClosureReassigns' => [
+                'code' => '<?php
+                    class Bag {
+                        /** @var array<string, mixed> */
+                        private array $values = [];
+
+                        /**
+                         * @param array<string, mixed> $values
+                         * @psalm-flow ($values) -> $this->{key}
+                         */
+                        final public function __construct(array $values) {
+                            $this->values = $values;
+                        }
+
+                        /** @psalm-flow ($value) -> $this->$name */
+                        public function set(string $name, mixed $value): void {
+                            $this->values[$name] = $value;
+                        }
+
+                        /** @psalm-flow $this->$name -> return */
+                        public function get(string $name): mixed {
+                            return $this->values[$name] ?? null;
+                        }
+
+                        /** @param array<string, mixed> $values */
+                        public static function make(array $values): static {
+                            return new static($values);
+                        }
+                    }
+
+                    final class Query extends Bag {
+                        public string $category = "";
+                    }
+
+                    function show(Query $query): void {
+                        echo $query->category;
+                    }
+
+                    function render(string $name, Query $query): void {
+                        $bag = new Bag([]);
+                        $replace = function () use (&$bag, $query): void {
+                            $bag = $query;
+                        };
+                        $replace();
+                        $bag->set($name, (string) $_GET["x"]);
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'receiverPropertiesSetByTheConstructorOfTheClassOfTheCall' => [
+                'code' => '<?php
+                    class Bag {
+                        /** @var array<string, mixed> */
+                        private array $values = [];
+
+                        /**
+                         * @param array<string, mixed> $values
+                         * @psalm-flow ($values) -> $this->{key}
+                         */
+                        final public function __construct(array $values) {
+                            $this->values = $values;
+                        }
+
+                        /** @psalm-flow ($value) -> $this->$name */
+                        public function set(string $name, mixed $value): void {
+                            $this->values[$name] = $value;
+                        }
+
+                        /** @psalm-flow $this->$name -> return */
+                        public function get(string $name): mixed {
+                            return $this->values[$name] ?? null;
+                        }
+
+                        /** @param array<string, mixed> $values */
+                        public static function make(array $values): static {
+                            return new static($values);
+                        }
+                    }
+
+                    final class Query extends Bag {
+                        public string $category = "";
+                    }
+
+                    function show(Query $query): void {
+                        echo $query->category;
+                    }
+
+                    function render(string $name): void {
+                        $bag = Query::make([$name => (string) $_GET["x"]]);
                     }',
                 'error_message' => 'TaintedHtml',
             ],
