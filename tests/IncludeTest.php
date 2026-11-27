@@ -904,6 +904,108 @@ final class IncludeTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'emptyArrayAfterAnUnresolvableIncludeInAForeachMayBeFilled' => [
+                'files' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
+                        /** @param list<string> $files */
+                        function load(array $files): mixed {
+                            $config = [];
+                            foreach ($files as $file) {
+                                /** @psalm-suppress UnresolvableInclude */
+                                include $file;
+                            }
+                            return $config["db"] ?? null;
+                        }',
+                ],
+                'files_to_check' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'file1.php',
+                ],
+                'hoist_constants' => false,
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'emptyArrayAfterAnUnresolvableIncludeInAWhileMayBeFilled' => [
+                'files' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
+                        /** @param list<string> $files */
+                        function load(array $files): mixed {
+                            $config = [];
+                            while (($file = array_shift($files)) !== null) {
+                                /** @psalm-suppress UnresolvableInclude */
+                                include $file;
+                            }
+                            return $config["db"] ?? null;
+                        }',
+                ],
+                'files_to_check' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'file1.php',
+                ],
+                'hoist_constants' => false,
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'emptyArrayAfterAnUnresolvableIncludeInAForMayBeFilled' => [
+                'files' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
+                        /** @param list<string> $files */
+                        function load(array $files): mixed {
+                            $config = [];
+                            for ($i = 0; $i < count($files); $i++) {
+                                /** @psalm-suppress UnresolvableInclude */
+                                include $files[$i];
+                            }
+                            return $config["db"] ?? null;
+                        }',
+                ],
+                'files_to_check' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'file1.php',
+                ],
+                'hoist_constants' => false,
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'emptyArrayAfterAnUnresolvableIncludeInADoWhileMayBeFilled' => [
+                'files' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
+                        function load(string $dir): mixed {
+                            $config = [];
+                            $i = 0;
+                            do {
+                                /** @psalm-suppress UnresolvableInclude */
+                                include $dir . "/config" . $i . ".php";
+                                $i++;
+                            } while ($i < 3);
+                            return $config["db"] ?? null;
+                        }',
+                ],
+                'files_to_check' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'file1.php',
+                ],
+                'hoist_constants' => false,
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'appendingToAnEmptyArrayAfterAnUnresolvableIncludeInAWhileBuildsAList' => [
+                'files' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
+                        /**
+                         * @param list<non-empty-string> $files
+                         * @return list<string>
+                         */
+                        function loadAll(array $files): array {
+                            $loaded = [];
+                            while (($file = array_shift($files)) !== null) {
+                                /** @psalm-suppress UnresolvableInclude */
+                                require $file;
+                                $loaded[] = $file;
+                            }
+                            return $loaded;
+                        }',
+                ],
+                'files_to_check' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'file1.php',
+                ],
+            ],
             'otherVariablesKeepTheirTypeAfterAnUnresolvableInclude' => [
                 'files' => [
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
