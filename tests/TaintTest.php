@@ -2063,9 +2063,10 @@ final class TaintTest extends TestCase
      */
     public function testKeyWritesDontMakeAStateOfEveryKeyAtEveryNodeAfterThem(): void
     {
+        // without the forgetting, 1500 writes take about 390 MB, and 160 MB with it
         $writes = implode('', array_map(
             static fn(int $i): string => "    \$form['k$i'] = \$value;\n",
-            range(1, 4000),
+            range(1, 1500),
         ));
 
         $this->testConfig->throw_exception = false;
@@ -2077,7 +2078,7 @@ final class TaintTest extends TestCase
             . "/** @psalm-taint-specialize */\n"
             . "function build(string \$value, mixed \$form): void {\n"
             . $writes
-            . "    echo \$form['k4000'];\n"
+            . "    echo \$form['k1500'];\n"
             . "}\n"
             . "build((string) \$_GET['q'], []);\n",
         );
@@ -2099,7 +2100,7 @@ final class TaintTest extends TestCase
         ));
 
         self::assertSame(['TaintedHtml', 'TaintedTextWithQuotes'], $taint_issue_types);
-        self::assertLessThan(768 * 1024 * 1024, $memory_used);
+        self::assertLessThan(256 * 1024 * 1024, $memory_used);
     }
 
     /**
@@ -2621,6 +2622,42 @@ final class TaintTest extends TestCase
     public static function providerValidCodeParse(): array
     {
         return [
+            'methodNamedByInputNarrowedToALiteral' => [
+                'code' => '<?php
+                    final class A {
+                        public function run(): void {}
+
+                        public static function purge(): void {}
+                    }
+
+                    $name = (string) $_GET["method"];
+
+                    if ($name === "run") {
+                        (new A())->$name();
+                    }
+
+                    if (in_array($name, ["purge"], true)) {
+                        A::$name();
+                    }',
+            ],
+            'methodNamedByALiteral' => [
+                'code' => '<?php
+                    final class A {
+                        public function run(): void {}
+                    }
+
+                    $name = "run";
+                    (new A())->$name();
+                    (new A())->{"run"}();',
+            ],
+            'methodNamedByAnArray' => [
+                'code' => '<?php
+                    final class A {
+                        public function run(): void {}
+                    }
+
+                    (new A())->{$_GET}();',
+            ],
             'arrayWalkCallbackWritingSafeValuesByReference' => [
                 'code' => '<?php
                     $items = ["a"];
@@ -3470,6 +3507,60 @@ final class TaintTest extends TestCase
                         $receiver->go("", ...["", (string) $_GET["x"]]);
                         $receiver->go(...["sink" => "", "other" => (string) $_GET["x"]]);
                     }',
+            ],
+            'guardAnUnpackedElementTakesNoTaintOfAnotherElement' => [
+                'code' => '<?php // --taint-analysis
+                    function safe(): string {
+                        return "safe";
+                    }
+
+                    function f(string $first, string $second): void {
+                        echo $first;
+                    }
+
+                    f(...[safe(), (string) $_GET["x"]]);',
+            ],
+            'guardAnOverrideParameterTakesNoTaintOfAnotherUnpackedElement' => [
+                'code' => '<?php // --taint-analysis
+                    function safe(): string {
+                        return "safe";
+                    }
+
+                    class Base {
+                        public function go(string ...$rest): void {}
+                    }
+
+                    class Child extends Base {
+                        /** @psalm-suppress ParamNameMismatch */
+                        #[\Override]
+                        public function go(string $first = "", string ...$rest): void {
+                            echo $first;
+                        }
+                    }
+
+                    function viaParent(Base $receiver): void {
+                        $receiver->go(...[safe(), (string) $_GET["x"]]);
+                    }
+
+                    (new Child())->go(...[safe(), (string) $_GET["x"]]);',
+            ],
+            'guardAnInheritedSinkTakesNoTaintOfAnotherUnpackedElement' => [
+                'code' => '<?php // --taint-analysis
+                    function safe(): string {
+                        return "safe";
+                    }
+
+                    interface I {
+                        /** @psalm-taint-sink shell $command */
+                        public function run(string $label, string $command): void;
+                    }
+
+                    final class Runner implements I {
+                        #[\Override]
+                        public function run(string $label, string $command): void {}
+                    }
+
+                    (new Runner())->run(...[(string) $_GET["x"], safe()]);',
             ],
             'taintSourceUnderAKeyOfTheReturnOnly' => [
                 'code' => '<?php // --taint-analysis
@@ -5661,6 +5752,57 @@ final class TaintTest extends TestCase
                         query(["name" => rand(0, 1) ? ["\$regex" => new Regex((string) $value)] : $value]);
                     }',
             ],
+            'nosqlSinkNotTaintedByScalarNarrowingOfAnIfThatLeaves' => [
+                'code' => '<?php
+                    /** @psalm-taint-sink nosql $filter */
+                    function query(array $filter): void {}
+
+                    /** @psalm-taint-source input */
+                    function input(): mixed {
+                        return null;
+                    }
+
+                    // past an if that leaves unless the value is a scalar, it holds no NoSQL query document
+                    function search(bool $regex): void {
+                        $value = input();
+                        if (!is_scalar($value)) {
+                            return;
+                        }
+                        query(["name" => $regex ? [] : $value]);
+                    }',
+            ],
+            'nosqlSinkNotTaintedByABsonValue' => [
+                'code' => '<?php
+                    use MongoDB\BSON\ObjectId;
+                    use MongoDB\BSON\UTCDateTime;
+
+                    /** @psalm-taint-sink nosql $filter */
+                    function query(array $filter): void {}
+
+                    /** @psalm-taint-source input */
+                    function input(): mixed {
+                        return null;
+                    }
+
+                    final class Call {
+                        /** @param list<ObjectId> $ids */
+                        public function __construct(
+                            public ObjectId $org_id,
+                            public array $ids,
+                            public UTCDateTime $created,
+                        ) {}
+                    }
+
+                    // the driver stores a BSON value as that type, never as a document holding an operator
+                    function find(Call $call): void {
+                        query(["org_id" => $call->org_id]);
+                        query(["_id" => ["\$in" => $call->ids]]);
+                        query(["created" => ["\$lt" => $call->created]]);
+                    }
+
+                    /** @psalm-suppress MixedArgument */
+                    find(new Call(input(), input(), input()));',
+            ],
             'nosqlSinkNotTaintedByIntCast' => [
                 'code' => '<?php
                     /** @psalm-taint-sink nosql $filter */
@@ -5668,6 +5810,103 @@ final class TaintTest extends TestCase
 
                     // an int can never be a NoSQL query document
                     query((int) $_GET["username"]);',
+            ],
+            'htmlSinkNotTaintedByScalarNarrowing' => [
+                'code' => '<?php
+                    /** @psalm-taint-sink html $s */
+                    function render($s): void {}
+
+                    /** @psalm-taint-source input */
+                    function input(): mixed {
+                        return null;
+                    }
+
+                    $int = input();
+                    if (is_int($int)) {
+                        render($int);
+                    }
+                    $nullable_int = input();
+                    if (is_int($nullable_int) || $nullable_int === null) {
+                        render($nullable_int);
+                    }
+                    $float_or_bool = input();
+                    if (is_float($float_or_bool) || is_bool($float_or_bool)) {
+                        render($float_or_bool);
+                    }
+                    $literal = input();
+                    if ($literal === "a" || $literal === "b") {
+                        render($literal);
+                    }
+                    $numeric = input();
+                    if (is_numeric($numeric)) {
+                        render($numeric);
+                    }',
+            ],
+            'sleepSinkNotTaintedByLiteralNarrowing' => [
+                'code' => '<?php
+                    /** @psalm-taint-sink sleep $s */
+                    function mysleep($s): void {}
+
+                    /** @psalm-taint-source input */
+                    function input(): mixed {
+                        return null;
+                    }
+
+                    $int = input();
+                    if ($int === 5) {
+                        sleep($int);
+                    }
+                    $listed = input();
+                    if (in_array($listed, [1, 2, 3], true)) {
+                        sleep($listed);
+                    }
+                    $float = input();
+                    if ($float === 1.5) {
+                        mysleep($float);
+                    }
+                    $true = input();
+                    if ($true === true) {
+                        mysleep($true);
+                    }',
+            ],
+            'sleepAndCustomTaintsCutByIntOrBoolNarrowing' => [
+                'code' => '<?php
+                    /** @psalm-taint-sink sleep $s */
+                    function mysleep($s): void {}
+
+                    /** @psalm-taint-sink alpha $s */
+                    function sink($s): void {}
+
+                    /**
+                     * @psalm-taint-source input
+                     * @psalm-taint-source alpha
+                     */
+                    function input(): mixed {
+                        return null;
+                    }
+
+                    // a known false negative: following them through every number would cost too much memory
+                    $int = input();
+                    if (is_int($int) || $int === null) {
+                        sleep((int) $int);
+                        sink($int);
+                    }
+                    $bool = input();
+                    if (is_bool($bool)) {
+                        mysleep($bool);
+                    }',
+            ],
+            'htmlSinkNotTaintedThroughNumericParam' => [
+                'code' => '<?php
+                    /** @psalm-taint-sink html $s */
+                    function render($s): void {}
+
+                    /** @param numeric $n */
+                    function show($n): void {
+                        render($n);
+                    }
+
+                    show($_GET["n"]);',
             ],
             'nosqlSinkNotTaintedByFloatCast' => [
                 'code' => '<?php
@@ -10946,6 +11185,25 @@ final class TaintTest extends TestCase
                     v("", "", k: (string) $_GET["x"]);',
                 'error_message' => 'TaintedHtml',
             ],
+            'taintTheParameterOfItsOwnUnpackedElement' => [
+                'code' => '<?php // --taint-analysis
+                    function safe(): string {
+                        return "safe";
+                    }
+
+                    interface I {
+                        /** @psalm-taint-sink shell $command */
+                        public function run(string $label, string $command): void;
+                    }
+
+                    final class Runner implements I {
+                        #[\Override]
+                        public function run(string $label, string $command): void {}
+                    }
+
+                    (new Runner())->run(...[safe(), (string) $_GET["x"]]);',
+                'error_message' => 'TaintedShell',
+            ],
             'taintTheVariadicWithASecondUnpackedArgument' => [
                 'code' => '<?php // --taint-analysis
                     function v(string $a, string ...$rest): void {
@@ -13919,6 +14177,48 @@ final class TaintTest extends TestCase
                         show((string) $_GET["x"]);
                     }',
                 'error_message' => 'TaintedHtml',
+            ],
+            'nosqlSinkTaintedPastAnIfNarrowingAMixedValueThatDoesNotLeave' => [
+                'code' => '<?php
+                    /** @psalm-taint-sink nosql $filter */
+                    function query(array $filter): void {}
+
+                    /** @psalm-taint-source input */
+                    function input(): mixed {
+                        return null;
+                    }
+
+                    // the implicit else keeps the value as it was: it can still be a query document
+                    function search(bool $regex): void {
+                        $value = input();
+                        if (is_scalar($value)) {
+                            echo "scalar";
+                        }
+                        query(["name" => $regex ? [] : $value]);
+                    }',
+                'error_message' => 'TaintedNosql',
+            ],
+            'nosqlSinkTaintedPastANestedIfThatLeavesOnlyOnOneWay' => [
+                'code' => '<?php
+                    /** @psalm-taint-sink nosql $filter */
+                    function query(array $filter): void {}
+
+                    /** @psalm-taint-source input */
+                    function input(): mixed {
+                        return null;
+                    }
+
+                    // only one way past the outer if narrowed the value
+                    function search(bool $regex, bool $check): void {
+                        $value = input();
+                        if ($check) {
+                            if (!is_scalar($value)) {
+                                return;
+                            }
+                        }
+                        query(["name" => $regex ? [] : $value]);
+                    }',
+                'error_message' => 'TaintedNosql',
             ],
             'nosqlSinkTaintedByAnEqualityOperandInExpr' => [
                 'code' => '<?php
@@ -17707,6 +18007,56 @@ final class TaintTest extends TestCase
                     echo first((array) $_GET["names"]);',
                 'error_message' => 'TaintedHtml',
             ],
+            'taintedNosqlFromABsonRegex' => [
+                'code' => '<?php
+                    use MongoDB\BSON\Regex;
+
+                    /** @psalm-taint-sink nosql $filter */
+                    function query(array $filter): void {}
+
+                    /** @psalm-taint-source input */
+                    function input(): mixed {
+                        return null;
+                    }
+
+                    final class Search {
+                        public function __construct(public Regex $name) {}
+                    }
+
+                    // a regex chooses which documents match
+                    function find(Search $search): void {
+                        query(["name" => $search->name]);
+                    }
+
+                    /** @psalm-suppress MixedArgument */
+                    find(new Search(input()));',
+                'error_message' => 'TaintedNosql',
+            ],
+            'taintedNosqlFromAnObjectImplementingABsonValueInterface' => [
+                'code' => '<?php
+                    use MongoDB\BSON\ObjectIdInterface;
+
+                    /** @psalm-taint-sink nosql $filter */
+                    function query(array $filter): void {}
+
+                    /** @psalm-taint-source input */
+                    function input(): mixed {
+                        return null;
+                    }
+
+                    final class Call {
+                        public function __construct(public ObjectIdInterface $org_id) {}
+                    }
+
+                    // a class of the code implementing it is stored as the document of its properties
+                    function find(Call $call): void {
+                        query(["org_id" => $call->org_id]);
+                    }
+
+                    /** @psalm-suppress MixedArgument */
+                    find(new Call(input()));',
+                'error_message' => 'TaintedNosql',
+            ],
             'taintedNosqlKeepsTaintWithoutScalarNarrowing' => [
                 'code' => '<?php
                     /** @psalm-taint-sink nosql $filter */
@@ -17956,6 +18306,13 @@ final class TaintTest extends TestCase
                     $a = (string) $_GET["file"];
                     $b = "hello" . $a;
                     include str_replace("a", "b", $b);',
+                'error_message' => 'TaintedInclude',
+            ],
+            'taintedInputInABranchOfAnIncludedTernary' => [
+                'code' => '<?php
+                    $a = (string) $_GET["file"];
+                    /** @psalm-suppress UnresolvableInclude, MissingFile */
+                    include rand(0, 1) ? "default.php" : $a;',
                 'error_message' => 'TaintedInclude',
             ],
             'taintedInputFromReturnToEval' => [
@@ -19452,6 +19809,28 @@ final class TaintTest extends TestCase
                     exec(escapeshellcmd("curl " . (string) $_GET["x"]));',
                 'error_message' => 'TaintedShell',
             ],
+            'taintHtmlThroughStripTagsKeepingSomeTags' => [
+                'code' => '<?php
+                    echo strip_tags((string) $_GET["x"], "<a>");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintHtmlThroughStripTagsKeepingSomeTagsGivenAsAnArray' => [
+                'code' => '<?php
+                    echo strip_tags((string) $_GET["x"], ["a"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'stripTagsWithNullAllowedTagsStillEscapesHtml' => [
+                'code' => '<?php
+                    echo strip_tags((string) $_GET["x"], null);',
+                'error_message' => 'TaintedTextWithQuotes',
+            ],
+            'taintHtmlThroughStripTagsWithUnknownAllowedTags' => [
+                'code' => '<?php
+                    function f(?string $t): void {
+                        echo strip_tags((string) $_GET["x"], $t);
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintThroughBuiltinStaticMethod' => [
                 'code' => '<?php
                     echo (string) Normalizer::normalize((string) $_GET["x"]);',
@@ -19518,6 +19897,119 @@ final class TaintTest extends TestCase
                 'code' => '<?php
                     $name = (string) $_GET["function"];
                     $name();',
+                'error_message' => 'TaintedCallable',
+            ],
+            'taintCallingAMethodNamedByInput' => [
+                'code' => '<?php
+                    final class A {
+                        public function run(): void {}
+                    }
+
+                    $name = (string) $_GET["method"];
+                    (new A())->$name();',
+                'error_message' => 'TaintedCallable',
+            ],
+            'taintCallingAMethodNamedByInputInBraces' => [
+                'code' => '<?php
+                    final class A {
+                        public function run(): void {}
+                    }
+
+                    $name = (string) $_GET["method"];
+                    (new A())->{$name}();',
+                'error_message' => 'TaintedCallable',
+            ],
+            'taintCallingANullsafeMethodNamedByInput' => [
+                'code' => '<?php
+                    final class A {
+                        public function run(): void {}
+                    }
+
+                    function f(?A $a): void {
+                        $name = (string) $_GET["method"];
+                        $a?->$name();
+                    }',
+                'error_message' => 'TaintedCallable',
+            ],
+            'taintCallingAStaticMethodNamedByInput' => [
+                'code' => '<?php
+                    final class A {
+                        public static function run(): void {}
+                    }
+
+                    $name = (string) $_GET["method"];
+                    A::$name();',
+                'error_message' => 'TaintedCallable',
+            ],
+            'taintCallingAStaticMethodNamedByInputInBraces' => [
+                'code' => '<?php
+                    final class A {
+                        public static function run(): void {}
+                    }
+
+                    $name = (string) $_GET["method"];
+                    A::{$name}();',
+                'error_message' => 'TaintedCallable',
+            ],
+            'taintCallingAStaticMethodNamedByInputOnAClassString' => [
+                'code' => '<?php
+                    function f(string $class): void {
+                        $name = (string) $_GET["method"];
+                        $class::$name();
+                    }',
+                'error_message' => 'TaintedCallable',
+            ],
+            'taintCallingAStaticMethodNamedByInputOnAnUnboundedClassString' => [
+                'code' => '<?php
+                    /**
+                     * @param class-string $class
+                     * @psalm-suppress MixedMethodCall
+                     */
+                    function f(string $class): void {
+                        $name = (string) $_GET["method"];
+                        $class::$name();
+                    }',
+                'error_message' => 'TaintedCallable',
+            ],
+            'taintCallingAStaticMethodNamedByInputOnAPhantomClass' => [
+                'code' => '<?php
+                    $name = (string) $_GET["method"];
+
+                    if (class_exists("OptionalLibrary")) {
+                        OptionalLibrary::$name();
+                    }',
+                'error_message' => 'TaintedCallable',
+            ],
+            'taintCallingAStaticMethodNamedByInputOnAnUndefinedClass' => [
+                'code' => '<?php
+                    $name = (string) $_GET["method"];
+                    /** @psalm-suppress UndefinedClass */
+                    MissingLibrary::$name();',
+                'error_message' => 'TaintedCallable',
+            ],
+            'taintCallableOfAMethodNamedByInput' => [
+                'code' => '<?php
+                    final class A {
+                        public function run(): void {}
+                    }
+
+                    $name = (string) $_GET["method"];
+                    $f = (new A())->$name(...);
+                    $f();',
+                'error_message' => 'TaintedCallable',
+                'php_version' => '8.1',
+            ],
+            'taintCallingAMethodOfThisNamedByAParameter' => [
+                'code' => '<?php
+                    class A {
+                        public function dispatch(string $name): void {
+                            $this->$name();
+                        }
+
+                        public function run(): void {}
+                    }
+
+                    (new A())->dispatch((string) $_GET["method"]);',
                 'error_message' => 'TaintedCallable',
             ],
             'taintCallingAnOffsetOverwrittenThroughAnUnknownKey' => [
@@ -21535,6 +22027,107 @@ final class TaintTest extends TestCase
                     function mysleep($s): void {}
                     mysleep((float) $_GET["seconds"]);',
                 'error_message' => 'TaintedSleep',
+            ],
+            'sleepSurvivesNumericNarrowing' => [
+                'code' => '<?php
+                    /** @psalm-taint-source input */
+                    function input(): mixed {
+                        return null;
+                    }
+
+                    $seconds = input();
+                    if (is_numeric($seconds)) {
+                        sleep((int) $seconds);
+                    }',
+                'error_message' => 'TaintedSleep',
+            ],
+            'shellSurvivesNumericNarrowing' => [
+                'code' => '<?php
+                    /** @psalm-taint-source input */
+                    function input(): mixed {
+                        return null;
+                    }
+
+                    // "1\n" is numeric
+                    $value = input();
+                    if (is_numeric($value)) {
+                        shell_exec("echo " . $value . " done");
+                    }',
+                'error_message' => 'TaintedShell',
+            ],
+            'shellSurvivesNumericParam' => [
+                'code' => '<?php
+                    /** @param numeric $n */
+                    function run($n): void {
+                        shell_exec("echo " . $n . " done");
+                    }
+
+                    run($_GET["n"]);',
+                'error_message' => 'TaintedShell',
+            ],
+            'customTaintSurvivesNarrowingToAnArrayOfInts' => [
+                'code' => '<?php
+                    /** @psalm-taint-source alpha */
+                    function input(): mixed {
+                        return null;
+                    }
+
+                    /** @psalm-taint-sink alpha $s */
+                    function sink($s): void {}
+
+                    /** @psalm-assert array<int, int> $x */
+                    function assertInts(mixed $x): void {}
+
+                    $ids = input();
+                    assertInts($ids);
+                    sink($ids);',
+                'error_message' => 'TaintedCustom',
+            ],
+            'htmlSurvivesNarrowingToArrayOrInt' => [
+                'code' => '<?php
+                    /** @psalm-taint-sink html $s */
+                    function render($s): void {}
+
+                    /** @psalm-taint-source input */
+                    function input(): mixed {
+                        return null;
+                    }
+
+                    // the array part of the value still holds the input
+                    $value = input();
+                    if (is_array($value) || is_int($value)) {
+                        render($value);
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'htmlSurvivesNarrowingToObjectOrFalse' => [
+                'code' => '<?php
+                    final class Html {}
+
+                    /** @psalm-taint-sink html $s */
+                    function render($s): void {}
+
+                    /** @psalm-taint-source input */
+                    function input(): mixed {
+                        return null;
+                    }
+
+                    $value = input();
+                    if ($value instanceof Html || $value === false) {
+                        render($value);
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'htmlSurvivesNarrowingToLiteralStringOrArray' => [
+                'code' => '<?php
+                    /** @psalm-taint-sink html $s */
+                    function render($s): void {}
+
+                    $value = $_GET["value"];
+                    if ($value === "a" || is_array($value)) {
+                        render($value);
+                    }',
+                'error_message' => 'TaintedHtml',
             ],
             'sqlSurvivesStringCast' => [
                 'code' => '<?php

@@ -36,11 +36,29 @@ final class TTrue extends TBool
     }
 
     /**
+     * @param array<lowercase-string, string> $aliased_classes
+     * @psalm-pure
+     */
+    #[Override]
+    public function toPhpString(
+        ?string $namespace,
+        array $aliased_classes,
+        ?string $this_class,
+        int $analysis_php_version_id,
+    ): ?string {
+        if ($analysis_php_version_id >= 8_02_00) {
+            return 'true';
+        }
+
+        return parent::toPhpString($namespace, $aliased_classes, $this_class, $analysis_php_version_id);
+    }
+
+    /**
      * @psalm-pure
      */
     #[Override]
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
-        return false;
+        return $analysis_php_version_id >= 8_02_00;
     }
 }

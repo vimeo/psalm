@@ -13,6 +13,10 @@ propose one and explain it.
 | `<extraFiles>` | scanned for classes and functions, never reported (e.g. a plugin directory) |
 | Composer `autoload` and `vendor/` | scanned on demand, never reported |
 
+Paths in `<projectFiles>`, `<extraFiles>`, `<ignoreFiles>` and an issue handler's `<errorLevel>` accept `*` and `**`
+(`<directory name="src/**/cache"/>`). A path that doesn't exist fails the config load unless the element has
+`allowMissingFiles="true"`.
+
 A class Psalm can't find (`UndefinedClass` for code that exists) is usually outside both: check the Composer
 autoloader (`composer dump-autoload`) or add the directory to `<extraFiles>`.
 
@@ -41,6 +45,12 @@ Psalm loads the precise stubs of an extension (`pdo`, `redis`, `mongodb`, `imagi
   and webmozart/assert and enables each when the project depends on its library (`loadLibraryPlugins`);
   `--debug` prints `Loaded plugin …` for each. Others: install with Composer, enable with
   `vendor/bin/psalm-plugin enable <package>`.
+
+## Globals
+
+`<globals><var name="x" type="int|null"/></globals>` declares the type of a global variable. In a function,
+`global $x` gives `$x` that type, whatever the file scope assigned to it; an inline `@var` or a `@global` tag of
+the function wins over it. At file scope, `$x` keeps the type it was assigned.
 
 ## Notable attributes of `<psalm>`
 

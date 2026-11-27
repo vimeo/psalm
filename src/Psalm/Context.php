@@ -857,13 +857,28 @@ final class Context
         StatementsAnalyzer $statements_analyzer,
         array $block_nodes,
     ): void {
+        $this->detachReferencesReboundWhere($block_context->references_in_scope, $statements_analyzer, $block_nodes);
+    }
+
+    /**
+     * {@see self::detachReferencesReboundIn()} for a place the block goes on from (its end, or a `break` in it)
+     *
+     * @param array<string, string> $block_references_in_scope the references where the block goes on
+     * @param array<PhpParser\Node> $block_nodes
+     * @internal
+     */
+    public function detachReferencesReboundWhere(
+        array $block_references_in_scope,
+        StatementsAnalyzer $statements_analyzer,
+        array $block_nodes,
+    ): void {
         $rebindings = [];
         $was_reference = [];
 
         foreach ($this->references_in_scope as $reference_id => $referenced_id) {
             foreach ([$reference_id, $referenced_id] as $var_id) {
                 if (!isset($rebindings[$var_id])
-                    && ($block_context->references_in_scope[$var_id] ?? null)
+                    && ($block_references_in_scope[$var_id] ?? null)
                         !== ($this->references_in_scope[$var_id] ?? null)
                     && ($rebinding = self::findReferenceRebinding($block_nodes, $var_id)) !== null
                 ) {
@@ -1903,11 +1918,13 @@ final class Context
      *
      * @param CapabilitySet $callee_capabilities
      * @param array<string, true> $preserved_methods Memoized results that cannot be affected by this call
+     * @param ?string $object_var_id the object whose properties the callee may write, null for any
      */
     public function removeMutableObjectVars(
         bool $methods_only = false,
         int $callee_capabilities = Capabilities::ALL,
         array $preserved_methods = [],
+        ?string $object_var_id = null,
     ): void {
         $forget_properties
             = ($callee_capabilities & (Capabilities::WRITE_PROPS | Capabilities::WRITE_THIS_PROPS)) !== 0;
@@ -1917,12 +1934,17 @@ final class Context
             return;
         }
 
+        $property_prefix = $object_var_id === null ? null : $object_var_id . '->';
+
         $vars_to_remove = [];
 
         foreach ($this->vars_in_scope as $var_id => $type) {
             if (!isset($preserved_methods[$var_id])
                 && $type->has_mutations
-                && (($forget_properties && str_contains($var_id, '->'))
+                && (($forget_properties
+                        && ($property_prefix === null
+                            ? str_contains($var_id, '->')
+                            : str_starts_with($var_id, $property_prefix)))
                     || ($forget_statics && (str_contains($var_id, '::') || self::isInSuperGlobal($var_id))))
                 && (!$methods_only || strpos($var_id, '()'))
             ) {
@@ -1949,7 +1971,10 @@ final class Context
 
             foreach ($clause->possibilities as $key => $_) {
                 if (!isset($preserved_methods[$key])
-                    && (($forget_properties && str_contains($key, '->'))
+                    && (($forget_properties
+                            && ($property_prefix === null
+                                ? str_contains($key, '->')
+                                : str_starts_with($key, $property_prefix)))
                         || ($forget_statics && (str_contains($key, '::') || self::isInSuperGlobal($key))))
                     && (!$methods_only || strpos($key, '()'))
                 ) {

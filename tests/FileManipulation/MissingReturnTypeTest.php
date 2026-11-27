@@ -72,6 +72,42 @@ final class MissingReturnTypeTest extends FileManipulationTestCase
                 'issues_to_fix' => ['MissingReturnType'],
                 'safe_types' => false,
             ],
+            'addMissingReturnTypeObjectShape71' => [
+                'input' => '<?php
+                    /**
+                     * @param object{a: int} $o
+                     */
+                    function foo($o) {
+                        return $o;
+                    }',
+                'output' => '<?php
+                    /**
+                     * @param object{a: int} $o
+                     *
+                     * @return object
+                     *
+                     * @psalm-return object{a:int}
+                     */
+                    function foo($o) {
+                        return $o;
+                    }',
+                'php_version' => '7.1',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => false,
+            ],
+            'arrayKeyReturn80' => [
+                'input' => '<?php
+                    function scope(array $array) {
+                        return (array_keys($array))[0] ?? null;
+                    }',
+                'output' => '<?php
+                    function scope(array $array): int|string|null {
+                        return (array_keys($array))[0] ?? null;
+                    }',
+                'php_version' => '8.0',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => false,
+            ],
             'addMissingReturnTypeWritesTheStringRefinementWithoutADocblock' => [
                 'input' => '<?php
                     function foo(string $s) {
@@ -1483,6 +1519,101 @@ final class MissingReturnTypeTest extends FileManipulationTestCase
                         return null;
                     }',
                 'php_version' => '7.3',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => false,
+            ],
+            'returnNullAndReturnTrue82' => [
+                'input' => '<?php
+                    function a() {
+                        if (rand(0,1)){
+                            return true;
+                        }
+
+                        return null;
+                    }',
+                'output' => '<?php
+                    function a(): true|null {
+                        if (rand(0,1)){
+                            return true;
+                        }
+
+                        return null;
+                    }',
+                'php_version' => '8.2',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => false,
+            ],
+            'returnTrue82' => [
+                'input' => '<?php
+                    function a() {
+                        return true;
+                    }',
+                'output' => '<?php
+                    function a(): true {
+                        return true;
+                    }',
+                'php_version' => '8.2',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => false,
+            ],
+            'returnTrue81' => [
+                'input' => '<?php
+                    function a() {
+                        return true;
+                    }',
+                'output' => '<?php
+                    /**
+                     * @return true
+                     */
+                    function a(): bool {
+                        return true;
+                    }',
+                'php_version' => '8.1',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => false,
+            ],
+            'returnFalse82' => [
+                'input' => '<?php
+                    function a() {
+                        return false;
+                    }',
+                'output' => '<?php
+                    function a(): false {
+                        return false;
+                    }',
+                'php_version' => '8.2',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => false,
+            ],
+            'returnIntOrFalse80' => [
+                'input' => '<?php
+                    function a() {
+                        return rand(0, 1) ? rand() : false;
+                    }',
+                'output' => '<?php
+                    function a(): int|false {
+                        return rand(0, 1) ? rand() : false;
+                    }',
+                'php_version' => '8.0',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => false,
+            ],
+            'returnNullAndReturnTrueWithDocblock82' => [
+                'input' => '<?php
+                    /**
+                     * Does a.
+                     */
+                    function a() {
+                        return rand(0, 1) ? true : null;
+                    }',
+                'output' => '<?php
+                    /**
+                     * Does a.
+                     */
+                    function a(): true|null {
+                        return rand(0, 1) ? true : null;
+                    }',
+                'php_version' => '8.2',
                 'issues_to_fix' => ['MissingReturnType'],
                 'safe_types' => false,
             ],

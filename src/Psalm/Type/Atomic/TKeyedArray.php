@@ -642,7 +642,6 @@ final class TKeyedArray extends Atomic
             ], $this->from_docblock);
         }
         $cloned->properties = $properties;
-        /** @psalm-suppress PropertyTypeCoercion */
         $cloned->fallback_params = $fallback_params;
         return $cloned;
     }
@@ -682,7 +681,6 @@ final class TKeyedArray extends Atomic
                 ], $this->from_docblock);
             }
             $cloned->properties = $properties;
-            /** @psalm-suppress PropertyTypeCoercion */
             $cloned->fallback_params = $fallback_params;
             return $cloned;
         }

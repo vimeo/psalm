@@ -415,6 +415,123 @@ final class GeneratorTest extends TestCase
                         yield "a";
                     }',
             ],
+            'generatorBareReturnMatchesNullReturnType' => [
+                'code' => '<?php
+                    /** @return Generator<int, string, mixed, null> */
+                    function a(): Generator {
+                        yield 1 => "a";
+                        return;
+                    }',
+            ],
+            'generatorEndingWithoutReturnMatchesNullReturnType' => [
+                'code' => '<?php
+                    /** @return Generator<int, string, mixed, null> */
+                    function a(): Generator {
+                        yield 1 => "a";
+                    }',
+            ],
+            'generatorBareReturnOrValueMatchesNullableReturnType' => [
+                'code' => '<?php
+                    /** @return Generator<int, string, mixed, int|null> */
+                    function a(): Generator {
+                        yield 1 => "a";
+                        if (rand(0, 1)) {
+                            return;
+                        }
+                        return 1;
+                    }',
+            ],
+            'generatorBareReturnInfersNullReturnType' => [
+                'code' => '<?php
+                    /** @psalm-suppress MissingClosureReturnType */
+                    $_a = function(bool $b) {
+                        yield "a";
+                        if ($b) {
+                            return;
+                        }
+                        return 1;
+                    };
+                    /** @psalm-suppress MissingClosureReturnType */
+                    $_b = function() { yield "a"; };
+                    ',
+                'assertions' => [
+                    '$_a' => 'Closure[pure](bool):Generator[pure]<int, string, mixed, int|null>',
+                    '$_b' => 'Closure[pure]():Generator[pure]<int, string, mixed, null>',
+                ],
+            ],
+            'generatorVoidAndNullReturnTypesAreInterchangeable' => [
+                'code' => '<?php
+                    /** @param Generator<int, string, mixed, null> $g */
+                    function takesNull(Generator $g): void {}
+                    /** @param Generator<int, string, mixed, void> $g */
+                    function takesVoid(Generator $g): void {}
+                    /** @return Generator<int, string, mixed, void> */
+                    function returnsVoid(): Generator { yield "a"; }
+                    /** @return Generator<int, string, mixed, null> */
+                    function returnsNull(): Generator { yield "a"; }
+
+                    takesNull(returnsVoid());
+                    takesVoid(returnsNull());',
+            ],
+            'generatorReturnTemplateBoundedByVoidOrNull' => [
+                'code' => '<?php
+                    /** @param Generator<int, string, mixed, null> $g */
+                    function takesNull(Generator $g): void {}
+                    /** @param Generator<int, string, mixed, void> $g */
+                    function takesVoid(Generator $g): void {}
+
+                    /**
+                     * @template T of void
+                     * @param Generator<int, string, mixed, T> $g
+                     */
+                    function forwardVoid(Generator $g): void {
+                        takesVoid($g);
+                        takesNull($g);
+                    }
+
+                    /**
+                     * @template T of null
+                     * @param Generator<int, string, mixed, T> $g
+                     */
+                    function forwardNull(Generator $g): void {
+                        takesVoid($g);
+                        takesNull($g);
+                    }',
+            ],
+            'generatorReturnNullMatchesVoidReturnType' => [
+                'code' => '<?php
+                    /** @return Generator<int, string, mixed, void> */
+                    function a(): Generator {
+                        yield "a";
+                        return null;
+                    }',
+            ],
+            'generatorGetReturnAfterEndingWithoutValueIsNull' => [
+                'code' => '<?php
+                    /** @psalm-suppress MissingClosureReturnType */
+                    $f = function() { yield "a"; };
+                    $r = $f()->getReturn();',
+                'assertions' => [
+                    '$r===' => 'null',
+                ],
+            ],
+            'generatorDeclaredVoidReturnTypeReadsAsNull' => [
+                'code' => '<?php
+                    /** @return Generator<int, string, mixed, void> */
+                    function inner(): Generator { yield "a"; }
+
+                    /** @return Generator<int, string, mixed, null> */
+                    function outer(): Generator {
+                        $x = yield from inner();
+                        /** @psalm-check-type-exact $x = null */;
+                        return $x;
+                    }
+
+                    $r = inner()->getReturn();',
+                'assertions' => [
+                    '$r===' => 'null',
+                ],
+            ],
             'generatorReturnWithIntersectionReturnType' => [
                 'code' => '<?php
                     /** @return Traversable&Generator<int, int, mixed, int> */
@@ -749,6 +866,25 @@ final class GeneratorTest extends TestCase
                         return 1;
                     }',
                 'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:32',
+            ],
+            'generatorBareReturnDoesNotMatchNonNullableReturnType' => [
+                'code' => '<?php
+                    /** @return Generator<int, int, mixed, int> */
+                    function a(): Generator {
+                        yield 1;
+                        return;
+                    }',
+                'error_message' => 'InvalidReturnType - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:33',
+            ],
+            'generatorReturnValueDoesNotMatchVoidReturnType' => [
+                'code' => '<?php
+                    /** @return Generator<int, int, mixed, void> */
+                    function a(): Generator {
+                        yield 1;
+                        return 1;
+                    }',
+                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:32'
+                    . ' - No return values are expected',
             ],
             'generatorReturnDoesNotMatchIntersectionWithGeneratorFirst' => [
                 'code' => '<?php

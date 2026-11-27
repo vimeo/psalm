@@ -73,6 +73,13 @@ final class ArgTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'unsealedShapeWhoseFallbackFitsASealedShapeParam' => [
+                'code' => '<?php
+                    /** @param array{a?: int, b?: string} $x */
+                    function g(array $x): void {}
+                    /** @param array{a: int, ...<"b", string>} $o */
+                    function h(array $o): void { g($o); }',
+            ],
             'namedArgumentsOfExtensionClassesUseThePhp8Names' => [
                 'code' => '<?php
                     function soap(SoapClient $client): void {
@@ -516,6 +523,9 @@ final class ArgTest extends TestCase
                             email: $input["email"],
                         );
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'useNamedArgumentsSimple' => [
                 'code' => '<?php
@@ -845,6 +855,45 @@ final class ArgTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'arrayUnionPassedToASealedShapeParamIsAMixedCoercion' => [
+                'code' => '<?php
+                    /** @param array{a?: int, b?: string} $x */
+                    function g(array $x): void {}
+                    function h(array $o): void { g($o + ["a" => 1]); }',
+                'error_message' => 'MixedArgumentTypeCoercion',
+            ],
+            'unsealedShapeWithAStringKeyedFallbackPassedToASealedShapeParamIsACoercion' => [
+                'code' => '<?php
+                    /** @param array{a?: int, b?: string} $x */
+                    function g(array $x): void {}
+                    /** @param array<string, int> $o */
+                    function h(array $o): void { g($o + ["a" => 1]); }',
+                'error_message' => 'ArgumentTypeCoercion',
+            ],
+            'unsealedShapePassedToASealedListParamIsACoercion' => [
+                'code' => '<?php
+                    /** @param list{int} $x */
+                    function g(array $x): void {}
+                    /** @param array<array-key, int> $o */
+                    function h(array $o): void { g($o + [0 => 1]); }',
+                'error_message' => 'ArgumentTypeCoercion',
+            ],
+            'unsealedListWithAnInvalidDeclaredEntryPassedToASealedListParamIsInvalid' => [
+                'code' => '<?php
+                    /** @param list{int} $x */
+                    function g(array $x): void {}
+                    /** @param list{string, ...<int>} $o */
+                    function h(array $o): void { g($o); }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'unsealedShapeWithAFallbackNoKeyOfASealedShapeParamAcceptsIsInvalid' => [
+                'code' => '<?php
+                    /** @param array{a?: int, b?: string} $x */
+                    function g(array $x): void {}
+                    /** @param array<string, object> $o */
+                    function h(array $o): void { g($o + ["a" => 1]); }',
+                'error_message' => 'InvalidArgument',
+            ],
             'undefinedVariableStaysUndefinedAfterACall' => [
                 'code' => '<?php
                     function takesInt(int $_i): void {}
@@ -1225,6 +1274,8 @@ final class ArgTest extends TestCase
                         );
                     }',
                 'error_message' => 'InvalidNamedArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'usePositionalArgAfterNamed' => [
                 'code' => '<?php
@@ -1238,6 +1289,8 @@ final class ArgTest extends TestCase
 
                     new Person(name: "", 0);',
                 'error_message' => 'InvalidNamedArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'useUnpackedInvalidNamedArgument' => [
                 'code' => '<?php
@@ -1282,6 +1335,8 @@ final class ArgTest extends TestCase
                         );
                     }',
                 'error_message' => 'NamedArgumentNotAllowed',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'noNamedArgsFunction' => [
                 'code' => '<?php
@@ -1557,8 +1612,10 @@ final class ArgTest extends TestCase
                 );
                 ',
                 'error_message' => 'TooFewArguments',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
-            'SealedRefuseUnsealed' => [
+            'SealedCoercesUnsealed' => [
                 'code' => '<?php
                     /** @param array{test: string} $a */
                     function a(array $a): string {
@@ -1569,6 +1626,38 @@ final class ArgTest extends TestCase
                     $unsealed = [];
                     a($unsealed);
                 ',
+                'error_message' => 'MixedArgumentTypeCoercion',
+            ],
+            'listPassedToASealedListParamIsACoercion' => [
+                'code' => '<?php
+                    /** @param list{int} $x */
+                    function g(array $x): void {}
+                    /** @param list<int> $o */
+                    function h(array $o): void { g($o); }',
+                'error_message' => 'ArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:5',
+            ],
+            'unsealedShapeWithAnOptionalKeyPassedToAShapeRequiringItIsACoercion' => [
+                'code' => '<?php
+                    /** @param array{a: int} $x */
+                    function g(array $x): void {}
+                    /** @param array{a?: int, ...<string, int>} $o */
+                    function h(array $o): void { g($o); }',
+                'error_message' => 'ArgumentTypeCoercion',
+            ],
+            'unsealedShapeWithAnInvalidOptionalKeyPassedToAShapeRequiringItIsInvalid' => [
+                'code' => '<?php
+                    /** @param array{a: int} $x */
+                    function g(array $x): void {}
+                    /** @param array{a?: string, ...<string, int>} $o */
+                    function h(array $o): void { g($o); }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'unsealedArrayWithAnInvalidDeclaredEntryPassedToASealedListParamIsInvalid' => [
+                'code' => '<?php
+                    /** @param list{int} $x */
+                    function g(array $x): void {}
+                    /** @param array{0: string, ...<array-key, int>} $o */
+                    function h(array $o): void { g($o); }',
                 'error_message' => 'InvalidArgument',
             ],
             'SealedRefuseSealedExtra' => [

@@ -358,7 +358,7 @@ final class ArrayFetchAnalyzer
                 $key_is_declared = !$stmt_type->possibly_undefined
                     && $dim_type !== null
                     && ($dim_type->isSingleStringLiteral() || $dim_type->isSingleIntLiteral())
-                    && $stmt_var_type->isSingle()
+                    && $stmt_var_type->isSingleAtomic()
                     && ($var_atomic = $stmt_var_type->getSingleAtomic()) instanceof TKeyedArray
                     && $var_atomic->fallback_params === null;
 
@@ -1009,7 +1009,7 @@ final class ArrayFetchAnalyzer
                     $codebase,
                 );
 
-                if ($resolved->isSingle()) {
+                if ($resolved->isSingleAtomic()) {
                     $type = $resolved->getSingleAtomic();
                     $original_type = $type;
                     $original_type_real = $type;
@@ -1024,10 +1024,37 @@ final class ArrayFetchAnalyzer
                 continue;
             }
 
+            // the item read from a template is the one each type of its bound gives
+            if ($type instanceof TTemplateParam
+                && !$in_assignment
+                && !$type->as->isMixed()
+                && !$type->as->isSingleAtomic()
+            ) {
+                $bound_type = $type->as;
+                $bound_offset_type = $offset_type->freeze();
+
+                $array_access_type = Type::combineUnionTypes(
+                    $array_access_type,
+                    self::getArrayAccessTypeGivenOffset(
+                        $statements_analyzer,
+                        $stmt,
+                        $bound_type,
+                        $bound_offset_type,
+                        false,
+                        $extended_var_id,
+                        $context,
+                    ),
+                );
+
+                $has_valid_expected_offset = true;
+
+                continue;
+            }
+
             if ($type instanceof TMixed
                 || $type instanceof TTemplateParam
             ) {
-                if (!$type instanceof TTemplateParam || $type->as->isMixed() || !$type->as->isSingle()) {
+                if (!$type instanceof TTemplateParam || $type->as->isMixed() || !$type->as->isSingleAtomic()) {
                     $array_access_type = self::handleMixedArrayAccess(
                         $context,
                         $statements_analyzer,
@@ -1690,6 +1717,8 @@ final class ArrayFetchAnalyzer
                 && $type->fallback_params !== null
                 && $type->fallback_params[1]->isMixed()
                 && count($key_values) === 1
+                // the fallback is about the keys the shape doesn't list: a listed key holds its own type
+                && !isset($type->properties[$key_values[0]->value])
             ) {
                 $properties = $type->properties;
                 $properties[$key_values[0]->value] = Type::getMixed();
@@ -2147,7 +2176,8 @@ final class ArrayFetchAnalyzer
 
     /**
      * A shape that surely has an item keeps, when written under a key whose value isn't known, the items the key can't
-     * be: they are what they were. An append writes under a key the shape doesn't have yet
+     * be: they are what they were. An append writes under a key the shape doesn't have yet. A write under keys the
+     * shape already has (`$key_exists`, or a key type all of whose values are its items) keeps its keys
      *
      * @psalm-capabilities read-props|write-this-props
      */
@@ -2156,7 +2186,46 @@ final class ArrayFetchAnalyzer
         Union $key_type,
         Union $value_type,
         bool $appends = false,
+        bool $key_exists = false,
     ): ?TKeyedArray {
+        // a shape that may be empty is no longer once written: only a shape that can't be keeps its items
+        $existing_keys = $appends || !$type->isNonEmpty() ? null : self::getItemKeysOfAWrittenKey($type, $key_type);
+
+        if ($existing_keys !== null || ($key_exists && !$appends && $type->isNonEmpty())) {
+            [$can_be_int, $can_be_string] = self::getKindsOfAWrittenKey($key_type);
+
+            $properties = $type->properties;
+
+            foreach ($properties as $key => $property) {
+                if ($existing_keys !== null
+                    ? in_array($key, $existing_keys, true)
+                    : (is_int($key) ? $can_be_int : $can_be_string)
+                ) {
+                    $properties[$key] = Type::combineUnionTypes(
+                        $property,
+                        $value_type,
+                        null,
+                        false,
+                        true,
+                        500,
+                        $property->possibly_undefined,
+                    );
+                }
+            }
+
+            $shape = TKeyedArray::make(
+                $properties,
+                $type->class_strings,
+                $type->fallback_params === null || $existing_keys !== null
+                    ? $type->fallback_params
+                    : [$type->fallback_params[0], Type::combineUnionTypes($type->fallback_params[1], $value_type)],
+                $type->is_list,
+                $type->from_docblock,
+            );
+
+            return $shape instanceof TKeyedArray ? $shape : null;
+        }
+
         if ($type->is_list || !$type->isNonEmpty()) {
             return null;
         }
@@ -2195,6 +2264,47 @@ final class ArrayFetchAnalyzer
         );
 
         return $shape instanceof TKeyedArray ? $shape : null;
+    }
+
+    /**
+     * The keys of the items of a shape a written key can be, when it can only be those (and, for a list, only items
+     * it surely has: a write past them may make it no list)
+     *
+     * @return non-empty-list<int|string>|null
+     * @psalm-pure
+     */
+    private static function getItemKeysOfAWrittenKey(TKeyedArray $type, Union $key_type): ?array
+    {
+        $keys = [];
+
+        foreach ($key_type->getAtomicTypes() as $key_atomic_type) {
+            if ($key_atomic_type instanceof TLiteralInt) {
+                $keys[] = $key_atomic_type->value;
+            } elseif ($key_atomic_type instanceof TLiteralString) {
+                $int_key = ArrayAnalyzer::getLiteralArrayKeyInt($key_atomic_type->value);
+                $keys[] = $int_key === false ? $key_atomic_type->value : $int_key;
+            } elseif ($key_atomic_type instanceof TIntRange
+                && $key_atomic_type->min_bound !== null
+                && $key_atomic_type->max_bound !== null
+                && $key_atomic_type->max_bound - $key_atomic_type->min_bound < count($type->properties)
+            ) {
+                // counted from the lower bound: the upper one may be PHP_INT_MAX, past which an int can't go
+                $count = $key_atomic_type->max_bound - $key_atomic_type->min_bound;
+                for ($offset = 0; $offset <= $count; $offset++) {
+                    $keys[] = $key_atomic_type->min_bound + $offset;
+                }
+            } else {
+                return null;
+            }
+        }
+
+        foreach ($keys as $key) {
+            if (!isset($type->properties[$key]) || ($type->is_list && $type->properties[$key]->possibly_undefined)) {
+                return null;
+            }
+        }
+
+        return $keys ?: null;
     }
 
     /**
@@ -2480,12 +2590,24 @@ final class ArrayFetchAnalyzer
                         }
                     } else {
                         $min_count = $type->getMinCount();
+                        $offset_atomic_types = $offset_type->getAtomicTypes();
+                        $offset_atomic_type = reset($offset_atomic_types);
                         $shape = self::writeUnknownKeyOfAShape(
                             $type,
                             $offset_type->hasMixed()
                                 ? Type::getArrayKey()
                                 : self::castOffsetTypeOfAWrite($offset_type->freeze()),
                             $replacement_type,
+                            false,
+                            // a key of the list from a foreach over it
+                            count($offset_atomic_types) === 1
+                                && $offset_atomic_type instanceof TIntRange
+                                && $offset_atomic_type->dependent_list_key !== null
+                                && $offset_atomic_type->dependent_list_key === ExpressionIdentifier::getExtendedVarId(
+                                    $stmt->var,
+                                    $statements_analyzer->getFQCLN(),
+                                    $statements_analyzer,
+                                ),
                         );
                         if ($shape) {
                             $type = $shape;
@@ -2620,7 +2742,7 @@ final class ArrayFetchAnalyzer
         $receiver_types = $array_type->getAtomicTypes();
 
         foreach ($receiver_types as $key => $type) {
-            if ($type instanceof TTemplateParam && $type->as->isSingle()) {
+            if ($type instanceof TTemplateParam && $type->as->isSingleAtomic()) {
                 $type = $type->as->getSingleAtomic();
             }
 

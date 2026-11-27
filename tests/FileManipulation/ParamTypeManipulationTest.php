@@ -293,6 +293,44 @@ final class ParamTypeManipulationTest extends FileManipulationTestCase
                 'issues_to_fix' => ['MissingParamType'],
                 'safe_types' => true,
             ],
+            'nullOrTrueParamTypeWithDefault82' => [
+                'input' => '<?php
+                    class C {
+                        public function fooFoo($a = null): void {}
+                    }
+
+                    (new C)->fooFoo(true);',
+                'output' => '<?php
+                    class C {
+                        public function fooFoo(true|null $a = null): void {}
+                    }
+
+                    (new C)->fooFoo(true);',
+                'php_version' => '8.2',
+                'issues_to_fix' => ['MissingParamType'],
+                'safe_types' => true,
+            ],
+            'nullOrObjectParamTypeWithDefault80' => [
+                'input' => '<?php
+                    class C {
+                        public function fooFoo($a = null): void {}
+                    }
+
+                    function bar(object $o): void {
+                        (new C)->fooFoo($o);
+                    }',
+                'output' => '<?php
+                    class C {
+                        public function fooFoo(object|null $a = null): void {}
+                    }
+
+                    function bar(object $o): void {
+                        (new C)->fooFoo($o);
+                    }',
+                'php_version' => '8.0',
+                'issues_to_fix' => ['MissingParamType'],
+                'safe_types' => true,
+            ],
             'noStringParamTypeParent' => [
                 'input' => '<?php
                     class C {

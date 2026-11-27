@@ -18,6 +18,7 @@ use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
 
+use function array_map;
 use function array_merge;
 
 /**
@@ -282,6 +283,7 @@ final class ReturnTypeCollector
             }
         }
 
+        // a generator that ends without a value returns null from getReturn()
         return [
             new Union([
                 new TGenericObject(
@@ -290,7 +292,15 @@ final class ReturnTypeCollector
                         $key_type ?? Type::getMixed(),
                         $value_type ?? Type::getMixed(),
                         Type::getMixed(),
-                        $return_types ? Type::combineUnionTypeArray($return_types, null) : Type::getVoid(),
+                        $return_types
+                            ? Type::combineUnionTypeArray(
+                                array_map(
+                                    static fn(Union $type): Union => $type->isVoid() ? Type::getNull() : $type,
+                                    $return_types,
+                                ),
+                                null,
+                            )
+                            : Type::getNull(),
                     ],
                 ),
             ]),

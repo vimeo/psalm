@@ -65,17 +65,19 @@ final class TemplateResult
     public array $upper_bounds_unintersectable_types = [];
 
     /**
-     * The class templates the receiver bound to a `*` (template name => defining class => `true`), see
-     * markStarBindings(). A template of a class the receiver extends that stands for a type wrapping them
-     * (`Getter<Box<T>>`) has that type as it is read from the receiver, with the `*`, as the value.
+     * The class templates the receiver bound to a `*`, a `covariant` or a `contravariant` argument (template name =>
+     * defining class => `true`, or TypeArgumentProjection::Covariant for a `covariant` one, which is read as the type
+     * it holds), see markStarBindings(). A template of a class the receiver extends that stands for a type wrapping
+     * them (`Getter<Box<T>>`) has that type as it is read from the receiver, with the `*`, as the value.
      *
-     * @var array<string, array<string, true|Union>>
+     * @var array<string, array<string, true|TypeArgumentProjection|Union>>
      */
     public array $star_bindings = [];
 
     /**
-     * What a template of star_bindings that stands for a type wrapping a template bound to a `*` is where the types
-     * are replaced as inputs (a parameter, an assigned value): that type with `never` for the `*`
+     * What a template of star_bindings is where the types are replaced as inputs (a parameter, an assigned value),
+     * when not `never`: the `X` of a `contravariant X`, or a type wrapping a template bound to a `*` with `never` for
+     * the `*`
      *
      * @var array<string, array<string, Union>>
      */
@@ -121,10 +123,11 @@ final class TemplateResult
     }
 
     /**
-     * Marks the class templates the receiver bound to a `*`, for what is read from and written to the receiver
+     * Marks the class templates the receiver bound to a `*`, a `covariant` or a `contravariant` argument, for what is
+     * read from and written to the receiver
      *
-     * @param array<string, array<string, true|Union>> $star_templates template name => defining class => mark
-     * @param array<string, array<string, Union>> $input_bounds what the marks that are types are as inputs
+     * @param array<string, array<string, true|TypeArgumentProjection|Union>> $star_templates see star_bindings
+     * @param array<string, array<string, Union>> $input_bounds see star_input_bounds
      * @psalm-capabilities read-props|write-this-props
      */
     public function markStarBindings(array $star_templates, array $input_bounds = []): void
