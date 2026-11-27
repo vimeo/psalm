@@ -243,9 +243,15 @@ class Reconciler
             $is_surely_absent = false;
             $is_real = ($old_new_types[$key] ?? null) === $new_type_parts;
             $is_equality = $is_real;
+            $asserts_offset_exists = false;
 
             foreach ($new_type_parts as $new_type_part_parts) {
                 foreach ($new_type_part_parts as $new_type_part_part) {
+                    $asserts_offset_exists = $asserts_offset_exists
+                        || (count($new_type_part_parts) === 1
+                            && ($new_type_part_part instanceof IsIsset
+                                || $new_type_part_part instanceof ArrayKeyExists));
+
                     if ($new_type_part_part->isNegation()) {
                         $has_negation = true;
                     }
@@ -667,6 +673,8 @@ class Reconciler
                 || $result_type->ignore_isset !== $before_adjustment->ignore_isset;
 
             $key_parts = self::breakUpPathIntoParts($key);
+            $offset_possibly_unset = false;
+
             if ($type_changed || $failed_reconciliation) {
                 $changed_var_ids[$key] = true;
 
@@ -679,8 +687,15 @@ class Reconciler
                 }
 
                 $array_value_type = $has_inverted_isset
-                    ? self::getPossiblyUnsetArrayValue($key_parts, $existing_types, $result_type)
+                    ? self::getPossiblyUnsetArrayValue(
+                        $key_parts,
+                        $existing_types,
+                        $result_type,
+                        $asserts_offset_exists,
+                    )
                     : $result_type;
+
+                $offset_possibly_unset = $has_inverted_isset && $array_value_type?->possibly_undefined;
 
                 if (str_ends_with($key, ']')
                     && !$has_empty
@@ -766,7 +781,10 @@ class Reconciler
             }
 
             // a variable that was not set before is still possibly undefined where it is asserted not to be set
-            if (!$did_type_exist && $has_inverted_isset && count($key_parts) === 1 && $key[0] === '$') {
+            if ((!$did_type_exist && $has_inverted_isset && count($key_parts) === 1 && $key[0] === '$')
+                // an offset the array may not have is read from the array, which reports it
+                || $offset_possibly_unset
+            ) {
                 $result_type = $result_type->setPossiblyUndefined(true);
             }
 
@@ -2837,8 +2855,8 @@ class Reconciler
 
     /**
      * Where isset() is negated, an offset of an array is not set, is null, or holds what the other alternatives of
-     * the clause say: the array gets that type for it, optional where the offset may be missing. Returns null where
-     * this tells nothing about the array.
+     * the clause say: the array gets that type for it, optional where the offset may be missing and no other clause
+     * says it exists. Returns null where this tells nothing about the array.
      *
      * @param  list<string>          $key_parts
      * @param  array<string, Union>  $existing_types
@@ -2847,6 +2865,7 @@ class Reconciler
         array $key_parts,
         array $existing_types,
         Union $result_type,
+        bool $offset_exists,
     ): ?Union {
         if (count($key_parts) < 4 || $key_parts[count($key_parts) - 1] !== ']') {
             return null;
@@ -2929,7 +2948,7 @@ class Reconciler
             return null;
         }
 
-        return $result_type->setPossiblyUndefined($possibly_undefined);
+        return $result_type->setPossiblyUndefined($possibly_undefined && !$offset_exists);
     }
 
     /**
