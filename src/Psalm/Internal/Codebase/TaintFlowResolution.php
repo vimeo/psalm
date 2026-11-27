@@ -36,6 +36,7 @@ use function str_ends_with;
 use function str_starts_with;
 use function strlen;
 use function strpos;
+use function strtolower;
 use function substr;
 
 use const PHP_INT_MAX;
@@ -408,6 +409,29 @@ final class TaintFlowResolution
      * @var array<string, bool>
      */
     private array $project_file_paths = [];
+
+    /**
+     * Path type id => [whether it is the type of an edge into a property (TaintFlowGraph::NAME_PUT_PREFIX) or out
+     * of it (TaintFlowGraph::NAME_BIND_PREFIX), the key of the property, its name marker]
+     *
+     * @var array<int, array{bool, string, string}>
+     */
+    private array $name_path_types = [];
+
+    /**
+     * Name marker => [the marker of the name alone, the variable holding the object called, the class] (see
+     * TaintFlowGraph::NAME_MARKER_PREFIX)
+     *
+     * @var array<string, array{string, string, string}>
+     */
+    private array $name_markers = [];
+
+    /**
+     * Two lowercase class names => whether an object may be of both (see mayBeOfBoth())
+     *
+     * @var array<string, bool>
+     */
+    private array $class_overlaps = [];
 
     /**
      * Open assignments key => path type => the open assignments after taking an edge of that type, IGNORED
@@ -1376,6 +1400,18 @@ final class TaintFlowResolution
             $this->array_conversion_path_types[$id] = true;
         } elseif (str_starts_with($path_type, self::OVERWRITE_PREFIX)) {
             $this->overwrite_path_types[$id] = true;
+        } elseif (str_starts_with($path_type, TaintFlowGraph::NAME_BIND_PREFIX)
+            || str_starts_with($path_type, TaintFlowGraph::NAME_PUT_PREFIX)
+        ) {
+            $is_put = str_starts_with($path_type, TaintFlowGraph::NAME_PUT_PREFIX);
+            $prefix_length = strlen($is_put ? TaintFlowGraph::NAME_PUT_PREFIX : TaintFlowGraph::NAME_BIND_PREFIX);
+            $at = (int) strpos($path_type, '@');
+
+            $this->name_path_types[$id] = [
+                $is_put,
+                substr($path_type, $prefix_length, $at - $prefix_length),
+                substr($path_type, $at + 1),
+            ];
         }
 
         return $id;
@@ -1558,7 +1594,9 @@ final class TaintFlowResolution
         $property_assignments = $made[self::PROPERTY_FAMILY];
         $innermost_property = $property_assignments ? $property_assignments[count($property_assignments) - 1] : -1;
 
-        if (isset($this->array_conversion_path_types[$path_type])) {
+        if (isset($this->name_path_types[$path_type])) {
+            $next = $this->applyNamePathType($open_assignments, $path_type);
+        } elseif (isset($this->array_conversion_path_types[$path_type])) {
             // An array converts to "Array", or to 0/1, never to what it holds: the conversion takes nothing the
             // flow put in an array as its innermost open assignment, under a key or as a key. That's the one it
             // made last, past any open assignment of a property it made: those of the call entering its context
@@ -1613,7 +1651,14 @@ final class TaintFlowResolution
             // to be told apart by it in filters (see getFilter()).
             $next = self::IGNORED;
         } elseif ($observed_family === -1) {
-            $next = $this->applyPathType($open_assignments, $path_type);
+            $foreach_marker = $this->path_type_effects[$path_type][4];
+
+            // a write under a name of what was read under it from an object it can't be set to (see matchNameSlot())
+            $next = $foreach_marker !== null
+                && !$this->path_type_effects[$path_type][5]
+                && $this->matchNameSlot($this->open_assignment_slots[$open_assignments], $foreach_marker, false) === false
+                ? self::IGNORED
+                : $this->applyPathType($open_assignments, $path_type);
         } elseif ($made[$observed_family] && $made[$observed_family][count($made[$observed_family]) - 1] < 0) {
             // one of the call put back
             $next = self::OBSERVES_CALL;
@@ -1679,6 +1724,8 @@ final class TaintFlowResolution
         [$made, $closed] = $this->open_assignments[$open_assignments];
         $slot = $this->open_assignment_slots[$open_assignments];
 
+        $bound = false;
+
         if ($closed_family !== -1) {
             $array_assignments = $made[self::ARRAY_FAMILY];
             $made_overwrites = $array_assignments
@@ -1706,6 +1753,7 @@ final class TaintFlowResolution
 
                 if ($foreach_marker !== null && $fetches_elements && $closed_assignment !== null) {
                     $slot = $this->getSlot($foreach_marker, $closed_assignment);
+                    $bound = true;
                 }
             } elseif ($closed[$closed_family] !== self::NO_CALL && $closed[$closed_family] !== self::FORGOTTEN) {
                 // past MAX_CALL_OPEN_ASSIGNMENT_DEPTH, FORGOTTEN
@@ -1714,7 +1762,19 @@ final class TaintFlowResolution
                 if ($foreach_marker !== null && $fetches_elements && $closed[$closed_family] !== self::FORGOTTEN) {
                     // one of the call entering the context, by its depth there
                     $slot = $this->getSlot($foreach_marker, -$closed[$closed_family]);
+                    $bound = true;
                 }
+            }
+
+            if (!$bound
+                && $foreach_marker !== null
+                && $fetches_elements
+                && str_starts_with($foreach_marker, TaintFlowGraph::NAME_MARKER_PREFIX)
+            ) {
+                // A property of a name the flow doesn't know (forgotten in a convergence, ...): still the one of
+                // that name, under any key, as the write under the name puts back what it doesn't know, and of the
+                // class of the marker (see matchNameSlot()).
+                $slot = $this->getSlot($foreach_marker, $this->getPathTypeId('arrayvalue-assignment@' . $foreach_marker));
             }
         }
 
@@ -1722,7 +1782,8 @@ final class TaintFlowResolution
             if ($foreach_marker !== null
                 && !$fetches_elements
                 && $slot >= 0
-                && $this->slots[$slot][0] === $foreach_marker
+                && ($this->slots[$slot][0] === $foreach_marker
+                    || $this->matchNameSlot($slot, $foreach_marker, false) === true)
             ) {
                 // the value of the element, or what was made of it, back under its key
                 $made[$added_family][] = $this->slots[$slot][1];
@@ -1753,6 +1814,164 @@ final class TaintFlowResolution
         }
 
         return $this->slot_ids[$key];
+    }
+
+    /**
+     * The open assignments of a flow with open assignments $open_assignments after it takes an edge of type
+     * $path_type out of a property read by name (see TaintFlowGraph::NAME_BIND_PREFIX), or into one set by name
+     * (TaintFlowGraph::NAME_PUT_PREFIX), or IGNORED. The property read is the element under its key of an array of
+     * the properties, as a value fetch of a foreach loop over them gets it (see applyPathType()), without the array:
+     * no flow ever sees it, and the property read through a node that many flows reach would else make them converge
+     * there (see enterConvergence()), forgetting its key. A flow set back under the same name only goes into the
+     * property of its key, and of a class the object it was read from may be (see matchNameSlot()), and any other
+     * into all of them.
+     *
+     * @psalm-external-mutation-free
+     */
+    private function applyNamePathType(int $open_assignments, int $path_type): int
+    {
+        [$is_put, $key, $marker] = $this->name_path_types[$path_type];
+        [$made, $closed] = $this->open_assignments[$open_assignments];
+
+        if (!$is_put) {
+            return $this->internOpenAssignments(
+                $made,
+                $closed,
+                $this->getSlot($marker, $this->getPathTypeId('arrayvalue-assignment-' . $key)),
+            );
+        }
+
+        $slot = $this->open_assignment_slots[$open_assignments];
+        $matches = $this->matchNameSlot($slot, $marker, true);
+
+        if ($matches === null) {
+            return $open_assignments;
+        }
+
+        $assignment = $this->slots[$slot][1];
+
+        // the key of one of the call entering the context (see applyPathType()) isn't known here
+        if (!$matches
+            || ($assignment >= 0
+                && !self::classPassesFetch($this->getClass($assignment, self::ARRAY_FAMILY), $key))
+        ) {
+            return self::IGNORED;
+        }
+
+        return $this->internOpenAssignments($made, $closed, self::NO_SLOT);
+    }
+
+    /**
+     * Whether a flow with element slot $slot read under the name of the name marker $marker (see
+     * TaintFlowGraph::NAME_MARKER_PREFIX) can be set by a write under that marker, into a property of the name of the
+     * key it was read under ($is_put), or else into the node of the properties of other names (see
+     * ReceiverPropertyTaints::getOtherPropertiesNodes()); null if it wasn't read under that name. Read from the same
+     * variable holding the object as the write, it can't be set into the property of a class the object can't be,
+     * nor, read from a property of a name the class read through has, into the properties of other names of that
+     * class: a write of that name sets it through the node of the property (see ReceiverPropertyTaints::addWrite()).
+     *
+     * @psalm-external-mutation-free
+     */
+    private function matchNameSlot(int $slot, string $marker, bool $is_put): ?bool
+    {
+        if ($slot < 0
+            || !str_starts_with($marker, TaintFlowGraph::NAME_MARKER_PREFIX)
+            || !str_starts_with($this->slots[$slot][0], TaintFlowGraph::NAME_MARKER_PREFIX)
+        ) {
+            return null;
+        }
+
+        $read_marker = $this->slots[$slot][0];
+        [$read_name, $read_object, $read_class] = $this->name_markers[$read_marker]
+            ??= self::parseNameMarker($read_marker);
+        [$name, $object, $class] = $this->name_markers[$marker] ??= self::parseNameMarker($marker);
+
+        if ($read_name !== $name) {
+            return null;
+        }
+
+        if ($object === '-' || $object !== $read_object) {
+            return true;
+        }
+
+        if (str_starts_with($read_class, '*')) {
+            return $this->mayBeOfBoth(substr($read_class, 1), $class);
+        }
+
+        [$holding_class, $read_through] = explode(':', $read_class, 2) + [1 => ''];
+
+        return $this->mayBeOfBoth($holding_class, $class) && ($is_put || $read_through !== $class);
+    }
+
+    /**
+     * @return array{string, string, string}
+     * @psalm-pure
+     */
+    private static function parseNameMarker(string $marker): array
+    {
+        $prefix_length = strlen(TaintFlowGraph::NAME_MARKER_PREFIX);
+        $bounds = (int) strpos($marker, '|');
+        $parts = explode(' ', substr($marker, $prefix_length, $bounds - $prefix_length));
+
+        return [
+            TaintFlowGraph::NAME_MARKER_PREFIX . $parts[0] . substr($marker, $bounds),
+            $parts[1] ?? '-',
+            $parts[2] ?? '-',
+        ];
+    }
+
+    /**
+     * Whether an object may be of both classes: only of a class extending both is an object of two classes, so
+     * one of them extends the other; an interface (or a trait) may be implemented by any class.
+     *
+     * @psalm-external-mutation-free
+     */
+    private function mayBeOfBoth(string $class, string $other_class): bool
+    {
+        $class = strtolower($class);
+        $other_class = strtolower($other_class);
+
+        if ($class === $other_class) {
+            return true;
+        }
+
+        if (isset($this->class_overlaps[$class . ' ' . $other_class])) {
+            return $this->class_overlaps[$class . ' ' . $other_class];
+        }
+
+        $provider = $this->codebase->classlike_storage_provider;
+
+        if (!$provider->has($class) || !$provider->has($other_class)) {
+            $overlaps = true;
+        } else {
+            $storage = $provider->get($class);
+            $other_storage = $provider->get($other_class);
+
+            $overlaps = $storage->is_interface
+                || $storage->is_trait
+                || $other_storage->is_interface
+                || $other_storage->is_trait
+                || isset($storage->parent_classes[$other_class])
+                || isset($other_storage->parent_classes[$class]);
+        }
+
+        return $this->class_overlaps[$class . ' ' . $other_class] = $overlaps;
+    }
+
+    /**
+     * Whether the flows of state $state hold a property read under a name (see TaintFlowGraph::NAME_MARKER_PREFIX)
+     * that a write under it puts back into that property: they aren't walked in a convergence (see
+     * enterConvergence()), which, past MAX_CONVERGENCE_KEYS of them, can't tell apart the names of the flows
+     * entering it. They only keep it in the function of the name and in the files outside the project (see
+     * scopeSlot()).
+     *
+     * @psalm-mutation-free
+     */
+    private function holdsName(int $state): bool
+    {
+        $slot = $this->open_assignment_slots[$this->state_open_assignments[$state]];
+
+        return $slot >= 0 && str_starts_with($this->slots[$slot][0], TaintFlowGraph::NAME_MARKER_PREFIX);
     }
 
     /**
@@ -2257,6 +2476,7 @@ final class TaintFlowResolution
         if (isset($this->forward_edges[$id])) {
             if (!isset($this->root_entries[$state])
                 && count($this->state_ids[$id]) >= self::CONVERGING_STATES
+                && !$this->holdsName($state)
                 && ($this->isOutsideOfCalls($this->state_contexts[$state])
                     || count($this->call_entries_reaching[$id] ?? []) > 1
                     || !$this->hasLocation($id))
@@ -2321,6 +2541,7 @@ final class TaintFlowResolution
         if ($outside_of_calls
             && !isset($this->root_entries[$state])
             && count($this->state_ids[$id]) >= self::CONVERGING_STATES
+            && !$this->holdsName($state)
         ) {
             // like any node many flows reach (see enterConvergence()): else each would leave through all its call
             // sites, a function-like's return reached from many convergences through a property its class sets

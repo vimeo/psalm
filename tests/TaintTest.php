@@ -8129,6 +8129,228 @@ final class TaintTest extends TestCase
                         echo $bag->get("other");
                     }',
             ],
+            'propertyReadAndSetUnderTheSameNameAmongManyGoesBackToIt' => [
+                'code' => '<?php
+                    final class Model {
+                        public array $title = [];
+                        public array $a = [];
+                        public array $b = [];
+                        public array $c = [];
+                        public array $d = [];
+                        public array $e = [];
+                        public array $f = [];
+                        public array $g = [];
+                        public array $h = [];
+                        public array $i = [];
+                        public array $j = [];
+                        public array $k = [];
+                        public array $l = [];
+
+                        /** @psalm-flow $this->$name -> return */
+                        public function get(string $name): array {
+                            return [];
+                        }
+
+                        /** @psalm-flow ($value) -> $this->$name */
+                        public function set(string $name, array $value): void {}
+                    }
+
+                    function save(Model $model): void {
+                        $model->a = [(string) $_GET["x"]];
+                        $model->b = [(string) $_GET["x"]];
+                        $model->c = [(string) $_GET["x"]];
+                        $model->d = [(string) $_GET["x"]];
+                        $model->e = [(string) $_GET["x"]];
+                        $model->f = [(string) $_GET["x"]];
+                        $model->g = [(string) $_GET["x"]];
+                        $model->h = [(string) $_GET["x"]];
+                        $model->i = [(string) $_GET["x"]];
+                        $model->j = [(string) $_GET["x"]];
+                        $model->k = [(string) $_GET["x"]];
+                        $model->l = [(string) $_GET["x"]];
+                    }
+
+                    function setElement(Model $model, string $name, int $i, string $value): void {
+                        $property = $model->get($name);
+                        $property[$i] = $value;
+                        $model->set($name, $property);
+                    }
+
+                    function show(Model $model): void {
+                        echo implode(",", $model->title);
+                    }',
+            ],
+            'propertyCopiedUnderTheSameNameAmongManyToAnotherObjectGoesToThatProperty' => [
+                'code' => '<?php
+                    final class Article {
+                        public array $title = [];
+                        public array $a = [];
+                        public array $b = [];
+                        public array $c = [];
+                        public array $d = [];
+                        public array $e = [];
+                        public array $f = [];
+                        public array $g = [];
+                        public array $h = [];
+                        public array $i = [];
+                        public array $j = [];
+                        public array $k = [];
+                        public array $l = [];
+
+                        /** @psalm-flow $this->$name -> return */
+                        public function get(string $name): array {
+                            return [];
+                        }
+
+                        /** @psalm-flow ($value) -> $this->$name */
+                        public function set(string $name, array $value): void {}
+                    }
+
+                    final class Draft {
+                        public array $title = [];
+                        public array $a = [];
+                        public array $b = [];
+                        public array $c = [];
+                        public array $d = [];
+                        public array $e = [];
+                        public array $f = [];
+                        public array $g = [];
+                        public array $h = [];
+                        public array $i = [];
+                        public array $j = [];
+                        public array $k = [];
+                        public array $l = [];
+
+                        /** @psalm-flow $this->$name -> return */
+                        public function get(string $name): array {
+                            return [];
+                        }
+
+                        /** @psalm-flow ($value) -> $this->$name */
+                        public function set(string $name, array $value): void {}
+                    }
+
+                    function save(Article $article): void {
+                        $article->a = [(string) $_GET["x"]];
+                        $article->b = [(string) $_GET["x"]];
+                        $article->c = [(string) $_GET["x"]];
+                        $article->d = [(string) $_GET["x"]];
+                        $article->e = [(string) $_GET["x"]];
+                        $article->f = [(string) $_GET["x"]];
+                        $article->g = [(string) $_GET["x"]];
+                        $article->h = [(string) $_GET["x"]];
+                        $article->i = [(string) $_GET["x"]];
+                        $article->j = [(string) $_GET["x"]];
+                        $article->k = [(string) $_GET["x"]];
+                        $article->l = [(string) $_GET["x"]];
+                    }
+
+                    function copyElement(Article $article, Draft $draft, string $name, int $i): void {
+                        $property = $article->get($name);
+                        $property[$i] = "";
+                        $draft->set($name, $property);
+                    }
+
+                    function show(Draft $draft): void {
+                        echo implode(",", $draft->title);
+                    }',
+            ],
+            'propertyReadAndSetUnderTheSameNameOfAnObjectStaysInItsClass' => [
+                'code' => '<?php
+                    final class Category {
+                        public array $filter = [];
+
+                        /** @psalm-flow $this->$name -> return */
+                        public function get(string $name): array {
+                            return [];
+                        }
+
+                        /** @psalm-flow ($value) -> $this->$name */
+                        public function set(string $name, array $value): void {}
+                    }
+
+                    final class Bag {
+                        /** @psalm-flow ($properties) -> $this->{key} */
+                        public function __construct(array $properties) {}
+
+                        /** @psalm-flow $this->$name -> return */
+                        public function get(string $name): array {
+                            return [];
+                        }
+
+                        /** @psalm-flow ($value) -> $this->$name */
+                        public function set(string $name, array $value): void {}
+                    }
+
+                    function make(): Bag {
+                        return new Bag(["filter" => [(string) $_GET["x"]]]);
+                    }
+
+                    function setElement(Bag|Category $object, string $name, int $i, string $value): void {
+                        $property = $object->get($name);
+                        $property[$i] = $value;
+                        $object->set($name, $property);
+                    }
+
+                    function show(Category $category): void {
+                        echo implode(",", $category->filter);
+                    }',
+            ],
+            'propertyReadAndSetUnderTheSameNameInAClosureOfATraitStaysInItsClass' => [
+                'code' => '<?php
+                    final class Category {
+                        public array $filter = [];
+
+                        /** @psalm-flow $this->$name -> return */
+                        public function get(string $name): array {
+                            return [];
+                        }
+
+                        /** @psalm-flow ($value) -> $this->$name */
+                        public function set(string $name, array $value): void {}
+                    }
+
+                    final class Bag {
+                        /** @psalm-flow ($properties) -> $this->{key} */
+                        public function __construct(array $properties) {}
+
+                        /** @psalm-flow $this->$name -> return */
+                        public function get(string $name): array {
+                            return [];
+                        }
+
+                        /** @psalm-flow ($value) -> $this->$name */
+                        public function set(string $name, array $value): void {}
+                    }
+
+                    function make(): Bag {
+                        return new Bag(["filter" => [(string) $_GET["x"]]]);
+                    }
+
+                    trait Setters {
+                        public static function setter(string $name, string $index, int $i): Closure {
+                            return static function (string $value, Bag|Category $object) use ($name, $index, $i): void {
+                                $property = $object->get($name);
+                                if (array_key_exists($i, $property) && is_array($property[$i])) {
+                                    $element = $property[$i];
+                                    $element[$index] = $value;
+                                    $property[$i] = $element;
+                                } else {
+                                    $property[$i] = [$index => $value];
+                                }
+                                $object->set($name, $property);
+                            };
+                        }
+                    }
+
+                    final class Fields {
+                        use Setters;
+                    }
+
+                    function show(Category $category): void {
+                        echo implode(",", $category->filter);
+                    }',
+            ],
             'propertyReadAndSetUnderTheSameNameInALoopNotAssigningIt' => [
                 'code' => '<?php
                     final class Model {
@@ -13596,6 +13818,452 @@ final class TaintTest extends TestCase
 
                     function show(Article $article): void {
                         echo $article->body;
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'propertyReadAndSetUnderTheSameNameAmongManyTaintsThemWithWhatIsSet' => [
+                'code' => '<?php
+                    final class Model {
+                        public array $title = [];
+                        public array $a = [];
+                        public array $b = [];
+                        public array $c = [];
+                        public array $d = [];
+                        public array $e = [];
+                        public array $f = [];
+                        public array $g = [];
+                        public array $h = [];
+                        public array $i = [];
+                        public array $j = [];
+                        public array $k = [];
+                        public array $l = [];
+
+                        /** @psalm-flow $this->$name -> return */
+                        public function get(string $name): array {
+                            return [];
+                        }
+
+                        /** @psalm-flow ($value) -> $this->$name */
+                        public function set(string $name, array $value): void {}
+                    }
+
+                    function setElement(Model $model, string $name, int $i): void {
+                        $property = $model->get($name);
+                        $property[$i] = (string) $_GET["x"];
+                        $model->set($name, $property);
+                    }
+
+                    function show(Model $model): void {
+                        echo implode(",", $model->title);
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'propertyReadAmongManyUnderANameAndSetUnderAnotherMayBeAnyProperty' => [
+                'code' => '<?php
+                    final class Model {
+                        public array $title = [];
+                        public array $a = [];
+                        public array $b = [];
+                        public array $c = [];
+                        public array $d = [];
+                        public array $e = [];
+                        public array $f = [];
+                        public array $g = [];
+                        public array $h = [];
+                        public array $i = [];
+                        public array $j = [];
+                        public array $k = [];
+                        public array $l = [];
+
+                        /** @psalm-flow $this->$name -> return */
+                        public function get(string $name): array {
+                            return [];
+                        }
+
+                        /** @psalm-flow ($value) -> $this->$name */
+                        public function set(string $name, array $value): void {}
+                    }
+
+                    function save(Model $model): void {
+                        $model->a = [(string) $_GET["x"]];
+                        $model->b = [(string) $_GET["x"]];
+                        $model->c = [(string) $_GET["x"]];
+                        $model->d = [(string) $_GET["x"]];
+                        $model->e = [(string) $_GET["x"]];
+                        $model->f = [(string) $_GET["x"]];
+                        $model->g = [(string) $_GET["x"]];
+                        $model->h = [(string) $_GET["x"]];
+                        $model->i = [(string) $_GET["x"]];
+                        $model->j = [(string) $_GET["x"]];
+                        $model->k = [(string) $_GET["x"]];
+                        $model->l = [(string) $_GET["x"]];
+                    }
+
+                    function setElement(Model $model, string $name, string $other, int $i, string $value): void {
+                        $property = $model->get($name);
+                        $property[$i] = $value;
+                        $model->set($other, $property);
+                    }
+
+                    function show(Model $model): void {
+                        echo implode(",", $model->title);
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'propertyReadAndSetUnderTheSameNameWithAnElementOfALiteralKeyTaintsAnyProperty' => [
+                'code' => '<?php
+                    final class Model {
+                        public array $title = [];
+                        public array $body = [];
+
+                        /** @psalm-flow $this->$name -> return */
+                        public function get(string $name): array {
+                            return [];
+                        }
+
+                        /** @psalm-flow ($value) -> $this->$name */
+                        public function set(string $name, array $value): void {}
+                    }
+
+                    function setElement(Model $model, string $name): void {
+                        $property = $model->get($name);
+                        $property["k"] = (string) $_GET["x"];
+                        $model->set($name, $property);
+                    }
+
+                    function show(Model $model): void {
+                        echo (string) $model->title["k"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'propertyCopiedUnderTheSameNameAmongManyToAnotherObjectTaintsThatProperty' => [
+                'code' => '<?php
+                    final class Article {
+                        public array $title = [];
+                        public array $a = [];
+                        public array $b = [];
+                        public array $c = [];
+                        public array $d = [];
+                        public array $e = [];
+                        public array $f = [];
+                        public array $g = [];
+                        public array $h = [];
+                        public array $i = [];
+                        public array $j = [];
+                        public array $k = [];
+                        public array $l = [];
+
+                        /** @psalm-flow $this->$name -> return */
+                        public function get(string $name): array {
+                            return [];
+                        }
+
+                        /** @psalm-flow ($value) -> $this->$name */
+                        public function set(string $name, array $value): void {}
+                    }
+
+                    final class Draft {
+                        public array $title = [];
+                        public array $a = [];
+                        public array $b = [];
+                        public array $c = [];
+                        public array $d = [];
+                        public array $e = [];
+                        public array $f = [];
+                        public array $g = [];
+                        public array $h = [];
+                        public array $i = [];
+                        public array $j = [];
+                        public array $k = [];
+                        public array $l = [];
+
+                        /** @psalm-flow $this->$name -> return */
+                        public function get(string $name): array {
+                            return [];
+                        }
+
+                        /** @psalm-flow ($value) -> $this->$name */
+                        public function set(string $name, array $value): void {}
+                    }
+
+                    function save(Article $article): void {
+                        $article->a = [(string) $_GET["x"]];
+                        $article->b = [(string) $_GET["x"]];
+                        $article->c = [(string) $_GET["x"]];
+                        $article->d = [(string) $_GET["x"]];
+                        $article->e = [(string) $_GET["x"]];
+                        $article->f = [(string) $_GET["x"]];
+                        $article->g = [(string) $_GET["x"]];
+                        $article->h = [(string) $_GET["x"]];
+                        $article->i = [(string) $_GET["x"]];
+                        $article->j = [(string) $_GET["x"]];
+                        $article->k = [(string) $_GET["x"]];
+                        $article->l = [(string) $_GET["x"]];
+                    }
+
+                    function copyElement(Article $article, Draft $draft, string $name, int $i): void {
+                        $property = $article->get($name);
+                        $property[$i] = "";
+                        $draft->set($name, $property);
+                    }
+
+                    function show(Draft $draft): void {
+                        echo implode(",", $draft->l);
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'propertyReadAndSetUnderTheSameNameOfAnObjectOfTwoInterfacesTaintsIt' => [
+                'code' => '<?php
+                    /** @property string $body */
+                    interface Store {
+                        /** @psalm-flow $this->$name -> return */
+                        public function get(string $name): string;
+
+                        /** @psalm-flow ($value) -> $this->$name */
+                        public function set(string $name, string $value): void;
+                    }
+
+                    /** @property string $body */
+                    interface Named {
+                        /** @psalm-flow $this->$name -> return */
+                        public function get(string $name): string;
+
+                        /** @psalm-flow ($value) -> $this->$name */
+                        public function set(string $name, string $value): void;
+                    }
+
+                    function save(Store $store): void {
+                        $store->set("body", (string) $_GET["x"]);
+                    }
+
+                    function append(Store|Named $object, string $name): void {
+                        $object->set($name, $object->get($name) . "!");
+                    }
+
+                    function show(Named $named): void {
+                        echo $named->get("body");
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'propertyReadAndSetUnderTheSameNameOfAnObjectStaysTainted' => [
+                'code' => '<?php
+                    final class Category {
+                        public array $filter = [];
+
+                        /** @psalm-flow $this->$name -> return */
+                        public function get(string $name): array {
+                            return [];
+                        }
+
+                        /** @psalm-flow ($value) -> $this->$name */
+                        public function set(string $name, array $value): void {}
+                    }
+
+                    final class Bag {
+                        /** @psalm-flow ($properties) -> $this->{key} */
+                        public function __construct(array $properties) {}
+
+                        /** @psalm-flow $this->$name -> return */
+                        public function get(string $name): array {
+                            return [];
+                        }
+
+                        /** @psalm-flow ($value) -> $this->$name */
+                        public function set(string $name, array $value): void {}
+                    }
+
+                    function make(): Bag {
+                        return new Bag(["filter" => [(string) $_GET["x"]]]);
+                    }
+
+                    function setElement(Bag|Category $object, string $name, int $i, string $value): void {
+                        $property = $object->get($name);
+                        $property[$i] = $value;
+                        $object->set($name, $property);
+                    }
+
+                    function show(Bag $bag): void {
+                        echo implode(",", $bag->get("filter"));
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'propertyReadAndSetUnderTheSameNameOfAnObjectTaintsItWithWhatIsSet' => [
+                'code' => '<?php
+                    final class Category {
+                        public array $filter = [];
+
+                        /** @psalm-flow $this->$name -> return */
+                        public function get(string $name): array {
+                            return [];
+                        }
+
+                        /** @psalm-flow ($value) -> $this->$name */
+                        public function set(string $name, array $value): void {}
+                    }
+
+                    final class Bag {
+                        /** @psalm-flow ($properties) -> $this->{key} */
+                        public function __construct(array $properties) {}
+
+                        /** @psalm-flow $this->$name -> return */
+                        public function get(string $name): array {
+                            return [];
+                        }
+
+                        /** @psalm-flow ($value) -> $this->$name */
+                        public function set(string $name, array $value): void {}
+                    }
+
+                    function make(): Bag {
+                        return new Bag(["filter" => [(string) $_GET["x"]]]);
+                    }
+
+                    function setElement(Bag|Category $object, string $name, int $i): void {
+                        $property = $object->get($name);
+                        $property[$i] = (string) $_GET["y"];
+                        $object->set($name, $property);
+                    }
+
+                    function show(Category $category): void {
+                        echo implode(",", $category->filter);
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'propertyReadAndSetUnderTheSameNameOfAnotherObjectInTheVariableTaintsIt' => [
+                'code' => '<?php
+                    final class Category {
+                        public array $filter = [];
+
+                        /** @psalm-flow $this->$name -> return */
+                        public function get(string $name): array {
+                            return [];
+                        }
+
+                        /** @psalm-flow ($value) -> $this->$name */
+                        public function set(string $name, array $value): void {}
+                    }
+
+                    final class Bag {
+                        /** @psalm-flow ($properties) -> $this->{key} */
+                        public function __construct(array $properties) {}
+
+                        /** @psalm-flow $this->$name -> return */
+                        public function get(string $name): array {
+                            return [];
+                        }
+
+                        /** @psalm-flow ($value) -> $this->$name */
+                        public function set(string $name, array $value): void {}
+                    }
+
+                    function make(): Bag {
+                        return new Bag(["filter" => [(string) $_GET["x"]]]);
+                    }
+
+                    function setElement(Bag|Category $object, Category $other, string $name, int $i, string $value): void {
+                        $property = $object->get($name);
+                        $property[$i] = $value;
+                        $object = $other;
+                        $object->set($name, $property);
+                    }
+
+                    function show(Category $category): void {
+                        echo implode(",", $category->filter);
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'propertyReadAndSetUnderTheSameNameOfObjectsOfALoopTaintsThem' => [
+                'code' => '<?php
+                    final class Category {
+                        public array $filter = [];
+
+                        /** @psalm-flow $this->$name -> return */
+                        public function get(string $name): array {
+                            return [];
+                        }
+
+                        /** @psalm-flow ($value) -> $this->$name */
+                        public function set(string $name, array $value): void {}
+                    }
+
+                    final class Bag {
+                        /** @psalm-flow ($properties) -> $this->{key} */
+                        public function __construct(array $properties) {}
+
+                        /** @psalm-flow $this->$name -> return */
+                        public function get(string $name): array {
+                            return [];
+                        }
+
+                        /** @psalm-flow ($value) -> $this->$name */
+                        public function set(string $name, array $value): void {}
+                    }
+
+                    function make(): Bag {
+                        return new Bag(["filter" => [(string) $_GET["x"]]]);
+                    }
+
+                    /** @param list<Bag|Category> $objects */
+                    function copyFirst(array $objects, string $name): void {
+                        $property = [];
+                        foreach ($objects as $object) {
+                            if ($property === []) {
+                                $property = $object->get($name);
+                            } else {
+                                $object->set($name, $property);
+                            }
+                        }
+                    }
+
+                    function show(Category $category): void {
+                        echo implode(",", $category->filter);
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'propertyReadAndSetUnderTheSameNameOfAnObjectReplacedByReferenceTaintsIt' => [
+                'code' => '<?php
+                    final class Category {
+                        public array $filter = [];
+
+                        /** @psalm-flow $this->$name -> return */
+                        public function get(string $name): array {
+                            return [];
+                        }
+
+                        /** @psalm-flow ($value) -> $this->$name */
+                        public function set(string $name, array $value): void {}
+                    }
+
+                    final class Bag {
+                        /** @psalm-flow ($properties) -> $this->{key} */
+                        public function __construct(array $properties) {}
+
+                        /** @psalm-flow $this->$name -> return */
+                        public function get(string $name): array {
+                            return [];
+                        }
+
+                        /** @psalm-flow ($value) -> $this->$name */
+                        public function set(string $name, array $value): void {}
+                    }
+
+                    function make(): Bag {
+                        return new Bag(["filter" => [(string) $_GET["x"]]]);
+                    }
+
+                    function replace(Bag|Category &$object): void {
+                        $object = new Category();
+                    }
+
+                    function setElement(Bag|Category $object, string $name, int $i, string $value): void {
+                        $property = $object->get($name);
+                        $property[$i] = $value;
+                        replace($object);
+                        $object->set($name, $property);
+                    }
+
+                    function show(Category $category): void {
+                        echo implode(",", $category->filter);
                     }',
                 'error_message' => 'TaintedHtml',
             ],
