@@ -2024,6 +2024,21 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         return $closure_capabilities;
     }
 
+    /** @psalm-pure */
+    private static function hasCallableWithSignature(Union $callee_type): bool
+    {
+        foreach ($callee_type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TClosure
+                || $atomic_type instanceof TCallable
+                || ($atomic_type instanceof TCallableObject && $atomic_type->callable !== null)
+            ) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     /**
      * Of a closure created in this scope, what calling it forgets of the memoized results when what its body does is
      * known: as much as its calls and writes would where it is called (see
@@ -2189,9 +2204,11 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                         $stmt,
                     );
 
-                    // a callable-string is the string form of a callable that may have been declared
-                    // with a return type: the other parts of the union give the type
-                    if (!$var_type_part instanceof TCallableString) {
+                    // next to a callable declared with a signature, a callable-string is its string form:
+                    // that part gives the type
+                    if (!$var_type_part instanceof TCallableString
+                        || !self::hasCallableWithSignature($stmt_name_type)
+                    ) {
                         self::addToTypeOfCall($statements_analyzer, $real_stmt, null);
                     }
                 } elseif ($var_type_part instanceof TString

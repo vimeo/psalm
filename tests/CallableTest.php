@@ -238,7 +238,7 @@ final class CallableTest extends TestCase
                 'ignored_issues' => ['MixedAssignment'],
                 'php_version' => '8.0',
             ],
-            'callOfAUnionWithACallableStringTakesTheTypeOfTheOtherParts' => [
+            'callOfAUnionWithACallableStringIsMixedUnlessAPartHasASignature' => [
                 'code' => '<?php
                     interface Engine {
                         public function render(string $f): string|Stringable;
@@ -253,13 +253,19 @@ final class CallableTest extends TestCase
                     $e = e();
                     $cs = cs();
                     $b = rand(0, 1) === 1;
+                    /** @var callable(string):int $typed */
+                    $typed = "strlen";
                     $withString = ($b ? [$e, "render"] : $cs)("x");
-                    $withStringFirst = ($b ? $cs : [$e, "render"])("x");',
+                    $withStringFirst = ($b ? $cs : [$e, "render"])("x");
+                    $withSignature = ($b ? $typed : $cs)("x");
+                    $withSignatureFirst = ($b ? $cs : $typed)("x");',
                 'assertions' => [
-                    '$withString===' => 'Stringable|string',
-                    '$withStringFirst===' => 'Stringable|string',
+                    '$withString===' => 'mixed',
+                    '$withStringFirst===' => 'mixed',
+                    '$withSignature===' => 'int',
+                    '$withSignatureFirst===' => 'int',
                 ],
-                'ignored_issues' => [],
+                'ignored_issues' => ['MixedAssignment'],
                 'php_version' => '8.0',
             ],
             'callOfACallableArrayGivesTheMethodTemplatesTheirBounds' => [
