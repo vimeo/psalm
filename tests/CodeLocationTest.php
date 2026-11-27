@@ -218,6 +218,24 @@ final class CodeLocationTest extends BaseTestCase
         $this->assertSame(2, $location->getColumn());
     }
 
+    public function testCommentLineSelectionOnAnAttributeLineHoldingAnAt(): void
+    {
+        $contents = "<?php\nclass A {\n    #[TestWith(['a@b.c'])]\n    public function f(): void {}\n}\n";
+        $location = $this->locateWithCommentLine($contents, 'f(', 4, 3, null, null);
+
+        $this->assertSame("#[TestWith(['a@b.c'])]", $location->getSelectedText());
+        $this->assertSame(5, $location->getColumn());
+    }
+
+    public function testCommentLineSelectionOnADocblockTextLineHoldingAnAt(): void
+    {
+        $contents = "<?php\n/**\n * Mail me at a@b.c\n */\nfunction f(): void {}\n";
+        $location = $this->locateWithCommentLine($contents, 'f(', 5, 3, null, null);
+
+        $this->assertSame('Mail me at a@b.c', $location->getSelectedText());
+        $this->assertSame(4, $location->getColumn());
+    }
+
     private function locateWithCommentLine(
         string $contents,
         string $selection,

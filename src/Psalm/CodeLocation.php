@@ -27,7 +27,6 @@ use function str_replace;
 use function strlen;
 use function strpos;
 use function strrpos;
-use function strspn;
 use function substr;
 use function substr_count;
 use function trim;
@@ -303,14 +302,20 @@ class CodeLocation
 
             // On a line holding code too, the tag is in the last doc comment before the node, up to its end
             $comment_start = strrpos($key_line, '/**');
-            $indentation = (int)strpos($key_line, '@', $comment_start === false ? 0 : $comment_start);
+            if ($comment_start !== false) {
+                $indentation = strpos($key_line, '@', $comment_start);
+                if ($indentation === false) {
+                    $indentation = $comment_start;
+                }
+            } else {
+                // A docblock line's content, or an attribute line: an `@` further on is not a tag
+                $indentation = preg_match('@^\s*(?:\*(?!/)\s*)?@', $key_line, $matches) ? strlen($matches[0]) : 0;
+            }
+
             $comment_end = strpos($key_line, '*/', $indentation);
             if ($comment_end !== false) {
                 $key_line = substr($key_line, 0, $comment_end);
             }
-
-            // Without a tag (an attribute line), the selection starts after the line's indentation
-            $indentation += strspn($key_line, " \t\n\r\0\x0B", $indentation);
 
             $key_line = trim((string) preg_replace('@\**/\s*@', '', substr($key_line, $indentation)));
 
