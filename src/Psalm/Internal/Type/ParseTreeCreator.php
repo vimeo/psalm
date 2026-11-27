@@ -40,7 +40,7 @@ use function substr;
  */
 final class ParseTreeCreator
 {
-    private const CALLABLE_KEYWORDS = [
+    public const CALLABLE_KEYWORDS = [
         'callable',
         'pure-callable',
         'impure-callable',

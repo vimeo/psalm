@@ -4590,6 +4590,69 @@ final class CallableTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'callableParamInReturnNamedLikeFunctionParam' => [
+                'code' => '<?php
+                    /**
+                     * @return Closure(int ...$values): int
+                     */
+                    function makeSum(int ...$values): Closure {
+                        return fn (int ...$values): int => array_sum($values);
+                    }
+
+                    /**
+                     * @return Closure(int &$count): void
+                     */
+                    function makeIncrement(int $count): Closure {
+                        return function (int &$count): void {
+                            $count++;
+                        };
+                    }
+
+                    /**
+                     * @return Closure(int &...$counts): void
+                     */
+                    function makeIncrementAll(int $counts): Closure {
+                        return function (int &...$counts): void {};
+                    }
+
+                    /**
+                     * @return callable[pure](int ...$values): int
+                     */
+                    function makePureSum(int ...$values): callable {
+                        return static fn (int ...$values): int => array_sum($values);
+                    }
+
+                    $sum = makeSum();
+                    $increment = makeIncrement(0);
+                    $increment_all = makeIncrementAll(0);
+                    $pure_sum = makePureSum();',
+                'assertions' => [
+                    '$sum===' => 'Closure[impure](int...):int',
+                    '$increment===' => 'Closure[impure](int &$_):void',
+                    '$increment_all===' => 'Closure[impure](int &...$_):void',
+                    '$pure_sum===' => 'callable[pure](int...):int',
+                ],
+            ],
+            'conditionalReturnOnAParamNamedLikeACallableParam' => [
+                'code' => '<?php
+                    /**
+                     * @return ($strict is true ? Closure(int $strict): int : Closure(mixed $strict): int)
+                     */
+                    function makeParser(bool $strict): Closure {
+                        return $strict
+                            ? fn (int $strict): int => $strict
+                            : fn (mixed $strict): int => (int) $strict;
+                    }
+
+                    $strict_parser = makeParser(true);
+                    $loose_parser = makeParser(false);',
+                'assertions' => [
+                    '$strict_parser===' => 'Closure[impure](int):int',
+                    '$loose_parser===' => 'Closure[impure](mixed):int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
