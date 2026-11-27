@@ -1813,6 +1813,29 @@ final class ArgumentsAnalyzer
             return null;
         }
 
+        if (($method_id === 'array_walk' || $method_id === 'array_walk_recursive')
+            && isset($function_params[0], $function_params[1])
+            && !array_any($args, static fn(PhpParser\Node\Arg $arg): bool => $arg->unpack)
+            && ($array_arg = self::getArgForParam($args, $function_params, $function_params[0]->name))
+            && ($array_type = $statements_analyzer->node_data->getType($array_arg->value))
+            && ($callback_arg = self::getArgForParam($args, $function_params, $function_params[1]->name))
+            && ($callback_type = $statements_analyzer->node_data->getType($callback_arg->value))
+        ) {
+            $extra_arg = isset($function_params[2])
+                ? self::getArgForParam($args, $function_params, $function_params[2]->name)
+                : null;
+
+            ArrayFunctionArgumentsAnalyzer::checkArrayWalkCallback(
+                $statements_analyzer,
+                $context,
+                $method_id,
+                $array_type,
+                $callback_arg,
+                $callback_type,
+                $extra_arg ? $statements_analyzer->node_data->getType($extra_arg->value) ?? Type::getMixed() : null,
+            );
+        }
+
         if ($method_id === 'get_class' && $args === []) {
             //get_class without args only works when inside a class
             if (!$context->self) {
