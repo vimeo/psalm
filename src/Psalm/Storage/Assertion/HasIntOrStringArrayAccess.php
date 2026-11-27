@@ -33,6 +33,9 @@ final class HasIntOrStringArrayAccess extends Assertion
         throw new UnexpectedValueException('This should never be called');
     }
 
+    /**
+     * @psalm-pure
+     */
     public function __toString(): string
     {
         return 'has-string-or-int-array-access';
