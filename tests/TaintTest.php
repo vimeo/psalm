@@ -3585,6 +3585,100 @@ final class TaintTest extends TestCase
 
                     (new Runner())->run(...[(string) $_GET["x"], safe()]);',
             ],
+            'guardAnUnpackedListTaintsNoParameterOfASafeElementOfIt' => [
+                'code' => '<?php // --taint-analysis
+                    function safe(): string {
+                        return "safe";
+                    }
+
+                    function f(string $first, string $second = ""): void {
+                        echo $first;
+                    }
+
+                    $l = explode(",", (string) $_GET["x"]);
+                    $l[0] = safe();
+                    f(...$l);',
+            ],
+            'guardAnUnpackedListTaintsNoParameterAfterItsTaintedElement' => [
+                'code' => '<?php // --taint-analysis
+                    /** @return list<string> */
+                    function values(): array {
+                        return [(string) $_GET["x"]];
+                    }
+
+                    function f(string $first, string $second = ""): void {
+                        echo $second;
+                    }
+
+                    f(...values());',
+            ],
+            'guardAStringKeyOfAnUnpackedArrayTaintsNoParameterOfAnotherName' => [
+                'code' => '<?php // --taint-analysis
+                    /** @return array<string, string> */
+                    function values(): array {
+                        return ["second" => (string) $_GET["x"]];
+                    }
+
+                    function f(string $first = "", string $second = ""): void {
+                        echo $first;
+                    }
+
+                    f(...values());',
+            ],
+            'guardAnIntKeyOfAnUnpackedShapeWithStringKeysTaintsNoParameterOfAStringKey' => [
+                'code' => '<?php // --taint-analysis
+                    /** @return array{0: string, ...<string, string>} */
+                    function values(): array {
+                        return [0 => "s", "second" => (string) $_GET["x"]];
+                    }
+
+                    function f(string $first = "", string $second = ""): void {
+                        echo $first;
+                    }
+
+                    f(...values());',
+            ],
+            'guardAParameterPastTheIntKeysOfAnUnpackedShapeWithStringKeysTakesNoIntKey' => [
+                'code' => '<?php // --taint-analysis
+                    /** @return array{0: string, ...<string, string>} */
+                    function values(): array {
+                        return [0 => (string) $_GET["x"], "second" => "s"];
+                    }
+
+                    function f(string $first = "", string $second = ""): void {
+                        echo $second;
+                    }
+
+                    f(...values());',
+            ],
+            'guardEachReceiverOfAnUnpackedShapeTakesTheKeyOfItsOwnParameter' => [
+                'code' => '<?php // --taint-analysis
+                    final class A {
+                        public function run(string $safe = "", string $dirty = ""): void {
+                            echo $safe;
+                        }
+                    }
+
+                    final class B {
+                        public function run(string $dirty = "", string $safe = ""): void {
+                            echo $safe;
+                        }
+                    }
+
+                    function call(A|B $receiver, string $safe): void {
+                        $receiver->run(...["safe" => $safe, "dirty" => (string) $_GET["x"]]);
+                    }
+
+                    call(new A(), "safe");',
+            ],
+            'guardAnUnpackedSafeListTaintsNoParameter' => [
+                'code' => '<?php // --taint-analysis
+                    function f(string $first, string $second = ""): void {
+                        echo $first;
+                    }
+
+                    f(...explode(",", "a,b"));',
+            ],
             'taintSourceUnderAKeyOfTheReturnOnly' => [
                 'code' => '<?php // --taint-analysis
                     /**
@@ -11273,6 +11367,128 @@ final class TaintTest extends TestCase
 
                     (new Runner())->run(...[safe(), (string) $_GET["x"]]);',
                 'error_message' => 'TaintedShell',
+            ],
+            'taintTheParameterOfAnUnpackedListOfAnUnknownShape' => [
+                'code' => '<?php // --taint-analysis
+                    function f(string $first, string $second = ""): void {
+                        echo $first;
+                    }
+
+                    $l = explode(",", (string) $_GET["x"]);
+                    f(...$l);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheVariadicWithAnUnpackedListOfAnUnknownShape' => [
+                'code' => '<?php // --taint-analysis
+                    function g(string ...$all): void {
+                        echo $all[0];
+                    }
+
+                    $l = explode(",", (string) $_GET["x"]);
+                    g(...$l);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheParameterAfterAPositionalOneWithAnUnpackedListOfAnUnknownShape' => [
+                'code' => '<?php // --taint-analysis
+                    /** @return list<string> */
+                    function values(): array {
+                        return [(string) $_GET["x"]];
+                    }
+
+                    function f(string $first, string $second = ""): void {
+                        echo $second;
+                    }
+
+                    f("", ...values());',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheParameterOfASparseIntegerKeyOfAnUnpackedShape' => [
+                'code' => '<?php // --taint-analysis
+                    function f(string $first, string $second = ""): void {
+                        echo $first;
+                    }
+
+                    f(...[1 => (string) $_GET["x"], 5 => "safe"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheParameterOfAnIntKeyOfAnUnpackedShapeWithStringKeys' => [
+                'code' => '<?php // --taint-analysis
+                    /** @return array{0: string, ...<string, string>} */
+                    function values(): array {
+                        return [0 => (string) $_GET["x"], "second" => "s"];
+                    }
+
+                    function f(string $first = "", string $second = ""): void {
+                        echo $first;
+                    }
+
+                    f(...values());',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheParameterOfAnIntKeyOfAnUnpackedSealedShapeWithStringKeys' => [
+                'code' => '<?php // --taint-analysis
+                    function f(string $first = "", string $second = ""): void {
+                        echo $first;
+                    }
+
+                    f(...[0 => (string) $_GET["x"], "second" => "safe"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheParameterOfAnUnpackedShapeWhoseOtherIntKeysCanComeFirst' => [
+                'code' => '<?php // --taint-analysis
+                    /** @return array{1: string, ...<int, string>} */
+                    function values(): array {
+                        return [0 => (string) $_GET["x"], 1 => "safe"];
+                    }
+
+                    function f(string $first, string $second = ""): void {
+                        echo $first;
+                    }
+
+                    f(...values());',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheParameterNamedByAKeyOfAnUnpackedShape' => [
+                'code' => '<?php // --taint-analysis
+                    /** @return array{second: string} */
+                    function values(): array {
+                        return ["second" => (string) $_GET["x"]];
+                    }
+
+                    function f(string $first = "", string $second = ""): void {
+                        echo $second;
+                    }
+
+                    f(...values());',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheParameterOfAnUnpackedArrayOfIntKeys' => [
+                'code' => '<?php // --taint-analysis
+                    /** @return array<int, string> */
+                    function lines(): array {
+                        return explode(",", (string) $_GET["x"]);
+                    }
+
+                    function f(string $first, string $second = ""): void {
+                        echo $first;
+                    }
+
+                    f(...lines());',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheParameterNamedByAStringKeyOfAnUnpackedArray' => [
+                'code' => '<?php // --taint-analysis
+                    /** @return array<string, string> */
+                    function values(): array {
+                        return ["second" => (string) $_GET["x"]];
+                    }
+
+                    function f(string $first = "", string $second = ""): void {
+                        echo $second;
+                    }
+
+                    f(...values());',
+                'error_message' => 'TaintedHtml',
             ],
             'taintTheVariadicWithASecondUnpackedArgument' => [
                 'code' => '<?php // --taint-analysis
