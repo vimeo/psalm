@@ -21,6 +21,7 @@ use function assert;
 final class TraitAnalyzer extends ClassLikeAnalyzer
 {
     /**
+     * @param ?string $parent_fq_class_name the parent of the class using the trait, which `parent` stands for in it
      * @psalm-mutation-free
      */
     public function __construct(
@@ -28,7 +29,9 @@ final class TraitAnalyzer extends ClassLikeAnalyzer
         SourceAnalyzer $source,
         string $fq_class_name,
         private readonly Aliases $aliases,
+        ?string $parent_fq_class_name = null,
     ) {
+        $this->parent_fq_class_name = $parent_fq_class_name;
         $this->source = $source;
         $this->file_analyzer = $source->getFileAnalyzer();
         $this->class = $class;

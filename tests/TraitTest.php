@@ -256,6 +256,56 @@ final class TraitTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'parentClassConstantAndStaticPropertyInATraitAreTheOnesOfTheClassUsingIt' => [
+                'code' => '<?php
+                    class Box {
+                        /** @var "box"|"crate" */
+                        public const KIND = "box";
+                        /** @var "box"|"other" */
+                        public static string $count = "box";
+                    }
+
+                    trait Describes {
+                        public function describe(): void {
+                            $name = parent::class;
+                            /** @psalm-check-type-exact $name = Box::class */;
+                            $kind = parent::KIND;
+                            /** @psalm-check-type-exact $kind = "box" */;
+                            $count = parent::$count;
+                            /** @psalm-check-type-exact $count = "box"|"other" */;
+                        }
+                    }
+
+                    final class UsesTrait extends Box {
+                        use Describes;
+
+                        /** @var "crate" */
+                        public const KIND = "crate";
+                    }',
+            ],
+            'callableArrayOfTheParentInATraitIsAMethodOfTheParentOfTheUsingClass' => [
+                'code' => '<?php
+                    class Box {
+                        public static function cmp(int $a, int $b): int {
+                            return $a <=> $b;
+                        }
+                    }
+
+                    trait Sorts {
+                        /**
+                         * @param list<int> $a
+                         * @return list<int>
+                         */
+                        public function sort(array $a): array {
+                            usort($a, [parent::class, "cmp"]);
+                            return $a;
+                        }
+                    }
+
+                    final class UsesTrait extends Box {
+                        use Sorts;
+                    }',
+            ],
             'selfConstantInTheTypeOfATraitPropertyIsTheOneOfTheUsingClass' => [
                 'code' => '<?php
                     trait HasKind {
@@ -2434,6 +2484,33 @@ final class TraitTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'parentClassOfATraitUsedByAClassWithoutParent' => [
+                'code' => '<?php
+                    trait Describes {
+                        public function name(): string {
+                            return parent::class;
+                        }
+                    }
+
+                    final class NoParent {
+                        use Describes;
+                    }',
+                'error_message' => 'ParentNotFound - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:36 - Cannot fetch a class'
+                    . ' constant on parent as this class does not extend another',
+            ],
+            'parentStaticPropertyOfATraitUsedByAClassWithoutParent' => [
+                'code' => '<?php
+                    trait Counts {
+                        public function count(): int {
+                            return parent::$count;
+                        }
+                    }
+
+                    final class NoParent {
+                        use Counts;
+                    }',
+                'error_message' => 'ParentNotFound',
+            ],
             'constantOfTheFirstTraitDeclaringItIsDeprecated' => [
                 'code' => '<?php
                     trait HasLimit {

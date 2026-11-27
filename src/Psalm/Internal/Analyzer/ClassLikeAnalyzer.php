@@ -276,6 +276,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
                 $trait_file_analyzer,
                 $fq_trait_name,
                 $trait_aliases,
+                $this->parent_fq_class_name,
             );
 
             foreach ($trait_node->stmts as $trait_stmt) {
