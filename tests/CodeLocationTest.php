@@ -236,6 +236,33 @@ final class CodeLocationTest extends BaseTestCase
         $this->assertSame(4, $location->getColumn());
     }
 
+    public function testCommentLineSelectionKeepsSlashes(): void
+    {
+        $contents = "<?php\n/**\n * @see https://example.com/foo\n */\nfunction f(): void {}\n";
+        $location = $this->locateWithCommentLine($contents, 'f(', 5, 3, null, null);
+
+        $this->assertSame('@see https://example.com/foo', $location->getSelectedText());
+        $this->assertSame(4, $location->getColumn());
+    }
+
+    public function testCommentLineSelectionOfAOneLineCommentWithoutATag(): void
+    {
+        $contents = "<?php\n/** mail a@b */ function f(): void {}\n";
+        $location = $this->locateWithCommentLine($contents, 'f(', 2, 2, null, null);
+
+        $this->assertSame('mail a@b', $location->getSelectedText());
+        $this->assertSame(5, $location->getColumn());
+    }
+
+    public function testCommentLineSelectionBeforeADoubleStarCommentEnd(): void
+    {
+        $contents = "<?php\n/** @return void **/\nfunction f(): void {}\n";
+        $location = $this->locateWithCommentLine($contents, 'f(', 3, 2, null, null);
+
+        $this->assertSame('@return void', $location->getSelectedText());
+        $this->assertSame(5, $location->getColumn());
+    }
+
     private function locateWithCommentLine(
         string $contents,
         string $selection,
