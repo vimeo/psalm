@@ -3203,8 +3203,8 @@ final class PropertyTypeTest extends TestCase
                          */
                         final public function setOptions(array $opts): void
                         {
-                            $this->a = $opts["a"] ?? "defaultA";
-                            $this->b = $opts["b"] ?? "defaultB";
+                            $this->a = $opts["a"];
+                            $this->b = $opts["b"];
                         }
                     }',
             ],
@@ -3237,8 +3237,8 @@ final class PropertyTypeTest extends TestCase
                          */
                         public function setOptions(array $opts): void
                         {
-                            $this->a = $opts["a"] ?? "defaultA";
-                            $this->b = $opts["b"] ?? "defaultB";
+                            $this->a = $opts["a"];
+                            $this->b = $opts["b"];
                         }
                     }',
             ],
