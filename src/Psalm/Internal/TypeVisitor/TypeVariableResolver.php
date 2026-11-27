@@ -10,6 +10,7 @@ use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TKeyedArray;
+use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\MutableTypeVisitor;
 use Psalm\Type\TypeNode;
@@ -48,7 +49,8 @@ final class TypeVariableResolver extends MutableTypeVisitor
      * stands for `never`; the two flags select how such variables are treated
      * relative to every other variable:
      *
-     * @param bool $only_never_bound resolve only those, leaving every other
+     * @param bool $only_never_bound resolve only those no value has reached
+     *      yet, and not in the arguments of an object, leaving every other
      *      variable live
      * @param bool $keep_never_bound leave those live, resolving every other
      *      variable
@@ -105,7 +107,7 @@ final class TypeVariableResolver extends MutableTypeVisitor
      * Returns null when nothing was resolved.
      *
      * @param non-empty-array<Atomic> $atomic_types
-     * @param bool $only_never_bound resolve only variables minted for an empty construction
+     * @param bool $only_never_bound resolve only variables minted for an empty construction that no value reached
      * @param bool $keep_never_bound leave variables minted for an empty construction live
      * @param bool $construction_site_only resolve through the construction-site bounds only
      * @param array<string, true> $unrolling the variables being unrolled further up the stack
@@ -126,7 +128,7 @@ final class TypeVariableResolver extends MutableTypeVisitor
         foreach ($atomic_types as $atomic_type) {
             if (!$atomic_type instanceof TTypeVariable
                 || isset($unrolling[self::getUnrollingKey($atomic_type)])
-                || ($only_never_bound && !$atomic_type->isNeverBound())
+                || ($only_never_bound && !$atomic_type->holdsNoValue())
                 || ($keep_never_bound && $atomic_type->isNeverBound())
                 || ($resolved = $atomic_type->getResolvedType($codebase, $construction_site_only)) === null
             ) {
@@ -246,6 +248,14 @@ final class TypeVariableResolver extends MutableTypeVisitor
                     $this->unrolling,
                 )
                 : null;
+
+            // an object is the same object whatever it is read from: what is added to it later (`$box->add($x)`)
+            // must still reach the variable of its type, so a variable holding no value yet stays live in it
+            if ($resolved_atomics === null && $this->only_never_bound && $atomic_type instanceof TNamedObject) {
+                $atomic_types[] = $atomic_type;
+
+                continue;
+            }
 
             if ($resolved_atomics === null) {
                 $original_atomic_type = $atomic_type;

@@ -443,6 +443,179 @@ final class TypeVariableTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'readOfATemplateOrNullSeesWhatWasAddedToAnObjectBuiltEmpty' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Coll {
+                        /** @var array<string, T> */
+                        private array $items;
+
+                        /** @param array<string, T> $items */
+                        public function __construct(array $items) {
+                            $this->items = $items;
+                        }
+
+                        /** @param T $item */
+                        public function add(string $key, $item): void {
+                            $this->items[$key] = $item;
+                        }
+
+                        /**
+                         * @param T $item
+                         * @return self<T>
+                         */
+                        public function with(string $key, $item): self {
+                            $this->items[$key] = $item;
+                            return $this;
+                        }
+
+                        /** @return T|null */
+                        public function get(string $key) {
+                            return $this->items[$key] ?? null;
+                        }
+                    }
+
+                    $coll = new Coll([]);
+                    $coll->add("k", "x");
+                    $value = $coll->get("k");',
+                'assertions' => [
+                    '$value' => 'null|string',
+                ],
+            ],
+            'objectReturnedByAMethodOfAnObjectBuiltEmptyKeepsItsTypeVariable' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Coll {
+                        /** @var array<string, T> */
+                        private array $items;
+
+                        /** @param array<string, T> $items */
+                        public function __construct(array $items) {
+                            $this->items = $items;
+                        }
+
+                        /** @param T $item */
+                        public function add(string $key, $item): void {
+                            $this->items[$key] = $item;
+                        }
+
+                        /**
+                         * @param T $item
+                         * @return self<T>
+                         */
+                        public function with(string $key, $item): self {
+                            $this->items[$key] = $item;
+                            return $this;
+                        }
+
+                        /** @return T|null */
+                        public function get(string $key) {
+                            return $this->items[$key] ?? null;
+                        }
+                    }
+
+                    $coll = (new Coll([]))->with("k", "x");
+                    $value = $coll->get("k");',
+                'assertions' => [
+                    '$value' => 'null|string',
+                ],
+            ],
+            'readOfAnObjectBuiltEmptyInALoopSeesWhatTheLoopAdds' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Coll {
+                        /** @var array<string, T> */
+                        private array $items;
+
+                        /** @param array<string, T> $items */
+                        public function __construct(array $items) {
+                            $this->items = $items;
+                        }
+
+                        /** @param T $item */
+                        public function add(string $key, $item): void {
+                            $this->items[$key] = $item;
+                        }
+
+                        /**
+                         * @param T $item
+                         * @return self<T>
+                         */
+                        public function with(string $key, $item): self {
+                            $this->items[$key] = $item;
+                            return $this;
+                        }
+
+                        /** @return T|null */
+                        public function get(string $key) {
+                            return $this->items[$key] ?? null;
+                        }
+                    }
+
+                    /** @return list<string> */
+                    function keys(): array {
+                        return [];
+                    }
+
+                    $coll = new Coll([]);
+                    $value = null;
+                    foreach (keys() as $key) {
+                        $value = $coll->get("k");
+                        $coll->add($key, "x");
+                    }',
+                'assertions' => [
+                    '$value' => 'null|string',
+                ],
+            ],
+            'objectHandedToAFunctionHoldsWhatThatFunctionMayAdd' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Coll {
+                        /** @var array<string, T> */
+                        private array $items;
+
+                        /** @param array<string, T> $items */
+                        public function __construct(array $items) {
+                            $this->items = $items;
+                        }
+
+                        /** @param T $item */
+                        public function add(string $key, $item): void {
+                            $this->items[$key] = $item;
+                        }
+
+                        /**
+                         * @param T $item
+                         * @return self<T>
+                         */
+                        public function with(string $key, $item): self {
+                            $this->items[$key] = $item;
+                            return $this;
+                        }
+
+                        /** @return T|null */
+                        public function get(string $key) {
+                            return $this->items[$key] ?? null;
+                        }
+                    }
+
+                    function fill(Coll $coll): void {
+                        $coll->add("k", 1);
+                    }
+
+                    $empty = new Coll([]);
+                    fill($empty);
+                    $from_empty = $empty->get("k");
+
+                    $filled = new Coll(["a" => "b"]);
+                    fill($filled);
+                    $from_filled = $filled->get("k");',
+                'assertions' => [
+                    '$from_empty' => 'mixed|null',
+                    '$from_filled' => 'mixed|null|string',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
             'constructorClassStringOrTemplateParamIsBoundToTheTemplateOfAClassString' => [
                 'code' => '<?php
                     /** @template TModel */

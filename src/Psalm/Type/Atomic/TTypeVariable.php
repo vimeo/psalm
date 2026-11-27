@@ -181,7 +181,28 @@ final class TTypeVariable extends Atomic
      */
     public function isNeverBound(): bool
     {
-        if (!$this->bounds || !$this->bounds->initial_lower_bound_count) {
+        return $this->bounds !== null
+            && $this->bounds->initial_lower_bound_count !== 0
+            && $this->boundsHoldNoValue($this->bounds->initial_lower_bound_count);
+    }
+
+    /**
+     * Whether no value has reached this variable yet: it stands for `never` (isNeverBound()) and nothing recorded
+     * a bound of a value since its construction (`$collection->add($x)` has)
+     */
+    public function holdsNoValue(): bool
+    {
+        return $this->bounds !== null
+            && $this->bounds->initial_lower_bound_count !== 0
+            && $this->boundsHoldNoValue(null);
+    }
+
+    /**
+     * Whether the first $count lower bounds (all of them for null) are all `never`
+     */
+    private function boundsHoldNoValue(?int $count): bool
+    {
+        if (!$this->bounds) {
             return false;
         }
 
@@ -203,10 +224,11 @@ final class TTypeVariable extends Atomic
         $checking[$this->name] = true;
 
         try {
-            foreach (array_slice($this->bounds->lower_bounds, 0, $this->bounds->initial_lower_bound_count) as $bound) {
+            foreach (array_slice($this->bounds->lower_bounds, 0, $count) as $bound) {
                 foreach ($bound->type->getAtomicTypes() as $atomic_type) {
                     if (!$atomic_type instanceof TNever
-                        && !($atomic_type instanceof TTypeVariable && $atomic_type->isNeverBound())
+                        && !($atomic_type instanceof TTypeVariable
+                            && ($count === null ? $atomic_type->holdsNoValue() : $atomic_type->isNeverBound()))
                     ) {
                         return false;
                     }

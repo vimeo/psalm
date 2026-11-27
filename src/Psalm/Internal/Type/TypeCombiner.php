@@ -100,7 +100,7 @@ final class TypeCombiner
         $combined = self::combine($types, $codebase);
 
         foreach ($types as $type) {
-            if ($type instanceof TTypeVariable && $type->isNeverBound() && !$combined->hasType($type->getKey())) {
+            if ($type instanceof TTypeVariable && $type->holdsNoValue() && !$combined->hasType($type->getKey())) {
                 $combined = $combined->getBuilder()->addType($type)->freeze();
             }
         }
@@ -497,7 +497,7 @@ final class TypeCombiner
             // a type variable minted for an empty construction stands for
             // `never` until something binds it, and `never` adds nothing to a
             // union: `T|Foo` for such a variable is just `Foo`
-            if (($type instanceof TNever || ($type instanceof TTypeVariable && $type->isNeverBound()))
+            if (($type instanceof TNever || ($type instanceof TTypeVariable && $type->holdsNoValue()))
                 && (count($combination->value_types) > 1 || count($new_types))
             ) {
                 $has_never = $has_never || $type instanceof TNever;

@@ -9,6 +9,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollect
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\AtomicParts;
 use Psalm\Internal\Type\StringRefinement;
+use Psalm\Internal\Type\TemplateBound;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Storage\Capabilities;
@@ -565,6 +566,10 @@ final class AtomicTypeComparator
 
             if ($atomic_comparison_result) {
                 $atomic_comparison_result->to_string_cast = false;
+
+                if ($input_type_part instanceof TGenericObject && $container_type_part instanceof TNamedObject) {
+                    self::recordEscapedTypeVariables($codebase, $input_type_part, $atomic_comparison_result);
+                }
             }
 
             return true;
@@ -1455,5 +1460,37 @@ final class AtomicTypeComparator
 
         return $codebase->classlike_storage_provider->get($template->defining_class)
             ->template_lower_bounds[$template->param_name] ?? Capabilities::NONE;
+    }
+
+    /**
+     * An object handed to code that sees it without its type arguments (`Box` for a `Box<`_0>`) may get any value
+     * its templates allow from there (`$box->add($x)`): the type variables of its arguments take the constraints of
+     * their templates, so what is read from the object afterwards is any of those
+     *
+     * @psalm-capabilities read-props|write-props
+     */
+    private static function recordEscapedTypeVariables(
+        Codebase $codebase,
+        TGenericObject $input_type_part,
+        TypeComparisonResult $atomic_comparison_result,
+    ): void {
+        $template_types = $codebase->classlike_storage_provider->has($input_type_part->value)
+            ? array_values($codebase->classlike_storage_provider->get($input_type_part->value)->template_types ?? [])
+            : [];
+
+        foreach ($input_type_part->type_params as $offset => $type_param) {
+            foreach ($type_param->getAtomicTypes() as $atomic_type) {
+                if (!$atomic_type instanceof TTypeVariable) {
+                    continue;
+                }
+
+                $constraint = isset($template_types[$offset]) ? reset($template_types[$offset]) : Type::getMixed();
+                $bound = new TemplateBound($constraint);
+                // what the object may hold, not a value given to it: no issue reports it
+                $bound->from_invariant_argument_mirror = true;
+
+                $atomic_comparison_result->type_variable_lower_bounds[] = [$atomic_type->name, $bound];
+            }
+        }
     }
 }
