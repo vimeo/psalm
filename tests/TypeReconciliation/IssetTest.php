@@ -718,7 +718,7 @@ final class IssetTest extends TestCase
                         }
 
                         if (isset($a[$k])) {
-                            /** @psalm-check-type-exact $a = list<int> */
+                            /** @psalm-check-type-exact $a = list{0: int, 1: int, 2?: int, ...<int>} */
                         }
 
                         if (isset($a[0])) {
