@@ -507,6 +507,24 @@ final class IfElseAnalyzer
             self::addConditionallyDefinedVarClauses($context, $if_context, $if_scope, $pre_if_vars);
         }
 
+        // `if (!is_string($a)) { $a = ""; }`: the condition types the mixed variable where it is false, and the if
+        // assigns it where it is true
+        if (!$stmt->else && !$stmt->elseifs) {
+            $typed_vars = [];
+
+            foreach ($if_context->assigned_var_ids as $var_id => $assignment_position) {
+                // assigned in the if, not only before it
+                if ($assignment_position !== ($post_if_context->assigned_var_ids[$var_id] ?? null)
+                    && isset($context->vars_in_scope[$var_id], $else_context->vars_in_scope[$var_id])
+                    && !$else_context->vars_in_scope[$var_id]->hasMixed()
+                ) {
+                    $typed_vars[$var_id] = $context->vars_in_scope[$var_id];
+                }
+            }
+
+            self::removeMixedAssignmentsOfNarrowedVars($statements_analyzer, $post_if_context, $typed_vars);
+        }
+
         if (!in_array(ScopeAnalyzer::ACTION_NONE, $if_scope->final_actions, true)) {
             $context->has_returned = true;
         }
@@ -682,7 +700,7 @@ final class IfElseAnalyzer
                 IssueBuffer::remove(
                     $statements_analyzer->getFilePath(),
                     'MixedAssignment',
-                    $first_appearance->raw_file_start,
+                    $post_if_context->assigned_var_ids[$var_id] ?? $first_appearance->raw_file_start,
                 );
             }
         }
