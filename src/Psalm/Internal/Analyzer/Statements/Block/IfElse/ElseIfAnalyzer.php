@@ -77,6 +77,10 @@ final class ElseIfAnalyzer
             return false;
         }
 
+        // the condition is evaluated whether or not the body runs: what its operands changed is changed after the if
+        // too, whatever the types the body leaves
+        $outer_context->removeClausesOfVarsChangedWith($elseif_context->parent_remove_vars);
+
         // the following elseifs and the else run where this condition is false
         $else_context->phantom_classes = [
             ...$phantom_classes_before_cond,
