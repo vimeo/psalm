@@ -183,6 +183,11 @@ final class TemplateInferredTypeReplacer
                 }
 
                 $atomic_type = $atomic_type->setTypes($intersected_types);
+
+                if ($codebase) {
+                    // a template still there, such as the one of the class calling its own method
+                    $atomic_type = TypeParser::getIntersectedTemplate($atomic_type, $codebase) ?? $atomic_type;
+                }
             } elseif ($atomic_type instanceof TConditional
                 && $codebase
             ) {

@@ -10,6 +10,7 @@ use Psalm\Exception\TypeParseTreeException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ArrayAnalyzer;
 use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
+use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\ParseTree;
 use Psalm\Internal\Type\ParseTree\CallableParamTree;
 use Psalm\Internal\Type\ParseTree\CallableTree;
@@ -92,6 +93,7 @@ use Psalm\Type\Union;
 
 use function array_all;
 use function array_any;
+use function array_filter;
 use function array_key_exists;
 use function array_key_first;
 use function array_keys;
@@ -1645,13 +1647,26 @@ final class TypeParser
             return new TMixed();
         }
 
-        // keyed arrays are merged, with a generic array as their fallback
-        if ($only_object_types
+        $is_template = static fn(array $member): bool => $member[0] instanceof TTemplateParam;
+        $intersects_template_with_array = array_any($members, $is_template)
+            && array_any(
+                $members,
+                static fn(array $member): bool => $member[0] instanceof TArray || $member[0] instanceof TKeyedArray,
+            );
+
+        if ($intersects_template_with_array) {
+            // the arrays are intersected together first, then with the templates
+            $members = [
+                ...array_filter($members, static fn(array $member): bool => !$is_template($member)),
+                ...array_filter($members, $is_template),
+            ];
+        } elseif ($only_object_types
             && !array_all(
                 $members,
                 static fn(array $member): bool => $member[0] instanceof TArray,
             )
         ) {
+            // keyed arrays are merged, with a generic array as their fallback
             return self::intersectObjectTypes(
                 array_map(static fn(array $member): Atomic => $member[0], $members),
                 $codebase,
@@ -1786,6 +1801,45 @@ final class TypeParser
         }
 
         return $atomic_types;
+    }
+
+    /**
+     * Where its template isn't replaced, as in the function declaring it, `T&array{id: int}` is a `T` whose values
+     * have an `id`
+     */
+    public static function getIntersectedTemplate(TIntersection $intersection, Codebase $codebase): ?TTemplateParam
+    {
+        $template = null;
+        // the values of the intersection are arrays
+        $members = [[new TArray([Type::getArrayKey(), Type::getMixed()])]];
+
+        foreach ($intersection->types as $type) {
+            $atomic_type = $type->isSingle() ? $type->getSingleAtomic() : null;
+
+            if ($template === null && $atomic_type instanceof TTemplateParam) {
+                $template = $atomic_type;
+                $members[] = array_values($atomic_type->as->getAtomicTypes());
+                continue;
+            }
+
+            if (!$atomic_type instanceof TArray && !$atomic_type instanceof TKeyedArray) {
+                return null;
+            }
+
+            $members[] = [$atomic_type];
+        }
+
+        if ($template === null) {
+            return null;
+        }
+
+        try {
+            $bound = self::intersectTypes($members, $codebase, $intersection->from_docblock);
+        } catch (TypeParseTreeException) {
+            return $template;
+        }
+
+        return $template->replaceAs(self::getUnionOrNever($bound, $intersection->from_docblock));
     }
 
     /**
@@ -1935,24 +1989,24 @@ final class TypeParser
             throw self::getUnrepresentableIntersectionException($type_1, $type_2);
         }
 
+        if ($type_1 instanceof TTemplateParam && ($type_2 instanceof TArray || $type_2 instanceof TKeyedArray)) {
+            return self::intersectTemplateWithArray($type_1, $type_2, $codebase, $from_docblock);
+        }
+
+        if ($type_2 instanceof TTemplateParam && ($type_1 instanceof TArray || $type_1 instanceof TKeyedArray)) {
+            return self::intersectTemplateWithArray($type_2, $type_1, $codebase, $from_docblock);
+        }
+
         if ($type_1 instanceof TArray && $type_2 instanceof TArray) {
             return self::intersectArrayTypes($type_1, $type_2, $codebase, $from_docblock);
         }
 
         if ($type_1 instanceof TArray && $type_2 instanceof TKeyedArray) {
-            if (self::isMixedArray($type_1)) {
-                return [$type_2];
-            }
-
-            throw self::getUnrepresentableIntersectionException($type_1, $type_2);
+            return self::intersectArrayWithKeyedArray($type_1, $type_2, $codebase, $from_docblock);
         }
 
         if ($type_1 instanceof TKeyedArray && $type_2 instanceof TArray) {
-            if (self::isMixedArray($type_2)) {
-                return [$type_1];
-            }
-
-            throw self::getUnrepresentableIntersectionException($type_1, $type_2);
+            return self::intersectArrayWithKeyedArray($type_2, $type_1, $codebase, $from_docblock);
         }
 
         if ($type_1 instanceof TKeyedArray && $type_2 instanceof TKeyedArray) {
@@ -2035,6 +2089,114 @@ final class TypeParser
             $type_1 instanceof TNonEmptyArray || $type_2 instanceof TNonEmptyArray
                 ? new TNonEmptyArray([$key_type, $value_type], null, null, 'non-empty-array', $from_docblock)
                 : new TArray([$key_type, $value_type], $from_docblock),
+        ];
+    }
+
+    /**
+     * A template intersected with an array, such as `T&array{id: int}`, is intersected once the template is replaced
+     *
+     * @return list<TIntersection>
+     */
+    private static function intersectTemplateWithArray(
+        TTemplateParam $template,
+        TArray|TKeyedArray $array,
+        Codebase $codebase,
+        bool $from_docblock,
+    ): array {
+        try {
+            if (self::intersectAtomicTypeLists(
+                array_values($template->as->getAtomicTypes()),
+                [$array],
+                $codebase,
+                $from_docblock,
+            ) === []) {
+                // the template can't be an array
+                return [];
+            }
+        } catch (TypeParseTreeException) {
+            // e.g. a template of `iterable`
+        }
+
+        return [
+            new TIntersection(
+                [
+                    new Union([$template], ['from_docblock' => $from_docblock]),
+                    new Union([$array], ['from_docblock' => $from_docblock]),
+                ],
+                $from_docblock,
+            ),
+        ];
+    }
+
+    /**
+     * As when parsing `array<string, int>&array{id: int}`, the properties of the keyed array with the generic array
+     * as their fallback, the properties' keys and values being those the generic array allows
+     *
+     * @return list<TArray|TKeyedArray>
+     * @throws TypeParseTreeException if Psalm has no type for the intersection
+     */
+    private static function intersectArrayWithKeyedArray(
+        TArray $array,
+        TKeyedArray $keyed_array,
+        Codebase $codebase,
+        bool $from_docblock,
+    ): array {
+        if ($keyed_array->is_list || $keyed_array->disjoint_shapes !== null) {
+            if (self::isMixedArray($array)) {
+                return [$keyed_array];
+            }
+
+            throw self::getUnrepresentableIntersectionException($array, $keyed_array);
+        }
+
+        if ($array instanceof TNonEmptyArray && !$keyed_array->isNonEmpty()) {
+            throw self::getUnrepresentableIntersectionException($array, $keyed_array);
+        }
+
+        [$key_type, $value_type] = $array->type_params;
+        $properties = [];
+
+        foreach ($keyed_array->properties as $key => $property_type) {
+            $intersected_type = self::intersectUnions($property_type, $value_type, $codebase, $from_docblock)
+                ->setPossiblyUndefined($property_type->possibly_undefined);
+
+            if ($intersected_type->isNever()
+                || !UnionTypeComparator::isContainedBy(
+                    $codebase,
+                    new Union([is_int($key) ? new TLiteralInt($key) : TLiteralString::make($key)]),
+                    $key_type,
+                )
+            ) {
+                if ($property_type->possibly_undefined) {
+                    continue;
+                }
+
+                // a key the generic array doesn't allow
+                return [];
+            }
+
+            $properties[$key] = $intersected_type;
+        }
+
+        $fallback_params = $keyed_array->fallback_params === null
+            ? $array->type_params
+            : [
+                self::intersectUnions($keyed_array->fallback_params[0], $key_type, $codebase, $from_docblock),
+                self::intersectUnions($keyed_array->fallback_params[1], $value_type, $codebase, $from_docblock),
+            ];
+
+        if ($properties === []) {
+            return [new TArray($fallback_params, $from_docblock)];
+        }
+
+        return [
+            TKeyedArray::make(
+                $properties,
+                null,
+                $fallback_params[0]->isNever() || $fallback_params[1]->isNever() ? null : $fallback_params,
+                false,
+                $from_docblock,
+            ),
         ];
     }
 

@@ -100,7 +100,7 @@ final class AtomicTypeComparator
         }
 
         if ($container_type_part instanceof TIntersection) {
-            // the input has all the types of the intersection
+            // the input has all the types of the intersection, the keys of an array shape being some of its keys
             $input_type = new Union([$input_type_part]);
 
             return array_all(
@@ -108,7 +108,7 @@ final class AtomicTypeComparator
                 static fn(Union $type): bool => UnionTypeComparator::isContainedBy(
                     $codebase,
                     $input_type,
-                    $type,
+                    self::getUnsealedShape($type),
                     false,
                     false,
                     null,
@@ -1531,5 +1531,29 @@ final class AtomicTypeComparator
 
         return $codebase->classlike_storage_provider->get($template->defining_class)
             ->template_lower_bounds[$template->param_name] ?? Capabilities::NONE;
+    }
+
+    /**
+     * A member of an intersection such as `T&array{id: int}`: the other members can have other keys
+     *
+     * @psalm-pure
+     */
+    private static function getUnsealedShape(Union $type): Union
+    {
+        $shape = $type->isSingle() ? $type->getSingleAtomic() : null;
+
+        if (!$shape instanceof TKeyedArray || $shape->fallback_params !== null || $shape->is_list) {
+            return $type;
+        }
+
+        return new Union([
+            TKeyedArray::make(
+                $shape->properties,
+                $shape->class_strings,
+                [Type::getArrayKey(), Type::getMixed()],
+                false,
+                $shape->from_docblock,
+            ),
+        ]);
     }
 }

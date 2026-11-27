@@ -2636,6 +2636,22 @@ final class ReturnTypeTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'genericArrayAndClassConstantShapeIntersection' => [
+                'code' => '<?php
+                    /** @return array<string, int>&Shapes::USER */
+                    function user(): array {
+                        throw new RuntimeException();
+                    }
+
+                    final class Shapes {
+                        const USER = ["id" => 1];
+                    }
+
+                    $a = user();',
+                'assertions' => [
+                    '$a===' => 'array{id: 1, ...<string, int>}',
+                ],
+            ],
             'invalidClassConstantIntersectionIsIgnored' => [
                 'code' => '<?php
                     /** @return Names::FOO&class-string */
@@ -3511,6 +3527,18 @@ final class ReturnTypeTest extends TestCase
                     function f(string $s): void {}
                     f("0");',
                 'error_message' => 'InvalidArgument',
+            ],
+            'emptyGenericArrayAndClassConstantShapeIntersection' => [
+                'code' => '<?php
+                    /** @return array<int, int>&Shapes::USER */
+                    function user(): array {
+                        throw new RuntimeException();
+                    }
+
+                    final class Shapes {
+                        const USER = ["id" => 1];
+                    }',
+                'error_message' => 'No value has all the types of the intersection',
             ],
             'emptyClassConstantIntersection' => [
                 'code' => '<?php
