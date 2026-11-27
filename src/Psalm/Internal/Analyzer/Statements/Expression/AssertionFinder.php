@@ -805,6 +805,17 @@ final class AssertionFinder
     /**
      * @psalm-pure
      */
+    private static function isLiteralClassStringUnion(Union $type): bool
+    {
+        return !$type->isUnionEmpty() && array_all(
+            $type->getAtomicTypes(),
+            static fn(Atomic $atomic): bool => $atomic instanceof TLiteralClassString,
+        );
+    }
+
+    /**
+     * @psalm-pure
+     */
     private static function withPolarity(Assertion $assertion, bool $negated): Assertion
     {
         return $negated ? $assertion->getNegation() : $assertion;
@@ -2072,7 +2083,9 @@ final class AssertionFinder
         if (!$left_variable_class_const) {
             $left_type = $source->node_data->getType($conditional->left);
 
-            if ($left_type && $left_type->isSingle()) {
+            if ($left_type
+                && ($left_type->isSingleAtomic() || self::isLiteralClassStringUnion($left_type))
+            ) {
                 foreach ($left_type->getAtomicTypes() as $type_part) {
                     if ($type_part instanceof TClassString || $type_part instanceof TLiteralClassString) {
                         $left_class_string_t = true;
@@ -2106,7 +2119,9 @@ final class AssertionFinder
         if (!$right_variable_class_const) {
             $right_type = $source->node_data->getType($conditional->right);
 
-            if ($right_type && $right_type->isSingle()) {
+            if ($right_type
+                && ($right_type->isSingleAtomic() || self::isLiteralClassStringUnion($right_type))
+            ) {
                 foreach ($right_type->getAtomicTypes() as $type_part) {
                     if ($type_part instanceof TClassString || $type_part instanceof TLiteralClassString) {
                         $right_class_string_t = true;
@@ -2859,7 +2874,7 @@ final class AssertionFinder
         ) {
             if ($operand_holds
                 && !$codebase->config->allow_bool_to_literal_bool_comparison
-                && $var_type->isSingle()
+                && $var_type->isSingleAtomic()
                 && $var_type->hasBool()
                 && !$var_type->from_docblock
                 && !$conditional instanceof VirtualIdentical
@@ -3180,7 +3195,18 @@ final class AssertionFinder
         } else {
             $type = $source->node_data->getType($whichclass_expr);
 
-            if ($type && $var_name) {
+            if ($type && $var_name !== null && !$type->isSingleAtomic() && self::isLiteralClassStringUnion($type)) {
+                $class_assertions = [];
+
+                foreach ($type->getLiteralStrings() as $class_string) {
+                    $class_assertions[] = new IsClassEqual($class_string->value);
+                }
+
+                // the object is of one of the classes, but not being of the class the value holds tells nothing
+                if (!$negated && $class_assertions !== []) {
+                    $if_types[$var_name] = [$class_assertions];
+                }
+            } elseif ($type && $var_name) {
                 foreach ($type->getAtomicTypes() as $type_part) {
                     if ($type_part instanceof TTemplateParamClass) {
                         $if_types[$var_name] = [[self::withPolarity(
@@ -3191,10 +3217,10 @@ final class AssertionFinder
                             )),
                             $negated,
                         )]];
-                    } elseif ($type->isSingle() && $type_part instanceof TLiteralClassString) {
+                    } elseif ($type->isSingleAtomic() && $type_part instanceof TLiteralClassString) {
                         $if_types[$var_name] = [[self::withPolarity(new IsClassEqual($type_part->value), $negated)]];
                     } elseif (!$negated
-                        && $type->isSingle()
+                        && $type->isSingleAtomic()
                         && $type_part instanceof TClassString
                         && $type_part->as_type
                     ) {
@@ -3890,7 +3916,7 @@ final class AssertionFinder
         $haystack_var_name = ExpressionIdentifier::getExtendedVarId($haystack_expr, $this_class_name, $source);
         $needle_type = $source->node_data->getType($first_arg);
         $needle_singleton = $needle_type !== null ? self::getInArraySingletonNeedle($needle_type) : null;
-        $is_array_template = $second_arg_type->isSingle()
+        $is_array_template = $second_arg_type->isSingleAtomic()
             && self::isArrayTemplate($second_arg_type->getSingleAtomic());
 
         // When the needle is a single known value, assert on the haystack alone so negating the call yields
@@ -3969,7 +3995,7 @@ final class AssertionFinder
                     if ($assertions !== []) {
                         $if_types[$first_var_name] = [$assertions];
                     }
-                } elseif ($second_arg_type->isSingle() && self::isArrayTemplate($atomic_type)) {
+                } elseif ($second_arg_type->isSingleAtomic() && self::isArrayTemplate($atomic_type)) {
                     $value_of_type = new Union([new TTemplateValueOf(
                         $atomic_type->param_name,
                         $atomic_type->defining_class,
@@ -4040,12 +4066,14 @@ final class AssertionFinder
     private static function getIntKeyAssertions(int $key, Union $looked_up_type): array
     {
         foreach ($looked_up_type->getAtomicTypes() as $atomic_type) {
-            if ($atomic_type instanceof TTemplateParam) {
-                $atomic_type = $atomic_type->as->isSingle() ? $atomic_type->as->getSingleAtomic() : $atomic_type;
-            }
+            $atomic_types = $atomic_type instanceof TTemplateParam
+                ? $atomic_type->as->getAtomicTypes()
+                : [$atomic_type];
 
-            if (!$atomic_type instanceof TInt && !$atomic_type instanceof TString) {
-                return [new IsLooselyEqual(new TLiteralInt($key))];
+            foreach ($atomic_types as $bound_atomic_type) {
+                if (!$bound_atomic_type instanceof TInt && !$bound_atomic_type instanceof TString) {
+                    return [new IsLooselyEqual(new TLiteralInt($key))];
+                }
             }
         }
 
@@ -4072,7 +4100,7 @@ final class AssertionFinder
         ?string $this_class_name,
         StatementsAnalyzer $source,
     ): ?InArray {
-        $array_atomic = $array_type->isSingle() ? $array_type->getSingleAtomic() : null;
+        $array_atomic = $array_type->isSingleAtomic() ? $array_type->getSingleAtomic() : null;
 
         if (!self::isArrayTemplate($array_atomic)) {
             return null;

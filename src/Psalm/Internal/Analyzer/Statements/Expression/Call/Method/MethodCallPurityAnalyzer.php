@@ -383,7 +383,7 @@ final class MethodCallPurityAnalyzer
             return false;
         }
 
-        $return_template = $return_type->isSingle() ? $return_type->getSingleAtomic() : null;
+        $return_template = $return_type->isSingleAtomic() ? $return_type->getSingleAtomic() : null;
 
         // `($callback is null ? Proxy<T> : T)`: the branch the arguments select
         if ($template_result !== null && $return_template instanceof TConditional) {
@@ -395,7 +395,7 @@ final class MethodCallPurityAnalyzer
                 clone $template_result,
                 $codebase,
             );
-            $selected_type = $selected_type->isSingle() ? $selected_type->getSingleAtomic() : null;
+            $selected_type = $selected_type->isSingleAtomic() ? $selected_type->getSingleAtomic() : null;
 
             $return_template = match ($selected_type instanceof TTemplateParam ? $selected_type->param_name : null) {
                 self::RETURNED_TEMPLATE . 'if' => $if_template,
@@ -515,7 +515,7 @@ final class MethodCallPurityAnalyzer
      */
     private static function markReturnedTemplate(Union $branch, string $name): array
     {
-        $template = $branch->isSingle() ? $branch->getSingleAtomic() : null;
+        $template = $branch->isSingleAtomic() ? $branch->getSingleAtomic() : null;
 
         if (!$template instanceof TTemplateParam) {
             return [null, $branch];
@@ -530,7 +530,7 @@ final class MethodCallPurityAnalyzer
     /** @psalm-pure */
     private static function isTemplate(Union $type, TTemplateParam $template): bool
     {
-        if (!$type->isSingle()) {
+        if (!$type->isSingleAtomic()) {
             return false;
         }
 

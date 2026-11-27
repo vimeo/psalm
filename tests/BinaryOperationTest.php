@@ -746,6 +746,20 @@ final class BinaryOperationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'concatOfAMixedAndAUnionOfStringLiterals' => [
+                'code' => '<?php
+                    /** @var mixed */
+                    $u = json_decode("1");
+
+                    $a = $u . (rand(0, 1) ? "a" : "b");
+                    $b = $u . (rand(0, 1) ? "a" : "");
+                ',
+                'assertions' => [
+                    '$a===' => 'non-falsy-string',
+                    '$b===' => 'string',
+                ],
+                'ignored_issues' => ['MixedOperand'],
+            ],
             'secondArrayUnionKeepsTheRestOfTheArrayForTheOtherKey' => [
                 'code' => '<?php
                     /** @var array<string, int> $arr */

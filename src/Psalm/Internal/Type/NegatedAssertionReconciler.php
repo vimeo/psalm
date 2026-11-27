@@ -235,7 +235,7 @@ final class NegatedAssertionReconciler extends Reconciler
             // an object of a final class is of exactly that class: one whose class isn't that one is not of it
             $codebase = $statements_analyzer->getCodebase();
 
-            if (!$existing_var_type->isSingle()
+            if (!$existing_var_type->isSingleAtomic()
                 && $codebase->classlike_storage_provider->has($assertion->type)
                 && $codebase->classlike_storage_provider->get($assertion->type)->final
             ) {

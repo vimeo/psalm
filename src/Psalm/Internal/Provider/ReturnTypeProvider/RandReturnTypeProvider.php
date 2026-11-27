@@ -48,7 +48,7 @@ final class RandReturnTypeProvider implements FunctionReturnTypeProviderInterfac
         $second_arg = $nodeTypeProvider->getType($call_args[1]->value);
 
         $min_value = null;
-        if ($first_arg !== null && $first_arg->isSingle()) {
+        if ($first_arg !== null && $first_arg->isSingleAtomic()) {
             $first_atomic_type = $first_arg->getSingleAtomic();
             if ($first_atomic_type instanceof TLiteralInt) {
                 $min_value = $first_atomic_type->value;
@@ -58,7 +58,7 @@ final class RandReturnTypeProvider implements FunctionReturnTypeProviderInterfac
         }
 
         $max_value = null;
-        if ($second_arg !== null && $second_arg->isSingle()) {
+        if ($second_arg !== null && $second_arg->isSingleAtomic()) {
             $second_atomic_type = $second_arg->getSingleAtomic();
             if ($second_atomic_type instanceof TLiteralInt) {
                 $max_value = $second_atomic_type->value;

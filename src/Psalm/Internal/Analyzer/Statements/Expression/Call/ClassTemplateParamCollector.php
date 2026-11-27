@@ -440,7 +440,7 @@ final class ClassTemplateParamCollector
 
             $seen[$defining_class . '::' . $template_name] = true;
             $extended_type = $static_class_storage->template_extended_params[$defining_class][$template_name] ?? null;
-            $extended_atomic = $extended_type?->isSingle() ? $extended_type->getSingleAtomic() : null;
+            $extended_atomic = $extended_type?->isSingleAtomic() ? $extended_type->getSingleAtomic() : null;
 
             if (!$extended_atomic instanceof TTemplateParam) {
                 return null;

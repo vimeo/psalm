@@ -832,7 +832,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
                         $context,
                     );
 
-                    $this_type = $var_comment->var_id === '$this' && $var_comment->type?->isSingle()
+                    $this_type = $var_comment->var_id === '$this' && $var_comment->type?->isSingleAtomic()
                         ? $var_comment->type->getSingleAtomic()
                         : null;
 
