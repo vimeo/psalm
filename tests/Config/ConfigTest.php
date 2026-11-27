@@ -416,6 +416,62 @@ final class ConfigTest extends DeferredAnalyzerTestCase
     }
 
     #[RequiresOperatingSystem('^(?!WIN)')]
+    public function testRecursiveWildcardDoesNotFollowASymlinkCycle(): void
+    {
+        $root = sys_get_temp_dir() . '/psalm_symlink_cycle_' . uniqid();
+        mkdir($root . '/app', 0777, true);
+        mkdir($root . '/vendor/some/package/tests-app/example/vendor/some', 0777, true);
+        mkdir($root . '/vendor/some/package/src');
+        file_put_contents($root . '/app/a.php', '<?php');
+        file_put_contents($root . '/vendor/some/package/b.php', '<?php');
+        file_put_contents($root . '/vendor/some/package/src/c.php', '<?php');
+
+        // vendor/some/package/tests-app/example/vendor/some/package is vendor/some/package again
+        if (!@symlink('../../../../', $root . '/vendor/some/package/tests-app/example/vendor/some/package')) {
+            $this->markTestSkipped('symlinks cannot be created');
+        }
+
+        try {
+            $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+                Config::loadFromXML(
+                    $root,
+                    '<?xml version="1.0"?>
+                    <psalm>
+                        <projectFiles>
+                            <directory name="app" />
+                            <directory name="vendor" />
+                            <ignoreFiles>
+                                <directory name="vendor/**/src" />
+                            </ignoreFiles>
+                        </projectFiles>
+                    </psalm>',
+                ),
+            );
+
+            $config = $this->project_analyzer->getConfig();
+
+            $this->assertTrue($config->isInProjectDirs($root . '/app/a.php'));
+            $this->assertTrue($config->isInProjectDirs($root . '/vendor/some/package/b.php'));
+            $this->assertFalse($config->isInProjectDirs($root . '/vendor/some/package/src/c.php'));
+        } finally {
+            unlink($root . '/vendor/some/package/tests-app/example/vendor/some/package');
+            unlink($root . '/vendor/some/package/src/c.php');
+            unlink($root . '/vendor/some/package/b.php');
+            unlink($root . '/app/a.php');
+            rmdir($root . '/vendor/some/package/src');
+            rmdir($root . '/vendor/some/package/tests-app/example/vendor/some');
+            rmdir($root . '/vendor/some/package/tests-app/example/vendor');
+            rmdir($root . '/vendor/some/package/tests-app/example');
+            rmdir($root . '/vendor/some/package/tests-app');
+            rmdir($root . '/vendor/some/package');
+            rmdir($root . '/vendor/some');
+            rmdir($root . '/vendor');
+            rmdir($root . '/app');
+            rmdir($root);
+        }
+    }
+
+    #[RequiresOperatingSystem('^(?!WIN)')]
     #[DataProvider('providerSymlinkedDirectoryKeepsDirectoryOptions')]
     public function testSymlinkedDirectoryKeepsDirectoryOptions(
         string $directory_name,
