@@ -4988,6 +4988,27 @@ final class FunctionCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'possiblyFalseArgumentMessageNamesTheFalseValue' => [
+                'code' => '<?php
+                    function takesString(string $s): void {}
+
+                    /** @return string|false */
+                    function maybeString() {
+                        return rand(0, 1) ? "a" : false;
+                    }
+
+                    takesString(maybeString());',
+                'error_message' => 'PossiblyFalseArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:33 - '
+                    . 'Argument 1 of takesString cannot be false, possibly false value provided',
+            ],
+            'falseArgumentMessageNamesTheFalseValue' => [
+                'code' => '<?php
+                    function takesString(string $s): void {}
+
+                    takesString(false);',
+                'error_message' => 'Argument 1 of takesString cannot be false, false value provided to parameter '
+                    . 'with type string',
+            ],
             'possiblyUndefinedVariableAfterExtractIsMixed' => [
                 'code' => '<?php
                     function takesInt(int $_i): void {}
