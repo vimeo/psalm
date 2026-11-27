@@ -6234,6 +6234,34 @@ final class ClassTemplateExtendsTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.3',
             ],
+            'untypedOverrideBindsTheTemplateDefaultOfItsDocumentingMethod' => [
+                'code' => '<?php
+                    class P {
+                        /**
+                         * @template T = string
+                         * @param list<T> $a
+                         * @return T
+                         */
+                        public function f(array $a = []) {
+                            throw new Exception();
+                        }
+                    }
+
+                    final class C extends P {
+                        #[Override]
+                        public function f(array $a = []) {
+                            throw new Exception();
+                        }
+                    }
+
+                    $x = (new C())->f();
+                    /** @psalm-check-type-exact $x = string */
+                    $y = (new C())->f([5]);
+                    /** @psalm-check-type-exact $y = 5 */',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
             'untypedOverrideBindsTheTemplateOfAByReferenceParamOfTheParent' => [
                 'code' => '<?php
                     interface Accessor {
