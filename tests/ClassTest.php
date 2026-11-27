@@ -1336,6 +1336,28 @@ final class ClassTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'constructorOfTheElseParentOfAFalseInterfaceExistsInitializesTheProperty' => [
+                'code' => '<?php
+                    if (interface_exists(\Missing\I::class)) {
+                        abstract class P implements \Missing\I {
+                            protected int $x;
+                            public function __construct() {}
+                        }
+                    } else {
+                        abstract class P {
+                            protected int $x;
+                            public function __construct() {
+                                $this->x = 1;
+                            }
+                        }
+                    }
+
+                    final class C extends P {
+                        public function __construct() {
+                            parent::__construct();
+                        }
+                    }',
+            ],
             'classOfANegatedClassExistsInAnElseifExistsInItsElse' => [
                 'code' => '<?php
                     function f(bool $c): void {
@@ -2514,6 +2536,29 @@ final class ClassTest extends TestCase
                         }
                     }',
                 'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:40',
+            ],
+            'traitOfTheElseOfAFalseInterfaceExistsIsTheOneAClassUses' => [
+                'code' => '<?php
+                    namespace Foo;
+
+                    if (interface_exists(\Missing\I::class)) {
+                        trait T {
+                            public function f(): int {
+                                return \Missing\Util::x();
+                            }
+                        }
+                    } else {
+                        trait T {
+                            public function f(): int {
+                                return "s";
+                            }
+                        }
+                    }
+
+                    final class U {
+                        use T;
+                    }',
+                'error_message' => 'InvalidReturnType - src' . DIRECTORY_SEPARATOR . 'somefile.php:12:50',
             ],
             'newStaticOfAClassImplementingAnInterfaceWithoutAConstructor' => [
                 'code' => '<?php
