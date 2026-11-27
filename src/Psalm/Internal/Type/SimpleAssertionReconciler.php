@@ -53,7 +53,6 @@ use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TLowercaseNumericString;
 use Psalm\Type\Atomic\TLowercaseString;
@@ -779,11 +778,8 @@ final class SimpleAssertionReconciler extends Reconciler
                         $existing_var_type->addType($array_atomic_type);
                     } else {
                         $redundant = false;
-                        $non_empty_array = self::getNonEmptyArrayOfOptionalKeys($array_atomic_type, $count, false);
-                        if ($non_empty_array !== null) {
-                            $existing_var_type->removeType('array');
-                            $existing_var_type->addType($non_empty_array);
-                        }
+                        $existing_var_type->removeType('array');
+                        $existing_var_type->addType($array_atomic_type->setMinCount($count));
                     }
                 } elseif ($array_atomic_type->is_list) {
                     if ($count <= $prop_min_count) {
@@ -802,6 +798,8 @@ final class SimpleAssertionReconciler extends Reconciler
                     }
                 } else {
                     $redundant = false;
+                    $existing_var_type->removeType('array');
+                    $existing_var_type->addType($array_atomic_type->setMinCount($count));
                 }
             }
 
@@ -899,15 +897,8 @@ final class SimpleAssertionReconciler extends Reconciler
                         $existing_var_type->addType($array_atomic_type);
                     } else {
                         $redundant = false;
-                        $non_empty_array = self::getNonEmptyArrayOfOptionalKeys(
-                            $array_atomic_type,
-                            $assertion->count,
-                            true,
-                        );
-                        if ($non_empty_array !== null) {
-                            $existing_var_type->removeType('array');
-                            $existing_var_type->addType($non_empty_array);
-                        }
+                        $existing_var_type->removeType('array');
+                        $existing_var_type->addType($array_atomic_type->setMinCount($assertion->count));
                     }
                 } else {
                     if ($array_atomic_type->is_list) {
@@ -929,6 +920,10 @@ final class SimpleAssertionReconciler extends Reconciler
                     } elseif ($prop_max_count === $prop_min_count && $prop_max_count === $assertion->count) {
                         $existing_var_type->removeType('array');
                         $existing_var_type->addType($array_atomic_type->makeSealed());
+                    } elseif ($assertion->count > $prop_min_count) {
+                        $redundant = false;
+                        $existing_var_type->removeType('array');
+                        $existing_var_type->addType($array_atomic_type->setMinCount($assertion->count));
                     }
                 }
             }
@@ -953,41 +948,6 @@ final class SimpleAssertionReconciler extends Reconciler
         }
 
         return $existing_var_type->freeze();
-    }
-
-    /**
-     * A sealed shape cannot say that some of its optional keys are present. When every key is
-     * optional and all values have one type, `non-empty-array<keys, value>` can.
-     */
-    private static function getNonEmptyArrayOfOptionalKeys(
-        TKeyedArray $shape,
-        int $count,
-        bool $exact,
-    ): ?TNonEmptyArray {
-        if ($shape->fallback_params !== null
-            || $shape->is_list
-            || $shape->getMinCount() !== 0
-            || $count < 1
-            || $count > count($shape->properties)
-        ) {
-            return null;
-        }
-
-        $value_type = array_values($shape->properties)[0]->setPossiblyUndefined(false);
-        $key_types = [];
-        foreach ($shape->properties as $key => $property) {
-            if ($property->setPossiblyUndefined(false)->getId() !== $value_type->getId()) {
-                return null;
-            }
-
-            $key_types[] = is_int($key) ? new TLiteralInt($key) : Type::getAtomicStringFromLiteral($key);
-        }
-
-        return new TNonEmptyArray(
-            [new Union($key_types), $value_type],
-            $exact ? $count : null,
-            $exact ? null : $count,
-        );
     }
 
     /**
@@ -2900,6 +2860,12 @@ final class SimpleAssertionReconciler extends Reconciler
                 $properties = $array_atomic_type->properties;
                 $properties[0] = $properties[0]->setPossiblyUndefined(false);
                 $types [] = $array_atomic_type->setProperties($properties);
+            } elseif ($array_atomic_type instanceof TKeyedArray
+                && !$array_atomic_type->is_list
+                && !$array_atomic_type->isNonEmpty()
+            ) {
+                unset($types['array']);
+                $types [] = $array_atomic_type->setMinCount(1);
             }
         }
 

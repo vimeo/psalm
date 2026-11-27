@@ -192,15 +192,21 @@ final class ArrayFunctionCallTest extends TestCase
         return [
             'countOfASealedShapeWithOnlyOptionalKeysIsNonEmpty' => [
                 'code' => '<?php
-                    /** @var array{a?: int, b?: int} $x */
+                    /** @var array{a?: int, b?: string} $x */
                     $x = [];
 
                     $first = 0;
+                    $count = null;
+                    $kept = null;
                     if (count($x) === 1) {
                         $first = array_key_first($x);
+                        $count = count($x);
+                        $kept = $x;
                     }',
                 'assertions' => [
                     '$first===' => '\'a\'|\'b\'|0',
+                    '$count===' => 'int<1, 2>|null',
+                    '$kept===' => 'array{a?: int, b?: string}|null',
                 ],
             ],
             'countGreaterThanZeroOfASealedShapeWithOnlyOptionalKeysIsNonEmpty' => [
@@ -208,26 +214,107 @@ final class ArrayFunctionCallTest extends TestCase
                     /** @var array{a?: int, b?: int} $x */
                     $x = [];
 
-                    $y = null;
+                    $last = 0;
                     if (count($x) > 0) {
-                        $y = $x;
-                    }',
+                        $last = array_key_last($x);
+                    }
+
+                    $afterLeaving = 0;
+                    if (!count($x)) {
+                        exit;
+                    }
+                    $afterLeaving = array_key_first($x);',
                 'assertions' => [
-                    '$y===' => 'non-empty-array<\'a\'|\'b\', int>|null',
+                    '$last===' => '\'a\'|\'b\'|0',
+                    '$afterLeaving===' => '\'a\'|\'b\'',
                 ],
             ],
-            'countOfASealedShapeWithOptionalKeysOfDifferentTypesKeepsTheShape' => [
+            'countOfSomeOfTheOptionalKeysOfASealedShapeIsItsMinimum' => [
                 'code' => '<?php
-                    /** @var array{a?: int, b?: string} $x */
+                    /** @var array{a?: int, b?: int, c?: int} $x */
                     $x = [];
 
-                    $y = null;
-                    if (count($x) === 1) {
-                        $y = $x;
+                    $count = null;
+                    $countAfterWrite = null;
+                    if (count($x) >= 2) {
+                        $count = count($x);
+                        $x["d"] = 1;
+                        $countAfterWrite = count($x);
                     }',
                 'assertions' => [
-                    '$y===' => 'array{a?: int, b?: string}|null',
+                    '$count===' => 'int<2, 3>|null',
+                    '$countAfterWrite===' => 'int<1, 4>|null',
                 ],
+            ],
+            'truthyShapeWithOnlyOptionalKeysIsNonEmpty' => [
+                'code' => '<?php
+                    /** @var array{a?: int, b?: int} $x */
+                    $x = [];
+
+                    $first = 0;
+                    if ($x) {
+                        $first = array_key_first($x);
+                    }',
+                'assertions' => [
+                    '$first===' => '\'a\'|\'b\'|0',
+                ],
+            ],
+            'countOfAnUnsealedShapeWithOnlyOptionalKeysIsNonEmpty' => [
+                'code' => '<?php
+                    /** @var array{a?: int, ...<string, string>} $x */
+                    $x = [];
+
+                    $first = 0;
+                    $kept = null;
+                    if (count($x) > 0) {
+                        $first = array_key_first($x);
+                        $kept = $x;
+                    }',
+                'assertions' => [
+                    '$first===' => '0|string',
+                    '$kept===' => 'array{a?: int, ...<string, string>}|null',
+                ],
+            ],
+            'unsetForgetsTheCountOfAShapeWithOnlyOptionalKeys' => [
+                'code' => '<?php
+                    /** @var array{a?: int, b?: int} $x */
+                    $x = [];
+
+                    $first = 0;
+                    if (count($x) > 0) {
+                        unset($x["a"]);
+                        $first = array_key_first($x);
+                    }',
+                'assertions' => [
+                    '$first===' => '\'b\'|0|null',
+                ],
+            ],
+            'countedShapeCombinedWithAnotherShapeForgetsItsCount' => [
+                'code' => '<?php
+                    /** @var array{a?: int, b?: int} $x */
+                    $x = [];
+
+                    $count = 0;
+                    if (count($x) > 0) {
+                        $y = rand(0, 1) ? $x : ["a" => 0, "b" => 0];
+                        $count = count($y);
+                    }',
+                'assertions' => [
+                    '$count===' => 'int<0, 2>',
+                ],
+            ],
+            'firstKeyOfAListThatMayBeEmptyAfterUnsetIsNotNullWhenCounted' => [
+                'code' => '<?php
+                    /** @param list<int> $values */
+                    function afterUnset(array $values): int {
+                        unset($values[rand(0, 1)]);
+
+                        if (count($values) === 1) {
+                            return $values[array_key_first($values)];
+                        }
+
+                        return 0;
+                    }',
             ],
             'countOfASealedShapeWithARequiredKeyKeepsTheShape' => [
                 'code' => '<?php
@@ -5434,6 +5521,28 @@ final class ArrayFunctionCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'offsetOfACountedShapeWithOnlyOptionalKeysIsStillPossiblyUndefined' => [
+                'code' => '<?php
+                    /** @param array{a?: int, b?: int} $x */
+                    function f(array $x): void {
+                        if (count($x) > 0) {
+                            echo $x["a"];
+                        }
+                    }',
+                'error_message' => 'PossiblyUndefinedArrayOffset',
+            ],
+            'countOfACountedShapeWithOnlyOptionalKeysIsRedundant' => [
+                'code' => '<?php
+                    /** @param array{a?: int, b?: int} $x */
+                    function f(array $x): void {
+                        if (count($x) > 0) {
+                            if (count($x) > 0) {
+                                echo "counted";
+                            }
+                        }
+                    }',
+                'error_message' => 'RedundantCondition',
+            ],
             'arrayKeyExistsOfAKeyTheArrayCantHaveIsNeverTrue' => [
                 'code' => '<?php
                     /** @param array<"a"|"b", int> $data */

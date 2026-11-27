@@ -26,6 +26,7 @@ use function implode;
 use function is_int;
 use function is_string;
 use function ksort;
+use function max;
 use function ord;
 use function preg_match;
 use function preg_replace_callback;
@@ -70,10 +71,32 @@ final class TKeyedArray extends Atomic
         parent::__construct($from_docblock);
     }
 
+    /**
+     * The number of items a count() check found the array to have at least, when the properties cannot say so:
+     * at least one of the optional keys of `array{a?: int, b?: int}` is there. Not part of the id.
+     *
+     * @var int<0, max>
+     */
+    public int $min_count = 0;
+
     #[Override]
     public function isCallableType(): bool
     {
         return $this->is_callable;
+    }
+
+    /**
+     * @param int<0, max> $min_count
+     */
+    public function setMinCount(int $min_count): self
+    {
+        // a list has its items in order, so its properties say how many it has
+        if ($this->is_list || $min_count <= $this->getMinCount()) {
+            return $this;
+        }
+        $cloned = clone $this;
+        $cloned->min_count = $min_count;
+        return $cloned;
     }
 
     /**
@@ -163,6 +186,8 @@ final class TKeyedArray extends Atomic
         }
         $cloned = clone $this;
         $cloned->properties = $properties;
+        // the items that were counted may not be the ones of these properties
+        $cloned->min_count = 0;
         if ($cloned->is_list) {
             $last_k = -1;
             $had_possibly_undefined = false;
@@ -440,7 +465,7 @@ final class TKeyedArray extends Atomic
 
         $value_type = $value_type->setPossiblyUndefined(false);
 
-        if ($has_defined_keys) {
+        if ($has_defined_keys || $this->min_count > 0) {
             return new TNonEmptyArray([$key_type, $value_type]);
         }
         return new TArray([$key_type, $value_type]);
@@ -450,6 +475,9 @@ final class TKeyedArray extends Atomic
     {
         if ($this->isGenericList()) {
             return !$this->properties[0]->possibly_undefined;
+        }
+        if ($this->min_count > 0) {
+            return true;
         }
         foreach ($this->properties as $property) {
             if (!$property->possibly_undefined) {
@@ -480,7 +508,7 @@ final class TKeyedArray extends Atomic
                 $prop_min_count++;
             }
         }
-        return $prop_min_count;
+        return max($prop_min_count, $this->min_count);
     }
 
     /**
@@ -704,6 +732,10 @@ final class TKeyedArray extends Atomic
         }
 
         if ($this->is_list !== $other_type->is_list) {
+            return false;
+        }
+
+        if ($this->min_count !== $other_type->min_count) {
             return false;
         }
 
