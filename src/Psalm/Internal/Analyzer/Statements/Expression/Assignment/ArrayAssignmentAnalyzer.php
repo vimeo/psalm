@@ -1728,13 +1728,11 @@ final class ArrayAssignmentAnalyzer
         } else {
             // a written value leaves the values of the other keys as they are, but a nested write is taken to fill
             // them too, as the nested writes under one key in a loop do
-            $new_child_type = Type::combineUnionTypes(
+            $new_child_type = Type::combineArrayWithWrite(
                 $root_type,
                 $array_assignment_type,
                 $codebase,
-                true,
-                true,
-                overwrite_array_values: $is_nested_write,
+                $is_nested_write,
             );
         }
 
@@ -2108,12 +2106,12 @@ final class ArrayAssignmentAnalyzer
 
                 $new_child_type = $child_shape
                     ? $child_stmt_type->setTypes([$child_shape])
-                    : Type::combineUnionTypes(
+                    // the deepest array holds the written value, as the root of a write that is not nested does
+                    : Type::combineArrayWithWrite(
                         $child_stmt_type,
                         $array_assignment_type,
                         $codebase,
-                        true,
-                        true,
+                        $previous_child_stmt !== null,
                     );
             }
             if ($new_child_type->hasNull() || $new_child_type->possibly_undefined) {

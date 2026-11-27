@@ -4110,12 +4110,18 @@ final class ArrayAssignmentTest extends TestCase
                     function getLists(): array {
                         return [];
                     }
-                    /** @return array<string, non-empty-list<int>> */
-                    function getNonEmptyLists(): array {
+                    /** @return array<string, array{x?: int}> */
+                    function getShapes(): array {
+                        return [];
+                    }
+                    /** @return array<string, array<string, list<int>>> */
+                    function getNestedLists(): array {
                         return [];
                     }
                     /** @var string $k */
                     $k = 'a';
+                    /** @var string $j */
+                    $j = 'b';
 
                     $a = getArrays();
                     $a[$k] = [1];
@@ -4123,9 +4129,22 @@ final class ArrayAssignmentTest extends TestCase
                     $b = getLists();
                     $b[$k] = [1];
 
-                    $c = getNonEmptyLists();
-                    $c[$k] = [];
+                    $c = getShapes();
+                    $c[$k] = ['x' => 1];
 
+                    $d = getNestedLists();
+                    $d[$j][$k] = [1];
+                PHP,
+                'assertions' => [
+                    '$a===' => 'non-empty-array<string, array<int, int>>',
+                    '$b===' => 'non-empty-array<string, list<int>>',
+                    '$c===' => 'non-empty-array<string, array{x?: int}>',
+                    '$d===' => 'non-empty-array<string, non-empty-array<string, list<int>>>',
+                ],
+            ],
+            'offsetWriteKeepsAnEmptyCheckOnAnotherKey' => [
+                'code' => <<<'PHP'
+                    <?php
                     /** @param array<string, array<int, int>> $d */
                     function f(array $d, string $k, string $j): void {
                         $d[$k] = [1];
@@ -4133,7 +4152,11 @@ final class ArrayAssignmentTest extends TestCase
                             echo "empty";
                         }
                     }
-
+                PHP,
+            ],
+            'propertyOffsetWriteKeepsAnEmptyCheckOnAnotherKey' => [
+                'code' => <<<'PHP'
+                    <?php
                     final class C {
                         /** @var array<string, list<int>> */
                         public array $p = [];
@@ -4146,11 +4169,6 @@ final class ArrayAssignmentTest extends TestCase
                         }
                     }
                 PHP,
-                'assertions' => [
-                    '$a===' => 'non-empty-array<string, array<int, int>>',
-                    '$b===' => 'non-empty-array<string, list<int>>',
-                    '$c===' => 'non-empty-array<string, list<int>>',
-                ],
             ],
             'offsetWriteOverwritesTheEmptyArrayOfTheWrittenKey' => [
                 'code' => <<<'PHP'
@@ -4161,6 +4179,10 @@ final class ArrayAssignmentTest extends TestCase
                     $a = [];
                     $a[$k] = [];
                     $a[$k][] = 1;
+
+                    $o = [];
+                    $o[$k] = [];
+                    $o[$k] = [1];
 
                     /** @var list<string> $names */
                     $names = [];
@@ -4180,6 +4202,7 @@ final class ArrayAssignmentTest extends TestCase
                 PHP,
                 'assertions' => [
                     '$a===' => 'non-empty-array<string, non-empty-list<1>>',
+                    '$o===' => 'non-empty-array<string, list{1}>',
                     '$b===' => 'array<string, non-empty-list<string>>',
                     '$c===' => 'array<string, non-empty-list<string>>',
                 ],
