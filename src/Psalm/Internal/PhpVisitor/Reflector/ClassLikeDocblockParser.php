@@ -26,6 +26,7 @@ use function array_key_first;
 use function count;
 use function explode;
 use function preg_match;
+use function preg_split;
 use function reset;
 use function strlen;
 use function substr_count;
@@ -238,6 +239,19 @@ final class ClassLikeDocblockParser
 
         if (isset($parsed_docblock->tags['psalm-taint-specialize'])) {
             $info->taint_specialize = true;
+        }
+
+        foreach ($parsed_docblock->tags['psalm-taint-source'] ?? [] as $source) {
+            $parts = preg_split('/\\s+/', trim($source)) ?: [];
+            if (count($parts) < 2
+                || $parts[0] === ''
+                || !preg_match('/^\\$[a-zA-Z_\\x80-\\xff][a-zA-Z0-9_\\x80-\\xff]*$/', $parts[1])
+            ) {
+                throw new DocblockParseException(
+                    '@psalm-taint-source on a class expects the kind of taint and the property it gives it to',
+                );
+            }
+            $info->property_taint_sources[$parts[1]][] = $parts[0];
         }
 
         if (isset($parsed_docblock->tags['psalm-cli-only'])) {

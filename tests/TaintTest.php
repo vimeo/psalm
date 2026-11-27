@@ -503,6 +503,153 @@ final class TaintTest extends TestCase
     }
 
     /**
+     * A library whose code isn't analyzed (here a stub) declares the properties holding what it got from outside the
+     * program as sources: every read of them is input.
+     */
+    public function testSourcesOnThePropertiesOfAStub(): void
+    {
+        $this->project_analyzer->setPhpVersion('8.1', 'tests');
+        $this->addStubFile(
+            'transcript.phpstub',
+            '<?php
+                namespace Lib;
+
+                class Transcript {
+                    /** @psalm-taint-source input */
+                    public string $language = "";
+
+                    /** @psalm-taint-source input */
+                    public static string $current = "";
+
+                    public string $plain = "";
+
+                    public function __construct(
+                        /** @psalm-taint-source input */
+                        public readonly string $code,
+                        public readonly string $id,
+                    ) {}
+                }
+
+                final class TranslatedTranscript extends Transcript {}
+
+                trait HasBody {
+                    /** @psalm-taint-source input */
+                    public string $body = "";
+                }
+
+                final class Page {
+                    use HasBody;
+                }
+
+                /**
+                 * @property-read string $title
+                 * @property-read string $slug
+                 * @psalm-taint-source input $title
+                 */
+                class Video {
+                    public function __get(string $name): string {}
+                }
+
+                final class Short extends Video {}
+            ',
+        );
+
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile($file_path, '<?php
+            function show(Lib\Transcript $t, ?Lib\Transcript $n, Lib\TranslatedTranscript $tt, Lib\Page $p, Lib\Video $v, Lib\Short $s): void {
+                echo $t->language;
+                echo Lib\Transcript::$current;
+                echo $t->code;
+                echo $n?->language;
+                echo $tt->language;
+                echo $p->body;
+                echo $v->title;
+                echo $s->title;
+                [$language] = [$t->language];
+                echo $language;
+                $reference = &$t->language;
+                echo $reference;
+                echo $t->plain;
+                echo $t->id;
+                echo $v->slug;
+                $t->language = "en";
+            }
+        ');
+        $this->project_analyzer->trackTaintedInputs();
+
+        $this->analyzeFile($file_path, new Context(), false);
+
+        $issues = array_values(array_filter(
+            IssueBuffer::getIssuesDataForFile($file_path),
+            static fn(IssueData $issue): bool => $issue->type === 'TaintedHtml',
+        ));
+
+        $lines = array_map(static fn(IssueData $issue): int => $issue->line_from, $issues);
+        sort($lines);
+
+        self::assertSame([3, 4, 5, 6, 7, 8, 9, 10, 12, 14], $lines);
+    }
+
+    /**
+     * The properties of analyzed code declared as sources are input wherever they are read, inside their class too,
+     * and whatever an object of a specialized class was given, unless taints are suppressed there: what is assigned
+     * to them still flows as well.
+     */
+    public function testSourcesOnPropertiesOfAnalyzedCode(): void
+    {
+        $this->project_analyzer->setPhpVersion('8.1', 'tests');
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile($file_path, '<?php
+            /** @psalm-taint-specialize */
+            final class Reply {
+                public function __construct(
+                    /** @psalm-taint-source input */
+                    public readonly string $text,
+                    public readonly string $id,
+                ) {}
+
+                public function show(): void {
+                    echo $this->text;
+                }
+            }
+
+            final class Box {
+                public string $content = "";
+            }
+
+            $reply = new Reply("hello", "1");
+            echo $reply->text;
+            echo $reply->id;
+
+            $box = new Box();
+            $box->content = (string) $_GET["content"];
+            echo $box->content;
+
+            /** @psalm-suppress TaintedInput */
+            function quiet(Reply $reply): string {
+                return $reply->text;
+            }
+
+            echo quiet($reply);
+        ');
+        $this->project_analyzer->trackTaintedInputs();
+
+        $this->analyzeFile($file_path, new Context(), false);
+
+        $issues = array_values(array_filter(
+            IssueBuffer::getIssuesDataForFile($file_path),
+            static fn(IssueData $issue): bool => $issue->type === 'TaintedHtml',
+        ));
+
+        $lines = array_map(static fn(IssueData $issue): int => $issue->line_from, $issues);
+        sort($lines);
+
+        self::assertSame([11, 20, 25], $lines);
+    }
+
+    /**
      * json_encode() removes the html taint only when its flags, a constant expression, escape <, > and &, and never the
      * has_quotes one: the " delimiting a JSON string ends a double-quoted attribute, whatever the flags.
      */

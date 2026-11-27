@@ -296,6 +296,14 @@ final class ClassLikeStorage implements HasAttributesInterface
     public ?string $taint_property_bag = null;
 
     /**
+     * The taints `@psalm-taint-source <kind> $<property>` on the class gives what is read from its properties, magic
+     * (`@property`, `@property-read`) or declared, by name (`$name`)
+     *
+     * @var array<string, int>
+     */
+    public array $property_taint_sources = [];
+
+    /**
      * Whether the methods of the class only run from the command line (`@psalm-cli-only`): what they print goes to a
      * terminal, not to an HTML response
      */

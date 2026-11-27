@@ -212,6 +212,7 @@ final class CommentAnalyzer
                 || isset($parsed_docblock->tags['psalm-readonly-allow-private-mutation'])
                 || isset($parsed_docblock->tags['psalm-allow-private-mutation'])
                 || isset($parsed_docblock->tags['psalm-taint-escape'])
+                || isset($parsed_docblock->tags['psalm-taint-source'])
                 || isset($parsed_docblock->tags['psalm-internal'])
                 || isset($parsed_docblock->tags['psalm-suppress'])
                 || $parsed_docblock->description)
@@ -263,6 +264,19 @@ final class CommentAnalyzer
                 } catch (RuntimeException $e) {
                     throw new DocblockParseException($e->getMessage(), 0, $e);
                 }
+            }
+        }
+
+        foreach ($parsed_docblock->tags['psalm-taint-source'] ?? [] as $source) {
+            $source = trim($source);
+            if ($source === '') {
+                throw new DocblockParseException('@psalm-taint-source expects the kind of taint it gives');
+            }
+            try {
+                $kind = (preg_split('/\\s+/', $source) ?: [$source])[0];
+                $var_comment->taint_sources |= $codebase->getOrRegisterTaint($kind);
+            } catch (RuntimeException $e) {
+                throw new DocblockParseException($e->getMessage(), 0, $e);
             }
         }
 

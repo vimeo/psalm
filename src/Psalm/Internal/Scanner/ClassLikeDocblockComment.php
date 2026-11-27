@@ -145,6 +145,14 @@ final class ClassLikeDocblockComment
     public ?string $taint_property_bag = null;
 
     /**
+     * The kinds of taint `@psalm-taint-source <kind> $<property>` on the class gives what is read from a property, by
+     * property name (`$name`)
+     *
+     * @var array<string, list<string>>
+     */
+    public array $property_taint_sources = [];
+
+    /**
      * @var array<int, string>
      */
     public array $suppressed_issues = [];

@@ -23,6 +23,7 @@ use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\Statements\UnsetAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\MixinLookup;
+use Psalm\Internal\Codebase\PropertyTaintSources;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
@@ -810,6 +811,19 @@ final class AtomicPropertyFetchAnalyzer
                 $statements_analyzer->node_data->setType($stmt, Type::getMixed());
             }
 
+            // a magic property its class or an interface it implements declares a source of
+            $magic_type = $in_assignment ? null : $statements_analyzer->node_data->getType($stmt);
+            if ($magic_type !== null) {
+                PropertyTaintSources::addSource(
+                    $statements_analyzer,
+                    $stmt,
+                    $magic_type,
+                    $fq_class_name . '::$' . $prop_name,
+                    0,
+                );
+                $statements_analyzer->node_data->setType($stmt, $magic_type);
+            }
+
             /*
              * If we have an explicit list of all allowed magic properties on the class, and we're
              * not in that list, fall through
@@ -1000,6 +1014,7 @@ final class AtomicPropertyFetchAnalyzer
         }
 
         $data_flow_graph = $statements_analyzer->data_flow_graph;
+        $fetched_property_id = $property_id;
         $property_id = InheritedMethodTaints::getPropertyIdInBody(
             $statements_analyzer->getCodebase(),
             $context,
@@ -1098,6 +1113,10 @@ final class AtomicPropertyFetchAnalyzer
                 $added_taints,
                 $removed_taints,
             );
+        }
+
+        if (!$in_assignment) {
+            PropertyTaintSources::addSource($statements_analyzer, $stmt, $type, $fetched_property_id, $removed_taints);
         }
     }
 

@@ -46,6 +46,58 @@ function show(QueryInput $input): void {
 }
 ```
 
+### Properties
+
+A library whose code Psalm doesn't analyze declares what its objects hold on the property, or on the promoted
+constructor parameter declaring it. Every read of it is then input, whatever the object was built from, also in a
+[`@psalm-taint-specialize`](index.md#specializing-classes) class:
+
+```php
+<?php
+class Transcript {
+    /** @psalm-taint-source input */
+    public string $text = '';
+
+    /** @psalm-taint-source input */
+    public static string $latest = '';
+
+    public function __construct(
+        /** @psalm-taint-source input */
+        public readonly string $language,
+        public readonly string $videoId,
+    ) {}
+}
+
+final class TranslatedTranscript extends Transcript {}
+
+function show(Transcript $transcript, TranslatedTranscript $translated): void {
+    echo $transcript->text;      // TaintedHtml
+    echo $transcript->language;  // TaintedHtml
+    echo Transcript::$latest;    // TaintedHtml
+    echo $translated->text;      // TaintedHtml
+    echo $transcript->videoId;   // no issue
+}
+```
+
+A magic property gets its source on the class, followed by its name:
+
+```php
+<?php
+/**
+ * @property-read string $title
+ * @property-read string $slug
+ * @psalm-taint-source input $title
+ */
+final class Video {
+    public function __get(string $name): string { return ''; }
+}
+
+function showVideo(Video $video): void {
+    echo $video->title; // TaintedHtml
+    echo $video->slug;  // no issue
+}
+```
+
 ## Custom taints declared in the configuration
 
 Custom taints can be declared in `psalm.xml`, so that the annotations can name them without a plugin registering
