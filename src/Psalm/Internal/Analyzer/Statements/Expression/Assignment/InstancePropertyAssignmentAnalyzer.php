@@ -71,6 +71,7 @@ use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function array_all;
+use function array_any;
 use function array_merge;
 use function array_pop;
 use function count;
@@ -139,10 +140,14 @@ final class InstancePropertyAssignmentAnalyzer
             // a subclass may give the template a subclass of the class whose name the default is, which the default
             // isn't the class-string of
             if ($class_property_type
-                && $class_property_type->getAtomicTypes() !== []
-                && array_all(
+                && array_any(
                     $class_property_type->getAtomicTypes(),
                     static fn(Atomic $atomic): bool => $atomic instanceof TTemplateParamClass,
+                )
+                && array_all(
+                    $class_property_type->getAtomicTypes(),
+                    static fn(Atomic $atomic): bool => $atomic instanceof TTemplateParamClass
+                        || $atomic instanceof TNull,
                 )
                 && array_all(
                     $assignment_value_type->getAtomicTypes(),
@@ -152,7 +157,7 @@ final class InstancePropertyAssignmentAnalyzer
             ) {
                 IssueBuffer::maybeAdd(
                     new PropertyTypeCoercion(
-                        $var_id . ' expects \'' . $class_property_type->getId() . '\', '
+                        $var_id . ' expects \'' . $class_property_type->getId() . '\','
                             . ' parent type \'' . $assignment_value_type->getId() . '\' provided',
                         new CodeLocation($statements_analyzer->getSource(), $stmt->default),
                         $property_id,
@@ -332,10 +337,23 @@ final class InstancePropertyAssignmentAnalyzer
 
             $bound = $template_class_string->as_type;
 
-            if ($bound === null
-                || strtolower($bound->value) === strtolower($class_string->value)
-                || ($codebase->classOrInterfaceExists($class_string->value)
-                    && $codebase->classExtendsOrImplements($class_string->value, $bound->value))
+            if ($bound === null) {
+                return true;
+            }
+
+            if (strtolower($bound->value) === strtolower($class_string->value)) {
+                // a final bound (or an enum) has no subclass: the template can only be the bound itself
+                if ($codebase->classlike_storage_provider->has($bound->value)
+                    && $codebase->classlike_storage_provider->get($bound->value)->final
+                ) {
+                    continue;
+                }
+
+                return true;
+            }
+
+            if ($codebase->classOrInterfaceExists($class_string->value)
+                && $codebase->classExtendsOrImplements($class_string->value, $bound->value)
             ) {
                 return true;
             }

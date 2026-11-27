@@ -77,6 +77,16 @@ final class ClassTemplateTest extends TestCase
                     '$cat' => 'Cat',
                 ],
             ],
+            'classStringOfAFinalBoundAsTheDefaultOfATemplateClassString' => [
+                'code' => '<?php
+                    final class FinalAnimal {}
+
+                    /** @template T of FinalAnimal */
+                    class Shelter {
+                        /** @var class-string<T> */
+                        protected string $species = FinalAnimal::class;
+                    }',
+            ],
             'nullCoalescingATemplatePropertyBoundedByANullableStringToAString' => [
                 'code' => '<?php
                     /**
@@ -6892,6 +6902,18 @@ final class ClassTemplateTest extends TestCase
                         public function adopt(): Animal {
                             return new ($this->species)();
                         }
+                    }',
+                'error_message' => 'PropertyTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:53 - $this->species'
+                    . ' expects \'class-string<T:Shelter as Animal>\', parent type \'Animal::class\' provided',
+            ],
+            'classStringOfTheBoundAsTheDefaultOfANullableTemplateClassString' => [
+                'code' => '<?php
+                    class Animal {}
+
+                    /** @template T of Animal */
+                    class Shelter {
+                        /** @var class-string<T>|null */
+                        protected ?string $species = Animal::class;
                     }',
                 'error_message' => 'PropertyTypeCoercion',
             ],
