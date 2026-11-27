@@ -6,6 +6,7 @@ namespace Psalm;
 
 use InvalidArgumentException;
 use LogicException;
+use Psalm\Exception\TypeParseTreeException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Type\AtomicParts;
@@ -1045,10 +1046,10 @@ abstract class Type
         bool $allow_interface_equality,
         bool $allow_float_int_equality,
     ): TTemplateKeyOf|TTemplateValueOf|null {
-        if ($type_1->isSingle() && !self::hasTemplateKeyOrValueOf($type_2)) {
+        if ($type_1->isSingleAtomic() && !self::hasTemplateKeyOrValueOf($type_2)) {
             $template_of = $type_1->getSingleAtomic();
             $other_type = $type_2;
-        } elseif ($type_2->isSingle() && !self::hasTemplateKeyOrValueOf($type_1)) {
+        } elseif ($type_2->isSingleAtomic() && !self::hasTemplateKeyOrValueOf($type_1)) {
             $template_of = $type_2->getSingleAtomic();
             $other_type = $type_1;
         } else {
@@ -1059,7 +1060,7 @@ abstract class Type
             return null;
         }
 
-        $template = $template_of->as->isSingle() ? $template_of->as->getSingleAtomic() : null;
+        $template = $template_of->as->isSingleAtomic() ? $template_of->as->getSingleAtomic() : null;
 
         if (!$template instanceof TTemplateParam) {
             return null;
@@ -1449,59 +1450,141 @@ abstract class Type
         }
 
         if (self::mayIntersect($type_1_atomic, $type_2_atomic, $codebase)) {
-            if ($type_1_atomic instanceof TNamedObject && $type_2_atomic instanceof TNamedObject) {
-                try {
-                    $first = $codebase->classlike_storage_provider->get($type_1_atomic->value);
-                    $second = $codebase->classlike_storage_provider->get($type_2_atomic->value);
-                    $first_is_class = !$first->is_interface && !$first->is_trait;
-                    $second_is_class = !$second->is_interface && !$second->is_trait;
-                    if ($first_is_class && $second_is_class) {
-                        return $intersection_atomic;
-                    }
-                } catch (InvalidArgumentException) {
-                    // Ignore non-existing classes during initial scan
-                }
-            }
-            if ($intersection_atomic === null && $wider_type === null) {
-                $intersection_atomic = $type_1_atomic;
-                $wider_type = $type_2_atomic;
-            }
-            if ($intersection_atomic === null || $wider_type === null) {
-                throw new LogicException(
-                    '$intersection_atomic and $wider_type should be both set or null.'
-                    . ' Check the preceding code for errors.'
-                    . ' Did you forget to assign one of the variables?',
-                );
-            }
-            if (!self::mayHaveIntersection($intersection_atomic, $codebase)
-                || !self::mayHaveIntersection($wider_type, $codebase)
-            ) {
-                throw new LogicException(
-                    '$intersection_atomic and $wider_type should be both support intersection.'
-                    . ' Check the preceding code for errors.',
-                );
-            }
-
-            $intersection_performed = true;
-
-            $wider_type_clone = $wider_type->setIntersectionTypes([]);
-
-            $final_intersection = array_merge(
-                [$wider_type_clone->getKey() => $wider_type_clone],
-                $intersection_atomic->getIntersectionTypes(),
+            return self::intersectIntersectionTypes(
+                $type_1_atomic,
+                $type_2_atomic,
+                $intersection_atomic,
+                $wider_type,
+                $codebase,
+                $intersection_performed,
             );
-
-            $wider_type_intersection_types = $wider_type->getIntersectionTypes();
-
-            foreach ($wider_type_intersection_types as $wider_type_intersection_type) {
-                $final_intersection[$wider_type_intersection_type->getKey()]
-                    = $wider_type_intersection_type;
-            }
-
-            return $intersection_atomic->setIntersectionTypes($final_intersection);
         }
 
         return $intersection_atomic;
+    }
+
+    /**
+     * The intersection of two types that support intersection, from the narrower and the wider one if known
+     */
+    private static function intersectIntersectionTypes(
+        Atomic $type_1_atomic,
+        Atomic $type_2_atomic,
+        ?Atomic $intersection_atomic,
+        ?Atomic $wider_type,
+        Codebase $codebase,
+        bool &$intersection_performed,
+    ): ?Atomic {
+        if ($type_1_atomic instanceof TNamedObject && $type_2_atomic instanceof TNamedObject) {
+            try {
+                $first = $codebase->classlike_storage_provider->get($type_1_atomic->value);
+                $second = $codebase->classlike_storage_provider->get($type_2_atomic->value);
+                $first_is_class = !$first->is_interface && !$first->is_trait;
+                $second_is_class = !$second->is_interface && !$second->is_trait;
+                if ($first_is_class
+                    && $second_is_class
+                    && !self::areSameClassWithObjectShapes($type_1_atomic, $type_2_atomic)
+                ) {
+                    return $intersection_atomic;
+                }
+            } catch (InvalidArgumentException) {
+                // Ignore non-existing classes during initial scan
+            }
+        }
+        if ($intersection_atomic === null && $wider_type === null) {
+            $intersection_atomic = $type_1_atomic;
+            $wider_type = $type_2_atomic;
+        }
+        if ($intersection_atomic === null || $wider_type === null) {
+            throw new LogicException(
+                '$intersection_atomic and $wider_type should be both set or null.'
+                . ' Check the preceding code for errors.'
+                . ' Did you forget to assign one of the variables?',
+            );
+        }
+        if (!self::mayHaveIntersection($intersection_atomic, $codebase)
+            || !self::mayHaveIntersection($wider_type, $codebase)
+        ) {
+            throw new LogicException(
+                '$intersection_atomic and $wider_type should be both support intersection.'
+                . ' Check the preceding code for errors.',
+            );
+        }
+
+        $intersection_atomic = self::intersectWithWiderType($codebase, $intersection_atomic, $wider_type);
+
+        if ($intersection_atomic !== null) {
+            $intersection_performed = true;
+        }
+
+        return $intersection_atomic;
+    }
+
+    /**
+     * $intersection_atomic with the parts of $wider_type added, or null when no value has both
+     *
+     * @param TIterable|TNamedObject|TTemplateParam|TObjectWithProperties $intersection_atomic
+     * @param TIterable|TNamedObject|TTemplateParam|TObjectWithProperties $wider_type
+     */
+    private static function intersectWithWiderType(
+        Codebase $codebase,
+        Atomic $intersection_atomic,
+        Atomic $wider_type,
+    ): ?Atomic {
+        $wider_type_clone = $wider_type->setIntersectionTypes([]);
+
+        $final_intersection = [$wider_type_clone->getKey() => $wider_type_clone];
+
+        try {
+            foreach ([
+                ...array_values($intersection_atomic->getIntersectionTypes()),
+                ...array_values($wider_type->getIntersectionTypes()),
+            ] as $intersection_part) {
+                $part_key = $intersection_part->getKey();
+                $same_key_part = $final_intersection[$part_key] ?? null;
+
+                // every object shape has the key `object`: their properties are those of all of them
+                $final_intersection[$part_key] = $intersection_part instanceof TObjectWithProperties
+                    && $same_key_part instanceof TObjectWithProperties
+                        ? TypeParser::mergeObjectShapes($codebase, $same_key_part, $intersection_part)
+                        : $intersection_part;
+            }
+
+            $own_key = $intersection_atomic->getKey();
+            $same_key_part = $final_intersection[$own_key] ?? null;
+
+            if ($intersection_atomic instanceof TObjectWithProperties
+                && $same_key_part instanceof TObjectWithProperties
+            ) {
+                $intersection_atomic = TypeParser::mergeObjectShapes($codebase, $intersection_atomic, $same_key_part);
+                unset($final_intersection[$own_key]);
+            }
+        } catch (TypeParseTreeException) {
+            return null;
+        }
+
+        // the class is already the intersection's own type
+        if ($intersection_atomic instanceof TNamedObject
+            && $wider_type instanceof TNamedObject
+            && self::areSameClassWithObjectShapes($intersection_atomic, $wider_type)
+        ) {
+            unset($final_intersection[$wider_type_clone->getKey()]);
+        }
+
+        return $intersection_atomic->setIntersectionTypes($final_intersection);
+    }
+
+    /**
+     * @psalm-pure
+     */
+    private static function areSameClassWithObjectShapes(TNamedObject $type_1, TNamedObject $type_2): bool
+    {
+        // class names are case-insensitive, type arguments are not
+        return $type_1::class === $type_2::class
+            && strtolower($type_1->value) === strtolower($type_2->value)
+            && substr($type_1->getKey(false), strlen($type_1->value))
+                === substr($type_2->getKey(false), strlen($type_2->value))
+            && ($type_1->extra_types['object'] ?? null) instanceof TObjectWithProperties
+            && ($type_2->extra_types['object'] ?? null) instanceof TObjectWithProperties;
     }
 
     /**

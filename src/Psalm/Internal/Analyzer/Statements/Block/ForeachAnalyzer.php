@@ -45,14 +45,31 @@ use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\TypeVisitor\ClassStringMapBoundReplacer;
 use Psalm\Internal\TypeVisitor\TypeVariableResolver;
 use Psalm\Issue\ImpureMethodCall;
+use Psalm\Issue\InvalidArrayAccess;
+use Psalm\Issue\InvalidArrayOffset;
+use Psalm\Issue\InvalidCast;
+use Psalm\Issue\InvalidClone;
 use Psalm\Issue\InvalidDocblock;
+use Psalm\Issue\InvalidFunctionCall;
 use Psalm\Issue\InvalidIterator;
+use Psalm\Issue\InvalidPropertyAssignment;
+use Psalm\Issue\InvalidReturnType;
+use Psalm\Issue\MissingClosureReturnType;
+use Psalm\Issue\MixedArgument;
+use Psalm\Issue\MixedAssignment;
+use Psalm\Issue\MixedMethodCall;
+use Psalm\Issue\MixedPropertyFetch;
+use Psalm\Issue\NoValue;
 use Psalm\Issue\NullIterator;
+use Psalm\Issue\ParadoxicalCondition;
 use Psalm\Issue\PossibleRawObjectIteration;
 use Psalm\Issue\PossiblyFalseIterator;
 use Psalm\Issue\PossiblyInvalidIterator;
 use Psalm\Issue\PossiblyNullIterator;
 use Psalm\Issue\RawObjectIteration;
+use Psalm\Issue\RedundantCondition;
+use Psalm\Issue\TypeDoesNotContainType;
+use Psalm\Issue\UndefinedClass;
 use Psalm\Issue\UnnecessaryVarAnnotation;
 use Psalm\IssueBuffer;
 use Psalm\Node\Expr\VirtualMethodCall;
@@ -112,6 +129,30 @@ use const ARRAY_FILTER_USE_BOTH;
  */
 final class ForeachAnalyzer
 {
+    /**
+     * The issues the uses of an item that is never raise (a check of its type, a call or a clone of it, a class
+     * named by it, a return of it, what is done with a value of it), as never is a type nothing is done with
+     */
+    private const ISSUES_OF_A_NEVER_ITEM = [
+        InvalidArrayAccess::class => true,
+        InvalidArrayOffset::class => true,
+        InvalidCast::class => true,
+        InvalidClone::class => true,
+        InvalidFunctionCall::class => true,
+        InvalidPropertyAssignment::class => true,
+        InvalidReturnType::class => true,
+        MissingClosureReturnType::class => true,
+        MixedArgument::class => true,
+        MixedAssignment::class => true,
+        MixedMethodCall::class => true,
+        MixedPropertyFetch::class => true,
+        NoValue::class => true,
+        ParadoxicalCondition::class => true,
+        RedundantCondition::class => true,
+        TypeDoesNotContainType::class => true,
+        UndefinedClass::class => true,
+    ];
+
     /**
      * @return  false|null
      */
@@ -359,6 +400,13 @@ final class ForeachAnalyzer
             $value_type = new Union([new TMixed()], ['by_ref' => $stmt->byRef]);
         }
 
+        // nothing is iterated: the item is never, and what the body does with it is not reported
+        $iterates_nothing = $value_type->isNever() || $key_type?->isNever() === true;
+
+        if ($iterates_nothing) {
+            IssueBuffer::startRecording();
+        }
+
         if ($stmt->byRef
             && $stmt->valueVar instanceof PhpParser\Node\Expr\Variable
             && is_string($stmt->valueVar->name)
@@ -457,47 +505,7 @@ final class ForeachAnalyzer
             $foreach_context->vars_in_scope[$var_comment->var_id] = $comment_type;
         }
 
-        if (!$stmt->byRef
-            && $iterator_type !== null
-            && $iterator_type->parent_nodes
-            && ArrayAssignmentAnalyzer::hasElementsOfItsOwn($iterator_type)
-            && $stmt->keyVar instanceof PhpParser\Node\Expr\Variable
-            && is_string($stmt->keyVar->name)
-            && $stmt->valueVar instanceof PhpParser\Node\Expr\Variable
-            && is_string($stmt->valueVar->name)
-            && isset($foreach_context->vars_in_scope['$' . $stmt->keyVar->name])
-            && isset($foreach_context->vars_in_scope['$' . $stmt->valueVar->name])
-        ) {
-            $key_node_ids = ArrayAssignmentAnalyzer::getValueNodeIds(
-                $foreach_context->vars_in_scope['$' . $stmt->keyVar->name],
-            );
-            $value_node_ids = ArrayAssignmentAnalyzer::getValueNodeIds(
-                $foreach_context->vars_in_scope['$' . $stmt->valueVar->name],
-            );
-
-            if ($key_node_ids !== [] && $value_node_ids !== []) {
-                $foreach_context->foreach_element_copies['$' . $stmt->valueVar->name] = [
-                    '$' . $stmt->keyVar->name,
-                    $key_node_ids,
-                    $value_node_ids,
-                    $iterator_type->parent_nodes,
-                ];
-            }
-        }
-
-        if ($foreach_marker !== null
-            && $stmt->keyVar instanceof PhpParser\Node\Expr\Variable
-            && is_string($stmt->keyVar->name)
-            && isset($foreach_context->vars_in_scope['$' . $stmt->keyVar->name])
-        ) {
-            $key_node_ids = ArrayAssignmentAnalyzer::getValueNodeIds(
-                $foreach_context->vars_in_scope['$' . $stmt->keyVar->name],
-            );
-
-            if ($key_node_ids !== []) {
-                $foreach_context->foreach_keys['$' . $stmt->keyVar->name] = [$key_node_ids, $foreach_marker];
-            }
-        }
+        self::trackKeyAndValueNodes($stmt, $iterator_type, $foreach_marker, $foreach_context);
 
         $loop_scope = new LoopScope($foreach_context, $context);
 
@@ -505,7 +513,7 @@ final class ForeachAnalyzer
 
         $stmt->setAttribute('alwaysEntered', $iterator_type !== null && $always_non_empty_array);
 
-        if (LoopAnalyzer::analyze(
+        $loop_result = LoopAnalyzer::analyze(
             $statements_analyzer,
             $stmt->stmts,
             [],
@@ -514,7 +522,13 @@ final class ForeachAnalyzer
             $inner_loop_context,
             false,
             $always_non_empty_array,
-        ) === false) {
+        );
+
+        if ($iterates_nothing) {
+            self::reportWhatIsNotDueToANeverItem();
+        }
+
+        if ($loop_result === false) {
             return false;
         }
 
@@ -557,6 +571,74 @@ final class ForeachAnalyzer
         }
 
         return null;
+    }
+
+    /**
+     * Stops the recording of the issues of a loop body analysed with an item that is never, and reports the ones
+     * that are not due to the item
+     */
+    private static function reportWhatIsNotDueToANeverItem(): void
+    {
+        $recorded_issues = IssueBuffer::clearRecordingLevel();
+        IssueBuffer::stopRecording();
+
+        foreach ($recorded_issues as $recorded_issue) {
+            if (!isset(self::ISSUES_OF_A_NEVER_ITEM[$recorded_issue::class])) {
+                IssueBuffer::bubbleUp($recorded_issue);
+            }
+        }
+    }
+
+    /**
+     * What the key and the value variables of a foreach take from the iterated value, for the data flow
+     */
+    private static function trackKeyAndValueNodes(
+        PhpParser\Node\Stmt\Foreach_ $stmt,
+        ?Union $iterator_type,
+        ?string $foreach_marker,
+        Context $foreach_context,
+    ): void {
+        if (!$stmt->byRef
+            && $iterator_type !== null
+            && $iterator_type->parent_nodes
+            && ArrayAssignmentAnalyzer::hasElementsOfItsOwn($iterator_type)
+            && $stmt->keyVar instanceof PhpParser\Node\Expr\Variable
+            && is_string($stmt->keyVar->name)
+            && $stmt->valueVar instanceof PhpParser\Node\Expr\Variable
+            && is_string($stmt->valueVar->name)
+            && isset($foreach_context->vars_in_scope['$' . $stmt->keyVar->name])
+            && isset($foreach_context->vars_in_scope['$' . $stmt->valueVar->name])
+        ) {
+            $key_node_ids = ArrayAssignmentAnalyzer::getValueNodeIds(
+                $foreach_context->vars_in_scope['$' . $stmt->keyVar->name],
+            );
+            $value_node_ids = ArrayAssignmentAnalyzer::getValueNodeIds(
+                $foreach_context->vars_in_scope['$' . $stmt->valueVar->name],
+            );
+
+            if ($key_node_ids !== [] && $value_node_ids !== []) {
+                $foreach_context->foreach_element_copies['$' . $stmt->valueVar->name] = [
+                    '$' . $stmt->keyVar->name,
+                    $key_node_ids,
+                    $value_node_ids,
+                    $iterator_type->parent_nodes,
+                ];
+            }
+        }
+
+        if ($foreach_marker !== null
+            && $stmt->keyVar instanceof PhpParser\Node\Expr\Variable
+            && is_string($stmt->keyVar->name)
+            && isset($foreach_context->vars_in_scope['$' . $stmt->keyVar->name])
+        ) {
+            $key_node_ids = ArrayAssignmentAnalyzer::getValueNodeIds(
+                $foreach_context->vars_in_scope['$' . $stmt->keyVar->name],
+            );
+
+            if ($key_node_ids !== []) {
+                $foreach_context->foreach_keys['$' . $stmt->keyVar->name] = [$key_node_ids, $foreach_marker];
+            }
+        }
     }
 
     /**
@@ -1112,7 +1194,7 @@ final class ForeachAnalyzer
         if ($stmt->expr instanceof PhpParser\Node\Expr\PropertyFetch
             && $stmt->expr->name instanceof PhpParser\Node\Identifier
             && ($object_type = $statements_analyzer->node_data->getType($stmt->expr->var))
-            && $object_type->isSingle()
+            && $object_type->isSingleAtomic()
             && ($object_atomic_type = $object_type->getSingleAtomic()) instanceof TNamedObject
         ) {
             $codebase = $statements_analyzer->getCodebase();
@@ -1390,10 +1472,12 @@ final class ForeachAnalyzer
                 continue;
             }
 
-            // if it's an empty array, we cannot iterate over it
+            // an empty array has no item to iterate over: what the loop body sees of one is never
             if ($iterator_atomic_type instanceof TArray && $iterator_atomic_type->isEmptyArray()) {
                 $always_non_empty_array = false;
                 $has_valid_iterator = true;
+                $value_type = Type::combineUnionTypes($value_type, Type::getNever());
+                $key_type = Type::combineUnionTypes($key_type, Type::getNever());
                 continue;
             }
 

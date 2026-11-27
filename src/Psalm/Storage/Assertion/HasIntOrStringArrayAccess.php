@@ -16,6 +16,14 @@ use UnexpectedValueException;
 final class HasIntOrStringArrayAccess extends Assertion
 {
     use UnserializeMemoryUsageSuppressionTrait;
+
+    /**
+     * @param bool $int_key unused: kept so that plugins creating the assertion keep working
+     */
+    public function __construct(public readonly bool $int_key = false)
+    {
+    }
+
     /**
      * @psalm-pure
      */

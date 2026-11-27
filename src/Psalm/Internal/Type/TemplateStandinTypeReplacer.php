@@ -30,8 +30,6 @@ use Psalm\Type\Atomic\TIntersection;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralClassString;
-use Psalm\Type\Atomic\TLiteralInt;
-use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TObjectWithProperties;
@@ -133,7 +131,7 @@ final class TemplateStandinTypeReplacer
         // never become part of the type inferred for the other atoms, e.g. `null` for `T|null`
         $other_input_type = $input_type;
 
-        if ($input_type && !$input_type->isSingle()) {
+        if ($input_type && !$input_type->isSingleAtomic()) {
             $new_input_type = $input_type->getBuilder();
             $has_template_atom = false;
 
@@ -422,28 +420,17 @@ final class TemplateStandinTypeReplacer
                             $codebase,
                         );
 
-                    if ($array_template_type->isSingle()
-                        && $offset_template_type->isSingle()
-                        && !$array_template_type->isMixed()
-                        && !$offset_template_type->isMixed()
-                    ) {
-                        $array_template_type = $array_template_type->getSingleAtomic();
-                        $offset_template_type = $offset_template_type->getSingleAtomic();
+                    $replacement_type = TemplateInferredTypeReplacer::getIndexedAccessType(
+                        $array_template_type,
+                        $offset_template_type,
+                        $codebase,
+                    );
 
+                    if ($replacement_type !== null) {
+                        $include_first = false;
 
-                        if ($array_template_type instanceof TKeyedArray
-                            && ($offset_template_type instanceof TLiteralString
-                                || $offset_template_type instanceof TLiteralInt)
-                            && isset($array_template_type->properties[$offset_template_type->value])
-                        ) {
-                            $include_first = false;
-
-                            $replacement_type
-                                = $array_template_type->properties[$offset_template_type->value];
-
-                            foreach ($replacement_type->getAtomicTypes() as $replacement_atomic_type) {
-                                $atomic_types[] = $replacement_atomic_type;
-                            }
+                        foreach ($replacement_type->getAtomicTypes() as $replacement_atomic_type) {
+                            $atomic_types[] = $replacement_atomic_type;
                         }
                     }
                 }
@@ -668,7 +655,7 @@ final class TemplateStandinTypeReplacer
                 }
 
                 if ($inferred_type !== null
-                    && $inferred_type->isSingle()
+                    && $inferred_type->isSingleAtomic()
                     && $template_collector->getTemplateTypes() === []
                 ) {
                     $replaced_atomic_type = $inferred_type->getSingleAtomic();
@@ -956,7 +943,7 @@ final class TemplateStandinTypeReplacer
                     $depth + 1,
                 );
 
-                if ($extra_type->isSingle()) {
+                if ($extra_type->isSingleAtomic()) {
                     $extra_type = $extra_type->getSingleAtomic();
 
                     if ($extra_type instanceof TNamedObject
@@ -1019,7 +1006,7 @@ final class TemplateStandinTypeReplacer
                     ) {
                         $keyed_template = $template_result->template_types[$replacement_atomic_type->param_name][$replacement_atomic_type->defining_class];
 
-                        if ($keyed_template->isSingle()) {
+                        if ($keyed_template->isSingleAtomic()) {
                             $keyed_template = $keyed_template->getSingleAtomic();
                         }
 
@@ -1867,7 +1854,9 @@ final class TemplateStandinTypeReplacer
      * @param TGenericObject|TNamedObject|TIterable $input_type_part
      * @param TGenericObject|TNamedObject|TIterable $container_type_part
      * @psalm-capabilities read-props|write-this-props|write-props|write-refs
-     * @param-out array<int, true> $input_star_offsets the offsets of the returned params that are a `*`
+     * @param-out array<int, TypeArgumentProjection> $input_star_offsets the offsets of the returned params that are
+     *                                                a `*`, a `covariant` or a `contravariant` argument
+     * @param-out array<int, bool>|null $container_type_params_covariant
      * @param-out array<int, true>|null $container_type_params_contravariant
      * @param-out array<int, true> $input_unbound_offsets the offsets of the returned params that hold a template of
      *                                                    an input without type params (`Impl` for `Sink<T>`): an
@@ -1938,8 +1927,8 @@ final class TemplateStandinTypeReplacer
         $input_star_offsets = [];
 
         foreach ($input_projections as $offset => $projection) {
-            if ($projection === TypeArgumentProjection::Star) {
-                $input_star_offsets[$offset] = true;
+            if ($projection->isUnknown()) {
+                $input_star_offsets[$offset] = $projection;
             }
         }
 
@@ -1949,6 +1938,37 @@ final class TemplateStandinTypeReplacer
 
         $container_type_params_covariant = $container_class_storage?->template_covariants;
         $container_type_params_contravariant = $container_class_storage?->template_contravariants;
+
+        // a `covariant` or `contravariant` argument of the container is compared as that of a template declared so
+        if ($container_type_part instanceof TGenericObject) {
+            foreach ($container_type_part->getProjections() as $offset => $projection) {
+                if ($projection === TypeArgumentProjection::Covariant) {
+                    $container_type_params_covariant[$offset] = true;
+                    unset($container_type_params_contravariant[$offset]);
+                } elseif ($projection === TypeArgumentProjection::Contravariant) {
+                    $container_type_params_contravariant[$offset] = true;
+                    unset($container_type_params_covariant[$offset]);
+                }
+            }
+        }
+
+        // what is read from a `contravariant X` argument is the bound of its template: what a covariant argument of the
+        // container, or an argument wrapping the template, holds, as for a `*`
+        $read_type_params = $input_type_part instanceof TGenericObject && $input_class_storage !== null
+            ? StarProjection::readTypeParams($input_type_part, $input_type_params, $input_class_storage, $codebase)
+            : $input_type_params;
+
+        if ($read_type_params !== $input_type_params && $input_type_part->value === $container_type_part->value) {
+            foreach ($input_type_params as $offset => $_) {
+                if (($input_star_offsets[$offset] ?? null) === TypeArgumentProjection::Contravariant
+                    && ($container_type_params_covariant[$offset] ?? false)
+                    && isset($read_type_params[$offset])
+                ) {
+                    $input_type_params[$offset] = $read_type_params[$offset];
+                    $input_star_offsets[$offset] = TypeArgumentProjection::Star;
+                }
+            }
+        }
 
         if ($input_type_part->value !== $container_type_part->value
             && $input_class_storage
@@ -1967,11 +1987,14 @@ final class TemplateStandinTypeReplacer
                         break;
                     }
 
-                    $replacement_templates[$template_name][$input_type_part->value] = $input_type_params[$i];
+                    $replacement_templates[$template_name][$input_type_part->value] = $read_type_params[$i];
 
-                    if (($input_projections[$i] ?? null) === TypeArgumentProjection::Star) {
+                    $input_projection = $input_projections[$i] ?? null;
+
+                    if ($input_projection?->isUnknown()) {
                         // `Box<T>` of the `@implements Getter<Box<T>>` of a `Box<*>` is as unknown as the receiver
-                        $star_templates[$template_name][$input_type_part->value] = true;
+                        $star_templates[$template_name][$input_type_part->value]
+                            = $input_projection === TypeArgumentProjection::Covariant ? $input_projection : true;
                     }
 
                     $i++;
@@ -2031,7 +2054,7 @@ final class TemplateStandinTypeReplacer
                                 );
 
                                 $candidate_offsets[] = $old_params_offset;
-                                $candidate_param_types[] = ($input_type_params[$old_params_offset] ?? Type::getMixed())
+                                $candidate_param_types[] = ($read_type_params[$old_params_offset] ?? Type::getMixed())
                                     ->setProperties(['from_template_default' => true]);
                             }
                         }
@@ -2050,13 +2073,23 @@ final class TemplateStandinTypeReplacer
                         $codebase,
                     );
 
-                    // a `*` argument of the input is one of the container when the container's template stands for
-                    // exactly the template that holds it
+                    // a `*`, `covariant` or `contravariant` argument of the input is one of the container when the
+                    // container's template stands for exactly the template that holds it
                     if (count($candidate_offsets) === 1
-                        && $extended_input_param_type->isSingle()
-                        && ($input_projections[$candidate_offsets[0]] ?? null) === TypeArgumentProjection::Star
+                        && $extended_input_param_type->isSingleAtomic()
+                        && ($projection = $input_projections[$candidate_offsets[0]] ?? null)?->isUnknown()
                     ) {
-                        $mapped_star_offsets[count($new_input_params)] = true;
+                        // a covariant argument of the container reads the bound of a `contravariant X`, which
+                        // $new_input_param holds, as a `*`; another one compares the `X`
+                        if ($projection === TypeArgumentProjection::Contravariant) {
+                            if ($container_type_params_covariant[count($new_input_params)] ?? false) {
+                                $projection = TypeArgumentProjection::Star;
+                            } else {
+                                $new_input_param = $input_type_params[$candidate_offsets[0]];
+                            }
+                        }
+
+                        $mapped_star_offsets[count($new_input_params)] = $projection;
                     } elseif ($star_templates !== []) {
                         // an argument that wraps the template (`list<T>`) holds a `*` as unknown as it is
                         $template_collector = new TemplateTypeCollector(true);
@@ -2064,7 +2097,7 @@ final class TemplateStandinTypeReplacer
 
                         foreach ($template_collector->getTemplateTypes() as $template) {
                             if (isset($star_templates[$template->param_name][$template->defining_class])) {
-                                $mapped_star_offsets[count($new_input_params)] = true;
+                                $mapped_star_offsets[count($new_input_params)] = TypeArgumentProjection::Star;
 
                                 break;
                             }

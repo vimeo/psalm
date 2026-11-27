@@ -8,6 +8,7 @@ use AssertionError;
 use Psalm\Codebase;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\PurityArguments;
+use Psalm\Internal\Type\StarProjection;
 use Psalm\Internal\Type\TemplateDefaults;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
@@ -74,6 +75,8 @@ final class ClassTemplateParamCollector
         $e = $static_class_storage->template_extended_params;
 
         if ($lhs_type_part instanceof TGenericObject) {
+            $lhs_type_part = StarProjection::resolveReads($lhs_type_part, $codebase);
+
             if ($class_storage === $static_class_storage && $class_storage->template_types) {
                 $class_template_params = self::getOwnTemplateParams($codebase, $class_storage, $lhs_type_part);
             }
@@ -321,11 +324,14 @@ final class ClassTemplateParamCollector
     }
 
     /**
-     * Marks the templates, by name and defining class, that the receiver binds to one of its `*` arguments: its own
-     * template of that argument, and those of the classes it extends that stand for exactly that template (`true`).
+     * Marks the templates, by name and defining class, that the receiver binds to one of its `*`, `covariant` or
+     * `contravariant` arguments: its own template of that argument, and those of the classes it extends that stand
+     * for exactly that template (see TemplateResult::$star_bindings; the `X` of a `contravariant X` is what is
+     * written to it).
      * A template of a class it extends that stands for a type wrapping one of them (`@implements Getter<Box<T>>`)
-     * is marked with that type, with the `*` in it, as that is what is read from the receiver (and with `never` in
-     * it as what is written to it): the type that its parameters take stays the one with the bound.
+     * is marked with that type as it is read from the receiver (`Box<*>`), and with what it is as an input (`never`,
+     * or the `X` of a `contravariant X`, in place of the template): the type that its parameters take stays the one
+     * with the bound.
      *
      * @param array<string, array<string, Union>>|null $class_template_params what collect() gave
      * @psalm-capabilities read-props|write-this-props|write-props|write-refs
@@ -338,38 +344,58 @@ final class ClassTemplateParamCollector
         ?array $class_template_params,
     ): void {
         if (!$lhs_type_part instanceof TGenericObject
-            || !$lhs_type_part->hasStarProjection()
+            || !$lhs_type_part->hasUnknownArgument()
             || $class_template_params === null
         ) {
             return;
         }
 
         $star_templates = [];
+        $input_bounds = [];
 
         foreach ($class_template_params as $template_name => $defining_classes) {
             foreach ($defining_classes as $defining_class => $_) {
                 $offset = self::getOwnTemplateOffset($static_class_storage, $defining_class, $template_name);
+                $projection = $offset === null ? null : $lhs_type_part->getProjection($offset);
 
-                if ($offset !== null && $lhs_type_part->getProjection($offset) === TypeArgumentProjection::Star) {
-                    $star_templates[$template_name][$defining_class] = true;
+                if ($offset !== null && $projection?->isUnknown()) {
+                    $star_templates[$template_name][$defining_class]
+                        = $projection === TypeArgumentProjection::Covariant ? $projection : true;
+
+                    // what is written to a `contravariant X` argument is `X`, what is read from it is the bound
+                    if ($projection === TypeArgumentProjection::Contravariant) {
+                        $input_bounds[$template_name][$defining_class] = $lhs_type_part->type_params[$offset];
+                    }
                 }
             }
         }
 
         $own_stars = [];
+        $own_input_bounds = [];
 
         foreach (array_keys($static_class_storage->template_types ?? []) as $offset => $template_name) {
-            if ($lhs_type_part->getProjection($offset) === TypeArgumentProjection::Star) {
-                $own_stars[$template_name][$static_class_storage->name] = true;
+            $projection = $lhs_type_part->getProjection($offset);
+
+            if ($projection?->isUnknown()) {
+                $own_stars[$template_name][$static_class_storage->name]
+                    = $projection === TypeArgumentProjection::Covariant ? $projection : true;
+
+                if ($projection === TypeArgumentProjection::Contravariant) {
+                    $own_input_bounds[$template_name][$static_class_storage->name]
+                        = $lhs_type_part->type_params[$offset];
+                }
             }
         }
 
-        $own_params = self::getOwnTemplateParams($codebase, $static_class_storage, $lhs_type_part);
+        $own_params = self::getOwnTemplateParams(
+            $codebase,
+            $static_class_storage,
+            StarProjection::resolveReads($lhs_type_part, $codebase),
+        );
         $bound_result = new TemplateResult($static_class_storage->template_types ?? [], $own_params);
         $star_result = new TemplateResult($static_class_storage->template_types ?? [], $own_params);
-        $star_result->markStarBindings($own_stars);
+        $star_result->markStarBindings($own_stars, $own_input_bounds);
         $input_result = $star_result->withStarPosition(true);
-        $input_bounds = [];
 
         foreach ($class_template_params as $template_name => $defining_classes) {
             foreach ($defining_classes as $defining_class => $_) {
@@ -414,7 +440,7 @@ final class ClassTemplateParamCollector
 
             $seen[$defining_class . '::' . $template_name] = true;
             $extended_type = $static_class_storage->template_extended_params[$defining_class][$template_name] ?? null;
-            $extended_atomic = $extended_type?->isSingle() ? $extended_type->getSingleAtomic() : null;
+            $extended_atomic = $extended_type?->isSingleAtomic() ? $extended_type->getSingleAtomic() : null;
 
             if (!$extended_atomic instanceof TTemplateParam) {
                 return null;

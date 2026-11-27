@@ -87,6 +87,8 @@ final class PropertiesOfTemplateTest extends TestCase
                     // public $a property); the exact form reveals it in the `a` field.
                     '$objAsArray===' => 'array{a: `_0:42, b: bool, c: string, ...<string, mixed>}',
                 ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'privatePropertiesPicksPrivate' => [
                 'code' => '<?php

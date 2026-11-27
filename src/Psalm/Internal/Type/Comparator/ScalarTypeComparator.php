@@ -236,7 +236,7 @@ final class ScalarTypeComparator
 
         // get_class() of a union of classes is the name of any of them
         if ($container_type_part instanceof TDependentGetClass
-            && !$container_type_part->as_type->isSingle()
+            && !$container_type_part->as_type->isSingleAtomic()
         ) {
             foreach ($container_type_part->as_type->getAtomicTypes() as $class_type) {
                 if (self::isContainedBy(

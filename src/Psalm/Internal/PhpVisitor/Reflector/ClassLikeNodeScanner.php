@@ -216,21 +216,38 @@ final class ClassLikeNodeScanner
                         || $duplicate_storage->stmt_location->file_path !== $this->file_path
                         || $class_location->getHash() !== $duplicate_storage->stmt_location->getHash())
                     ) {
-                        IssueBuffer::maybeAdd(
-                            new DuplicateClass(
-                                'Class ' . $fq_classlike_name . ' has already been defined'
-                                . ($duplicate_storage->location
-                                    ? ' in ' . $duplicate_storage->location->file_path
-                                    : ''),
-                                $name_location,
-                            ),
-                        );
+                        // the declarations of a dependency are alternatives, one per PHP or dependency version
+                        // (`if (!class_exists(...))`): the project's declaration replaces them, else the first one is
+                        // kept. A dependency file dropped here is not cached, so that it declares the class again if
+                        // the other file goes.
+                        $analyzer = $this->codebase->analyzer;
 
-                        $this->file_storage->has_visitor_issues = true;
+                        if (!$analyzer->isOwnCodeFile($this->file_path)) {
+                            $this->file_storage->has_visitor_issues = true;
 
-                        $duplicate_storage->has_visitor_issues = true;
+                            return false;
+                        }
 
-                        return false;
+                        if ($duplicate_storage->stubbed
+                            || !$duplicate_storage->location
+                            || $analyzer->isOwnCodeFile($duplicate_storage->location->file_path)
+                        ) {
+                            IssueBuffer::maybeAdd(
+                                new DuplicateClass(
+                                    'Class ' . $fq_classlike_name . ' has already been defined'
+                                    . ($duplicate_storage->location
+                                        ? ' in ' . $duplicate_storage->location->file_path
+                                        : ''),
+                                    $name_location,
+                                ),
+                            );
+
+                            $this->file_storage->has_visitor_issues = true;
+
+                            $duplicate_storage->has_visitor_issues = true;
+
+                            return false;
+                        }
                     }
                 } elseif (!$duplicate_storage->location
                     || $duplicate_storage->location->file_path !== $this->file_path
@@ -825,7 +842,9 @@ final class ClassLikeNodeScanner
             if ($docblock_info->extension_requirement !== null) {
                 try {
                     $requirement_type = $this->parseRequirement($docblock_info->extension_requirement);
-                    $requirement_atomic = $requirement_type->isSingle() ? $requirement_type->getSingleAtomic() : null;
+                    $requirement_atomic = $requirement_type->isSingleAtomic()
+                        ? $requirement_type->getSingleAtomic()
+                        : null;
 
                     $storage->extension_requirement = $this->getRequirementName($docblock_info->extension_requirement);
                     $storage->extension_requirement_type = $requirement_atomic instanceof TGenericObject
@@ -843,7 +862,9 @@ final class ClassLikeNodeScanner
                 try {
                     $requirement_name = $this->getRequirementName($implementation_requirement);
                     $requirement_type = $this->parseRequirement($implementation_requirement);
-                    $requirement_atomic = $requirement_type->isSingle() ? $requirement_type->getSingleAtomic() : null;
+                    $requirement_atomic = $requirement_type->isSingleAtomic()
+                        ? $requirement_type->getSingleAtomic()
+                        : null;
 
                     $storage->implementation_requirements[] = $requirement_name;
 
@@ -1055,7 +1076,7 @@ final class ClassLikeNodeScanner
                     $storage->template_types ?: [],
                 );
 
-                if ($mixin_type->isSingle()) {
+                if ($mixin_type->isSingleAtomic()) {
                     $mixin_type = $mixin_type->getSingleAtomic();
 
                     if ($mixin_type instanceof TNamedObject) {
@@ -1532,7 +1553,7 @@ final class ClassLikeNodeScanner
         }
 
         // a union is still read member by member, so the parents it names don't also miss their arguments
-        if (!$union_type->isSingle()) {
+        if (!$union_type->isSingleAtomic()) {
             $storage->docblock_issues[] = new InvalidDocblock(
                 $tag . ' cannot be a union type',
                 new CodeLocation($this->file_scanner, $node, null, true),
@@ -1589,7 +1610,8 @@ final class ClassLikeNodeScanner
     }
 
     /**
-     * Reports a `*` argument, which cannot bind a template of the parent (`@extends Box<*>`), as PHPStan does
+     * Reports a `*`, `covariant` or `contravariant` argument, which cannot bind a template of the parent
+     * (`@extends Box<*>`), as PHPStan does
      */
     private function reportStarArgument(
         ClassLikeStorage $storage,
@@ -1597,12 +1619,13 @@ final class ClassLikeNodeScanner
         TGenericObject $atomic_type,
         string $tag,
     ): bool {
-        if (!$atomic_type->hasStarProjection()) {
+        if (!$atomic_type->hasUnknownArgument()) {
             return false;
         }
 
         $storage->docblock_issues[] = new InvalidDocblock(
-            'The * type argument of ' . $atomic_type->getId() . ' is not allowed in ' . $tag,
+            ($atomic_type->hasStarProjection() ? 'The * type argument' : 'The variance of a type argument')
+                . ' of ' . $atomic_type->getId() . ' is not allowed in ' . $tag,
             new CodeLocation($this->file_scanner, $node, null, true),
         );
 
@@ -1789,7 +1812,7 @@ final class ClassLikeNodeScanner
             if ($inferred_type
                 && !(
                     $const->value instanceof Concat
-                    && $inferred_type->isSingle()
+                    && $inferred_type->isSingleAtomic()
                     && $inferred_type->getSingleAtomic()::class === TString::class
                 )
             ) {
@@ -2142,7 +2165,12 @@ final class ClassLikeNodeScanner
                 : null;
             $property_storage->suppressed_issues = $var_comment ? $var_comment->suppressed_issues : [];
             $property_storage->internal = $var_comment ? $var_comment->psalm_internal : [];
-            if (count($property_storage->internal) === 0 && $var_comment && $var_comment->internal) {
+            // the classes using a trait of the global namespace are outside it
+            if (count($property_storage->internal) === 0
+                && $var_comment
+                && $var_comment->internal
+                && !($storage->is_trait && !str_contains($fq_classlike_name, '\\'))
+            ) {
                 $property_storage->internal = [NamespaceAnalyzer::getNameSpaceRoot($fq_classlike_name)];
             }
             $property_storage->native_readonly = $storage->readonly || $stmt->isReadonly();
@@ -2878,7 +2906,7 @@ final class ClassLikeNodeScanner
     {
         $type = $this->parseRequirement($docblock_type);
 
-        $atomic_type = $type->isSingle() ? $type->getSingleAtomic() : null;
+        $atomic_type = $type->isSingleAtomic() ? $type->getSingleAtomic() : null;
 
         return $atomic_type instanceof TNamedObject ? $atomic_type->value : (string) $type;
     }

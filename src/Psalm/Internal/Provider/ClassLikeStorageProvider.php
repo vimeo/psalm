@@ -6,6 +6,7 @@ namespace Psalm\Internal\Provider;
 
 use InvalidArgumentException;
 use LogicException;
+use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Issue\DuplicateClass;
 use Psalm\IssueBuffer;
 use Psalm\Storage\ClassLikeStorage;
@@ -114,18 +115,22 @@ final class ClassLikeStorageProvider
 
     /**
      * @param array<string, ClassLikeStorage> $more
+     * @param array<string, ClassLikeStorage> $earlier the storages held before the scanning processes started
      */
-    public function addMore(array $more): void
+    public function addMore(array $more, array $earlier, int $analysis_php_version_id): void
     {
+        $analyzer = ProjectAnalyzer::getInstance()->getCodebase()->analyzer;
+
         foreach ($more as $k => $storage) {
             if (isset(self::$storage[$k])) {
                 $duplicate_storage = self::$storage[$k];
                 $duplicate_location = $duplicate_storage->location ?? $duplicate_storage->stmt_location;
                 $location = $storage->location ?? $storage->stmt_location;
-                // a project polyfill of a native class stubbed with a newer `@since` replaces the
-                // stub (the scanner only lets it through below that version)
+                // a project polyfill of a native class stubbed with an `@since` newer than the analysed
+                // version replaces the stub, as in ClassLikeNodeScanner
                 $is_polyfill = $duplicate_storage->stubbed
                     && $duplicate_storage->since_php_version_id !== null
+                    && $analysis_php_version_id < $duplicate_storage->since_php_version_id
                     && $storage->user_defined;
 
                 if (!$is_polyfill
@@ -133,20 +138,36 @@ final class ClassLikeStorageProvider
                     && $location !== null
                     && $duplicate_location->getHash() !== $location->getHash()
                 ) {
-                    // the declaration in the smaller path wins: it is the one a single process finds first
-                    $new_is_kept = strcmp($location->file_path, $duplicate_location->file_path) < 0;
+                    // a stub is no dependency alternative: a duplicate of it stays a duplicate
+                    $has_stub = $duplicate_storage->stubbed || $storage->stubbed;
+                    $is_own_code = $has_stub || $analyzer->isOwnCodeFile($location->file_path);
+                    $duplicate_is_own_code = $has_stub || $analyzer->isOwnCodeFile($duplicate_location->file_path);
+
+                    if ($is_own_code !== $duplicate_is_own_code) {
+                        // the project's declaration replaces a dependency's, see ClassLikeNodeScanner
+                        $new_is_kept = $is_own_code;
+                    } else {
+                        // a single process keeps what it scanned before (a worker may have rescanned that file),
+                        // then the declaration in the smaller path: it takes its files in path order
+                        $earlier_storage = $earlier[$k] ?? null;
+                        $earlier_location = $earlier_storage?->location ?? $earlier_storage?->stmt_location;
+                        $new_is_kept = $duplicate_location->file_path !== $earlier_location?->file_path
+                            && strcmp($location->file_path, $duplicate_location->file_path) < 0;
+                    }
                     [$kept, $kept_location, $dropped_location] = $new_is_kept
                         ? [$storage, $location, $duplicate_location]
                         : [$duplicate_storage, $duplicate_location, $location];
 
-                    IssueBuffer::maybeAdd(
-                        new DuplicateClass(
-                            'Class ' . $kept->name . ' has already been defined in ' . $kept_location->file_path,
-                            $dropped_location,
-                        ),
-                    );
+                    if ($is_own_code && $duplicate_is_own_code) {
+                        IssueBuffer::maybeAdd(
+                            new DuplicateClass(
+                                'Class ' . $kept->name . ' has already been defined in ' . $kept_location->file_path,
+                                $dropped_location,
+                            ),
+                        );
 
-                    $kept->has_visitor_issues = true;
+                        $kept->has_visitor_issues = true;
+                    }
 
                     if (!$new_is_kept) {
                         continue;

@@ -14,9 +14,7 @@ use Psalm\StatementsSource;
 use function array_column;
 use function array_map;
 use function getenv;
-use function hrtime;
 use function putenv;
-use function usleep;
 
 /**
  * @psalm-import-type WorkerPerf from Collector
@@ -26,11 +24,30 @@ use function usleep;
  */
 final class CollectorTest extends TestCase
 {
+    /** The nanoseconds Collector reads as the time; a test moves it with advance() instead of waiting */
+    private int $now_ns = 1_000_000_000;
+
+    #[Override]
+    protected function setUp(): void
+    {
+        parent::setUp();
+        Collector::setClock(fn(): int => $this->now_ns);
+    }
+
     #[Override]
     protected function tearDown(): void
     {
         Collector::reset();
+        Collector::setClock(null);
         parent::tearDown();
+    }
+
+    /**
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    private function advance(int $microseconds): void
+    {
+        $this->now_ns += $microseconds * 1_000;
     }
 
     public function testExecutionsOfOneStatementAreOneHotItemWithTheirPasses(): void
@@ -107,12 +124,12 @@ final class CollectorTest extends TestCase
         $source->method('getFileName')->willReturn('src/N.php');
 
         // as StatementsAnalyzer does: the outer statement starts, and its child is analysed inside it
-        $outer_start = (int) hrtime(true);
+        $outer_start = Collector::nowNs();
         Collector::$child_ns = 0;
-        $inner_start = (int) hrtime(true);
-        usleep(5_000);
+        $inner_start = Collector::nowNs();
+        $this->advance(5_000);
         Collector::statementEnd($source, new Nop(['startLine' => 11]), $inner_start, 0);
-        usleep(5_000);
+        $this->advance(5_000);
         Collector::statementEnd($source, new Nop(['startLine' => 10]), $outer_start, 0);
 
         $result = Collector::finish(0, 0);
@@ -121,21 +138,22 @@ final class CollectorTest extends TestCase
         $wall = array_column($result['hot']['statements'], 'wall_us', 'line');
         $self = array_column($result['hot']['statements'], 'self_us', 'line');
 
-        // the outer one took about 10 ms with the inner one, and about 5 ms of its own
-        $this->assertGreaterThanOrEqual(10_000, $wall[10]);
-        $this->assertLessThan($wall[10] - 4_000, $self[10]);
-        $this->assertGreaterThanOrEqual(5_000, $self[11]);
+        // the outer one took 10 ms with the inner one, and 5 ms of its own
+        $this->assertSame(10_000, $wall[10]);
+        $this->assertSame(5_000, $self[10]);
+        $this->assertSame(5_000, $wall[11]);
+        $this->assertSame(5_000, $self[11]);
     }
 
     public function testFunctionLikePassesAreRankedByTheirOwnTime(): void
     {
         Collector::start(null, []);
 
-        // an outer pass of about 100 ms, with an inner pass of 60 ms in it
+        // an outer pass of 100 ms, with an inner pass of 60 ms in it
         $outer = Collector::functionStart();
-        usleep(40_000);
+        $this->advance(40_000);
         $inner = Collector::functionStart();
-        usleep(60_000);
+        $this->advance(60_000);
         Collector::functionEnd('/p/src/F.php', 'src/F.php', 20, 'inner', false, $inner);
         Collector::functionEnd('/p/src/F.php', 'src/F.php', 10, 'outer', false, $outer);
 
@@ -144,11 +162,14 @@ final class CollectorTest extends TestCase
         $this->assertNotNull($result);
         // the inner pass took more of its own time than the outer one, though the outer one took longer in all
         $this->assertSame(['inner', 'outer'], array_column($result['hot']['functions'], 'id'));
-        $self = array_column($result['hot']['functions'], 'self_us', 'id');
-        $wall = array_column($result['hot']['functions'], 'wall_us', 'id');
-        $this->assertSame($self['inner'], $wall['inner']);
-        $this->assertGreaterThanOrEqual(100_000, $wall['outer']);
-        $this->assertEqualsWithDelta($wall['outer'] - $wall['inner'], $self['outer'], 1_000);
+        $this->assertSame(
+            ['inner' => 60_000, 'outer' => 40_000],
+            array_column($result['hot']['functions'], 'self_us', 'id'),
+        );
+        $this->assertSame(
+            ['inner' => 60_000, 'outer' => 100_000],
+            array_column($result['hot']['functions'], 'wall_us', 'id'),
+        );
     }
 
     public function testDisabledCollectorRecordsNothing(): void

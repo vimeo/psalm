@@ -10,6 +10,8 @@ use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Tests\TestCase;
 
+use const PHP_VERSION_ID;
+
 final class ClassLikesTest extends TestCase
 {
     private ClassLikes $classlikes;
@@ -31,7 +33,7 @@ final class ClassLikesTest extends TestCase
         $classStorage = new ClassLikeStorage('Baz');
         $classStorage->class_implements['bar'] = 'Bar';
 
-        $this->storage_provider->addMore(['baz' => $classStorage]);
+        $this->storage_provider->addMore(['baz' => $classStorage], [], PHP_VERSION_ID);
 
         self::assertTrue($this->classlikes->classImplements('Baz', 'Foo'));
     }

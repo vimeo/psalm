@@ -155,6 +155,73 @@ final class CallableTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'callableObjectSignatureConstantIsResolved' => [
+                'code' => '<?php
+                    final class A {
+                        const FOO = 1;
+
+                        /** @return object&callable(): self::FOO */
+                        public function f(): object {
+                            return function (): int { return 1; };
+                        }
+                    }
+
+                    $y = (new A)->f()();
+                ',
+                'assertions' => [
+                    '$y===' => '1',
+                ],
+            ],
+            'callableObjectSignatureWithStaticConstant' => [
+                'code' => '<?php
+                    class A {
+                        const FOO = 1;
+
+                        /** @param object&callable(): static::FOO $o */
+                        public function f(object $o): void {}
+
+                        /** @param class-string<object&callable(): static::FOO> $c */
+                        public function g(string $c): void {}
+                    }
+                ',
+            ],
+            'isCallableOnAShapeWhoseOtherElementsAreOptionalKeepsTheCallableArray' => [
+                'code' => '<?php
+                    /**
+                     * @param list{0: string, 1: string, 2?: string} $sealed
+                     * @param array{a?: string, ...<int, string>} $unsealed
+                     */
+                    function f(array $sealed, array $unsealed): void {
+                        if (is_callable($sealed)) {
+                            /** @psalm-check-type-exact $sealed = callable-array{0: class-string, 1: non-empty-string} */
+                        }
+
+                        if (is_callable($unsealed)) {
+                            /** @psalm-check-type-exact $unsealed = callable-array{0: class-string, 1: non-empty-string} */
+                        }
+                    }',
+            ],
+            'isCallableOnAListOfStringsKeepsTheCallableArray' => [
+                'code' => '<?php
+                    /**
+                     * @param list<string> $list
+                     * @param non-empty-list<scalar> $nonEmptyList
+                     * @param list<object|string> $objectOrStringList
+                     */
+                    function f(array $list, array $nonEmptyList, array $objectOrStringList): void {
+                        if (is_callable($list)) {
+                            /** @psalm-check-type-exact $list = callable-array{0: class-string, 1: non-empty-string} */
+                        }
+
+                        if (is_callable($nonEmptyList)) {
+                            /** @psalm-check-type-exact $nonEmptyList = callable-array{0: class-string, 1: non-empty-string} */
+                        }
+
+                        if (is_callable($objectOrStringList)) {
+                            /** @psalm-check-type-exact $objectOrStringList = callable-array{0: class-string|object, 1: non-empty-string} */
+                        }
+                    }',
+            ],
             'literalArraysOfAnExistingMethodAreCallableArrays' => [
                 'code' => '<?php
                     final class Foo {
@@ -4533,6 +4600,67 @@ final class CallableTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'callableObjectWithUndefinedParamClass' => [
+                'code' => '<?php
+                    /** @param object&callable(Missing): void $o */
+                    function f(object $o): void {}
+                ',
+                'error_message' => 'UndefinedDocblockClass',
+            ],
+            'callableObjectWithUndefinedReturnClass' => [
+                'code' => '<?php
+                    /** @param object&callable(): Missing $o */
+                    function f(object $o): void {}
+                ',
+                'error_message' => 'UndefinedDocblockClass',
+            ],
+            'classStringOfCallableObjectWithUndefinedParamClass' => [
+                'code' => '<?php
+                    /** @param class-string<object&callable(Missing): void> $c */
+                    function f(string $c): void {}
+                ',
+                'error_message' => 'UndefinedDocblockClass',
+            ],
+            'isCallableOnAListOfIntsIsNeverTrue' => [
+                'code' => '<?php
+                    /** @param list<int> $list */
+                    function f(array $list): void {
+                        if (is_callable($list)) {
+                            echo "callable";
+                        }
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29',
+            ],
+            'isCallableOnAListOfThreeElementsIsNeverTrue' => [
+                'code' => '<?php
+                    /** @param list{string, string, string} $a */
+                    function f(array $a): void {
+                        if (is_callable($a)) {
+                            echo "callable";
+                        }
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29',
+            ],
+            'isCallableOnAListWhoseFirstElementIsAnIntIsNeverTrue' => [
+                'code' => '<?php
+                    /** @param list{int, ...<string>} $a */
+                    function f(array $a): void {
+                        if (is_callable($a)) {
+                            echo "callable";
+                        }
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29',
+            ],
+            'isCallableOnAShapeWithAnotherRequiredKeyIsNeverTrue' => [
+                'code' => '<?php
+                    /** @param array{0: string, a: string, ...<int, string>} $a */
+                    function f(array $a): void {
+                        if (is_callable($a)) {
+                            echo "callable";
+                        }
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29',
+            ],
             'literalArrayOfAnUnknownClassIsNotACallableArray' => [
                 'code' => '<?php
                     /** @return callable-array{string, string} */
@@ -5045,6 +5173,8 @@ final class CallableTest extends TestCase
                         protected static function runLoop(): void {}
                     }',
                 'error_message' => 'expects a public static callable',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'undefinedCallableMethodArray' => [
                 'code' => '<?php
@@ -6373,6 +6503,8 @@ final class CallableTest extends TestCase
                         protected function runLoop(): void {}
                     }',
                 'error_message' => 'expects a public callable',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'emptyStringIsNotCallable' => [
                 'code' => '<?php

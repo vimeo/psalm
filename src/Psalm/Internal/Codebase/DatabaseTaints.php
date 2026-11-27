@@ -673,7 +673,7 @@ final class DatabaseTaints
         CodeLocation $call_location,
         bool $is_row,
     ): void {
-        $atomic = $type !== null && $type->isSingle() ? $type->getSingleAtomic() : null;
+        $atomic = $type !== null && $type->isSingleAtomic() ? $type->getSingleAtomic() : null;
 
         if ($atomic instanceof TKeyedArray && $atomic->fallback_params === null) {
             foreach ($atomic->properties as $key => $value_type) {

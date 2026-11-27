@@ -1160,6 +1160,9 @@ final class TryCatchTest extends TestCase
                         $c();
                         return true;
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'variableAssignedUnconditionallyInAFinallyBlockHasTheAssignedTypeAfterTheTry' => [
                 'code' => '<?php

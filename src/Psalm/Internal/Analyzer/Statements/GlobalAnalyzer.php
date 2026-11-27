@@ -129,15 +129,20 @@ final class GlobalAnalyzer
             }
 
             // `self` and `static` of a `@global` tag are the class the function is in
-            $global_type = isset($function_storage->global_types[$var_id])
-                ? TypeExpander::expandUnion(
+            if (isset($function_storage->global_types[$var_id])) {
+                $global_type = TypeExpander::expandUnion(
                     $codebase,
                     $function_storage->global_types[$var_id],
                     $context->self,
                     $context->self,
                     $statements_analyzer->getParentFQCLN(),
-                )
-                : null;
+                );
+            } elseif (!$context->is_global && isset($codebase->config->globals[$var_id])) {
+                // declared for the whole program: what the file scope assigns may have changed before the call
+                $global_type = VariableFetchAnalyzer::getGlobalType($var_id, $codebase->analysis_php_version_id);
+            } else {
+                $global_type = null;
+            }
 
             if ($comment_type) {
                 $context->vars_in_scope[$var_id] = $comment_type;
@@ -151,8 +156,11 @@ final class GlobalAnalyzer
                     $context->vars_in_scope[$var_id] = $global_type;
                     $context->vars_possibly_in_scope[$var_id] = true;
                 } else {
-                    $global_type = $global_context && $global_context->hasVariable($var_id)
-                        ? $global_context->vars_in_scope[$var_id]
+                    // at file scope, the variable already is the global
+                    $scope_context = $context->is_global ? $context : $global_context;
+
+                    $global_type = $scope_context && $scope_context->hasVariable($var_id)
+                        ? $scope_context->vars_in_scope[$var_id]
                         : VariableFetchAnalyzer::getGlobalType($var_id, $codebase->analysis_php_version_id);
 
                     // `global` creates the global as null when it is not set, but a superglobal is read as set
@@ -172,6 +180,11 @@ final class GlobalAnalyzer
                     $context->vars_possibly_in_scope[$var_id] = true;
 
                     $context->byref_constraints[$var_id] = new ReferenceConstraint();
+
+                    // what the variable holds now is not what a call can leave in the global
+                    if ($context->is_global) {
+                        $global_type = null;
+                    }
                 }
             }
 

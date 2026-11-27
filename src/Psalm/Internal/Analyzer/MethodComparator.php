@@ -678,7 +678,7 @@ final class MethodComparator
                     $next_type = $binding_classlike_storage
                         ->template_extended_params[$bound_atomic->defining_class][$bound_atomic->param_name] ?? null;
 
-                    if ($next_type === null || !$next_type->isSingle()) {
+                    if ($next_type === null || !$next_type->isSingleAtomic()) {
                         break;
                     }
 
@@ -732,7 +732,12 @@ final class MethodComparator
         }
 
         if ($prevent_method_signature_mismatch) {
-            if (!$guide_classlike_storage->user_defined
+            $guide_has_signature_params = self::hasSignatureParamTypes(
+                $guide_classlike_storage,
+                $cased_guide_method_id,
+            );
+
+            if (!$guide_has_signature_params
                 && $guide_param->type) {
                 $implementer_param_type = $implementer_param->signature_type;
 
@@ -857,7 +862,7 @@ final class MethodComparator
                 }
             }
 
-            if ($guide_classlike_storage->user_defined
+            if ($guide_has_signature_params
                 && $implementer_param->signature_type
                 && $guide_param->signature_type
             ) {
@@ -915,6 +920,18 @@ final class MethodComparator
                 $suppressed_issues + $implementer_classlike_storage->suppressed_issues,
             );
         }
+    }
+
+    /**
+     * Whether the param types of a method are the ones it declares, and not callmap or reflection types: a stub
+     * declares real signatures, except for the methods the callmap describes
+     *
+     * @psalm-external-mutation-free
+     */
+    private static function hasSignatureParamTypes(ClassLikeStorage $classlike_storage, string $cased_method_id): bool
+    {
+        return $classlike_storage->user_defined
+            || ($classlike_storage->stubbed && !InternalCallMapHandler::inCallMap($cased_method_id));
     }
 
     /**
@@ -1007,6 +1024,7 @@ final class MethodComparator
                 $codebase,
                 $guide_param_signature_type,
                 $implementer_param_signature_type,
+                false,
             )
             : UnionTypeComparator::isContainedByInPhp(
                 $guide_param_signature_type,
@@ -1330,6 +1348,7 @@ final class MethodComparator
                 $codebase,
                 $implementer_signature_return_type,
                 $guide_signature_return_type,
+                false,
             )
             : UnionTypeComparator::isContainedByInPhp($implementer_signature_return_type, $guide_signature_return_type);
 
@@ -1647,12 +1666,24 @@ final class MethodComparator
      * An object with `__toString()` is not a string: it only passes as one where PHP casts it, which a return
      * value or an argument of an overriding method does not get under strict_types
      */
-    private static function isContainedWithoutStringCast(Codebase $codebase, Union $input, Union $container): bool
-    {
+    private static function isContainedWithoutStringCast(
+        Codebase $codebase,
+        Union $input,
+        Union $container,
+        bool $allow_float_int_equality = true,
+    ): bool {
         $comparison_result = new TypeComparisonResult();
 
-        return UnionTypeComparator::isContainedBy($codebase, $input, $container, false, false, $comparison_result)
-            && !$comparison_result->to_string_cast;
+        return UnionTypeComparator::isContainedBy(
+            $codebase,
+            $input,
+            $container,
+            false,
+            false,
+            $comparison_result,
+            false,
+            $allow_float_int_equality,
+        ) && !$comparison_result->to_string_cast;
     }
 
     /**
