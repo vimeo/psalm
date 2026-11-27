@@ -2456,6 +2456,40 @@ final class PropertyTypeTest extends TestCase
 
                     class B extends A {}',
             ],
+            'readPrivatePropertyOfCurrentClassOnChildInstanceIntersectedWithAnInterface' => [
+                'code' => '<?php
+                    interface Tagged {}
+
+                    class A {
+                        private int $value = 0;
+
+                        public function read(): int {
+                            if ($this instanceof B && $this instanceof Tagged) {
+                                return $this->value;
+                            }
+
+                            return 0;
+                        }
+                    }
+
+                    class B extends A {}',
+            ],
+            'readPrivatePropertyOfCurrentClassOnCallableChildInstance' => [
+                'code' => '<?php
+                    class A {
+                        private int $value = 0;
+
+                        public function read(): int {
+                            if ($this instanceof B && is_callable($this)) {
+                                return $this->value;
+                            }
+
+                            return 0;
+                        }
+                    }
+
+                    class B extends A {}',
+            ],
             'protectedPropertyRedeclaredInASubclassAccessedFromASibling' => [
                 'code' => '<?php
                     class A

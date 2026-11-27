@@ -26,6 +26,7 @@ use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\IssueBuffer;
 use Psalm\Storage\Assertion\ArrayKeyExists;
 use Psalm\Type;
+use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
 
@@ -43,6 +44,7 @@ use function preg_quote;
 use function str_contains;
 use function str_starts_with;
 use function strpbrk;
+use function strtolower;
 use function substr;
 
 /**
@@ -436,7 +438,9 @@ final class IfElseAnalyzer
                             $codebase,
                         );
 
-                        if (!$combined_type->equals($context->vars_in_scope[$var_id], true, false)) {
+                        if (!$combined_type->equals($context->vars_in_scope[$var_id], true, false)
+                            && !self::isOfTheSameClasses($context->vars_in_scope[$var_id], $combined_type)
+                        ) {
                             $context->removeDescendents($var_id, $combined_type, $type, $statements_analyzer);
                         }
 
@@ -452,7 +456,12 @@ final class IfElseAnalyzer
                             && !UnionTypeComparator::isContainedBy($codebase, $type, $updated_type)
                         ) {
                             $updated_type = Type::combineUnionTypes($updated_type, $type, $codebase);
-                            $context->removeDescendents($var_id, $updated_type, $type, $statements_analyzer);
+
+                            if ($var_id !== '$this'
+                                || !self::isOfTheSameClasses($context->vars_in_scope[$var_id], $updated_type)
+                            ) {
+                                $context->removeDescendents($var_id, $updated_type, $type, $statements_analyzer);
+                            }
                         }
 
                         $context->vars_in_scope[$var_id] = $updated_type;
@@ -726,5 +735,32 @@ final class IfElseAnalyzer
         $branch_actions = array_slice($if_scope->final_actions, 1);
 
         return $branch_actions && !in_array(ScopeAnalyzer::ACTION_NONE, $branch_actions, true);
+    }
+
+    /**
+     * Whether a branch only intersected the objects of a variable with interfaces or `callable-object`, which doesn't
+     * change the type of their properties: the variable is of the same classes before and after
+     *
+     * @psalm-pure
+     */
+    private static function isOfTheSameClasses(Union $before, Union $after): bool
+    {
+        $classes = [];
+
+        foreach ($before->getAtomicTypes() as $atomic_type) {
+            if (!$atomic_type instanceof TNamedObject) {
+                return false;
+            }
+
+            $classes[strtolower($atomic_type->value)] = true;
+        }
+
+        foreach ($after->getAtomicTypes() as $atomic_type) {
+            if (!$atomic_type instanceof TNamedObject || !isset($classes[strtolower($atomic_type->value)])) {
+                return false;
+            }
+        }
+
+        return true;
     }
 }

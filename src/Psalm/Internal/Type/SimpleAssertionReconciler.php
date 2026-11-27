@@ -2606,11 +2606,10 @@ final class SimpleAssertionReconciler extends Reconciler
                 $callable_types[] = new TCallableObject();
                 $redundant = false;
             } elseif ($type instanceof TNamedObject
-                && ($invoke_member = CallableTypeComparator::getInvokeMember($codebase, $type)) !== null
-                && ($codebase->classExists($invoke_member->value)
-                    || $codebase->classlikes->enumExists($invoke_member->value))
+                && ($callable_object = self::getCallableNamedObject($codebase, $type)) !== null
             ) {
-                $callable_types[] = $type;
+                $callable_types[] = $callable_object;
+                $redundant = $redundant && $callable_object === $type;
             } elseif ($type instanceof TString
                 && !$type instanceof TLiteralString
                 // the name of a function is never numeric, but it can be lowercase and a literal
@@ -2729,21 +2728,40 @@ final class SimpleAssertionReconciler extends Reconciler
             return null;
         }
 
-        if ($bound->hasCallableType() || $bound->hasMixed()) {
-            return $type->replaceAs(self::reconcileCallable(
-                $assertion,
-                $codebase,
-                $type->as,
-                null,
-                $negated,
-                null,
-                $suppressed_issues,
-                $failed_reconciliation,
-                $is_equality,
-            ));
+        return $type->replaceAs(self::reconcileCallable(
+            $assertion,
+            $codebase,
+            $type->as,
+            null,
+            $negated,
+            null,
+            $suppressed_issues,
+            $failed_reconciliation,
+            $is_equality,
+        ));
+    }
+
+    /**
+     * The object itself when it has __invoke(), else the object as a callable one, null when it can't be callable
+     */
+    private static function getCallableNamedObject(Codebase $codebase, TNamedObject $type): ?Atomic
+    {
+        $invoke_member = CallableTypeComparator::getInvokeMember($codebase, $type);
+        if ($invoke_member !== null
+            && ($codebase->classExists($invoke_member->value)
+                || $codebase->classlikes->enumExists($invoke_member->value))
+        ) {
+            return $type;
         }
 
-        return $type;
+        if ($codebase->classlike_storage_provider->has($type->value)
+            && !$codebase->classlike_storage_provider->get($type->value)->final
+        ) {
+            // a class or an interface that doesn't declare __invoke() has implementations or children that do
+            return $type->addIntersectionType(new TCallableObject());
+        }
+
+        return null;
     }
 
     /**
