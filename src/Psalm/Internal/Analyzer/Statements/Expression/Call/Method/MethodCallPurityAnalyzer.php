@@ -16,6 +16,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAss
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ByRefArgumentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\CallPurityResolver;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\NoDiscardAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\GlobalStateAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ReturnAnalyzer;
@@ -942,6 +943,8 @@ final class MethodCallPurityAnalyzer
                 $context->assigned_var_ids[$lhs_var_id . '->' . $name] ??= 0;
             }
         }
+
+        CallAnalyzer::forgetArgumentPropertiesWrittenByCallee($statements_analyzer, $context, $method_storage, $args);
     }
 
     /**

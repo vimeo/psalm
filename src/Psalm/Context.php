@@ -1326,7 +1326,7 @@ final class Context
 
     /**
      * @param Clause[]             $clauses
-     * @param array<string, bool>  $changed_var_ids
+     * @param array<string, mixed> $changed_var_ids
      * @return array{list<Clause>, list<Clause>}
      * @psalm-pure
      */
@@ -1962,6 +1962,11 @@ final class Context
             // forgotten, not unset: Context::update() tells the two apart
             $this->vars_possibly_in_scope[$var_id] = true;
             $this->parent_remove_vars[$var_id] = ++self::$clause_removal_count;
+
+            // the rest of the condition tests what the call left, not what it tested before
+            if ($this->inside_conditional) {
+                $this->assigned_var_ids[$var_id] ??= 0;
+            }
         }
 
         $clauses_to_keep = [];
@@ -2071,6 +2076,18 @@ final class Context
         $this->forgetPropertyBoundByReference($var_id, false);
         $this->vars_possibly_in_scope[$var_id] = true;
         $this->parent_remove_vars[$var_id] = ++self::$clause_removal_count;
+    }
+
+    /**
+     * Forgets what is known of a property (`$a->p`), and of what it holds, after a call assigned it
+     */
+    public function forgetAssignedProperty(string $property_id): void
+    {
+        $this->forgetPropertyDescendents($property_id);
+
+        if (isset($this->vars_in_scope[$property_id])) {
+            $this->forgetWrittenVar($property_id);
+        }
     }
 
     /**

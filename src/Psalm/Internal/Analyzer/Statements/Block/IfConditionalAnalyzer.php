@@ -229,7 +229,6 @@ final class IfConditionalAnalyzer
                 ...$if_conditional_context->parent_remove_vars,
             ];
 
-            /** @var array<string, bool> */
             $more_cond_referenced_var_ids = $if_conditional_context->cond_referenced_var_ids;
             $if_conditional_context->cond_referenced_var_ids = array_merge(
                 $more_cond_referenced_var_ids,
@@ -241,7 +240,6 @@ final class IfConditionalAnalyzer
                 $more_cond_referenced_var_ids,
             );
 
-            /** @var array<string, int> */
             $more_cond_assigned_var_ids = $if_conditional_context->assigned_var_ids;
             $if_conditional_context->assigned_var_ids = array_merge(
                 $more_cond_assigned_var_ids,

@@ -122,6 +122,32 @@ final class RedundantConditionTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
+    public function testPropertyThatACallWritesWithoutRememberingPropertyAssignments(): void
+    {
+        Config::getInstance()->remember_property_assignments_after_call = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                final class Counter {
+                    public int $n = 1;
+                }
+
+                function write(object $o, string $name): bool {
+                    $o->{$name} = 0;
+                    return true;
+                }
+
+                function f(Counter $c): void {
+                    if ($c->n && write($c, "n") && $c->n) {
+                        echo "if";
+                    }
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
     public function testMixedAssignmentOfALoopWhoseConditionsCallAMethodWritingAProperty(): void
     {
         $this->project_analyzer->getConfig()->throw_exception = false;
@@ -2072,6 +2098,373 @@ final class RedundantConditionTest extends TestCase
                         }
                     }',
             ],
+            'propertyThatAPrivateMethodOfTheMethodCalledWrites' => [
+                'code' => '<?php
+                    final class Counter {
+                        public int $n = 1;
+
+                        public function resetIndirect(): bool {
+                            $this->doReset();
+                            return true;
+                        }
+
+                        private function doReset(): void {
+                            $this->n = 0;
+                        }
+                    }
+
+                    function f(Counter $c): void {
+                        if ($c->n && $c->resetIndirect() && $c->n) {
+                            echo "if";
+                        }
+                    }',
+            ],
+            'propertyThatAPrivateMethodOfTheMethodCalledWritesHasItsDeclaredTypeAfterTheCall' => [
+                'code' => '<?php
+                    final class Counter {
+                        public int $n = 1;
+
+                        public function resetIndirect(): void {
+                            $this->doReset();
+                        }
+
+                        private function doReset(): void {
+                            $this->n = 0;
+                        }
+                    }
+
+                    $c = new Counter();
+                    $c->n = 1;
+                    $c->resetIndirect();
+                    $n = $c->n;',
+                'assertions' => [
+                    '$n===' => 'int',
+                ],
+            ],
+            'propertyThatAMethodOfTheParentWritesThroughAChainOfCalls' => [
+                'code' => '<?php
+                    class Base {
+                        public int $n = 1;
+
+                        protected function viaChain(): void {
+                            $this->step();
+                        }
+
+                        private function step(): void {
+                            $this->doReset();
+                        }
+
+                        protected function doReset(): void {
+                            $this->n = 0;
+                        }
+                    }
+
+                    final class Child extends Base {
+                        public function viaParent(): bool {
+                            parent::doReset();
+                            return true;
+                        }
+
+                        public function viaSelf(): bool {
+                            self::viaChain();
+                            return true;
+                        }
+                    }
+
+                    function f(Child $c): void {
+                        if ($c->n && $c->viaParent() && $c->n) {
+                            echo "if";
+                        }
+
+                        if ($c->n && $c->viaSelf() && $c->n) {
+                            echo "if";
+                        }
+                    }',
+            ],
+            'propertyThatMethodsCallingEachOtherWrite' => [
+                'code' => '<?php
+                    final class Counter {
+                        public int $n = 1;
+                        public int $m = 1;
+
+                        public function ping(): bool {
+                            return $this->pong();
+                        }
+
+                        public function pong(): bool {
+                            if ($this->m) {
+                                $this->m = 0;
+                                return $this->ping();
+                            }
+
+                            $this->n = 0;
+                            return true;
+                        }
+                    }
+
+                    function f(Counter $c): void {
+                        if ($c->n && $c->ping() && $c->n) {
+                            echo "if";
+                        }
+                    }',
+            ],
+            'propertyOfAnArgumentThatAFunctionWrites' => [
+                'code' => '<?php
+                    final class Counter {
+                        public int $n = 1;
+                    }
+
+                    function resetC(Counter $c): bool {
+                        $c->n = 0;
+                        return true;
+                    }
+
+                    function f(Counter $c): void {
+                        if ($c->n && resetC($c) && $c->n) {
+                            echo "if";
+                        }
+
+                        if ($c->n) {
+                            resetC($c);
+
+                            if ($c->n) {
+                                echo "if";
+                            }
+                        }
+                    }',
+            ],
+            'propertyOfAnArgumentThatAMethodOfAnotherObjectWrites' => [
+                'code' => '<?php
+                    final class Counter {
+                        public int $n = 1;
+                    }
+
+                    final class Other {
+                        public function resetIt(Counter $c): bool {
+                            $c->n = 0;
+                            return true;
+                        }
+                    }
+
+                    function f(Counter $c): void {
+                        if ($c->n && (new Other)->resetIt($c) && $c->n) {
+                            echo "if";
+                        }
+                    }',
+            ],
+            'propertyOfAnArgumentThatAStaticMethodOrAConstructorWrites' => [
+                'code' => '<?php
+                    final class Counter {
+                        public int $n = 1;
+                    }
+
+                    final class Resetter {
+                        public function __construct(Counter $c) {
+                            $c->n = 0;
+                        }
+
+                        public static function reset(Counter $c): bool {
+                            $c->n = 0;
+                            return true;
+                        }
+                    }
+
+                    function f(Counter $c): void {
+                        if ($c->n && Resetter::reset($c) && $c->n) {
+                            echo "if";
+                        }
+
+                        if ($c->n) {
+                            new Resetter($c);
+
+                            if ($c->n) {
+                                echo "if";
+                            }
+                        }
+                    }',
+            ],
+            'propertyOfANamedArgumentThatAFunctionWrites' => [
+                'code' => '<?php
+                    final class Counter {
+                        public int $n = 1;
+                    }
+
+                    function resetSecond(Counter $a, Counter $b): bool {
+                        $b->n = 0;
+                        return true;
+                    }
+
+                    function f(Counter $c, Counter $d): void {
+                        if ($c->n && resetSecond(b: $c, a: $d) && $c->n) {
+                            echo "if";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'propertyOfAnArgumentThatAFunctionPassesToAWriter' => [
+                'code' => '<?php
+                    final class Counter {
+                        public int $n = 1;
+                    }
+
+                    function resetC(Counter $c): bool {
+                        $c->n = 0;
+                        return true;
+                    }
+
+                    function outer(Counter $c): bool {
+                        resetC($c);
+                        return true;
+                    }
+
+                    function outerOuter(Counter $c): bool {
+                        return outer($c);
+                    }
+
+                    function f(Counter $c): void {
+                        if ($c->n && outer($c) && $c->n) {
+                            echo "if";
+                        }
+
+                        if ($c->n && outerOuter($c) && $c->n) {
+                            echo "if";
+                        }
+                    }',
+            ],
+            'propertyOfAnArgumentThatAMethodCalledOnItWrites' => [
+                'code' => '<?php
+                    final class Counter {
+                        public int $n = 1;
+
+                        public function resetSelf(): void {
+                            $this->n = 0;
+                        }
+
+                        public function resetIndirect(): void {
+                            $this->doReset();
+                        }
+
+                        private function doReset(): void {
+                            $this->n = 0;
+                        }
+                    }
+
+                    function viaMethod(Counter $c): bool {
+                        $c->resetSelf();
+                        return true;
+                    }
+
+                    function viaIndirectMethod(Counter $c): bool {
+                        $c->resetIndirect();
+                        return true;
+                    }
+
+                    function f(Counter $c): void {
+                        if ($c->n && viaMethod($c) && $c->n) {
+                            echo "if";
+                        }
+
+                        if ($c->n && viaIndirectMethod($c) && $c->n) {
+                            echo "if";
+                        }
+                    }',
+            ],
+            'propertyOfAnArgumentThatAMethodPassesToItsOwnHelper' => [
+                'code' => '<?php
+                    final class Counter {
+                        public int $n = 1;
+                    }
+
+                    final class Resetter {
+                        public function __construct(Counter $c) {
+                            $c->n = 0;
+                        }
+                    }
+
+                    final class Other {
+                        public function go(Counter $c): bool {
+                            $this->help($c);
+                            return true;
+                        }
+
+                        public static function goStatic(Counter $c): bool {
+                            self::helpStatic($c);
+                            return true;
+                        }
+
+                        public function build(Counter $c): bool {
+                            new Resetter($c);
+                            return true;
+                        }
+
+                        private function help(Counter $c): void {
+                            $c->n = 0;
+                        }
+
+                        private static function helpStatic(Counter $c): void {
+                            $c->n = 0;
+                        }
+                    }
+
+                    function f(Counter $c, Other $o): void {
+                        if ($c->n && $o->go($c) && $c->n) {
+                            echo "if";
+                        }
+
+                        if ($c->n && Other::goStatic($c) && $c->n) {
+                            echo "if";
+                        }
+
+                        if ($c->n && $o->build($c) && $c->n) {
+                            echo "if";
+                        }
+                    }',
+            ],
+            'propertyOfAnArgumentThatFunctionsCallingEachOtherWrite' => [
+                'code' => '<?php
+                    final class Counter {
+                        public int $n = 1;
+                    }
+
+                    function resetC(Counter $c): bool {
+                        $c->n = 0;
+                        return true;
+                    }
+
+                    function ping(Counter $c, int $i): bool {
+                        return $i > 0 ? pong($c, $i - 1) : resetC($c);
+                    }
+
+                    function pong(Counter $c, int $i): bool {
+                        return ping($c, $i);
+                    }
+
+                    function f(Counter $c): void {
+                        if ($c->n && ping($c, 2) && $c->n) {
+                            echo "if";
+                        }
+                    }',
+            ],
+            'itemsOfAPropertyOfAnArgumentThatAFunctionWrites' => [
+                'code' => '<?php
+                    final class C {
+                        /** @var list<int> */
+                        public array $items = [];
+                    }
+
+                    function addItem(C $c): bool {
+                        $c->items[] = 1;
+                        return true;
+                    }
+
+                    function f(C $c): void {
+                        if ($c->items === [] && addItem($c) && $c->items === []) {
+                            echo "if";
+                        }
+                    }',
+            ],
             'assigningAPropertyKeepsTheClausesAfterOneOnAnItemOfIt' => [
                 'code' => '<?php
                     final class C {
@@ -3259,6 +3652,132 @@ final class RedundantConditionTest extends TestCase
                         }
                     }',
                 'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:29 - $c->items[0] is isset has already been asserted',
+            ],
+            'propertyThatAPrivateMethodOfTheMethodCalledDoesNotWrite' => [
+                'code' => '<?php
+                    final class Counter {
+                        public int $n = 1;
+                        public int $m = 1;
+
+                        public function resetIndirect(): bool {
+                            $this->doReset();
+                            return true;
+                        }
+
+                        private function doReset(): void {
+                            $this->m = 0;
+                        }
+                    }
+
+                    function f(Counter $c): void {
+                        if ($c->n && $c->resetIndirect() && $c->n) {
+                            echo "if";
+                        }
+                    }',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:17:29 - $c->n has already been asserted',
+            ],
+            'propertyOfAnArgumentThatAFunctionDoesNotWrite' => [
+                'code' => '<?php
+                    final class Counter {
+                        public int $n = 1;
+                        public int $m = 1;
+                    }
+
+                    function resetM(Counter $c): bool {
+                        $c->m = 0;
+                        return true;
+                    }
+
+                    function f(Counter $c): void {
+                        if ($c->n && resetM($c) && $c->n) {
+                            echo "if";
+                        }
+                    }',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:29 - $c->n has already been asserted',
+            ],
+            'propertyOfAnotherArgumentThatAFunctionWrites' => [
+                'code' => '<?php
+                    final class Counter {
+                        public int $n = 1;
+                    }
+
+                    function resetSecond(Counter $a, Counter $b): bool {
+                        $b->n = 0;
+                        return true;
+                    }
+
+                    function f(Counter $c, Counter $d): void {
+                        if ($c->n && resetSecond($c, $d) && $c->n) {
+                            echo "if";
+                        }
+                    }',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:12:29 - $c->n has already been asserted',
+            ],
+            'propertyOfAnArgumentPassedToAFunctionWritingAnotherProperty' => [
+                'code' => '<?php
+                    final class Counter {
+                        public int $n = 1;
+                        public int $m = 1;
+                    }
+
+                    function resetM(Counter $c): bool {
+                        $c->m = 0;
+                        return true;
+                    }
+
+                    function outer(Counter $c): bool {
+                        return resetM($c);
+                    }
+
+                    function f(Counter $c): void {
+                        if ($c->n && outer($c) && $c->n) {
+                            echo "if";
+                        }
+                    }',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:17:29 - $c->n has already been asserted',
+            ],
+            'propertyOfAnArgumentPassedOnAsAnotherArgument' => [
+                'code' => '<?php
+                    final class Counter {
+                        public int $n = 1;
+                    }
+
+                    function resetC(Counter $c): bool {
+                        $c->n = 0;
+                        return true;
+                    }
+
+                    function resetSecond(Counter $a, Counter $b): bool {
+                        return resetC($b);
+                    }
+
+                    function f(Counter $c, Counter $d): void {
+                        if ($c->n && resetSecond($c, $d) && $c->n) {
+                            echo "if";
+                        }
+                    }',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:16:29 - $c->n has already been asserted',
+            ],
+            'issetOfAPropertyThatTheConstructorAssignsThroughAPrivateMethod' => [
+                'code' => '<?php
+                    final class A {
+                        public int $p;
+
+                        public function __construct() {
+                            $this->init();
+                        }
+
+                        private function init(): void {
+                            $this->p = 1;
+                        }
+                    }
+
+                    function f(A $a): void {
+                        if (isset($a->p)) {
+                            echo "if";
+                        }
+                    }',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:15:29 - Type int for $a->p is always isset',
             ],
             'identicalComparisonOfAShapeWithAShorterOneIsImpossible' => [
                 'code' => '<?php

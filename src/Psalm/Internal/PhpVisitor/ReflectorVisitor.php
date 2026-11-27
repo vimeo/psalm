@@ -575,6 +575,7 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
             }
         }
 
+        $this->recordThisMethodCall($node);
         $this->recordExternalEffects($node);
 
         return null;
@@ -705,8 +706,52 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
     }
 
     /**
+     * Records that the method being scanned calls a method of `$this` (see MethodStorage::$this_method_calls)
+     */
+    private function recordThisMethodCall(PhpParser\Node $node): void
+    {
+        if (!$this->functionlike_node_scanners) {
+            return;
+        }
+
+        if ($node instanceof PhpParser\Node\Expr\MethodCall
+            || $node instanceof PhpParser\Node\Expr\NullsafeMethodCall
+        ) {
+            if (!$node->var instanceof PhpParser\Node\Expr\Variable || $node->var->name !== 'this') {
+                return;
+            }
+
+            $prefix = '';
+        } elseif ($node instanceof PhpParser\Node\Expr\StaticCall && $node->class instanceof PhpParser\Node\Name) {
+            $prefix = match ($node->class->toLowerString()) {
+                'self', 'static' => '',
+                'parent' => 'parent::',
+                default => null,
+            };
+
+            if ($prefix === null) {
+                return;
+            }
+        } else {
+            return;
+        }
+
+        $storage = end($this->functionlike_node_scanners)->storage;
+
+        if ($storage instanceof MethodStorage
+            && !$storage->is_static
+            && $node->name instanceof PhpParser\Node\Identifier
+            && !$node->isFirstClassCallable()
+        ) {
+            $storage->this_method_calls[$prefix . strtolower($node->name->name)] = true;
+        }
+    }
+
+    /**
      * Records that the method being scanned writes `$this->property` (see MethodStorage::$this_property_mutations),
-     * or only items or properties of what it holds (see MethodStorage::$this_property_item_mutations)
+     * or only items or properties of what it holds (see MethodStorage::$this_property_item_mutations), and that the
+     * function-like being scanned writes a property of an object a parameter holds (see
+     * FunctionLikeStorage::$param_property_mutations)
      */
     private function recordThisPropertyMutation(PhpParser\Node\Expr $target): void
     {
@@ -746,9 +791,10 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
 
         $storage = end($this->functionlike_node_scanners)->storage;
 
-        if (!$target instanceof PhpParser\Node\Expr\PropertyFetch
+        if ($storage === null
+            || !$target instanceof PhpParser\Node\Expr\PropertyFetch
             || !$target->var instanceof PhpParser\Node\Expr\Variable
-            || $target->var->name !== 'this'
+            || !is_string($target->var->name)
             || !$target->name instanceof PhpParser\Node\Identifier
         ) {
             return;
@@ -756,6 +802,17 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
 
         $name = $target->name->name;
         $writes_property = !$path && $writes_last;
+
+        if ($target->var->name !== 'this') {
+            foreach ($storage->params as $param) {
+                if ($param->name === $target->var->name && !$param->is_variadic) {
+                    $storage->param_property_mutations[$param->name][$name] = $writes_property
+                        || ($storage->param_property_mutations[$param->name][$name] ?? false);
+                }
+            }
+
+            return;
+        }
 
         if ($storage instanceof FunctionStorage && $storage->writes_only_this_properties && $writes_property) {
             $storage->this_property_mutations[$name] = true;

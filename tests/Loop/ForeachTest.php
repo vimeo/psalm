@@ -3350,8 +3350,8 @@ final class ForeachTest extends TestCase
                     }
                     PHP,
                 'assertions' => [
-                    '$direct===' => 'int<1, max>',
-                    '$deep===' => 'int<1, max>',
+                    '$direct===' => 'int',
+                    '$deep===' => 'int',
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.1',

@@ -233,6 +233,23 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
     public bool $is_static = false;
 
     /**
+     * The properties of the objects its parameters hold that the body writes, by parameter name: true when it
+     * assigns the property itself, false when it only writes items or properties of what it holds
+     *
+     * @var array<string, array<string, bool>>
+     */
+    public array $param_property_mutations = [];
+
+    /**
+     * The calls the body passes its parameters to, which may write their properties: the parameter name, the id of
+     * the function-like called (as in $called_function_like_ids, or `$param::method` for a method of a parameter) and
+     * the offset or name of the argument the parameter is, null when the method is called on the parameter itself
+     *
+     * @var list<array{string, lowercase-string, int|string|null}>
+     */
+    public array $param_calls = [];
+
+    /**
      * The capabilities (side effects) this function-like may use: a bitmask of
      * {@see Capabilities} constants, {@see Capabilities::ALL} when unannotated.
      *

@@ -31,6 +31,7 @@ use function defined;
 use function dirname;
 use function explode;
 use function in_array;
+use function is_string;
 use function str_contains;
 use function strlen;
 use function strtolower;
@@ -54,6 +55,10 @@ final class ExpressionScanner
     ): void {
         if ($functionlike_storage) {
             self::scanGlobalWrites($node, $aliases, $functionlike_storage);
+
+            if ($functionlike_storage->params) {
+                self::scanParamCalls($node, $aliases, $functionlike_storage);
+            }
         }
 
         if ($node instanceof PhpParser\Node\Expr\Include_ && !$skip_if_descendants) {
@@ -167,6 +172,102 @@ final class ExpressionScanner
         ) {
             $storage->called_function_like_ids[strtolower($storage->defining_fqcln . '::' . $node->name->name)] = true;
         }
+    }
+
+    /**
+     * Records the calls the function-like of $storage passes its parameters to, or calls methods of its parameters
+     * with (see FunctionLikeStorage::$param_calls)
+     */
+    private static function scanParamCalls(
+        PhpParser\Node\Expr $node,
+        Aliases $aliases,
+        FunctionLikeStorage $storage,
+    ): void {
+        $defining_fqcln = $storage instanceof MethodStorage ? $storage->defining_fqcln : null;
+
+        if ($node instanceof PhpParser\Node\Expr\FuncCall && $node->name instanceof PhpParser\Node\Name) {
+            $callee_ids = self::getFunctionIds($node->name, $aliases);
+        } elseif (($node instanceof PhpParser\Node\Expr\MethodCall
+                || $node instanceof PhpParser\Node\Expr\NullsafeMethodCall)
+            && $node->var instanceof PhpParser\Node\Expr\Variable
+            && is_string($node->var->name)
+            && $node->name instanceof PhpParser\Node\Identifier
+        ) {
+            if ($node->var->name === 'this') {
+                if ($defining_fqcln === null || $defining_fqcln === '') {
+                    return;
+                }
+
+                $callee_ids = [strtolower($defining_fqcln . '::' . $node->name->name)];
+            } elseif (self::isParam($storage, $node->var->name)) {
+                $callee_ids = [strtolower('$' . $node->var->name . '::' . $node->name->name)];
+                $storage->param_calls[] = [$node->var->name, $callee_ids[0], null];
+            } else {
+                return;
+            }
+        } elseif (($node instanceof PhpParser\Node\Expr\StaticCall || $node instanceof PhpParser\Node\Expr\New_)
+            && $node->class instanceof PhpParser\Node\Name
+        ) {
+            if ($node instanceof PhpParser\Node\Expr\StaticCall
+                && !$node->name instanceof PhpParser\Node\Identifier
+            ) {
+                return;
+            }
+
+            $fq_class_name = ClassLikeAnalyzer::getFQCLNFromNameObject($node->class, $aliases);
+            $fq_class_name = match (strtolower($fq_class_name)) {
+                'self', 'static' => $defining_fqcln,
+                'parent' => null,
+                default => $fq_class_name,
+            };
+
+            if ($fq_class_name === null || $fq_class_name === '') {
+                return;
+            }
+
+            $callee_ids = [strtolower($fq_class_name . '::' . (
+                $node instanceof PhpParser\Node\Expr\StaticCall && $node->name instanceof PhpParser\Node\Identifier
+                    ? $node->name->name
+                    : '__construct'
+            ))];
+        } else {
+            return;
+        }
+
+        if ($node->isFirstClassCallable()) {
+            return;
+        }
+
+        foreach ($node->getArgs() as $offset => $arg) {
+            if ($arg->unpack) {
+                return;
+            }
+
+            if (!$arg->value instanceof PhpParser\Node\Expr\Variable
+                || !is_string($arg->value->name)
+                || !self::isParam($storage, $arg->value->name)
+            ) {
+                continue;
+            }
+
+            foreach ($callee_ids as $callee_id) {
+                $storage->param_calls[] = [$arg->value->name, $callee_id, $arg->name?->name ?? $offset];
+            }
+        }
+    }
+
+    /**
+     * @psalm-capabilities read-props
+     */
+    private static function isParam(FunctionLikeStorage $storage, string $name): bool
+    {
+        foreach ($storage->params as $param) {
+            if ($param->name === $name && !$param->is_variadic) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

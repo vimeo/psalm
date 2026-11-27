@@ -668,6 +668,15 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             $template_result,
         );
 
+        if ($function_call_info->function_storage !== null && !$stmt->isFirstClassCallable()) {
+            CallAnalyzer::forgetArgumentPropertiesWrittenByCallee(
+                $statements_analyzer,
+                $context,
+                $function_call_info->function_storage,
+                $stmt->getArgs(),
+            );
+        }
+
         self::checkFunctionNoDiscard(
             $statements_analyzer,
             $stmt,

@@ -645,7 +645,8 @@ final class NewAnalyzer extends CallAnalyzer
     }
 
     /**
-     * What the constructor leaves in the context: the globals it writes, then what it asserts
+     * What the constructor leaves in the context: the globals and the properties of its arguments it writes, then
+     * what it asserts
      */
     private static function applyConstructorEffects(
         StatementsAnalyzer $statements_analyzer,
@@ -659,6 +660,15 @@ final class NewAnalyzer extends CallAnalyzer
         $method_storage = $codebase->methods->getStorage($declaring_method_id);
 
         GlobalAnalyzer::readGlobalsWrittenBy($statements_analyzer, $context, $method_storage);
+
+        if (!$stmt->isFirstClassCallable()) {
+            CallAnalyzer::forgetArgumentPropertiesWrittenByCallee(
+                $statements_analyzer,
+                $context,
+                $method_storage,
+                $stmt->getArgs(),
+            );
+        }
 
         if (!$method_storage->assertions || !$stmt->class instanceof PhpParser\Node\Name) {
             return;

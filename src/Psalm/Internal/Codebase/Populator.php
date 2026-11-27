@@ -58,8 +58,10 @@ use function explode;
 use function in_array;
 use function key;
 use function reset;
+use function str_starts_with;
 use function strpos;
 use function strtolower;
+use function substr;
 
 /**
  * @internal
@@ -111,6 +113,8 @@ final class Populator
         $this->iteration_purity_bound = [];
 
         Perf\Collector::step('populate.methods');
+
+        $this->addPropertyMutationsOfCalledMethods();
 
         // every method's capabilities are known now: bind what consuming the generators they
         // return, and iterating the iterators their classes are, may do
@@ -412,6 +416,73 @@ final class Populator
         $storage = $this->classlike_storage_provider->get($fq_class_name);
 
         return isset($storage->parent_interfaces['traversable']) || isset($storage->class_implements['traversable']);
+    }
+
+    /**
+     * Adds the properties of `$this` that the methods a method calls on `$this` write to those it writes, until
+     * nothing changes: the method called may call another one
+     */
+    private function addPropertyMutationsOfCalledMethods(): void
+    {
+        do {
+            $changed = false;
+
+            foreach ($this->classlike_storage_provider->getNew() as $class_storage) {
+                foreach ($class_storage->methods as $method_storage) {
+                    foreach ($method_storage->this_method_calls as $call => $_) {
+                        $callee_storage = $this->getCalledMethodStorage($class_storage, $call);
+
+                        if ($callee_storage === null
+                            || $callee_storage === $method_storage
+                            || $callee_storage->is_static
+                        ) {
+                            continue;
+                        }
+
+                        foreach ($callee_storage->this_property_mutations ?? [] as $name => $writes_property) {
+                            $existing = $method_storage->this_property_mutations[$name] ?? null;
+                            $merged = $writes_property || $existing === true;
+
+                            if ($existing !== $merged) {
+                                $method_storage->this_property_mutations[$name] = $merged;
+                                $changed = true;
+                            }
+                        }
+
+                        foreach ($callee_storage->this_property_item_mutations as $name => $item_mutations) {
+                            foreach ($item_mutations as $sub_path => $writes_last) {
+                                $existing = $method_storage->this_property_item_mutations[$name][$sub_path] ?? null;
+                                $merged = $writes_last || $existing === true;
+
+                                if ($existing !== $merged) {
+                                    $method_storage->this_property_item_mutations[$name][$sub_path] = $merged;
+                                    $changed = true;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        } while ($changed);
+    }
+
+    /**
+     * The method a call recorded in MethodStorage::$this_method_calls of a method of the class runs
+     *
+     * @psalm-capabilities read-props
+     */
+    private function getCalledMethodStorage(ClassLikeStorage $storage, string $call): ?MethodStorage
+    {
+        if (str_starts_with($call, 'parent::')) {
+            if ($storage->parent_class === null || !$this->classlike_storage_provider->has($storage->parent_class)) {
+                return null;
+            }
+
+            $storage = $this->classlike_storage_provider->get($storage->parent_class);
+            $call = substr($call, 8);
+        }
+
+        return $this->getDeclaringMethodStorage($storage, $call);
     }
 
     /**
