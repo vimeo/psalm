@@ -920,9 +920,16 @@ final class AssertionFinder
         ?Codebase $codebase = null,
         bool $negate = false,
     ): array {
-        $first_var_name = isset($expr->getArgs()[0]->value)
+        $first_arg = $expr->getArgs()[0] ?? null;
+
+        // an unpacked argument is the array of the arguments, not the first of them
+        if ($first_arg !== null && $first_arg->unpack) {
+            $first_arg = null;
+        }
+
+        $first_var_name = $first_arg !== null
             ? ExpressionIdentifier::getExtendedVarId(
-                $expr->getArgs()[0]->value,
+                $first_arg->value,
                 $this_class_name,
                 $source,
             )
@@ -930,9 +937,9 @@ final class AssertionFinder
 
         $if_types = [];
 
-        $first_var_type = isset($expr->getArgs()[0]->value)
+        $first_var_type = $first_arg !== null
             && $source instanceof StatementsAnalyzer
-            ? $source->node_data->getType($expr->getArgs()[0]->value)
+            ? $source->node_data->getType($first_arg->value)
             : null;
 
         $function_id = self::getCalledFunctionId($expr, $source);
@@ -952,18 +959,19 @@ final class AssertionFinder
         } elseif ($function_id === 'is_callable') {
             if ($first_var_name) {
                 $if_types[$first_var_name] = [[new IsType(new TCallable())]];
-            } elseif ($expr->getArgs()[0]->value instanceof PhpParser\Node\Expr\Array_
-                && isset($expr->getArgs()[0]->value->items[0], $expr->getArgs()[0]->value->items[1])
-                && $expr->getArgs()[0]->value->items[1]->value instanceof PhpParser\Node\Scalar\String_
+            } elseif ($first_arg !== null
+                && $first_arg->value instanceof PhpParser\Node\Expr\Array_
+                && isset($first_arg->value->items[0], $first_arg->value->items[1])
+                && $first_arg->value->items[1]->value instanceof PhpParser\Node\Scalar\String_
             ) {
                 $first_var_name_in_array_argument = ExpressionIdentifier::getExtendedVarId(
-                    $expr->getArgs()[0]->value->items[0]->value,
+                    $first_arg->value->items[0]->value,
                     $this_class_name,
                     $source,
                 );
                 if ($first_var_name_in_array_argument) {
                     $if_types[$first_var_name_in_array_argument] = [
-                        [new HasMethod($expr->getArgs()[0]->value->items[1]->value->value)],
+                        [new HasMethod($first_arg->value->items[1]->value->value)],
                     ];
                 }
             }
@@ -1263,67 +1271,75 @@ final class AssertionFinder
         return null;
     }
 
-    private static function processIrreconcilableFunctionCall(
+    /**
+     * Reports a type check (`is_*()`, `instanceof`) of an expression without an id that always or never holds, as the
+     * reconciler does for a variable
+     */
+    private static function processIrreconcilableTypeCheck(
         Union $first_var_type,
-        Union $expected_type,
+        IsType $assertion,
         PhpParser\Node\Expr $expr,
         StatementsAnalyzer $source,
         Codebase $codebase,
         bool $negate,
     ): void {
-        if ($first_var_type->hasMixed()) {
+        // the value of a void call is null, and a never call has none
+        if ($first_var_type->hasMixed() || $first_var_type->hasType('void') || $first_var_type->isNever()) {
             return;
         }
 
-        if (!UnionTypeComparator::isContainedBy(
+        $expected_type = new Union([$assertion->type]);
+
+        // an int is not a float for is_float()
+        if (UnionTypeComparator::isContainedBy(
             $codebase,
             $first_var_type,
             $expected_type,
+            false,
+            false,
+            null,
+            false,
+            false,
         )) {
+            $always_holds = true;
+        } elseif ((!$assertion->type instanceof TNamedObject
+                || $codebase->classOrInterfaceOrEnumExists($assertion->type->value))
+            // instanceof only checks the class, not the type arguments
+            && !UnionTypeComparator::canExpressionTypesBeIdentical(
+                $codebase,
+                $expected_type,
+                self::withoutTypeArguments($first_var_type),
+            )
+        ) {
+            $always_holds = false;
+        } else {
             return;
         }
 
-        if (!$negate) {
-            if ($first_var_type->from_docblock) {
-                IssueBuffer::maybeAdd(
-                    new RedundantConditionGivenDocblockType(
-                        'Docblock type ' . $first_var_type . ' always contains ' . $expected_type,
-                        new CodeLocation($source, $expr),
-                        $first_var_type . ' ' . $expected_type,
-                    ),
-                    $source->getSuppressedIssues(),
-                );
+        $type_id = $first_var_type->getId();
+        $expected_id = $expected_type->getId();
+        $code_location = new CodeLocation($source, $expr);
+        $dupe_key = $type_id . ' ' . $expected_id;
+
+        if ($always_holds !== $negate) {
+            if ($always_holds) {
+                $message = $type_id . ' always contains ' . $expected_id;
             } else {
-                IssueBuffer::maybeAdd(
-                    new RedundantCondition(
-                        $first_var_type . ' always contains ' . $expected_type,
-                        new CodeLocation($source, $expr),
-                        $first_var_type . ' ' . $expected_type,
-                    ),
-                    $source->getSuppressedIssues(),
-                );
+                $message = $type_id . ' can never contain ' . $expected_id;
             }
+
+            $issue = $first_var_type->from_docblock
+                ? new RedundantConditionGivenDocblockType('Docblock type ' . $message, $code_location, $dupe_key)
+                : new RedundantCondition($message, $code_location, $dupe_key);
         } else {
-            if ($first_var_type->from_docblock) {
-                IssueBuffer::maybeAdd(
-                    new DocblockTypeContradiction(
-                        'Docblock type !' . $first_var_type . ' does not contain ' . $expected_type,
-                        new CodeLocation($source, $expr),
-                        $first_var_type . ' ' . $expected_type,
-                    ),
-                    $source->getSuppressedIssues(),
-                );
-            } else {
-                IssueBuffer::maybeAdd(
-                    new TypeDoesNotContainType(
-                        '!' . $first_var_type . ' does not contain ' . $expected_type,
-                        new CodeLocation($source, $expr),
-                        $first_var_type . ' ' . $expected_type,
-                    ),
-                    $source->getSuppressedIssues(),
-                );
-            }
+            $message = ($always_holds ? '!' : '') . $type_id . ' does not contain ' . $expected_id;
+
+            $issue = $first_var_type->from_docblock
+                ? new DocblockTypeContradiction('Docblock type ' . $message, $code_location, $dupe_key)
+                : new TypeDoesNotContainType($message, $code_location, $dupe_key);
         }
+
+        IssueBuffer::maybeAdd($issue, $source->getSuppressedIssues());
     }
 
     /**
@@ -2477,9 +2493,9 @@ final class AssertionFinder
                 // a string passing a ctype check is of the type, but a string of the type may not pass it ("-5")
                 && !str_starts_with($function_id, 'ctype_')
             ) {
-                self::processIrreconcilableFunctionCall(
+                self::processIrreconcilableTypeCheck(
                     $first_var_type,
-                    new Union([$assertion_type->type]),
+                    $assertion_type,
                     $expr,
                     $source,
                     $codebase,
@@ -4674,6 +4690,21 @@ final class AssertionFinder
                         }
                     }
                 }
+            } elseif ($codebase
+                && $source instanceof StatementsAnalyzer
+                && $conditional->class instanceof PhpParser\Node\Name
+                && !in_array(strtolower($conditional->class->getFirst()), ['self', 'static', 'parent'], true)
+                && $instanceof_assertions[0] instanceof IsType
+                && ($var_type = $source->node_data->getType($conditional->expr))
+            ) {
+                self::processIrreconcilableTypeCheck(
+                    $var_type,
+                    $instanceof_assertions[0],
+                    $conditional,
+                    $source,
+                    $codebase,
+                    $inside_negation,
+                );
             }
         }
 

@@ -73,6 +73,27 @@ final class ConditionalReturnTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'conditionalOnAnArrayOfOtherKeysTakesTheElseBranch' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T $t
+                     * @return (T is list<int> ? "list" : "other")
+                     */
+                    function kind($t) {
+                        throw new Exception();
+                    }
+
+                    /** @return array<string, int> */
+                    function map(): array {
+                        return [];
+                    }
+
+                    $k = kind(map());',
+                'assertions' => [
+                    '$k===' => "'other'",
+                ],
+            ],
             'unionOfConditionalsOnTheSameTemplateKeepsBoth' => [
                 'code' => '<?php
                     /**

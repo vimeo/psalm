@@ -2143,6 +2143,113 @@ final class RedundantConditionTest extends TestCase
                         return ["id" => $i] === $shape;
                     }',
             ],
+            'typeCheckOfAnUnpackedArgument' => [
+                'code' => '<?php
+                    /** @param mixed $value */
+                    function f($value): void {
+                        if (is_array(...[$value])) {}
+                        if (is_string(...["x"])) {}
+                    }',
+            ],
+            'arraysOfDisjointKeysCanBothBeEmpty' => [
+                'code' => '<?php
+                    /** @return array<string, string> */
+                    function getMap(): array {
+                        return [];
+                    }
+
+                    /**
+                     * @param array<string, string> $map
+                     * @param list<int> $list
+                     */
+                    function f(array $map, array $list): bool {
+                        if (array_is_list(getMap())) {}
+                        if (!array_is_list(getMap())) {}
+
+                        return $map === $list;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'objectShapeCanBeAChildOfANonFinalClass' => [
+                'code' => '<?php
+                    class Base {}
+
+                    /** @return object{foo: string} */
+                    function shape(): object {
+                        return new class extends Base {
+                            public string $foo = "";
+                        };
+                    }
+
+                    /** @param object{foo: string} $s */
+                    function f(object $s, Base $b): bool {
+                        if (shape() instanceof Base) {}
+
+                        return $s === $b;
+                    }',
+            ],
+            'isNullOfAVoidCall' => [
+                'code' => '<?php
+                    function v(): void {}
+
+                    if (is_null(v())) {
+                        echo "always";
+                    }',
+            ],
+            'typeChecksOfReturnValuesThatMayHold' => [
+                'code' => '<?php
+                    interface I {}
+                    class C {}
+
+                    function cb(): callable {
+                        return "strlen";
+                    }
+
+                    function it(): iterable {
+                        return [];
+                    }
+
+                    function c(): C {
+                        return new C();
+                    }
+
+                    function o(): object {
+                        return new C();
+                    }
+
+                    function intOrString(): int|string {
+                        return 1;
+                    }
+
+                    /**
+                     * @template T
+                     * @param T $t
+                     * @return T
+                     */
+                    function id($t) {
+                        return $t;
+                    }
+
+                    /** @param mixed $m */
+                    function f($m): void {
+                        if (is_string(cb())) {}
+                        if (is_array(cb())) {}
+                        if (is_object(cb())) {}
+                        if (is_array(it())) {}
+                        if (is_object(it())) {}
+                        if (it() instanceof Traversable) {}
+                        if (c() instanceof I) {}
+                        if (o() instanceof I) {}
+                        if (is_iterable(o())) {}
+                        if (is_numeric(intOrString())) {}
+                        if (is_string(id($m))) {}
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
@@ -3266,6 +3373,133 @@ final class RedundantConditionTest extends TestCase
                         return [1, 2] === [3];
                     }',
                 'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:32 - list{3} cannot be identical to list{1, 2',
+            ],
+            'isStringOfALiteralIsImpossible' => [
+                'code' => '<?php
+                    if (is_string(123)) {
+                        echo "never";
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:25 - 123 does not contain string',
+            ],
+            'isStringOfAReturnValueIsImpossible' => [
+                'code' => '<?php
+                    /** @return 123 */
+                    function ret(): int {
+                        return 123;
+                    }
+
+                    if (is_string(ret())) {
+                        echo "never";
+                    }',
+                'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:25 - Docblock type 123 does not contain string',
+            ],
+            'negatedIsStringOfALiteralIsRedundant' => [
+                'code' => '<?php
+                    if (!is_string(123)) {
+                        echo "always";
+                    }',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:26 - 123 can never contain string',
+            ],
+            'negatedIsStringOfAReturnValueIsRedundant' => [
+                'code' => '<?php
+                    /** @return 123 */
+                    function ret(): int {
+                        return 123;
+                    }
+
+                    if (!is_string(ret())) {
+                        echo "always";
+                    }',
+                'error_message' => 'RedundantConditionGivenDocblockType - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:26 - Docblock type 123 can never contain string',
+            ],
+            'isFloatOfAnIntLiteralIsImpossible' => [
+                'code' => '<?php
+                    if (is_float(1)) {
+                        echo "never";
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:25 - 1 does not contain float',
+            ],
+            'instanceofOfAReturnValueOfAnotherFinalClassIsImpossible' => [
+                'code' => '<?php
+                    final class A {}
+                    final class B {}
+
+                    function a(): A {
+                        return new A();
+                    }
+
+                    if (a() instanceof B) {
+                        echo "never";
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:25 - A does not contain B',
+            ],
+            'instanceofOfANullableReturnValueOfAnotherFinalClassIsImpossible' => [
+                'code' => '<?php
+                    final class A {}
+                    final class B {}
+
+                    function a(): ?A {
+                        return null;
+                    }
+
+                    if (a() instanceof B) {
+                        echo "never";
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:25 - A|null does not contain B',
+            ],
+            'negatedInstanceofOfAReturnValueOfAnotherFinalClassIsRedundant' => [
+                'code' => '<?php
+                    final class A {}
+                    final class B {}
+
+                    function a(): A {
+                        return new A();
+                    }
+
+                    if (!(a() instanceof B)) {
+                        echo "always";
+                    }',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:27 - A can never contain B',
+            ],
+            'instanceofOfAReturnValueOfItsClassIsRedundant' => [
+                'code' => '<?php
+                    final class A {}
+
+                    function a(): A {
+                        return new A();
+                    }
+
+                    if (a() instanceof A) {
+                        echo "always";
+                    }',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:25 - A always contains A',
+            ],
+            'arrayIsListOfANonEmptyArrayOfStringKeysIsImpossible' => [
+                'code' => '<?php
+                    /** @return non-empty-array<string, string> */
+                    function getMap(): array {
+                        return ["a" => "b"];
+                    }
+
+                    if (array_is_list(getMap())) {
+                        echo "never";
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:25 - non-empty-array<string, string> does not contain list<mixed',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'negatedInstanceofOfAReturnValueOfItsClassIsImpossible' => [
+                'code' => '<?php
+                    final class A {}
+
+                    function a(): A {
+                        return new A();
+                    }
+
+                    if (!(a() instanceof A)) {
+                        echo "never";
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:27 - !A does not contain A',
             ],
         ];
     }
