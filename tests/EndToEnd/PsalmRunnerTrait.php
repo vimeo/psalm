@@ -78,8 +78,12 @@ trait PsalmRunnerTrait
      */
     protected static function createTemporaryDirectory(string $prefix): string
     {
-        $dir = (realpath(sys_get_temp_dir()) ?: sys_get_temp_dir()) . DIRECTORY_SEPARATOR . $prefix
-            . bin2hex(random_bytes(8));
+        $temp_dir = realpath(sys_get_temp_dir());
+        if ($temp_dir === false) {
+            $temp_dir = sys_get_temp_dir();
+        }
+
+        $dir = $temp_dir . DIRECTORY_SEPARATOR . $prefix . bin2hex(random_bytes(8));
         if (!mkdir($dir)) {
             throw new RuntimeException("Could not create the directory $dir");
         }
