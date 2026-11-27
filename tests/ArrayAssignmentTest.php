@@ -304,6 +304,26 @@ final class ArrayAssignmentTest extends TestCase
                         /** @psalm-check-type-exact $a = array{0: "v"|2, a: "v"|1, ...<K, "v">} */;
                     }',
             ],
+            'writeUnderALiteralKeyKeepsTheOffsetsOfOtherLiteralKeysAndForgetsTheSameKey' => [
+                'code' => '<?php
+                    $a = [];
+                    $a["x"] = 1;
+                    $a["y"] = "b";
+                    $a["01"] = true;
+                    $a[1] = 2.5;
+                    $a["1"] = "s";
+                    $a[-1] = null;
+                    $kept = $a["x"];
+                    $kept2 = $a["01"];
+                    $same = $a[1];
+                    $same2 = $a["1"];',
+                'assertions' => [
+                    '$kept===' => '1',
+                    '$kept2===' => 'true',
+                    '$same===' => "'s'",
+                    '$same2===' => "'s'",
+                ],
+            ],
             'writeUnderAStringKeyMayReachTheIntKeyOfItsDecimalString' => [
                 'code' => '<?php
                     /**
@@ -896,6 +916,39 @@ final class ArrayAssignmentTest extends TestCase
                     $bag->items()[] = "foo";
                     $a = [];
                     Bag::of($a)["k"] = "bar";',
+            ],
+            'coalesceAssignmentAddsAKeyMissingFromASealedShape' => [
+                'code' => '<?php
+                    $e = ["a" => 1];
+                    $e["b"] ??= 2;
+
+                    $n = ["a" => 1];
+                    $n["b"]["c"] ??= 2;
+
+                    /** @param array<string, mixed> $r */
+                    function f(array $r): array {
+                        $r["k"] = ["a" => 1];
+                        $r["k"]["b"] ??= 2;
+                        return $r;
+                    }',
+                'assertions' => [
+                    '$e===' => 'array{a: 1, b: 2}',
+                    '$n===' => 'array{a: 1, b: array{c: 2}}',
+                ],
+                'ignored_issues' => ['TypeDoesNotContainType'],
+            ],
+            'coalesceAssignmentKeepsTheValueOfAnOptionalKey' => [
+                'code' => '<?php
+                    /** @return array{a: int, b?: string} */
+                    function get(): array {
+                        return ["a" => 1];
+                    }
+
+                    $e = get();
+                    $e["b"] ??= 2;',
+                'assertions' => [
+                    '$e===' => 'array{a: int, b: 2|string}',
+                ],
             ],
             'coalesceAssignmentOnTwoOptionalKeysOfAnArrayWithAShapeIntersection' => [
                 'code' => '<?php
@@ -4079,6 +4132,122 @@ final class ArrayAssignmentTest extends TestCase
                     }
                 PHP,
             ],
+            'offsetWriteKeepsTheValuesOfTheOtherKeysPossiblyEmpty' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @return array<string, array<int, int>> */
+                    function getArrays(): array {
+                        return [];
+                    }
+                    /** @return array<string, list<int>> */
+                    function getLists(): array {
+                        return [];
+                    }
+                    /** @return array<string, non-empty-list<int>> */
+                    function getNonEmptyLists(): array {
+                        return [];
+                    }
+                    /** @return array<string, array{x?: int}> */
+                    function getShapes(): array {
+                        return [];
+                    }
+                    /** @return array<string, array<string, list<int>>> */
+                    function getNestedLists(): array {
+                        return [];
+                    }
+                    /** @var string $k */
+                    $k = 'a';
+                    /** @var string $j */
+                    $j = 'b';
+
+                    $a = getArrays();
+                    $a[$k] = [1];
+
+                    $b = getLists();
+                    $b[$k] = [1];
+
+                    $c = getShapes();
+                    $c[$k] = ['x' => 1];
+
+                    $e = getNonEmptyLists();
+                    $e[$k] = [];
+
+                    $d = getNestedLists();
+                    $d[$j][$k] = [1];
+                PHP,
+                'assertions' => [
+                    '$a===' => 'non-empty-array<string, array<int, int>>',
+                    '$b===' => 'non-empty-array<string, list<int>>',
+                    '$c===' => 'non-empty-array<string, array{x?: int}>',
+                    '$d===' => 'non-empty-array<string, non-empty-array<string, list<int>>>',
+                    '$e===' => 'non-empty-array<string, list<int>>',
+                ],
+            ],
+            'offsetWriteKeepsAnEmptyCheckOnAnotherKey' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array<string, array<int, int>> $d */
+                    function f(array $d, string $k, string $j): void {
+                        $d[$k] = [1];
+                        if (isset($d[$j]) && empty($d[$j])) {
+                            echo "empty";
+                        }
+                    }
+                PHP,
+            ],
+            'propertyOffsetWriteKeepsAnEmptyCheckOnAnotherKey' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class C {
+                        /** @var array<string, list<int>> */
+                        public array $p = [];
+
+                        public function f(string $k, string $j): void {
+                            $this->p[$k] = [1];
+                            if (isset($this->p[$j]) && empty($this->p[$j])) {
+                                echo "empty";
+                            }
+                        }
+                    }
+                PHP,
+            ],
+            'offsetWriteOverwritesTheEmptyArrayOfTheWrittenKey' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @var string $k */
+                    $k = 'a';
+
+                    $a = [];
+                    $a[$k] = [];
+                    $a[$k][] = 1;
+
+                    $o = [];
+                    $o[$k] = [];
+                    $o[$k] = [1];
+
+                    /** @var list<string> $names */
+                    $names = [];
+                    $b = [];
+                    foreach ($names as $name) {
+                        if (!isset($b[$name])) {
+                            $b[$name] = [];
+                        }
+                        $b[$name][] = $name;
+                    }
+
+                    $c = [];
+                    foreach ($names as $name) {
+                        $c[$name] ??= [];
+                        $c[$name][] = $name;
+                    }
+                PHP,
+                'assertions' => [
+                    '$a===' => 'non-empty-array<string, non-empty-list<1>>',
+                    '$o===' => 'non-empty-array<string, list{1}>',
+                    '$b===' => 'array<string, non-empty-list<string>>',
+                    '$c===' => 'array<string, non-empty-list<string>>',
+                ],
+            ],
             'classStringKeyStaysAClassStringWhenMergedWithClassStringKeys' => [
                 'code' => <<<'PHP'
                     <?php
@@ -4159,6 +4328,12 @@ final class ArrayAssignmentTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'coalesceAssignmentToAKeyMissingFromASealedShapeIsAlwaysTaken' => [
+                'code' => '<?php
+                    $e = ["a" => 1];
+                    $e["b"] ??= 2;',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:21 - Type null for $e["b"] is never isset',
+            ],
             'nestedWriteUnderAnUnlistedKeyOfAShapeWithAMixedFallback' => [
                 'code' => '<?php
                     /** @param array{meta: array, ...} $payload */

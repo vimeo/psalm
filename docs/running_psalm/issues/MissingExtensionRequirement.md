@@ -61,12 +61,25 @@ reported.
 
 The extensions PHP is always built with need no declaration: `Core`, `standard`, `date`, `pcre`, `SPL`, `Reflection`,
 `hash` from PHP 7.4, `json` from PHP 8.0, `random` from PHP 8.2, `uri` and `Zend OPcache` from PHP 8.5. Psalm checks
-the lowest PHP version the `php` requirement of `composer.json` allows:
+the lowest PHP version the `php` requirement of `composer.json` allows (without one, its `config.platform.php`):
 
 ```php
 <?php // composer.json requires "php": "^7.3"
 
 function digest(string $s): string {
     return hash('sha256', $s);                              // MissingExtensionRequirement: PHP 7.3 can be built without it
+}
+```
+
+Psalm doesn't report an extension that a declared or checked extension requires: `libxml` for
+`dom`, `SimpleXML`, `xmlreader` and `xsl` (`xmlwriter` and `soap` from PHP 8.4), `dom` for `xsl` from PHP 8.3, `PDO`
+for its drivers:
+
+```php
+<?php // composer.json requires "ext-dom": "*" and "ext-pdo_sqlite": "*"
+
+function f(): PDO {
+    libxml_use_internal_errors(true);                       // no issue: ext-dom requires ext-libxml
+    return new PDO('sqlite::memory:');                      // no issue: ext-pdo_sqlite requires ext-pdo
 }
 ```

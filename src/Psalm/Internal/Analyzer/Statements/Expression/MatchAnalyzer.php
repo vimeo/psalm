@@ -276,6 +276,8 @@ final class MatchAnalyzer
             // says nothing of the values left out by its negation
             $all_match_condition_is_a_chain = count($all_conds) > $codebase->config->max_shaped_array_size;
 
+            $chained_conditions = [];
+
             if ($all_match_condition_is_a_chain) {
                 $all_match_condition = null;
 
@@ -285,6 +287,8 @@ final class MatchAnalyzer
                         $all_cond,
                         $match_condition->getAttributes(),
                     );
+
+                    $chained_conditions[] = $cond_identical;
 
                     $all_match_condition = $all_match_condition
                         ? new VirtualBooleanOr(
@@ -321,7 +325,14 @@ final class MatchAnalyzer
 
             $statements_analyzer->addSuppressedIssues($analysis_suppressions);
 
-            ExpressionAnalyzer::analyze($statements_analyzer, $all_match_condition, $context);
+            if ($all_match_condition_is_a_chain) {
+                // analysed as a whole, each `||` of the chain would narrow the subject by every value before it
+                foreach ($chained_conditions as $chained_condition) {
+                    ExpressionAnalyzer::analyze($statements_analyzer, $chained_condition, $context);
+                }
+            } else {
+                ExpressionAnalyzer::analyze($statements_analyzer, $all_match_condition, $context);
+            }
 
             $clauses = FormulaGenerator::getFormula(
                 spl_object_id($all_match_condition),

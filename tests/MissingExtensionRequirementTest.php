@@ -183,6 +183,131 @@ final class MissingExtensionRequirementTest extends TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
+    public function testExtensionADeclaredExtensionRequires(): void
+    {
+        $this->project_analyzer->getConfig()->declared_extensions = ['dom' => true];
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+        $this->addFile($file_path, '<?php
+            function f(): void {
+                libxml_use_internal_errors(true);
+                $d = new DOMDocument();
+                $d->loadHTML("<p>x</p>");
+            }');
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testPdoRequiredByADeclaredDriver(): void
+    {
+        $this->project_analyzer->getConfig()->declared_extensions = ['pdo_sqlite' => true];
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+        $this->addFile($file_path, '<?php
+            function f(): PDO {
+                return new PDO("sqlite::memory:");
+            }');
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testExtensionACheckedExtensionRequires(): void
+    {
+        $this->project_analyzer->getConfig()->declared_extensions = [];
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+        $this->addFile($file_path, '<?php
+            function f(): void {
+                if (extension_loaded("SimpleXML")) {
+                    libxml_use_internal_errors(true);
+                }
+            }');
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testExtensionThatRequiresADeclaredExtension(): void
+    {
+        $this->project_analyzer->getConfig()->declared_extensions = ['libxml' => true];
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+        $this->addFile($file_path, '<?php
+            function f(): DOMDocument {
+                return new DOMDocument();
+            }');
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('DOMDocument is part of the ext-dom extension');
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testExtensionADeclaredExtensionRequiresFromTheLowestPhpComposerAllows(): void
+    {
+        $this->project_analyzer->getConfig()->declared_extensions = ['xmlwriter' => true];
+        $this->project_analyzer->getConfig()->lowest_composer_php_version_id = 8_04_00;
+        $this->project_analyzer->setPhpVersion('8.4', 'tests');
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+        $this->addFile($file_path, '<?php
+            function f(): void {
+                libxml_use_internal_errors(true);
+            }');
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testDomRequiredByXslFromTheLowestPhpComposerAllows(): void
+    {
+        $this->project_analyzer->getConfig()->declared_extensions = ['xsl' => true];
+        $this->project_analyzer->getConfig()->lowest_composer_php_version_id = 8_04_00;
+        $this->project_analyzer->setPhpVersion('8.4', 'tests');
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+        $this->addFile($file_path, '<?php
+            function f(): DOMDocument {
+                return new DOMDocument();
+            }');
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testExtensionADeclaredExtensionRequiresFromANewerPhpThanComposerAllows(): void
+    {
+        $this->project_analyzer->getConfig()->declared_extensions = ['xmlwriter' => true];
+        $this->project_analyzer->getConfig()->lowest_composer_php_version_id = 8_03_00;
+        $this->project_analyzer->setPhpVersion('8.4', 'tests');
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+        $this->addFile($file_path, '<?php
+            function f(): void {
+                libxml_use_internal_errors(true);
+            }');
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('libxml_use_internal_errors is part of the ext-libxml extension');
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testDomRequiredByXslFromAPhpNewerThanComposerAllows(): void
+    {
+        $this->project_analyzer->getConfig()->declared_extensions = ['xsl' => true];
+        $this->project_analyzer->getConfig()->lowest_composer_php_version_id = 8_02_00;
+        $this->project_analyzer->setPhpVersion('8.4', 'tests');
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+        $this->addFile($file_path, '<?php
+            function f(): DOMDocument {
+                return new DOMDocument();
+            }');
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('DOMDocument is part of the ext-dom extension');
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
     /**
      * @psalm-pure
      */
@@ -312,6 +437,33 @@ final class MissingExtensionRequirementTest extends TestCase
                         return mb_strlen($s);
                     }',
                 'error_message' => 'MissingExtensionRequirement - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:32'
+                    . ' - mb_strlen is part of the ext-mbstring extension',
+            ],
+            'extensionCheckedInALoopLeftBeforeTheCheck' => [
+                'code' => '<?php
+                    /** @param list<string> $xs */
+                    function f(array $xs, string $s): int {
+                        foreach ($xs as $_) {
+                            if (function_exists("mb_convert_encoding")) {
+                                break;
+                            }
+                        }
+                        return mb_strlen($s);
+                    }',
+                'error_message' => 'MissingExtensionRequirement - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:32'
+                    . ' - mb_strlen is part of the ext-mbstring extension',
+            ],
+            'extensionCheckedOnlyInAnIf' => [
+                'code' => '<?php
+                    function f(string $s, bool $c): int {
+                        if ($c) {
+                            if (!function_exists("mb_convert_encoding")) {
+                                return 0;
+                            }
+                        }
+                        return mb_strlen($s);
+                    }',
+                'error_message' => 'MissingExtensionRequirement - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:32'
                     . ' - mb_strlen is part of the ext-mbstring extension',
             ],
             'new' => [

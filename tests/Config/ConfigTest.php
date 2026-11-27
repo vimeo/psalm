@@ -67,6 +67,7 @@ use function getenv;
 use function glob;
 use function implode;
 use function in_array;
+use function intdiv;
 use function is_array;
 use function is_dir;
 use function is_link;
@@ -357,7 +358,6 @@ final class ConfigTest extends DeferredAnalyzerTestCase
         $last_error = error_get_last();
         $check_symlink_error =
             !is_array($last_error) ||
-            !isset($last_error['message']) ||
             !in_array($last_error['message'], $no_symlinking_error);
 
         @symlink(dirname(__DIR__, 1) . '/fixtures/symlinktest/a', dirname(__DIR__, 1) . '/fixtures/symlinktest/ignored/b');
@@ -3615,12 +3615,18 @@ final class ConfigTest extends DeferredAnalyzerTestCase
 
         try {
             $config = Config::loadFromXML($root, '<?xml version="1.0"?><psalm/>');
+            // the version the CLI analyses at when neither --php-version nor phpVersion is set
+            $analysis_version = $config->getPHPVersionFromComposerJson();
         } finally {
             unlink($root . DIRECTORY_SEPARATOR . 'composer.json');
             rmdir($root);
         }
 
         $this->assertSame($expected, $config->lowest_composer_php_version_id);
+        $this->assertSame(
+            $expected === null ? null : intdiv($expected, 10_000) . '.' . intdiv($expected, 100) % 100,
+            $analysis_version,
+        );
     }
 
     /**
@@ -3633,6 +3639,14 @@ final class ConfigTest extends DeferredAnalyzerTestCase
         yield 'no php requirement' => ['{"require": {}}', null];
         yield 'one major version' => ['{"require": {"php": "^8.2"}}', 8_02_00];
         yield 'several major versions' => ['{"require": {"php": "^7.3 || ^8.0"}}', 7_03_00];
+        yield 'config.platform.php' => ['{"config": {"platform": {"php": "8.3.0"}}}', 8_03_00];
+        yield 'config.platform.php with a patch version' => ['{"config": {"platform": {"php": "7.4.33"}}}', 7_04_00];
+        yield 'config.platform.php-64bit' => ['{"config": {"platform": {"php-64bit": "8.2"}}}', 8_02_00];
+        yield 'php requirement before config.platform.php' => [
+            '{"require": {"php": "^8.1"}, "config": {"platform": {"php": "8.3.0"}}}',
+            8_01_00,
+        ];
+        yield 'config.platform.php disabled' => ['{"config": {"platform": {"php": false}}}', null];
     }
 
     /**

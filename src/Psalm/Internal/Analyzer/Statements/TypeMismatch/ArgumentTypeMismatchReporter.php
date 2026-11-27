@@ -190,7 +190,8 @@ final class ArgumentTypeMismatchReporter extends TypeMismatchReporter
     protected function falseIssue(): ?CodeIssue
     {
         return new InvalidArgument(
-            $this->argument . ' cannot be false, ' . $this->expected_type->getId() . ' value expected',
+            $this->argument . ' cannot be false, false value provided to parameter with type '
+                . $this->expected_type->getId(),
             $this->location,
             $this->cased_method_id,
         );
@@ -203,7 +204,7 @@ final class ArgumentTypeMismatchReporter extends TypeMismatchReporter
     protected function possiblyFalseIssue(): ?CodeIssue
     {
         return new PossiblyFalseArgument(
-            $this->argument . ' cannot be false, possibly ' . $this->expected_type->getId() . ' value expected',
+            $this->argument . ' cannot be false, possibly false value provided',
             $this->location,
             $this->cased_method_id,
         );

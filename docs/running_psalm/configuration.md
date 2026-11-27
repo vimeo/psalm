@@ -514,7 +514,12 @@ Psalm itself requires these plugins, so they don't need installing.
   phpVersion="[string]"
 >
 ```
-Set the php version Psalm should assume when checking and/or fixing the project. If this attribute is not set, Psalm uses the declaration in `composer.json` if one is present. It will check against the earliest version of PHP that satisfies the declared `php` dependency
+Set the php version Psalm should assume when checking and/or fixing the project. If this attribute is not set, Psalm uses the declaration in `composer.json` if one is present. It will check against the earliest version of PHP that satisfies the declared `php` dependency. If `composer.json` has no `php` requirement, Psalm uses the version set in `config.platform.php`:
+
+```json
+{"require": {"php": "^8.1"}, "config": {"platform": {"php": "8.3.0"}}} // 8.1
+{"config": {"platform": {"php": "8.3.0"}}} // 8.3
+```
 
 This can be overridden on the command-line using the `--php-version=` flag which takes the highest precedence over both the `phpVersion` setting and the version derived from `composer.json`.
 

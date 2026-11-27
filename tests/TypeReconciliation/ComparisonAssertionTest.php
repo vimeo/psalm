@@ -78,6 +78,66 @@ final class ComparisonAssertionTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'notIdenticalToAnObjectKeepsAWiderType' => [
+                'code' => '<?php
+                    interface Handler {}
+
+                    class Command {}
+
+                    /** @var iterable<int, string> $items */
+                    $items = [];
+
+                    /** @var Traversable<int, string> $other */
+                    $other = new ArrayIterator([]);
+
+                    /** @var callable $callable */
+                    $callable = "strlen";
+
+                    /** @var Handler $handler */
+                    $handler = new class implements Handler {};
+
+                    /** @var Command $command */
+                    $command = new Command();
+
+                    $kept = null;
+                    $count = 0;
+
+                    if ($items !== $other) {
+                        $kept = $items;
+                    }
+
+                    if ($callable !== $handler) {
+                        $count++;
+                    }
+
+                    if ($callable !== $command) {
+                        $count++;
+                    }',
+                'assertions' => [
+                    '$kept===' => 'iterable<int, string>|null',
+                ],
+            ],
+            'instanceofAnInterfaceOfACallableIsNotAContradiction' => [
+                'code' => '<?php
+                    interface ResetInterface {}
+
+                    /**
+                     * @param callable(string): ?string $resolver
+                     * @return string
+                     */
+                    function f(callable $resolver): string {
+                        $kind = "plain";
+
+                        if ($resolver instanceof ResetInterface) {
+                            $kind = "reset";
+                        }
+
+                        return $kind;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'getClassIdenticalToAUnionOfClassStringsNarrowsToEachOfThem' => [
                 'code' => '<?php
                     final class A {}
@@ -765,6 +825,15 @@ final class ComparisonAssertionTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'callableNeverIdenticalToAFinalClassWithoutInvoke' => [
+                'code' => '<?php
+                    final class Command {}
+
+                    function compare(callable $callable, Command $command): bool {
+                        return $callable === $command;
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+            ],
             'nullsafePropertyNeverIdenticalToAValueStaysARedundantCondition' => [
                 'code' => '<?php
                     final class Item {

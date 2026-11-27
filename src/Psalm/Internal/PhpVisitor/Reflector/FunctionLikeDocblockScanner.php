@@ -24,6 +24,7 @@ use Psalm\Internal\Codebase\TaintStore;
 use Psalm\Internal\Scanner\FileScanner;
 use Psalm\Internal\Scanner\FunctionDocblockComment;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\Type\ParseTreeCreator;
 use Psalm\Internal\Type\PurityWildcard;
 use Psalm\Internal\Type\TemplateDefaults;
 use Psalm\Internal\Type\TypeAlias;
@@ -785,7 +786,8 @@ final class FunctionLikeDocblockScanner
         foreach ($fixed_type_tokens as $i => $type_token) {
             $token_body = $type_token[0];
 
-            if ($token_body[0] === '$') {
+            // the name of a parameter of a callable type is not a reference to a parameter of the function
+            if ($token_body[0] === '$' && !ParseTreeCreator::isCallableParamName($fixed_type_tokens, $i)) {
                 foreach ($storage->params as $j => $param_storage) {
                     if ('$' . $param_storage->name === $token_body) {
                         if (!isset($param_type_mapping[$token_body])) {

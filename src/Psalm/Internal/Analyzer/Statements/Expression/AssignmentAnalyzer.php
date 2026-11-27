@@ -1348,6 +1348,11 @@ final class AssignmentAnalyzer
         } elseif ($stmt instanceof PhpParser\Node\Expr\AssignOp\BitwiseXor) {
             $operation = new VirtualBitwiseXor($stmt->var, $stmt->expr, $stmt->getAttributes());
         } elseif ($stmt instanceof PhpParser\Node\Expr\AssignOp\Coalesce) {
+            // the offsets `??=` reads may be missing: it creates them
+            for ($var = $stmt->var; $var instanceof PhpParser\Node\Expr\ArrayDimFetch; $var = $var->var) {
+                $var->setAttribute('coalesceAssignmentTarget', true);
+            }
+
             $operation = new VirtualCoalesce($stmt->var, $stmt->expr, $stmt->getAttributes());
         } elseif ($stmt instanceof PhpParser\Node\Expr\AssignOp\Concat) {
             $operation = new VirtualConcat($stmt->var, $stmt->expr, $stmt->getAttributes());
@@ -2659,7 +2664,7 @@ final class AssignmentAnalyzer
         Codebase $codebase,
         Context $context,
         PhpParser\Node\Expr $var,
-        string $list_var_id,
+        ?string $list_var_id,
         ?Union $new_assign_type,
         bool $has_comment_type,
         PhpParser\Node\Expr $array,
@@ -2667,7 +2672,58 @@ final class AssignmentAnalyzer
         Union $array_type,
         string|int|null $offset_value,
         int &$removed_taints,
+        ?PhpParser\Comment\Doc $doc_comment,
     ): void {
+        if ($var instanceof PhpParser\Node\Expr\ArrayDimFetch
+            || $var instanceof PhpParser\Node\Expr\PropertyFetch
+            || $var instanceof PhpParser\Node\Expr\StaticPropertyFetch
+        ) {
+            // an offset or a property is assigned like by `$a['k'] = ...`, which updates what holds it. A value of no
+            // known type is reported once for the whole destructuring, and a property is not reported for being
+            // assigned a mixed item
+            $suppressed_issues = $statements_analyzer->getSuppressedIssues();
+            $suppress_mixed_assignment = !isset($suppressed_issues['MixedAssignment'])
+                && ($new_assign_type === null || !$var instanceof PhpParser\Node\Expr\ArrayDimFetch);
+
+            if ($suppress_mixed_assignment) {
+                $statements_analyzer->addSuppressedIssues(['MixedAssignment']);
+            }
+
+            $item_type = $new_assign_type ?? Type::getMixed();
+
+            if ($array_type->hasMixed()) {
+                $item_type = $item_type->addParentNodes(self::taintDestructuredItem(
+                    $statements_analyzer,
+                    $array,
+                    $array_id,
+                    $array_type,
+                    $offset_value,
+                    Type::getMixed(),
+                )->parent_nodes);
+            }
+
+            try {
+                self::analyze(
+                    $statements_analyzer,
+                    $var,
+                    null,
+                    $item_type,
+                    $context,
+                    $doc_comment,
+                );
+            } finally {
+                if ($suppress_mixed_assignment) {
+                    $statements_analyzer->removeSuppressedIssues(['MixedAssignment']);
+                }
+            }
+
+            return;
+        }
+
+        if ($list_var_id === null) {
+            return;
+        }
+
         if ($new_assign_type !== null
             && $new_assign_type->hasMixed()
             && !$has_comment_type
@@ -2841,6 +2897,87 @@ final class AssignmentAnalyzer
             IssueBuffer::maybeAdd(
                 new ParseError($compile_error, new CodeLocation($statements_analyzer->getSource(), $assign_var)),
                 $statements_analyzer->getSuppressedIssues(),
+            );
+        }
+    }
+
+    /**
+     * The type of what a destructured item takes from one of the types of the destructured value, with the taints of
+     * the array it is read from
+     */
+    private static function getDestructuredItemType(
+        StatementsAnalyzer $statements_analyzer,
+        Codebase $codebase,
+        Atomic $assign_value_atomic_type,
+        PhpParser\Node\ArrayItem $assign_var_item,
+        string|int|null $offset_value,
+        bool &$can_be_empty,
+        PhpParser\Node\Expr $array,
+        ?string $array_id,
+        Union $assign_value_type,
+    ): ?Union {
+        $item_type = null;
+
+        if ($assign_value_atomic_type instanceof TArray
+            || $assign_value_atomic_type instanceof TKeyedArray
+        ) {
+            $item_type = self::getDestructuredArrayItemType(
+                $statements_analyzer,
+                $assign_value_atomic_type,
+                $assign_var_item,
+                $offset_value,
+                $can_be_empty,
+            );
+        } elseif ($assign_value_atomic_type->hasArrayAccessInterface($codebase)) {
+            $item_type = self::getArrayAccessItemType($assign_value_atomic_type, $codebase);
+        }
+
+        if (!$item_type) {
+            return null;
+        }
+
+        return self::taintDestructuredItem(
+            $statements_analyzer,
+            $array,
+            $array_id,
+            $assign_value_type,
+            $offset_value,
+            TypeVariableResolver::resolveTopLevel($item_type, $codebase),
+        );
+    }
+
+    /**
+     * A variable that a destructuring may assign
+     */
+    private static function registerDestructuredVar(
+        StatementsAnalyzer $statements_analyzer,
+        Context $context,
+        PhpParser\Node\Expr $var,
+        string $list_var_id,
+    ): void {
+        $context->vars_possibly_in_scope[$list_var_id] = true;
+        $context->assigned_var_ids[$list_var_id] = (int)$var->getAttribute('startFilePos');
+        $context->possibly_assigned_var_ids[$list_var_id] = true;
+
+        if (str_contains($list_var_id, '-')
+            || str_contains($list_var_id, '[')
+            || str_contains($list_var_id, '::')
+        ) {
+            return;
+        }
+
+        $location = new CodeLocation($statements_analyzer, $var);
+
+        if (!$statements_analyzer->hasVariable($list_var_id)) {
+            $statements_analyzer->registerVariable(
+                $list_var_id,
+                $location,
+                $context->branch_point,
+            );
+        } else {
+            $statements_analyzer->registerVariableAssignment(
+                $list_var_id,
+                $location,
             );
         }
     }
@@ -3029,68 +3166,30 @@ final class AssignmentAnalyzer
                     continue;
                 }
 
-                if ($list_var_id) {
-                    $context->vars_possibly_in_scope[$list_var_id] = true;
-                    $context->assigned_var_ids[$list_var_id] = (int)$var->getAttribute('startFilePos');
-                    $context->possibly_assigned_var_ids[$list_var_id] = true;
-
-                    $already_in_scope = isset($context->vars_in_scope[$list_var_id]);
-
-                    if (!str_contains($list_var_id, '-')
-                        && !str_contains($list_var_id, '[')
-                        && !str_contains($list_var_id, '::')
-                    ) {
-                        $location = new CodeLocation($statements_analyzer, $var);
-
-                        if (!$statements_analyzer->hasVariable($list_var_id)) {
-                            $statements_analyzer->registerVariable(
-                                $list_var_id,
-                                $location,
-                                $context->branch_point,
-                            );
-                        } else {
-                            $statements_analyzer->registerVariableAssignment(
-                                $list_var_id,
-                                $location,
-                            );
-                        }
-
-                        if (isset($context->byref_constraints[$list_var_id])) {
-                            // something
-                        }
+                // an appended item (`$a[]`) has no id, but its type is needed all the same
+                if ($list_var_id !== null || $var instanceof PhpParser\Node\Expr\ArrayDimFetch) {
+                    if ($list_var_id !== null) {
+                        self::registerDestructuredVar($statements_analyzer, $context, $var, $list_var_id);
                     }
 
                     // the item may be in any of the arrays the value can be
-                    $item_type = null;
-
-                    if ($assign_value_atomic_type instanceof TArray
-                        || $assign_value_atomic_type instanceof TKeyedArray
-                    ) {
-                        $item_type = self::getDestructuredArrayItemType(
-                            $statements_analyzer,
-                            $assign_value_atomic_type,
-                            $assign_var_item,
-                            $offset_value,
-                            $can_be_empty,
-                        );
-                    } elseif ($assign_value_atomic_type->hasArrayAccessInterface($codebase)) {
-                        $item_type = self::getArrayAccessItemType($assign_value_atomic_type, $codebase);
-                    }
+                    $item_type = self::getDestructuredItemType(
+                        $statements_analyzer,
+                        $codebase,
+                        $assign_value_atomic_type,
+                        $assign_var_item,
+                        $offset_value,
+                        $can_be_empty,
+                        $array,
+                        $array_id,
+                        $assign_value_type,
+                    );
 
                     if ($item_type) {
-                        $item_type = self::taintDestructuredItem(
-                            $statements_analyzer,
-                            $array,
-                            $array_id,
-                            $assign_value_type,
-                            $offset_value,
-                            TypeVariableResolver::resolveTopLevel($item_type, $codebase),
-                        );
-
                         $new_assign_type = Type::combineUnionTypes($item_type, $new_assign_type);
                     }
 
-                    if ($already_in_scope) {
+                    if ($list_var_id !== null && isset($context->vars_in_scope[$list_var_id])) {
                         // removes dependent vars from $context
                         $context->removeDescendents(
                             $list_var_id,
@@ -3153,22 +3252,21 @@ final class AssignmentAnalyzer
                     }
                 }
 
-                if ($list_var_id) {
-                    self::assignDestructuredItem(
-                        $statements_analyzer,
-                        $codebase,
-                        $context,
-                        $var,
-                        $list_var_id,
-                        $new_assign_type,
-                        $has_comment_type,
-                        $array,
-                        $array_id,
-                        $assign_value_type,
-                        $offset_value,
-                        $removed_taints,
-                    );
-                }
+                self::assignDestructuredItem(
+                    $statements_analyzer,
+                    $codebase,
+                    $context,
+                    $var,
+                    $list_var_id,
+                    $new_assign_type,
+                    $has_comment_type,
+                    $array,
+                    $array_id,
+                    $assign_value_type,
+                    $offset_value,
+                    $removed_taints,
+                    $doc_comment,
+                );
             }
 
             // an array-dim target (e.g. $a['b']) never enters the scope when its root var is undefined
@@ -3231,6 +3329,18 @@ final class AssignmentAnalyzer
         } else {
             if (ExpressionAnalyzer::analyze($statements_analyzer, $assign_var->var, $context) === false) {
                 return;
+            }
+
+            // a write under a name that is one of several literals (`$o->{$p}`) may change each of those properties
+            $assigned_var_id = ExpressionIdentifier::getExtendedVarId(
+                $assign_var,
+                $statements_analyzer->getFQCLN(),
+                $statements_analyzer,
+            );
+
+            if ($assigned_var_id !== null) {
+                $context->remove($assigned_var_id);
+                $context->forgetPropertiesAliasedBy($assigned_var_id, $assign_value_type);
             }
 
             if (($assign_var_type = $statements_analyzer->node_data->getType($assign_var->var))
