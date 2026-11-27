@@ -2862,6 +2862,17 @@ class Reconciler
                         && !$base_atomic_type->isEmptyArray())
                     || $base_atomic_type instanceof TClassStringMap
                     ) {
+                        // a list has no negative key, so the offset is one of the others
+                        if ($base_atomic_type instanceof TKeyedArray
+                            && $base_atomic_type->is_list
+                            && count($array_key_offsets) > 1
+                            && ($int_array_key_offset = ArrayAnalyzer::getLiteralArrayKeyInt($array_key_offset))
+                                !== false
+                            && $int_array_key_offset < 0
+                        ) {
+                            break;
+                        }
+
                         $new_base_type = $existing_types[$base_key];
 
                         // a key the array always has cannot be left without a value: no array of that shape can be

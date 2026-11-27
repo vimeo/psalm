@@ -2785,10 +2785,18 @@ final class IssetTest extends TestCase
                 'code' => <<<'PHP'
                     <?php
                     /** @param list<string> $l */
-                    function f(array $l, bool $b): void {
+                    function negativeLast(array $l, bool $b): void {
                         $i = $b ? 5 : -1;
                         if (isset($l[$i])) {
-                            /** @psalm-check-type-exact $l = array{-1?: string, 0: string, 1: string, 2: string, 3: string, 4: string, 5: string, ...<int<0, max>, string>} */
+                            /** @psalm-check-type-exact $l = list{string, string, string, string, string, string, ...<string>} */
+                        }
+                    }
+
+                    /** @param list<string> $l */
+                    function negativeFirst(array $l, bool $b): void {
+                        $i = $b ? -1 : 5;
+                        if (isset($l[$i])) {
+                            /** @psalm-check-type-exact $l = list{string, string, string, string, string, string, ...<string>} */
                         }
                     }
                     PHP,
