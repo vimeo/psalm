@@ -1113,6 +1113,12 @@ final class AssertionReconciler extends Reconciler
                     $existing_var_type_part = $existing_var_type_part->addIntersectionType($new_type_part);
                     $acceptable_atomic_types[] = $existing_var_type_part;
                 }
+
+                $shaped_object = self::getShapedObject($codebase, $existing_var_type_part, $new_type_part);
+
+                if ($shaped_object !== null) {
+                    $acceptable_atomic_types[] = $shaped_object;
+                }
             }
 
             if ($acceptable_atomic_types) {
@@ -1470,6 +1476,11 @@ final class AssertionReconciler extends Reconciler
         if ($type_1_parts === null && $type_2_parts === null) {
             // `instanceof` of an interface on a callable keeps what it did: only `===` makes the object a callable
             $refined_type = ($is_identity ? self::getCallableObject($codebase, $type_1_atomic, $type_2_atomic) : null)
+                ?? self::getShapedObject($codebase, $type_1_atomic, $type_2_atomic)
+                // two arrays that can be empty can both be []
+                ?? ($is_identity && self::canBeTheEmptyArray($type_1_atomic) && self::canBeTheEmptyArray($type_2_atomic)
+                    ? Type::getEmptyArrayAtomic()
+                    : null)
                 ?? self::refineWithIntersectionParts(
                     $type_1_atomic,
                     $type_2_atomic,
@@ -1792,6 +1803,36 @@ final class AssertionReconciler extends Reconciler
         }
 
         return null;
+    }
+
+    /**
+     * The object of a non-final class or of an interface that an object shape may be (a child or an implementation may
+     * declare its properties), or null if one of the types isn't an object shape and the other such an object
+     *
+     * @psalm-capabilities read-props
+     */
+    private static function getShapedObject(Codebase $codebase, Atomic $type_1, Atomic $type_2): ?Atomic
+    {
+        [$shape, $object] = $type_1 instanceof TObjectWithProperties ? [$type_1, $type_2] : [$type_2, $type_1];
+
+        if (!$shape instanceof TObjectWithProperties
+            || !$object instanceof TNamedObject
+            || !$codebase->classlike_storage_provider->has($object->value)
+            || $codebase->classlike_storage_provider->get($object->value)->final
+        ) {
+            return null;
+        }
+
+        return self::addIntersectionPart($codebase, $object, $shape);
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    private static function canBeTheEmptyArray(Atomic $type): bool
+    {
+        return $type::class === TArray::class
+            || ($type instanceof TKeyedArray && !$type->isNonEmpty());
     }
 
     /**
