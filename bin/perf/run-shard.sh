@@ -266,6 +266,11 @@ run_round() {
 
 run_field() { jq -r ".$3" "$RUNDIR/$1-$2.json"; }
 
+# Killed by the kernel in round 1: the runner may only have run out of memory because both sides ran at once.
+oom_killed() {
+    jq -e '.memory_crash and ((.reason // "") | startswith("killed by SIGKILL"))' "$RUNDIR/$1-1.json" > /dev/null
+}
+
 # Both first runs ok and wall times differ by more than RERUN_RATIO of base.
 needs_rerun() {
     [ "$(run_field base 1 status)" = ok ] && [ "$(run_field head 1 status)" = ok ] || return 1
@@ -324,6 +329,11 @@ measure_project() {
     install_project
     write_config
     run_round 1
+    if oom_killed base || oom_killed head; then
+        echo "run-shard: $NAME was killed out of memory side by side, re-running base and head one after the other" >&2
+        run_once base 1
+        run_once head 1
+    fi
     if needs_rerun; then
         echo "run-shard: $NAME wall times differ by more than $(awk -v r="$RERUN_RATIO" 'BEGIN { printf "%g", r * 100 }') %, re-running" >&2
         run_round 2

@@ -21,7 +21,7 @@ The report has a collapsed **Hot files** block, only when some project has a fil
 
 The profiles of both sides are in the `perf-report` artifact (`profiles/<project>.base.json` and `.head.json`); open them at https://psalm.dev/profile/.
 
-Base and head run side by side (`--threads=1` each), so both see the same runner load and a job takes one analysis per round, not two. Their memory adds up on the runner: drupal, the largest, needs about 12 GB for both sides. If head blows up, the kernel kills it, the larger process, and head reports a memory crash.
+Base and head run side by side (`--threads=1` each), so both see the same runner load and a job takes one analysis per round, not two. Their memory adds up on the runner: drupal, the largest, needs about 12 GB for both sides. If the kernel kills either side out of memory, both run again one after the other, and those runs are judged.
 
 The measured runs are profiled with `--debug-performance=PATH`, which adds the same small CPU and memory cost to both sides. If either side does not support the option, or the PR changes `src/Psalm/Internal/Perf`, neither side is profiled.
 
