@@ -71,10 +71,8 @@ use function array_fill_keys;
 use function array_filter;
 use function array_map;
 use function array_merge;
-use function array_pop;
 use function array_values;
 use function count;
-use function end;
 use function explode;
 use function implode;
 use function in_array;
@@ -782,41 +780,13 @@ final class FunctionLikeDocblockScanner
         $param_type_mapping = [];
         $template_function_id = 'fn-' . strtolower($cased_function_id);
 
-        // per open bracket: its token index, and whether it opens the parameters of a callable type
-        $open_brackets = [];
-        $last_closed_bracket_start = 0;
-
         // This checks for param references in the return type tokens
         // If found, the param is replaced with a generated template param
         foreach ($fixed_type_tokens as $i => $type_token) {
             $token_body = $type_token[0];
 
-            if (in_array($token_body, ['(', '[', '<', '{'], true)) {
-                // `Closure[pure](…)`: the purity stands between the keyword and the parameters
-                $keyword_index = ($fixed_type_tokens[$i - 1][0] ?? '') === ']'
-                    ? $last_closed_bracket_start - 1
-                    : $i - 1;
-                $open_brackets[] = [
-                    $i,
-                    $token_body === '('
-                        && in_array(
-                            $fixed_type_tokens[$keyword_index][0] ?? '',
-                            ParseTreeCreator::CALLABLE_KEYWORDS,
-                            true,
-                        ),
-                ];
-            } elseif (in_array($token_body, [')', ']', '>', '}'], true)) {
-                $last_closed_bracket_start = array_pop($open_brackets)[0] ?? 0;
-            } elseif ($token_body[0] === '$'
-                && $open_brackets
-                && end($open_brackets)[1]
-                && self::followsCallableParamType($fixed_type_tokens, $i)
-            ) {
-                // the name of a parameter of the callable, not a reference to a parameter of the function
-                continue;
-            }
-
-            if ($token_body[0] === '$') {
+            // the name of a parameter of a callable type is not a reference to a parameter of the function
+            if ($token_body[0] === '$' && !ParseTreeCreator::isCallableParamName($fixed_type_tokens, $i)) {
                 foreach ($storage->params as $j => $param_storage) {
                     if ('$' . $param_storage->name === $token_body) {
                         if (!isset($param_type_mapping[$token_body])) {
@@ -887,24 +857,6 @@ final class FunctionLikeDocblockScanner
         }
 
         return [$fixed_type_tokens, $function_template_types];
-    }
-
-    /**
-     * Whether the `$name` token at `$i` follows the type of a callable parameter: `int $x`, `int ...$x`,
-     * `int... $x`, `int &$x` or `int &...$x`
-     *
-     * @param array<int, array{0: string, 1: int, 2?: string}> $tokens
-     * @psalm-pure
-     */
-    private static function followsCallableParamType(array $tokens, int $i): bool
-    {
-        $j = $i - 1;
-
-        while (isset($tokens[$j]) && in_array($tokens[$j][0], [' ', '...', '&'], true)) {
-            --$j;
-        }
-
-        return $j < $i - 1 && isset($tokens[$j]) && $tokens[$j][0] !== '(' && $tokens[$j][0] !== ',';
     }
 
     /**

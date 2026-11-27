@@ -4653,6 +4653,71 @@ final class CallableTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'callableParamNamedLikeFunctionParamWithDefaultNestedOrAlias' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-type Handler = callable(int ...$values): void
+                     */
+                    final class Registry {
+                        /**
+                         * @return Handler
+                         */
+                        public static function handler(int ...$values): callable {
+                            return static function (int ...$values): void {};
+                        }
+                    }
+
+                    /**
+                     * @return Closure(int $step = 1): int
+                     */
+                    function makeCounter(int $step): Closure {
+                        return fn (int $step = 1): int => $step;
+                    }
+
+                    /**
+                     * @return Closure(Closure(int &$item): void $each): void
+                     */
+                    function makeWalker(int $item, Closure $each): Closure {
+                        return function (Closure $each): void {};
+                    }
+
+                    $handler = Registry::handler();
+                    $counter = makeCounter(2);
+                    $walker = makeWalker(1, fn (int &$item): null => null);',
+                'assertions' => [
+                    '$handler===' => 'callable[impure](int...):void',
+                    '$counter===' => 'Closure[impure](int=):int',
+                    '$walker===' => 'Closure[impure](Closure[impure](int &$_):void):void',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'functionParamReferenceInsideCallableParamsAfterAnOperator' => [
+                'code' => '<?php
+                    /**
+                     * @return Closure(int | $name): void
+                     */
+                    function makeGreeter(string $name): Closure {
+                        return function (int|string $value): void {};
+                    }
+
+                    /**
+                     * @return Closure(Closure(): $name): void
+                     */
+                    function makeRunner(string $name): Closure {
+                        return function (Closure $producer): void {};
+                    }
+
+                    $greet = makeGreeter("Ann");
+                    $greet("Ann");
+                    $run = makeRunner("Ann");',
+                'assertions' => [
+                    '$greet===' => 'Closure[impure](\'Ann\'|int):void',
+                    '$run===' => 'Closure[impure](Closure[impure]():\'Ann\'):void',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
@@ -4663,6 +4728,26 @@ final class CallableTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'untypedFunctionParamNamedLikeACallableParam' => [
+                'code' => '<?php
+                    /**
+                     * @return array<int, callable(int $signal): void>|null
+                     */
+                    function initializeSignal($signal) {
+                        return null;
+                    }',
+                'error_message' => 'MissingParamType',
+            ],
+            'untypedFunctionParamNamedLikeAnOptionalCallableParam' => [
+                'code' => '<?php
+                    /**
+                     * @return Closure(int=$count): void
+                     */
+                    function makeCounter($count): Closure {
+                        return function (int $count = 0): void {};
+                    }',
+                'error_message' => 'MissingParamType',
+            ],
             'callableObjectWithUndefinedParamClass' => [
                 'code' => '<?php
                     /** @param object&callable(Missing): void $o */
