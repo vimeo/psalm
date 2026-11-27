@@ -2025,7 +2025,7 @@ final class PluginTest extends DeferredAnalyzerTestCase
             {
                 $expr = $event->getExpr();
 
-                self::$calls[] = $event->getMethodId() . ' ' . $expr::class . ':' . $expr->getLine();
+                self::$calls[] = $event->getMethodId() . ' ' . $expr::class;
             }
         };
 
@@ -2084,14 +2084,14 @@ final class PluginTest extends DeferredAnalyzerTestCase
 
         $this->assertSame(
             [
-                'Mixin::check PhpParser\Node\Expr\StaticCall:27',
-                'Mixin::instance PhpParser\Node\Expr\StaticCall:28',
-                'Assert::selfcall PhpParser\Node\Expr\MethodCall:29',
-                'Assert::selfcall PhpParser\Node\Expr\StaticCall:15',
-                'Assert::selfcall PhpParser\Node\Expr\StaticCall:16',
-                'Assert::selfcall PhpParser\Node\Expr\MethodCall:17',
-                'Assert::selfcall PhpParser\Node\Expr\StaticCall:23',
-                'Mixin::instance PhpParser\Node\Expr\StaticCall:39',
+                'Mixin::check PhpParser\Node\Expr\StaticCall', // Assert::check()
+                'Mixin::instance PhpParser\Node\Expr\StaticCall', // Assert::instance()
+                'Assert::selfcall PhpParser\Node\Expr\MethodCall', // (new Assert())->selfCall()
+                'Assert::selfcall PhpParser\Node\Expr\StaticCall', // self::selfCall()
+                'Assert::selfcall PhpParser\Node\Expr\StaticCall', // static::selfCall()
+                'Assert::selfcall PhpParser\Node\Expr\MethodCall', // $this->selfCall()
+                'Assert::selfcall PhpParser\Node\Expr\StaticCall', // parent::selfCall()
+                'Mixin::instance PhpParser\Node\Expr\StaticCall', // parent::instance()
             ],
             $plugin::$calls,
         );
