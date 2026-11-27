@@ -79,6 +79,73 @@ final class DisjointArrayShapesTest extends TestCase
                         return "";
                     }',
             ],
+            'assertedSealedShapeRulesOutTheShapesOfNoCommonKey' => [
+                'code' => '<?php
+                    /** @psalm-assert-if-true array{world: string} $arg */
+                    function isWorld(array $arg): bool {
+                        return isset($arg["world"]);
+                    }
+
+                    /** @return array{hello: string}|array{world: string} */
+                    function f(): array {
+                        return ["hello" => "x"];
+                    }
+
+                    $x = f();
+                    $a = null;
+                    if (isWorld($x)) {
+                        $a = $x;
+                    }',
+                'assertions' => [
+                    '$a===' => 'array{world: string}|null',
+                ],
+            ],
+            'assertedTemplateOfASealedShapeRulesOutTheShapesOfNoCommonKey' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array{world: string}
+                     * @param array{hello: string}|T $arg
+                     * @psalm-assert-if-true T $arg
+                     */
+                    function isWorld(array $arg): bool {
+                        return isset($arg["world"]);
+                    }
+
+                    /** @return array{hello: string}|array{world: string} */
+                    function f(): array {
+                        return ["hello" => "x"];
+                    }
+
+                    $x = f();
+                    $a = null;
+                    if (isWorld($x)) {
+                        $a = $x;
+                    }',
+                'assertions' => [
+                    '$a===' => 'array{world: string}|null',
+                ],
+            ],
+            'assertedSealedShapeOfAKeyNoShapeHasNarrowsTheShapesAsOne' => [
+                'code' => '<?php
+                    /** @psalm-assert-if-true array{other: string} $arg */
+                    function isOther(array $arg): bool {
+                        return isset($arg["other"]);
+                    }
+
+                    /** @return array{hello: string}|array{world: string} */
+                    function f(): array {
+                        return ["hello" => "x"];
+                    }
+
+                    $x = f();
+                    $a = null;
+                    if (isOther($x)) {
+                        $a = $x;
+                    }',
+                'assertions' => [
+                    '$a===' => 'array{hello?: string, other: string, world?: string}|null',
+                ],
+            ],
             'issetOfAnOffsetPicksTheShape' => [
                 'code' => '<?php
                     /** @param array{string}|array{value: string} $a */

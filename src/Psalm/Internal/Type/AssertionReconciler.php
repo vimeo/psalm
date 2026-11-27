@@ -34,6 +34,7 @@ use Psalm\Storage\Assertion\IsIsset;
 use Psalm\Storage\Assertion\IsLooselyEqual;
 use Psalm\Storage\Assertion\IsNotIdentical;
 use Psalm\Storage\Assertion\IsNotLooselyEqual;
+use Psalm\Storage\Assertion\IsType;
 use Psalm\Storage\Assertion\NestedAssertions;
 use Psalm\Storage\Assertion\NonEmpty;
 use Psalm\Storage\Assertion\NonEmptyCountable;
@@ -95,6 +96,7 @@ use function array_filter;
 use function array_intersect_key;
 use function array_keys;
 use function array_merge;
+use function array_pop;
 use function array_search;
 use function array_values;
 use function assert;
@@ -157,8 +159,26 @@ final class AssertionReconciler extends Reconciler
         $result_type = null;
         $shapes = $array_type->getDisjointShapes();
         $changed = false;
+        $asserted_shapes = self::getAssertedSealedShapes($assertion);
 
         foreach ($shapes as $shape) {
+            // the value is one of the shapes, and a sealed shape rules out those of no common key; a single shape
+            // asserted to be one of no common key still gets the keys of both (#3095)
+            if ($asserted_shapes !== []) {
+                $shares_a_key = false;
+                foreach ($asserted_shapes as $asserted_shape) {
+                    if (array_intersect_key($shape->properties, $asserted_shape->properties)) {
+                        $shares_a_key = true;
+                        break;
+                    }
+                }
+
+                if (!$shares_a_key) {
+                    $changed = true;
+                    continue;
+                }
+            }
+
             $shape_failed_reconciliation = Reconciler::RECONCILIATION_OK;
             $shape_type = $existing_var_type->getBuilder()->addType($shape)->freeze();
             $shape_result_type = self::reconcileUnion(
@@ -227,11 +247,34 @@ final class AssertionReconciler extends Reconciler
             return $result_type ?? $existing_var_type;
         }
 
-        // a shape is narrowed to no more than the shapes as one are
-        return $result_type !== null
-            && UnionTypeComparator::isContainedBy($codebase, $result_type, $merged_result_type)
-            ? $result_type
-            : $merged_result_type;
+        return $result_type ?? $merged_result_type;
+    }
+
+    /**
+     * The sealed shapes an assertion says the value is one of, or none when it allows anything else
+     *
+     * @return list<TKeyedArray>
+     * @psalm-pure
+     */
+    private static function getAssertedSealedShapes(Assertion $assertion): array
+    {
+        if (!$assertion instanceof IsType) {
+            return [];
+        }
+
+        $atomics = [$assertion->type];
+        $shapes = [];
+        while (($atomic = array_pop($atomics)) !== null) {
+            if ($atomic instanceof TTemplateParam) {
+                $atomics = [...$atomics, ...$atomic->as->getAtomicTypes()];
+            } elseif ($atomic instanceof TKeyedArray && $atomic->fallback_params === null) {
+                $shapes[] = $atomic;
+            } else {
+                return [];
+            }
+        }
+
+        return $shapes;
     }
 
     /**
