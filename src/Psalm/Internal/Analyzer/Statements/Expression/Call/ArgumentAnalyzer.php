@@ -101,6 +101,7 @@ use const DIRECTORY_SEPARATOR;
 use const PREG_SPLIT_NO_EMPTY;
 
 /**
+ * @psalm-import-type CallSpecializedOverride from TaintFlowGraph
  * @internal
  */
 final class ArgumentAnalyzer
@@ -2284,6 +2285,7 @@ final class ArgumentAnalyzer
                     $argument_name,
                     $unpacked_argument_offset,
                     $expr,
+                    $function_call_location,
                 )
                 : [];
 
@@ -2590,6 +2592,8 @@ final class ArgumentAnalyzer
      * type it takes: null for the argument itself, else an element of an unpacked array, which has the position
      * or the name of its own. An argument unpacked into a variadic parameter takes the elements it is known to
      * have by their position (from its own) or key; else it may be any of them, in any parameter from its offset.
+     * The overrides specialized by call take it through the parameters of their specialization for the call at
+     * $call_location (see MethodCallReturnTypeFetcher::getReturnDispatchNode()).
      *
      * @return list<array{DataFlowNode, Union|null}>
      */
@@ -2605,6 +2609,7 @@ final class ArgumentAnalyzer
         ?string $argument_name,
         ?int $unpacked_argument_offset,
         PhpParser\Node\Expr $expr,
+        CodeLocation $call_location,
     ): array {
         $class_storage = $statements_analyzer->getCodebase()->classlike_storage_provider->get(
             $method_id->fq_class_name,
@@ -2655,7 +2660,7 @@ final class ArgumentAnalyzer
         $routes = [];
 
         foreach ($arguments as [$offset, $name, $any_following, $element]) {
-            $dispatch_node = self::getDispatchNode(
+            $dispatch_nodes = self::getDispatchNodes(
                 $statements_analyzer,
                 $taint_flow_graph,
                 $method_id,
@@ -2665,9 +2670,10 @@ final class ArgumentAnalyzer
                 $specialize_taint,
                 $name,
                 $any_following,
+                $call_location,
             );
 
-            if ($dispatch_node) {
+            foreach ($dispatch_nodes as $dispatch_node) {
                 $routes[] = [$dispatch_node, $element];
             }
         }
@@ -2676,11 +2682,14 @@ final class ArgumentAnalyzer
     }
 
     /**
-     * The node that the calls of the method, giving the parameter at $param_offset (or the one of the name
-     * $variadic_argument_name, which the variadic parameter takes), go through to the overrides of the classes
-     * extending it, if any may run.
+     * The nodes that the call of the method at $call_location, giving the parameter at $param_offset (or the one of
+     * the name $variadic_argument_name, which the variadic parameter takes), goes through to the overrides of the
+     * classes extending it that may run: one shared by the calls for the overrides whose body is shared, and the
+     * parameters of this call's specialization of the overrides specialized by call.
+     *
+     * @return list<DataFlowNode>
      */
-    private static function getDispatchNode(
+    private static function getDispatchNodes(
         StatementsAnalyzer $statements_analyzer,
         TaintFlowGraph $taint_flow_graph,
         MethodIdentifier $method_id,
@@ -2690,7 +2699,8 @@ final class ArgumentAnalyzer
         bool $specialize_taint,
         ?string $variadic_argument_name,
         bool $any_following,
-    ): ?DataFlowNode {
+        CodeLocation $call_location,
+    ): array {
         $codebase = $statements_analyzer->getCodebase();
         $class_storage = $codebase->classlike_storage_provider->get($method_id->fq_class_name);
 
@@ -2703,21 +2713,87 @@ final class ArgumentAnalyzer
         );
 
         if ($taint_flow_graph->isEmptyDispatch($dispatch_node)) {
-            return null;
+            return [];
         }
 
-        if ($taint_flow_graph->hasNode($dispatch_node)) {
-            return $dispatch_node;
+        $call_specialized_overrides = $taint_flow_graph->getCallSpecializedDispatch($dispatch_node)
+            ?? self::addDispatch(
+                $codebase,
+                $taint_flow_graph,
+                $dispatch_node,
+                $class_storage->dependent_classlikes,
+                $method_id,
+                $cased_method_id,
+                $function_param,
+                $param_offset,
+                $specialize_taint,
+                $variadic_argument_name,
+                $any_following,
+            );
+
+        if ($call_specialized_overrides === null) {
+            return [];
         }
 
-        // the first of these calls links it to the methods that may run
+        $dispatch_nodes = $taint_flow_graph->hasNode($dispatch_node) ? [$dispatch_node] : [];
+
+        foreach ($call_specialized_overrides as $override) {
+            $get_param_node = static fn(int $offset): DataFlowNode => DataFlowNode::getForMethodArgument(
+                $override['cased_body_method_id'],
+                $offset,
+                $override['storage'],
+                $call_location,
+            );
+
+            foreach ($override['offsets'] as $offset) {
+                $param_node = $get_param_node($offset);
+                $taint_flow_graph->addNode($param_node);
+                $dispatch_nodes[] = $param_node;
+
+                // one of the arguments after the first of the variadic parameter of the override, see
+                // addVariadicArgumentPath()
+                if ($override['variadic_offset'] !== null && $offset > $override['variadic_offset']) {
+                    $variadic_node = DataFlowNode::getForVariadicArguments(
+                        $get_param_node($override['variadic_offset']),
+                    );
+                    $taint_flow_graph->addNode($variadic_node);
+                    $taint_flow_graph->addPath($param_node, $variadic_node, 'arg');
+                }
+            }
+        }
+
+        return $dispatch_nodes;
+    }
+
+    /**
+     * Links $dispatch_node to the parameters of the overrides whose body is shared by their calls, once, and returns
+     * the overrides specialized by call, which each call enters with its own specialization (see getDispatchNodes()),
+     * or null if no override may run.
+     *
+     * @param array<lowercase-string, bool> $dependent_classlikes
+     * @return list<CallSpecializedOverride>|null
+     */
+    private static function addDispatch(
+        Codebase $codebase,
+        TaintFlowGraph $taint_flow_graph,
+        DataFlowNode $dispatch_node,
+        array $dependent_classlikes,
+        MethodIdentifier $method_id,
+        string $cased_method_id,
+        FunctionLikeParameter $function_param,
+        int $param_offset,
+        bool $specialize_taint,
+        ?string $variadic_argument_name,
+        bool $any_following,
+    ): ?array {
         $new_sinks = [];
         $variadic_paths = [];
+        $call_specialized_overrides = [];
 
         $cased_method_name = explode('::', $cased_method_id)[1];
         $appearing_method_id = $codebase->methods->getAppearingMethodId($method_id);
 
-        foreach ($class_storage->dependent_classlikes as $dependent_classlike_lc => $_) {
+        foreach ($dependent_classlikes as $dependent_classlike_lc => $_) {
             $dependent_classlike_storage = $codebase->classlike_storage_provider->get($dependent_classlike_lc);
 
             $dependent_method_id = new MethodIdentifier($dependent_classlike_lc, $method_id->method_name);
@@ -2762,7 +2838,34 @@ final class ArgumentAnalyzer
                 continue;
             }
 
-            // The parameter of an override specialized by call, in the specialization keyed by the
+            // an override specialized by call, with a body, is entered by each call with its own specialization
+            if ($is_override
+                && $dependent_storage
+                && $dependent_storage->specialize_call
+                && $dependent_storage->location
+            ) {
+                $cased_body_method_id = FunctionLikeAnalyzer::getCasedBodyMethodId($codebase, $dependent_method_id);
+                $offsets = [];
+
+                foreach ($dependent_offsets as $dependent_offset) {
+                    $offsets[] = $dependent_offset ?? $param_offset;
+                }
+
+                $call_specialized_overrides[$cased_body_method_id] = [
+                    'cased_body_method_id' => $cased_body_method_id,
+                    'body_method_id' => (string) FunctionLikeAnalyzer::getBodyMethodId(
+                        $codebase,
+                        $dependent_method_id,
+                    ),
+                    'storage' => $dependent_storage,
+                    'offsets' => $offsets,
+                    'variadic_offset' => $dependent_variadic_offset,
+                ];
+
+                continue;
+            }
+
+            // The parameter of an override specialized speculatively, in the specialization keyed by the
             // location of the method, which the dispatch of its returns leaves (see
             // MethodCallReturnTypeFetcher::getReturnDispatchNode()): what its body returns of the
             // argument then reaches the call.
@@ -2823,11 +2926,19 @@ final class ArgumentAnalyzer
             }
         }
 
-        if ($new_sinks === []) {
+        $call_specialized_overrides = array_values($call_specialized_overrides);
+
+        if ($new_sinks === [] && $call_specialized_overrides === []) {
             // no override may run: the classes extending this one inherit the method
             $taint_flow_graph->addEmptyDispatch($dispatch_node);
 
             return null;
+        }
+
+        $taint_flow_graph->addCallSpecializedDispatch($dispatch_node, $call_specialized_overrides);
+
+        if ($new_sinks === []) {
+            return $call_specialized_overrides;
         }
 
         $taint_flow_graph->addNode($dispatch_node);
@@ -2842,7 +2953,7 @@ final class ArgumentAnalyzer
             $taint_flow_graph->addPath($new_sink, $variadic_node, 'arg');
         }
 
-        return $dispatch_node;
+        return $call_specialized_overrides;
     }
 
     /**

@@ -785,19 +785,6 @@ final class DataFlowNode implements Stringable
     }
 
     /**
-     * What the virtual calls of a method on a class give the `$this` of the overrides of the classes extending it
-     * that may run instead: shared by all those calls, so it has no location.
-     *
-     * @psalm-pure
-     */
-    public static function getForThisDispatch(string $cased_method_id): self
-    {
-        $label = 'dispatch of $this to ' . $cased_method_id;
-
-        return self::make(strtolower($label), $label, null);
-    }
-
-    /**
      * What the virtual calls of a method on a class get from the methods of the classes extending it that may run
      * instead: shared by all those calls, so it has no location.
      *
