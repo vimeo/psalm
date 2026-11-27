@@ -403,11 +403,15 @@ abstract class CallAnalyzer
 
                 $documenting_method_storage = $codebase->methods->getStorage($documenting_method_id);
 
+                // the inherited parameter types refer to the templates of the documenting method, bound by the call
+                // (by the arguments and by the defaults of the params not passed); the method keeps its own storage
+                // otherwise (its taint sinks, named arguments)
                 if ($documenting_method_storage->template_types) {
-                    $method_storage = $documenting_method_storage;
-
-                    // the inherited parameter types refer to the templates of the documenting method, bound by the call
                     $template_result->template_types += $documenting_method_storage->template_types;
+
+                    $method_storage = clone $method_storage;
+                    $method_storage->template_types = $documenting_method_storage->template_types;
+                    $method_storage->template_defaults = $documenting_method_storage->template_defaults;
                 }
             }
 

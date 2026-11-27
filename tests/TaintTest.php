@@ -19434,6 +19434,106 @@ final class TaintTest extends TestCase
                 'error_message' => 'TaintedShell',
                 'php_version' => '8.1',
             ],
+            'taintSinkOfAnOverrideOfAMethodWithTemplates' => [
+                'code' => '<?php // --taint-analysis
+                    class P {
+                        /**
+                         * @template T
+                         * @param T $a
+                         * @param positive-int $b
+                         * @return T
+                         */
+                        public function f($a, int $b) {
+                            return $a;
+                        }
+                    }
+
+                    final class C extends P {
+                        /**
+                         * @psalm-taint-sink html $a
+                         */
+                        #[\\Override]
+                        public function f($a, int $b) {
+                            return $a;
+                        }
+                    }
+
+                    (new C())->f((string) $_GET["x"], 1);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintSinkOfAnImplementationOfAnInterfaceMethodWithTemplates' => [
+                'code' => '<?php // --taint-analysis
+                    interface I {
+                        /**
+                         * @template T
+                         * @param T $a
+                         * @return T
+                         */
+                        public function f($a, int $b);
+                    }
+
+                    final class Impl implements I {
+                        /** @psalm-taint-sink html $a */
+                        #[\\Override]
+                        public function f($a, int $b) {
+                            return $a;
+                        }
+                    }
+
+                    (new Impl())->f((string) $_GET["x"], 1);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintSinkOfATraitMethodOverridingAMethodWithTemplates' => [
+                'code' => '<?php // --taint-analysis
+                    class P {
+                        /**
+                         * @template T
+                         * @param T $a
+                         * @return T
+                         */
+                        public function g($a) {
+                            return $a;
+                        }
+                    }
+
+                    trait Tr {
+                        /** @psalm-taint-sink sql $a */
+                        public function g($a) {
+                            return $a;
+                        }
+                    }
+
+                    final class C extends P {
+                        use Tr;
+                    }
+
+                    (new C())->g((string) $_GET["y"]);',
+                'error_message' => 'TaintedSql',
+            ],
+            'taintSinkOfAStaticOverrideOfAMethodWithTemplates' => [
+                'code' => '<?php // --taint-analysis
+                    class P2 {
+                        /**
+                         * @template T
+                         * @param T $a
+                         * @return T
+                         */
+                        public static function s($a) {
+                            return $a;
+                        }
+                    }
+
+                    final class C2 extends P2 {
+                        /** @psalm-taint-sink shell $a */
+                        #[\\Override]
+                        public static function s($a) {
+                            return $a;
+                        }
+                    }
+
+                    C2::s((string) $_GET["z"]);',
+                'error_message' => 'TaintedShell',
+            ],
             'taintReturnedByAFirstClassCallableOfAStaticMethod' => [
                 'code' => '<?php // --taint-analysis
                     final class K {

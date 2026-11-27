@@ -6473,6 +6473,95 @@ final class ClassTemplateExtendsTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'untypedOverrideBindsTheConditionalOfTheParentByTheDefaultOfAParamNotPassed' => [
+                'code' => '<?php
+                    interface AccessResult {}
+
+                    interface Accessible {
+                        /**
+                         * @param string $operation
+                         * @param bool $return_as_object
+                         * @return ($return_as_object is true ? AccessResult : bool)
+                         */
+                        public function access($operation, $return_as_object = false);
+                    }
+
+                    abstract class EntityBase implements Accessible {
+                        /**
+                         * {@inheritdoc}
+                         */
+                        #[Override]
+                        public function access($operation, $return_as_object = false) {
+                            return $return_as_object ? new class implements AccessResult {} : true;
+                        }
+                    }
+
+                    final class Menu extends EntityBase {}
+
+                    function check(Menu $menu, bool $as_object): void {
+                        $default = $menu->access("edit");
+                        $object = $menu->access("edit", true);
+                        $either = $menu->access("edit", $as_object);
+                        /** @psalm-check-type-exact $default = bool */
+                        /** @psalm-check-type-exact $object = AccessResult */
+                        /** @psalm-check-type-exact $either = AccessResult|bool */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'untypedOverrideBindsTheTemplateDefaultOfItsDocumentingMethod' => [
+                'code' => '<?php
+                    class P {
+                        /**
+                         * @template T = string
+                         * @param list<T> $a
+                         * @return T
+                         */
+                        public function f(array $a = []) {
+                            throw new Exception();
+                        }
+                    }
+
+                    final class C extends P {
+                        #[Override]
+                        public function f(array $a = []) {
+                            throw new Exception();
+                        }
+                    }
+
+                    $x = (new C())->f();
+                    /** @psalm-check-type-exact $x = string */
+                    $y = (new C())->f([5]);
+                    /** @psalm-check-type-exact $y = 5 */',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'untypedOverrideBindsTheTemplateOfAByReferenceParamOfTheParent' => [
+                'code' => '<?php
+                    interface Accessor {
+                        /**
+                         * @template T of object|mixed[]
+                         * @param T $objectOrArray
+                         */
+                        public function setValue(object|array &$objectOrArray, string $path, mixed $value): void;
+                    }
+
+                    final class PropertyAccessor implements Accessor {
+                        #[Override]
+                        public function setValue(object|array &$objectOrArray, string $path, mixed $value): void {}
+                    }
+
+                    /** @param array<string, mixed> $data */
+                    function write(array $data, PropertyAccessor $accessor): void {
+                        $accessor->setValue($data, "x", 1);
+                        /** @psalm-check-type-exact $data = array<string, mixed> */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
             'untypedOverrideBindsTheMethodTemplateOfTheParentParamDocblock' => [
                 'code' => '<?php
                     /** @template T of object */
