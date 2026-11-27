@@ -76,6 +76,7 @@ use function assert;
 use function count;
 use function is_int;
 use function is_numeric;
+use function max;
 use function min;
 use function strcspn;
 use function strtolower;
@@ -961,7 +962,7 @@ final class TypeCombiner
                 );
             }
 
-            if (!$has_defined_keys) {
+            if (!$has_defined_keys && $type->min_count === 0) {
                 $combination->array_always_filled = false;
             }
 
@@ -976,7 +977,7 @@ final class TypeCombiner
                         static fn(Union $p): bool => !$p->possibly_undefined,
                     ),
                 );
-                $combination->array_min_counts[$min_prop_count] = true;
+                $combination->array_min_counts[max($min_prop_count, $type->min_count)] = true;
             }
 
             foreach ($missing_entries as $k => $_) {
@@ -2038,6 +2039,17 @@ final class TypeCombiner
                         (bool)$combination->all_arrays_lists,
                         $from_docblock,
                     );
+
+                    // every combined array has at least that many items, whichever of its keys they are
+                    if ($objectlike instanceof TKeyedArray
+                        && $combination->array_always_filled
+                        && $combination->array_min_counts !== null
+                        && $combination->array_min_counts !== []
+                    ) {
+                        $objectlike = $objectlike->setMinCount(
+                            max(0, min(array_keys($combination->array_min_counts))),
+                        );
+                    }
                 }
 
                 $new_types[] = $objectlike;

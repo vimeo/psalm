@@ -303,6 +303,55 @@ final class ArrayFunctionCallTest extends TestCase
                     '$count===' => 'int<0, 2>',
                 ],
             ],
+            'countedShapesCombinedKeepTheSmallerCount' => [
+                'code' => '<?php
+                    /** @var array{a?: int, b?: int, c?: int} $x */
+                    $x = [];
+                    /** @var array{a?: int, b?: int, c?: int} $y */
+                    $y = [];
+
+                    if (count($x) < 2 || count($y) < 3) {
+                        throw new RuntimeException("");
+                    }
+                    $z = rand(0, 1) ? $x : $y;
+                    $count = count($z);',
+                'assertions' => [
+                    '$count===' => 'int<2, 3>',
+                ],
+            ],
+            'countedShapeKeepsItsCountAfterAConditionalOffsetWrite' => [
+                'code' => '<?php
+                    /** @var array{a?: int, b?: int} $x */
+                    $x = [];
+
+                    if (count($x) === 0) {
+                        throw new RuntimeException("");
+                    }
+                    if (rand(0, 1)) {
+                        $x["a"] = 3;
+                    }
+                    $count = count($x);',
+                'assertions' => [
+                    '$count===' => 'int<1, 2>',
+                ],
+            ],
+            'countedShapeCombinedWithAnEmptyArrayForgetsItsCount' => [
+                'code' => '<?php
+                    /** @var array{a?: int, b?: int} $x */
+                    $x = [];
+
+                    if (count($x) === 0) {
+                        throw new RuntimeException("");
+                    }
+                    if (rand(0, 1)) {
+                        $x = [];
+                    }
+                    $count = count($x);
+                    if ($x) {}',
+                'assertions' => [
+                    '$count===' => 'int<0, 2>',
+                ],
+            ],
             'firstKeyOfAListThatMayBeEmptyAfterUnsetIsNotNullWhenCounted' => [
                 'code' => '<?php
                     /** @param list<int> $values */
