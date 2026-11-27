@@ -198,6 +198,60 @@ final class ForeachTest extends TestCase
                         }
                     }
                     echo $found;
+                }
+
+                /** @param list<int> $list */
+                function notFromABodyEndingInAReturn(array $list, bool $c): int {
+                    foreach ($list as $_) {
+                        if ($c) {
+                            $a = 1;
+                            break;
+                        }
+                        $a = "s";
+                        return 0;
+                    }
+                    /** @psalm-check-type-exact $a? = 1 */;
+                    return $a ?? 0;
+                }
+
+                /** @param list<int> $list */
+                function notFromABodyEndingInAThrow(array $list, bool $c): int {
+                    foreach ($list as $_) {
+                        if ($c) {
+                            $a = 1;
+                            break;
+                        }
+                        $a = "s";
+                        throw new Exception($a);
+                    }
+                    /** @psalm-check-type-exact $a? = 1 */;
+                    return $a ?? 0;
+                }
+
+                /** @param list<int> $list */
+                function notAtTheNextIterationFromABodyEndingInAReturn(array $list): void {
+                    foreach ($list as $_) {
+                        /** @psalm-check-type-exact $x? = 1 */;
+                        if (rand(0, 1)) {
+                            $x = 1;
+                            continue;
+                        }
+                        $x = "s";
+                        return;
+                    }
+                }
+
+                /** @param list<int> $list */
+                function possiblyDefinedBeforeTheLoopWithNoType(array $list, int $n): void {
+                    switch ($n) {
+                        case 1:
+                            $x = "s";
+                            break;
+                    }
+                    foreach ($list as $_) {
+                        $x = 1;
+                    }
+                    echo $x;
                 }',
         );
 
@@ -208,6 +262,8 @@ final class ForeachTest extends TestCase
                 'UndefinedVariable 95:26',
                 'MixedArgument 95:26',
                 'PossiblyUndefinedVariable 106:26',
+                'PossiblyUndefinedVariable 160:26',
+                'MixedArgument 160:26',
             ],
             array_map(
                 static fn(IssueData $issue): string

@@ -104,9 +104,8 @@ final class AssignmentInConditionalTest extends TestCase
 
                     $b = $found ?? null;',
                 'assertions' => [
-                    '$b===' => 'mixed|null',
+                    '$b===' => '1|null|string',
                 ],
-                'ignored_issues' => ['MixedAssignment'],
             ],
             'variableAssignedInACatchInTheElseIsNotTypedByTheIf' => [
                 'code' => '<?php

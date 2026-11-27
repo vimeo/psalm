@@ -41,6 +41,7 @@ final class DoAnalyzer
         PhpParser\Node\Stmt\Do_ $stmt,
         Context $context,
     ): ?bool {
+        $vars_possibly_in_scope_before_loop = $context->vars_possibly_in_scope;
         $do_context = clone $context;
         $do_context->break_types[] = 'loop';
         $do_context->inside_loop = true;
@@ -224,7 +225,12 @@ final class DoAnalyzer
             ...$do_context->vars_possibly_in_scope,
         ];
 
-        LoopAnalyzer::addVarsPossiblyDefinedInLoop($context, $inner_loop_context, $loop_scope);
+        LoopAnalyzer::addVarsPossiblyDefinedInLoop(
+            $context,
+            $inner_loop_context,
+            $loop_scope,
+            $vars_possibly_in_scope_before_loop,
+        );
 
         if ($context->collect_exceptions) {
             $context->mergeExceptions($inner_loop_context);
