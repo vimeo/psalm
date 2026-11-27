@@ -181,7 +181,7 @@ final class ClassConstAnalyzer
                 if ($fq_class_name === null) {
                     return !IssueBuffer::accepts(
                         new ParentNotFound(
-                            'Cannot check property fetch on parent as this class does not extend another',
+                            'Cannot fetch a class constant on parent as this class does not extend another',
                             new CodeLocation($statements_analyzer->getSource(), $stmt),
                         ),
                         $statements_analyzer->getSuppressedIssues(),

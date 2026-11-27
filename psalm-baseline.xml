@@ -634,8 +634,6 @@
       <code><![CDATA[$extended_var_id]]></code>
       <code><![CDATA[$extended_var_id]]></code>
       <code><![CDATA[$list_var_id]]></code>
-      <code><![CDATA[$list_var_id]]></code>
-      <code><![CDATA[$list_var_id]]></code>
       <code><![CDATA[$prop_name]]></code>
       <code><![CDATA[$root_var_id]]></code>
       <code><![CDATA[$var_comment->line_number]]></code>
@@ -1058,7 +1056,6 @@
       <code><![CDATA[$invalid_fetch_types[0]]]></code>
     </PossiblyUndefinedIntArrayOffset>
     <RiskyTruthyFalsyComparison>
-      <code><![CDATA[!$prop_name]]></code>
       <code><![CDATA[$context->calling_method_id]]></code>
       <code><![CDATA[$context->calling_method_id]]></code>
       <code><![CDATA[$declaring_property_class]]></code>

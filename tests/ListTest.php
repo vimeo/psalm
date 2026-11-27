@@ -22,6 +22,50 @@ final class ListTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'keyedDestructuringIntoAnOffsetUpdatesTheArray' => [
+                'code' => '<?php
+                    $users = [];
+                    [
+                        "user" => $users[],
+                        "name" => $name,
+                    ] = ["user" => "test@user.com", "name" => "Test User"];
+
+                    $named = [];
+                    ["user" => $named["u"]] = ["user" => "a"];
+
+                    /** @param list<array{id: int}> $rows */
+                    function ids(array $rows): array {
+                        $ids = [];
+                        foreach ($rows as ["id" => $ids[]]) {}
+
+                        return $ids;
+                    }',
+                'assertions' => [
+                    '$users===' => 'list{\'test@user.com\'}',
+                    '$named===' => 'array{u: \'a\'}',
+                ],
+            ],
+            'keyedDestructuringIntoAnOffsetWithAnIncrementedKeyEvaluatesTheKeyOnce' => [
+                'code' => '<?php
+                    $i = 0;
+                    $a = [];
+                    ["k" => $a[$i++]] = ["k" => 5];',
+                'assertions' => [
+                    '$i===' => '1',
+                    '$a===' => 'array{0: 5}',
+                ],
+            ],
+            'keyedDestructuringByReferenceIntoAnOffsetUpdatesTheArray' => [
+                'code' => '<?php
+                    /** @var array<array-key, mixed> $source */
+                    $source = [];
+                    $a = ["x" => 0];
+                    ["k" => &$a["x"]] = $source;',
+                'assertions' => [
+                    '$a===' => 'array{x: mixed}',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
             'destructuringWithTrailingEmptyEntries' => [
                 'code' => '<?php
                     ["a" => $a, ] = ["a" => 1];
@@ -282,6 +326,17 @@ final class ListTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'keyedDestructuringIntoAPropertyChecksItsType' => [
+                'code' => '<?php
+                    final class O {
+                        public int $p = 0;
+                    }
+
+                    function f(O $o): void {
+                        ["k" => $o->p] = ["k" => "str"];
+                    }',
+                'error_message' => 'InvalidPropertyAssignmentValue',
+            ],
             'destructuringWithKeyedAndUnkeyedEntries' => [
                 'code' => '<?php
                     /** @param array<int, float> $source */
