@@ -480,6 +480,75 @@ final class CallableTest extends TestCase
                         }
                     }',
             ],
+            'narrowingAVariableToAnInterfaceKeepsWhatItsPropertiesAreAssigned' => [
+                'code' => '<?php
+                    interface Marker {}
+
+                    class Open {
+                        public ?string $p = null;
+                    }
+
+                    $x = new Open();
+                    $x->p = "set";
+
+                    if ($x instanceof Marker && rand(0, 1)) {
+                        echo "marked";
+                    }
+
+                    if (is_callable($x) && rand(0, 1)) {
+                        echo "callable";
+                    }
+
+                    $p = $x->p;',
+                'assertions' => [
+                    '$p===' => '\'set\'',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'variableReassignedInABranchOfANarrowingForgetsWhatItsPropertiesAreAssigned' => [
+                'code' => '<?php
+                    interface Marker {}
+
+                    class Open {
+                        public ?string $p = null;
+                    }
+
+                    function other(): Open {
+                        return new Open();
+                    }
+
+                    $x = new Open();
+                    $x->p = "set";
+
+                    if ($x instanceof Marker && rand(0, 1)) {
+                        $x = other();
+                    }
+
+                    $p = $x->p;',
+                'assertions' => [
+                    '$p===' => 'null|string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'instanceofAnInterfaceOfACallableInAUnionKeepsTheTypeArguments' => [
+                'code' => '<?php
+                    /**
+                     * @param IteratorAggregate<int, string>|(callable(): Generator<int, string>) $source
+                     * @return Traversable<int, string>
+                     */
+                    function makeIterator($source): Traversable {
+                        if ($source instanceof IteratorAggregate) {
+                            return $source->getIterator();
+                        }
+
+                        return $source();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'callableCanBeIdenticalToAnInterfaceOrANonFinalClass' => [
                 'code' => '<?php
                     interface Handler {}

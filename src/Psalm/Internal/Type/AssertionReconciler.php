@@ -27,6 +27,7 @@ use Psalm\Storage\Assertion\HasExactCount;
 use Psalm\Storage\Assertion\IsAClass;
 use Psalm\Storage\Assertion\IsClassEqual;
 use Psalm\Storage\Assertion\IsEqualIsset;
+use Psalm\Storage\Assertion\IsIdentical;
 use Psalm\Storage\Assertion\IsIsset;
 use Psalm\Storage\Assertion\IsLooselyEqual;
 use Psalm\Storage\Assertion\IsNotIdentical;
@@ -911,6 +912,7 @@ final class AssertionReconciler extends Reconciler
                 $existing_var_type,
                 new Union([$new_type_part]),
                 $any_scalar_type_match_found,
+                $assertion instanceof IsIdentical,
             );
 
             // a key or a value of the bound of T can be one of key-of<T> or value-of<T>
@@ -1158,6 +1160,7 @@ final class AssertionReconciler extends Reconciler
         Union &$existing_type,
         Union $new_type,
         bool &$any_scalar_type_match_found = false,
+        bool $is_identity = false,
     ): ?Union {
         $matching_atomic_types = [];
 
@@ -1181,6 +1184,7 @@ final class AssertionReconciler extends Reconciler
                             $new_type_part,
                             $codebase,
                             $any_scalar_type_match_found,
+                            $is_identity,
                         ),
                     ];
                 }
@@ -1207,12 +1211,14 @@ final class AssertionReconciler extends Reconciler
         Atomic $type_2_atomic,
         Codebase $codebase,
         bool &$any_scalar_type_match_found,
+        bool $is_identity = false,
     ): array {
         $type_1_parts = AtomicParts::split($type_1_atomic, $type_2_atomic, $codebase);
         $type_2_parts = $type_1_parts === null ? AtomicParts::split($type_2_atomic, $type_1_atomic, $codebase) : null;
 
         if ($type_1_parts === null && $type_2_parts === null) {
-            $refined_type = self::getCallableObject($codebase, $type_1_atomic, $type_2_atomic)
+            // `instanceof` of an interface on a callable keeps what it did: only `===` makes the object a callable
+            $refined_type = ($is_identity ? self::getCallableObject($codebase, $type_1_atomic, $type_2_atomic) : null)
                 ?? self::refineWithIntersectionParts(
                     $type_1_atomic,
                     $type_2_atomic,
@@ -1243,6 +1249,7 @@ final class AssertionReconciler extends Reconciler
                             $type_2_part,
                             $codebase,
                             $any_scalar_type_match_found,
+                            $is_identity,
                         )),
                 ];
             }

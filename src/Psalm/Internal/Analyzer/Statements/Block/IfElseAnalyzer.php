@@ -436,7 +436,7 @@ final class IfElseAnalyzer
                         );
 
                         if (!$combined_type->equals($context->vars_in_scope[$var_id], true, false)
-                            && !self::isThisOfTheSameClass($var_id, $context->vars_in_scope[$var_id], $combined_type)
+                            && !self::isOfTheSameClasses($context->vars_in_scope[$var_id], $combined_type)
                         ) {
                             $context->removeDescendents($var_id, $combined_type, $type, $statements_analyzer);
                         }
@@ -454,7 +454,9 @@ final class IfElseAnalyzer
                         ) {
                             $updated_type = Type::combineUnionTypes($updated_type, $type, $codebase);
 
-                            if (!self::isThisOfTheSameClass($var_id, $context->vars_in_scope[$var_id], $updated_type)) {
+                            if ($var_id !== '$this'
+                                || !self::isOfTheSameClasses($context->vars_in_scope[$var_id], $updated_type)
+                            ) {
                                 $context->removeDescendents($var_id, $updated_type, $type, $statements_analyzer);
                             }
                         }
@@ -733,27 +735,27 @@ final class IfElseAnalyzer
     }
 
     /**
-     * Whether `$this`, which is never assigned, is still of the same class: a branch only intersected it with an
-     * interface or `callable-object`, which doesn't change the type of its properties
+     * Whether a branch only intersected the objects of a variable with interfaces or `callable-object`, which doesn't
+     * change the type of their properties: the variable is of the same classes before and after
      *
      * @psalm-pure
      */
-    private static function isThisOfTheSameClass(string $var_id, Union $before, Union $after): bool
+    private static function isOfTheSameClasses(Union $before, Union $after): bool
     {
-        if ($var_id !== '$this') {
-            return false;
-        }
+        $classes = [];
 
-        $class = null;
-
-        foreach ([...$before->getAtomicTypes(), ...$after->getAtomicTypes()] as $atomic_type) {
-            if (!$atomic_type instanceof TNamedObject
-                || ($class !== null && strtolower($atomic_type->value) !== $class)
-            ) {
+        foreach ($before->getAtomicTypes() as $atomic_type) {
+            if (!$atomic_type instanceof TNamedObject) {
                 return false;
             }
 
-            $class = strtolower($atomic_type->value);
+            $classes[strtolower($atomic_type->value)] = true;
+        }
+
+        foreach ($after->getAtomicTypes() as $atomic_type) {
+            if (!$atomic_type instanceof TNamedObject || !isset($classes[strtolower($atomic_type->value)])) {
+                return false;
+            }
         }
 
         return true;
