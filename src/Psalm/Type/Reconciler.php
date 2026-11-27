@@ -1996,21 +1996,45 @@ class Reconciler
                                         $class_property_type = Type::getMixed();
                                     }
                                 } else {
-                                    $class_property_type = self::getPropertyType(
-                                        $codebase,
-                                        $existing_key_type_part->value,
-                                        $property_name,
-                                    );
+                                    // `$o->{$p}` is any of the properties `$p` names
+                                    $property_names = $property_name[0] === '{'
+                                        ? (isset($existing_keys[substr($property_name, 1, -1)])
+                                            ? ExpressionIdentifier::getLiteralPropertyNames(
+                                                $existing_keys[substr($property_name, 1, -1)],
+                                            )
+                                            : [])
+                                        : [$property_name];
+
+                                    $class_property_type = null;
+                                    $part_keeps_value = $property_names !== [];
+
+                                    foreach ($property_names as $name) {
+                                        $name_type = self::getPropertyType(
+                                            $codebase,
+                                            $existing_key_type_part->value,
+                                            $name,
+                                        );
+
+                                        if ($name_type === null) {
+                                            return null;
+                                        }
+
+                                        $class_property_type = Type::combineUnionTypes(
+                                            $class_property_type,
+                                            $name_type,
+                                            $codebase,
+                                        );
+
+                                        $part_keeps_value = $part_keeps_value && self::isReadonlyProperty(
+                                            $codebase,
+                                            $existing_key_type_part->value,
+                                            $name,
+                                        );
+                                    }
 
                                     if (!$class_property_type) {
                                         return null;
                                     }
-
-                                    $part_keeps_value = self::isReadonlyProperty(
-                                        $codebase,
-                                        $existing_key_type_part->value,
-                                        $property_name,
-                                    );
                                 }
                             }
                         } else {

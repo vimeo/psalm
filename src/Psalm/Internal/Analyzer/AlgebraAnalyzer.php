@@ -233,7 +233,7 @@ final class AlgebraAnalyzer
             }
 
             foreach ($var_ids as $var_id => $_) {
-                if (preg_match('/' . preg_quote($var_id, '/') . '[\]\[\-]/', $key)) {
+                if (preg_match('/' . preg_quote($var_id, '/') . '[\]\[\-}]/', $key)) {
                     return true;
                 }
             }
