@@ -2195,7 +2195,7 @@ final class FunctionLikeDocblockScanner
 
                 $bound = FromDocblockSetter::markResources($bound);
 
-                $defining_id ='fn-' . strtolower($cased_function_id);
+                $defining_id = 'fn-' . strtolower($cased_function_id);
 
                 if ($bound->getId() !== $storage->template_types[$template_name][$defining_id]->getId()) {
                     $storage->template_types[$template_name][$defining_id] = $bound;
