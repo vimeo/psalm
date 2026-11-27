@@ -198,6 +198,90 @@ final class CodeLocationTest extends BaseTestCase
         $this->assertSame(5, $location->getColumn());
     }
 
+    public function testCommentLineSelectionOnAnIndentedLineWithoutATag(): void
+    {
+        $contents = "<?php\nclass A {\n    #[DataProvider('provider')]\n    public function testFoo(): void {}\n}\n";
+        $location = $this->locateWithCommentLine($contents, 'testFoo', 4, 3, null, null);
+
+        $this->assertSame("#[DataProvider('provider')]", $location->getSelectedText());
+        $this->assertSame(3, $location->getLineNumber());
+        $this->assertSame(5, $location->getColumn());
+        $this->assertSame(32, $location->getEndColumn());
+    }
+
+    public function testCommentLineSelectionOnATabIndentedLineWithoutATag(): void
+    {
+        $contents = "<?php\nclass A {\n\t#[Attr]\n\tpublic function f(): void {}\n}\n";
+        $location = $this->locateWithCommentLine($contents, 'f(', 4, 3, null, null);
+
+        $this->assertSame('#[Attr]', $location->getSelectedText());
+        $this->assertSame(2, $location->getColumn());
+    }
+
+    public function testCommentLineSelectionOnAnAttributeLineHoldingAnAt(): void
+    {
+        $contents = "<?php\nclass A {\n    #[TestWith(['a@b.c'])]\n    public function f(): void {}\n}\n";
+        $location = $this->locateWithCommentLine($contents, 'f(', 4, 3, null, null);
+
+        $this->assertSame("#[TestWith(['a@b.c'])]", $location->getSelectedText());
+        $this->assertSame(5, $location->getColumn());
+    }
+
+    public function testCommentLineSelectionOnADocblockTextLineHoldingAnAt(): void
+    {
+        $contents = "<?php\n/**\n * Mail me at a@b.c\n */\nfunction f(): void {}\n";
+        $location = $this->locateWithCommentLine($contents, 'f(', 5, 3, null, null);
+
+        $this->assertSame('Mail me at a@b.c', $location->getSelectedText());
+        $this->assertSame(4, $location->getColumn());
+    }
+
+    public function testCommentLineSelectionKeepsSlashes(): void
+    {
+        $contents = "<?php\n/**\n * @see https://example.com/foo\n */\nfunction f(): void {}\n";
+        $location = $this->locateWithCommentLine($contents, 'f(', 5, 3, null, null);
+
+        $this->assertSame('@see https://example.com/foo', $location->getSelectedText());
+        $this->assertSame(4, $location->getColumn());
+    }
+
+    public function testCommentLineSelectionOfAOneLineCommentWithoutATag(): void
+    {
+        $contents = "<?php\n/** mail a@b */ function f(): void {}\n";
+        $location = $this->locateWithCommentLine($contents, 'f(', 2, 2, null, null);
+
+        $this->assertSame('mail a@b', $location->getSelectedText());
+        $this->assertSame(5, $location->getColumn());
+    }
+
+    public function testCommentLineSelectionBeforeADoubleStarCommentEnd(): void
+    {
+        $contents = "<?php\n/** @return void **/\nfunction f(): void {}\n";
+        $location = $this->locateWithCommentLine($contents, 'f(', 3, 2, null, null);
+
+        $this->assertSame('@return void', $location->getSelectedText());
+        $this->assertSame(5, $location->getColumn());
+    }
+
+    public function testCommentLineSelectionKeepsAWildcardBeforeTheCommentEnd(): void
+    {
+        $contents = "<?php\nclass A {\n    /** @return self::STATUS_* */\n    public function f() {}\n}\n";
+        $location = $this->locateWithCommentLine($contents, 'f(', 4, 3, null, null);
+
+        $this->assertSame('@return self::STATUS_*', $location->getSelectedText());
+        $this->assertSame(9, $location->getColumn());
+    }
+
+    public function testCommentLineSelectionOfACommentOpeningAlone(): void
+    {
+        $contents = "<?php\nclass A {\n    /**\n     * @return void\n     */\n    public function f(): void {}\n}\n";
+        $location = $this->locateWithCommentLine($contents, 'f(', 6, 3, null, null);
+
+        $this->assertSame('/**', $location->getSelectedText());
+        $this->assertSame(3, $location->getLineNumber());
+        $this->assertSame(5, $location->getColumn());
+    }
+
     private function locateWithCommentLine(
         string $contents,
         string $selection,
