@@ -110,7 +110,7 @@ final class InternalCallMapHandler
     private static ?array $taint_store_map = null;
 
     /**
-     * @var array<lowercase-string, non-empty-list<key-of<TaintKind::TAINT_NAMES>>>|null
+     * @var array<lowercase-string, non-empty-list<key-of<TaintKind::TAINT_NAMES>|'~secret_key'>>|null
      */
     private static ?array $taint_escape_map = null;
 
@@ -748,13 +748,15 @@ final class InternalCallMapHandler
     public static function getReturnRemovedTaints(string $function_id): int
     {
         if (self::$taint_escape_map === null) {
-            /** @var array<lowercase-string, non-empty-list<key-of<TaintKind::TAINT_NAMES>>> */
+            /** @var array<lowercase-string, non-empty-list<key-of<TaintKind::TAINT_NAMES>|'~secret_key'>> */
             self::$taint_escape_map = require(dirname(__DIR__, 4) . '/dictionaries/InternalTaintEscapeMap.php');
         }
 
         $removed_taints = 0;
         foreach (self::$taint_escape_map[strtolower($function_id)] ?? [] as $taint) {
-            $removed_taints |= TaintKind::TAINT_NAMES[$taint];
+            $removed_taints |= $taint === '~secret_key'
+                ? TaintKind::ALL & ~TaintKind::SECRET_KEY
+                : TaintKind::TAINT_NAMES[$taint];
         }
 
         return $removed_taints;

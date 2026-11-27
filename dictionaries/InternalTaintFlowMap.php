@@ -166,6 +166,15 @@ return [
     'transliterator_transliterate' => ['string'],
     'uconverter::convert' => ['str'],
     'uconverter::transcode' => ['str'],
+    // hash: only a secret it is computed from survives (see InternalTaintEscapeMap.php)
+    'crypt' => ['string', 'salt'],
+    'hash' => ['data'],
+    'hash_hkdf' => ['key'],
+    'hash_hmac' => ['data', 'key'],
+    'hash_hmac_file' => ['key'],
+    'hash_pbkdf2' => ['password', 'salt'],
+    'md5' => ['string'],
+    'sha1' => ['string'],
     // random
     'random\randomizer::getbytesfromstring' => ['string'],
     'random\randomizer::pickarraykeys' => ['array'],
@@ -181,6 +190,7 @@ return [
     'bzdecompress' => ['data'],
     // sodium
     'sodium_base642bin' => ['string'],
+    'sodium_bin2hex' => ['string'],
     'sodium_hex2bin' => ['string'],
     'sodium_pad' => ['string'],
     'sodium_unpad' => ['string'],
