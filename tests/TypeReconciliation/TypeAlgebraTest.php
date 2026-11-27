@@ -770,15 +770,14 @@ final class TypeAlgebraTest extends TestCase
             ],
             'theNegatedTernaryConditionOnAnOffsetOfAVariableSetInALoopNarrowsIt' => [
                 'code' => '<?php
+                    /** @param list<array<string, mixed>> $files */
                     function f(array $files): string {
                         foreach ($files as $file) {
-                            echo (string) $file;
+                            echo count($file);
                         }
 
                         return !isset($file["a"]) ? "" : (is_string($file["a"]) ? $file["a"] : "");
                     }',
-                'assertions' => [],
-                'ignored_issues' => ['MixedAssignment'],
             ],
             'isAAndItsNegationAreDifferentConditions' => [
                 'code' => '<?php

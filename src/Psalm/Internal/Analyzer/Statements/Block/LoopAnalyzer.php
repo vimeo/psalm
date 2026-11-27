@@ -455,6 +455,7 @@ final class LoopAnalyzer
                     }
                 }
 
+                $body_has_returned = $continue_context->has_returned;
                 $continue_context->has_returned = false;
 
                 $loop_parent_context->vars_possibly_in_scope += $continue_context->vars_possibly_in_scope;
@@ -475,10 +476,19 @@ final class LoopAnalyzer
                         continue;
                     }
 
-                    $loop_var_types_at_start[$var_id] = Type::combineUnionTypes(
-                        $continue_context->vars_in_scope[$var_id] ?? null,
-                        $loop_scope->possibly_defined_loop_vars[$var_id] ?? null,
-                    )->setPossiblyUndefined(false);
+                    // the end of a body that returns or throws doesn't go on to the next iteration: only its
+                    // continues do
+                    $at_end = $body_has_returned ? null : $continue_context->vars_in_scope[$var_id] ?? null;
+                    $at_continues = $loop_scope->possibly_defined_loop_vars[$var_id] ?? null;
+
+                    if (!$at_end && !$at_continues) {
+                        $continue_context->remove($var_id);
+
+                        continue;
+                    }
+
+                    $loop_var_types_at_start[$var_id] = Type::combineUnionTypes($at_end, $at_continues)
+                        ->setPossiblyUndefined(false);
                     $continue_context->vars_in_scope[$var_id] = $loop_var_types_at_start[$var_id]
                         ->setPossiblyUndefined(true);
                     $continue_context->vars_possibly_in_scope[$var_id] = true;
@@ -1074,6 +1084,7 @@ final class LoopAnalyzer
 
         // the variables the condition is first evaluated with
         $entry_vars_in_scope = $context->vars_in_scope;
+        $vars_possibly_in_scope_before_loop = $context->vars_possibly_in_scope;
 
         $for_context = clone $context;
 
@@ -1175,6 +1186,14 @@ final class LoopAnalyzer
                 ...$context->vars_possibly_in_scope,
                 ...$for_context->vars_possibly_in_scope,
             ];
+
+            self::addVarsPossiblyDefinedInLoop(
+                $context,
+                $inner_loop_context,
+                $loop_scope,
+                $vars_possibly_in_scope_before_loop,
+                $while_true,
+            );
         } elseif ($pre_context) {
             $context->vars_possibly_in_scope = $pre_context->vars_possibly_in_scope;
         }
@@ -1557,6 +1576,59 @@ final class LoopAnalyzer
                     $defined_here,
                     $is_only_left_by_the_condition,
                 );
+            }
+        }
+    }
+
+    /**
+     * A variable the loop defines on some of the ways out of it is possibly undefined after the loop, and holds what
+     * those ways out left in it
+     *
+     * @param array<string, bool> $vars_possibly_in_scope_before_loop the ones possibly defined before the loop with
+     *                                                                 no known type keep none
+     * @param bool $is_only_left_by_break whether the loop is only left by a break (`while (true)`)
+     */
+    public static function addVarsPossiblyDefinedInLoop(
+        Context $context,
+        Context $inner_context,
+        LoopScope $loop_scope,
+        array $vars_possibly_in_scope_before_loop,
+        bool $is_only_left_by_break = false,
+    ): void {
+        $is_left_after_an_iteration = !$is_only_left_by_break
+            && $loop_scope->final_actions !== [ScopeAnalyzer::ACTION_BREAK];
+
+        foreach ($context->vars_possibly_in_scope as $var_id => $_) {
+            // a pseudo-variable (an extension check) that only some ways out set says nothing after the loop
+            if (!str_starts_with($var_id, '$')
+                || isset($context->vars_in_scope[$var_id])
+                || isset($vars_possibly_in_scope_before_loop[$var_id])
+                || !self::isLoopVar($var_id)
+                || isset($inner_context->references_in_scope[$var_id])
+            ) {
+                continue;
+            }
+
+            $at_breaks = $loop_scope->vars_at_breaks[$var_id] ?? null;
+            $at_continues = $loop_scope->vars_at_continues[$var_id] ?? null;
+
+            // a finally run on the way out changes what the variable holds after the loop
+            if (($at_breaks && $loop_scope->breaks_through_finally)
+                || ($at_continues && $loop_scope->continues_through_finally)
+            ) {
+                continue;
+            }
+
+            // the end of a body that returns or throws is not a way out of the loop
+            $at_end = $inner_context->has_returned ? null : $inner_context->vars_in_scope[$var_id] ?? null;
+
+            $types = array_values(array_filter(
+                $is_left_after_an_iteration ? [$at_breaks, $at_end, $at_continues] : [$at_breaks],
+            ));
+
+            if ($types) {
+                $context->vars_in_scope[$var_id] = Type::combineUnionTypeArray($types, null)
+                    ->setPossiblyUndefined(true);
             }
         }
     }
