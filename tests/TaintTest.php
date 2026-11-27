@@ -14978,6 +14978,43 @@ final class TaintTest extends TestCase
                     }',
                 'error_message' => 'TaintedHtml',
             ],
+            'propertyOfOtherNamesSetBackThroughAParentClassIsReadThroughItsNodeOfOtherNames' => [
+                'code' => '<?php
+                    class Record {
+                        /** @psalm-flow ($value) -> $this->$name */
+                        public function __set(string $name, string $value): void {}
+
+                        /** @psalm-flow $this->$name -> return */
+                        public function __get(string $name): string {
+                            return "";
+                        }
+
+                        /** @psalm-flow $this->$name -> return */
+                        public function get(string $name): string {
+                            return "";
+                        }
+
+                        /** @psalm-flow ($value) -> $this->$name */
+                        public function set(string $name, string $value): void {}
+                    }
+
+                    final class A extends Record {}
+
+                    final class B extends Record {}
+
+                    function store(A $a): void {
+                        $a->set("p", (string) $_GET["x"]);
+                    }
+
+                    function touchField(Record $object, string $name): void {
+                        $object->set($name, $object->get($name) . "!");
+                    }
+
+                    function show(B $object): void {
+                        echo $object->get("p");
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
             'propertySetUnderANameNotKnownIsReadByAGetterOfAnUndeclaredName' => [
                 'code' => '<?php
                     final class Model {
