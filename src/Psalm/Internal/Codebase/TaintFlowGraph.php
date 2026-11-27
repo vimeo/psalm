@@ -34,6 +34,7 @@ use Psalm\Issue\TaintedSleep;
 use Psalm\Issue\TaintedSql;
 use Psalm\Issue\TaintedSystemSecret;
 use Psalm\Issue\TaintedTextWithQuotes;
+use Psalm\Issue\TaintedTimingComparison;
 use Psalm\Issue\TaintedUnserialize;
 use Psalm\Issue\TaintedUrlComponent;
 use Psalm\Issue\TaintedUrlPath;
@@ -82,6 +83,9 @@ final class TaintFlowGraph extends DataFlowGraph
      * CastAnalyzer::getArrayConversionSuffix()).
      */
     public const ARRAY_CONVERSION_SUFFIX = '-of-array';
+
+    /** The secrets a comparison taking a time that depends on them must not compare with user input */
+    public const COMPARED_SECRETS = TaintKind::SECRET_KEY | TaintKind::SYSTEM_SECRET;
 
     /**
      * The separator DataFlowNode uses to build a specialized node id from its
@@ -229,6 +233,22 @@ final class TaintFlowGraph extends DataFlowGraph
      * @var array<string, true>
      */
     private array $empty_dispatches = [];
+
+    /**
+     * The sinks of the strings compared in a time that depends on them => the id of the sink of the first string of
+     * the comparison, and the offset (0 or 1) of the string (see addComparisonSinks())
+     *
+     * @var array<string, array{string, int}>
+     */
+    private array $comparison_sinks = [];
+
+    /**
+     * What reached the strings of each comparison, by the id of its first sink and the offset of the string: whether
+     * a secret key or user input, the node it reached the sink from and the sink (see reportTimingComparisons())
+     *
+     * @var array<string, array<int, array<'secret'|'input', array{DataFlowNode, DataFlowNode}>>>
+     */
+    private array $compared_flows = [];
 
     /**
      * Call sites specialized speculatively, before knowing whether the callee is pure:
@@ -606,6 +626,30 @@ final class TaintFlowGraph extends DataFlowGraph
         $this->sinks[$node->id] = $row;
         // in the rare case the sink is the _next_ node, this is necessary
         $this->nodes[$node->id] = $row;
+    }
+
+    /**
+     * Adds the sinks of the two strings of a comparison taking a time that depends on them: the flows reaching them
+     * are not reported as such, a secret key reaching one while user input reaches the other is (see
+     * TimingComparisonAnalyzer)
+     *
+     * @psalm-capabilities read-props|write-this-props|write-props
+     */
+    public function addComparisonSinks(DataFlowNode $first, DataFlowNode $second): void
+    {
+        $this->addSink($first);
+        $this->addSink($second);
+
+        $this->comparison_sinks[$first->id] = [$first->id, 0];
+        $this->comparison_sinks[$second->id] = [$first->id, 1];
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    public function isComparisonSink(string $sink_id): bool
+    {
+        return isset($this->comparison_sinks[$sink_id]);
     }
 
     /**
@@ -1113,6 +1157,7 @@ final class TaintFlowGraph extends DataFlowGraph
         }
 
         $this->specialized_calls += $other->specialized_calls;
+        $this->comparison_sinks += $other->comparison_sinks;
         $this->generator_sent_nodes += $other->generator_sent_nodes;
         $this->shared_state += $other->shared_state;
 
@@ -1272,6 +1317,8 @@ final class TaintFlowGraph extends DataFlowGraph
             }
         } unset($map);
 
+        $this->removeComparisonSinksNoSecretReaches();
+
         Perf\Collector::step('taint.resolve');
         Perf\Collector::taint(
             count($this->nodes),
@@ -1301,7 +1348,87 @@ final class TaintFlowGraph extends DataFlowGraph
 
         $resolution->resolve($progress);
 
+        $this->reportTimingComparisons();
+
         $progress->taskDone(0);
+    }
+
+    /**
+     * Removes the sinks of the comparisons no secret can reach (see addComparisonSinks()) before the resolution: most
+     * comparisons never see one, and the resolution replays a sink inside a function-like for each of its calls. The
+     * nodes a secret may reach are found ignoring the calls and the keys it goes through, so they are more than those
+     * the resolution finds.
+     *
+     * @psalm-capabilities read-props|write-this-props|write-props
+     */
+    private function removeComparisonSinksNoSecretReaches(): void
+    {
+        if ($this->comparison_sinks === []) {
+            return;
+        }
+
+        /** @var array<string, int> $reached */
+        $reached = [];
+        $queue = [];
+        foreach ($this->sources as $id => $row) {
+            $secrets = $this->table->getTaints($row) & self::COMPARED_SECRETS;
+            if ($secrets !== 0) {
+                $reached[$id] = $secrets;
+                $queue[] = $id;
+            }
+        }
+
+        // a path adds its taints to whatever goes through it
+        foreach ($this->forward_edges as $destinations) {
+            foreach ($destinations as $to_id => $path) {
+                $secrets = $path->added_taints & self::COMPARED_SECRETS & ~($reached[$to_id] ?? 0);
+                if ($secrets !== 0) {
+                    $reached[$to_id] = ($reached[$to_id] ?? 0) | $secrets;
+                    $queue[] = $to_id;
+                }
+            }
+        }
+
+        while (($id = array_pop($queue)) !== null) {
+            $secrets = $reached[$id];
+
+            $next = [];
+            foreach ($this->forward_edges[$id] ?? [] as $to_id => $path) {
+                $next[$to_id] = ($next[$to_id] ?? 0) | ($secrets & ~$path->removed_taints);
+            }
+
+            // a specialized node goes on as the node it specializes, and that node as each of its specializations
+            $separator = strpos($id, self::SPECIALIZATION_SEPARATOR);
+            if ($separator !== false) {
+                $unspecialized_id = substr($id, 0, $separator);
+                $next[$unspecialized_id] = ($next[$unspecialized_id] ?? 0) | $secrets;
+            }
+
+            foreach ($this->specializations[$id] ?? [] as $specialized_id) {
+                $next[$specialized_id] = ($next[$specialized_id] ?? 0) | $secrets;
+            }
+
+            foreach ($next as $to_id => $to_secrets) {
+                $known = $reached[$to_id] ?? 0;
+                if (($to_secrets & ~$known) !== 0) {
+                    $reached[$to_id] = $known | $to_secrets;
+                    $queue[] = $to_id;
+                }
+            }
+        }
+
+        $reached_comparisons = [];
+        foreach ($this->comparison_sinks as $sink_id => [$comparison_id]) {
+            if (isset($reached[$sink_id])) {
+                $reached_comparisons[$comparison_id] = true;
+            }
+        }
+
+        foreach ($this->comparison_sinks as $sink_id => [$comparison_id]) {
+            if (!isset($reached_comparisons[$comparison_id])) {
+                unset($this->sinks[$sink_id], $this->comparison_sinks[$sink_id]);
+            }
+        }
     }
 
     /**
@@ -1615,6 +1742,14 @@ final class TaintFlowGraph extends DataFlowGraph
         Config $config,
         Codebase $codebase,
     ): void {
+        if (isset($this->comparison_sinks[$sink->id])) {
+            [$comparison_id, $offset] = $this->comparison_sinks[$sink->id];
+            $kind = ($taints & self::COMPARED_SECRETS) !== 0 ? 'secret' : 'input';
+            $this->compared_flows[$comparison_id][$offset][$kind] ??= [$predecessor, $sink];
+
+            return;
+        }
+
         if ($sink->code_location
             && $config->reportIssueInFile('TaintedInput', $sink->code_location->file_path)
         ) {
@@ -1732,6 +1867,12 @@ final class TaintFlowGraph extends DataFlowGraph
                     $issue_trace,
                     $path,
                 ),
+                TaintKind::SECRET_KEY => new TaintedTimingComparison(
+                    'Detected a secret key compared in a time that depends on how much of it the other value matches',
+                    $issue_location,
+                    $issue_trace,
+                    $path,
+                ),
                 TaintKind::INPUT_SSRF => new TaintedSSRF(
                     'Detected tainted network request',
                     $issue_location,
@@ -1814,5 +1955,46 @@ final class TaintFlowGraph extends DataFlowGraph
 
             IssueBuffer::maybeAdd($issue);
         }
+    }
+
+    /**
+     * Reports the comparisons of a secret key with user input (see addComparisonSinks()), at the comparison, with
+     * the trace of the input
+     */
+    private function reportTimingComparisons(): void
+    {
+        foreach ($this->compared_flows as $flows) {
+            foreach ([0, 1] as $offset) {
+                $secret = $flows[$offset]['secret'] ?? null;
+                $input = $flows[1 - $offset]['input'] ?? null;
+                if ($secret === null || $input === null) {
+                    continue;
+                }
+
+                [$predecessor, $sink] = $input;
+                if ($sink->code_location === null) {
+                    continue;
+                }
+
+                $origin = $secret[0];
+                while ($origin->taintSource !== null && $origin->taintSource !== $origin) {
+                    $origin = $origin->taintSource;
+                }
+
+                $origin_location = $origin->code_location ? ' (' . $origin->code_location->getShortSummary() . ')' : '';
+
+                IssueBuffer::maybeAdd(new TaintedTimingComparison(
+                    'Detected user input compared with the secret of ' . $origin->label . $origin_location
+                        . ' in a time that depends on how much of it they share: compare them with hash_equals()',
+                    $sink->code_location,
+                    $this->getIssueTrace($predecessor),
+                    $this->getPredecessorPath($predecessor) . ' -> ' . $this->getSuccessorPath($sink),
+                ));
+
+                break;
+            }
+        }
+
+        $this->compared_flows = [];
     }
 }

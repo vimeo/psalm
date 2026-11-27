@@ -237,6 +237,14 @@ final class BinaryOpAnalyzer
             $stmt_left_type = $statements_analyzer->node_data->getType($stmt->left);
             $stmt_right_type = $statements_analyzer->node_data->getType($stmt->right);
 
+            if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Equal
+                || $stmt instanceof PhpParser\Node\Expr\BinaryOp\NotEqual
+                || $stmt instanceof PhpParser\Node\Expr\BinaryOp\Identical
+                || $stmt instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical
+            ) {
+                TimingComparisonAnalyzer::analyzeComparison($statements_analyzer, $stmt);
+            }
+
             if (!$statements_analyzer->getCodebase()->config->allow_string_standin_for_class
                 && ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Equal
                     || $stmt instanceof PhpParser\Node\Expr\BinaryOp\NotEqual

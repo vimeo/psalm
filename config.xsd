@@ -527,6 +527,7 @@
             <xs:element name="TaintedSSRF" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedSystemSecret" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedTextWithQuotes" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="TaintedTimingComparison" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedUnserialize" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedUrlComponent" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedUrlPath" type="IssueHandlerType" minOccurs="0" />
