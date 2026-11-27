@@ -254,24 +254,35 @@ final class MethodCallAnalyzer extends CallAnalyzer
         // a memoized call returns what the same call returned before, even if it may change what it returns next
         $memoized_type = $method_var_id !== null ? $context->vars_in_scope[$method_var_id] ?? null : null;
 
+        // `$object->$name()` with `$name` one of known strings calls each of those methods
+        $name = $stmt->name;
+        $method_names = self::getLiteralMethodNames($statements_analyzer, $stmt) ?? [$name];
+
         $possible_new_class_types = [];
         foreach ($lhs_types as $lhs_type_part) {
-            AtomicMethodCallAnalyzer::analyze(
-                $statements_analyzer,
-                $stmt,
-                $codebase,
-                $context,
-                $class_type,
-                $lhs_type_part,
-                $lhs_type_part instanceof TNamedObject
-                    || $lhs_type_part instanceof TTemplateParam
-                    ? $lhs_type_part
-                    : null,
-                false,
-                $lhs_var_id,
-                $result,
-                $template_result,
-            );
+            foreach ($method_names as $method_name) {
+                $stmt->name = $method_name;
+
+                AtomicMethodCallAnalyzer::analyze(
+                    $statements_analyzer,
+                    $stmt,
+                    $codebase,
+                    $context,
+                    $class_type,
+                    $lhs_type_part,
+                    $lhs_type_part instanceof TNamedObject
+                        || $lhs_type_part instanceof TTemplateParam
+                        ? $lhs_type_part
+                        : null,
+                    false,
+                    $lhs_var_id,
+                    $result,
+                    $template_result,
+                );
+
+                $stmt->name = $name;
+            }
+
             if ($lhs_var_id !== null && isset($context->vars_in_scope[$lhs_var_id])
                 && ($possible_new_class_type = $context->vars_in_scope[$lhs_var_id]) instanceof Union
                 && !$possible_new_class_type->equals($class_type)) {

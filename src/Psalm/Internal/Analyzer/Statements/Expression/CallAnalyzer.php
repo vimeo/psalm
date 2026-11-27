@@ -48,6 +48,7 @@ use Psalm\Issue\WrongCaseFunction;
 use Psalm\IssueBuffer;
 use Psalm\Node\Expr\BinaryOp\VirtualIdentical;
 use Psalm\Node\Expr\VirtualConstFetch;
+use Psalm\Node\VirtualIdentifier;
 use Psalm\Node\VirtualName;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Plugin\EventHandler\Event\AfterMethodCallAnalysisEvent;
@@ -72,6 +73,7 @@ use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TKeyedArray;
+use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObject;
@@ -2132,6 +2134,39 @@ abstract class CallAnalyzer
                 }
             }
         }
+    }
+
+    /**
+     * The methods a call names with an expression (`$object->$name()`, `A::$name()`) whose value is one of known
+     * strings, as the names a call of each of them would have; null when the name isn't such an expression.
+     *
+     * @return non-empty-list<Identifier>|null
+     */
+    public static function getLiteralMethodNames(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\MethodCall|PhpParser\Node\Expr\StaticCall $stmt,
+    ): ?array {
+        if (!$stmt->name instanceof PhpParser\Node\Expr) {
+            return null;
+        }
+
+        $name_type = $statements_analyzer->node_data->getType($stmt->name);
+
+        if (!$name_type) {
+            return null;
+        }
+
+        $names = [];
+
+        foreach ($name_type->getAtomicTypes() as $atomic) {
+            if (!$atomic instanceof TLiteralString) {
+                return null;
+            }
+
+            $names[] = new VirtualIdentifier($atomic->value, $stmt->name->getAttributes());
+        }
+
+        return $names ?: null;
     }
 
     /**

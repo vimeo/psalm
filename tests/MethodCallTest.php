@@ -4187,6 +4187,129 @@ final class MethodCallTest extends TestCase
                     }
                 PHP,
             ],
+            'staticCallOfAMethodNamedByALiteral' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Foo {
+                        public static function a(): int { return 0; }
+                    }
+
+                    $m = 'a';
+                    $r = Foo::$m();
+                PHP,
+                'assertions' => ['$r===' => 'int'],
+            ],
+            'staticCallOfMethodsNamedByLiterals' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Foo {
+                        public static function a(): int { return 0; }
+                        public static function b(): string { return ""; }
+                    }
+
+                    $m = random_int(0, 1) ? 'a' : 'b';
+                    $r = Foo::$m();
+                PHP,
+                'assertions' => ['$r===' => 'int|string'],
+            ],
+            'instanceCallOfAMethodNamedByALiteral' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Foo {
+                        public function a(): int { return 0; }
+                    }
+
+                    $m = 'a';
+                    $r = (new Foo())->$m();
+                PHP,
+                'assertions' => ['$r===' => 'int'],
+            ],
+            'instanceCallOfMethodsNamedByLiterals' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Foo {
+                        public function a(): int { return 0; }
+                        public function b(): string { return ""; }
+                    }
+
+                    $m = random_int(0, 1) ? 'a' : 'b';
+                    $r = (new Foo())->$m();
+                PHP,
+                'assertions' => ['$r===' => 'int|string'],
+            ],
+            'callableOfStaticMethodsNamedByLiterals' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Foo {
+                        public static function a(): int { return 0; }
+                        public static function b(): string { return ""; }
+                    }
+
+                    $m = random_int(0, 1) ? 'a' : 'b';
+                    $f = Foo::$m(...);
+                PHP,
+                'assertions' => ['$f===' => 'Closure[impure]():int|Closure[impure]():string'],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'callableOfInstanceMethodsNamedByLiterals' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Foo {
+                        public function a(): int { return 0; }
+                        public function b(): string { return ""; }
+                    }
+
+                    $m = random_int(0, 1) ? 'a' : 'b';
+                    $f = (new Foo())->$m(...);
+                PHP,
+                'assertions' => ['$f===' => 'Closure[impure]():int|Closure[impure]():string'],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'callableOfAStaticMethodOfSeveralClasses' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Foo {
+                        public static function a(): int { return 0; }
+                    }
+                    final class B {
+                        public static function a(): string { return ""; }
+                    }
+
+                    $f = (random_int(0, 1) ? Foo::class : B::class)::a(...);
+                PHP,
+                'assertions' => ['$f===' => 'Closure[impure]():int|Closure[impure]():string'],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'staticCallOfMethodsNamedByLiteralsAssertsWhatEachAsserts' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Foo {
+                        /**
+                         * @param mixed $v
+                         * @psalm-assert-if-true string $v
+                         */
+                        public static function isString($v): bool { return is_string($v); }
+
+                        /**
+                         * @param mixed $v
+                         * @psalm-assert-if-true string $v
+                         */
+                        public static function isText($v): bool { return is_string($v); }
+                    }
+
+                    /** @var mixed */
+                    $v = $_GET['v'];
+                    $m = random_int(0, 1) ? 'isString' : 'isText';
+                    $r = '';
+                    if (Foo::$m($v)) {
+                        $r = $v;
+                    }
+                PHP,
+                'assertions' => ['$r===' => 'string'],
+            ],
         ];
     }
 
@@ -5700,6 +5823,75 @@ final class MethodCallTest extends TestCase
                     $_a = (new A)->foo(...);
                 PHP,
                 'error_message' => 'UndefinedMethod',
+            ],
+            'staticCallOfAnUndefinedMethodNamedByALiteral' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Foo {}
+
+                    $m = 'foo';
+                    Foo::$m();
+                PHP,
+                'error_message' => 'UndefinedMethod',
+            ],
+            'instanceCallOfAnUndefinedMethodNamedByALiteral' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Foo {}
+
+                    $m = 'foo';
+                    (new Foo())->$m();
+                PHP,
+                'error_message' => 'UndefinedMethod',
+            ],
+            'instanceCallOfMethodsNamedByLiteralsOneOfThemUndefined' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Foo {
+                        public function a(): void {}
+                    }
+
+                    $m = random_int(0, 1) ? 'a' : 'foo';
+                    (new Foo())->$m();
+                PHP,
+                'error_message' => 'PossiblyUndefinedMethod',
+            ],
+            'staticCallOfMethodsNamedByLiteralsChecksTheArgumentsOfEach' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Foo {
+                        public static function a(string $s): void {}
+                        public static function b(int $i): void {}
+                    }
+
+                    $m = random_int(0, 1) ? 'a' : 'b';
+                    Foo::$m("x");
+                PHP,
+                'error_message' => 'InvalidScalarArgument',
+            ],
+            'instanceCallOfAPrivateMethodNamedByALiteral' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Foo {
+                        private function a(): void {}
+                    }
+
+                    $m = 'a';
+                    (new Foo())->$m();
+                PHP,
+                'error_message' => 'InaccessibleMethod',
+            ],
+            'staticCallOfAnInstanceMethodNamedByALiteral' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Foo {
+                        public function a(): void {}
+                    }
+
+                    $m = 'a';
+                    Foo::$m();
+                PHP,
+                'error_message' => 'InvalidStaticInvocation',
             ],
             'overrideOfAStubMethodWithATemplateStillChecksTheArgument' => [
                 'code' => <<<'PHP'

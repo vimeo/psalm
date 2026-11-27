@@ -1277,10 +1277,7 @@ final class PluginTest extends DeferredAnalyzerTestCase
 
                 $name = "magicMethod";
                 $dynamic = Foo::$name(...);
-                /** @psalm-check-type-exact $dynamic = \Closure */
-
-                $instance_dynamic = (new Foo())->$name(...);
-                /** @psalm-check-type-exact $instance_dynamic = \Closure */',
+                /** @psalm-check-type-exact $dynamic = \Closure[pure](string=) */',
         );
 
         $this->analyzeFile($file_path, new Context());

@@ -355,30 +355,41 @@ final class StaticCallAnalyzer extends CallAnalyzer
 
         $lhs_type_parts = $lhs_type->getAtomicTypes();
 
-        // a call to one of several classes asserts only what each of them asserts
+        // `A::$name()` with `$name` one of known strings calls each of those methods
+        $name = $stmt->name;
+        $method_names = self::getLiteralMethodNames($statements_analyzer, $stmt) ?? [$name];
+
+        // a call to one of several methods asserts only what each of them asserts
         $targets_if_true_assertions = [];
         $targets_if_false_assertions = [];
 
         foreach ($lhs_type_parts as $lhs_type_part) {
-            AtomicStaticCallAnalyzer::analyze(
-                $statements_analyzer,
-                $stmt,
-                $context,
-                $lhs_type_part,
-                $lhs_type->ignore_nullable_issues || $class_state->isNullOnlyByShortCircuit(),
-                $moved_call,
-                $has_mock,
-                $has_existing_method,
-                $args_analyzed,
-                $template_result,
-            );
+            foreach ($method_names as $method_name) {
+                $stmt->name = $method_name;
 
-            if (count($lhs_type_parts) > 1) {
-                $targets_if_true_assertions[] = $statements_analyzer->node_data->getIfTrueAssertions($stmt) ?? [];
-                $targets_if_false_assertions[] = $statements_analyzer->node_data->getIfFalseAssertions($stmt) ?? [];
+                AtomicStaticCallAnalyzer::analyze(
+                    $statements_analyzer,
+                    $stmt,
+                    $context,
+                    $lhs_type_part,
+                    $lhs_type->ignore_nullable_issues || $class_state->isNullOnlyByShortCircuit(),
+                    $moved_call,
+                    $has_mock,
+                    $has_existing_method,
+                    $args_analyzed,
+                    $template_result,
+                );
 
-                $statements_analyzer->node_data->setIfTrueAssertions($stmt, []);
-                $statements_analyzer->node_data->setIfFalseAssertions($stmt, []);
+                $stmt->name = $name;
+
+                if (count($lhs_type_parts) * count($method_names) > 1) {
+                    $targets_if_true_assertions[] = $statements_analyzer->node_data->getIfTrueAssertions($stmt) ?? [];
+                    $targets_if_false_assertions[] = $statements_analyzer->node_data->getIfFalseAssertions($stmt)
+                        ?? [];
+
+                    $statements_analyzer->node_data->setIfTrueAssertions($stmt, []);
+                    $statements_analyzer->node_data->setIfFalseAssertions($stmt, []);
+                }
             }
         }
 

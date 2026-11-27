@@ -3642,6 +3642,21 @@ final class UnusedCodeTest extends TestCase
     public static function providerInvalidCodeParse(): array
     {
         return [
+            'privateMethodNotNamedByALiteralIsUnused' => [
+                'code' => '<?php
+                    final class Foo {
+                        private function a(): int { return 0; }
+                        private function b(): int { return 1; }
+
+                        public function run(): int {
+                            $m = "a";
+                            return $this->$m();
+                        }
+                    }
+
+                    echo (new Foo())->run();',
+                'error_message' => 'UnusedMethod - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:42',
+            ],
             'privatePropertyNamedAsAColumnOutsideItsClassIsUnused' => [
                 'code' => '<?php
                     final class Row {
