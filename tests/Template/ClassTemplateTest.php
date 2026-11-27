@@ -87,6 +87,21 @@ final class ClassTemplateTest extends TestCase
                         protected string $species = FinalAnimal::class;
                     }',
             ],
+            'caseOfAnEnumBoundAsTheDefaultOfATemplateClassString' => [
+                'code' => '<?php
+                    enum Suit {
+                        case Hearts;
+                    }
+
+                    /** @template T of Suit */
+                    class Deck {
+                        /** @var class-string<T> */
+                        protected string $suit = Suit::class;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'nullCoalescingATemplatePropertyBoundedByANullableStringToAString' => [
                 'code' => '<?php
                     /**
