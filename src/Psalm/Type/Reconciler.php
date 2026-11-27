@@ -231,6 +231,9 @@ class Reconciler
             $has_truthy_or_falsy_or_empty = false;
             $has_empty = false;
             $has_count_check = false;
+            // a negated isset() or array_key_exists() that holds on its own, not as one alternative of a clause
+            $is_surely_not_set = false;
+            $is_surely_absent = false;
             $is_real = ($old_new_types[$key] ?? null) === $new_type_parts;
             $is_equality = $is_real;
 
@@ -265,6 +268,11 @@ class Reconciler
 
                     $has_count_check = $has_count_check
                         || $new_type_part_part instanceof NonEmptyCountable;
+
+                    if (count($new_type_part_parts) === 1) {
+                        $is_surely_not_set = $is_surely_not_set || $new_type_part_part instanceof IsNotIsset;
+                        $is_surely_absent = $is_surely_absent || $new_type_part_part instanceof ArrayKeyDoesNotExist;
+                    }
                 }
             }
 
@@ -518,8 +526,9 @@ class Reconciler
                         $existing_types,
                         $changed_var_ids,
                         $result_type,
-                        $has_inverted_isset,
-                        $has_inverted_key_exists,
+                        $is_surely_not_set,
+                        $is_surely_absent,
+                        true,
                         $codebase,
                     ))
             ) {
@@ -640,8 +649,9 @@ class Reconciler
                         $existing_types,
                         $changed_var_ids,
                         $result_type,
-                        $has_inverted_isset,
-                        $has_inverted_key_exists,
+                        $is_surely_not_set,
+                        $is_surely_absent,
+                        $has_inverted_isset || $has_inverted_key_exists,
                         $codebase,
                     )
                 ) {
@@ -2698,7 +2708,9 @@ class Reconciler
 
     /**
      * Narrows a union of shapes by what is known of one offset: a shape that cannot have the offset so is left out.
-     * Returns false where the array is no union of shapes, or the offset is not a literal.
+     * Returns false where the array is no union of shapes, or the offset is not a literal. $not_set and
+     * $key_does_not_exist hold where the negated isset() or array_key_exists() is a clause of its own, $may_be_unset
+     * where it is one alternative of a clause.
      *
      * @param  list<string>          $key_parts
      * @param  array<string, Union>  $existing_types
@@ -2711,6 +2723,7 @@ class Reconciler
         Union $result_type,
         bool $not_set,
         bool $key_does_not_exist,
+        bool $may_be_unset,
         Codebase $codebase,
     ): bool {
         if (count($key_parts) < 4) {
@@ -2738,7 +2751,7 @@ class Reconciler
             return false;
         }
 
-        if (!$not_set && !$key_does_not_exist && $result_type->isNever()) {
+        if (!$not_set && !$key_does_not_exist && !$may_be_unset && $result_type->isNever()) {
             return false;
         }
 
@@ -2747,14 +2760,22 @@ class Reconciler
             $property = $shape->properties[$offset] ?? null;
 
             if ($property === null) {
-                if ($not_set || $key_does_not_exist || $result_type->possibly_undefined) {
+                if ($not_set || $key_does_not_exist || $may_be_unset || $result_type->possibly_undefined) {
                     $shapes[] = $shape;
                 }
                 continue;
             }
 
+            // the offset may be unset or null here, and so is not narrowed by the other alternatives
+            if ($may_be_unset && !$not_set && !$key_does_not_exist
+                && ($property->possibly_undefined || self::mayHoldNull($property))
+            ) {
+                $shapes[] = $shape;
+                continue;
+            }
+
             if ($not_set || $key_does_not_exist) {
-                if ($not_set && $property->isNullable()) {
+                if ($not_set && self::mayHoldNull($property)) {
                     $properties = $shape->properties;
                     $properties[$offset] = Type::getNull()->setPossiblyUndefined($property->possibly_undefined);
                     $shapes[] = $shape->setProperties($properties);

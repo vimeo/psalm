@@ -89,7 +89,7 @@ use const ARRAY_FILTER_USE_BOTH;
  */
 final class TypeCombiner
 {
-    private const MAX_DISJOINT_SHAPES = 8;
+    public const MAX_DISJOINT_SHAPES = 8;
 
     /**
      * Combines the parts of a declared type. A type variable that stands for `never` until bound adds no value to a
@@ -2007,17 +2007,7 @@ final class TypeCombiner
             if ($container_property === null
                 || ($input_property->possibly_undefined && !$container_property->possibly_undefined)
                 || ($input_property->getId() !== $container_property->getId()
-                    && (!$codebase
-                        || !UnionTypeComparator::isContainedBy(
-                            $codebase,
-                            $input_property,
-                            $container_property,
-                            false,
-                            false,
-                            null,
-                            false,
-                            false,
-                        )))
+                    && (!$codebase || !self::propertyHoldsProperty($container_property, $input_property, $codebase)))
             ) {
                 return false;
             }
@@ -2030,6 +2020,60 @@ final class TypeCombiner
         }
 
         return true;
+    }
+
+    /**
+     * Whether every value of $input is one of $container. Shapes kept apart in $container hold only what one of them
+     * holds, not all their combined properties do.
+     */
+    private static function propertyHoldsProperty(Union $container, Union $input, Codebase $codebase): bool
+    {
+        $container_array = $container->getAtomicTypes()['array'] ?? null;
+
+        if ($container_array instanceof TKeyedArray && $container_array->disjoint_shapes !== null) {
+            $input_array = $input->getAtomicTypes()['array'] ?? null;
+
+            if ($input_array !== null) {
+                if (!$input_array instanceof TKeyedArray || $input_array->fallback_params !== null) {
+                    return false;
+                }
+
+                foreach ($input_array->getDisjointShapes() as $input_shape) {
+                    foreach ($container_array->disjoint_shapes as $container_shape) {
+                        if (self::shapeHoldsShape($container_shape, $input_shape, $codebase)) {
+                            continue 2;
+                        }
+                    }
+
+                    return false;
+                }
+
+                $input_rest = $input->getBuilder();
+                $input_rest->removeType('array');
+                if ($input_rest->isUnionEmpty()) {
+                    return true;
+                }
+                $input = $input_rest->freeze();
+            }
+
+            $container_rest = $container->getBuilder();
+            $container_rest->removeType('array');
+            if ($container_rest->isUnionEmpty()) {
+                return false;
+            }
+            $container = $container_rest->freeze();
+        }
+
+        return UnionTypeComparator::isContainedBy(
+            $codebase,
+            $input,
+            $container,
+            false,
+            false,
+            null,
+            false,
+            false,
+        );
     }
 
     /**

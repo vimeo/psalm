@@ -365,6 +365,101 @@ final class DisjointArrayShapesTest extends TestCase
                     '$x===' => 'array{a: float|int}|array{b: string}',
                 ],
             ],
+            'shapeOfNestedShapesIsNotHeldByTheirCombinedProperties' => [
+                'code' => '<?php
+                    /**
+                     * @return array{a: array{foo: int}|array{bar: string}, z?: int}|array{a: array{foo?: int, bar?: string}}|array{b: string}
+                     */
+                    function f(): array {
+                        return ["b" => ""];
+                    }
+
+                    $x = f();
+                    if (isset($x["z"])) {
+                        exit;
+                    }',
+                'assertions' => [
+                    '$x===' => 'array{a: array{bar?: string, foo?: int}}|array{b: string}',
+                ],
+            ],
+            'notIssetAsOneAlternativeKeepsTheShapeWithTheOffset' => [
+                'code' => '<?php
+                    /** @return array{a: int, tag: 1}|array{b: string, tag: 2} */
+                    function f(): array {
+                        return ["b" => "", "tag" => 2];
+                    }
+
+                    $x = f();
+                    $y = null;
+                    if (!isset($x["a"]) || $x["a"] === 1) {
+                        $y = $x;
+                    }',
+                'assertions' => [
+                    '$y===' => 'array{a: 1, tag: 1}|array{b: string, tag: 2}|null',
+                ],
+            ],
+            'negatedIssetAndComparisonKeepsTheShapeWithTheOffset' => [
+                'code' => '<?php
+                    /** @return array{a: int, tag: 1}|array{b: string, tag: 2} */
+                    function f(): array {
+                        return ["b" => "", "tag" => 2];
+                    }
+
+                    $x = f();
+                    if (isset($x["a"]) && $x["a"] !== 1) {
+                        exit;
+                    }',
+                'assertions' => [
+                    '$x===' => 'array{a: 1, tag: 1}|array{b: string, tag: 2}',
+                ],
+            ],
+            'keyDoesNotExistAsOneAlternativeKeepsTheShapeWithTheOffset' => [
+                'code' => '<?php
+                    /** @return array{a: int, tag: 1}|array{b: string, tag: 2} */
+                    function f(): array {
+                        return ["b" => "", "tag" => 2];
+                    }
+
+                    $x = f();
+                    $y = null;
+                    if (!array_key_exists("a", $x) || $x["a"] === 1) {
+                        $y = $x;
+                    }',
+                'assertions' => [
+                    '$y===' => 'array{a: 1, tag: 1}|array{b: string, tag: 2}|null',
+                ],
+            ],
+            'notIssetKeepsTheShapeWhoseMixedOffsetMayBeNull' => [
+                'code' => '<?php
+                    /** @return array{a: mixed, tag: 1}|array{b: string, tag: 2} */
+                    function f(): array {
+                        return ["b" => "", "tag" => 2];
+                    }
+
+                    $x = f();
+                    if (isset($x["a"])) {
+                        exit;
+                    }',
+                'assertions' => [
+                    '$x===' => 'array{a: null, tag: 1}|array{b: string, tag: 2}',
+                ],
+            ],
+            'truthyShapeWithMoreOptionalKeysThanShapesKeptApartStaysOneShape' => [
+                'code' => '<?php
+                    /** @return array{k0?: int, k1?: int, k2?: int, k3?: int, k4?: int, k5?: int, k6?: int, k7?: int, k8?: int} */
+                    function f(): array {
+                        return [];
+                    }
+
+                    $x = f();
+                    $y = null;
+                    if ($x) {
+                        $y = $x;
+                    }',
+                'assertions' => [
+                    '$y===' => 'array{k0?: int, k1?: int, k2?: int, k3?: int, k4?: int, k5?: int, k6?: int, k7?: int, k8?: int}|null',
+                ],
+            ],
             'unionOfShapesReturnedByAClosureIsInParentheses' => [
                 'code' => '<?php
                     /** @return Closure():(array{a: int}|array{b: string}) */

@@ -691,6 +691,11 @@ final class SimpleAssertionReconciler extends Reconciler
      */
     private static function getShapesWithAnItem(TKeyedArray $shape): Atomic
     {
+        // more shapes than are kept apart combine back into this one
+        if (count($shape->properties) > TypeCombiner::MAX_DISJOINT_SHAPES) {
+            return $shape;
+        }
+
         $shapes = [];
         foreach ($shape->properties as $key => $property) {
             $properties = $shape->properties;
