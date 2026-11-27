@@ -57,6 +57,27 @@ use function strtolower;
 final class MethodCallReturnTypeFetcher
 {
     /**
+     * An intersection with a final class can only be that class
+     */
+    public static function isFinalReceiver(Codebase $codebase, ?Atomic $static_type): bool
+    {
+        if (!$static_type instanceof TNamedObject) {
+            return false;
+        }
+
+        foreach ([$static_type, ...$static_type->extra_types] as $receiver_part) {
+            if ($receiver_part instanceof TNamedObject
+                && $codebase->classlike_storage_provider->has($receiver_part->value)
+                && $codebase->classlike_storage_provider->get($receiver_part->value)->final
+            ) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * @param  TNamedObject|TTemplateParam|null  $static_type
      * @param list<PhpParser\Node\Arg> $args
      */
@@ -83,6 +104,7 @@ final class MethodCallReturnTypeFetcher
 
         $class_storage = $codebase->methods->getClassLikeStorageForMethod($method_id);
         $method_storage = ($class_storage->methods[$method_id->method_name] ?? null);
+        $final_receiver = self::isFinalReceiver($codebase, $static_type);
 
         if ($stmt->isFirstClassCallable()) {
             if ($method_storage) {
@@ -102,8 +124,7 @@ final class MethodCallReturnTypeFetcher
                     $fq_class_name,
                     $static_type,
                     $class_storage->parent_class,
-                    $static_type instanceof TNamedObject
-                    && $codebase->classlike_storage_provider->get($static_type->value)->final,
+                    $final_receiver,
                     true,
                 );
             }
@@ -251,8 +272,7 @@ final class MethodCallReturnTypeFetcher
                         $class_storage->parent_class,
                         true,
                         false,
-                        $static_type instanceof TNamedObject
-                        && $codebase->classlike_storage_provider->get($static_type->value)->final,
+                        $final_receiver,
                         true,
                     );
                 }
@@ -273,8 +293,7 @@ final class MethodCallReturnTypeFetcher
                     $class_storage->parent_class,
                     true,
                     false,
-                    $static_type instanceof TNamedObject
-                    && $codebase->classlike_storage_provider->get($static_type->value)->final,
+                    $final_receiver,
                     true,
                 );
 

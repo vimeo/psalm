@@ -2693,7 +2693,7 @@ final class ConditionalReturnTypeTest extends TestCase
 
                     $tapped = named()->tap(fn ($_x): int => 1);',
                 'assertions' => [
-                    '$tapped===' => 'IBox&HasName',
+                    '$tapped===' => 'IBox&static&HasName',
                 ],
                 'ignored_issues' => ['InvalidArgument', 'MissingClosureParamType'],
             ],

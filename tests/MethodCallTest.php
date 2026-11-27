@@ -3563,6 +3563,35 @@ final class MethodCallTest extends TestCase
                     '$f===' => 'B<F>&F',
                 ],
             ],
+            'staticOnIntersectionReceiverWithFinalClass' => [
+                'code' => '<?php
+                    interface I {}
+                    interface J {}
+
+                    class P {
+                        /** @return static&I */
+                        public function si() {
+                            throw new Exception();
+                        }
+
+                        /** @return static&J */
+                        public function sj() {
+                            throw new Exception();
+                        }
+
+                        /** @return static */
+                        public function me() {
+                            throw new Exception();
+                        }
+                    }
+
+                    final class D extends P {}
+
+                    $d = (new D())->si()->sj()->me();',
+                'assertions' => [
+                    '$d===' => 'J&I&D',
+                ],
+            ],
             'staticKeptWhenSubstitutedIntoIntersection' => [
                 'code' => '<?php
                     /** @template T */
