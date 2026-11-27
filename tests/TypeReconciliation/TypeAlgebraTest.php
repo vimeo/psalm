@@ -5700,6 +5700,48 @@ final class TypeAlgebraTest extends TestCase
                         return 0;
                     }',
             ],
+            'orOfANegatedAndAPositiveDocblockArrayAssertionKeepsTheNonArrays' => [
+                'code' => '<?php
+                    /** @psalm-assert-if-true list<mixed> $x */
+                    function isList(mixed $x): bool {
+                        return is_array($x) && array_is_list($x);
+                    }
+
+                    /** @psalm-assert-if-true array<string, int> $x */
+                    function isMapInt(mixed $x): bool {
+                        return is_array($x);
+                    }
+
+                    /** @param array<array-key, mixed>|bool $x */
+                    function f(array|bool $x): void {
+                        if (!isList($x) || isMapInt($x)) {
+                            /** @psalm-check-type-exact $x = array<string, int>|bool */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'elseOfAnIfTrueIfFalseArrayAssertionKeepsTheNonArrays' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-assert-if-true list<string> $arg
+                     * @psalm-assert-if-false array<string, string> $arg
+                     */
+                    function is_list_or_map(mixed $arg): bool {
+                        return is_array($arg) && array_is_list($arg);
+                    }
+
+                    /** @param array<string, string>|list<string>|null $foo */
+                    function f($foo): void {
+                        if (!is_list_or_map($foo)) {
+                            /** @psalm-check-type-exact $foo = array<string, string>|null */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
         ];
     }
 

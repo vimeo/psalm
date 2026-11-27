@@ -7,6 +7,7 @@ namespace Psalm\Internal;
 use Psalm\Exception\ComplicatedExpressionException;
 use Psalm\Storage\Assertion;
 use Psalm\Storage\Assertion\IsType;
+use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TKeyedArray;
 use UnexpectedValueException;
@@ -431,10 +432,11 @@ final class Algebra
             }
 
             foreach ($anded_types as $key => $orred_types) {
-                // due to type collapsing, the negation of a specific array can't be applied: it is irrelevant next
-                // to an array type the variable is asserted to have, and otherwise the group says nothing, as
-                // dropping only the negation would narrow more than the condition allows. The negation of any
-                // array (`$a is list || $a is not array`) is applied.
+                // due to type collapsing, the negation of a specific array can't be applied: next to an array type
+                // the variable is asserted to have, it stands for what is not an array at all (the arrays it allows
+                // can't be told apart from that type), and otherwise the group says nothing, as dropping only the
+                // negation would narrow more than the condition allows. The negation of any array
+                // (`$a is list || $a is not array`) is applied.
                 $has_array_type = false;
                 $negated_array_indexes = [];
 
@@ -461,11 +463,11 @@ final class Algebra
                     continue;
                 }
 
-                foreach ($negated_array_indexes as $index) {
-                    unset($truths[$var][$key][$index]);
-                }
+                $not_an_array = (new IsType(new TArray([Type::getArrayKey(), Type::getMixed()])))->getNegation();
 
-                $truths[$var][$key] = array_values($truths[$var][$key]);
+                foreach ($negated_array_indexes as $index) {
+                    $truths[$var][$key][$index] = $not_an_array;
+                }
             }
         }
 
