@@ -3594,6 +3594,16 @@ final class MagicMethodAnnotationTest extends TestCase
                     PHP,
                 'error_message' => 'UndefinedFunction',
             ],
+            'methodParamFollowedByAnotherType' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @method void handle(int $value|string) */
+                    final class Handler {}
+                    PHP,
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:13 - '
+                    . 'handle(int $value|string) is not a valid method: Unexpected token | after the name of a '
+                    . 'parameter in docblock for Handler',
+            ],
         ];
     }
 

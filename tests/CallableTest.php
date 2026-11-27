@@ -6938,6 +6938,17 @@ final class CallableTest extends TestCase
                     }',
                 'error_message' => 'MixedArgumentTypeCoercion',
             ],
+            'callableParamFollowedByAnotherType' => [
+                'code' => '<?php
+                    /** @return Closure(int $value|string): void */
+                    function makeHandler(): Closure {
+                        return function (int|string $value): void {};
+                    }',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:21 - '
+                    . 'Unexpected token | after the name of a parameter in docblock for makeHandler',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 }
