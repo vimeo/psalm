@@ -627,8 +627,11 @@ final class IfAnalyzer
                 && self::isNarrowedMixed($codebase, $type, $outer_context->vars_in_scope[$var_id])
                 && !self::mayAssignAsAWhole($branch_nodes, $var_id, $statements_analyzer)
             ) {
+                // with the data flow of the branch only: where the variable keeps the nodes it had before, another
+                // way past the if keeps them, and when every other branch leaves, a type narrowed away from taints
+                // (see Reconciler) would get them back
                 $possibly_redefined_vars[$var_id] = $outer_context->vars_in_scope[$var_id]
-                    ->addParentNodes($type->parent_nodes);
+                    ->setParentNodes($type->parent_nodes);
             }
         }
 
