@@ -1277,7 +1277,7 @@ final class ArrayKeyExistsTest extends TestCase
                     if (array_key_exists("a", $a)) {
                         echo $a[0];
                     }',
-                'error_message' => 'PossiblyUndefinedArrayOffset',
+                'error_message' => 'InvalidArrayOffset',
             ],
             'possiblyUndefinedArrayAccessWithArrayKeyExistsOnMissingKey' => [
                 'code' => '<?php
@@ -1290,7 +1290,7 @@ final class ArrayKeyExistsTest extends TestCase
                     if (array_key_exists("b", $a)) {
                         echo $a[0];
                     }',
-                'error_message' => 'PossiblyUndefinedArrayOffset',
+                'error_message' => 'NoValue',
             ],
             'dontCreateWeirdString' => [
                 'code' => '<?php

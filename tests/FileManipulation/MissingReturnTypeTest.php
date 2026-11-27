@@ -793,7 +793,7 @@ final class MissingReturnTypeTest extends FileManipulationTestCase
                     /**
                      * @return string[]
                      *
-                     * @psalm-return array{a: \'goodbye\'|\'hello\', b?: \'hello again\'}
+                     * @psalm-return array{a: \'goodbye\', b: \'hello again\'}|array{a: \'hello\'}
                      */
                     function foo(): array {
                         return rand(0, 1) ? ["a" => "hello"] : ["a" => "goodbye", "b" => "hello again"];
@@ -918,7 +918,7 @@ final class MissingReturnTypeTest extends FileManipulationTestCase
                     /**
                      * @return string[]
                      *
-                     * @psalm-return array{a: \'goodbye\'|\'hello\', b?: \'hello again\'}
+                     * @psalm-return array{a: \'goodbye\'}|array{a: \'hello\', b: \'hello again\'}
                      */
                     function foo(): array {
                         if (rand(0, 1)) {

@@ -943,14 +943,14 @@ final class TypeCombinationTest extends TestCase
                 ],
             ],
             'combineObjectType1' => [
-                'array{a?: int, b?: string}',
+                'array{a: int}|array{b: string}',
                 [
                     'array{a: int}',
                     'array{b: string}',
                 ],
             ],
             'combineObjectType2' => [
-                'array{a: int|string, b?: string}',
+                'array{a: int}|array{a: string, b: string}',
                 [
                     'array{a: int}',
                     'array{a: string,b: string}',
@@ -985,7 +985,7 @@ final class TypeCombinationTest extends TestCase
                 ],
             ],
             'combinePossiblyUndefinedKeys' => [
-                'array{a: bool, b?: mixed, d?: mixed}',
+                'array{a: false, b: mixed}|array{a: true, d: mixed}',
                 [
                     'array{a: false, b: mixed}',
                     'array{a: true, d: mixed}',

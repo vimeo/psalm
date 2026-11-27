@@ -20,12 +20,15 @@ use Psalm\Type\Union;
 use Throwable;
 
 use function array_key_first;
+use function array_map;
 use function assert;
 use function count;
 use function implode;
 use function is_int;
 use function is_string;
 use function ksort;
+use function max;
+use function min;
 use function ord;
 use function preg_match;
 use function preg_replace_callback;
@@ -68,6 +71,36 @@ final class TKeyedArray extends Atomic
         bool $from_docblock = false,
     ) {
         parent::__construct($from_docblock);
+    }
+
+    /**
+     * The shapes this one is a union of, when one shape cannot say what they say together.
+     * The properties are then those of all of them, combined. Never holds less than two.
+     *
+     * @var non-empty-list<TKeyedArray>|null
+     */
+    public ?array $disjoint_shapes = null;
+
+    /**
+     * @param list<TKeyedArray> $disjoint_shapes
+     */
+    public function setDisjointShapes(array $disjoint_shapes): self
+    {
+        $disjoint_shapes = count($disjoint_shapes) > 1 ? $disjoint_shapes : null;
+        if ($disjoint_shapes === $this->disjoint_shapes) {
+            return $this;
+        }
+        $cloned = clone $this;
+        $cloned->disjoint_shapes = $disjoint_shapes;
+        return $cloned;
+    }
+
+    /**
+     * @return non-empty-list<TKeyedArray>
+     */
+    public function getDisjointShapes(): array
+    {
+        return $this->disjoint_shapes ?? [$this];
     }
 
     #[Override]
@@ -140,6 +173,7 @@ final class TKeyedArray extends Atomic
             return $this;
         }
         $cloned = clone $this;
+        $cloned->disjoint_shapes = null;
         $cloned->is_callable = $is_callable;
         return $cloned;
     }
@@ -162,6 +196,7 @@ final class TKeyedArray extends Atomic
             ], $this->from_docblock);
         }
         $cloned = clone $this;
+        $cloned->disjoint_shapes = null;
         $cloned->properties = $properties;
         if ($cloned->is_list) {
             $last_k = -1;
@@ -189,6 +224,7 @@ final class TKeyedArray extends Atomic
             return $this;
         }
         $cloned = clone $this;
+        $cloned->disjoint_shapes = null;
         $cloned->fallback_params = null;
         return $cloned;
     }
@@ -213,6 +249,15 @@ final class TKeyedArray extends Atomic
     #[Override]
     public function getId(bool $exact = true): string
     {
+        if ($this->disjoint_shapes !== null) {
+            $ids = array_map(
+                static fn(TKeyedArray $shape): string => $shape->getId($exact),
+                $this->disjoint_shapes,
+            );
+            sort($ids);
+            return implode('|', $ids);
+        }
+
         return $this->format(
             static fn(Union $type): string => $type->getId($exact),
             true,
@@ -236,6 +281,20 @@ final class TKeyedArray extends Atomic
                 $this_class,
                 true,
             );
+        }
+
+        if ($this->disjoint_shapes !== null) {
+            $shapes = array_map(
+                static fn(TKeyedArray $shape): string => $shape->toNamespacedString(
+                    $namespace,
+                    $aliased_classes,
+                    $this_class,
+                    false,
+                ),
+                $this->disjoint_shapes,
+            );
+            sort($shapes);
+            return implode('|', $shapes);
         }
 
         return $this->format(
@@ -440,7 +499,7 @@ final class TKeyedArray extends Atomic
 
         $value_type = $value_type->setPossiblyUndefined(false);
 
-        if ($has_defined_keys) {
+        if ($has_defined_keys || $this->isNonEmpty()) {
             return new TNonEmptyArray([$key_type, $value_type]);
         }
         return new TArray([$key_type, $value_type]);
@@ -448,6 +507,14 @@ final class TKeyedArray extends Atomic
 
     public function isNonEmpty(): bool
     {
+        if ($this->disjoint_shapes !== null) {
+            foreach ($this->disjoint_shapes as $shape) {
+                if (!$shape->isNonEmpty()) {
+                    return false;
+                }
+            }
+            return true;
+        }
         if ($this->isGenericList()) {
             return !$this->properties[0]->possibly_undefined;
         }
@@ -465,6 +532,12 @@ final class TKeyedArray extends Atomic
      */
     public function getMinCount(): int
     {
+        if ($this->disjoint_shapes !== null) {
+            return min(array_map(
+                static fn(TKeyedArray $shape): int => $shape->getMinCount(),
+                $this->disjoint_shapes,
+            ));
+        }
         if ($this->is_list) {
             foreach ($this->properties as $k => $property) {
                 if ($property->possibly_undefined || $property->isNever()) {
@@ -492,6 +565,17 @@ final class TKeyedArray extends Atomic
     {
         if ($this->fallback_params) {
             return null;
+        }
+        if ($this->disjoint_shapes !== null) {
+            $max_count = 1;
+            foreach ($this->disjoint_shapes as $shape) {
+                $shape_max_count = $shape->getMaxCount();
+                if ($shape_max_count === null) {
+                    return null;
+                }
+                $max_count = max($max_count, $shape_max_count);
+            }
+            return $max_count;
         }
         $prop_max_count = 0;
         foreach ($this->properties as $property) {
@@ -567,6 +651,7 @@ final class TKeyedArray extends Atomic
                 ], $this->from_docblock);
             }
             $cloned = clone $this;
+            $cloned->disjoint_shapes = null;
             $cloned->properties = [$replaced_list_type];
             $cloned->fallback_params = [$this->fallback_params[0], $replaced_list_type];
 
@@ -641,6 +726,7 @@ final class TKeyedArray extends Atomic
                 $never, $never,
             ], $this->from_docblock);
         }
+        $cloned->disjoint_shapes = null;
         $cloned->properties = $properties;
         $cloned->fallback_params = $fallback_params;
         return $cloned;
@@ -680,6 +766,7 @@ final class TKeyedArray extends Atomic
                     $never, $never,
                 ], $this->from_docblock);
             }
+            $cloned->disjoint_shapes = null;
             $cloned->properties = $properties;
             $cloned->fallback_params = $fallback_params;
             return $cloned;
@@ -693,7 +780,7 @@ final class TKeyedArray extends Atomic
     #[Override]
     protected function getChildNodeKeys(): array
     {
-        return ['properties', 'fallback_params'];
+        return ['properties', 'fallback_params', 'disjoint_shapes'];
     }
 
     #[Override]
@@ -721,6 +808,18 @@ final class TKeyedArray extends Atomic
             }
 
             if (!$this->fallback_params[1]->equals($other_type->fallback_params[1], false, false)) {
+                return false;
+            }
+        }
+
+        if (count($this->disjoint_shapes ?? []) !== count($other_type->disjoint_shapes ?? [])) {
+            return false;
+        }
+
+        foreach ($this->disjoint_shapes ?? [] as $i => $shape) {
+            if (!isset($other_type->disjoint_shapes[$i])
+                || !$shape->equals($other_type->disjoint_shapes[$i], $ensure_source_equality)
+            ) {
                 return false;
             }
         }

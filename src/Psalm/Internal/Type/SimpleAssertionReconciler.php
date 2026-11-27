@@ -687,6 +687,26 @@ final class SimpleAssertionReconciler extends Reconciler
     }
 
     /**
+     * A sealed shape with only optional keys that has an item has one of the keys: one shape for each of them.
+     */
+    private static function getShapesWithAnItem(TKeyedArray $shape): Atomic
+    {
+        // more shapes than are kept apart combine back into this one
+        if (count($shape->properties) > TypeCombiner::MAX_DISJOINT_SHAPES) {
+            return $shape;
+        }
+
+        $shapes = [];
+        foreach ($shape->properties as $key => $property) {
+            $properties = $shape->properties;
+            $properties[$key] = $property->setPossiblyUndefined(false);
+            $shapes[] = $shape->setProperties($properties);
+        }
+
+        return TypeCombiner::combine($shapes)->getSingleAtomic();
+    }
+
+    /**
      * @param NonEmptyCountable|HasAtLeastCount $assertion
      * @param   string[]  $suppressed_issues
      */
@@ -779,6 +799,10 @@ final class SimpleAssertionReconciler extends Reconciler
                         $existing_var_type->addType($array_atomic_type);
                     } else {
                         $redundant = false;
+                        if ($prop_min_count === 0) {
+                            $existing_var_type->removeType('array');
+                            $existing_var_type->addType(self::getShapesWithAnItem($array_atomic_type));
+                        }
                     }
                 } elseif ($array_atomic_type->is_list) {
                     if ($count <= $prop_min_count) {
@@ -2939,6 +2963,13 @@ final class SimpleAssertionReconciler extends Reconciler
                 $properties = $array_atomic_type->properties;
                 $properties[0] = $properties[0]->setPossiblyUndefined(false);
                 $types [] = $array_atomic_type->setProperties($properties);
+            } elseif ($array_atomic_type instanceof TKeyedArray
+                && !$array_atomic_type->is_list
+                && $array_atomic_type->fallback_params === null
+                && !$array_atomic_type->isNonEmpty()
+            ) {
+                unset($types['array']);
+                $types [] = self::getShapesWithAnItem($array_atomic_type);
             }
         }
 

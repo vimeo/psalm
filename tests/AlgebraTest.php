@@ -322,7 +322,6 @@ final class AlgebraTest extends TestCase
 
     public function testSimplifyCNFWithOneUselessTerm(): void
     {
-        /** @psalm-suppress ArgumentTypeCoercion due to Psalm bug */
         $formula = [
             new Clause(['$a' => ['!falsy' => new Truthy()], '$b' => ['!falsy' => new Truthy()]], 1, 1),
             new Clause(['$a' => ['falsy' => new Falsy()], '$b' => ['!falsy' => new Truthy()]], 1, 2),
@@ -350,7 +349,6 @@ final class AlgebraTest extends TestCase
 
     public function testSimplifyCNFWithUselessTermAndOneInMiddle(): void
     {
-        /** @psalm-suppress ArgumentTypeCoercion due to Psalm bug */
         $formula = [
             new Clause(['$a' => ['!falsy' => new Truthy()], '$b' => ['!falsy' => new Truthy()]], 1, 1),
             new Clause(['$b' => ['!falsy' => new Truthy()]], 1, 2),

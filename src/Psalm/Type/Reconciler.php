@@ -30,6 +30,7 @@ use Psalm\Internal\Type\AssertionReconciler;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
+use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\TypeVisitor\TemplateTypeCollector;
 use Psalm\Internal\TypeVisitor\TypeVariableResolver;
@@ -237,6 +238,9 @@ class Reconciler
             $has_truthy_or_falsy_or_empty = false;
             $has_empty = false;
             $has_count_check = false;
+            // a negated isset() or array_key_exists() that holds on its own, not as one alternative of a clause
+            $is_surely_not_set = false;
+            $is_surely_absent = false;
             $is_real = ($old_new_types[$key] ?? null) === $new_type_parts;
             $is_equality = $is_real;
 
@@ -271,6 +275,11 @@ class Reconciler
 
                     $has_count_check = $has_count_check
                         || $new_type_part_part instanceof NonEmptyCountable;
+
+                    if (count($new_type_part_parts) === 1) {
+                        $is_surely_not_set = $is_surely_not_set || $new_type_part_part instanceof IsNotIsset;
+                        $is_surely_absent = $is_surely_absent || $new_type_part_part instanceof ArrayKeyDoesNotExist;
+                    }
                 }
             }
 
@@ -544,7 +553,21 @@ class Reconciler
                 );
             }
 
-            if ($has_inverted_key_exists || $has_inverted_isset) {
+            if (($has_inverted_key_exists || $has_inverted_isset)
+                && !(str_ends_with($key, ']')
+                    && !$has_empty
+                    && !$is_equality
+                    && self::adjustDisjointShapes(
+                        self::breakUpPathIntoParts($key),
+                        $existing_types,
+                        $changed_var_ids,
+                        $result_type,
+                        $is_surely_not_set,
+                        $is_surely_absent,
+                        true,
+                        $codebase,
+                    ))
+            ) {
                 self::reconcileAbsentArrayValue(
                     $new_type_parts,
                     $key,
@@ -660,6 +683,20 @@ class Reconciler
                     : $result_type;
 
                 if (str_ends_with($key, ']')
+                    && !$has_empty
+                    && self::adjustDisjointShapes(
+                        $key_parts,
+                        $existing_types,
+                        $changed_var_ids,
+                        $result_type,
+                        $is_surely_not_set,
+                        $is_surely_absent,
+                        $has_inverted_isset || $has_inverted_key_exists,
+                        $codebase,
+                    )
+                ) {
+                    // each shape took what the offset says of it
+                } elseif (str_ends_with($key, ']')
                     && $array_value_type !== null
                     && !$has_inverted_key_exists
                     && !$has_empty
@@ -2893,6 +2930,121 @@ class Reconciler
         }
 
         return $result_type->setPossiblyUndefined($possibly_undefined);
+    }
+
+    /**
+     * Narrows a union of shapes by what is known of one offset: a shape that cannot have the offset so is left out.
+     * Returns false where the array is no union of shapes, or the offset is not a literal. $not_set and
+     * $key_does_not_exist hold where the negated isset() or array_key_exists() is a clause of its own, $may_be_unset
+     * where it is one alternative of a clause.
+     *
+     * @param  list<string>          $key_parts
+     * @param  array<string, Union>  $existing_types
+     * @param  array<string, bool>   $changed_var_ids
+     */
+    private static function adjustDisjointShapes(
+        array $key_parts,
+        array &$existing_types,
+        array &$changed_var_ids,
+        Union $result_type,
+        bool $not_set,
+        bool $key_does_not_exist,
+        bool $may_be_unset,
+        Codebase $codebase,
+    ): bool {
+        if (count($key_parts) < 4) {
+            return false;
+        }
+
+        $array_key = $key_parts[count($key_parts) - 2];
+        $base_key_parts = array_slice($key_parts, 0, -3);
+        $base_key = implode('', $base_key_parts);
+        $base_type = $existing_types[$base_key] ?? null;
+        $base_atomic_type = $base_type?->getAtomicTypes()['array'] ?? null;
+
+        if (!$base_type
+            || !$base_atomic_type instanceof TKeyedArray
+            || $base_atomic_type->disjoint_shapes === null
+        ) {
+            return false;
+        }
+
+        if ($array_key[0] === '\'' || $array_key[0] === '"') {
+            $offset = ExpressionIdentifier::unquoteOffset($array_key);
+        } elseif (preg_match('/^-?[0-9]+$/', $array_key) === 1) {
+            $offset = (int) $array_key;
+        } else {
+            return false;
+        }
+
+        if (!$not_set && !$key_does_not_exist && !$may_be_unset && $result_type->isNever()) {
+            return false;
+        }
+
+        $shapes = [];
+        foreach ($base_atomic_type->disjoint_shapes as $shape) {
+            $property = $shape->properties[$offset] ?? null;
+
+            if ($property === null) {
+                if ($not_set || $key_does_not_exist || $may_be_unset || $result_type->possibly_undefined) {
+                    $shapes[] = $shape;
+                }
+                continue;
+            }
+
+            // the offset may be unset or null here, and so is not narrowed by the other alternatives
+            if ($may_be_unset && !$not_set && !$key_does_not_exist
+                && ($property->possibly_undefined || self::mayHoldNull($property))
+            ) {
+                $shapes[] = $shape;
+                continue;
+            }
+
+            if ($not_set || $key_does_not_exist) {
+                if ($not_set && self::mayHoldNull($property)) {
+                    $properties = $shape->properties;
+                    $properties[$offset] = Type::getNull()->setPossiblyUndefined($property->possibly_undefined);
+                    $shapes[] = $shape->setProperties($properties);
+                } elseif ($property->possibly_undefined) {
+                    $properties = $shape->properties;
+                    unset($properties[$offset]);
+                    $shapes[] = $properties ? $shape->setProperties($properties) : Type::getEmptyArrayAtomic();
+                }
+                continue;
+            }
+
+            if (!UnionTypeComparator::canExpressionTypesBeIdentical($codebase, $property, $result_type)) {
+                continue;
+            }
+
+            $properties = $shape->properties;
+            $properties[$offset] = (UnionTypeComparator::isContainedBy($codebase, $property, $result_type)
+                ? $property
+                : $result_type
+            )->setPossiblyUndefined($property->possibly_undefined && $result_type->possibly_undefined);
+            $shapes[] = $shape->setProperties($properties);
+        }
+
+        $new_base_type = $base_type->getBuilder();
+        $new_base_type->removeType('array');
+
+        if ($shapes) {
+            foreach (TypeCombiner::combine($shapes, $codebase)->getAtomicTypes() as $atomic_type) {
+                $new_base_type->addType($atomic_type);
+            }
+        }
+
+        $new_base_type = $new_base_type->isUnionEmpty() ? Type::getNever() : $new_base_type->freeze();
+
+        $changed_var_ids[$base_key . '[' . $array_key . ']'] = true;
+
+        if (str_ends_with($base_key, ']')) {
+            self::adjustTKeyedArrayType($base_key_parts, $existing_types, $changed_var_ids, $new_base_type);
+        }
+
+        $existing_types[$base_key] = $new_base_type;
+
+        return true;
     }
 
     /**

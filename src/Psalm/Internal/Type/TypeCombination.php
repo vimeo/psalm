@@ -9,6 +9,7 @@ use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TIterable;
+use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
@@ -79,6 +80,13 @@ final class TypeCombination
     public array $objectlike_class_string_keys = [];
 
     public bool $objectlike_sealed = true;
+
+    /**
+     * The keyed arrays that were combined, or null when they cannot be kept apart.
+     *
+     * @var list<TKeyedArray>|null
+     */
+    public ?array $objectlike_shapes = [];
 
     public ?Union $objectlike_key_type = null;
 

@@ -35,6 +35,7 @@ use Psalm\Storage\Assertion\IsIsset;
 use Psalm\Storage\Assertion\IsLooselyEqual;
 use Psalm\Storage\Assertion\IsNotIdentical;
 use Psalm\Storage\Assertion\IsNotLooselyEqual;
+use Psalm\Storage\Assertion\IsType;
 use Psalm\Storage\Assertion\NestedAssertions;
 use Psalm\Storage\Assertion\NonEmpty;
 use Psalm\Storage\Assertion\NonEmptyCountable;
@@ -96,8 +97,10 @@ use function array_filter;
 use function array_intersect_key;
 use function array_keys;
 use function array_merge;
+use function array_pop;
 use function array_search;
 use function array_values;
+use function assert;
 use function count;
 use function is_nan;
 use function is_numeric;
@@ -111,6 +114,193 @@ use function strtolower;
  */
 final class AssertionReconciler extends Reconciler
 {
+    /**
+     * An assertion says of a union of shapes what it says of each of them.
+     *
+     * @param array<string, array<string, Union>> $template_type_map
+     * @param string[] $suppressed_issues
+     * @param-out Reconciler::RECONCILIATION_* $failed_reconciliation
+     */
+    private static function reconcileDisjointShapes(
+        Assertion $assertion,
+        Union $existing_var_type,
+        ?string $key,
+        StatementsAnalyzer $statements_analyzer,
+        bool $inside_loop,
+        array $template_type_map,
+        ?CodeLocation $code_location,
+        array $suppressed_issues,
+        ?int &$failed_reconciliation,
+        bool $negated,
+    ): Union {
+        $codebase = $statements_analyzer->getCodebase();
+        $array_type = $existing_var_type->getArray();
+        assert($array_type instanceof TKeyedArray);
+
+        // what there is to report is reported of the shapes as one
+        $merged_result_type = self::reconcileUnion(
+            $assertion,
+            $existing_var_type->getBuilder()->addType($array_type->setDisjointShapes([]))->freeze(),
+            $key,
+            $statements_analyzer,
+            $inside_loop,
+            $template_type_map,
+            $code_location,
+            $suppressed_issues,
+            $failed_reconciliation,
+            $negated,
+        );
+
+        if ($failed_reconciliation !== Reconciler::RECONCILIATION_OK) {
+            return $failed_reconciliation === Reconciler::RECONCILIATION_REDUNDANT
+                ? $existing_var_type
+                : $merged_result_type;
+        }
+
+        $result_type = null;
+        $shapes = $array_type->getDisjointShapes();
+        $changed = false;
+        $asserted_shapes = self::getAssertedSealedShapes($assertion);
+
+        foreach ($shapes as $shape) {
+            // the value is one of the shapes, and a sealed shape rules out those of no common key but the empty array
+            // both may be; a single shape asserted to be one of no common key still gets the keys of both (#3095)
+            if ($asserted_shapes !== []) {
+                $shares_a_key = false;
+                $both_may_be_empty = false;
+                foreach ($asserted_shapes as $asserted_shape) {
+                    if (array_intersect_key($shape->properties, $asserted_shape->properties)) {
+                        $shares_a_key = true;
+                        break;
+                    }
+
+                    $both_may_be_empty = $both_may_be_empty
+                        || (self::mayBeEmpty($shape) && self::mayBeEmpty($asserted_shape));
+                }
+
+                if (!$shares_a_key) {
+                    $changed = true;
+
+                    if ($both_may_be_empty) {
+                        $result_type = Type::combineUnionTypes(Type::getEmptyArray(), $result_type, $codebase);
+                    }
+
+                    continue;
+                }
+            }
+
+            $shape_failed_reconciliation = Reconciler::RECONCILIATION_OK;
+            $shape_type = $existing_var_type->getBuilder()->addType($shape)->freeze();
+            $shape_result_type = self::reconcileUnion(
+                $assertion,
+                $shape_type,
+                $key,
+                $statements_analyzer,
+                $inside_loop,
+                $template_type_map,
+                null,
+                $suppressed_issues,
+                $shape_failed_reconciliation,
+                $negated,
+            );
+
+            if ($shape_failed_reconciliation === Reconciler::RECONCILIATION_EMPTY
+                || $shape_result_type->isNever()
+                || $shape_result_type->isUnionEmpty()
+            ) {
+                $changed = true;
+                continue;
+            }
+
+            $changed = $changed || $shape_result_type->getId() !== $shape_type->getId();
+            $result_type = Type::combineUnionTypes($shape_result_type, $result_type, $codebase);
+        }
+
+        // no shape is narrowed: the assertion is redundant when it is for each of them
+        if (!$changed && $code_location && $key !== null) {
+            foreach ($shapes as $shape) {
+                IssueBuffer::startRecording();
+                self::reconcileUnion(
+                    $assertion,
+                    $existing_var_type->getBuilder()->addType($shape)->freeze(),
+                    $key,
+                    $statements_analyzer,
+                    $inside_loop,
+                    $template_type_map,
+                    $code_location,
+                    $suppressed_issues,
+                    $shape_failed_reconciliation,
+                    $negated,
+                );
+                $shape_issues = IssueBuffer::clearRecordingLevel();
+                IssueBuffer::stopRecording();
+
+                if (!$shape_issues) {
+                    return $result_type ?? $existing_var_type;
+                }
+            }
+
+            self::reconcileUnion(
+                $assertion,
+                $existing_var_type->getBuilder()->addType($shapes[0])->freeze(),
+                $key,
+                $statements_analyzer,
+                $inside_loop,
+                $template_type_map,
+                $code_location,
+                $suppressed_issues,
+                $failed_reconciliation,
+                $negated,
+            );
+
+            // the ids are equal, but the assertion may have changed a flag (`isset()` drops possibly_undefined)
+            return $result_type ?? $existing_var_type;
+        }
+
+        return $result_type ?? $merged_result_type;
+    }
+
+    /**
+     * The sealed shapes an assertion says the value is one of, or none when it allows anything else
+     *
+     * @return list<TKeyedArray>
+     * @psalm-pure
+     */
+    private static function getAssertedSealedShapes(Assertion $assertion): array
+    {
+        if (!$assertion instanceof IsType) {
+            return [];
+        }
+
+        $atomics = [$assertion->type];
+        $shapes = [];
+        while (($atomic = array_pop($atomics)) !== null) {
+            if ($atomic instanceof TTemplateParam) {
+                $atomics = [...$atomics, ...$atomic->as->getAtomicTypes()];
+            } elseif ($atomic instanceof TKeyedArray && $atomic->fallback_params === null) {
+                $shapes[] = $atomic;
+            } else {
+                return [];
+            }
+        }
+
+        return $shapes;
+    }
+
+    /**
+     * @psalm-pure
+     */
+    private static function mayBeEmpty(TKeyedArray $shape): bool
+    {
+        foreach ($shape->properties as $property) {
+            if (!$property->possibly_undefined) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     /**
      * Reconciles types
      *
@@ -135,6 +325,52 @@ final class AssertionReconciler extends Reconciler
         array $suppressed_issues = [],
         ?int &$failed_reconciliation = Reconciler::RECONCILIATION_OK,
         bool $negated = false,
+    ): Union {
+        if ($existing_var_type?->hasDisjointShapes()) {
+            return self::reconcileDisjointShapes(
+                $assertion,
+                $existing_var_type,
+                $key,
+                $statements_analyzer,
+                $inside_loop,
+                $template_type_map,
+                $code_location,
+                $suppressed_issues,
+                $failed_reconciliation,
+                $negated,
+            );
+        }
+
+        return self::reconcileUnion(
+            $assertion,
+            $existing_var_type,
+            $key,
+            $statements_analyzer,
+            $inside_loop,
+            $template_type_map,
+            $code_location,
+            $suppressed_issues,
+            $failed_reconciliation,
+            $negated,
+        );
+    }
+
+    /**
+     * @param   string[]            $suppressed_issues
+     * @param   array<string, array<string, Union>> $template_type_map
+     * @param-out Reconciler::RECONCILIATION_* $failed_reconciliation
+     */
+    private static function reconcileUnion(
+        Assertion $assertion,
+        ?Union $existing_var_type,
+        ?string $key,
+        StatementsAnalyzer $statements_analyzer,
+        bool $inside_loop,
+        array $template_type_map,
+        ?CodeLocation $code_location,
+        array $suppressed_issues,
+        ?int &$failed_reconciliation,
+        bool $negated,
     ): Union {
         $codebase = $statements_analyzer->getCodebase();
 

@@ -60,7 +60,7 @@ final class TIntersection extends Atomic
         return implode(
             '&',
             array_map(
-                static fn(Union $type): string => count($type->getAtomicTypes()) > 1
+                static fn(Union $type): string => count($type->getAtomicTypes()) > 1 || $type->hasDisjointShapes()
                     ? '(' . $type->getId($exact) . ')'
                     : $type->getId($exact),
                 $this->types,
