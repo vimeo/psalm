@@ -912,7 +912,7 @@ final class CallableTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
-            'instanceofAnInterfaceOfACallableIsPossible' => [
+            'instanceofAnInterfaceOnACallableIsPossible' => [
                 'code' => '<?php
                     interface ShutdownInterface {
                         public function reset(bool $s): void;
@@ -922,7 +922,17 @@ final class CallableTest extends TestCase
                         if ($fn instanceof ShutdownInterface) {
                             $fn->reset(true);
                         }
+                    }
+
+                    /** @param callable(string):(?string) $resolver */
+                    function g($resolver): void {
+                        if ($resolver instanceof ShutdownInterface) {
+                            $resolver->reset(false);
+                        }
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'callableCheckOfThisInAConstructorKeepsThePropertiesForAChild' => [
                 'code' => '<?php
