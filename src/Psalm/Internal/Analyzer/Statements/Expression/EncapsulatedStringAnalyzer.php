@@ -162,6 +162,7 @@ final class EncapsulatedStringAnalyzer
 
                         if ($string_context !== null) {
                             $removed_taints |= $string_context->getRemovedTaints();
+                            $position_removed_taints |= $string_context->getPositionRemovedTaints();
                             ConcatAnalyzer::addPositionSinksForExpression($statements_analyzer, $string_context, $part);
                         }
 

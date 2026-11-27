@@ -1833,6 +1833,7 @@ final class FunctionCallReturnTypeFetcher
                 : null;
 
             $position_removed_taints = 0;
+            $arg_position_removed_taints = [];
 
             if ($format_arg) {
                 $prefixes = [];
@@ -1877,6 +1878,8 @@ final class FunctionCallReturnTypeFetcher
                     $removed_from_arg = ($arg_removed_taints[$i] ?? 0) | $arg_context->getRemovedTaints();
                     unset($arg_removed_taints[$i]);
                     $arg_removed_taints[$param_offset] = $removed_from_arg;
+                    $arg_position_removed_taints[$param_offset] = ($arg_position_removed_taints[$param_offset] ?? 0)
+                        | $arg_context->getPositionRemovedTaints();
 
                     ConcatAnalyzer::addPositionSinksForExpression($statements_analyzer, $arg_context, $arg->value);
                 }
@@ -1894,6 +1897,7 @@ final class FunctionCallReturnTypeFetcher
                 $added_taints,
                 $arg_removed_taints,
                 $position_removed_taints,
+                $arg_position_removed_taints,
             );
         }
 
@@ -2169,6 +2173,8 @@ final class FunctionCallReturnTypeFetcher
      * @param array<int, PhpParser\Node\Arg> $args
      * @param int $input_taints the taints of user input (see Codebase::getInputTaints())
      * @param array<int, int> $arg_removed_taints the taints removed from the flows of some of $args only, by index
+     * @param array<int, int> $arg_position_removed_taints the taints the place of some of $args in the string returned
+     *   removes from them, by index (see TaintShadows)
      * @param int $position_removed_taints the taints the place of the values in the string returned removes from all
      *   of them (see TaintShadows)
      * @psalm-capabilities read-props|write-this-props|write-props|write-refs
@@ -2185,6 +2191,7 @@ final class FunctionCallReturnTypeFetcher
         int $added_taints = 0,
         array $arg_removed_taints = [],
         int $position_removed_taints = 0,
+        array $arg_position_removed_taints = [],
     ): void {
         foreach ($function_storage->return_source_params as $i => $path_type) {
             $arg_indices = self::callableArgIndices($function_storage->params, $args, $i);
@@ -2208,7 +2215,7 @@ final class FunctionCallReturnTypeFetcher
                     $removed_taints,
                     $added_taints,
                     $arg_removed_taints[$arg_index] ?? 0,
-                    $position_removed_taints,
+                    $position_removed_taints | ($arg_position_removed_taints[$arg_index] ?? 0),
                     self::getRestoredTaints($function_id, $args),
                 );
             }

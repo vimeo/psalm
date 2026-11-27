@@ -3190,6 +3190,18 @@ final class TaintTest extends TestCase
 
                     redirectTo(Config::$baseUrl . "?next=" . (string) $_GET["next"]);',
             ],
+            'redirectSinkAfterAQueryWithAnUnknownUrlBeforeIt' => [
+                'code' => '<?php
+                    final class Config { public static string $baseUrl = ""; }
+
+                    /** @psalm-taint-sink redirect $url */
+                    function redirectTo(string $url): void {}
+
+                    $next = (string) $_GET["next"];
+                    $query = "?next={$next}";
+                    redirectTo(Config::$baseUrl . $query);
+                    redirectTo(Config::$baseUrl . "#{$next}");',
+            ],
             'sessionItemStoredButNeverRead' => [
                 'code' => '<?php
                     $_SESSION["user"] = $_GET["user"];',
@@ -10084,6 +10096,25 @@ final class TaintTest extends TestCase
                     // `&admin=1` changes the query of the URL
                     header("Location: " . Config::$baseUrl . "?page=" . (string) $_GET["page"]);',
                 'error_message' => 'TaintedUrlComponent',
+            ],
+            'redirectSinkAfterAQueryOfAnUnknownUrlCutBySubstr' => [
+                'code' => '<?php
+                    final class Config { public static string $baseUrl = ""; }
+
+                    /** @psalm-taint-sink redirect $url */
+                    function redirectTo(string $url): void {}
+
+                    // substr() cuts off the `?`
+                    redirectTo(substr(Config::$baseUrl . "?" . (string) $_GET["next"], 1));',
+                'error_message' => 'TaintedRedirect',
+            ],
+            'redirectSinkAfterAFormattedQueryCutBySubstr' => [
+                'code' => '<?php
+                    /** @psalm-taint-sink redirect $url */
+                    function redirectTo(string $url): void {}
+
+                    redirectTo(substr(sprintf("?%s", (string) $_GET["next"]), 1));',
+                'error_message' => 'TaintedRedirect',
             ],
             'locationHeaderOfAQueryAlone' => [
                 'code' => '<?php

@@ -724,7 +724,8 @@ final class BinaryOpAnalyzer
         // After the start of a URL fixing its server (the left operand's, and the right operand's own literal start
         // when the left operand is a literal), the right operand can't choose it. What the right operand's own start
         // fixed holds only if nothing is put before it (see TaintShadows).
-        $right_position_removed_taints = ConcatAnalyzer::getTaintsRemovedAfterUrlOrigins($literal_prefixes);
+        $right_position_removed_taints = ConcatAnalyzer::getTaintsRemovedAfterUrlOrigins($literal_prefixes)
+            | $left_context->getPositionRemovedTaints();
         $left_type = $statements_analyzer->node_data->getType($stmt->left);
         $right_restored_taints = $left_type
             && $left_type->allStringLiterals()

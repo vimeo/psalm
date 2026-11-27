@@ -251,17 +251,26 @@ final class StringContext
 
     /**
      * The taints a value embedded here loses: SQL syntax outside quotes, unless the value is known to be outside
-     * SQL quotes (where that isn't known, the escaping of the value is trusted), and after a literal `?` or `#`, the
-     * host and the path of a URL.
+     * SQL quotes. Where that isn't known, the escaping of the value is trusted.
      *
      * @psalm-mutation-free
      */
     public function getRemovedTaints(): int
     {
-        return ($this->sql === self::SQL_OUTSIDE || $this->sql === self::SQL_BACKTICKED
-                ? 0
-                : TaintKind::INPUT_SQL_UNQUOTED)
-            | ($this->after_query ? TaintKind::INPUT_REDIRECT | TaintKind::INPUT_URL_PATH : 0);
+        return $this->sql === self::SQL_OUTSIDE || $this->sql === self::SQL_BACKTICKED
+            ? 0
+            : TaintKind::INPUT_SQL_UNQUOTED;
+    }
+
+    /**
+     * The taints a value embedded here loses while it stays here (see TaintShadows): after a literal `?` or `#`, the
+     * host and the path of a URL. Text put before the string doesn't move them, but a builtin cutting it can.
+     *
+     * @psalm-mutation-free
+     */
+    public function getPositionRemovedTaints(): int
+    {
+        return $this->after_query ? TaintKind::INPUT_REDIRECT | TaintKind::INPUT_URL_PATH : 0;
     }
 
     /**
