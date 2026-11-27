@@ -2248,6 +2248,10 @@ final class ArrayAssignmentAnalyzer
                 }
 
                 if ($key !== $written_key) {
+                    if (self::isDifferentLiteralKey($key, $written_key_type)) {
+                        continue 2;
+                    }
+
                     $key_types[$key] ??= self::getArrayKeysOfOffsetType(
                         self::getTypeOfOffset($context, substr($key, 1, -1)),
                     );
@@ -2271,6 +2275,34 @@ final class ArrayAssignmentAnalyzer
                 $context->removeVarFromConflictingClauses($var_id);
             }
         }
+    }
+
+    /**
+     * Whether the offset of a var id is a literal key that differs from the only key the written offset may be:
+     * those two never alias, which spares comparing their types
+     *
+     * @psalm-pure
+     */
+    private static function isDifferentLiteralKey(string $offset_key, Union $written_key_type): bool
+    {
+        if (!$written_key_type->isSingle()) {
+            return false;
+        }
+
+        $written_atomic = $written_key_type->getSingleAtomic();
+
+        if ($written_atomic instanceof TLiteralInt) {
+            $written_key = $written_atomic->value;
+        } elseif ($written_atomic instanceof TLiteralString) {
+            $int_key = ArrayAnalyzer::getLiteralArrayKeyInt($written_atomic->value);
+            $written_key = $int_key === false ? $written_atomic->value : $int_key;
+        } else {
+            return false;
+        }
+
+        $literal_key = self::getLiteralKeyOfOffset(substr($offset_key, 1, -1));
+
+        return $literal_key !== null && $literal_key !== $written_key;
     }
 
     /**
