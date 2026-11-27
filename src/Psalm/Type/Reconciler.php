@@ -103,6 +103,7 @@ use function is_numeric;
 use function is_string;
 use function key;
 use function ksort;
+use function min;
 use function preg_match;
 use function preg_quote;
 use function reset;
@@ -2829,6 +2830,26 @@ class Reconciler
 
         $base_key = implode('', $key_parts);
 
+        // a list that has an offset has all the offsets before it: when the offset can be several keys, a list has
+        // all the offsets up to the smallest one it can have
+        $key_is_set = !$result_type->possibly_undefined && !$result_type->isNever();
+        $last_list_offset_set = null;
+        if (count($array_key_offsets) === 1 ? !$result_type->isNever() : $key_is_set) {
+            foreach ($array_key_offsets as $array_key_offset) {
+                $int_array_key_offset = ArrayAnalyzer::getLiteralArrayKeyInt($array_key_offset);
+                if ($int_array_key_offset === false) {
+                    $last_list_offset_set = null;
+                    break;
+                }
+                if ($int_array_key_offset < 0) {
+                    continue;
+                }
+                $last_list_offset_set = $last_list_offset_set === null
+                    ? $int_array_key_offset
+                    : min($last_list_offset_set, $int_array_key_offset);
+            }
+        }
+
         $result_type = $result_type->setPossiblyUndefined(
             $result_type->possibly_undefined || count($array_key_offsets) > 1,
         );
@@ -2841,6 +2862,17 @@ class Reconciler
                         && !$base_atomic_type->isEmptyArray())
                     || $base_atomic_type instanceof TClassStringMap
                     ) {
+                        // a list has no negative key, so the offset is one of the others
+                        if ($base_atomic_type instanceof TKeyedArray
+                            && $base_atomic_type->is_list
+                            && count($array_key_offsets) > 1
+                            && ($int_array_key_offset = ArrayAnalyzer::getLiteralArrayKeyInt($array_key_offset))
+                                !== false
+                            && $int_array_key_offset < 0
+                        ) {
+                            break;
+                        }
+
                         $new_base_type = $existing_types[$base_key];
 
                         // a key the array always has cannot be left without a value: no array of that shape can be
@@ -2868,18 +2900,20 @@ class Reconciler
 
                             // only one of the keys the offset can be holds what the assertion says, and which one is
                             // not known: the items it may be keep the types they have
-                            if (count($array_key_offsets) === 1 || !isset($properties[$array_key_offset])) {
+                            if (count($array_key_offsets) === 1) {
                                 $properties[$array_key_offset] = $result_type;
+                            } elseif (!isset($properties[$array_key_offset])) {
+                                // a list has the item at the smallest key whichever key the offset is
+                                $properties[$array_key_offset] = $base_atomic_type->is_list
+                                    && $base_atomic_type->fallback_params
+                                    && $last_list_offset_set !== null
+                                    && ArrayAnalyzer::getLiteralArrayKeyInt($array_key_offset) === $last_list_offset_set
+                                    ? $base_atomic_type->fallback_params[1]
+                                    : $result_type;
                             }
 
-                            // a list that has an offset has all the offsets before it
-                            if ($base_atomic_type->is_list
-                                && !$result_type->possibly_undefined
-                                && !$result_type->isNever()
-                                && ($int_array_key_offset = ArrayAnalyzer::getLiteralArrayKeyInt($array_key_offset))
-                                    !== false
-                            ) {
-                                for ($x = 0; $x < $int_array_key_offset; $x++) {
+                            if ($base_atomic_type->is_list && $key_is_set && $last_list_offset_set !== null) {
+                                for ($x = 0; $x <= $last_list_offset_set; $x++) {
                                     if (isset($properties[$x]) && $properties[$x]->possibly_undefined) {
                                         $properties[$x] = $properties[$x]->isNever()
                                             && $base_atomic_type->fallback_params
@@ -2899,11 +2933,11 @@ class Reconciler
                             ) {
                                 if ($base_atomic_type->fallback_params
                                     && ArrayAnalyzer::getLiteralArrayKeyInt($array_key_offset) !== false) {
-                                    $fallback = $base_atomic_type->fallback_params[1]->setPossiblyUndefined(
-                                        $result_type->isNever(),
-                                    );
+                                    $fallback = $base_atomic_type->fallback_params[1];
                                     for ($x = 0; $x < $array_key_offset; $x++) {
-                                        $properties[$x] ??= $fallback;
+                                        $properties[$x] ??= $fallback->setPossiblyUndefined(
+                                            $last_list_offset_set === null || $x > $last_list_offset_set,
+                                        );
                                     }
                                     ksort($properties);
                                     $base_atomic_type = $base_atomic_type->setProperties($properties);
