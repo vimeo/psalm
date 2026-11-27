@@ -1041,6 +1041,11 @@ final class MethodCallPurityAnalyzer
             $type = Type::combineUnionTypes($result->property_types_after_call[$property_id], $type);
         }
 
+        // what it held may still be there, as the data flow of taint analysis sees it
+        if (isset($context->vars_in_scope[$property_id])) {
+            $type = $type->addParentNodes($context->vars_in_scope[$property_id]->parent_nodes);
+        }
+
         $result->property_types_after_call[$property_id] = $type;
         $result->property_writer_counts[$property_id] = ($result->property_writer_counts[$property_id] ?? 0) + 1;
         $context->vars_in_scope[$property_id] = $type;
@@ -1390,8 +1395,11 @@ final class MethodCallPurityAnalyzer
             $declared_type = self::getTypeAfterItemWrites($codebase, $type_before, $declared_type);
         }
 
-        // assigned rather than forgotten, so that it holds this type after the branches of a condition too
-        $context->vars_in_scope[$property_id] = $declared_type;
+        // assigned rather than forgotten, so that it holds this type after the branches of a condition too; what it
+        // held may still be there, as the data flow of taint analysis sees it
+        $context->vars_in_scope[$property_id] = $type_before !== null
+            ? $declared_type->addParentNodes($type_before->parent_nodes)
+            : $declared_type;
         $context->possibly_assigned_var_ids[$property_id] = true;
     }
 
