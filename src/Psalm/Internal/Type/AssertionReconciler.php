@@ -162,19 +162,28 @@ final class AssertionReconciler extends Reconciler
         $asserted_shapes = self::getAssertedSealedShapes($assertion);
 
         foreach ($shapes as $shape) {
-            // the value is one of the shapes, and a sealed shape rules out those of no common key; a single shape
-            // asserted to be one of no common key still gets the keys of both (#3095)
+            // the value is one of the shapes, and a sealed shape rules out those of no common key but the empty array
+            // both may be; a single shape asserted to be one of no common key still gets the keys of both (#3095)
             if ($asserted_shapes !== []) {
                 $shares_a_key = false;
+                $both_may_be_empty = false;
                 foreach ($asserted_shapes as $asserted_shape) {
                     if (array_intersect_key($shape->properties, $asserted_shape->properties)) {
                         $shares_a_key = true;
                         break;
                     }
+
+                    $both_may_be_empty = $both_may_be_empty
+                        || (self::mayBeEmpty($shape) && self::mayBeEmpty($asserted_shape));
                 }
 
                 if (!$shares_a_key) {
                     $changed = true;
+
+                    if ($both_may_be_empty) {
+                        $result_type = Type::combineUnionTypes(Type::getEmptyArray(), $result_type, $codebase);
+                    }
+
                     continue;
                 }
             }
@@ -275,6 +284,20 @@ final class AssertionReconciler extends Reconciler
         }
 
         return $shapes;
+    }
+
+    /**
+     * @psalm-pure
+     */
+    private static function mayBeEmpty(TKeyedArray $shape): bool
+    {
+        foreach ($shape->properties as $property) {
+            if (!$property->possibly_undefined) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**

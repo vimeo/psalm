@@ -34,6 +34,40 @@ final class DisjointArrayShapesTest extends TestCase
                     '$x===' => 'array{a: int}|array{b: string}',
                 ],
             ],
+            'sealedAssertedShapeOfNoCommonKeyKeepsTheEmptyArrayBothMayBe' => [
+                'code' => '<?php
+                    /** @psalm-assert-if-true array{b?: string} $v */
+                    function isB(array $v): bool {
+                        return $v === [] || isset($v["b"]);
+                    }
+
+                    /** @param array{a?: int}|array{b: string} $x */
+                    function f(array $x): void {
+                        if (isB($x)) {
+                            /** @psalm-check-type-exact $x = array{b?: string} */;
+                            if ($x === []) {}
+                        }
+                    }',
+            ],
+            'shapeOfListKeysIsNotHeldByTheListOfThem' => [
+                'code' => '<?php
+                    /** @return list{int, string}|array{0: int, 1: string}|array{a: bool} */
+                    function f(): array {
+                        return [1, "x"];
+                    }
+
+                    /** @return array{0: int, 1: string}|list{int, string}|array{a: bool} */
+                    function g(): array {
+                        return [1, "x"];
+                    }
+
+                    $x = f();
+                    $y = g();',
+                'assertions' => [
+                    '$x===' => 'array{0: int, 1: string}|array{a: bool}',
+                    '$y===' => 'array{0: int, 1: string}|array{a: bool}',
+                ],
+            ],
             'branchesAssigningDifferentShapesAreKeptApart' => [
                 'code' => '<?php
                     $x = rand(0, 1) ? ["a" => 1] : ["b" => "x"];',
