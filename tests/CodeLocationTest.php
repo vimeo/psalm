@@ -198,6 +198,26 @@ final class CodeLocationTest extends BaseTestCase
         $this->assertSame(5, $location->getColumn());
     }
 
+    public function testCommentLineSelectionOnAnIndentedLineWithoutATag(): void
+    {
+        $contents = "<?php\nclass A {\n    #[DataProvider('provider')]\n    public function testFoo(): void {}\n}\n";
+        $location = $this->locateWithCommentLine($contents, 'testFoo', 4, 3, null, null);
+
+        $this->assertSame("#[DataProvider('provider')]", $location->getSelectedText());
+        $this->assertSame(3, $location->getLineNumber());
+        $this->assertSame(5, $location->getColumn());
+        $this->assertSame(32, $location->getEndColumn());
+    }
+
+    public function testCommentLineSelectionOnATabIndentedLineWithoutATag(): void
+    {
+        $contents = "<?php\nclass A {\n\t#[Attr]\n\tpublic function f(): void {}\n}\n";
+        $location = $this->locateWithCommentLine($contents, 'f(', 4, 3, null, null);
+
+        $this->assertSame('#[Attr]', $location->getSelectedText());
+        $this->assertSame(2, $location->getColumn());
+    }
+
     private function locateWithCommentLine(
         string $contents,
         string $selection,
