@@ -2745,6 +2745,54 @@ final class IssetTest extends TestCase
                 'ignored_issues' => ['RedundantCondition', 'RedundantConditionGivenDocblockType', 'TypeDoesNotContainType'],
                 'php_version' => '8.1',
             ],
+            'assertionOnAListItemWithAUnionKeyOnlyRequiresTheItemsUpToTheSmallestKey' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param list<array{string}|string> $l */
+                    function bigFirst(array $l, bool $b): void {
+                        $i = $b ? 5 : 2;
+                        if (is_array($l[$i])) {
+                            /** @psalm-check-type-exact $l = list{0: list{string}|string, 1: list{string}|string, 2: list{string}|string, 3?: list{string}|string, 4?: list{string}|string, 5?: list{string}|string, ...<list{string}|string>} */
+                        }
+                    }
+
+                    /** @param list<array{string}|string> $l */
+                    function smallFirst(array $l, bool $b): void {
+                        $i = $b ? 2 : 5;
+                        if (is_array($l[$i])) {
+                            /** @psalm-check-type-exact $l = list{0: list{string}|string, 1: list{string}|string, 2: list{string}|string, 3?: list{string}|string, 4?: list{string}|string, 5?: list{string}|string, ...<list{string}|string>} */
+                        }
+                    }
+
+                    /** @param list<string> $l */
+                    function issetBigFirst(array $l, bool $b): void {
+                        $i = $b ? 5 : 2;
+                        if (isset($l[$i])) {
+                            /** @psalm-check-type-exact $l = list{0: string, 1: string, 2: string, 3?: string, 4?: string, 5?: string, ...<string>} */
+                        }
+                    }
+
+                    /** @param list<string> $l */
+                    function notIsset(array $l, bool $b): void {
+                        $i = $b ? 5 : 2;
+                        if (!isset($l[$i])) {
+                            /** @psalm-check-type-exact $l = list<string> */
+                        }
+                    }
+                    PHP,
+            ],
+            'assertionOnAnArrayItemWithAUnionKeyKeepsTheValueTypeOfEachKey' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array<string, int|string> $a */
+                    function f(array $a, bool $b): void {
+                        $k = $b ? 'x' : 'y';
+                        if (is_int($a[$k])) {
+                            /** @psalm-check-type-exact $a = array{x?: int|string, y?: int|string, ...<string, int|string>} */
+                        }
+                    }
+                    PHP,
+            ],
             'comparisonOfAnItemWithAUnionKeyKeepsTheOtherItemsDefined' => [
                 'code' => <<<'PHP'
                     <?php
@@ -3277,6 +3325,20 @@ final class IssetTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'listItemAfterTheSmallestKeyOfAUnionKeyAssertionIsPossiblyUndefined' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param list<string> $l */
+                    function f(array $l, bool $b): string {
+                        $i = $b ? 5 : 2;
+                        if (isset($l[$i])) {
+                            return $l[4];
+                        }
+                        return '';
+                    }
+                    PHP,
+                'error_message' => 'PossiblyUndefinedArrayOffset',
+            ],
             'appendUnderAnIntOffsetOfADeclaredStringCheckedWithIssetIsReported' => [
                 'code' => '<?php
                     /** @param array{x: non-empty-array|non-empty-string|ArrayAccess} $a */

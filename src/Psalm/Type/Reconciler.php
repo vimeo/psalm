@@ -103,6 +103,7 @@ use function is_numeric;
 use function is_string;
 use function key;
 use function ksort;
+use function min;
 use function preg_match;
 use function preg_quote;
 use function reset;
@@ -2829,6 +2830,23 @@ class Reconciler
 
         $base_key = implode('', $key_parts);
 
+        // a list that has an offset has all the offsets before it: when the offset can be several keys, a list has
+        // all the offsets up to the smallest one
+        $key_is_set = !$result_type->possibly_undefined && !$result_type->isNever();
+        $last_list_offset_set = null;
+        if (count($array_key_offsets) === 1 ? !$result_type->isNever() : $key_is_set) {
+            foreach ($array_key_offsets as $array_key_offset) {
+                $int_array_key_offset = ArrayAnalyzer::getLiteralArrayKeyInt($array_key_offset);
+                if ($int_array_key_offset === false) {
+                    $last_list_offset_set = null;
+                    break;
+                }
+                $last_list_offset_set = $last_list_offset_set === null
+                    ? $int_array_key_offset
+                    : min($last_list_offset_set, $int_array_key_offset);
+            }
+        }
+
         $result_type = $result_type->setPossiblyUndefined(
             $result_type->possibly_undefined || count($array_key_offsets) > 1,
         );
@@ -2856,7 +2874,10 @@ class Reconciler
 
                             $base_atomic_type = TKeyedArray::make(
                                 [
-                                $array_key_offset => $result_type,
+                                $array_key_offset => count($array_key_offsets) === 1
+                                    ? $result_type
+                                    : Type::combineUnionTypes($fallback_value_type, $result_type)
+                                        ->setPossiblyUndefined(true),
                                 ],
                                 null,
                                 $fallback_key_type->isNever() ? null : [$fallback_key_type, $fallback_value_type],
@@ -2868,18 +2889,19 @@ class Reconciler
 
                             // only one of the keys the offset can be holds what the assertion says, and which one is
                             // not known: the items it may be keep the types they have
-                            if (count($array_key_offsets) === 1 || !isset($properties[$array_key_offset])) {
+                            if (count($array_key_offsets) === 1) {
                                 $properties[$array_key_offset] = $result_type;
+                            } elseif (!isset($properties[$array_key_offset])) {
+                                $properties[$array_key_offset] = $base_atomic_type->fallback_params
+                                    ? Type::combineUnionTypes(
+                                        $base_atomic_type->fallback_params[1],
+                                        $result_type,
+                                    )->setPossiblyUndefined(true)
+                                    : $result_type;
                             }
 
-                            // a list that has an offset has all the offsets before it
-                            if ($base_atomic_type->is_list
-                                && !$result_type->possibly_undefined
-                                && !$result_type->isNever()
-                                && ($int_array_key_offset = ArrayAnalyzer::getLiteralArrayKeyInt($array_key_offset))
-                                    !== false
-                            ) {
-                                for ($x = 0; $x < $int_array_key_offset; $x++) {
+                            if ($base_atomic_type->is_list && $key_is_set && $last_list_offset_set !== null) {
+                                for ($x = 0; $x <= $last_list_offset_set; $x++) {
                                     if (isset($properties[$x]) && $properties[$x]->possibly_undefined) {
                                         $properties[$x] = $properties[$x]->isNever()
                                             && $base_atomic_type->fallback_params
@@ -2899,11 +2921,11 @@ class Reconciler
                             ) {
                                 if ($base_atomic_type->fallback_params
                                     && ArrayAnalyzer::getLiteralArrayKeyInt($array_key_offset) !== false) {
-                                    $fallback = $base_atomic_type->fallback_params[1]->setPossiblyUndefined(
-                                        $result_type->isNever(),
-                                    );
+                                    $fallback = $base_atomic_type->fallback_params[1];
                                     for ($x = 0; $x < $array_key_offset; $x++) {
-                                        $properties[$x] ??= $fallback;
+                                        $properties[$x] ??= $fallback->setPossiblyUndefined(
+                                            $last_list_offset_set === null || $x > $last_list_offset_set,
+                                        );
                                     }
                                     ksort($properties);
                                     $base_atomic_type = $base_atomic_type->setProperties($properties);
