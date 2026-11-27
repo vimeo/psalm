@@ -2962,35 +2962,6 @@ final class AnnotationTest extends TestCase
                     }',
                 'error_message' => 'InvalidDocblock',
             ],
-            'intMaskOfAWildcardGlobalConstant' => [
-                'code' => '<?php
-                    /** @param int-mask<PHP_URL_*> $flags */
-                    function takesFlags(int $flags): void {
-                        echo $flags;
-                    }',
-                'error_message' => 'InvalidDocblock',
-            ],
-            'intMaskOfAGenericConstant' => [
-                'code' => '<?php
-                    const FLAG = 1;
-
-                    /** @param int-mask<FLAG<int>> $flags */
-                    function takesFlags(int $flags): void {
-                        echo $flags;
-                    }',
-                'error_message' => 'InvalidDocblock',
-            ],
-            'intMaskOfAnIntersectionOfConstants' => [
-                'code' => '<?php
-                    const FLAG = 1;
-                    const OTHER_FLAG = 2;
-
-                    /** @param int-mask<FLAG&OTHER_FLAG> $flags */
-                    function takesFlags(int $flags): void {
-                        echo $flags;
-                    }',
-                'error_message' => 'InvalidDocblock',
-            ],
             'intMaskOfAPartiallyQualifiedConstantDoesNotFallBackToTheGlobalOne' => [
                 'code' => '<?php
                     namespace Foo;

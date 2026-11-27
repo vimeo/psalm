@@ -1272,10 +1272,9 @@ final class TypeParser
 
                 $atomic_type = reset($generic_param_atomics);
 
-                // a generic or an intersection is not the name of a global constant
+                // only a bare name is the name of a global constant, not a generic, an intersection or a callable
                 if ($atomic_type instanceof TNamedObject
-                    && !$atomic_type instanceof TGenericObject
-                    && !$atomic_type->extra_types
+                    && ($parse_tree->children[$generic_param_offset] ?? null) instanceof Value
                 ) {
                     if (defined($atomic_type->value)) {
                         // silenced, as reading a deprecated constant (ASSERT_ACTIVE) emits E_DEPRECATED
