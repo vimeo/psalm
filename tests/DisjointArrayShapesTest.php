@@ -472,6 +472,48 @@ final class DisjointArrayShapesTest extends TestCase
                     '$c===' => 'Closure[impure]():(array{a: int}|array{b: string})',
                 ],
             ],
+            'itemsWrittenKeyByKeyInALoopAreOneShape' => [
+                'code' => '<?php
+                    /** @var list<array{k: string, c: string, t: string, u: bool}> $rows */
+                    $rows = [];
+                    $ary = [];
+                    foreach ($rows as $row) {
+                        $ary[$row["k"]]["a"] = $row["c"];
+                        $ary[$row["k"]]["b"] = $row["u"];
+                        $ary[$row["k"]]["c"] = $row["t"];
+                    }
+
+                    foreach ($ary as $data) {
+                    }',
+                'assertions' => [
+                    '$ary===' => 'array<string, array{a: string, b: bool, c: string}>',
+                ],
+            ],
+            'itemsWrittenKeyByKeyInTwoLevelsOfNonLiteralKeysAreOneShape' => [
+                'code' => '<?php
+                    /** @var string $k */
+                    $k = "x";
+                    /** @var string $m */
+                    $m = "y";
+                    $ary = [];
+                    $ary[$k][$m]["a"] = 1;
+                    $ary[$k][$m]["b"] = 2;
+                    $ary[$k][$m]["c"] = 3;',
+                'assertions' => [
+                    '$ary===' => 'non-empty-array<string, non-empty-array<string, array{a: 1, b: 2, c?: 3}>>',
+                ],
+            ],
+            'unionOfShapesOfAnArrayIsKeptWhenAnotherKeyIsWritten' => [
+                'code' => '<?php
+                    /** @var array<string, array{a: int}|array{b: string}> $ary */
+                    $ary = [];
+                    /** @var string $k */
+                    $k = "x";
+                    $ary[$k] = ["a" => 1];',
+                'assertions' => [
+                    '$ary===' => 'non-empty-array<string, array{a: int}|array{b: string}>',
+                ],
+            ],
             'countIsNotRedundantWhenOneShapeMayHaveFewerItems' => [
                 'code' => '<?php
                     /** @param array{a: int, b: int}|array{c: int, d?: int, e?: int} $x */

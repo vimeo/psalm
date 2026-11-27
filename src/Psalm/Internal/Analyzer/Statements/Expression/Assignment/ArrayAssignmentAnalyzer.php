@@ -28,6 +28,8 @@ use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
+use Psalm\Internal\TypeVisitor\ContainsDisjointShapesVisitor;
+use Psalm\Internal\TypeVisitor\DisjointShapeCollapser;
 use Psalm\Issue\ImpurePropertyAssignment;
 use Psalm\Issue\InvalidArrayAssignment;
 use Psalm\IssueBuffer;
@@ -306,6 +308,7 @@ final class ArrayAssignmentAnalyzer
                 $offset_already_existed,
                 $parent_var_id,
             );
+            $new_child_type = self::withoutDisjointShapesOfAWrite($new_child_type, $root_type, $current_type);
         } else {
             $new_child_type = $root_type;
         }
@@ -1420,6 +1423,35 @@ final class ArrayAssignmentAnalyzer
     }
 
     /**
+     * The array with the item written to it next to the others it may have is one shape with them, not a union of
+     * shapes: the array does not say which of its items has which
+     */
+    private static function withoutDisjointShapesOfAWrite(
+        Union $combined_type,
+        Union $array_type,
+        Union $written_type,
+    ): Union {
+        if (self::containsDisjointShapes($array_type) || self::containsDisjointShapes($written_type)) {
+            return $combined_type;
+        }
+
+        (new DisjointShapeCollapser())->traverse($combined_type);
+
+        return $combined_type;
+    }
+
+    /**
+     * @psalm-pure
+     */
+    private static function containsDisjointShapes(Union $type): bool
+    {
+        $visitor = new ContainsDisjointShapesVisitor();
+        $visitor->traverseArray($type->getAtomicTypes());
+
+        return $visitor->matches();
+    }
+
+    /**
      * Adds the paths of the assignment of $value to array $array at $location under a key that is one of
      * $key_values: one for each, in the taint flow graph, the others than the first through a node of their own (a
      * path between two nodes has one type). The variable use graph only knows the key is one of them: an unkeyed
@@ -2103,12 +2135,16 @@ final class ArrayAssignmentAnalyzer
 
                 $new_child_type = $child_shape
                     ? $child_stmt_type->setTypes([$child_shape])
-                    : Type::combineUnionTypes(
+                    : self::withoutDisjointShapesOfAWrite(
+                        Type::combineUnionTypes(
+                            $child_stmt_type,
+                            $array_assignment_type,
+                            $codebase,
+                            true,
+                            true,
+                        ),
                         $child_stmt_type,
                         $array_assignment_type,
-                        $codebase,
-                        true,
-                        true,
                     );
             }
             if ($new_child_type->hasNull() || $new_child_type->possibly_undefined) {
