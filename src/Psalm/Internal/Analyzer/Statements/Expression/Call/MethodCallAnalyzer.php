@@ -7,6 +7,7 @@ namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
 use AssertionError;
 use PhpParser;
 use Psalm\CodeLocation;
+use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\ClosureAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\AtomicMethodCallAnalysisResult;
@@ -36,19 +37,27 @@ use Psalm\Issue\UndefinedMagicMethod;
 use Psalm\Issue\UndefinedMethod;
 use Psalm\IssueBuffer;
 use Psalm\Type;
+use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TConditional;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TObject;
+use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateValueOf;
 use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Union;
 
+use function array_filter;
+use function array_map;
 use function array_merge;
 use function array_reduce;
+use function array_values;
 use function count;
+use function implode;
 use function is_string;
+use function strrpos;
 use function strtolower;
+use function substr;
 
 /**
  * @internal
@@ -119,6 +128,18 @@ final class MethodCallAnalyzer extends CallAnalyzer
 
         $context->inside_call = $was_inside_call;
 
+        // `$object->$name()` with `$name` one of known strings calls each of those methods
+        $literal_method_names = self::getLiteralMethodNames($statements_analyzer, $stmt);
+
+        $called_method_name = $stmt->name instanceof PhpParser\Node\Identifier
+            ? $stmt->name->name
+            : ($literal_method_names !== null
+                ? implode('|', array_map(
+                    static fn(PhpParser\Node\Identifier $name): string => $name->name,
+                    $literal_method_names,
+                ))
+                : null);
+
         if ($stmt->var instanceof PhpParser\Node\Expr\Variable) {
             if (is_string($stmt->var->name) && $stmt->var->name === 'this' && !$statements_analyzer->getFQCLN()) {
                 if (IssueBuffer::accepts(
@@ -172,12 +193,12 @@ final class MethodCallAnalyzer extends CallAnalyzer
             : null;
 
         if ($class_type
-            && $stmt->name instanceof PhpParser\Node\Identifier
+            && $called_method_name !== null
             && ($class_type->isNull() || $class_type->isVoid())
         ) {
             return !IssueBuffer::accepts(
                 new NullReference(
-                    'Cannot call method ' . $stmt->name->name . ' on null value',
+                    'Cannot call method ' . $called_method_name . ' on null value',
                     new CodeLocation($statements_analyzer->getSource(), $stmt->name),
                 ),
                 $statements_analyzer->getSuppressedIssues(),
@@ -185,15 +206,15 @@ final class MethodCallAnalyzer extends CallAnalyzer
         }
 
         if ($receiver_type
-            && $stmt->name instanceof PhpParser\Node\Identifier
+            && $called_method_name !== null
             && $receiver_type->isNullable()
             && !$receiver_type->ignore_nullable_issues
-            && !($stmt->name->name === 'offsetGet' && $context->inside_isset)
+            && !($called_method_name === 'offsetGet' && $context->inside_isset)
             && !$receiver_state->isNullOnlyByShortCircuit()
         ) {
             IssueBuffer::maybeAdd(
                 new PossiblyNullReference(
-                    'Cannot call method ' . $stmt->name->name . ' on possibly null value',
+                    'Cannot call method ' . $called_method_name . ' on possibly null value',
                     new CodeLocation($statements_analyzer->getSource(), $stmt->name),
                 ),
                 $statements_analyzer->getSuppressedIssues(),
@@ -201,13 +222,13 @@ final class MethodCallAnalyzer extends CallAnalyzer
         }
 
         if ($receiver_type
-            && $stmt->name instanceof PhpParser\Node\Identifier
+            && $called_method_name !== null
             && $receiver_type->isFalsable()
             && !$receiver_type->ignore_falsable_issues
         ) {
             IssueBuffer::maybeAdd(
                 new PossiblyFalseReference(
-                    'Cannot call method ' . $stmt->name->name . ' on possibly false value',
+                    'Cannot call method ' . $called_method_name . ' on possibly false value',
                     new CodeLocation($statements_analyzer->getSource(), $stmt->name),
                 ),
                 $statements_analyzer->getSuppressedIssues(),
@@ -254,41 +275,18 @@ final class MethodCallAnalyzer extends CallAnalyzer
         // a memoized call returns what the same call returned before, even if it may change what it returns next
         $memoized_type = $method_var_id !== null ? $context->vars_in_scope[$method_var_id] ?? null : null;
 
-        // `$object->$name()` with `$name` one of known strings calls each of those methods
-        $name = $stmt->name;
-        $method_names = self::getLiteralMethodNames($statements_analyzer, $stmt) ?? [$name];
-
-        $possible_new_class_types = [];
-        foreach ($lhs_types as $lhs_type_part) {
-            foreach ($method_names as $method_name) {
-                $stmt->name = $method_name;
-
-                AtomicMethodCallAnalyzer::analyze(
-                    $statements_analyzer,
-                    $stmt,
-                    $codebase,
-                    $context,
-                    $class_type,
-                    $lhs_type_part,
-                    $lhs_type_part instanceof TNamedObject
-                        || $lhs_type_part instanceof TTemplateParam
-                        ? $lhs_type_part
-                        : null,
-                    false,
-                    $lhs_var_id,
-                    $result,
-                    $template_result,
-                );
-
-                $stmt->name = $name;
-            }
-
-            if ($lhs_var_id !== null && isset($context->vars_in_scope[$lhs_var_id])
-                && ($possible_new_class_type = $context->vars_in_scope[$lhs_var_id]) instanceof Union
-                && !$possible_new_class_type->equals($class_type)) {
-                $possible_new_class_types[] = $context->vars_in_scope[$lhs_var_id];
-            }
-        }
+        $possible_new_class_types = self::analyzeAtomicCalls(
+            $statements_analyzer,
+            $stmt,
+            $codebase,
+            $context,
+            $class_type,
+            $lhs_types,
+            $lhs_var_id,
+            $result,
+            $template_result,
+            $literal_method_names,
+        );
 
         MethodCallPurityAnalyzer::keepPropertiesNotWrittenForEveryReceiverType($codebase, $context, $result);
 
@@ -377,8 +375,10 @@ final class MethodCallAnalyzer extends CallAnalyzer
         }
 
         if ($result->non_existent_class_method_ids) {
+            $possibly_undefined = $result->existent_method_ids || $result->has_mixed_method_call;
+
             if ($context->check_methods) {
-                if ($result->existent_method_ids || $result->has_mixed_method_call) {
+                if ($possibly_undefined) {
                     IssueBuffer::maybeAdd(
                         new PossiblyUndefinedMethod(
                             'Method ' . $result->non_existent_class_method_ids[0] . ' does not exist',
@@ -399,12 +399,17 @@ final class MethodCallAnalyzer extends CallAnalyzer
                 }
             }
 
-            return true;
+            // the methods that exist still give the call its type
+            if (!$possibly_undefined) {
+                return true;
+            }
         }
 
         if ($result->non_existent_interface_method_ids) {
+            $possibly_undefined = $result->existent_method_ids || $result->has_mixed_method_call;
+
             if ($context->check_methods) {
-                if ($result->existent_method_ids || $result->has_mixed_method_call) {
+                if ($possibly_undefined) {
                     IssueBuffer::maybeAdd(
                         new PossiblyUndefinedMethod(
                             'Method ' . $result->non_existent_interface_method_ids[0] . ' does not exist',
@@ -425,7 +430,10 @@ final class MethodCallAnalyzer extends CallAnalyzer
                 }
             }
 
-            return true;
+            // the methods that exist still give the call its type
+            if (!$possibly_undefined) {
+                return true;
+            }
         }
 
         if ($result->too_many_arguments && $result->too_many_arguments_method_ids) {
@@ -558,5 +566,134 @@ final class MethodCallAnalyzer extends CallAnalyzer
         }
 
         return true;
+    }
+
+    /**
+     * Analyses the call on each type of the receiver, with each method its name can be
+     *
+     * @param array<Atomic> $lhs_types
+     * @param non-empty-list<PhpParser\Node\Identifier>|null $literal_method_names
+     * @return list<Union> the types the receiver may have after the call
+     */
+    private static function analyzeAtomicCalls(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\MethodCall $stmt,
+        Codebase $codebase,
+        Context $context,
+        Union $class_type,
+        array $lhs_types,
+        ?string $lhs_var_id,
+        AtomicMethodCallAnalysisResult $result,
+        ?TemplateResult $template_result,
+        ?array $literal_method_names,
+    ): array {
+        $name = $stmt->name;
+        $calls = [];
+        $call_count = 0;
+
+        foreach ($lhs_types as $lhs_type_part) {
+            // the method name matters only on an object whose methods are known
+            $method_names = $literal_method_names !== null
+                && ($lhs_type_part instanceof TNamedObject
+                    || $lhs_type_part instanceof TTemplateParam
+                    || $lhs_type_part instanceof TObjectWithProperties)
+                ? $literal_method_names
+                : [$name];
+
+            $calls[] = [$lhs_type_part, $method_names];
+            $call_count += count($method_names);
+        }
+
+        // a call of one of several methods asserts only what each of them asserts
+        $targets_if_true_assertions = [];
+        $targets_if_false_assertions = [];
+
+        $possible_new_class_types = [];
+
+        foreach ($calls as [$lhs_type_part, $method_names]) {
+            foreach ($method_names as $method_name) {
+                $stmt->name = $method_name;
+
+                try {
+                    AtomicMethodCallAnalyzer::analyze(
+                        $statements_analyzer,
+                        $stmt,
+                        $codebase,
+                        $context,
+                        $class_type,
+                        $lhs_type_part,
+                        $lhs_type_part instanceof TNamedObject
+                            || $lhs_type_part instanceof TTemplateParam
+                            ? $lhs_type_part
+                            : null,
+                        false,
+                        $lhs_var_id,
+                        $result,
+                        $template_result,
+                    );
+                } finally {
+                    $stmt->name = $name;
+                }
+
+                if ($call_count > 1) {
+                    $targets_if_true_assertions[] = $statements_analyzer->node_data->getIfTrueAssertions($stmt) ?? [];
+                    $targets_if_false_assertions[] = $statements_analyzer->node_data->getIfFalseAssertions($stmt)
+                        ?? [];
+
+                    $statements_analyzer->node_data->setIfTrueAssertions($stmt, []);
+                    $statements_analyzer->node_data->setIfFalseAssertions($stmt, []);
+                }
+            }
+
+            if ($lhs_var_id !== null && isset($context->vars_in_scope[$lhs_var_id])
+                && ($possible_new_class_type = $context->vars_in_scope[$lhs_var_id]) instanceof Union
+                && !$possible_new_class_type->equals($class_type)) {
+                $possible_new_class_types[] = $context->vars_in_scope[$lhs_var_id];
+            }
+        }
+
+        if ($targets_if_true_assertions && $targets_if_false_assertions) {
+            $statements_analyzer->node_data->setIfTrueAssertions(
+                $stmt,
+                self::getCommonAssertions($targets_if_true_assertions),
+            );
+            $statements_analyzer->node_data->setIfFalseAssertions(
+                $stmt,
+                self::getCommonAssertions($targets_if_false_assertions),
+            );
+        }
+
+        if ($literal_method_names !== null && count($literal_method_names) > 1 && count($lhs_types) > 1) {
+            // `$r instanceof A ? 'a' : 'b'` names a method of each receiver: a method is missing when no receiver
+            // has it
+            $existent_method_names = [];
+
+            foreach ($result->existent_method_ids as $method_id => $_) {
+                $existent_method_names[self::getMethodNameLc($method_id)] = true;
+            }
+
+            $is_missing = static fn(string $method_id): bool
+                => !isset($existent_method_names[self::getMethodNameLc($method_id)]);
+
+            $result->non_existent_class_method_ids = array_values(
+                array_filter($result->non_existent_class_method_ids, $is_missing),
+            );
+            $result->non_existent_interface_method_ids = array_values(
+                array_filter($result->non_existent_interface_method_ids, $is_missing),
+            );
+            $result->non_existent_magic_method_ids = array_values(
+                array_filter($result->non_existent_magic_method_ids, $is_missing),
+            );
+        }
+
+        return $possible_new_class_types;
+    }
+
+    /**
+     * @psalm-pure
+     */
+    private static function getMethodNameLc(string $method_id): string
+    {
+        return strtolower(substr($method_id, (int) strrpos($method_id, ':') + 1));
     }
 }

@@ -164,6 +164,31 @@ final class MethodCallTest extends TestCase
         );
     }
 
+    public function testMixedMethodCallOfMethodsNamedByLiteralsIsReportedOnce(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @param mixed $o */
+                function f($o): void {
+                    $m = random_int(0, 1) ? "a" : "b";
+                    $o->$m();
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context(), false);
+
+        self::assertSame(
+            ['MixedMethodCall'],
+            array_map(
+                static fn(IssueData $issue): string => $issue->type,
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
+        );
+    }
+
     public function testMethodCallMemoize(): void
     {
         $this->project_analyzer->getConfig()->memoize_method_calls = true;
@@ -4310,6 +4335,120 @@ final class MethodCallTest extends TestCase
                 PHP,
                 'assertions' => ['$r===' => 'string'],
             ],
+            'instanceCallOfMethodsNamedByLiteralsAssertsWhatEachAsserts' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Foo {
+                        /**
+                         * @param mixed $v
+                         * @psalm-assert-if-true string $v
+                         */
+                        public function isString($v): bool { return is_string($v); }
+
+                        /**
+                         * @param mixed $v
+                         * @psalm-assert-if-true string $v
+                         */
+                        public function isText($v): bool { return is_string($v); }
+                    }
+
+                    /** @var mixed */
+                    $v = $_GET['v'];
+                    $m = random_int(0, 1) ? 'isString' : 'isText';
+                    $r = '';
+                    if ((new Foo())->$m($v)) {
+                        $r = $v;
+                    }
+                PHP,
+                'assertions' => ['$r===' => 'string'],
+            ],
+            'instanceCallOfMethodsNamedByLiteralsAssertsOnlyWhatEachAsserts' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Foo {
+                        /**
+                         * @param mixed $v
+                         * @psalm-assert-if-true string $v
+                         */
+                        public function isString($v): bool { return is_string($v); }
+
+                        /** @param mixed $v */
+                        public function accepts($v): bool { return true; }
+                    }
+
+                    /** @var mixed */
+                    $v = $_GET['v'];
+                    $m = random_int(0, 1) ? 'isString' : 'accepts';
+                    $r = null;
+                    if ((new Foo())->$m($v)) {
+                        $r = $v;
+                    }
+                PHP,
+                'assertions' => ['$r===' => 'mixed|null'],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
+            'callOnSeveralReceiversAssertsOnlyWhatEachAsserts' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Foo {
+                        /**
+                         * @param mixed $v
+                         * @psalm-assert-if-true string $v
+                         */
+                        public function check($v): bool { return is_string($v); }
+                    }
+                    final class Bar {
+                        /** @param mixed $v */
+                        public function check($v): bool { return true; }
+                    }
+
+                    /** @var mixed */
+                    $v = $_GET['v'];
+                    $o = random_int(0, 1) ? new Foo() : new Bar();
+                    $r = null;
+                    if ($o->check($v)) {
+                        $r = $v;
+                    }
+                PHP,
+                'assertions' => ['$r===' => 'mixed|null'],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
+            'instanceCallOfAMethodNamedForEachReceiver' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Validator {
+                        public function validate(): int { return 0; }
+                    }
+                    final class Runner {
+                        public function run(): string { return ""; }
+                    }
+
+                    /** @param Validator|Runner $o */
+                    function f(object $o): int|string {
+                        $m = $o instanceof Validator ? 'validate' : 'run';
+                        return $o->$m();
+                    }
+
+                    $r = f(new Runner());
+                    $s = (random_int(0, 1) ? new Validator() : new Runner())->{random_int(0, 1) ? 'validate' : 'run'}();
+                PHP,
+                'assertions' => ['$s===' => 'int|string'],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'instanceCallOfMethodsNamedByLiteralsOneOfThemUndefinedHasTheTypeOfTheOthers' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Foo {
+                        public function a(): int { return 0; }
+                    }
+
+                    $m = random_int(0, 1) ? 'a' : 'foo';
+                    $r = (new Foo())->$m();
+                PHP,
+                'assertions' => ['$r===' => 'int'],
+                'ignored_issues' => ['PossiblyUndefinedMethod'],
+            ],
         ];
     }
 
@@ -5892,6 +6031,20 @@ final class MethodCallTest extends TestCase
                     Foo::$m();
                 PHP,
                 'error_message' => 'InvalidStaticInvocation',
+            ],
+            'instanceCallOnAPossiblyNullReceiverOfAMethodNamedByALiteral' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Foo {
+                        public function a(): void {}
+                    }
+
+                    function f(?Foo $o): void {
+                        $m = 'a';
+                        $o->$m();
+                    }
+                PHP,
+                'error_message' => 'PossiblyNullReference',
             ],
             'overrideOfAStubMethodWithATemplateStillChecksTheArgument' => [
                 'code' => <<<'PHP'

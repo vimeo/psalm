@@ -3645,16 +3645,16 @@ final class UnusedCodeTest extends TestCase
             'privateMethodNotNamedByALiteralIsUnused' => [
                 'code' => '<?php
                     final class Foo {
-                        private function a(): int { return 0; }
-                        private function b(): int { return 1; }
+                        private function a(): void {}
+                        private function b(): void {}
 
-                        public function run(): int {
+                        public function run(): void {
                             $m = "a";
-                            return $this->$m();
+                            $this->$m();
                         }
                     }
 
-                    echo (new Foo())->run();',
+                    (new Foo())->run();',
                 'error_message' => 'UnusedMethod - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:42',
             ],
             'privatePropertyNamedAsAColumnOutsideItsClassIsUnused' => [

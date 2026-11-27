@@ -39,6 +39,7 @@ use Psalm\Storage\Capabilities;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
+use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
 
@@ -353,56 +354,18 @@ final class StaticCallAnalyzer extends CallAnalyzer
             ? NullsafeChainState::of($stmt->class)
             : NullsafeChainState::None;
 
-        $lhs_type_parts = $lhs_type->getAtomicTypes();
-
-        // `A::$name()` with `$name` one of known strings calls each of those methods
-        $name = $stmt->name;
-        $method_names = self::getLiteralMethodNames($statements_analyzer, $stmt) ?? [$name];
-
-        // a call to one of several methods asserts only what each of them asserts
-        $targets_if_true_assertions = [];
-        $targets_if_false_assertions = [];
-
-        foreach ($lhs_type_parts as $lhs_type_part) {
-            foreach ($method_names as $method_name) {
-                $stmt->name = $method_name;
-
-                AtomicStaticCallAnalyzer::analyze(
-                    $statements_analyzer,
-                    $stmt,
-                    $context,
-                    $lhs_type_part,
-                    $lhs_type->ignore_nullable_issues || $class_state->isNullOnlyByShortCircuit(),
-                    $moved_call,
-                    $has_mock,
-                    $has_existing_method,
-                    $args_analyzed,
-                    $template_result,
-                );
-
-                $stmt->name = $name;
-
-                if (count($lhs_type_parts) * count($method_names) > 1) {
-                    $targets_if_true_assertions[] = $statements_analyzer->node_data->getIfTrueAssertions($stmt) ?? [];
-                    $targets_if_false_assertions[] = $statements_analyzer->node_data->getIfFalseAssertions($stmt)
-                        ?? [];
-
-                    $statements_analyzer->node_data->setIfTrueAssertions($stmt, []);
-                    $statements_analyzer->node_data->setIfFalseAssertions($stmt, []);
-                }
-            }
-        }
-
-        if ($targets_if_true_assertions && $targets_if_false_assertions) {
-            $statements_analyzer->node_data->setIfTrueAssertions(
-                $stmt,
-                self::getCommonAssertions($targets_if_true_assertions),
-            );
-            $statements_analyzer->node_data->setIfFalseAssertions(
-                $stmt,
-                self::getCommonAssertions($targets_if_false_assertions),
-            );
-        }
+        self::analyzeAtomicCalls(
+            $statements_analyzer,
+            $stmt,
+            $context,
+            $lhs_type->getAtomicTypes(),
+            $lhs_type->ignore_nullable_issues || $class_state->isNullOnlyByShortCircuit(),
+            $moved_call,
+            $has_mock,
+            $has_existing_method,
+            $args_analyzed,
+            $template_result,
+        );
 
         if ($class_state !== NullsafeChainState::None) {
             $stmt_type = $statements_analyzer->node_data->getType($stmt);
@@ -441,6 +404,75 @@ final class StaticCallAnalyzer extends CallAnalyzer
         }
 
         return true;
+    }
+
+    /**
+     * Analyses the call on each class it can be made on, with each method its name can be
+     *
+     * @param array<Atomic> $lhs_type_parts
+     */
+    private static function analyzeAtomicCalls(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\StaticCall $stmt,
+        Context $context,
+        array $lhs_type_parts,
+        bool $ignore_nullable_issues,
+        bool &$moved_call,
+        bool &$has_mock,
+        bool &$has_existing_method,
+        bool &$args_analyzed,
+        ?TemplateResult $template_result,
+    ): void {
+        // `A::$name()` with `$name` one of known strings calls each of those methods
+        $name = $stmt->name;
+        $method_names = self::getLiteralMethodNames($statements_analyzer, $stmt) ?? [$name];
+
+        // a call to one of several methods asserts only what each of them asserts
+        $targets_if_true_assertions = [];
+        $targets_if_false_assertions = [];
+
+        foreach ($lhs_type_parts as $lhs_type_part) {
+            foreach ($method_names as $method_name) {
+                $stmt->name = $method_name;
+
+                try {
+                    AtomicStaticCallAnalyzer::analyze(
+                        $statements_analyzer,
+                        $stmt,
+                        $context,
+                        $lhs_type_part,
+                        $ignore_nullable_issues,
+                        $moved_call,
+                        $has_mock,
+                        $has_existing_method,
+                        $args_analyzed,
+                        $template_result,
+                    );
+                } finally {
+                    $stmt->name = $name;
+                }
+
+                if (count($lhs_type_parts) * count($method_names) > 1) {
+                    $targets_if_true_assertions[] = $statements_analyzer->node_data->getIfTrueAssertions($stmt) ?? [];
+                    $targets_if_false_assertions[] = $statements_analyzer->node_data->getIfFalseAssertions($stmt)
+                        ?? [];
+
+                    $statements_analyzer->node_data->setIfTrueAssertions($stmt, []);
+                    $statements_analyzer->node_data->setIfFalseAssertions($stmt, []);
+                }
+            }
+        }
+
+        if ($targets_if_true_assertions && $targets_if_false_assertions) {
+            $statements_analyzer->node_data->setIfTrueAssertions(
+                $stmt,
+                self::getCommonAssertions($targets_if_true_assertions),
+            );
+            $statements_analyzer->node_data->setIfFalseAssertions(
+                $stmt,
+                self::getCommonAssertions($targets_if_false_assertions),
+            );
+        }
     }
 
     /**

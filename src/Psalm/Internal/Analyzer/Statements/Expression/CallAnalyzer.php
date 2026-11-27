@@ -2166,7 +2166,7 @@ abstract class CallAnalyzer
             $names[] = new VirtualIdentifier($atomic->value, $stmt->name->getAttributes());
         }
 
-        return $names ?: null;
+        return $names;
     }
 
     /**
