@@ -33,6 +33,7 @@ use Psalm\Internal\PhpVisitor\ThisReturnVisitor;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Scanner\FileScanner;
 use Psalm\Internal\Scanner\ParsedDocblock;
+use Psalm\Internal\Scanner\VarDocblockComment;
 use Psalm\Internal\Type\TypeAlias;
 use Psalm\Internal\TypeVisitor\FunctionPurityTemplateReplacer;
 use Psalm\Issue\DuplicateFunction;
@@ -648,48 +649,13 @@ final class FunctionLikeNodeScanner
                     continue;
                 }
 
-                $doc_comment = $param->getDocComment();
-                $var_comment_type = null;
-                $var_comment_readonly = false;
-                $var_comment_allow_private_mutation = false;
-                $var_comment_suppressed_issues = [];
-                $var_comment_deprecated = false;
-                if ($doc_comment) {
-                    $template_types = ($this->existing_function_template_types ?: [])
-                        + ($classlike_storage->template_types ?: [])
-                    ;
-
-                    try {
-                        $var_comments = CommentAnalyzer::getTypeFromComment(
-                            $this->codebase,
-                            $doc_comment,
-                            $this->file_scanner,
-                            $this->aliases,
-                            $template_types,
-                            $this->type_aliases,
-                        );
-
-                        $var_comment = array_pop($var_comments);
-
-                        if ($var_comment !== null) {
-                            $var_comment_type = $var_comment->type;
-                            $var_comment_readonly = $var_comment->readonly;
-                            $var_comment_allow_private_mutation = $var_comment->allow_private_mutation;
-                            $var_comment_suppressed_issues = $var_comment->suppressed_issues;
-                            $var_comment_deprecated = $var_comment->deprecated;
-                        }
-                    } catch (IncorrectDocblockException $e) {
-                        $storage->docblock_issues[] = new MissingDocblockType(
-                            $e->getMessage() . ' in docblock for ' . $cased_function_id,
-                            new CodeLocation($this->file_scanner, $param, null, true),
-                        );
-                    } catch (DocblockParseException $e) {
-                        $storage->docblock_issues[] = new InvalidDocblock(
-                            $e->getMessage() . ' in docblock for ' . $cased_function_id,
-                            new CodeLocation($this->file_scanner, $param, null, true),
-                        );
-                    }
-                }
+                $var_comment = $this->getPromotedPropertyComment(
+                    $param,
+                    $classlike_storage,
+                    $storage,
+                    $cased_function_id,
+                );
+                $var_comment_type = $var_comment?->type;
 
                 //both way to document type were used
                 if ($param_storage->type && $param_storage->type->from_docblock && $var_comment_type) {
@@ -723,15 +689,12 @@ final class FunctionLikeNodeScanner
                 $property_storage->has_default = (bool)$param->default;
                 $property_storage->native_readonly = ($param->flags & Modifiers::READONLY) !== 0
                     || $classlike_storage->readonly;
-                $property_storage->readonly = $property_storage->native_readonly || $var_comment_readonly;
-                $property_storage->allow_private_mutation = $var_comment_allow_private_mutation;
-                $property_storage->suppressed_issues = $var_comment_suppressed_issues;
-                $property_storage->deprecated = $var_comment_deprecated;
+                $property_storage->readonly = $property_storage->native_readonly;
+                $fq_classlike_name = $classlike_storage->name;
                 $property_storage->attributes = $param_storage->attributes;
+                self::applyPromotedPropertyDocblockAndAttributes($property_storage, $fq_classlike_name, $var_comment);
                 $param_storage->promoted_property = true;
                 $property_storage->is_promoted = true;
-
-                $fq_classlike_name = $classlike_storage->name;
 
                 $property_id = $fq_classlike_name . '::$' . $param_storage->name;
 
@@ -944,6 +907,95 @@ final class FunctionLikeNodeScanner
         }
 
         return [$promotes || $stmt->stmts !== [] ? Capabilities::WRITE_THIS_PROPS : Capabilities::NONE, $assigned];
+    }
+
+    /**
+     * The `@var` docblock of a promoted parameter, which documents its property
+     */
+    private function getPromotedPropertyComment(
+        PhpParser\Node\Param $param,
+        ClassLikeStorage $classlike_storage,
+        FunctionLikeStorage $storage,
+        string $cased_function_id,
+    ): ?VarDocblockComment {
+        $doc_comment = $param->getDocComment();
+
+        if (!$doc_comment) {
+            return null;
+        }
+
+        $template_types = ($this->existing_function_template_types ?: [])
+            + ($classlike_storage->template_types ?: [])
+        ;
+
+        try {
+            $var_comments = CommentAnalyzer::getTypeFromComment(
+                $this->codebase,
+                $doc_comment,
+                $this->file_scanner,
+                $this->aliases,
+                $template_types,
+                $this->type_aliases,
+            );
+
+            return array_pop($var_comments);
+        } catch (IncorrectDocblockException $e) {
+            $storage->docblock_issues[] = new MissingDocblockType(
+                $e->getMessage() . ' in docblock for ' . $cased_function_id,
+                new CodeLocation($this->file_scanner, $param, null, true),
+            );
+        } catch (DocblockParseException $e) {
+            $storage->docblock_issues[] = new InvalidDocblock(
+                $e->getMessage() . ' in docblock for ' . $cased_function_id,
+                new CodeLocation($this->file_scanner, $param, null, true),
+            );
+        }
+
+        return null;
+    }
+
+    /**
+     * Applies the docblock and the attributes of a promoted property the way a declared property's are applied
+     */
+    private static function applyPromotedPropertyDocblockAndAttributes(
+        PropertyStorage $property_storage,
+        string $fq_classlike_name,
+        ?VarDocblockComment $var_comment,
+    ): void {
+        $root_namespace = $fq_classlike_name !== '' ? NamespaceAnalyzer::getNameSpaceRoot($fq_classlike_name) : null;
+
+        if ($var_comment !== null) {
+            $property_storage->readonly = $property_storage->readonly || $var_comment->readonly;
+            $property_storage->allow_private_mutation = $var_comment->allow_private_mutation;
+            $property_storage->suppressed_issues = $var_comment->suppressed_issues;
+            $property_storage->deprecated = $var_comment->deprecated;
+            $property_storage->description = $var_comment->description;
+            $property_storage->internal = $var_comment->psalm_internal;
+
+            if ($property_storage->internal === [] && $var_comment->internal && $root_namespace !== null) {
+                $property_storage->internal = [$root_namespace];
+            }
+        }
+
+        foreach ($property_storage->attributes as $attribute) {
+            if ($attribute->fq_class_name === 'Psalm\\Deprecated'
+                || $attribute->fq_class_name === 'JetBrains\\PhpStorm\\Deprecated'
+                || $attribute->fq_class_name === 'Deprecated'
+            ) {
+                $property_storage->deprecated = true;
+            }
+
+            if ($attribute->fq_class_name === 'Psalm\\Internal'
+                && !$property_storage->internal
+                && $root_namespace !== null
+            ) {
+                $property_storage->internal = [$root_namespace];
+            }
+
+            if ($attribute->fq_class_name === 'Psalm\\Readonly') {
+                $property_storage->readonly = true;
+            }
+        }
     }
 
     /**

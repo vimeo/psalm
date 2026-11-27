@@ -619,6 +619,33 @@ final class InternalAnnotationTest extends TestCase
                         class Bar extends Foo {}
                     }',
             ],
+            'internalPromotedPropertyIsUsableInsideItsNamespace' => [
+                'code' => '<?php
+                    namespace NsA {
+                        final class A {
+                            public function __construct(
+                                /** @internal */
+                                public int $promoted = 0,
+                                /** @psalm-internal NsA */
+                                public int $promotedNs = 0,
+                                public int $plain = 0,
+                            ) {}
+                        }
+                    }
+
+                    namespace NsA\Sub {
+                        $a = new \NsA\A();
+                        echo $a->promoted . $a->promotedNs . $a->plain;
+                    }
+
+                    namespace NsB {
+                        $a = new \NsA\A();
+                        echo $a->plain;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'psalmInternalPropertyGet' => [
                 'code' => '<?php
                     namespace A\B {
@@ -1594,6 +1621,65 @@ final class InternalAnnotationTest extends TestCase
                     }',
                 'error_message' => 'A\B\Foo is internal to A\B',
             ],
+            'internalOnAPromotedProperty' => [
+                'code' => '<?php
+                    namespace NsA {
+                        final class A {
+                            public function __construct(
+                                /** @internal */
+                                public int $promoted = 0,
+                            ) {}
+                        }
+                    }
+
+                    namespace NsB {
+                        echo (new \NsA\A())->promoted;
+                    }',
+                'error_message' => 'InternalProperty',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'psalmInternalOnAPromotedProperty' => [
+                'code' => '<?php
+                    namespace NsA {
+                        final class A {
+                            public function __construct(
+                                /** @psalm-internal NsA\Sub */
+                                public int $promoted = 0,
+                            ) {}
+                        }
+                    }
+
+                    namespace NsA\Other {
+                        echo (new \NsA\A())->promoted;
+                    }',
+                'error_message' => 'InternalProperty',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'psalmInternalAttributeOnAPromotedProperty' => [
+                'code' => '<?php
+                    namespace Psalm {
+                        #[\Attribute]
+                        final class Internal {}
+                    }
+
+                    namespace NsA {
+                        final class A {
+                            public function __construct(
+                                #[\Psalm\Internal]
+                                public int $promoted = 0,
+                            ) {}
+                        }
+                    }
+
+                    namespace NsB {
+                        echo (new \NsA\A())->promoted;
+                    }',
+                'error_message' => 'InternalProperty',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'psalmInternalPropertyGet' => [
                 'code' => '<?php
                     namespace A\B {
@@ -2163,6 +2249,32 @@ final class InternalAnnotationTest extends TestCase
                 'error_message' => 'The function a\foo is internal to A\B but called from A\f',
             ],
         ];
+    }
+
+    /**
+     * Taint analysis initializes a promoted property by a write in the constructor, which is no use of it.
+     */
+    public function testPromotedPropertyInternalToAnotherNamespaceWithTaintAnalysis(): void
+    {
+        $this->project_analyzer->trackTaintedInputs();
+        $this->testValidCode(
+            '<?php
+                namespace NsA {
+                    final class A {
+                        public function __construct(
+                            /** @psalm-internal NsA\Sub */
+                            public string $promoted = "",
+                        ) {}
+                    }
+                }
+
+                namespace NsA\Sub {
+                    echo (new \NsA\A("a"))->promoted;
+                }',
+            [],
+            [],
+            '8.1',
+        );
     }
 
     public function testCodeTheProjectDoesNotShipIsInternal(): void

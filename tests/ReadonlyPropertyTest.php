@@ -260,6 +260,21 @@ final class ReadonlyPropertyTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'readonlyAttributeOnAPromotedProperty' => [
+                'code' => '<?php
+                    final class C {
+                        public function __construct(
+                            #[\Psalm\Readonly]
+                            public int $foo = 0,
+                        ) {}
+                    }
+
+                    $c = new C();
+                    $c->foo = 1;',
+                'error_message' => 'InaccessibleProperty - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:21',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'unsetOfAReadonlyPropertyAfterAFetch' => [
                 'code' => '<?php
                     final class C {
