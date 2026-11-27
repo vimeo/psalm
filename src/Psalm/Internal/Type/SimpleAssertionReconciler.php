@@ -2508,7 +2508,7 @@ final class SimpleAssertionReconciler extends Reconciler
      * @param Reconciler::RECONCILIATION_* $failed_reconciliation
      */
     private static function reconcileIntArrayAccess(
-        HasIntOrStringArrayAccess $assertion,
+        Assertion $assertion,
         Codebase $codebase,
         Union $existing_var_type,
         ?string $key,
@@ -2523,14 +2523,7 @@ final class SimpleAssertionReconciler extends Reconciler
         $existing_var_atomic_types = $existing_var_type->getAtomicTypes();
 
         if ($existing_var_type->hasMixed()) {
-            // a string only has characters at int offsets: with a key that may be a string, the parent stays mixed
-            return $assertion->int_key
-                ? new Union([
-                    new TNonEmptyArray([Type::getArrayKey(), Type::getMixed()]),
-                    new TNamedObject('ArrayAccess'),
-                    new TNonEmptyString(),
-                ])
-                : Type::getMixed();
+            return Type::getMixed();
         }
 
         $array_types = [];
