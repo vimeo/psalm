@@ -111,6 +111,22 @@ final class FunctionTemplateTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'closureParamWithTemplatesNamingKeyOfAnotherTemplateNotInItsType' => [
+                'code' => '<?php
+                    /**
+                     * @template TArr of array
+                     * @template TKey of key-of<TArr>
+                     * @template TDict of array<TKey, mixed>
+                     * @param callable(string): void $c
+                     * @param TArr $arr
+                     * @param TDict $dict
+                     */
+                    function unrelated(callable $c, array $arr, array $dict): void {}
+
+                    unrelated(function ($s): void {
+                        /** @psalm-check-type-exact $s = string */
+                    }, ["a" => 1], ["a" => 2]);',
+            ],
             'offsetOfATemplateBoundByAUnionReadsEachTypeOfTheBound' => [
                 'code' => '<?php
                     /**
