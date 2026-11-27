@@ -1201,6 +1201,181 @@ final class PropertyTypeTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'propertyNamedByOneOfSeveralLiteralsHasTheTypeOfEach' => [
+                'code' => '<?php
+                    final class A {
+                        public string $x = "";
+                        public bool $y = false;
+                    }
+
+                    final class B {
+                        public int $x = 1;
+                        public float $y = 1.2;
+                    }
+
+                    final class C {
+                        public string $x = "";
+                        private int $z = 0;
+
+                        /** @param "x"|"z" $p */
+                        public function own(string $p): int|string {
+                            return $this->{$p};
+                        }
+                    }
+
+                    /** @param "x"|"y" $p */
+                    function get(A|B $o, string $p): bool|float|string|int {
+                        return $o->{$p};
+                    }
+
+                    $p = rand(0, 1) ? "x" : "y";
+                    $value = (new A())->{$p};',
+                'assertions' => [
+                    '$value===' => 'bool|string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'coalesceOfAPropertyNamedByOneOfSeveralLiterals' => [
+                'code' => '<?php
+                    final class A {
+                        public string $x = "";
+                    }
+
+                    /** @param "x"|"w" $p */
+                    function coalesce(A $o, string $p): string {
+                        return $o->{$p} ?? "d";
+                    }',
+            ],
+            'issetGuardsThePropertyNamedByOneOfSeveralLiterals' => [
+                'code' => '<?php
+                    final class A {
+                        public string $x = "";
+                    }
+
+                    function takesString(string $s): void {}
+
+                    /** @param "x"|"w" $p */
+                    function guarded(A $o, string $p): void {
+                        if (isset($o->{$p})) {
+                            takesString($o->{$p});
+                        }
+                    }',
+            ],
+            'notNullNarrowsThePropertyNamedByOneOfSeveralLiterals' => [
+                'code' => '<?php
+                    final class A {
+                        public string $x = "";
+                        public ?string $n = null;
+                    }
+
+                    function takesString(string $s): void {}
+
+                    /** @param "x"|"n" $p */
+                    function narrowed(A $o, string $p): void {
+                        if ($o->{$p} !== null) {
+                            takesString($o->{$p});
+                        }
+                    }
+
+                    /** @param "x"|"n" $p */
+                    function returned(A $o, string $p): string {
+                        if ($o->{$p} === null) {
+                            return "";
+                        }
+
+                        return $o->{$p};
+                    }
+
+                    /** @param "x"|"n" $p */
+                    function otherObjectWritten(A $o, A $o2, string $p): void {
+                        if ($o->{$p} !== null) {
+                            $o2->n = null;
+                            takesString($o->{$p});
+                        }
+                    }',
+            ],
+            'issetGuardsAMagicPropertyNamedByOneOfSeveralLiterals' => [
+                'code' => '<?php
+                    /**
+                     * @property-read string|null $primary
+                     * @property-read string|null $unique
+                     */
+                    final class Fluent {
+                        public function __get(string $k): mixed {
+                            return null;
+                        }
+
+                        public function __isset(string $k): bool {
+                            return false;
+                        }
+                    }
+
+                    function takesString(string $s): void {}
+
+                    /** @param "primary"|"unique" $index */
+                    function f(Fluent $column, string $index): void {
+                        if (isset($column->{$index})) {
+                            takesString($column->{$index});
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'constructorWritingAPropertyNamedByAForeachKeyKeepsTheParentsInitialisations' => [
+                'code' => '<?php
+                    class Base {
+                        protected string $pluginId;
+                        public function __construct(string $id) { $this->pluginId = $id; }
+                    }
+
+                    final class Source extends Base {
+                        private bool $cacheCounts = false;
+                        private bool $skipCount = false;
+
+                        public function __construct(string $id, array $configuration) {
+                            parent::__construct($id);
+                            foreach (["cacheCounts" => "cache_counts", "skipCount" => "skip_count"] as $property => $key) {
+                                if (isset($configuration[$key])) {
+                                    $this->$property = (bool) $configuration[$key];
+                                }
+                            }
+                        }
+                    }',
+            ],
+            'constructorWritingAPropertyNamedByOneOfSeveralLiteralsKeepsTheOtherInitialisations' => [
+                'code' => '<?php
+                    final class Own {
+                        private string $a;
+                        private bool $x = false;
+                        private bool $y = false;
+
+                        /** @param "x"|"y" $p */
+                        public function __construct(string $p) {
+                            $this->a = "v";
+                            $this->{$p} = true;
+                        }
+                    }',
+            ],
+            'writeOfAPropertyNamedByOneOfSeveralLiteralsKeepsWhatIsKnownOfTheOthers' => [
+                'code' => '<?php
+                    final class Narrow {
+                        public ?string $n = null;
+                        public ?string $m = null;
+                        public bool $x = false;
+                    }
+
+                    function takesString(string $s): void {}
+
+                    /** @param "x"|"m" $p */
+                    function narrowedOther(Narrow $o, string $p): void {
+                        if ($o->n !== null) {
+                            $o->{$p} = null;
+                            takesString($o->n);
+                        }
+                    }',
+            ],
             'finalClassInitialisesThePropertyThroughAnAliasedTraitMethod' => [
                 'code' => '<?php
                     interface H {}
@@ -5948,6 +6123,152 @@ final class PropertyTypeTest extends TestCase
                         }
                     }',
                 'error_message' => 'UndefinedPropertyFetch',
+            ],
+            'propertyNamedByOneOfSeveralLiteralsIsUndefinedForOneOfThem' => [
+                'code' => '<?php
+                    final class A {
+                        public string $x = "";
+                    }
+
+                    /** @param "x"|"w" $p */
+                    function get(A $o, string $p): string {
+                        return (string) $o->{$p};
+                    }',
+                'error_message' => 'UndefinedPropertyFetch',
+            ],
+            'propertyNamedByOneOfSeveralLiteralsIsForgottenWhenTheNameChanges' => [
+                'code' => '<?php
+                    final class A {
+                        public string $x = "";
+                        public ?string $n = null;
+                        public ?string $m = null;
+                    }
+
+                    function takesString(string $s): void {}
+
+                    /**
+                     * @param "x"|"n" $p
+                     * @param "m"|"n" $q
+                     */
+                    function f(A $o, string $p, string $q): void {
+                        if ($o->{$p} !== null) {
+                            $p = $q;
+                            takesString($o->{$p});
+                        }
+                    }',
+                'error_message' => 'PossiblyNullArgument',
+            ],
+            'propertyNamedByOneOfSeveralLiteralsIsForgottenWhenOneOfThemIsWritten' => [
+                'code' => '<?php
+                    final class A {
+                        public string $x = "";
+                        public ?string $n = null;
+                    }
+
+                    function takesString(string $s): void {}
+
+                    /** @param "x"|"n" $p */
+                    function f(A $o, string $p): void {
+                        if ($o->{$p} !== null) {
+                            $o->n = null;
+                            takesString($o->{$p});
+                        }
+                    }',
+                'error_message' => 'PossiblyNullArgument',
+            ],
+            'propertyNamedByOneOfSeveralLiteralsIsForgottenWhenOneOfThemIsUnset' => [
+                'code' => '<?php
+                    final class A {
+                        public string $x = "";
+                        public ?string $n = null;
+                    }
+
+                    function takesString(string $s): void {}
+
+                    /** @param "x"|"n" $p */
+                    function f(A $o, string $p): void {
+                        if ($o->{$p} !== null) {
+                            unset($o->n);
+                            takesString($o->{$p});
+                        }
+                    }',
+                'error_message' => 'PossiblyNullArgument',
+            ],
+            'propertyNamedByOneOfSeveralLiteralsIsForgottenWhenItIsWritten' => [
+                'code' => '<?php
+                    final class A {
+                        public string $x = "";
+                        public ?string $n = null;
+                    }
+
+                    function takesString(string $s): void {}
+
+                    /** @param "x"|"n" $p */
+                    function f(A $o, string $p): void {
+                        if ($o->{$p} !== null) {
+                            $o->{$p} = null;
+                            takesString($o->{$p});
+                        }
+                    }',
+                'error_message' => 'PossiblyNullArgument',
+            ],
+            'writeOfAPropertyNamedByOneOfSeveralLiteralsForgetsEachOfThem' => [
+                'code' => '<?php
+                    final class A {
+                        public ?string $m = null;
+                        public ?string $n = null;
+                    }
+
+                    function takesString(string $s): void {}
+
+                    /** @param "m"|"n" $p */
+                    function f(A $o, string $p): void {
+                        if ($o->n !== null) {
+                            $o->{$p} = null;
+                            takesString($o->n);
+                        }
+                    }',
+                'error_message' => 'PossiblyNullArgument',
+            ],
+            'propertyNamedByOneOfSeveralLiteralsIsForgottenWhenTheObjectIsReassigned' => [
+                'code' => '<?php
+                    final class A {
+                        public string $x = "";
+                        public ?string $n = null;
+                    }
+
+                    function takesString(string $s): void {}
+
+                    /** @param "x"|"n" $p */
+                    function reassigned(A $o, A $o2, string $p): void {
+                        if ($o->{$p} !== null) {
+                            $o = $o2;
+                            takesString($o->{$p});
+                        }
+                    }',
+                'error_message' => 'PossiblyNullArgument',
+            ],
+            'propertyNamedByOneOfSeveralLiteralsIsForgottenAfterAMethodCall' => [
+                'code' => '<?php
+                    final class A {
+                        public string $x = "";
+                        public ?string $n = null;
+
+                        public function reset(): void {
+                            $this->n = null;
+                        }
+                    }
+
+                    function takesString(string $s): void {}
+
+                    /** @param "x"|"n" $p */
+                    function called(A $o, string $p): void {
+                        if ($o->{$p} !== null) {
+                            $o->reset();
+                            takesString($o->{$p});
+                        }
+                    }',
+                'error_message' => 'PossiblyNullArgument',
             ],
             'issetOnATypedPropertyOfABuiltinClassWithADefault' => [
                 'code' => '<?php

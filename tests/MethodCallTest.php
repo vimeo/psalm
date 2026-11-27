@@ -7,6 +7,7 @@ namespace Psalm\Tests;
 use Override;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\IssueData;
+use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\IssueBuffer;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\InvalidCodeAnalysisWithIssuesTestTrait;
@@ -31,6 +32,49 @@ final class MethodCallTest extends TestCase
         );
 
         $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testConstructorOverloadReportsBothIssuesOfTheLastDeclaredSignature(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile(
+            $file_path,
+            '<?php
+                class Connection {
+                    /**
+                     * @psalm-overload (string $dsnOrHost)
+                     * @psalm-overload (string $dsnOrHost, int $port)
+                     */
+                    public function __construct(string $dsnOrHost, ?int $port = null) {}
+                }
+
+                new Connection(3306);',
+        );
+
+        $this->project_analyzer->setPhpVersion('8.0', 'tests');
+        $this->analyzeFile($file_path, new Context(), false);
+
+        self::assertSame(
+            ['InvalidArgument', 'TooFewArguments'],
+            array_map(
+                static fn(IssueData $issue): string => $issue->type,
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
+        );
+    }
+
+    /**
+     * Without the soap stub (the project doesn't require ext-soap), the callmap gives the signature
+     */
+    public function testSoapClientSetLocationOfTheCallMapBeforePhp81ReturnsNullWhenNoLocationWasSet(): void
+    {
+        $this->project_analyzer->setPhpVersion('8.0', 'tests');
+
+        $callables = InternalCallMapHandler::getCallablesFromCallMap('SoapClient::__setLocation');
+
+        self::assertNotNull($callables);
+        self::assertSame('null|string', $callables[0]->return_type?->getId());
     }
 
     public function testNewOfAnObjectOrAClassStringOfTheSameClassIsReportedOnce(): void
@@ -436,6 +480,124 @@ final class MethodCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'psalmOverloadOfAConstructorOfAGenericClass' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /**
+                         * @psalm-overload (T $value)
+                         * @psalm-overload (T $value, int $n)
+                         */
+                        public function __construct(mixed $value, int $n = 0) {
+                        }
+                    }
+
+                    $one = new Box(1);
+                    $two = new Box("x", 2);',
+                'assertions' => [
+                    '$one===' => 'Box<1>',
+                    '$two===' => "Box<'x'>",
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'psalmOverloadOfAConstructorIsChosenByNamedArgumentsSelfAndParent' => [
+                'code' => '<?php
+                    class Connection {
+                        /**
+                         * @psalm-overload (string $dsnOrHost)
+                         * @psalm-overload (string $dsnOrHost, int $port)
+                         */
+                        public function __construct(string $dsnOrHost, ?int $port = null) {
+                        }
+
+                        public static function memory(): self {
+                            return new self("sqlite::memory:");
+                        }
+                    }
+
+                    final class Pooled extends Connection {
+                        public function __construct(string $host) {
+                            parent::__construct($host, 5432);
+                        }
+                    }
+
+                    $named = new Connection(dsnOrHost: "localhost", port: 3306);
+                    $memory = Connection::memory();',
+                'assertions' => [
+                    '$named===' => 'Connection',
+                    '$memory===' => 'Connection',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'psalmOverloadOfAConstructorFallsBackToTheRealSignature' => [
+                'code' => '<?php
+                    class View {
+                        /**
+                         * @psalm-overload (int $x)
+                         * @psalm-overload (string $x)
+                         */
+                        public function __construct(int|string $x) {}
+                    }
+
+                    final class Sub extends View {
+                        public function __construct(int|string $y) {
+                            parent::__construct($y);
+                        }
+                    }
+
+                    function create(int|string $v): View {
+                        return new View($v);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'psalmOverloadOfAConstructorAcceptsEachDeclaredSignature' => [
+                'code' => '<?php
+                    class Connection {
+                        /**
+                         * @psalm-overload (string $dsnOrHost)
+                         * @psalm-overload (string $dsnOrHost, int $port)
+                         */
+                        public function __construct(string $dsnOrHost, ?int $port = null) {
+                        }
+                    }
+
+                    final class Pooled extends Connection {}
+
+                    $first = new Connection("sqlite::memory:");
+                    $second = new Connection("localhost", 3306);
+                    $third = new Pooled("localhost", 3306);',
+                'assertions' => [
+                    '$first===' => 'Connection',
+                    '$second===' => 'Connection',
+                    '$third===' => 'Pooled',
+                ],
+            ],
+            'soapClientSetLocationReturnsNullWhenNoLocationWasSet' => [
+                'code' => '<?php
+                    function f(SoapClient $client): string {
+                        $old = $client->__setLocation("http://example.org");
+
+                        if ($old === null) {
+                            return "none";
+                        }
+
+                        return $old;
+                    }
+
+                    final class Soap extends SoapClient {
+                        #[Override]
+                        public function __setLocation(?string $location = null): ?string {
+                            return null;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'psalmOverloadOfAStaticMethodIsNotChosenForAFirstClassCallable' => [
                 'code' => '<?php
                     final class Picker {
@@ -3963,6 +4125,42 @@ final class MethodCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'psalmOverloadOfAConstructorRejectsAMixOfTheSignatures' => [
+                'code' => '<?php
+                    final class Version {
+                        /**
+                         * @psalm-overload (string $first)
+                         * @psalm-overload (int $first, int $second)
+                         */
+                        public function __construct(string|int $first, ?int $second = null) {
+                        }
+                    }
+
+                    new Version("a", "b");',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:33 - '
+                    . 'Argument 1 of Version::__construct expects int, but \'a\' provided',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'psalmOverloadOfAnInheritedConstructorIsSelectedByTheArguments' => [
+                'code' => '<?php
+                    class Base {
+                        /**
+                         * @psalm-overload (string $first)
+                         * @psalm-overload (int $first, int $second)
+                         */
+                        public function __construct(string|int $first, ?int $second = null) {
+                        }
+                    }
+
+                    final class Child extends Base {}
+
+                    new Child("a", "b");',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:31 - '
+                    . 'Argument 1 of Child::__construct expects int, but \'a\' provided',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'psalmOverloadOfAMethodReportsAMethodOfTheOtherResult' => [
                 'code' => '<?php
                     final class PagedResult {

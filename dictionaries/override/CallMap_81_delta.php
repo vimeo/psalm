@@ -5931,19 +5931,6 @@ return array (
         'value=' => 'null|string',
       ),
     ),
-    'soapclient::__setlocation' => 
-    array (
-      'old' => 
-      array (
-        0 => 'string',
-        'location=' => 'null|string',
-      ),
-      'new' => 
-      array (
-        0 => 'null|string',
-        'location=' => 'null|string',
-      ),
-    ),
     'splfileobject::fputcsv' => 
     array (
       'old' => 

@@ -110,6 +110,87 @@ final class NamespaceTest extends TestCase
                     use function B\foo;
                     use const B\FOO;',
             ],
+            'namespaceRelativeNameInDocblock' => [
+                'code' => '<?php
+                    namespace App\Model\Sub {
+                        final class Role {}
+                    }
+
+                    namespace App\Model {
+                        use Vendor\Sub;
+
+                        final class User {}
+
+                        /**
+                         * @param namespace\User $user
+                         * @return Namespace\Sub\Role
+                         */
+                        function roleOf($user) {
+                            return new namespace\Sub\Role();
+                        }
+
+                        $role = roleOf(new User());
+                    }',
+                'assertions' => [
+                    '$role===' => 'App\Model\Sub\Role',
+                ],
+            ],
+            'namespaceRelativeNameInDocblockOfGlobalNamespace' => [
+                'code' => '<?php
+                    namespace {
+                        final class Logger {}
+
+                        /** @return namespace\Logger */
+                        function logger() {
+                            return new Logger();
+                        }
+
+                        $logger = logger();
+                    }',
+                'assertions' => [
+                    '$logger===' => 'Logger',
+                ],
+            ],
+            'namespaceRelativeConstantWithANamespaceSegment' => [
+                'code' => '<?php
+                    namespace App\namespace {
+                        const FLAG = 7;
+                    }
+
+                    namespace App {
+                        const FLAG = "wrong";
+
+                        final class Config {
+                            const LIMIT = namespace\namespace\FLAG;
+                        }
+
+                        $flag = namespace\namespace\FLAG;
+                        $limit = Config::LIMIT;
+                    }',
+                'assertions' => [
+                    '$flag===' => '7',
+                    '$limit===' => '7',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'namespaceRelativeAttributeWithANamespaceSegment' => [
+                'code' => '<?php
+                    namespace Psalm\namespace {
+                        #[\Attribute]
+                        final class Deprecated {}
+                    }
+
+                    namespace Psalm {
+                        #[namespace\namespace\Deprecated]
+                        const LIMIT = 1;
+
+                        echo LIMIT;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
         ];
     }
 
@@ -132,6 +213,12 @@ final class NamespaceTest extends TestCase
                         foo();
                     }',
                 'error_message' => 'UndefinedFunction',
+            ],
+            'namespaceRelativeDocblockPrefixWithoutAName' => [
+                'code' => '<?php
+                    /** @return namespace\ */
+                    function f() {}',
+                'error_message' => 'UndefinedDocblockClass',
             ],
             'callRootFunctionFromNamespace' => [
                 'code' => '<?php

@@ -439,6 +439,33 @@ final class MissingExtensionRequirementTest extends TestCase
                 'error_message' => 'MissingExtensionRequirement - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:32'
                     . ' - mb_strlen is part of the ext-mbstring extension',
             ],
+            'extensionCheckedInALoopLeftBeforeTheCheck' => [
+                'code' => '<?php
+                    /** @param list<string> $xs */
+                    function f(array $xs, string $s): int {
+                        foreach ($xs as $_) {
+                            if (function_exists("mb_convert_encoding")) {
+                                break;
+                            }
+                        }
+                        return mb_strlen($s);
+                    }',
+                'error_message' => 'MissingExtensionRequirement - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:32'
+                    . ' - mb_strlen is part of the ext-mbstring extension',
+            ],
+            'extensionCheckedOnlyInAnIf' => [
+                'code' => '<?php
+                    function f(string $s, bool $c): int {
+                        if ($c) {
+                            if (!function_exists("mb_convert_encoding")) {
+                                return 0;
+                            }
+                        }
+                        return mb_strlen($s);
+                    }',
+                'error_message' => 'MissingExtensionRequirement - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:32'
+                    . ' - mb_strlen is part of the ext-mbstring extension',
+            ],
             'new' => [
                 'code' => '<?php
                     function f(): ZipArchive {

@@ -125,7 +125,10 @@ abstract class Type
 
         $imported_namespaces = $aliases->uses;
 
-        if (str_contains($class, '\\')) {
+        // `namespace\Foo` is relative to the current namespace, and imports don't apply to it
+        if (stripos($class, 'namespace\\') === 0 && strlen($class) > 10) {
+            $class = substr($class, 10);
+        } elseif (str_contains($class, '\\')) {
             $class_parts = explode('\\', $class);
             $first_namespace = array_shift($class_parts);
 
@@ -648,8 +651,6 @@ abstract class Type
      * @param  int    $literal_limit any greater number of literal types than this
      *                               will be merged to a scalar
      * @psalm-external-mutation-free
-     * @psalm-suppress ImpurePropertyAssignment We're not mutating external instances
-     * @psalm-suppress InaccessibleProperty We're not mutating external instances
      */
     public static function combineUnionTypes(
         ?Union $type_1,
@@ -659,6 +660,59 @@ abstract class Type
         bool $allow_mixed_union = true,
         int $literal_limit = 500,
         ?bool $possibly_undefined = null,
+    ): Union {
+        return self::combineUnions(
+            $type_1,
+            $type_2,
+            $codebase,
+            $overwrite_empty_array,
+            $allow_mixed_union,
+            $literal_limit,
+            $possibly_undefined,
+            true,
+        );
+    }
+
+    /**
+     * Combines an array with the array a write into it makes, which holds the written value
+     *
+     * @internal
+     * @param  bool   $overwrite_array_values whether the written value overwrites the values of the other keys too,
+     *                               and not only an empty array
+     * @psalm-external-mutation-free
+     */
+    public static function combineArrayWithWrite(
+        Union $array_type,
+        Union $written_array_type,
+        Codebase $codebase,
+        bool $overwrite_array_values,
+    ): Union {
+        return self::combineUnions(
+            $array_type,
+            $written_array_type,
+            $codebase,
+            true,
+            true,
+            500,
+            null,
+            $overwrite_array_values,
+        );
+    }
+
+    /**
+     * @psalm-external-mutation-free
+     * @psalm-suppress ImpurePropertyAssignment We're not mutating external instances
+     * @psalm-suppress InaccessibleProperty We're not mutating external instances
+     */
+    private static function combineUnions(
+        ?Union $type_1,
+        ?Union $type_2,
+        ?Codebase $codebase,
+        bool $overwrite_empty_array,
+        bool $allow_mixed_union,
+        int $literal_limit,
+        ?bool $possibly_undefined,
+        bool $overwrite_array_values,
     ): Union {
         if ($type_2 === null && $type_1 === null) {
             throw new UnexpectedValueException('At least one type must be provided to combine');
@@ -715,6 +769,7 @@ abstract class Type
                 $overwrite_empty_array,
                 $allow_mixed_union,
                 $literal_limit,
+                $overwrite_array_values,
             );
 
             if (!$type_1->initialized || !$type_2->initialized) {

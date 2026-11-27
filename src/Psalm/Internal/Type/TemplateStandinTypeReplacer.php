@@ -1001,6 +1001,7 @@ final class TemplateStandinTypeReplacer
                     // @codingStandardsIgnoreStart
                     if ($replacement_atomic_type instanceof TTemplateKeyOf
                         && isset($template_result->template_types[$replacement_atomic_type->param_name][$replacement_atomic_type->defining_class])
+                        && isset($template_result->lower_bounds[$atomic_type->param_name][$atomic_type->defining_class])
                         && count($template_result->lower_bounds[$atomic_type->param_name][$atomic_type->defining_class])
                             === 1
                     ) {
