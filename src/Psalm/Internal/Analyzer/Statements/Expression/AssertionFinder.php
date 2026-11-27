@@ -59,6 +59,7 @@ use Psalm\Storage\Assertion\ArrayKeyExists;
 use Psalm\Storage\Assertion\DoesNotHaveAtLeastCount;
 use Psalm\Storage\Assertion\Empty_;
 use Psalm\Storage\Assertion\Falsy;
+use Psalm\Storage\Assertion\HasArrayValue;
 use Psalm\Storage\Assertion\HasAtLeastCount;
 use Psalm\Storage\Assertion\HasExactCount;
 use Psalm\Storage\Assertion\HasMethod;
@@ -127,6 +128,7 @@ use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function array_all;
+use function array_any;
 use function array_filter;
 use function array_keys;
 use function array_map;
@@ -137,6 +139,7 @@ use function count;
 use function explode;
 use function in_array;
 use function is_int;
+use function is_nan;
 use function is_numeric;
 use function is_string;
 use function ltrim;
@@ -987,15 +990,12 @@ final class AssertionFinder
                 $if_types[$first_var_name] = [[new HasMethod($expr->getArgs()[1]->value->value)]];
             }
         } elseif ($function_id === 'in_array'
-            && self::hasTrueThirdArg($expr)
             && $source instanceof StatementsAnalyzer
-            && isset($expr->getArgs()[1])
         ) {
             return self::getInarrayAssertions(
                 $expr,
                 $source,
-                $first_var_name ?? self::getStringCastNeedleVarId($expr, $source, $this_class_name),
-                self::getOperandId($expr->getArgs()[1]->value, $this_class_name, $source),
+                $this_class_name,
             );
         } elseif ($function_id === 'array_key_exists' || $function_id === 'key_exists') {
             return self::getArrayKeyExistsAssertions(
@@ -2491,18 +2491,6 @@ final class AssertionFinder
             || strtolower($second_arg->name->getFirst()) !== 'true';
     }
 
-    private static function hasTrueThirdArg(PhpParser\Node\Expr\FuncCall $stmt): bool
-    {
-        if (!isset($stmt->getArgs()[2])) {
-            return false;
-        }
-
-        $third_arg = $stmt->getArgs()[2]->value;
-
-        return $third_arg instanceof PhpParser\Node\Expr\ConstFetch
-            && strtolower($third_arg->name->getFirst()) === 'true';
-    }
-
     /**
      * A nullsafe chain that is null only by short-circuiting is null exactly when the receiver of its nullsafe link
      * is, which holds for a single link: with several, a null intermediate value says nothing. A nullsafe property
@@ -3847,14 +3835,86 @@ final class AssertionFinder
     private static function getInarrayAssertions(
         PhpParser\Node\Expr\FuncCall $expr,
         StatementsAnalyzer $source,
-        ?string $first_var_name,
-        string $haystack,
+        ?string $this_class_name,
     ): array {
+        $args = $expr->getArgs();
+        $has_unpack = array_any($args, static fn(PhpParser\Node\Arg $arg): bool => $arg->unpack);
+
+        $needle_arg = self::getArgumentOfParameter($args, 0, 'needle');
+        $haystack_arg = self::getArgumentOfParameter($args, 1, 'haystack');
+
+        if ($needle_arg === null || $haystack_arg === null) {
+            return [];
+        }
+
+        $strict_arg = self::getArgumentOfParameter($args, 2, 'strict');
+        $strict = null;
+
+        if ($strict_arg !== null) {
+            $strict_type = $source->node_data->getType($strict_arg->value);
+
+            if ($strict_type !== null) {
+                if ($strict_type->isTrue()) {
+                    $strict = true;
+                } elseif ($strict_type->isFalse()) {
+                    $strict = false;
+                }
+            } elseif ($strict_arg->value instanceof PhpParser\Node\Expr\ConstFetch) {
+                $const_name = strtolower($strict_arg->value->name->getFirst());
+                if ($const_name === 'true') {
+                    $strict = true;
+                } elseif ($const_name === 'false') {
+                    $strict = false;
+                }
+            }
+        } elseif (!$has_unpack) {
+            $strict = false;
+        }
+
+        if ($strict === null) {
+            return [];
+        }
+
+        $first_arg = $needle_arg->value;
+        $haystack_expr = $haystack_arg->value;
+
+        $second_arg_type = $source->node_data->getType($haystack_expr);
+
+        if ($second_arg_type === null) {
+            return [];
+        }
+
+        $first_var_name = ExpressionIdentifier::getExtendedVarId($first_arg, $this_class_name, $source)
+            ?? ($strict ? self::getStringCastNeedleVarId($expr, $source, $this_class_name) : null);
+
+        $haystack_var_name = ExpressionIdentifier::getExtendedVarId($haystack_expr, $this_class_name, $source);
+        $needle_type = $source->node_data->getType($first_arg);
+        $needle_singleton = $needle_type !== null ? self::getInArraySingletonNeedle($needle_type) : null;
+        $is_array_template = $second_arg_type->isSingle()
+            && self::isArrayTemplate($second_arg_type->getSingleAtomic());
+
+        // When the needle is a single known value, assert on the haystack alone so negating the call yields
+        // a single-variable clause that narrows the haystack's element type.
+        if ($needle_singleton !== null
+            && $haystack_var_name !== null
+            && $haystack_var_name !== $first_var_name
+            && (!$strict
+                || $first_var_name === null
+                || $first_arg instanceof PhpParser\Node\Expr\ClassConstFetch
+                || !$is_array_template)
+        ) {
+            return [[$haystack_var_name => [[new HasArrayValue($needle_singleton, $strict)]]]];
+        }
+
+        if (!$strict) {
+            return [];
+        }
+
+        $haystack = self::getOperandId($haystack_expr, $this_class_name, $source);
         $if_types = [];
 
-        if ($first_var_name
-            && ($second_arg_type = $source->node_data->getType($expr->getArgs()[1]->value))
-            && ($first_arg = $expr->getArgs()[0]->value ?? null)
+        if ($first_var_name !== null
+            && $first_var_name !== ''
             && !$first_arg instanceof PhpParser\Node\Expr\ClassConstFetch
         ) {
             foreach ($second_arg_type->getAtomicTypes() as $atomic_type) {
@@ -3917,8 +3977,8 @@ final class AssertionFinder
                     )]);
 
                     // the values of two templates can't be intersected
-                    if (($first_var_type = $source->node_data->getType($first_arg))
-                        && Type::intersectUnionTypes($value_of_type, $first_var_type, $source->getCodebase()) !== null
+                    if ($needle_type !== null
+                        && Type::intersectUnionTypes($value_of_type, $needle_type, $source->getCodebase()) !== null
                     ) {
                         $if_types[$first_var_name] = [[new InArray($value_of_type, $haystack)]];
                     }
@@ -3927,6 +3987,33 @@ final class AssertionFinder
         }
 
         return $if_types ? [$if_types] : [];
+    }
+
+    /**
+     * A needle type that stands for a single runtime value (excluding NAN, which never equals itself).
+     *
+     * @psalm-pure
+     */
+    private static function getInArraySingletonNeedle(Union $needle_type): ?Atomic
+    {
+        if (count($needle_type->getAtomicTypes()) !== 1) {
+            return null;
+        }
+
+        $atomic = $needle_type->getSingleAtomic();
+
+        if ($atomic instanceof TNull
+            || $atomic instanceof TFalse
+            || $atomic instanceof TTrue
+            || $atomic instanceof TLiteralInt
+            || $atomic instanceof TLiteralString
+            || $atomic instanceof TEnumCase
+            || ($atomic instanceof TLiteralFloat && !is_nan($atomic->value))
+        ) {
+            return $atomic;
+        }
+
+        return null;
     }
 
     /**

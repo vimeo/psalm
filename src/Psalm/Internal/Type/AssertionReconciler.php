@@ -24,6 +24,7 @@ use Psalm\IssueBuffer;
 use Psalm\Storage\Assertion;
 use Psalm\Storage\Assertion\ArrayKeyExists;
 use Psalm\Storage\Assertion\Falsy;
+use Psalm\Storage\Assertion\HasArrayValue;
 use Psalm\Storage\Assertion\HasAtLeastCount;
 use Psalm\Storage\Assertion\HasExactCount;
 use Psalm\Storage\Assertion\IsAClass;
@@ -278,6 +279,16 @@ final class AssertionReconciler extends Reconciler
                 $suppressed_issues,
                 $failed_reconciliation,
                 $inside_loop,
+            );
+        }
+
+        if ($assertion instanceof HasArrayValue) {
+            return ArrayValueAssertionReconciler::reconcileHasArrayValue(
+                $assertion,
+                $existing_var_type,
+                $statements_analyzer,
+                $inside_loop,
+                $failed_reconciliation,
             );
         }
 
