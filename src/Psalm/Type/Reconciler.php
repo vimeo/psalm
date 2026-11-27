@@ -8,6 +8,7 @@ use InvalidArgumentException;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ArrayAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\ArrayAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\CoalesceAnalyzer;
@@ -2014,6 +2015,7 @@ class Reconciler
                                             $existing_key_type_part->value,
                                             $name,
                                             $statements_analyzer,
+                                            $code_location,
                                         );
 
                                         if ($name_type === null) {
@@ -2266,6 +2268,7 @@ class Reconciler
         string $fq_class_name,
         string $property_name,
         ?StatementsAnalyzer $statements_analyzer = null,
+        ?CodeLocation $code_location = null,
     ): ?Union {
         $property_id = $fq_class_name . '::$' . $property_name;
 
@@ -2274,12 +2277,16 @@ class Reconciler
         // a read of a property the code can't access goes through `__get()`, which the `@property` describes
         if (!$property_exists
             || ($statements_analyzer !== null
+                && $code_location !== null
                 && $codebase->methods->methodExists($codebase, new MethodIdentifier($fq_class_name, '__get'))
-                && !$codebase->properties->isAccessibleFrom(
-                    $fq_class_name,
-                    $property_name,
-                    $statements_analyzer->getFQCLN(),
-                ))
+                && ClassLikeAnalyzer::checkPropertyVisibility(
+                    $property_id,
+                    new Context($statements_analyzer->getFQCLN()),
+                    $statements_analyzer,
+                    $code_location,
+                    [],
+                    false,
+                ) !== true)
         ) {
             $class_storage = $codebase->classlike_storage_provider->get(
                 $fq_class_name,

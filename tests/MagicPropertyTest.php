@@ -964,6 +964,60 @@ final class MagicPropertyTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'propertyOfTheChildHidesTheAnnotationOfAParentWithOnlyAMagicGetter' => [
+                'code' => '<?php
+                    /**
+                     * @property object|false|null $connection
+                     */
+                    abstract class FileTransfer {
+                        public function __get(string $name): mixed {
+                            return null;
+                        }
+                    }
+
+                    final class SSH extends FileTransfer {
+                        /** @var resource|false */
+                        protected $connection = false;
+
+                        /** @param resource|false $connection */
+                        public function connect($connection): void {
+                            $this->connection = $connection;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'protectedPropertyRedeclaredBySiblingIsReadDirectlyFromAnotherChild' => [
+                'code' => '<?php
+                    /**
+                     * @property string $value
+                     */
+                    abstract class Base {
+                        protected int|string $value = 0;
+
+                        public function __get(string $name): mixed {
+                            return "";
+                        }
+                    }
+
+                    final class Other extends Base {
+                        protected int|string $value = 1;
+                    }
+
+                    final class Reader extends Base {
+                        public function read(Other $other): int {
+                            if ($other->value && is_int($other->value)) {
+                                return $other->value;
+                            }
+
+                            return 0;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'propertyAnnotationOfTheClassNarrowsItsPublicProperty' => [
                 'code' => '<?php
                     /**
