@@ -46,6 +46,48 @@ function show(QueryInput $input): void {
 }
 ```
 
+### Conditional sources
+
+A conditional type on the parameters chooses the taint of each call, as with
+[conditional sinks](custom_taint_sinks.md#conditional-sinks). A condition the arguments don't decide gives the taints of
+both branches.
+
+```php
+<?php // --taint-analysis
+
+final class Config {
+    /** @psalm-taint-source ($key is 'salt' ? 'secret_key' : null) */
+    public static function get(string $key): string { return ''; }
+}
+
+function check(string $key): void {
+    $given = (string) $_GET['hash'];
+
+    hash('sha256', Config::get('salt')) === $given; // TaintedTimingComparison
+    hash('sha256', Config::get('name')) === $given; // no issue
+    hash('sha256', Config::get($key)) === $given;   // TaintedTimingComparison: $key may be 'salt'
+}
+```
+
+### Class constants
+
+A class constant can be a source too, such as a secret hardcoded in the class:
+
+```php
+<?php // --taint-analysis
+
+final class Signer {
+    /** @psalm-taint-source secret_key */
+    private const SALT = 'MIASfjaspijf0';
+
+    public static function check(string $data, string $given): bool {
+        return hash('sha256', $data . self::SALT) === $given; // TaintedTimingComparison
+    }
+}
+
+Signer::check('id=1', (string) $_GET['sign']);
+```
+
 ## Custom taints declared in the configuration
 
 Custom taints can be declared in `psalm.xml`, so that the annotations can name them without a plugin registering

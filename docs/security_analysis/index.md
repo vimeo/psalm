@@ -841,9 +841,11 @@ issue:
 | `sleep` | [TaintedSleep](../running_psalm/issues/TaintedSleep.md) | Controlling wait durations (`sleep()`, cURL timeouts, ...; carried by numbers too) |
 | `llm_prompt` | [TaintedLlmPrompt](../running_psalm/issues/TaintedLlmPrompt.md) | Prompt injection into an LLM |
 | `user_secret` | [TaintedUserSecret](../running_psalm/issues/TaintedUserSecret.md) | Leaking a user-supplied secret |
-| `system_secret` | [TaintedSystemSecret](../running_psalm/issues/TaintedSystemSecret.md) | Leaking a system secret |
+| `system_secret` | [TaintedSystemSecret](../running_psalm/issues/TaintedSystemSecret.md) | Leaking a system secret, or comparing it with user input in a time that depends on it ([TaintedTimingComparison](../running_psalm/issues/TaintedTimingComparison.md)) |
+| `secret_key` | [TaintedTimingComparison](../running_psalm/issues/TaintedTimingComparison.md) | Comparing a token, a signature or a salted hash with user input in a time that depends on it |
 
-Every kind except `user_secret` and `system_secret` is user input, and built-in sources carry all of them. In
+Every kind except `user_secret`, `system_secret` and `secret_key` is user input, and built-in sources carry all of
+them. In
 annotations, `input` (or its alias `tainted`) matches all user-input kinds, and `input_except_sleep` matches all of them
 except `sleep`.
 

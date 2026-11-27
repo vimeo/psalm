@@ -388,6 +388,7 @@ These issues are only reported when their corresponding feature is enabled (e.g.
  - [TaintedSql](issues/TaintedSql.md)
  - [TaintedSystemSecret](issues/TaintedSystemSecret.md)
  - [TaintedTextWithQuotes](issues/TaintedTextWithQuotes.md)
+ - [TaintedTimingComparison](issues/TaintedTimingComparison.md)
  - [TaintedUnserialize](issues/TaintedUnserialize.md)
  - [TaintedUrlComponent](issues/TaintedUrlComponent.md)
  - [TaintedUrlPath](issues/TaintedUrlPath.md)
