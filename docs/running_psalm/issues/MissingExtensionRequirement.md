@@ -61,7 +61,7 @@ reported.
 
 The extensions PHP is always built with need no declaration: `Core`, `standard`, `date`, `pcre`, `SPL`, `Reflection`,
 `hash` from PHP 7.4, `json` from PHP 8.0, `random` from PHP 8.2, `uri` and `Zend OPcache` from PHP 8.5. Psalm checks
-the lowest PHP version the `php` requirement of `composer.json` allows:
+the lowest PHP version the `php` requirement of `composer.json` allows (without one, its `config.platform.php`):
 
 ```php
 <?php // composer.json requires "php": "^7.3"
