@@ -500,6 +500,8 @@ final class TaintFlowGraph extends DataFlowGraph
         string $path_type,
         int $added_taints = 0,
         int $removed_taints = 0,
+        int $position_removed_taints = 0,
+        int $restored_taints = 0,
     ): void {
         if ($removed_taints === TaintKind::ALL
             || $to->id === DataFlowNode::getForVariableUse()->id
@@ -508,7 +510,15 @@ final class TaintFlowGraph extends DataFlowGraph
             return;
         }
 
-        parent::addPath($from, $to, $path_type, $added_taints, $removed_taints);
+        parent::addPath(
+            $from,
+            $to,
+            $path_type,
+            $added_taints,
+            $removed_taints,
+            $position_removed_taints,
+            $restored_taints,
+        );
     }
 
     /**
@@ -518,7 +528,7 @@ final class TaintFlowGraph extends DataFlowGraph
      * a path again to replace it, e.g. with the taints a call escapes: see addPath().)
      *
      * Two paths of the same type are merged into one: a flow keeps the taints either keeps, and gets those
-     * either adds. Two paths of different types aren't: they handle open assignments differently (see
+     * either adds or gives back. Two paths of different types aren't: they handle open assignments differently (see
      * shouldIgnoreFetch()). The one of the first type stays, and the other goes through a node of its own.
      *
      * @psalm-capabilities read-props|write-this-props|write-props|write-refs
@@ -539,6 +549,7 @@ final class TaintFlowGraph extends DataFlowGraph
                 min($existing->length, $path->length),
                 ($existing->added_taints & ~$existing->removed_taints) | ($path->added_taints & ~$path->removed_taints),
                 $existing->removed_taints & $path->removed_taints,
+                $existing->restored_taints | $path->restored_taints,
             );
 
             return;
@@ -913,7 +924,13 @@ final class TaintFlowGraph extends DataFlowGraph
                 if ($path_index === null) {
                     $path_index = count($path_indexes);
                     $path_indexes[spl_object_id($path)] = $path_index;
-                    $paths[] = [$path->type, $path->length, $path->added_taints, $path->removed_taints];
+                    $paths[] = [
+                        $path->type,
+                        $path->length,
+                        $path->added_taints,
+                        $path->removed_taints,
+                        $path->restored_taints,
+                    ];
                 }
 
                 $ints[] = $path_index;
@@ -981,7 +998,7 @@ final class TaintFlowGraph extends DataFlowGraph
      *     sources: array{string, list<string|DataFlowNode|null>},
      *     sinks: array{string, list<string|DataFlowNode|null>},
      *     edges: string,
-     *     paths: list<array{string, int, int, int}>,
+     *     paths: list<array{string, int, int, int, int}>,
      *     strings: list<string>,
      *     file_paths: list<string>,
      *     file_names: list<string>,
@@ -1006,8 +1023,8 @@ final class TaintFlowGraph extends DataFlowGraph
         unset($nodes);
 
         $paths = [];
-        foreach ($data['paths'] as [$type, $length, $added_taints, $removed_taints]) {
-            $paths[] = $this->getPath($type, $length, $added_taints, $removed_taints);
+        foreach ($data['paths'] as [$type, $length, $added_taints, $removed_taints, $restored_taints]) {
+            $paths[] = $this->getPath($type, $length, $added_taints, $removed_taints, $restored_taints);
         }
 
         $forward_edges = [];

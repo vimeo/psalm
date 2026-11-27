@@ -26,6 +26,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\CliOutput;
 use Psalm\Internal\Codebase\ConditionalTaintSinks;
 use Psalm\Internal\Codebase\ReceiverPropertyTaints;
+use Psalm\Internal\Codebase\TaintShadows;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
@@ -1146,6 +1147,7 @@ final class NewAnalyzer extends CallAnalyzer
                 continue;
             }
 
+            // what the methods of the object give back of it may be a part of it (see TaintShadows)
             foreach ($arg_type->parent_nodes as $parent_node) {
                 $graph->addPath(
                     $parent_node,
@@ -1153,6 +1155,8 @@ final class NewAnalyzer extends CallAnalyzer
                     $path_type,
                     $method_storage->added_taints,
                     $method_storage->removed_taints,
+                    0,
+                    TaintShadows::ALL,
                 );
             }
         }

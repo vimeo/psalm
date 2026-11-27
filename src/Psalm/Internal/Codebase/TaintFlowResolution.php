@@ -764,6 +764,14 @@ final class TaintFlowResolution
     private array $entry_bases = [];
 
     /**
+     * Entry that isn't a filter => the shadows (see TaintShadows) the calls entering it have without their taints
+     * (see getHiddenShadows())
+     *
+     * @var array<int, int>
+     */
+    private array $entry_hidden = [];
+
+    /**
      * Entry => the conversions of an array its calls pass, if it is a filter for them (see getConversionFilter()),
      * and the overwrites they are anywhere in an array through or not (see getAnywhereFilter()), which tell it apart
      * from the filters with the same facts (see addEntry())
@@ -972,8 +980,9 @@ final class TaintFlowResolution
         $this->internOpenAssignments([[], []], [self::NO_CALL, self::NO_CALL]);
         $this->internOpenAssignments([[], []], [0, 0], self::INHERITED_SLOT);
 
+        // a shadow isn't a taint a sink takes (see TaintShadows)
         foreach ($sinks as $id => $row) {
-            $this->sink_taints[$id] = $table->getTaints($row);
+            $this->sink_taints[$id] = $table->getTaints($row) & ~TaintShadows::ALL;
         }
     }
 
@@ -990,6 +999,8 @@ final class TaintFlowResolution
             if (!isset($this->sink_reachable[$id]) || $source_taints === 0) {
                 continue;
             }
+
+            $source_taints |= TaintShadows::of($source_taints);
 
             $open_assignments = self::NO_OPEN_ASSIGNMENTS;
 
@@ -2372,13 +2383,24 @@ final class TaintFlowResolution
                 $path_added &= ~$input_taints;
             }
 
+            $next_kept = $kept;
+
+            // The flow gets back the taints it has the shadows of (see TaintShadows). The calls entering the walk of an
+            // entry have each taint with its shadow, or neither, but for those it hides (see getHiddenShadows()): it
+            // keeps the taint of a shadow it keeps, or adds a hidden one.
+            if ($path->restored_taints !== 0) {
+                $hidden = $context === -1 ? 0 : $this->entry_hidden[$this->entry_bases[$context]];
+                $next_kept |= TaintShadows::restore($kept & $path->restored_taints & ~$hidden);
+                $path_added |= TaintShadows::restore(($added | ($kept & $hidden)) & $path->restored_taints);
+            }
+
             $next_added = ($added | $path_added) & ~$removed_taints;
 
             // What a builtin decodes from a string (json_decode(), unserialize(), parse_str(), ...) can be an array
             // or an object again, whatever the string's type took away: decoded user input can be a NoSQL query.
             // In the walk of an entry, the taints the calls keep aren't known: any of them may be user input.
             if ($path->type === DataFlowGraph::UNSERIALIZATION_PATH_TYPE
-                && (($kept | $next_added) & ~$removed_taints & $input_taints) !== 0
+                && (($next_kept | $next_added) & ~$removed_taints & $input_taints) !== 0
             ) {
                 $next_added |= TaintKind::ARRAY_ONLY;
             }
@@ -2386,7 +2408,7 @@ final class TaintFlowResolution
             $this->takeEdge(
                 $context,
                 $open_assignments,
-                $kept & ~$removed_taints,
+                $next_kept & ~$removed_taints,
                 $next_added,
                 $state,
                 0,
@@ -2577,6 +2599,27 @@ final class TaintFlowResolution
     }
 
     /**
+     * The shadows (see TaintShadows) a flow of state $state has without their taints, for every call entering its
+     * context: a place in a string removed those taints. The walk of an entry is shared by the flows entering it, with
+     * their taints relative to theirs (see $state_kept), so those differing by that enter their own (see getEntry()).
+     *
+     * A taint the walk keeps of the calls is had by each call having its shadow, unless the calls don't have it (see
+     * $entry_hidden) or the walk adds the shadow.
+     *
+     * @psalm-mutation-free
+     */
+    private function getHiddenShadows(int $state): int
+    {
+        $kept = $this->state_kept[$state];
+        $added = $this->state_added[$state];
+        $context = $this->state_contexts[$state];
+        $hidden_of_calls = $context === -1 ? 0 : $this->entry_hidden[$this->entry_bases[$context]];
+        $had = $added | ($kept & ~TaintShadows::restore($hidden_of_calls | $added));
+
+        return ($kept | $added) & TaintShadows::ALL & ~TaintShadows::of($had);
+    }
+
+    /**
      * A flow enters the shared body of a specialized function-like through the specialized node of state
      * $caller of the call identified by $specialization_key.
      *
@@ -2598,7 +2641,13 @@ final class TaintFlowResolution
     private function enterSpecializedCall(int $caller, string $unspecialized_id, string $specialization_key): void
     {
         $this->addEntryCaller(
-            $this->getEntry($unspecialized_id, self::ENTRY_CALL, $caller),
+            $this->getEntry(
+                $unspecialized_id,
+                self::ENTRY_CALL,
+                $caller,
+                self::CALL_OPEN_ASSIGNMENTS,
+                $this->getHiddenShadows($caller),
+            ),
             $caller,
             $specialization_key,
             isset($this->copy_positions[$caller]),
@@ -2628,7 +2677,13 @@ final class TaintFlowResolution
     private function enterConvergence(int $caller, string $id): void
     {
         $this->addEntryCaller(
-            $this->getEntry($id, self::ENTRY_CONVERGENCE, $caller, $this->getConvergenceOpenAssignments($caller, $id)),
+            $this->getEntry(
+                $id,
+                self::ENTRY_CONVERGENCE,
+                $caller,
+                $this->getConvergenceOpenAssignments($caller, $id),
+                $this->getHiddenShadows($caller),
+            ),
             $caller,
             null,
             isset($this->copy_positions[$caller]),
@@ -2741,9 +2796,10 @@ final class TaintFlowResolution
         string $id,
         int $kind,
         int $caller,
-        int $open_assignments = self::CALL_OPEN_ASSIGNMENTS,
+        int $open_assignments,
+        int $hidden,
     ): int {
-        $entry_key = $kind . ' ' . $id . ' ' . $open_assignments;
+        $entry_key = $kind . ' ' . $id . ' ' . $open_assignments . ' ' . $hidden;
 
         if (isset($this->entry_ids[$entry_key])) {
             return $this->entry_ids[$entry_key];
@@ -2751,6 +2807,7 @@ final class TaintFlowResolution
 
         $entry = $this->addEntry($id, $kind, []);
         $this->entry_ids[$entry_key] = $entry;
+        $this->entry_hidden[$entry] = $hidden;
         $this->root_entries[count($this->state_nodes)] = $entry;
 
         $this->reach($id, $entry, $open_assignments, self::ALL_TAINTS, 0, $caller, 0, -1);
@@ -3896,7 +3953,10 @@ final class TaintFlowResolution
             $this->entry_sink_ranks[$entry][$caller] = count($this->entry_sink_ranks[$entry] ?? []);
         }
 
-        $taints = $this->state_added[$caller] & ~($this->entry_sink_caller_taints[$entry][$caller] ?? 0);
+        // a sink takes no shadow (see TaintShadows)
+        $taints = $this->state_added[$caller]
+            & ~TaintShadows::ALL
+            & ~($this->entry_sink_caller_taints[$entry][$caller] ?? 0);
         $this->entry_sink_caller_taints[$entry][$caller] = $this->state_added[$caller];
 
         for ($taint = 1; $taints !== 0; $taint <<= 1) {

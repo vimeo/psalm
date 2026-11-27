@@ -14,6 +14,7 @@ use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\PhpDeprecations;
 use Psalm\Internal\Codebase\StringContext;
+use Psalm\Internal\Codebase\TaintShadows;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
@@ -152,8 +153,12 @@ final class EncapsulatedStringAnalyzer
                     }
 
                     if ($casted_part_type->parent_nodes) {
-                        // after the start of a URL fixing its server, the part can't choose it
-                        $removed_taints |= ConcatAnalyzer::getTaintsRemovedAfterUrlOrigins($literal_prefixes);
+                        // After the start of a URL fixing its server, the part can't choose it. What the part's own
+                        // start fixed holds only if nothing is before it (see TaintShadows).
+                        $position_removed_taints = ConcatAnalyzer::getTaintsRemovedAfterUrlOrigins($literal_prefixes);
+                        $restored_taints = $literal_prefixes_extendable && $literal_prefixes === ['']
+                            ? 0
+                            : TaintShadows::BEFORE_VALUE;
 
                         if ($string_context !== null) {
                             $removed_taints |= $string_context->getRemovedTaints();
@@ -167,6 +172,8 @@ final class EncapsulatedStringAnalyzer
                                 'concat',
                                 $added_taints,
                                 $removed_taints,
+                                $position_removed_taints,
+                                $restored_taints,
                             );
                         }
                     }

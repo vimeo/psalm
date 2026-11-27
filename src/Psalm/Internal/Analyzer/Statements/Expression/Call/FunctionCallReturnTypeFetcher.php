@@ -26,6 +26,7 @@ use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Codebase\InternalTaintSourceMap;
 use Psalm\Internal\Codebase\StringContext;
 use Psalm\Internal\Codebase\TaintFlowGraph;
+use Psalm\Internal\Codebase\TaintShadows;
 use Psalm\Internal\Codebase\TaintStore;
 use Psalm\Internal\Codebase\UrlHosts;
 use Psalm\Internal\Codebase\VariableUseGraph;
@@ -913,8 +914,9 @@ final class FunctionCallReturnTypeFetcher
 
             $graph->addPath($argument_node, $param_node, 'arg');
 
+            // preg_replace_callback() passes the parts of the subject a pattern matches
             foreach ($argument_source_nodes as [$source_node, $path_type]) {
-                $graph->addPath($source_node, $argument_node, $path_type);
+                $graph->addPath($source_node, $argument_node, $path_type, 0, 0, 0, TaintShadows::ALL);
             }
         }
     }
@@ -1829,6 +1831,8 @@ final class FunctionCallReturnTypeFetcher
                 ? self::getSprintfFormatArg($args)
                 : null;
 
+            $position_removed_taints = 0;
+
             if ($format_arg) {
                 $prefixes = [];
 
@@ -1838,7 +1842,7 @@ final class FunctionCallReturnTypeFetcher
                     $prefixes[] = str_replace('%%', '%', $matches[0] ?? '');
                 }
 
-                $removed_taints |= ConcatAnalyzer::getTaintsRemovedAfterUrlOrigins($prefixes);
+                $position_removed_taints = ConcatAnalyzer::getTaintsRemovedAfterUrlOrigins($prefixes);
             }
 
             $format_type = $format_arg ? $statements_analyzer->node_data->getType($format_arg->value) : null;
@@ -1888,6 +1892,7 @@ final class FunctionCallReturnTypeFetcher
                 $removed_taints | $conditionally_removed_taints,
                 $added_taints,
                 $arg_removed_taints,
+                $position_removed_taints,
             );
         }
 
@@ -2072,9 +2077,99 @@ final class FunctionCallReturnTypeFetcher
     ];
 
     /**
+     * The builtins returning the strings given to them, or one of them, with the start they had: one changing the case
+     * of letters, escaping characters as longer text, removing some at the end, or returning a value of an array or
+     * one of its keys. A value after a literal start fixing the server of a URL is still after it in what they return
+     * (see TaintShadows).
+     */
+    private const START_KEEPING_FLOWS = [
+        'strtolower' => true,
+        'strtoupper' => true,
+        'mb_strtolower' => true,
+        'mb_strtoupper' => true,
+        'ucfirst' => true,
+        'lcfirst' => true,
+        'ucwords' => true,
+        'rtrim' => true,
+        'chop' => true,
+        'htmlspecialchars' => true,
+        'htmlentities' => true,
+        'strval' => true,
+        'array_change_key_case' => true,
+        'array_chunk' => true,
+        'array_column' => true,
+        'array_combine' => true,
+        'array_count_values' => true,
+        'array_diff' => true,
+        'array_diff_assoc' => true,
+        'array_diff_key' => true,
+        'array_diff_uassoc' => true,
+        'array_diff_ukey' => true,
+        'array_fill' => true,
+        'array_fill_keys' => true,
+        'array_filter' => true,
+        'array_find' => true,
+        'array_find_key' => true,
+        'array_first' => true,
+        'array_flip' => true,
+        'array_intersect' => true,
+        'array_intersect_assoc' => true,
+        'array_intersect_key' => true,
+        'array_intersect_uassoc' => true,
+        'array_intersect_ukey' => true,
+        'array_key_first' => true,
+        'array_key_last' => true,
+        'array_keys' => true,
+        'array_last' => true,
+        'array_merge' => true,
+        'array_merge_recursive' => true,
+        'array_pad' => true,
+        'array_pop' => true,
+        'array_rand' => true,
+        'array_replace' => true,
+        'array_replace_recursive' => true,
+        'array_reverse' => true,
+        'array_search' => true,
+        'array_shift' => true,
+        'array_slice' => true,
+        'array_splice' => true,
+        'array_udiff' => true,
+        'array_udiff_assoc' => true,
+        'array_udiff_uassoc' => true,
+        'array_uintersect' => true,
+        'array_uintersect_assoc' => true,
+        'array_uintersect_uassoc' => true,
+        'array_unique' => true,
+        'array_values' => true,
+        'current' => true,
+        'end' => true,
+        'iterator_to_array' => true,
+        'key' => true,
+        'max' => true,
+        'min' => true,
+        'next' => true,
+        'pos' => true,
+        'prev' => true,
+        'reset' => true,
+    ];
+
+    /**
+     * The builtins putting text before some of the strings given to them, without cutting them
+     */
+    private const TEXT_PREPENDING_FLOWS = [
+        'implode' => true,
+        'join' => true,
+        'sprintf' => true,
+        'str_repeat' => true,
+        'vsprintf' => true,
+    ];
+
+    /**
      * @param array<int, PhpParser\Node\Arg> $args
      * @param int $input_taints the taints of user input (see Codebase::getInputTaints())
      * @param array<int, int> $arg_removed_taints the taints removed from the flows of some of $args only, by index
+     * @param int $position_removed_taints the taints the place of the values in the string returned removes from all
+     *   of them (see TaintShadows)
      * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     public static function taintUsingFlows(
@@ -2088,6 +2183,7 @@ final class FunctionCallReturnTypeFetcher
         int $removed_taints,
         int $added_taints = 0,
         array $arg_removed_taints = [],
+        int $position_removed_taints = 0,
     ): void {
         foreach ($function_storage->return_source_params as $i => $path_type) {
             $arg_indices = self::callableArgIndices($function_storage->params, $args, $i);
@@ -2111,6 +2207,7 @@ final class FunctionCallReturnTypeFetcher
                     $removed_taints,
                     $added_taints,
                     $arg_removed_taints[$arg_index] ?? 0,
+                    $position_removed_taints,
                 );
             }
         }
@@ -2170,6 +2267,7 @@ final class FunctionCallReturnTypeFetcher
         int $removed_taints,
         int $added_taints = 0,
         int $arg_removed_taints = 0,
+        int $position_removed_taints = 0,
     ): void {
         $param_name = $function_storage->params[$param_offset]->name;
         $path_removed_taints = isset(self::UNESCAPED_RETURN_FLOWS[$function_id][$param_name])
@@ -2194,7 +2292,25 @@ final class FunctionCallReturnTypeFetcher
             $path_removed_taints
                 | ($function_storage->signature_return_type?->getTaintsToRemove($input_taints) ?? 0)
                 | $arg_removed_taints,
+            $position_removed_taints,
+            self::getRestoredTaints($function_id),
         );
+    }
+
+    /**
+     * The taints the flows through a `@psalm-flow` of $function_id get back of the shadows they have (see
+     * TaintShadows): what follows a URL start can choose its server again once a builtin cuts the string, or puts
+     * text before it.
+     *
+     * @psalm-pure
+     */
+    public static function getRestoredTaints(string $function_id): int
+    {
+        if (isset(self::START_KEEPING_FLOWS[$function_id])) {
+            return 0;
+        }
+
+        return isset(self::TEXT_PREPENDING_FLOWS[$function_id]) ? TaintShadows::BEFORE_VALUE : TaintShadows::ALL;
     }
 
     /**
@@ -2234,6 +2350,9 @@ final class FunctionCallReturnTypeFetcher
                 // what the native return type cannot hold, since PHP enforces it
                 $removed_taints
                     | ($function_storage->signature_return_type?->getTaintsToRemove($codebase->getInputTaints()) ?? 0),
+                0,
+                // preg_replace_callback() puts what the callback returns after a part of the subject
+                TaintShadows::ALL,
             );
         }
     }

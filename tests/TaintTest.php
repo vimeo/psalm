@@ -4583,6 +4583,50 @@ final class TaintTest extends TestCase
                     request("/topics/{$value}/partitions");
                     request(sprintf("/consumers/%s/instances/%s", $value, $value));',
             ],
+            'dontTaintAValueAfterAUrlStartThatStaysThere' => [
+                'code' => '<?php // --taint-analysis
+                    /** @psalm-taint-sink redirect $url */
+                    function redirectTo(string $url): void {}
+
+                    /** @psalm-taint-sink ssrf $url */
+                    function fetch(string $url): void {}
+
+                    function same(string $url): string {
+                        return $url;
+                    }
+
+                    $value = (string) $_GET["value"];
+                    redirectTo("https://example.com/" . $value);
+                    redirectTo("/account?tab=" . rawurlencode($value));
+                    redirectTo(same("https://example.com/" . $value));
+                    redirectTo(strtolower("https://example.com/" . $value));
+                    fetch("https://example.com/" . $value);
+                    fetch(same("https://example.com/" . $value));
+                    fetch(rtrim("https://example.com/" . $value, "/"));
+                    fetch("https://example.com" . "/{$value}");
+                    fetch("https://example.com/" . ("/items/" . $value));
+                    $url = "https://example.com/" . $value;
+                    fetch($url);',
+            ],
+            'dontTaintAnEscapedValueCutByABuiltin' => [
+                'code' => '<?php // --taint-analysis
+                    /** @psalm-taint-sink redirect $url */
+                    function redirectTo(string $url): void {}
+
+                    /** @psalm-taint-escape redirect */
+                    function validRedirect(string $url): string {
+                        return $url;
+                    }
+
+                    function after(string $url): string {
+                        return substr($url, 20);
+                    }
+
+                    $value = validRedirect((string) $_GET["value"]);
+                    redirectTo(substr($value, 1));
+                    redirectTo(after($value));
+                    redirectTo(after((string) (int) $_GET["id"]));',
+            ],
             'dontTaintUrlPathInTheQueryOrTheFragmentOfAUrl' => [
                 'code' => '<?php // --taint-analysis
                     $value = urlencode((string) $_GET["value"]);
@@ -15244,6 +15288,235 @@ final class TaintTest extends TestCase
                 'code' => '<?php // --taint-analysis
                     file_get_contents(sprintf("https://%s/items", (string) $_GET["value"]));',
                 'error_message' => 'TaintedSSRF',
+            ],
+            'taintSsrfAfterAPathFromTheRootWithTextBeforeIt' => [
+                'code' => '<?php // --taint-analysis
+                    final class Config {
+                        public static string $base = "";
+                    }
+
+                    /** @psalm-taint-sink ssrf $url */
+                    function fetch(string $url): void {}
+
+                    $value = (string) $_GET["value"];
+                    // Config::$base may be `php://filter/read=`: the value can add `/resource=` and any URL
+                    fetch(Config::$base . "/items/{$value}");',
+                'error_message' => 'TaintedSSRF',
+            ],
+            'taintSsrfAfterAUrlStartWithTextBeforeIt' => [
+                'code' => '<?php // --taint-analysis
+                    final class Config {
+                        public static string $base = "";
+                    }
+
+                    /** @psalm-taint-sink ssrf $url */
+                    function fetch(string $url): void {}
+
+                    $value = (string) $_GET["value"];
+                    $url = "https://example.com/" . $value;
+                    fetch(Config::$base . $url);',
+                'error_message' => 'TaintedSSRF',
+            ],
+            'taintRedirectAfterAPathFromTheRootTheValueContinues' => [
+                'code' => '<?php // --taint-analysis
+                    final class Config {
+                        public static string $base = "";
+                    }
+
+                    /** @psalm-taint-sink redirect $url */
+                    function redirectTo(string $url): void {}
+
+                    $value = (string) $_GET["value"];
+                    // with Config::$base `/`, the value continues the host of `//x...`
+                    redirectTo(Config::$base . "/x{$value}");',
+                'error_message' => 'TaintedRedirect',
+            ],
+            'taintRedirectAfterAPathFromTheRootWithASlashBeforeIt' => [
+                'code' => '<?php // --taint-analysis
+                    final class Config {
+                        public static string $base = "";
+                    }
+
+                    /** @psalm-taint-sink redirect $url */
+                    function redirectTo(string $url): void {}
+
+                    $value = (string) $_GET["value"];
+                    redirectTo(Config::$base . "/" . $value);',
+                'error_message' => 'TaintedRedirect',
+            ],
+            'taintRedirectAfterAPathFromTheRootInAVariableWithTextBeforeIt' => [
+                'code' => '<?php // --taint-analysis
+                    final class Config {
+                        public static string $base = "";
+                    }
+
+                    /** @psalm-taint-sink redirect $url */
+                    function redirectTo(string $url): void {}
+
+                    $value = (string) $_GET["value"];
+                    $prefix = Config::$base;
+                    redirectTo($prefix . "/{$value}");',
+                'error_message' => 'TaintedRedirect',
+            ],
+            'taintRedirectAfterAPathFromTheRootCutBySubstr' => [
+                'code' => '<?php // --taint-analysis
+                    final class Config {
+                        public static string $base = "";
+                    }
+
+                    /** @psalm-taint-sink redirect $url */
+                    function redirectTo(string $url): void {}
+
+                    $value = (string) $_GET["value"];
+                    redirectTo(substr("/items/" . $value, 7));',
+                'error_message' => 'TaintedRedirect',
+            ],
+            'taintRedirectAfterARootSlashCutBySubstr' => [
+                'code' => '<?php // --taint-analysis
+                    final class Config {
+                        public static string $base = "";
+                    }
+
+                    /** @psalm-taint-sink redirect $url */
+                    function redirectTo(string $url): void {}
+
+                    $value = (string) $_GET["value"];
+                    redirectTo(substr("/" . $value, 1));',
+                'error_message' => 'TaintedRedirect',
+            ],
+            'taintRedirectAfterAQueryCutByLtrim' => [
+                'code' => '<?php // --taint-analysis
+                    final class Config {
+                        public static string $base = "";
+                    }
+
+                    /** @psalm-taint-sink redirect $url */
+                    function redirectTo(string $url): void {}
+
+                    $value = (string) $_GET["value"];
+                    redirectTo(ltrim("/search?" . $value, "/search?"));',
+                'error_message' => 'TaintedRedirect',
+            ],
+            'taintRedirectAfterAQuestionMarkCutByLtrim' => [
+                'code' => '<?php // --taint-analysis
+                    final class Config {
+                        public static string $base = "";
+                    }
+
+                    /** @psalm-taint-sink redirect $url */
+                    function redirectTo(string $url): void {}
+
+                    $value = (string) $_GET["value"];
+                    redirectTo(ltrim("?" . $value, "?"));',
+                'error_message' => 'TaintedRedirect',
+            ],
+            'taintRedirectAfterAQueryCutByStrReplace' => [
+                'code' => '<?php // --taint-analysis
+                    final class Config {
+                        public static string $base = "";
+                    }
+
+                    /** @psalm-taint-sink redirect $url */
+                    function redirectTo(string $url): void {}
+
+                    $value = (string) $_GET["value"];
+                    redirectTo(str_replace("/search?", "", "/search?" . $value));',
+                'error_message' => 'TaintedRedirect',
+            ],
+            'taintRedirectAfterAQuestionMarkCutByStrReplace' => [
+                'code' => '<?php // --taint-analysis
+                    final class Config {
+                        public static string $base = "";
+                    }
+
+                    /** @psalm-taint-sink redirect $url */
+                    function redirectTo(string $url): void {}
+
+                    $value = (string) $_GET["value"];
+                    redirectTo(str_replace("?", "", "?" . $value));',
+                'error_message' => 'TaintedRedirect',
+            ],
+            'taintRedirectAfterAQueryCutByExplode' => [
+                'code' => '<?php // --taint-analysis
+                    final class Config {
+                        public static string $base = "";
+                    }
+
+                    /** @psalm-taint-sink redirect $url */
+                    function redirectTo(string $url): void {}
+
+                    $value = (string) $_GET["value"];
+                    redirectTo(explode("?", "/search?" . $value)[1]);',
+                'error_message' => 'TaintedRedirect',
+            ],
+            'taintRedirectAfterAQuestionMarkWithTextBeforeItCutByExplode' => [
+                'code' => '<?php // --taint-analysis
+                    final class Config {
+                        public static string $base = "";
+                    }
+
+                    /** @psalm-taint-sink redirect $url */
+                    function redirectTo(string $url): void {}
+
+                    $value = (string) $_GET["value"];
+                    redirectTo(explode("?", Config::$base . "?" . $value)[1]);',
+                'error_message' => 'TaintedRedirect',
+            ],
+            'taintRedirectInAMatchOfAUrl' => [
+                'code' => '<?php // --taint-analysis
+                    final class Config {
+                        public static string $base = "";
+                    }
+
+                    /** @psalm-taint-sink redirect $url */
+                    function redirectTo(string $url): void {}
+
+                    $value = (string) $_GET["value"];
+                    preg_match("~\\\\?(.*)~", "https://example.com/?" . $value, $matches);
+                    redirectTo($matches[1]);',
+                'error_message' => 'TaintedRedirect',
+            ],
+            'taintRedirectInTheCharactersOfAUrl' => [
+                'code' => '<?php // --taint-analysis
+                    final class Config {
+                        public static string $base = "";
+                    }
+
+                    /** @psalm-taint-sink redirect $url */
+                    function redirectTo(string $url): void {}
+
+                    $value = (string) $_GET["value"];
+                    $url = "https://example.com/?" . $value;
+                    $cut = "";
+                    for ($i = 21; $i < strlen($url); $i++) {
+                        $cut .= $url[$i];
+                    }
+                    redirectTo($cut);',
+                'error_message' => 'TaintedRedirect',
+            ],
+            'taintRedirectAfterAUrlStartCutInAFunction' => [
+                'code' => '<?php // --taint-analysis
+                    /** @psalm-taint-sink redirect $url */
+                    function redirectTo(string $url): void {}
+
+                    function after(string $url): string {
+                        return substr($url, 20);
+                    }
+
+                    redirectTo(after("https://example.com/" . (string) $_GET["value"]));',
+                'error_message' => 'TaintedRedirect',
+            ],
+            'taintRedirectAfterAUrlStartAFunctionAddsAndCuts' => [
+                'code' => '<?php // --taint-analysis
+                    /** @psalm-taint-sink redirect $url */
+                    function redirectTo(string $url): void {}
+
+                    function query(string $value): string {
+                        return substr("/search?" . $value, 8);
+                    }
+
+                    redirectTo(query((string) $_GET["value"]));',
+                'error_message' => 'TaintedRedirect',
             ],
             'taintHtmlAfterTheStartOfAUrl' => [
                 'code' => '<?php // --taint-analysis

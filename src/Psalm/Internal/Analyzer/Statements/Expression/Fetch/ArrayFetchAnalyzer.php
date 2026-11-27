@@ -23,6 +23,7 @@ use Psalm\Internal\Codebase\CombinedFlowGraph;
 use Psalm\Internal\Codebase\PropertyBagTaints;
 use Psalm\Internal\Codebase\ServerVariableTaints;
 use Psalm\Internal\Codebase\TaintFlowGraph;
+use Psalm\Internal\Codebase\TaintShadows;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
@@ -681,6 +682,9 @@ final class ArrayFetchAnalyzer
 
             $parent_nodes = $stmt_var_type->parent_nodes;
 
+            // a character of a string is a part of it: a value after a URL start can be one alone (see TaintShadows)
+            $restored_taints = self::mayBeString($stmt_var_type) ? TaintShadows::ALL : 0;
+
             // a global read by its name gets what is written to that name, not all of them
             if ($dim_value !== null
                 && $var instanceof PhpParser\Node\Expr\Variable
@@ -702,6 +706,8 @@ final class ArrayFetchAnalyzer
                         'arrayvalue-fetch@' . $foreach_marker,
                         $added_taints,
                         $removed_taints,
+                        0,
+                        $restored_taints,
                     );
 
                     if ($graph instanceof CombinedFlowGraph) {
@@ -720,6 +726,8 @@ final class ArrayFetchAnalyzer
                         'arrayvalue-fetch-' . $fetched_keys,
                         $added_taints,
                         $removed_taints,
+                        0,
+                        $restored_taints,
                     );
                     $graph->variable_use_graph->addPath(
                         $parent_node,
@@ -737,6 +745,8 @@ final class ArrayFetchAnalyzer
                             : 'arrayvalue-fetch' . $key_path_suffix,
                         $added_taints,
                         $removed_taints,
+                        0,
+                        $restored_taints,
                     );
                 }
 
@@ -771,6 +781,28 @@ final class ArrayFetchAnalyzer
         self::taintSuperGlobalFetch($statements_analyzer, $var, $offset_type, $stmt_type);
 
         PropertyBagTaints::taintFetch($statements_analyzer, $var, $offset_type, $stmt_type, $context);
+    }
+
+    /**
+     * Whether a value of $type may be a string, whose offsets are its characters: anything but an array, an object or
+     * null
+     *
+     * @psalm-pure
+     */
+    private static function mayBeString(Union $type): bool
+    {
+        foreach ($type->getAtomicTypes() as $atomic) {
+            if (!$atomic instanceof TArray
+                && !$atomic instanceof TKeyedArray
+                && !$atomic instanceof TNamedObject
+                && !$atomic instanceof TObject
+                && !$atomic instanceof TNull
+            ) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
