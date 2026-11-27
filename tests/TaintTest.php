@@ -13719,6 +13719,132 @@ final class TaintTest extends TestCase
                     }',
                 'error_message' => 'TaintedHtml',
             ],
+            'receiverPropertyReadThroughAnUndefinedMagicPropertyOfASealedClass' => [
+                'code' => '<?php
+                    /**
+                     * @template V
+                     */
+                    class Bag {
+                        /** @var array<string, V> */
+                        private array $values = [];
+
+                        /**
+                         * @param array<string, V> $values
+                         * @psalm-flow ($values) -> $this->{key}
+                         */
+                        public function __construct(array $values) {
+                            $this->values = $values;
+                        }
+
+                        /**
+                         * @param V $value
+                         * @psalm-flow ($value) -> $this->$name
+                         */
+                        public function set(string $name, mixed $value): void {
+                            $this->values[$name] = $value;
+                        }
+
+                        /**
+                         * @return V|null
+                         * @psalm-flow $this->$name -> return
+                         */
+                        public function __get(string $name): mixed {
+                            return $this->values[$name] ?? null;
+                        }
+                    }
+
+                    /** @psalm-suppress UndefinedMagicPropertyFetch */
+                    function show(Bag $bag): void {
+                        $bag->set("title", (string) $_GET["x"]);
+                        echo (string) $bag->title;
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'receiverPropertySetByTheConstructorReadThroughAnUndefinedMagicProperty' => [
+                'code' => '<?php
+                    /**
+                     * @template V
+                     */
+                    class Bag {
+                        /** @var array<string, V> */
+                        private array $values = [];
+
+                        /**
+                         * @param array<string, V> $values
+                         * @psalm-flow ($values) -> $this->{key}
+                         */
+                        public function __construct(array $values) {
+                            $this->values = $values;
+                        }
+
+                        /**
+                         * @param V $value
+                         * @psalm-flow ($value) -> $this->$name
+                         */
+                        public function set(string $name, mixed $value): void {
+                            $this->values[$name] = $value;
+                        }
+
+                        /**
+                         * @return V|null
+                         * @psalm-flow $this->$name -> return
+                         */
+                        public function __get(string $name): mixed {
+                            return $this->values[$name] ?? null;
+                        }
+                    }
+
+                    /** @psalm-suppress UndefinedMagicPropertyFetch */
+                    function show(): void {
+                        $bag = new Bag(["title" => (string) $_GET["x"]]);
+                        echo (string) $bag->title;
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'receiverPropertyReadThroughAnUndefinedMagicPropertyOfThis' => [
+                'code' => '<?php
+                    /**
+                     * @template V
+                     */
+                    class Bag {
+                        /** @var array<string, V> */
+                        private array $values = [];
+
+                        /**
+                         * @param array<string, V> $values
+                         * @psalm-flow ($values) -> $this->{key}
+                         */
+                        public function __construct(array $values) {
+                            $this->values = $values;
+                        }
+
+                        /**
+                         * @param V $value
+                         * @psalm-flow ($value) -> $this->$name
+                         */
+                        public function set(string $name, mixed $value): void {
+                            $this->values[$name] = $value;
+                        }
+
+                        /**
+                         * @return V|null
+                         * @psalm-flow $this->$name -> return
+                         */
+                        public function __get(string $name): mixed {
+                            return $this->values[$name] ?? null;
+                        }
+                    }
+
+                    /** @extends Bag<string> */
+                    final class Model extends Bag {
+                        /** @psalm-suppress UndefinedThisPropertyFetch */
+                        public function show(): void {
+                            $this->set("title", (string) $_GET["x"]);
+                            echo (string) $this->title;
+                        }
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
             'propertyBagOfAnObjectTrackedPerInstance' => [
                 'code' => '<?php
                     /**
