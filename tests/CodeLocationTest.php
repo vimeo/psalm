@@ -263,6 +263,25 @@ final class CodeLocationTest extends BaseTestCase
         $this->assertSame(5, $location->getColumn());
     }
 
+    public function testCommentLineSelectionKeepsAWildcardBeforeTheCommentEnd(): void
+    {
+        $contents = "<?php\nclass A {\n    /** @return self::STATUS_* */\n    public function f() {}\n}\n";
+        $location = $this->locateWithCommentLine($contents, 'f(', 4, 3, null, null);
+
+        $this->assertSame('@return self::STATUS_*', $location->getSelectedText());
+        $this->assertSame(9, $location->getColumn());
+    }
+
+    public function testCommentLineSelectionOfACommentOpeningAlone(): void
+    {
+        $contents = "<?php\nclass A {\n    /**\n     * @return void\n     */\n    public function f(): void {}\n}\n";
+        $location = $this->locateWithCommentLine($contents, 'f(', 6, 3, null, null);
+
+        $this->assertSame('/**', $location->getSelectedText());
+        $this->assertSame(3, $location->getLineNumber());
+        $this->assertSame(5, $location->getColumn());
+    }
+
     private function locateWithCommentLine(
         string $contents,
         string $selection,
