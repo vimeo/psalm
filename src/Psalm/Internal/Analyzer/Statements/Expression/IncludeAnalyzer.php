@@ -7,11 +7,13 @@ namespace Psalm\Internal\Analyzer\Statements\Expression;
 use AssertionError;
 use PhpParser;
 use Psalm\CodeLocation;
+use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\FileIncludeException;
 use Psalm\Exception\UnpreparedAnalysisException;
 use Psalm\Internal\Analyzer\FileAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\CliOutput;
@@ -179,8 +181,14 @@ final class IncludeAnalyzer
                 // the included code runs in the process of the code including it
                 $cli_only = CliOutput::isInCliOnlyCode($statements_analyzer, $context);
 
+                // a file outside of the analyzed ones
+                if (!$codebase->file_storage_provider->has($path_to_file) || $config->mustBeIgnored($path_to_file)) {
+                    self::markEmptyArraysPossiblyFilled($stmt, $context, $codebase);
+
+                    return true;
+                }
+
                 if ($statements_analyzer->hasParentFilePath($path_to_file)
-                    || !$codebase->file_storage_provider->has($path_to_file)
                     || (
                         $statements_analyzer->hasAlreadyRequiredFilePath($path_to_file)
                         && (
@@ -199,9 +207,6 @@ final class IncludeAnalyzer
                         )
                     )
                 ) {
-                    return true;
-                }
-                if ($config->mustBeIgnored($path_to_file)) {
                     return true;
                 }
 
@@ -295,12 +300,16 @@ final class IncludeAnalyzer
             }
 
             if (isset($context->phantom_files[$path_to_file])) {
+                self::markEmptyArraysPossiblyFilled($stmt, $context, $codebase);
+
                 return true;
             }
 
             $var_id = ExpressionIdentifier::getExtendedVarId($stmt->expr, null)
                 ?? self::getConstantPhantomFileId($stmt->expr);
             if ($var_id && isset($context->phantom_files[$var_id])) {
+                self::markEmptyArraysPossiblyFilled($stmt, $context, $codebase);
+
                 return true;
             }
 
@@ -336,7 +345,36 @@ final class IncludeAnalyzer
             $context->check_functions = false;
         }
 
+        self::markEmptyArraysPossiblyFilled($stmt, $context, $codebase);
+
         return true;
+    }
+
+    /**
+     * A file that is not analyzed may fill the arrays the scope including it has empty: reading their items gives
+     * values Psalm doesn't know, while appending to them still builds on the empty array. A superglobal can only be
+     * put back to its usual type.
+     */
+    private static function markEmptyArraysPossiblyFilled(
+        PhpParser\Node\Expr\Include_ $stmt,
+        Context $context,
+        Codebase $codebase,
+    ): void {
+        foreach ($context->vars_in_scope as $var_id => $type) {
+            if (!$type->isEmptyArray()) {
+                continue;
+            }
+
+            $filled_type = VariableFetchAnalyzer::isSuperGlobal($var_id)
+                ? VariableFetchAnalyzer::getGlobalType($var_id, $codebase->analysis_php_version_id)
+                    ->setParentNodes($type->parent_nodes)
+                : $type->setProperties(['possibly_filled_by_include' => true]);
+
+            $context->removeDescendents($var_id, $type, $filled_type);
+            $context->vars_in_scope[$var_id] = $filled_type;
+            $context->assigned_var_ids[$var_id] = (int) $stmt->getAttribute('startFilePos');
+            $context->possibly_assigned_var_ids[$var_id] = true;
+        }
     }
 
     /**

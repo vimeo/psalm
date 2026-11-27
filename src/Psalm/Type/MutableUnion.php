@@ -80,6 +80,11 @@ final class MutableUnion implements TypeNode
     public bool $from_global_state = false;
 
     /**
+     * Whether an included file Psalm doesn't analyze may have written into this empty array
+     */
+    public bool $possibly_filled_by_include = false;
+
+    /**
      * Whether the property that this type has been derived from has been initialized in a constructor
      */
     public bool $initialized = true;

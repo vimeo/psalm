@@ -2591,7 +2591,8 @@ final class LoopAnalyzer
     }
 
     /**
-     * Types that read the same may still differ: closures made from different functions or methods do
+     * Types that read the same may still differ: closures made from different functions or methods do, and so does
+     * an empty array an unanalyzed include may have filled
      *
      * @psalm-pure
      */
@@ -2599,6 +2600,7 @@ final class LoopAnalyzer
     {
         return $type->getId() !== $other_type->getId()
             || $type->possibly_undefined !== $other_type->possibly_undefined
+            || $type->possibly_filled_by_include !== $other_type->possibly_filled_by_include
             || array_diff_key($type->getAtomicTypes(), $other_type->getAtomicTypes()) !== []
             || array_diff_key($other_type->getAtomicTypes(), $type->getAtomicTypes()) !== [];
     }
