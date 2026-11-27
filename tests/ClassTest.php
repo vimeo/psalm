@@ -1271,6 +1271,71 @@ final class ClassTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [],
             ],
+            'classImplementingAMissingInterfaceUnderInterfaceExistsInANamespace' => [
+                'code' => '<?php
+                    namespace Foo;
+
+                    if (interface_exists(\Missing\RunnerInterface::class)) {
+                        final class Runner implements \Missing\RunnerInterface {
+                            public function run(): int {
+                                return 0;
+                            }
+                        }
+                    } else {
+                        final class Runner {
+                            public function run(): void {}
+                        }
+                    }',
+            ],
+            'classImplementingAMissingInterfaceUnderInterfaceExists' => [
+                'code' => '<?php
+                    if (interface_exists(\Missing\CacheException::class)) {
+                        final class CacheException extends \Exception implements \Missing\CacheException {}
+                    } else {
+                        final class CacheException extends \Exception {}
+                    }',
+            ],
+            'interfaceExtendingAMissingInterfaceUnderInterfaceExistsInANamespace' => [
+                'code' => '<?php
+                    namespace Foo;
+
+                    if (interface_exists(\Missing\Base::class)) {
+                        interface I extends \Missing\Base {}
+                    } else {
+                        interface I {}
+                    }',
+            ],
+            'enumImplementingAMissingInterfaceUnderInterfaceExistsInANamespace' => [
+                'code' => '<?php
+                    namespace Foo;
+
+                    if (interface_exists(\Missing\Base::class)) {
+                        enum E implements \Missing\Base {
+                            case A;
+                        }
+                    } else {
+                        enum E {
+                            case A;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'traitWithAMissingAttributeUnderClassExistsInANamespace' => [
+                'code' => '<?php
+                    namespace Foo;
+
+                    if (class_exists(\Missing\Attr::class)) {
+                        #[\Missing\Attr]
+                        trait T {}
+                    } else {
+                        trait T {}
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'classOfANegatedClassExistsInAnElseifExistsInItsElse' => [
                 'code' => '<?php
                     function f(bool $c): void {
@@ -2434,6 +2499,21 @@ final class ClassTest extends TestCase
                         }
                     }',
                 'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:44',
+            ],
+            'methodOfTheElseClassOfAFalseInterfaceExistsInANamespaceIsAnalyzed' => [
+                'code' => '<?php
+                    namespace Foo;
+
+                    if (interface_exists(\Missing\RunnerInterface::class)) {
+                        final class Runner implements \Missing\RunnerInterface {}
+                    } else {
+                        final class Runner {
+                            public function run(): string {
+                                return 1;
+                            }
+                        }
+                    }',
+                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:40',
             ],
             'newStaticOfAClassImplementingAnInterfaceWithoutAConstructor' => [
                 'code' => '<?php

@@ -84,6 +84,10 @@ final class TraitAnalyzer extends ClassLikeAnalyzer
 
         $storage = $codebase->classlike_storage_provider->get($fq_trait_name);
 
+        if (!ClassLikeAnalyzer::isStorageDeclaration($storage, $stmt, $statements_analyzer->getFilePath())) {
+            return;
+        }
+
         ClassLikeAnalyzer::registerDocblockSuppressions($storage, $statements_analyzer->getFilePath(), $codebase);
 
         $suppressed_issues = $storage->suppressed_issues + $statements_analyzer->getSuppressedIssues();

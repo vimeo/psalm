@@ -370,6 +370,23 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
     }
 
     /**
+     * Whether the storage was built from this declaration. The scanner skips a declaration under a guard it knows
+     * to be false (`if (interface_exists(...))` for a missing interface) and takes the class from another one, e.g.
+     * in the `else`.
+     */
+    public static function isStorageDeclaration(
+        ClassLikeStorage $storage,
+        PhpParser\Node\Stmt\ClassLike $stmt,
+        string $file_path,
+    ): bool {
+        $stmt_location = $storage->stmt_location;
+
+        return $stmt_location === null
+            || ($stmt_location->file_path === $file_path
+                && $stmt_location->raw_file_start === (int) $stmt->getAttribute('startFilePos'));
+    }
+
+    /**
      * Reports a class-like named after a keyword PHP adds
      *
      * @param array<array-key, string> $suppressed_issues

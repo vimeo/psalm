@@ -297,7 +297,9 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
 
         $storage = $this->storage;
 
-        if ($storage->has_visitor_issues) {
+        if ($storage->has_visitor_issues
+            || ($class->name && !self::isStorageDeclaration($storage, $class, $this->getFilePath()))
+        ) {
             return;
         }
 
