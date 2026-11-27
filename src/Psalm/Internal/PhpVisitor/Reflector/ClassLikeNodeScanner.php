@@ -43,6 +43,7 @@ use Psalm\Internal\Type\TypeAlias\InlineTypeAlias;
 use Psalm\Internal\Type\TypeAlias\LinkableTypeAlias;
 use Psalm\Internal\Type\TypeParser;
 use Psalm\Internal\Type\TypeTokenizer;
+use Psalm\Internal\TypeVisitor\FromDocblockSetter;
 use Psalm\Internal\TypeVisitor\TypeScanner;
 use Psalm\Issue\ConstantDeclarationInTrait;
 use Psalm\Issue\DuplicateClass;
@@ -595,6 +596,8 @@ final class ClassLikeNodeScanner
                                 continue;
                             }
 
+                            $template_type = FromDocblockSetter::markResources($template_type);
+
                             $other_templates = array_map(
                                 preg_quote(...),
                                 array_diff(array_column($docblock_info->templates, 0), [$template_name]),
@@ -656,6 +659,8 @@ final class ClassLikeNodeScanner
                         } catch (TypeParseTreeException) {
                             continue;
                         }
+
+                        $bound = FromDocblockSetter::markResources($bound);
 
                         if ($bound->getId() !== $storage->template_types[$template_name][$fq_classlike_name]->getId()) {
                             $storage->template_types[$template_name] = [$fq_classlike_name => $bound];

@@ -30,6 +30,7 @@ use Psalm\Internal\Type\TemplateDefaults;
 use Psalm\Internal\Type\TypeAlias;
 use Psalm\Internal\Type\TypeParser;
 use Psalm\Internal\Type\TypeTokenizer;
+use Psalm\Internal\TypeVisitor\FromDocblockSetter;
 use Psalm\Internal\TypeVisitor\TypeScanner;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\PossiblyInvalidDocblockTag;
@@ -2131,6 +2132,7 @@ final class FunctionLikeDocblockScanner
                             $storage->template_types + ($template_types ?: []) + $declared_template_types,
                             $type_aliases,
                         );
+                        $template_type = FromDocblockSetter::markResources($template_type);
                     } catch (TypeParseTreeException $e) {
                         $storage->docblock_issues[] = new InvalidDocblock(
                             'Template ' . $template_name . ' has invalid as type - ' . $e->getMessage(),
@@ -2190,6 +2192,8 @@ final class FunctionLikeDocblockScanner
                 } catch (TypeParseTreeException) {
                     continue;
                 }
+
+                $bound = FromDocblockSetter::markResources($bound);
 
                 $defining_id = 'fn-' . strtolower($cased_function_id);
 

@@ -12,6 +12,7 @@ use Psalm\Exception\TypeParseTreeException;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\TypeVisitor\FromDocblockSetter;
 use Psalm\Internal\TypeVisitor\TemplateDefaultFiller;
 use Psalm\Internal\TypeVisitor\TemplateTypeCollector;
 use Psalm\Internal\TypeVisitor\TypeScanner;
@@ -437,6 +438,8 @@ final class TemplateDefaults
 
                 continue;
             }
+
+            $default = FromDocblockSetter::markResources($default);
 
             $type_scanner->traverseArray($default->getAtomicTypes());
 

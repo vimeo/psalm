@@ -57,6 +57,45 @@ final class ClassTemplateTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'resourceIsAValidTemplateDefaultOfAClass' => [
+                'code' => '<?php
+                    /** @template T = resource */
+                    class A {}
+
+                    final class B extends A {}
+
+                    /** @template T = array<string, resource> */
+                    final class C {}',
+            ],
+            'resourceIsAValidTemplateBoundOfAClassInterfaceAndTrait' => [
+                'code' => '<?php
+                    /** @template T of resource */
+                    class A {}
+
+                    final class B extends A {}
+
+                    /** @template T of array<string, resource> */
+                    interface I {}
+
+                    final class C implements I {}
+
+                    /** @template T of resource */
+                    trait Tr {}
+
+                    final class D {
+                        use Tr;
+                    }
+
+                    /**
+                     * @template T of array<TK, resource>
+                     * @template TK of array-key
+                     */
+                    class E {}
+
+                    final class F extends E {}',
+                'assertions' => [],
+                'ignored_issues' => ['MissingTemplateParam'],
+            ],
             'literalClassStringArgumentForTheClassStringOfATemplate' => [
                 'code' => '<?php
                     /** @psalm-consistent-constructor */
