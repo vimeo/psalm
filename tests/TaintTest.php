@@ -41,6 +41,7 @@ use function array_flip;
 use function array_map;
 use function array_values;
 use function basename;
+use function extension_loaded;
 use function getcwd;
 use function implode;
 use function in_array;
@@ -747,6 +748,43 @@ final class TaintTest extends TestCase
                 [33, 'TaintedUrlScheme'],
                 [36, 'TaintedUrlScheme'],
             ],
+            array_map(static fn(IssueData $issue): array => [$issue->line_from, $issue->type], $issues),
+        );
+    }
+
+    /**
+     * A project that doesn't require ext-pdo doesn't load the stub of the extension: PDO::quote() is then the method
+     * the call map declares
+     */
+    public function testQuotedStringKeepsItsTaintsButSqlWithoutTheStubOfPdo(): void
+    {
+        if (!extension_loaded('pdo')) {
+            self::markTestSkipped('Without the pdo extension, only its stub declares PDO');
+        }
+
+        $config = $this->testConfig;
+        self::assertInstanceOf(TestConfig::class, $config);
+        $config->disableExtension('pdo');
+        $config->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile($file_path, '<?php
+            function run(PDO $pdo): void {
+                $quoted = $pdo->quote((string) $_GET["message"]);
+                echo $quoted;
+                $pdo->exec("DELETE FROM t WHERE a = " . $quoted);
+            }
+        ');
+        $this->project_analyzer->trackTaintedInputs();
+
+        $this->analyzeFile($file_path, new Context(), false);
+
+        $issues = array_values(array_filter(
+            IssueBuffer::getIssuesDataForFile($file_path),
+            static fn(IssueData $issue): bool => !in_array($issue->type, self::IGNORE, true),
+        ));
+
+        self::assertEqualsCanonicalizing(
+            [[4, 'TaintedHtml'], [4, 'TaintedTextWithQuotes']],
             array_map(static fn(IssueData $issue): array => [$issue->line_from, $issue->type], $issues),
         );
     }
@@ -10414,6 +10452,11 @@ final class TaintTest extends TestCase
                     function show(PDO $pdo): void {
                         echo (string) $pdo->query("SELECT * FROM users")->fetch()[1];
                     }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'quotedStringKeepsItsTaintsButSql' => [
+                'code' => '<?php
+                    echo (new PDO("sqlite::memory:"))->quote((string) $_GET["message"]);',
                 'error_message' => 'TaintedHtml',
             ],
             'allColumnsHoldEachColumnUnderItsNameAsWritten' => [
