@@ -1018,6 +1018,34 @@ final class MagicPropertyTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'protectedPropertyIsReadDirectlyFromATraitOfTheClass' => [
+                'code' => '<?php
+                    trait Reads {
+                        public function read(self $other): int {
+                            if ($other->value && is_int($other->value)) {
+                                return $other->value;
+                            }
+
+                            return 0;
+                        }
+                    }
+
+                    /**
+                     * @property string $value
+                     */
+                    final class Holder {
+                        use Reads;
+
+                        protected int|string $value = 0;
+
+                        public function __get(string $name): mixed {
+                            return "";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'propertyAnnotationOfTheClassNarrowsItsPublicProperty' => [
                 'code' => '<?php
                     /**

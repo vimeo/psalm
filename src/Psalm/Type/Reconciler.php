@@ -20,6 +20,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ArrayFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Clause;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
@@ -2263,6 +2264,20 @@ class Reconciler
         return true;
     }
 
+    /**
+     * Whether the code is in a trait, which runs in a class that the analysis of the trait doesn't know
+     */
+    private static function isInTrait(StatementsAnalyzer $statements_analyzer): bool
+    {
+        $source = $statements_analyzer->getSource();
+
+        while (!$source instanceof ClassLikeAnalyzer && $source !== $source->getSource()) {
+            $source = $source->getSource();
+        }
+
+        return $source instanceof TraitAnalyzer;
+    }
+
     private static function getPropertyType(
         Codebase $codebase,
         string $fq_class_name,
@@ -2279,6 +2294,7 @@ class Reconciler
             || ($statements_analyzer !== null
                 && $code_location !== null
                 && $codebase->methods->methodExists($codebase, new MethodIdentifier($fq_class_name, '__get'))
+                && !self::isInTrait($statements_analyzer)
                 && ClassLikeAnalyzer::checkPropertyVisibility(
                     $property_id,
                     new Context($statements_analyzer->getFQCLN()),
