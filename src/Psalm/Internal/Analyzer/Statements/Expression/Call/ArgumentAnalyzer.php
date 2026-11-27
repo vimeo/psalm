@@ -109,15 +109,14 @@ final class ArgumentAnalyzer
     public const NOT_PASSED = 'not_passed';
 
     /**
-     * Builtins whose result holds what __toString returns for the objects they convert: true for those converting the
-     * values of their array arguments, or the offset of the argument they convert
+     * Builtins converting objects that their parameter types don't say they convert, whose result holds what
+     * __toString returns: true for those converting the values of their array arguments, or the offset of the
+     * argument they convert
      */
     private const TO_STRING_RESULT_BUILTINS = [
         'strval' => 0,
         'implode' => true,
         'join' => true,
-        'vsprintf' => true,
-        'vprintf' => true,
     ];
 
     // callable $this
@@ -2135,7 +2134,7 @@ final class ArgumentAnalyzer
      * The argument with the objects its parameter converts to strings converted: their __toString calls are signalled,
      * and what they return goes into the argument. A builtin (named by $builtin_id) without a string parameter that
      * takes an array of strings (vsprintf, str_replace) converts the objects among its values, and one in
-     * TO_STRING_RESULT_BUILTINS returns what their __toString methods return.
+     * TO_STRING_RESULT_BUILTINS, whose parameter types don't say so, converts them too.
      */
     private static function convertArgumentObjects(
         StatementsAnalyzer $statements_analyzer,
@@ -2179,7 +2178,21 @@ final class ArgumentAnalyzer
             $value_type = CastAnalyzer::getArrayValueType($input_type);
 
             if ($value_type && $value_type->hasObjectType()) {
-                CastAnalyzer::castStringAttempt($statements_analyzer, $context, $value_type, $expr, false, false);
+                $string_type = CastAnalyzer::castStringAttempt(
+                    $statements_analyzer,
+                    $context,
+                    $value_type,
+                    $expr,
+                    false,
+                    false,
+                );
+
+                if (!$is_unpacked) {
+                    $input_type = $input_type->setParentNodes([
+                        ...$input_type->parent_nodes,
+                        ...$string_type->parent_nodes,
+                    ]);
+                }
             }
         }
 

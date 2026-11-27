@@ -2641,7 +2641,9 @@ final class TaintTest extends TestCase
                     $tag->content = (string) $_GET["x"];
                     echo strval($tag);
                     echo implode(",", [$tag, new Plain()]);
-                    echo strval(new Plain());',
+                    echo strval(new Plain());
+                    echo vsprintf("<p>%s</p>", [$tag]);
+                    echo str_replace("a", [$tag], "a");',
             ],
             'methodNamedByInputNarrowedToALiteral' => [
                 'code' => '<?php
@@ -15726,6 +15728,20 @@ final class TaintTest extends TestCase
                     $tag = new Tag();
                     $tag->content = (string) $_GET["x"];
                     echo vsprintf("<p>%s</p>", [$tag]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheStrReplaceInObjectsWhoseToStringReturnsATaintedProperty' => [
+                'code' => '<?php // --taint-analysis
+                    final class Tag {
+                        public string $content = "";
+                        public function __toString(): string {
+                            return $this->content;
+                        }
+                    }
+
+                    $tag = new Tag();
+                    $tag->content = (string) $_GET["x"];
+                    echo str_replace("a", [$tag], "a");',
                 'error_message' => 'TaintedHtml',
             ],
             'taintTheStringPartOfAStringConversionOfAnObjectOrAString' => [
