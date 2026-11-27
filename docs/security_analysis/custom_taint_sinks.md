@@ -77,6 +77,32 @@ final class TemplateLoader {
 
 Here a tainted template name is not reported, a tainted template source is.
 
+### Values under a key of an array
+
+Append a literal key (`['key']`, `["key"]` or `[0]`) to the parameter name to make only the value under that key of
+the array given to the parameter a sink:
+
+```php
+<?php
+
+interface Client {
+    /**
+     * @param array<array-key, mixed> $options
+     * @psalm-taint-sink shell $options['command']
+     */
+    public function run(array $options): void;
+}
+
+function deploy(Client $client, string $key): void {
+    $input = (string) $_GET["input"];
+
+    $client->run(["command" => $input]); // TaintedShell
+    $client->run(["label" => $input]);   // no issue
+    $client->run([$key => $input]);      // TaintedShell: $key may be "command"
+    $client->run($_GET);                 // TaintedShell: its keys aren't known
+}
+```
+
 ### Conditional sinks
 
 Like [conditional escapes](index.md#your-own-escaping-functions), the taint type can be a

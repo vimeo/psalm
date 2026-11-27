@@ -2385,6 +2385,20 @@ final class ArgumentAnalyzer
             $removed_taints,
         );
 
+        if ($taint_flow_graph) {
+            self::addArgumentArraySinks(
+                $codebase,
+                $taint_flow_graph,
+                $method_id,
+                $function_param,
+                $argument_offset,
+                $dispatch_routes !== [],
+                $argument_value_node,
+                $added_taints,
+                $removed_taints,
+            );
+        }
+
         if ($taint_flow_graph && $method_id && $function_storage) {
             self::addInheritedParamSinks(
                 $codebase,
@@ -2459,6 +2473,7 @@ final class ArgumentAnalyzer
 
         $sinks = 0;
         $value_sinks = 0;
+        $key_sinks = [];
         $declarations = self::getParamSinkDeclarations(
             $codebase,
             $method_id,
@@ -2481,6 +2496,9 @@ final class ArgumentAnalyzer
 
             $sinks |= $param->sinks;
             $value_sinks |= $param->value_sinks;
+            foreach ($param->key_sinks as $key => $taints) {
+                $key_sinks[$key] = ($key_sinks[$key] ?? 0) | $taints;
+            }
         }
 
         if ($sinks !== 0) {
@@ -2496,6 +2514,91 @@ final class ArgumentAnalyzer
         if ($value_sinks !== 0) {
             $taint_flow_graph->addArgumentValuesSink($argument_value_node, $value_sinks);
         }
+
+        $taint_flow_graph->addArgumentKeySinks($argument_value_node, $key_sinks);
+    }
+
+    /**
+     * The sinks of the values of the array the argument of this call gives a parameter (`$param[*]`, `$param['key']`),
+     * on a node of this call: on the node of the parameter, which every call shares, the calls in the same state would
+     * be reported as one. A virtual call may run an override of the method, so it takes the sinks of the parameters of
+     * the overrides too.
+     */
+    private static function addArgumentArraySinks(
+        Codebase $codebase,
+        TaintFlowGraph $taint_flow_graph,
+        ?MethodIdentifier $method_id,
+        FunctionLikeParameter $function_param,
+        int $argument_offset,
+        bool $is_virtual,
+        DataFlowNode $argument_value_node,
+        int $added_taints,
+        int $removed_taints,
+    ): void {
+        $value_sinks = $function_param->value_sinks;
+        $key_sinks = $function_param->key_sinks;
+
+        if ($is_virtual && $method_id !== null) {
+            foreach (self::getOverrideParams($codebase, $method_id, $argument_offset) as $override_param) {
+                $value_sinks |= $override_param->value_sinks;
+                foreach ($override_param->key_sinks as $key => $taints) {
+                    $key_sinks[$key] = ($key_sinks[$key] ?? 0) | $taints;
+                }
+            }
+        }
+
+        if ($value_sinks !== 0) {
+            $taint_flow_graph->addArgumentValuesSink(
+                $argument_value_node,
+                $value_sinks,
+                $added_taints,
+                $removed_taints,
+            );
+        }
+
+        $taint_flow_graph->addArgumentKeySinks($argument_value_node, $key_sinks, $added_taints, $removed_taints);
+    }
+
+    /**
+     * The parameters at $offset (see DataFlowNode::getParameterOffset()) of the methods of the classes extending or
+     * implementing the class of $method_id that override it
+     *
+     * @return list<FunctionLikeParameter>
+     * @psalm-capabilities read-props
+     */
+    private static function getOverrideParams(Codebase $codebase, MethodIdentifier $method_id, int $offset): array
+    {
+        if (!$codebase->classlike_storage_provider->has($method_id->fq_class_name)) {
+            return [];
+        }
+
+        $class_storage = $codebase->classlike_storage_provider->get($method_id->fq_class_name);
+        $declaring_method_id = (string) $codebase->methods->getDeclaringMethodId($method_id);
+        $params = [];
+
+        foreach ($class_storage->dependent_classlikes as $dependent_classlike_lc => $_) {
+            $dependent_declaring_method_id = $codebase->methods->getDeclaringMethodId(
+                new MethodIdentifier($dependent_classlike_lc, $method_id->method_name),
+            );
+
+            if ($dependent_declaring_method_id === null
+                || (string) $dependent_declaring_method_id === $declaring_method_id
+                || !$codebase->methods->hasStorage($dependent_declaring_method_id)
+            ) {
+                continue;
+            }
+
+            $dependent_params = $codebase->methods->getStorage($dependent_declaring_method_id)->params;
+            $last_param = $dependent_params === [] ? null : $dependent_params[count($dependent_params) - 1];
+            // an argument after the first its variadic parameter is given has the offset of its own position
+            $dependent_param = $dependent_params[$offset] ?? ($last_param?->is_variadic ? $last_param : null);
+
+            if ($dependent_param !== null) {
+                $params[] = $dependent_param;
+            }
+        }
+
+        return $params;
     }
 
     /**
@@ -2506,7 +2609,7 @@ final class ArgumentAnalyzer
      */
     private static function declaresSinks(FunctionLikeParameter $param): bool
     {
-        return $param->declares_sinks || ($param->sinks | $param->value_sinks) !== 0;
+        return $param->declares_sinks || ($param->sinks | $param->value_sinks) !== 0 || $param->key_sinks !== [];
     }
 
     /**

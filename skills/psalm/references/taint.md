@@ -75,6 +75,15 @@ $clean = $purifier->purify($html);
 /** @psalm-taint-sink sql $query */
 function runRaw(string $query): void {}
 
+/**
+ * @param array<string, mixed> $options
+ * @psalm-taint-sink shell $options['command']
+ */
+function run(array $options): void {}
+
+run(['command' => $_GET['c']]); // TaintedShell
+run(['label' => $_GET['l']]);   // safe: only the value under 'command' is a sink
+
 /** @psalm-taint-source input */
 function requestParam(string $name): string {}
 ```

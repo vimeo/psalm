@@ -116,6 +116,8 @@ final class TaintedCall
                 $graph->addArgumentValuesSink($param_node, $param->value_sinks);
             }
 
+            $graph->addArgumentKeySinks($param_node, $param->key_sinks);
+
             $nodes_by_param[$param_offset][] = $argument_node;
 
             // the arguments of a variadic parameter all decide its conditions: one whose type isn't known, none

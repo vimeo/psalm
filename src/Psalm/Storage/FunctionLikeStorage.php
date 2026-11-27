@@ -522,6 +522,9 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
             $overload_param = clone $overload_param;
             $overload_param->sinks |= $real_param->sinks;
             $overload_param->value_sinks |= $real_param->value_sinks;
+            foreach ($real_param->key_sinks as $key => $taints) {
+                $overload_param->key_sinks[$key] = ($overload_param->key_sinks[$key] ?? 0) | $taints;
+            }
             $overload_param->assert_untainted = $overload_param->assert_untainted || $real_param->assert_untainted;
             $overload_param->by_ref = $real_param->by_ref;
             $overload_param->out_type ??= $real_param->by_ref ? $real_param->out_type : null;

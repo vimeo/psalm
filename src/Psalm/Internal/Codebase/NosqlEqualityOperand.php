@@ -100,7 +100,12 @@ final class NosqlEqualityOperand
      */
     private static function isNosqlSink(FunctionLikeParameter $param): bool
     {
-        return (($param->sinks | $param->value_sinks) & TaintKind::INPUT_NOSQL) !== 0;
+        $sinks = $param->sinks | $param->value_sinks;
+        foreach ($param->key_sinks as $key_sinks) {
+            $sinks |= $key_sinks;
+        }
+
+        return ($sinks & TaintKind::INPUT_NOSQL) !== 0;
     }
 
     /**
