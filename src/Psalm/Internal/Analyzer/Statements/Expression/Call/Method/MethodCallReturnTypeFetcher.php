@@ -58,6 +58,8 @@ final class MethodCallReturnTypeFetcher
 {
     /**
      * An intersection with a final class can only be that class
+     *
+     * @psalm-capabilities read-props
      */
     public static function isFinalReceiver(Codebase $codebase, ?Atomic $static_type): bool
     {
