@@ -31,6 +31,7 @@ use function is_array;
 use function ksort;
 use function max;
 use function min;
+use function preg_match;
 use function str_contains;
 use function str_ends_with;
 use function str_starts_with;
@@ -643,6 +644,14 @@ final class TaintFlowResolution
     private array $entry_nodes = [];
 
     /**
+     * Entry => the function-like whose body a specialized call entry enters, or the node entered: the entries of
+     * the parameters of one function-like walk the same nodes of its body, which each call has its own of
+     *
+     * @var list<string>
+     */
+    private array $entry_functions = [];
+
+    /**
      * Entry => what it is: ENTRY_CALL or ENTRY_CONVERGENCE
      *
      * @var list<self::ENTRY_*>
@@ -734,10 +743,11 @@ final class TaintFlowResolution
     private array $entry_class_levels = [];
 
     /**
-     * Node id => some of the specialized call entries whose walks reached it => true: a node the walks of
-     * several reach is shared by them, like a property (see enterConvergence())
+     * Node id => the function-likes of some of the specialized call entries whose walks reached it (see
+     * $entry_functions) => true: a node the walks of the entries of several reach is shared by them, like a
+     * property (see enterConvergence())
      *
-     * @var array<string, array<int, true>>
+     * @var array<string, array<string, true>>
      */
     private array $call_entries_reaching = [];
 
@@ -2143,7 +2153,7 @@ final class TaintFlowResolution
                 && $this->entry_kinds[$context] === self::ENTRY_CALL
                 && count($this->call_entries_reaching[$node_id] ?? []) < 2
             ) {
-                $this->call_entries_reaching[$node_id][$this->entry_bases[$context]] = true;
+                $this->call_entries_reaching[$node_id][$this->entry_functions[$this->entry_bases[$context]]] = true;
             }
 
             $state = count($this->state_nodes);
@@ -2617,11 +2627,13 @@ final class TaintFlowResolution
      * enter another one, which then gets their taints, past those of the flows entering the first one.
      *
      * The exits a convergence reaches lead to all their call sites, as outside of any specialized call (see
-     * walk()). Flows in specialized calls only converge at a node the walks of several entries reach, or one
-     * without a location (a property, ...): there, a value is shared by the calls, and any call reading it may
-     * return it, so the call site each flow was entered through doesn't matter anymore. (The filters of an
-     * entry share its node, so a property only their walks reach would otherwise be walked in each of them,
-     * with all that its value reaches.)
+     * walk()). Flows in specialized calls only converge at a node the walks of the entries of several
+     * function-likes reach, or one without a location (a property, ...): there, a value is shared by the calls,
+     * and any call reading it may return it, so the call site each flow was entered through doesn't matter
+     * anymore. (The filters of an entry share its node, so a property only their walks reach would otherwise be
+     * walked in each of them, with all that its value reaches.) The entries of the parameters of one function-like
+     * all reach the nodes of its body, but each call has its own: a flow entered through one call leaves through
+     * that call only.
      *
      * @psalm-capabilities read-props|write-this-props|write-refs
      */
@@ -2818,6 +2830,11 @@ final class TaintFlowResolution
         }
 
         $this->entry_nodes[] = $id;
+        // a parameter of a function-like (`fn#1`, with the suffix of a body analyzed for an inheriting class)
+        $this->entry_functions[] = $kind === self::ENTRY_CALL
+            && preg_match('/^(.+)#\d+([^#]*)$/', $id, $matches) === 1
+                ? ($matches[1] ?? '') . ($matches[2] ?? '')
+                : $id;
         $this->entry_kinds[] = $kind;
         $this->entry_facts[] = $facts;
         $this->entry_filters[$entry] = [];
