@@ -619,7 +619,7 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
                 return;
             }
 
-            // except those that call the callable they are given
+            // except those that call the callable they are given, or may write a property through a reference
             if ($node instanceof PhpParser\Node\Expr\FuncCall
                 && $node->name instanceof Name
                 && !in_array(
@@ -627,6 +627,7 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
                     ['call_user_func', 'call_user_func_array', 'forward_static_call', 'forward_static_call_array'],
                     true,
                 )
+                && !self::passesStateOutsideItself($node)
             ) {
                 return;
             }
@@ -670,6 +671,37 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
         if ($writes_outside) {
             $storage->writes_only_this_properties = false;
         }
+    }
+
+    /**
+     * Whether a call passes a property, a static property, a global or an item of those, which a by-reference
+     * parameter would write
+     *
+     * @psalm-capabilities read-props
+     */
+    private static function passesStateOutsideItself(PhpParser\Node\Expr\FuncCall $node): bool
+    {
+        foreach ($node->getRawArgs() as $arg) {
+            if (!$arg instanceof PhpParser\Node\Arg) {
+                continue;
+            }
+
+            $value = $arg->value;
+
+            while ($value instanceof PhpParser\Node\Expr\ArrayDimFetch) {
+                $value = $value->var;
+            }
+
+            if ($value instanceof PhpParser\Node\Expr\PropertyFetch
+                || $value instanceof PhpParser\Node\Expr\NullsafePropertyFetch
+                || $value instanceof PhpParser\Node\Expr\StaticPropertyFetch
+                || ($value instanceof PhpParser\Node\Expr\Variable && $value->name === 'GLOBALS')
+            ) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

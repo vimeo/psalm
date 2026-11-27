@@ -110,6 +110,31 @@ final class CapabilitiesTest extends TestCase
                     }
                     PHP,
             ],
+            'closureWritingLocalVariableByReferenceKeepsMemoizedGetter' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Child {}
+                    final class Owner {
+                        public ?Child $child = null;
+                        /** @psalm-mutation-free */
+                        public function getChild(): ?Child { return $this->child; }
+                    }
+                    function clear(?Child &$c): void { $c = null; }
+                    function f(Owner $owner): Child {
+                        $c = function (): void {
+                            $local = null;
+                            clear($local);
+                            $items = [null];
+                            clear($items[0]);
+                        };
+                        if ($owner->getChild() === null) {
+                            return new Child();
+                        }
+                        $c();
+                        return $owner->getChild();
+                    }
+                    PHP,
+            ],
             'closureWritingThisKeepsMemoizedGetterOfAnotherObject' => [
                 'code' => <<<'PHP'
                     <?php
@@ -4514,6 +4539,49 @@ final class CapabilitiesTest extends TestCase
                     }
                     PHP,
                 'error_message' => 'NullableReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:16:16',
+            ],
+            'closureWritingPropertyByReferenceForgetsMemoizedGetter' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Child {}
+                    final class Owner {
+                        public ?Child $child = null;
+                        /** @psalm-mutation-free */
+                        public function getChild(): ?Child { return $this->child; }
+                    }
+                    function clear(?Child &$c): void { $c = null; }
+                    function viaClosure(Owner $owner): Child {
+                        $c = function () use ($owner): void { clear($owner->child); };
+                        if ($owner->getChild() === null) {
+                            return new Child();
+                        }
+                        $c();
+                        return $owner->getChild();
+                    }
+                    PHP,
+                'error_message' => 'NullableReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:15:12',
+            ],
+            'closureWritingPropertyItemByReferenceForgetsMemoizedGetter' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Child {}
+                    final class Owner {
+                        /** @var array<string, ?Child> */
+                        public array $children = [];
+                        /** @psalm-mutation-free */
+                        public function getChild(): ?Child { return $this->children['a'] ?? null; }
+                    }
+                    function clear(?Child &$c): void { $c = null; }
+                    function f(Owner $owner): Child {
+                        $c = fn(): null => clear($owner->children['a']);
+                        if ($owner->getChild() === null) {
+                            return new Child();
+                        }
+                        $c();
+                        return $owner->getChild();
+                    }
+                    PHP,
+                'error_message' => 'NullableReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:16:12',
             ],
             'closureReboundWithBindToForgetsMemoizedGetter' => [
                 'code' => <<<'PHP'
