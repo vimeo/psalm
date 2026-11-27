@@ -276,6 +276,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
                 $trait_file_analyzer,
                 $fq_trait_name,
                 $trait_aliases,
+                $this->parent_fq_class_name,
             );
 
             foreach ($trait_node->stmts as $trait_stmt) {
@@ -367,6 +368,23 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
         );
 
         return true;
+    }
+
+    /**
+     * Whether the storage was built from this declaration. The scanner skips a declaration under a guard it knows
+     * to be false (`if (interface_exists(...))` for a missing interface) and takes the class from another one, e.g.
+     * in the `else`.
+     */
+    public static function isStorageDeclaration(
+        ClassLikeStorage $storage,
+        PhpParser\Node\Stmt\ClassLike $stmt,
+        string $file_path,
+    ): bool {
+        $stmt_location = $storage->stmt_location;
+
+        return $stmt_location === null
+            || ($stmt_location->file_path === $file_path
+                && $stmt_location->raw_file_start === (int) $stmt->getAttribute('startFilePos'));
     }
 
     /**

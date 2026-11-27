@@ -1184,6 +1184,14 @@ final class AtomicTypeComparator
             return false;
         }
 
+        // an interface or a class that isn't final can have a child or an implementation with __invoke()
+        if ($allow_interface_equality
+            && (self::mayBeTheSameCallableObject($codebase, $type1_part, $type2_part)
+                || self::mayBeTheSameCallableObject($codebase, $type2_part, $type1_part))
+        ) {
+            return true;
+        }
+
         if ($type1_part instanceof TIterable && $type2_part instanceof TNamedObject) {
             $type1_part = self::getTraversableHalf($codebase, $type1_part, $type2_part, false) ?? $type1_part;
         } elseif ($type2_part instanceof TIterable && $type1_part instanceof TNamedObject) {
@@ -1334,11 +1342,6 @@ final class AtomicTypeComparator
             return true;
         }
 
-        if (self::mayBeTheSameCallableObject($codebase, $type1_part, $type2_part)
-            || self::mayBeTheSameCallableObject($codebase, $type2_part, $type1_part)
-        ) {
-            return true;
-        }
 
         // e.g. callable and string can both be a callable-string
         $type1_parts = AtomicParts::split($type1_part, $type2_part, $codebase);

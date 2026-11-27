@@ -682,7 +682,7 @@ final class ClassLikes
             $storage->location->file_path,
         );
 
-        $trait_finder = new TraitFinder($fq_trait_name);
+        $trait_finder = new TraitFinder($fq_trait_name, $storage->stmt_location?->raw_file_start);
 
         $traverser = new NodeTraverser();
         $traverser->addVisitor(

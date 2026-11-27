@@ -48,10 +48,19 @@ final class TemplateResult
     public ?Union $conditional_return_context = null;
 
     /**
-     * The bindings are the type arguments of the receiver of a call, which replace the templates of the declared
-     * parameter types, even in code of the receiver's class. The argument types stay rigid.
+     * The bindings are in the caller's terms (the type arguments of the receiver of a call, or bounds inferred from
+     * the arguments): they replace the templates of the declared parameter types, even in code of the receiver's
+     * class, and their own templates are not replaced again. The argument types stay rigid.
      */
     public bool $of_receiver = false;
+
+    /**
+     * The templates whose `as` type in $template_types has the receiver's bindings already: the class templates it
+     * names are the caller's
+     *
+     * @var array<string, array<string, true>>
+     */
+    public array $receiver_bound_template_types = [];
 
     /**
      * The class a `new` expression constructs: its templates stand for the new object's type arguments, even in
