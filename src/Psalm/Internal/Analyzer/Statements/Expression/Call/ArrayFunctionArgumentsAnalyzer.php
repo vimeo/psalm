@@ -45,7 +45,10 @@ use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TClosedResource;
 use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TKeyedArray;
+use Psalm\Type\Atomic\TLiteralClassString;
+use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObject;
@@ -63,6 +66,7 @@ use function assert;
 use function count;
 use function explode;
 use function in_array;
+use function is_int;
 use function is_numeric;
 use function str_contains;
 use function strtolower;
@@ -1306,53 +1310,101 @@ final class ArrayFunctionArgumentsAnalyzer
 
     /**
      * The key and value types array_walk() passes to its callback, or, for array_walk_recursive(), the keys and the
-     * values that are not arrays at any depth. Null when some value may hold arrays that can't be resolved.
+     * values of the entries that are not arrays, at any depth. Null when the callback is never called, or when some
+     * value may hold arrays that can't be resolved.
      *
      * @return array{Union, Union}|null
      */
     private static function getArrayWalkElementTypes(Union $array_type, Codebase $codebase, bool $recursive): ?array
     {
+        $element_types = self::collectArrayWalkElementTypes($array_type, $recursive);
+
+        if ($element_types === null || $element_types[0] === [] || $element_types[1] === []) {
+            return null;
+        }
+
+        return [
+            TypeCombiner::combine($element_types[0], $codebase),
+            TypeCombiner::combine($element_types[1], $codebase),
+        ];
+    }
+
+    /**
+     * @return array{list<Atomic>, list<Atomic>}|null
+     */
+    private static function collectArrayWalkElementTypes(Union $array_type, bool $recursive): ?array
+    {
         $key_types = [];
         $value_types = [];
 
         foreach ($array_type->getAtomicTypes() as $atomic) {
-            if ($atomic instanceof TKeyedArray) {
+            if ($atomic instanceof TKeyedArray && !$recursive) {
                 $atomic = $atomic->getGenericArrayType();
             }
 
-            if (!$atomic instanceof TArray) {
+            if ($atomic instanceof TArray) {
+                $entries = [[$atomic->type_params[0], $atomic->type_params[1]]];
+            } elseif ($atomic instanceof TKeyedArray) {
+                // each entry separately, as only the entries that aren't arrays pass their key to the callback
+                $entries = [];
+
+                foreach ($atomic->properties as $key => $property_type) {
+                    if (is_int($key)) {
+                        $key_type = new TLiteralInt($key);
+                    } elseif (isset($atomic->class_strings[$key])) {
+                        $key_type = new TLiteralClassString($key);
+                    } else {
+                        $key_type = Type::getAtomicStringFromLiteral($key);
+                    }
+
+                    $entries[] = [new Union([$key_type]), $property_type];
+                }
+
+                if ($atomic->fallback_params !== null) {
+                    $entries[] = [$atomic->fallback_params[0], $atomic->fallback_params[1]];
+                }
+            } else {
                 return null;
             }
 
-            $key_types = [...$key_types, ...array_values($atomic->type_params[0]->getAtomicTypes())];
+            foreach ($entries as [$entry_key_type, $entry_value_type]) {
+                $passes_key = !$recursive;
 
-            foreach ($atomic->type_params[1]->getAtomicTypes() as $value_atomic) {
-                if (!$recursive) {
-                    $value_types[] = $value_atomic;
-                } elseif ($value_atomic instanceof TArray || $value_atomic instanceof TKeyedArray) {
-                    $nested_types = self::getArrayWalkElementTypes(new Union([$value_atomic]), $codebase, true);
+                foreach ($entry_value_type->getAtomicTypes() as $value_atomic) {
+                    if (!$recursive) {
+                        $value_types[] = $value_atomic;
+                    } elseif ($value_atomic instanceof TNever) {
+                        continue;
+                    } elseif ($value_atomic instanceof TArray || $value_atomic instanceof TKeyedArray) {
+                        $nested_types = self::collectArrayWalkElementTypes(new Union([$value_atomic]), true);
 
-                    if ($nested_types === null) {
+                        if ($nested_types === null) {
+                            return null;
+                        }
+
+                        $key_types = [...$key_types, ...$nested_types[0]];
+                        $value_types = [...$value_types, ...$nested_types[1]];
+                    } elseif ($value_atomic instanceof Scalar
+                        || $value_atomic instanceof TObject
+                        || $value_atomic instanceof TNamedObject
+                        || $value_atomic instanceof TNull
+                        || $value_atomic instanceof TResource
+                        || $value_atomic instanceof TClosedResource
+                    ) {
+                        $value_types[] = $value_atomic;
+                        $passes_key = true;
+                    } else {
                         return null;
                     }
+                }
 
-                    $key_types = [...$key_types, ...array_values($nested_types[0]->getAtomicTypes())];
-                    $value_types = [...$value_types, ...array_values($nested_types[1]->getAtomicTypes())];
-                } elseif ($value_atomic instanceof Scalar
-                    || $value_atomic instanceof TObject
-                    || $value_atomic instanceof TNamedObject
-                    || $value_atomic instanceof TNull
-                    || $value_atomic instanceof TResource
-                    || $value_atomic instanceof TClosedResource
-                ) {
-                    $value_types[] = $value_atomic;
-                } else {
-                    return null;
+                if ($passes_key) {
+                    $key_types = [...$key_types, ...array_values($entry_key_type->getAtomicTypes())];
                 }
             }
         }
 
-        return [TypeCombiner::combine($key_types, $codebase), TypeCombiner::combine($value_types, $codebase)];
+        return [$key_types, $value_types];
     }
 
     private static function getArrayWalkCallable(

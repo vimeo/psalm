@@ -602,6 +602,23 @@ final class ArrayFunctionCallTest extends TestCase
                 'ignored_issues' => ['UnusedClosureParam'],
                 'php_version' => '8.0',
             ],
+            'arrayWalkRecursivePassesOnlyTheKeysOfValuesItDoesNotDescendInto' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @param array<string, list<int>> $nested
+                     * @param array{first: list<int>, second: list<int>} $shape
+                     */
+                    function visit(array $nested, array $shape): void {
+                        array_walk_recursive($nested, static function (int $value, int $key): void {});
+                        array_walk_recursive($shape, static function (int $value, int $key): void {});
+                        $withEmpty = ["items" => [1, 2], "empty" => []];
+                        array_walk_recursive($withEmpty, static function (int $value, int $key): void {});
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['UnusedClosureParam'],
+            ],
             'arrayWalkSkipsCallbackParametersItCannotCheck' => [
                 'code' => <<<'PHP'
                     <?php
@@ -6170,6 +6187,17 @@ final class ArrayFunctionCallTest extends TestCase
                     }
                     PHP,
                 'error_message' => 'Parameter 1 of closure passed to function array_walk_recursive expects int, but string provided',
+            ],
+            'arrayWalkRecursiveWithACallbackNotTakingTheKeyOfAValueItDoesNotDescendInto' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array<string, int|list<int>> $values */
+                    function visit(array $values): void {
+                        array_walk_recursive($values, static function (int $value, int $key): void {});
+                    }
+                    PHP,
+                'error_message' => 'Parameter 2 of closure passed to function array_walk_recursive expects int, but',
+                'error_levels' => ['UnusedClosureParam'],
             ],
             'implodeWithNonStringableArgs' => [
                 'code' => '<?php
