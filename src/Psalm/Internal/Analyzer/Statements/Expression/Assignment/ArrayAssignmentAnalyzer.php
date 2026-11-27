@@ -72,6 +72,7 @@ use function implode;
 use function is_int;
 use function is_string;
 use function preg_match;
+use function reset;
 use function sort;
 use function spl_object_id;
 use function str_contains;
@@ -2285,11 +2286,14 @@ final class ArrayAssignmentAnalyzer
      */
     private static function isDifferentLiteralKey(string $offset_key, Union $written_key_type): bool
     {
-        if (!$written_key_type->isSingle()) {
+        // not isSingle(): that takes several literals of one kind for a single type
+        $written_atomics = $written_key_type->getAtomicTypes();
+
+        if (count($written_atomics) !== 1) {
             return false;
         }
 
-        $written_atomic = $written_key_type->getSingleAtomic();
+        $written_atomic = reset($written_atomics);
 
         if ($written_atomic instanceof TLiteralInt) {
             $written_key = $written_atomic->value;
