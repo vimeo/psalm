@@ -423,7 +423,7 @@ trait UnionTrait
             );
         }
 
-        if (!$this->isSingleAndMaybeNullable()) {
+        if (!$this->isSinglePhpTypeAndMaybeNullable()) {
             if ($analysis_php_version_id < 8_00_00) {
                 return null;
             }
@@ -531,7 +531,7 @@ trait UnionTrait
         }
 
         if ($analysis_php_version_id < 7_00_00
-            || (!$this->isSingleAndMaybeNullable() && $analysis_php_version_id < 8_00_00)
+            || (!$this->isSinglePhpTypeAndMaybeNullable() && $analysis_php_version_id < 8_00_00)
         ) {
             return false;
         }
@@ -1187,6 +1187,30 @@ trait UnionTrait
     }
 
     /**
+     * Whether PHP writes this union as one type besides `null`: literals are written as their kind (`4|20` is `int`)
+     *
+     * @psalm-mutation-free
+     */
+    private function isSinglePhpTypeAndMaybeNullable(): bool
+    {
+        $literal_counts = [
+            count($this->literal_int_types),
+            count($this->literal_string_types),
+            count($this->literal_float_types),
+        ];
+
+        $php_type_count = count($this->types) - (int) isset($this->types['null']);
+
+        foreach ($literal_counts as $literal_count) {
+            if ($literal_count > 0) {
+                $php_type_count -= $literal_count - 1;
+            }
+        }
+
+        return $php_type_count === 1;
+    }
+
+    /**
      * @psalm-mutation-free
      * @return bool true if this is an int
      */
@@ -1211,11 +1235,17 @@ trait UnionTrait
      */
     public function isFloat(): bool
     {
-        if (!$this->isSingle()) {
+        if ($this->types === []) {
             return false;
         }
 
-        return isset($this->types['float']) || $this->literal_float_types;
+        foreach ($this->types as $type) {
+            if (!$type instanceof TFloat) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**

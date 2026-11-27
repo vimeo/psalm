@@ -3195,14 +3195,16 @@ final class AssertionFinder
         } else {
             $type = $source->node_data->getType($whichclass_expr);
 
-            if ($type && $var_name && !$type->isSingle() && self::isLiteralClassStringUnion($type)) {
+            if ($type && $var_name !== null && !$type->isSingle() && self::isLiteralClassStringUnion($type)) {
+                $class_assertions = [];
+
+                foreach ($type->getLiteralStrings() as $class_string) {
+                    $class_assertions[] = new IsClassEqual($class_string->value);
+                }
+
                 // the object is of one of the classes, but not being of the class the value holds tells nothing
-                if (!$negated) {
-                    $if_types[$var_name] = [array_map(
-                        static fn(TLiteralString $class_string): Assertion
-                            => new IsClassEqual($class_string->value),
-                        array_values($type->getLiteralStrings()),
-                    )];
+                if (!$negated && $class_assertions !== []) {
+                    $if_types[$var_name] = [$class_assertions];
                 }
             } elseif ($type && $var_name) {
                 foreach ($type->getAtomicTypes() as $type_part) {

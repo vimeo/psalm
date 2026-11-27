@@ -234,6 +234,8 @@ final class TemplateInferredTypeReplacer
 
     /**
      * The type that a shape gives at the literal keys of `$offset_type`, or null if one of them isn't a known offset
+     *
+     * @psalm-capabilities read-props|write-this-props|write-refs
      */
     public static function getIndexedAccessType(Union $array_type, Union $offset_type, ?Codebase $codebase): ?Union
     {
