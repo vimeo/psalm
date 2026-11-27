@@ -1566,7 +1566,7 @@ class Reconciler
             && ($constant_storage?->type?->from_docblock === true
                 || ClassConstAnalyzer::hasDeclaredType($constant_storage));
 
-        return $codebase->classlikes->getClassConstantType(
+        $constant_type = $codebase->classlikes->getClassConstantType(
             $fq_class_name,
             $const_name,
             ReflectionProperty::IS_PRIVATE,
@@ -1574,6 +1574,17 @@ class Reconciler
             [],
             $late_static_binding,
         );
+
+        // the declared type may name other constants (`Foo::ROLE_*`)
+        return $late_static_binding && $constant_type !== null
+            ? TypeExpander::expandUnion(
+                $codebase,
+                $constant_type,
+                $fq_class_name,
+                $fq_class_name,
+                $class_storage->parent_class,
+            )
+            : $constant_type;
     }
 
     /**

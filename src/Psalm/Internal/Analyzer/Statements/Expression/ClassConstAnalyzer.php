@@ -843,6 +843,17 @@ final class ClassConstAnalyzer
             return true;
         }
 
+        if ($may_be_overridden) {
+            // the declared type may name other constants (`Foo::ROLE_*`)
+            $class_constant_type = TypeExpander::expandUnion(
+                $codebase,
+                $class_constant_type,
+                $fq_class_name,
+                $fq_class_name,
+                $const_class_storage->parent_class,
+            );
+        }
+
         $stmt_type = $class_constant_type;
 
         if ($class_keyword === 'static') {
