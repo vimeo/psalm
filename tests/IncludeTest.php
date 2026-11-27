@@ -763,6 +763,83 @@ final class IncludeTest extends TestCase
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'file1.php',
                 ],
             ],
+            'emptyArrayAfterAnUnresolvableIncludeMayBeFilled' => [
+                'files' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
+                        function config(string $dir): mixed {
+                            $cfg = [];
+                            /** @psalm-suppress UnresolvableInclude */
+                            require $dir . "/config.php";
+                            if (isset($cfg["app"])) {
+                                return $cfg["app"];
+                            }
+                            return null;
+                        }',
+                ],
+                'files_to_check' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'file1.php',
+                ],
+                'hoist_constants' => false,
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'emptyArrayAfterAnIncludeOfAMissingFileMayBeFilled' => [
+                'files' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
+                        function config(): mixed {
+                            $cfg = [];
+                            /** @psalm-suppress MissingFile */
+                            require "doesnotexist.php";
+                            if (isset($cfg["app"])) {
+                                return $cfg["app"];
+                            }
+                            return null;
+                        }',
+                ],
+                'files_to_check' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'file1.php',
+                ],
+                'hoist_constants' => false,
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'emptyArrayAfterAnIncludeOfAFileCheckedWithFileExistsMayBeFilled' => [
+                'files' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
+                        function config(string $file): mixed {
+                            $cfg = [];
+                            if (!file_exists($file)) {
+                                return null;
+                            }
+                            require $file;
+                            if (isset($cfg["app"])) {
+                                return $cfg["app"];
+                            }
+                            return null;
+                        }',
+                ],
+                'files_to_check' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'file1.php',
+                ],
+                'hoist_constants' => false,
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'otherVariablesKeepTheirTypeAfterAnUnresolvableInclude' => [
+                'files' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
+                        /** @param non-empty-list<string> $names */
+                        function load(string $dir, array $names): int {
+                            $loaded = ["first"];
+                            /** @psalm-suppress UnresolvableInclude */
+                            require $dir . "/config.php";
+                            return strlen($dir) + strlen($names[0]) + strlen($loaded[0]);
+                        }',
+                ],
+                'files_to_check' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'file1.php',
+                ],
+            ],
             'nestedParentFile' => [
                 'files' => [
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'a' . DIRECTORY_SEPARATOR . 'b' . DIRECTORY_SEPARATOR . 'c' . DIRECTORY_SEPARATOR . 'd' . DIRECTORY_SEPARATOR . 'script.php' => '<?php

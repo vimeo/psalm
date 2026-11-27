@@ -24,7 +24,9 @@ use Psalm\IssueBuffer;
 use Psalm\Node\Expr\VirtualInclude;
 use Psalm\Node\Expr\VirtualTernary;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
+use Psalm\Type;
 use Psalm\Type\Atomic;
+use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
@@ -295,12 +297,16 @@ final class IncludeAnalyzer
             }
 
             if (isset($context->phantom_files[$path_to_file])) {
+                self::forgetEmptyArrays($stmt, $context);
+
                 return true;
             }
 
             $var_id = ExpressionIdentifier::getExtendedVarId($stmt->expr, null)
                 ?? self::getConstantPhantomFileId($stmt->expr);
             if ($var_id && isset($context->phantom_files[$var_id])) {
+                self::forgetEmptyArrays($stmt, $context);
+
                 return true;
             }
 
@@ -336,7 +342,30 @@ final class IncludeAnalyzer
             $context->check_functions = false;
         }
 
+        self::forgetEmptyArrays($stmt, $context);
+
         return true;
+    }
+
+    /**
+     * A file that is not analyzed may fill the arrays the scope including it starts empty
+     */
+    private static function forgetEmptyArrays(PhpParser\Node\Expr\Include_ $stmt, Context $context): void
+    {
+        foreach ($context->vars_in_scope as $var_id => $type) {
+            if (!$type->isEmptyArray()) {
+                continue;
+            }
+
+            $array_type = new Union([new TArray([Type::getArrayKey(), Type::getMixed()])], [
+                'parent_nodes' => $type->parent_nodes,
+            ]);
+
+            $context->removeDescendents($var_id, $type, $array_type);
+            $context->vars_in_scope[$var_id] = $array_type;
+            $context->assigned_var_ids[$var_id] = (int) $stmt->getAttribute('startFilePos');
+            $context->possibly_assigned_var_ids[$var_id] = true;
+        }
     }
 
     /**
