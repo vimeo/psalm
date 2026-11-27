@@ -69,7 +69,7 @@ final class PowReturnTypeProvider implements FunctionReturnTypeProviderInterface
 
     /**
      * @return non-empty-list<?Atomic> null for an unknown type
-     * @psalm-mutation-free
+     * @psalm-pure
      */
     private static function getAtomicTypes(?Union $type): array
     {
