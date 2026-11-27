@@ -64,6 +64,54 @@ That is `.cursor/mcp.json` for Cursor and `.gemini/settings.json` for Gemini CLI
 Agents that read skills find the skill in `vendor/vimeo/psalm/skills/psalm`; copy it to `.agents/skills/psalm` or
 `.claude/skills/psalm`.
 
+## Project instructions
+
+An agent uses the MCP tools and the skill only when it decides to. These lines in `AGENTS.md` (`CLAUDE.md` for
+Claude Code) make running Psalm the default:
+
+```markdown
+## Psalm
+- Run `vendor/bin/psalm` on the files you change, and on the whole project before you finish.
+- Before fixing an unfamiliar issue, run `vendor/bin/psalm --explain=<IssueType>`.
+- Don't add `@psalm-suppress` or baseline entries without asking.
+```
+
+## Checking the whole project when Claude Code stops
+
+The language server reports the issues of the edited files. Unused code and taint paths between files show up only in
+a run on the whole project. A [`Stop` hook](https://code.claude.com/docs/en/hooks#stop) runs it when Claude wants to
+finish. A full run can be slow on a large project, so the plugin doesn't add this hook.
+
+`.claude/settings.json`:
+
+```json
+{
+  "hooks": {
+    "Stop": [
+      {"hooks": [{"type": "command", "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/psalm-stop.sh", "args": []}]}
+    ]
+  }
+}
+```
+
+`.claude/hooks/psalm-stop.sh` (executable, needs `jq`):
+
+```bash
+#!/bin/bash
+[ "$(jq -r '.stop_hook_active // false')" = true ] && exit 0
+cd "$CLAUDE_PROJECT_DIR" || exit 1
+output=$(vendor/bin/psalm --no-progress --output-format=compact 2>&1)
+status=$?
+[ "$status" = 0 ] && exit 0
+printf '%s\n' "$output" >&2
+[ "$status" = 2 ] && exit 2 || exit 1
+```
+
+* Psalm finds issues: the hook exits `2`, and Claude keeps working with the issues.
+* Claude tries to stop again (`stop_hook_active`): the hook exits `0`, so an issue that needs you doesn't loop.
+* Psalm fails, for example without `psalm.xml`: the hook exits `1`, which Claude Code shows as a hook error and
+  doesn't block on.
+
 ## Tools
 
 `psalm-mcp` keeps the codebase in memory, like the language server, and reloads the files that changed on disk before
