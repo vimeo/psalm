@@ -476,24 +476,6 @@
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/AssertionFinder.php">
-    <ImplicitToStringCast>
-      <code><![CDATA[$expected_type]]></code>
-      <code><![CDATA[$expected_type]]></code>
-      <code><![CDATA[$expected_type]]></code>
-      <code><![CDATA[$expected_type]]></code>
-      <code><![CDATA[$expected_type]]></code>
-      <code><![CDATA[$expected_type]]></code>
-      <code><![CDATA[$expected_type]]></code>
-      <code><![CDATA[$expected_type]]></code>
-      <code><![CDATA[$first_var_type]]></code>
-      <code><![CDATA[$first_var_type]]></code>
-      <code><![CDATA[$first_var_type]]></code>
-      <code><![CDATA[$first_var_type]]></code>
-      <code><![CDATA[$first_var_type]]></code>
-      <code><![CDATA[$first_var_type]]></code>
-      <code><![CDATA[$first_var_type]]></code>
-      <code><![CDATA[$first_var_type]]></code>
-    </ImplicitToStringCast>
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[$count_expr->getArgs()[0]]]></code>
       <code><![CDATA[$count_expr->getArgs()[0]]]></code>

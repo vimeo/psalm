@@ -920,9 +920,16 @@ final class AssertionFinder
         ?Codebase $codebase = null,
         bool $negate = false,
     ): array {
-        $first_var_name = isset($expr->getArgs()[0]->value)
+        $first_arg = $expr->getArgs()[0] ?? null;
+
+        // an unpacked argument is the array of the arguments, not the first of them
+        if ($first_arg !== null && $first_arg->unpack) {
+            $first_arg = null;
+        }
+
+        $first_var_name = $first_arg !== null
             ? ExpressionIdentifier::getExtendedVarId(
-                $expr->getArgs()[0]->value,
+                $first_arg->value,
                 $this_class_name,
                 $source,
             )
@@ -930,9 +937,9 @@ final class AssertionFinder
 
         $if_types = [];
 
-        $first_var_type = isset($expr->getArgs()[0]->value)
+        $first_var_type = $first_arg !== null
             && $source instanceof StatementsAnalyzer
-            ? $source->node_data->getType($expr->getArgs()[0]->value)
+            ? $source->node_data->getType($first_arg->value)
             : null;
 
         $function_id = self::getCalledFunctionId($expr, $source);
@@ -952,18 +959,19 @@ final class AssertionFinder
         } elseif ($function_id === 'is_callable') {
             if ($first_var_name) {
                 $if_types[$first_var_name] = [[new IsType(new TCallable())]];
-            } elseif ($expr->getArgs()[0]->value instanceof PhpParser\Node\Expr\Array_
-                && isset($expr->getArgs()[0]->value->items[0], $expr->getArgs()[0]->value->items[1])
-                && $expr->getArgs()[0]->value->items[1]->value instanceof PhpParser\Node\Scalar\String_
+            } elseif ($first_arg !== null
+                && $first_arg->value instanceof PhpParser\Node\Expr\Array_
+                && isset($first_arg->value->items[0], $first_arg->value->items[1])
+                && $first_arg->value->items[1]->value instanceof PhpParser\Node\Scalar\String_
             ) {
                 $first_var_name_in_array_argument = ExpressionIdentifier::getExtendedVarId(
-                    $expr->getArgs()[0]->value->items[0]->value,
+                    $first_arg->value->items[0]->value,
                     $this_class_name,
                     $source,
                 );
                 if ($first_var_name_in_array_argument) {
                     $if_types[$first_var_name_in_array_argument] = [
-                        [new HasMethod($expr->getArgs()[0]->value->items[1]->value->value)],
+                        [new HasMethod($first_arg->value->items[1]->value->value)],
                     ];
                 }
             }
@@ -1308,21 +1316,23 @@ final class AssertionFinder
             return;
         }
 
+        $type_id = $first_var_type->getId();
+        $expected_id = $expected_type->getId();
         $code_location = new CodeLocation($source, $expr);
-        $dupe_key = $first_var_type . ' ' . $expected_type;
+        $dupe_key = $type_id . ' ' . $expected_id;
 
         if ($always_holds !== $negate) {
             if ($always_holds) {
-                $message = $first_var_type . ' always contains ' . $expected_type;
+                $message = $type_id . ' always contains ' . $expected_id;
             } else {
-                $message = $first_var_type . ' can never contain ' . $expected_type;
+                $message = $type_id . ' can never contain ' . $expected_id;
             }
 
             $issue = $first_var_type->from_docblock
                 ? new RedundantConditionGivenDocblockType('Docblock type ' . $message, $code_location, $dupe_key)
                 : new RedundantCondition($message, $code_location, $dupe_key);
         } else {
-            $message = ($always_holds ? '!' : '') . $first_var_type . ' does not contain ' . $expected_type;
+            $message = ($always_holds ? '!' : '') . $type_id . ' does not contain ' . $expected_id;
 
             $issue = $first_var_type->from_docblock
                 ? new DocblockTypeContradiction('Docblock type ' . $message, $code_location, $dupe_key)

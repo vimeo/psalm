@@ -1198,11 +1198,18 @@ final class AtomicTypeComparator
             return false;
         }
 
-        // an interface or a class that isn't final can have a child or an implementation with __invoke()
+        // an interface or a class that isn't final can have a child or an implementation with __invoke(), or with the
+        // properties of an object shape
         if ($allow_interface_equality
             && (self::mayBeTheSameCallableObject($codebase, $type1_part, $type2_part)
-                || self::mayBeTheSameCallableObject($codebase, $type2_part, $type1_part))
+                || self::mayBeTheSameCallableObject($codebase, $type2_part, $type1_part)
+                || self::mayBeTheSameShapedObject($codebase, $type1_part, $type2_part)
+                || self::mayBeTheSameShapedObject($codebase, $type2_part, $type1_part))
         ) {
+            return true;
+        }
+
+        if (self::canBeTheEmptyArray($type1_part) && self::canBeTheEmptyArray($type2_part)) {
             return true;
         }
 
@@ -1388,6 +1395,26 @@ final class AtomicTypeComparator
             && $object instanceof TNamedObject
             && $codebase->classlike_storage_provider->has($object->value)
             && !$codebase->classlike_storage_provider->get($object->value)->final;
+    }
+
+    /**
+     * @psalm-capabilities read-props
+     */
+    private static function mayBeTheSameShapedObject(Codebase $codebase, Atomic $shape, Atomic $object): bool
+    {
+        return $shape instanceof TObjectWithProperties
+            && $object instanceof TNamedObject
+            && $codebase->classlike_storage_provider->has($object->value)
+            && !$codebase->classlike_storage_provider->get($object->value)->final;
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    private static function canBeTheEmptyArray(Atomic $type): bool
+    {
+        return $type::class === TArray::class
+            || ($type instanceof TKeyedArray && !$type->isNonEmpty());
     }
 
     /**

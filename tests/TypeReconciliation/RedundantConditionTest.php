@@ -2143,6 +2143,53 @@ final class RedundantConditionTest extends TestCase
                         return ["id" => $i] === $shape;
                     }',
             ],
+            'typeCheckOfAnUnpackedArgument' => [
+                'code' => '<?php
+                    /** @param mixed $value */
+                    function f($value): void {
+                        if (is_array(...[$value])) {}
+                        if (is_string(...["x"])) {}
+                    }',
+            ],
+            'arraysOfDisjointKeysCanBothBeEmpty' => [
+                'code' => '<?php
+                    /** @return array<string, string> */
+                    function getMap(): array {
+                        return [];
+                    }
+
+                    /**
+                     * @param array<string, string> $map
+                     * @param list<int> $list
+                     */
+                    function f(array $map, array $list): bool {
+                        if (array_is_list(getMap())) {}
+                        if (!array_is_list(getMap())) {}
+
+                        return $map === $list;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'objectShapeCanBeAChildOfANonFinalClass' => [
+                'code' => '<?php
+                    class Base {}
+
+                    /** @return object{foo: string} */
+                    function shape(): object {
+                        return new class extends Base {
+                            public string $foo = "";
+                        };
+                    }
+
+                    /** @param object{foo: string} $s */
+                    function f(object $s, Base $b): bool {
+                        if (shape() instanceof Base) {}
+
+                        return $s === $b;
+                    }',
+            ],
             'isNullOfAVoidCall' => [
                 'code' => '<?php
                     function v(): void {}
@@ -3426,6 +3473,20 @@ final class RedundantConditionTest extends TestCase
                         echo "always";
                     }',
                 'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:25 - A always contains A',
+            ],
+            'arrayIsListOfANonEmptyArrayOfStringKeysIsImpossible' => [
+                'code' => '<?php
+                    /** @return non-empty-array<string, string> */
+                    function getMap(): array {
+                        return ["a" => "b"];
+                    }
+
+                    if (array_is_list(getMap())) {
+                        echo "never";
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:25 - non-empty-array<string, string> does not contain list<mixed',
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
             'negatedInstanceofOfAReturnValueOfItsClassIsImpossible' => [
                 'code' => '<?php
