@@ -23,6 +23,7 @@ use Psalm\Type\Atomic\TLiteralString;
  *      from_property?: bool,
  *      from_static_property?: bool,
  *      from_global_state?: bool,
+ *      possibly_filled_by_include?: bool,
  *      initialized?: bool,
  *      initialized_class?: ?string,
  *      checked?: bool,
@@ -96,6 +97,12 @@ final class Union implements TypeNode
      * from such a value. Mutating it needs the write-globals capability.
      */
     public bool $from_global_state = false;
+
+    /**
+     * Whether an included file Psalm doesn't analyze may have written into this empty array, so that reading an item of
+     * it gives a value Psalm doesn't know rather than none
+     */
+    public bool $possibly_filled_by_include = false;
 
     /**
      * Whether the property that this type has been derived from has been initialized in a constructor

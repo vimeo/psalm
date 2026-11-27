@@ -1118,6 +1118,19 @@ final class ArrayFetchAnalyzer
                 continue;
             }
 
+            // an included file Psalm doesn't analyze may have filled the empty array
+            if ($type instanceof TArray
+                && $type->isEmptyArray()
+                && $array_type->possibly_filled_by_include
+                && !$in_assignment
+            ) {
+                $has_array_access = true;
+                $has_valid_expected_offset = true;
+                $array_access_type = Type::combineUnionTypes($array_access_type, Type::getMixed());
+
+                continue;
+            }
+
             if ($type instanceof TArray
                 || $type instanceof TKeyedArray
                 || $type instanceof TClassStringMap

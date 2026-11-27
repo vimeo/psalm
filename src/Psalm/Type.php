@@ -800,6 +800,10 @@ abstract class Type
                 $combined_type->from_global_state = true;
             }
 
+            if ($type_1->possibly_filled_by_include || $type_2->possibly_filled_by_include) {
+                $combined_type->possibly_filled_by_include = true;
+            }
+
             if ($type_1->had_template && $type_2->had_template) {
                 $combined_type->had_template = true;
             }

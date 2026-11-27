@@ -825,6 +825,85 @@ final class IncludeTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'appendingToAnEmptyArrayAfterAnUnresolvableIncludeBuildsAList' => [
+                'files' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
+                        /**
+                         * @param list<non-empty-string> $files
+                         * @return list<string>
+                         */
+                        function loadAll(array $files): array {
+                            $loaded = [];
+                            foreach ($files as $file) {
+                                /** @psalm-suppress UnresolvableInclude */
+                                require $file;
+                                $loaded[] = $file;
+                            }
+                            return $loaded;
+                        }',
+                ],
+                'files_to_check' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'file1.php',
+                ],
+            ],
+            'superglobalNarrowedToAnEmptyArrayGetsItsTypeBackAfterAnUnresolvableInclude' => [
+                'files' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
+                        function field(): string {
+                            if (empty($_POST)) {
+                                /** @psalm-suppress UnresolvableInclude */
+                                require (string) getenv("ROOT") . "/maintenance.php";
+                            }
+                            $v = $_POST["a"] ?? "";
+                            return is_string($v) ? $v : "";
+                        }',
+                ],
+                'files_to_check' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'file1.php',
+                ],
+            ],
+            'emptyArrayAfterAnIncludeOfAnIgnoredFileMayBeFilled' => [
+                'files' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
+                        function config(): mixed {
+                            $cfg = [];
+                            require __DIR__ . "/src/Psalm/Internal/Stubs/config.php";
+                            if (isset($cfg["app"])) {
+                                return $cfg["app"];
+                            }
+                            return null;
+                        }',
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'Psalm'
+                        . DIRECTORY_SEPARATOR . 'Internal' . DIRECTORY_SEPARATOR . 'Stubs' . DIRECTORY_SEPARATOR
+                        . 'config.php' => '<?php
+                        $cfg = ["app" => 1];',
+                ],
+                'files_to_check' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'file1.php',
+                ],
+                'hoist_constants' => false,
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'emptyArrayAfterAnUnresolvableIncludeInABranchMayBeFilled' => [
+                'files' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
+                        function config(string $dir, bool $load): mixed {
+                            $cfg = [];
+                            if ($load) {
+                                /** @psalm-suppress UnresolvableInclude */
+                                require $dir . "/config.php";
+                            }
+                            return $cfg["app"] ?? null;
+                        }',
+                ],
+                'files_to_check' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'file1.php',
+                ],
+                'hoist_constants' => false,
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'otherVariablesKeepTheirTypeAfterAnUnresolvableInclude' => [
                 'files' => [
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
@@ -1043,6 +1122,22 @@ final class IncludeTest extends TestCase
     public static function providerTestInvalidIncludes(): array
     {
         return [
+            'emptyArrayAssignedAgainAfterAnUnresolvableIncludeIsEmpty' => [
+                'files' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
+                        function config(string $dir): void {
+                            $cfg = [];
+                            /** @psalm-suppress UnresolvableInclude */
+                            require $dir . "/config.php";
+                            $cfg = [];
+                            echo (string) $cfg["app"];
+                        }',
+                ],
+                'files_to_check' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'file1.php',
+                ],
+                'error_message' => 'EmptyArrayAccess',
+            ],
             'requireGuardedByFileExistsOfAnotherFile' => [
                 'files' => [
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'a' . DIRECTORY_SEPARATOR . 'script.php' => '<?php

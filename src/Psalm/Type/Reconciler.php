@@ -618,6 +618,10 @@ class Reconciler
                 $result_type = $result_type->setProperties(['from_global_state' => true]);
             }
 
+            if ($before_adjustment && $before_adjustment->possibly_filled_by_include) {
+                $result_type = $result_type->setProperties(['possibly_filled_by_include' => true]);
+            }
+
             // narrowing doesn't change the value: an object nothing else references stays so
             if ($before_adjustment && $before_adjustment->reference_free) {
                 $result_type = $result_type->setProperties(['reference_free' => true]);
@@ -1734,7 +1738,11 @@ class Reconciler
                         $part_has_offset = false;
 
                         if ($existing_key_type_part instanceof TArray) {
-                            $new_base_type_candidate = $existing_key_type_part->type_params[1];
+                            // an included file Psalm doesn't analyze may have filled the empty array
+                            $new_base_type_candidate = $existing_key_type_part->isEmptyArray()
+                                && $existing_keys[$base_key]->possibly_filled_by_include
+                                ? Type::getMixed()
+                                : $existing_key_type_part->type_params[1];
 
                             if ($new_base_type_candidate->isMixed()
                                 && !$has_isset

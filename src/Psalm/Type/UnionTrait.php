@@ -165,6 +165,10 @@ trait UnionTrait
             $properties['from_global_state'] = true;
         }
 
+        if ($this->possibly_filled_by_include) {
+            $properties['possibly_filled_by_include'] = true;
+        }
+
         if (!$this->initialized) {
             $properties['initialized'] = false;
         }
@@ -1698,6 +1702,10 @@ trait UnionTrait
         }
 
         if ($this->initialized !== $other_type->initialized) {
+            return false;
+        }
+
+        if ($this->possibly_filled_by_include !== $other_type->possibly_filled_by_include) {
             return false;
         }
 
