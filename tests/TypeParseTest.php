@@ -598,6 +598,18 @@ final class TypeParseTest extends TestCase
         $this->assertSame('(Foo::A|Foo::B)&int<2, 5>', Type::parseString('(Foo::A|Foo::B)&int<2, 5>')->getId());
     }
 
+    public function testIntersectionOfShapesKeptApartIsParenthesized(): void
+    {
+        $this->assertNotSame(
+            Type::parseString('array{a: int}|(array{b: string}&Foo::BAR)')->getId(),
+            Type::parseString('(array{a: int}|array{b: string})&Foo::BAR')->getId(),
+        );
+        $this->assertSame(
+            '(array{a: int}|array{b: string})&Foo::BAR',
+            Type::parseString('(array{a: int}|array{b: string})&Foo::BAR')->getId(),
+        );
+    }
+
     public function testIntersectionInConditionalBranch(): void
     {
         $this->assertSame(
