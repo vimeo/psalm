@@ -1012,6 +1012,7 @@ final class PreloaderList {
         \Psalm\Internal\Provider\ReturnTypeProvider\FilterUtils::class,
         \Psalm\Internal\Provider\ReturnTypeProvider\FilterVarReturnTypeProvider::class,
         \Psalm\Internal\Provider\ReturnTypeProvider\FirstArgStringReturnTypeProvider::class,
+        \Psalm\Internal\Provider\ReturnTypeProvider\GeneratorGetReturnReturnTypeProvider::class,
         \Psalm\Internal\Provider\ReturnTypeProvider\GetCalledClassReturnTypeProvider::class,
         \Psalm\Internal\Provider\ReturnTypeProvider\GetClassMethodsReturnTypeProvider::class,
         \Psalm\Internal\Provider\ReturnTypeProvider\GetObjectVarsReturnTypeProvider::class,
