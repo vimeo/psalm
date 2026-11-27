@@ -2671,7 +2671,7 @@ final class ArrayAssignmentTest extends TestCase
                     $a = (array) (rand(0, 1) ? [1 => "one"] : 0);
                     $b = (array) null;',
                 'assertions' => [
-                    '$a' => 'array{0?: int, 1?: string}',
+                    '$a' => 'array{1: string}|list{int}',
                     '$b' => 'array<never, never>',
                 ],
             ],

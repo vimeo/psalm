@@ -284,7 +284,7 @@ final class TKeyedArray extends Atomic
         }
 
         if ($this->disjoint_shapes !== null) {
-            return implode('|', array_map(
+            $shapes = array_map(
                 static fn(TKeyedArray $shape): string => $shape->toNamespacedString(
                     $namespace,
                     $aliased_classes,
@@ -292,7 +292,9 @@ final class TKeyedArray extends Atomic
                     false,
                 ),
                 $this->disjoint_shapes,
-            ));
+            );
+            sort($shapes);
+            return implode('|', $shapes);
         }
 
         return $this->format(

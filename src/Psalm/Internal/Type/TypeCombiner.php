@@ -7,6 +7,7 @@ namespace Psalm\Internal\Type;
 use InvalidArgumentException;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\Statements\Expression\ArrayAnalyzer;
+use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\TypeVisitor\ClassStringMapBoundReplacer;
 use Psalm\Type;
 use Psalm\Type\Atomic;
@@ -879,8 +880,12 @@ final class TypeCombiner
                 return null;
             }
 
-            // only sealed shapes are kept apart: an unsealed one may hold what another says
-            if ($type->is_callable || $type->fallback_params !== null) {
+            // only sealed shapes are kept apart: an unsealed one may hold what another says, and so may a list
+            // that can end before its last item
+            if ($type->is_callable
+                || $type->fallback_params !== null
+                || ($type->is_list && !$type->allShapeKeysAlwaysDefined())
+            ) {
                 $combination->objectlike_shapes = null;
             } elseif ($combination->objectlike_shapes !== null) {
                 foreach ($type->getDisjointShapes() as $shape) {
@@ -1971,6 +1976,15 @@ final class TypeCombiner
     private static function addDisjointShape(array $shapes, TKeyedArray $shape, ?Codebase $codebase): ?array
     {
         foreach ($shapes as $i => $existing_shape) {
+            if (self::shapeHoldsShape($existing_shape, $shape, $codebase)) {
+                return $shapes;
+            }
+
+            if (self::shapeHoldsShape($shape, $existing_shape, $codebase)) {
+                unset($shapes[$i]);
+                return self::addDisjointShape(array_values($shapes), $shape, $codebase);
+            }
+
             $merged = self::mergeShapesDifferingInOneKey($existing_shape, $shape, $codebase);
             if ($merged !== null) {
                 unset($shapes[$i]);
@@ -1981,6 +1995,32 @@ final class TypeCombiner
         $shapes[] = $shape;
 
         return count($shapes) > self::MAX_DISJOINT_SHAPES ? null : $shapes;
+    }
+
+    /**
+     * Whether every array of the sealed shape $input is one of the sealed shape $container.
+     */
+    private static function shapeHoldsShape(TKeyedArray $container, TKeyedArray $input, ?Codebase $codebase): bool
+    {
+        foreach ($input->properties as $key => $input_property) {
+            $container_property = $container->properties[$key] ?? null;
+            if ($container_property === null
+                || ($input_property->possibly_undefined && !$container_property->possibly_undefined)
+                || ($input_property->getId() !== $container_property->getId()
+                    && (!$codebase
+                        || !UnionTypeComparator::isContainedBy($codebase, $input_property, $container_property)))
+            ) {
+                return false;
+            }
+        }
+
+        foreach ($container->properties as $key => $container_property) {
+            if (!isset($input->properties[$key]) && !$container_property->possibly_undefined) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**

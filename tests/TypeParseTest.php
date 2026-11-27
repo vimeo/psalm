@@ -429,8 +429,8 @@ final class TypeParseTest extends TestCase
 
     public function testUnionOfIntersectionOfTKeyedArray(): void
     {
-        $this->assertSame('array{a: int|string, b?: int}', (string) Type::parseString('array{a: int}|array{a: string}&array{b: int}'));
-        $this->assertSame('array{a: int|string, b?: int}', (string) Type::parseString('array{b: int}&array{a: string}|array{a: int}'));
+        $this->assertSame('array{a: int}|array{a: string, b: int}', (string) Type::parseString('array{a: int}|array{a: string}&array{b: int}'));
+        $this->assertSame('array{a: int}|array{a: string, b: int}', (string) Type::parseString('array{b: int}&array{a: string}|array{a: int}'));
     }
 
     public function testIntersectionOfUnionOfTKeyedArray(): void

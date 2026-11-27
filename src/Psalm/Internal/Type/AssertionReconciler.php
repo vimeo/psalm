@@ -154,12 +154,15 @@ final class AssertionReconciler extends Reconciler
         }
 
         $result_type = null;
+        $shapes = $array_type->getDisjointShapes();
+        $changed = false;
 
-        foreach ($array_type->getDisjointShapes() as $shape) {
+        foreach ($shapes as $shape) {
             $shape_failed_reconciliation = Reconciler::RECONCILIATION_OK;
+            $shape_type = $existing_var_type->getBuilder()->addType($shape)->freeze();
             $shape_result_type = self::reconcileUnion(
                 $assertion,
-                $existing_var_type->getBuilder()->addType($shape)->freeze(),
+                $shape_type,
                 $key,
                 $statements_analyzer,
                 $inside_loop,
@@ -174,13 +177,37 @@ final class AssertionReconciler extends Reconciler
                 || $shape_result_type->isNever()
                 || $shape_result_type->isUnionEmpty()
             ) {
+                $changed = true;
                 continue;
             }
 
+            $changed = $changed || $shape_result_type->getId() !== $shape_type->getId();
             $result_type = Type::combineUnionTypes($shape_result_type, $result_type, $codebase);
         }
 
-        return $result_type ?? $merged_result_type;
+        // no shape is narrowed: the assertion is as redundant as it is for one of them
+        if (!$changed && $code_location && $key !== null) {
+            self::reconcileUnion(
+                $assertion,
+                $existing_var_type->getBuilder()->addType($shapes[0])->freeze(),
+                $key,
+                $statements_analyzer,
+                $inside_loop,
+                $template_type_map,
+                $code_location,
+                $suppressed_issues,
+                $failed_reconciliation,
+                $negated,
+            );
+
+            return $existing_var_type;
+        }
+
+        // a shape is narrowed to no more than the shapes as one are
+        return $result_type !== null
+            && UnionTypeComparator::isContainedBy($codebase, $result_type, $merged_result_type)
+            ? $result_type
+            : $merged_result_type;
     }
 
     /**
