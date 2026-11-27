@@ -2186,7 +2186,9 @@ final class ArgumentsAnalyzer
                         $template_result,
                         $codebase,
                         $statements_analyzer,
-                        $statements_analyzer->node_data->getType($arg->value),
+                        // a variable that is not defined yet is null in the function
+                        $statements_analyzer->node_data->getType($arg->value)
+                            ?? ($arg->value instanceof PhpParser\Node\Expr\Variable ? Type::getNull() : null),
                         $argument_offset,
                         $context->self,
                         $context->calling_method_id ?: $context->calling_function_id,

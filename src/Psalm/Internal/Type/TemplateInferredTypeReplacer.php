@@ -18,7 +18,6 @@ use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TConditional;
 use Psalm\Type\Atomic\TGenericObject;
-use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIntersection;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TKeyOf;
@@ -719,21 +718,12 @@ final class TemplateInferredTypeReplacer
             foreach (isset($l['mixed']) ? [$l['mixed']] : $l as $candidate_atomic_type) {
                 $candidate = new Union([$candidate_atomic_type]);
                 $comparison_result = new TypeComparisonResult();
-                // an object that is only castable to string is not of a string condition
-                if (UnionTypeComparator::isContainedBy(
+                if (UnionTypeComparator::isOfConditionalType(
                     $codebase,
-                    $candidate,
+                    $candidate_atomic_type,
                     $conditional_type,
-                    false,
-                    false,
                     $comparison_result,
-                    false,
-                    false,
-                )
-                    && !$comparison_result->to_string_cast
-                    && (!$candidate_atomic_type instanceof TInt
-                        || !$conditional_type->isFloat())
-                ) {
+                )) {
                     $matching_if_types[] = $candidate_atomic_type;
 
                     continue;
