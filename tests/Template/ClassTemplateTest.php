@@ -57,6 +57,51 @@ final class ClassTemplateTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'literalClassStringArgumentForTheClassStringOfATemplate' => [
+                'code' => '<?php
+                    /** @psalm-consistent-constructor */
+                    class Animal {}
+                    final class Cat extends Animal {}
+
+                    /**
+                     * @template T of Animal
+                     * @param class-string<T> $species
+                     * @return T
+                     */
+                    function adopt(string $species): Animal {
+                        return new $species();
+                    }
+
+                    $cat = adopt(Cat::class);',
+                'assertions' => [
+                    '$cat' => 'Cat',
+                ],
+            ],
+            'classStringOfAFinalBoundAsTheDefaultOfATemplateClassString' => [
+                'code' => '<?php
+                    final class FinalAnimal {}
+
+                    /** @template T of FinalAnimal */
+                    class Shelter {
+                        /** @var class-string<T> */
+                        protected string $species = FinalAnimal::class;
+                    }',
+            ],
+            'caseOfAnEnumBoundAsTheDefaultOfATemplateClassString' => [
+                'code' => '<?php
+                    enum Suit {
+                        case Hearts;
+                    }
+
+                    /** @template T of Suit */
+                    class Deck {
+                        /** @var class-string<T> */
+                        protected string $suit = Suit::class;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'nullCoalescingATemplatePropertyBoundedByANullableStringToAString' => [
                 'code' => '<?php
                     /**
@@ -7021,6 +7066,47 @@ final class ClassTemplateTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'classStringOutsideTheBoundAsTheDefaultOfATemplateClassString' => [
+                'code' => '<?php
+                    class Animal {}
+                    class Stone {}
+
+                    /** @template T of Animal */
+                    class Shelter {
+                        /** @var class-string<T> */
+                        protected string $species = Stone::class;
+                    }',
+                'error_message' => 'InvalidPropertyAssignmentValue',
+            ],
+            'classStringOfTheBoundAsTheClassStringOfATemplate' => [
+                'code' => '<?php
+                    /** @psalm-consistent-constructor */
+                    class Animal {}
+
+                    /** @template T of Animal */
+                    class Shelter {
+                        /** @var class-string<T> */
+                        protected string $species = Animal::class;
+
+                        /** @return T */
+                        public function adopt(): Animal {
+                            return new ($this->species)();
+                        }
+                    }',
+                'error_message' => 'PropertyTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:53 - $this->species'
+                    . ' expects \'class-string<T:Shelter as Animal>\', parent type \'Animal::class\' provided',
+            ],
+            'classStringOfTheBoundAsTheDefaultOfANullableTemplateClassString' => [
+                'code' => '<?php
+                    class Animal {}
+
+                    /** @template T of Animal */
+                    class Shelter {
+                        /** @var class-string<T>|null */
+                        protected ?string $species = Animal::class;
+                    }',
+                'error_message' => 'PropertyTypeCoercion',
+            ],
             'templateBoundByStaticReadOnThisIsTheTemplate' => [
                 'code' => '<?php
                     /**
