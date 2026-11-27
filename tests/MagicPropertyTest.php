@@ -1046,6 +1046,36 @@ final class MagicPropertyTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'propertyAnnotationDescribesAProtectedPropertyNarrowedInAnUnrelatedTrait' => [
+                'code' => '<?php
+                    /**
+                     * @property int $size
+                     */
+                    final class Limit {
+                        protected int|string|null $size = null;
+
+                        public function __get(string $name): mixed {
+                            return 0;
+                        }
+                    }
+
+                    trait UsesLimit {
+                        public function read(Limit $limit): int {
+                            if ($limit->size && $limit->size < 5) {
+                                return $limit->size;
+                            }
+
+                            return 0;
+                        }
+                    }
+
+                    final class Reader {
+                        use UsesLimit;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'propertyAnnotationOfTheClassNarrowsItsPublicProperty' => [
                 'code' => '<?php
                     /**
