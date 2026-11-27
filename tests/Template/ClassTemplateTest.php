@@ -664,6 +664,47 @@ final class ClassTemplateTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'receiverOfTheClassWithTheClassOwnTemplateAsATypeArgumentKeepsItInAClosureParam' => [
+                'code' => '<?php
+                    /**
+                     * @template TKey of array-key
+                     * @template TValue
+                     */
+                    abstract class Coll {
+                        /** @return static<int, TKey> */
+                        abstract public function keys(): static;
+
+                        /**
+                         * @template TNew
+                         * @param callable(TValue, TKey): TNew $c
+                         * @return static<TKey, TNew>
+                         */
+                        abstract public function map(callable $c): static;
+
+                        /**
+                         * @template T
+                         * @template TArr of list<T>
+                         * @param T $t
+                         * @param callable(TArr, TValue): void $c
+                         */
+                        abstract public function withList(mixed $t, callable $c): void;
+
+                        public function test(): void {
+                            $this->keys()->map(function ($key) {
+                                /** @psalm-check-type-exact $key = array-key */
+                                return $key;
+                            });
+
+                            $this->keys()->withList(1, function ($list, $key): void {
+                                /** @psalm-check-type-exact $list = list<1> */
+                                /** @psalm-check-type-exact $key = array-key */
+                            });
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'newOfTheClassItselfInsideItsMethodAcceptsAnotherTemplate' => [
                 'code' => '<?php
                     /** @template T */
