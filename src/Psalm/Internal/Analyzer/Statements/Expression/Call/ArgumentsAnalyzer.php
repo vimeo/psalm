@@ -615,6 +615,41 @@ final class ArgumentsAnalyzer
     }
 
     /**
+     * How many arguments an unpacked sealed shape passes by position: its integer keys, if it surely has them. Null
+     * for what is not known.
+     *
+     * @psalm-capabilities read-props
+     */
+    private static function getUnpackedPositionalCount(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Arg $arg,
+    ): ?int {
+        $unpacked_type = $statements_analyzer->node_data->getType($arg->value);
+
+        if (!$unpacked_type
+            || !$unpacked_type->isSingle()
+            || !($unpacked_atomic = $unpacked_type->getSingleAtomic()) instanceof TKeyedArray
+            || $unpacked_atomic->fallback_params !== null
+        ) {
+            return null;
+        }
+
+        $count = 0;
+
+        foreach ($unpacked_atomic->properties as $key => $property) {
+            if (is_int($key)) {
+                if ($property->possibly_undefined) {
+                    return null;
+                }
+
+                $count++;
+            }
+        }
+
+        return $count;
+    }
+
+    /**
      * The parameter an argument is passed to: the one it is named after, else the one at its position, a variadic one
      * taking the rest
      *
@@ -1350,10 +1385,19 @@ final class ArgumentsAnalyzer
         }
 
         $has_packed_var = false;
+        // the arguments bound by position: the same for each named argument, as PHP rejects a positional argument
+        // after a named one; unknown after an unpack that may have integer keys it isn't known to have
+        $positional_arguments = 0;
 
         foreach ($args as $arg) {
             if ($arg->unpack) {
                 $has_packed_var = true;
+                $unpacked_positional_arguments = self::getUnpackedPositionalCount($statements_analyzer, $arg);
+                $positional_arguments = $positional_arguments === null || $unpacked_positional_arguments === null
+                    ? null
+                    : $positional_arguments + $unpacked_positional_arguments;
+            } elseif (!$arg->name && $positional_arguments !== null) {
+                $positional_arguments++;
             }
         }
 
@@ -1456,6 +1500,7 @@ final class ArgumentsAnalyzer
                             $template_result,
                             $specialize_taint,
                             $in_call_map,
+                            $positional_arguments,
                             $static_is_called_class,
                         );
                     }
@@ -1723,6 +1768,7 @@ final class ArgumentsAnalyzer
                     $template_result,
                     $specialize_taint,
                     $in_call_map,
+                    $positional_arguments,
                     $static_is_called_class,
                 );
 

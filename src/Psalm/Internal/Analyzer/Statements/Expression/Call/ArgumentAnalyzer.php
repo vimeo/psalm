@@ -179,6 +179,7 @@ final class ArgumentAnalyzer
         ?TemplateResult $template_result,
         bool $specialize_taint,
         bool $in_call_map,
+        ?int $positional_arguments,
         bool $static_is_called_class = false,
     ): ?bool {
         if ($arg->getAttribute(self::NOT_PASSED) === true) {
@@ -319,6 +320,7 @@ final class ArgumentAnalyzer
             $template_result,
             $specialize_taint,
             $in_call_map,
+            $positional_arguments,
             $static_is_called_class,
         ) === false) {
             return false;
@@ -411,6 +413,7 @@ final class ArgumentAnalyzer
         ?TemplateResult $template_result,
         bool $specialize_taint,
         bool $in_call_map,
+        ?int $positional_arguments,
         bool $static_is_called_class,
     ): ?bool {
         if (!$function_param->type) {
@@ -788,6 +791,7 @@ final class ArgumentAnalyzer
             $function_call_location,
             $arg->name?->name,
             $unpacked_argument_offset,
+            $positional_arguments,
         ) === false) {
             return false;
         }
@@ -1021,6 +1025,7 @@ final class ArgumentAnalyzer
         CodeLocation $function_call_location,
         ?string $argument_name = null,
         int $unpacked_argument_offset = 0,
+        ?int $positional_arguments = null,
     ): ?bool {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -1060,6 +1065,7 @@ final class ArgumentAnalyzer
                     $in_call_map,
                     $argument_name,
                     $unpack ? $unpacked_argument_offset : null,
+                    $positional_arguments,
                 );
             }
 
@@ -1144,6 +1150,7 @@ final class ArgumentAnalyzer
                     $in_call_map,
                     $argument_name,
                     $unpack ? $unpacked_argument_offset : null,
+                    $positional_arguments,
                 );
             }
 
@@ -1353,6 +1360,7 @@ final class ArgumentAnalyzer
                 $in_call_map,
                 $argument_name,
                 $unpack ? $unpacked_argument_offset : null,
+                $positional_arguments,
                 $param_type->isString()
                     || $union_comparison_results->to_string_cast === true
                     // a builtin taking a stringable-object (sprintf) converts it
@@ -2135,6 +2143,7 @@ final class ArgumentAnalyzer
         bool $in_call_map,
         ?string $argument_name = null,
         ?int $unpacked_argument_offset = null,
+        ?int $positional_arguments = null,
         bool $converts_to_string = false,
     ): void {
         $codebase = $statements_analyzer->getCodebase();
@@ -2283,6 +2292,7 @@ final class ArgumentAnalyzer
                     $specialize_taint,
                     $argument_name,
                     $unpacked_argument_offset,
+                    $positional_arguments,
                     $expr,
                 )
                 : [];
@@ -2604,6 +2614,7 @@ final class ArgumentAnalyzer
         bool $specialize_taint,
         ?string $argument_name,
         ?int $unpacked_argument_offset,
+        ?int $positional_arguments,
         PhpParser\Node\Expr $expr,
     ): array {
         $class_storage = $statements_analyzer->getCodebase()->classlike_storage_provider->get(
@@ -2619,7 +2630,25 @@ final class ArgumentAnalyzer
             : $argument_offset;
 
         // [offset, name, whether it may be any following parameter, element]
-        $arguments = [[$param_offset, $function_param->is_variadic ? $argument_name : null, false, null]];
+        $arguments = [[$param_offset, $argument_name, false, null]];
+
+        if ($unpacked_argument_offset !== null && !$function_param->is_variadic) {
+            // the element the declared parameter takes came by its position or by the name of the parameter, and
+            // the override binds it the same way
+            [$by_position, $by_name] = self::getUnpackedBindings(
+                $statements_analyzer->node_data->getType($expr),
+                $function_param->name,
+            );
+            $arguments = [];
+
+            if ($by_position) {
+                $arguments[] = [$param_offset, null, false, null];
+            }
+
+            if ($by_name) {
+                $arguments[] = [$param_offset, $function_param->name, false, null];
+            }
+        }
 
         if ($unpacked_argument_offset !== null && $function_param->is_variadic) {
             $unpacked_type = $statements_analyzer->node_data->getType($expr);
@@ -2665,6 +2694,7 @@ final class ArgumentAnalyzer
                 $specialize_taint,
                 $name,
                 $any_following,
+                $positional_arguments,
             );
 
             if ($dispatch_node) {
@@ -2676,9 +2706,43 @@ final class ArgumentAnalyzer
     }
 
     /**
+     * Whether the element of an unpacked argument a parameter that is not variadic takes may come by its position
+     * (an integer key) and by the name of the parameter (a string key).
+     *
+     * @return array{bool, bool}
+     * @psalm-mutation-free
+     */
+    private static function getUnpackedBindings(?Union $unpacked_type, string $param_name): array
+    {
+        if ($unpacked_type === null) {
+            return [true, true];
+        }
+
+        $by_position = false;
+        $by_name = false;
+
+        foreach ($unpacked_type->getAtomicTypes() as $atomic) {
+            if ($atomic instanceof TKeyedArray && $atomic->fallback_params === null) {
+                $by_name = $by_name || isset($atomic->properties[$param_name]);
+                $by_position = $by_position || !isset($atomic->properties[$param_name]);
+            } elseif ($atomic instanceof TKeyedArray || $atomic instanceof TArray) {
+                $key_type = $atomic instanceof TKeyedArray
+                    ? $atomic->getGenericKeyType()
+                    : $atomic->type_params[0];
+                $by_position = $by_position || !$key_type->isString();
+                $by_name = $by_name || !$key_type->isInt();
+            } else {
+                return [true, true];
+            }
+        }
+
+        return [$by_position, $by_name];
+    }
+
+    /**
      * The node that the calls of the method, giving the parameter at $param_offset (or the one of the name
-     * $variadic_argument_name, which the variadic parameter takes), go through to the overrides of the classes
-     * extending it, if any may run.
+     * $named_argument, which the parameter of that name or the variadic one takes), go through to the overrides of
+     * the classes extending it, if any may run.
      */
     private static function getDispatchNode(
         StatementsAnalyzer $statements_analyzer,
@@ -2688,8 +2752,9 @@ final class ArgumentAnalyzer
         FunctionLikeParameter $function_param,
         int $param_offset,
         bool $specialize_taint,
-        ?string $variadic_argument_name,
+        ?string $named_argument,
         bool $any_following,
+        ?int $positional_arguments,
     ): ?DataFlowNode {
         $codebase = $statements_analyzer->getCodebase();
         $class_storage = $codebase->classlike_storage_provider->get($method_id->fq_class_name);
@@ -2698,8 +2763,9 @@ final class ArgumentAnalyzer
             $cased_method_id,
             $param_offset,
             $specialize_taint,
-            $variadic_argument_name,
+            $named_argument,
             $any_following,
+            $positional_arguments,
         );
 
         if ($taint_flow_graph->isEmptyDispatch($dispatch_node)) {
@@ -2730,28 +2796,46 @@ final class ArgumentAnalyzer
             $is_override = $dependent_appearing_method_id !== null
                 && (string) $dependent_appearing_method_id !== (string) $appearing_method_id;
 
-            // An argument of a variadic parameter binds to the parameters of the override that take it: a named
-            // one the fixed parameter of that name, else the variadic one; one that may be any following the
-            // position, each from it; any other the one at its position. The variadic parameter is keyed by
-            // position, but never before its own index (see DataFlowNode::getParameterOffset()).
+            // An argument binds to the parameters of the override that take it: a named one the parameter of that
+            // name, else the variadic one, unless the positional arguments filled it (PHP throws); one that may be
+            // any following the position, each from it; any other the one at its position, whatever the parameters
+            // of the override are called. The variadic parameter is keyed by position, but never before its own
+            // index (see DataFlowNode::getParameterOffset()).
             $dependent_offsets = [null];
             $dependent_variadic_offset = null;
 
-            if ($function_param->is_variadic && $dependent_storage) {
-                $dependent_offsets = $variadic_argument_name === null && !$any_following ? [$param_offset] : [];
+            if ($dependent_storage) {
+                $dependent_offsets = [];
 
                 foreach ($dependent_storage->params as $i => $dependent_param) {
                     if ($dependent_param->is_variadic) {
                         $dependent_variadic_offset = $i;
+                    }
+                }
 
-                        if ($any_following || $dependent_offsets === []) {
+                if ($any_following) {
+                    foreach ($dependent_storage->params as $i => $dependent_param) {
+                        if ($dependent_param->is_variadic) {
                             $dependent_offsets[] = max($param_offset, $i);
+                        } elseif ($i >= $param_offset) {
+                            $dependent_offsets[] = $i;
                         }
-                    } elseif ($any_following
-                        ? $i >= $param_offset
-                        : $dependent_param->name === $variadic_argument_name
-                    ) {
-                        $dependent_offsets[] = $i;
+                    }
+                } elseif ($named_argument === null) {
+                    $dependent_offsets[] = $param_offset;
+                } else {
+                    $named_offset = DataFlowNode::getParameterOffsetOfNamedArgument(
+                        $dependent_storage,
+                        $named_argument,
+                    );
+
+                    if ($named_offset !== null) {
+                        if ($positional_arguments === null
+                            || $named_offset >= $positional_arguments
+                            || $dependent_storage->params[$named_offset]->is_variadic
+                        ) {
+                            $dependent_offsets[] = $named_offset;
+                        }
                     }
                 }
             }
