@@ -111,6 +111,33 @@ final class FunctionTemplateTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'offsetOfATemplateBoundByAUnionReadsEachTypeOfTheBound' => [
+                'code' => '<?php
+                    /**
+                     * @template T of "ab"|"cd"
+                     * @param T $s
+                     */
+                    function firstChar(string $s): string {
+                        /** @psalm-check-type $c = non-empty-string */
+                        $c = $s[0];
+
+                        return $c;
+                    }
+
+                    /**
+                     * @template T of array<int>|string
+                     * @param T $a
+                     */
+                    function first($a): int|string {
+                        /** @psalm-check-type $f = int|non-empty-string */
+                        $f = $a[0];
+
+                        return $f;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'indexedAccessOfATemplateShapeByAUnionOfKeys' => [
                 'code' => '<?php
                     /**

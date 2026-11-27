@@ -1024,6 +1024,33 @@ final class ArrayFetchAnalyzer
                 continue;
             }
 
+            // the item read from a template is the one each type of its bound gives
+            if ($type instanceof TTemplateParam
+                && !$in_assignment
+                && !$type->as->isMixed()
+                && !$type->as->isSingle()
+            ) {
+                $bound_type = $type->as;
+                $bound_offset_type = $offset_type->freeze();
+
+                $array_access_type = Type::combineUnionTypes(
+                    $array_access_type,
+                    self::getArrayAccessTypeGivenOffset(
+                        $statements_analyzer,
+                        $stmt,
+                        $bound_type,
+                        $bound_offset_type,
+                        false,
+                        $extended_var_id,
+                        $context,
+                    ),
+                );
+
+                $has_valid_expected_offset = true;
+
+                continue;
+            }
+
             if ($type instanceof TMixed
                 || $type instanceof TTemplateParam
             ) {
