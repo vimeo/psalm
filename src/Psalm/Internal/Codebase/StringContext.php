@@ -26,14 +26,19 @@ use const PREG_OFFSET_CAPTURE;
 use const PREG_SPLIT_DELIM_CAPTURE;
 
 /**
- * Where the text known of a string ends, for the values embedded after it: inside or outside the quotes of SQL, and
- * where in HTML markup. An escaping function only makes a value safe for some positions: what real_escape_string()
- * returns is only safe in SQL quotes, what htmlspecialchars() returns can still end an unquoted attribute value, or
- * be a `javascript:` URL.
+ * Where the text known of a string ends, for the values embedded after it: inside or outside the quotes of SQL, where
+ * in HTML markup, and whether after a literal `?` or `#`. An escaping function only makes a value safe for some
+ * positions: what real_escape_string() returns is only safe in SQL quotes, what htmlspecialchars() returns can still
+ * end an unquoted attribute value, or be a `javascript:` URL.
  *
  * A string whose start is literal text starts outside SQL quotes, in HTML text. A value embedded in it is taken to
  * change neither (an escaped value has no quote or `<`), except that it ends the scheme of a URL. Where the text is not
  * known, nothing is: a start tag in the text after it tells where in HTML markup the string is again.
+ *
+ * A `?` or `#` ends the host and the path of a URL whatever comes before it, so a value embedded after a literal one
+ * can't choose where a redirect sends the client (`redirect` taint), or be a `..` segment of the path (`url_path`
+ * taint). It may still choose the server a request is sent to (`ssrf` taint): the `/resource=` of a
+ * `php://filter/read=...?` stream, or the next URL of the space-separated list ldap_connect() takes, can follow it.
  *
  * @internal
  * @psalm-immutable
@@ -86,6 +91,7 @@ final class StringContext
         private readonly string $tag = '',
         private readonly string $attribute = '',
         private readonly int $scheme = self::SCHEME_DECIDED,
+        private readonly bool $after_query = false,
     ) {
     }
 
@@ -223,24 +229,39 @@ final class StringContext
     public function afterValue(): self
     {
         return match ($this->html) {
-            self::HTML_BEFORE_VALUE => new self($this->sql, self::HTML_UNQUOTED_VALUE, $this->tag, $this->attribute),
-            self::HTML_UNQUOTED_VALUE, self::HTML_SINGLE_QUOTED_VALUE, self::HTML_DOUBLE_QUOTED_VALUE
-                => new self($this->sql, $this->html, $this->tag, $this->attribute),
+            self::HTML_BEFORE_VALUE => new self(
+                $this->sql,
+                self::HTML_UNQUOTED_VALUE,
+                $this->tag,
+                $this->attribute,
+                self::SCHEME_DECIDED,
+                $this->after_query,
+            ),
+            self::HTML_UNQUOTED_VALUE, self::HTML_SINGLE_QUOTED_VALUE, self::HTML_DOUBLE_QUOTED_VALUE => new self(
+                $this->sql,
+                $this->html,
+                $this->tag,
+                $this->attribute,
+                self::SCHEME_DECIDED,
+                $this->after_query,
+            ),
             default => $this,
         };
     }
 
     /**
      * The taints a value embedded here loses: SQL syntax outside quotes, unless the value is known to be outside
-     * SQL quotes. Where that isn't known, the escaping of the value is trusted.
+     * SQL quotes (where that isn't known, the escaping of the value is trusted), and after a literal `?` or `#`, the
+     * host and the path of a URL.
      *
      * @psalm-mutation-free
      */
     public function getRemovedTaints(): int
     {
-        return $this->sql === self::SQL_OUTSIDE || $this->sql === self::SQL_BACKTICKED
-            ? 0
-            : TaintKind::INPUT_SQL_UNQUOTED;
+        return ($this->sql === self::SQL_OUTSIDE || $this->sql === self::SQL_BACKTICKED
+                ? 0
+                : TaintKind::INPUT_SQL_UNQUOTED)
+            | ($this->after_query ? TaintKind::INPUT_REDIRECT | TaintKind::INPUT_URL_PATH : 0);
     }
 
     /**
@@ -292,6 +313,7 @@ final class StringContext
             $same_html ? $this->tag : '',
             $same_html ? $this->attribute : '',
             $same_html ? $this->scheme : self::SCHEME_DECIDED,
+            $this->after_query && $other->after_query,
         );
     }
 
@@ -300,7 +322,7 @@ final class StringContext
      */
     private function afterLiteral(string $text): self
     {
-        return $this->afterHtml($text, $this->afterSql($text));
+        return $this->afterHtml($text, $this->afterSql($text), $this->after_query || strpbrk($text, '?#') !== false);
     }
 
     /**
@@ -341,7 +363,7 @@ final class StringContext
     /**
      * @psalm-mutation-free
      */
-    private function afterHtml(string $text, ?int $sql): self
+    private function afterHtml(string $text, ?int $sql, bool $after_query): self
     {
         $state = $this->html;
         $tag = $this->tag;
@@ -355,7 +377,7 @@ final class StringContext
             $last_tag_start = $matches[0][$count - 1][1] ?? null;
 
             if ($last_tag_start === null) {
-                return new self($sql, null);
+                return new self($sql, null, '', '', self::SCHEME_DECIDED, $after_query);
             }
 
             $state = self::HTML_TEXT;
@@ -475,7 +497,7 @@ final class StringContext
             }
         }
 
-        return new self($sql, $state, $tag, $attribute, $scheme);
+        return new self($sql, $state, $tag, $attribute, $scheme, $after_query);
     }
 
     /**

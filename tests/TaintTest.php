@@ -3147,6 +3147,49 @@ final class TaintTest extends TestCase
                     redirectTo("https://example.com/" . (string) $_GET["page"]);
                     redirectTo("/docs/" . (string) $_GET["page"]);',
             ],
+            'locationHeaderQueryAfterAnUnknownStartIsNoRedirect' => [
+                'code' => '<?php
+                    final class Config { public static string $baseUrl = ""; }
+                    function baseUrl(): string { return Config::$baseUrl; }
+
+                    $page = rawurlencode((string) $_GET["page"]);
+                    header("Location: " . baseUrl() . "?page=" . $page);
+                    header("Location: " . baseUrl() . "/docs#" . $page);
+                    header("Location: " . baseUrl() . ("?page=" . $page));
+                    $query = "?page=" . $page;
+                    header("Location: " . baseUrl() . $query);
+                    header("Location: " . baseUrl() . "?page=" . $page . "&from=" . $page);',
+            ],
+            'locationHeaderInterpolatedQueryAfterAnUnknownStartIsNoRedirect' => [
+                'code' => '<?php
+                    final class Config { public static string $baseUrl = ""; }
+
+                    $base = Config::$baseUrl;
+                    $page = rawurlencode((string) $_GET["page"]);
+                    header("Location: {$base}#{$page}");
+                    header("Location: {$base}?page={$page}");
+                    header("Location: " . $base . "?page={$page}");',
+            ],
+            'locationHeaderFormattedQueryAfterAnUnknownStartIsNoRedirect' => [
+                'code' => '<?php
+                    final class Config { public static string $baseUrl = ""; }
+
+                    $page = rawurlencode((string) $_GET["page"]);
+                    header("Location: " . sprintf("%s?page=%s", Config::$baseUrl, $page));',
+            ],
+            'locationHeaderOfAQueryAloneIsNoRedirect' => [
+                'code' => '<?php
+                    header("Location: ?page=" . rawurlencode((string) $_GET["page"]));',
+            ],
+            'redirectSinkAfterAQueryOfAnUnknownUrl' => [
+                'code' => '<?php
+                    final class Config { public static string $baseUrl = ""; }
+
+                    /** @psalm-taint-sink redirect $url */
+                    function redirectTo(string $url): void {}
+
+                    redirectTo(Config::$baseUrl . "?next=" . (string) $_GET["next"]);',
+            ],
             'sessionItemStoredButNeverRead' => [
                 'code' => '<?php
                     $_SESSION["user"] = $_GET["user"];',
@@ -9982,6 +10025,85 @@ final class TaintTest extends TestCase
                     // `..` reaches another path of the server
                     header("Location: https://example.com/docs/" . rawurlencode((string) $_GET["page"]));',
                 'error_message' => 'TaintedUrlPath',
+            ],
+            'locationHeaderQueryAfterATaintedStart' => [
+                'code' => '<?php
+                    header("Location: " . (string) $_GET["url"] . "?page=" . rawurlencode((string) $_GET["page"]));',
+                'error_message' => 'TaintedRedirect',
+            ],
+            'locationHeaderValueBeforeAQuery' => [
+                'code' => '<?php
+                    final class Config { public static string $baseUrl = ""; }
+
+                    // `/evil.example` after a base URL of `` is another server
+                    header("Location: " . Config::$baseUrl . "/" . (string) $_GET["page"] . "?from=1");',
+                'error_message' => 'TaintedRedirect',
+            ],
+            'locationHeaderInterpolatedValueBeforeAQuery' => [
+                'code' => '<?php
+                    final class Config { public static string $baseUrl = ""; }
+
+                    $base = Config::$baseUrl;
+                    $page = (string) $_GET["page"];
+                    header("Location: {$base}/{$page}?from=1");',
+                'error_message' => 'TaintedRedirect',
+            ],
+            'locationHeaderFormattedValueBeforeAQuery' => [
+                'code' => '<?php
+                    final class Config { public static string $baseUrl = ""; }
+
+                    header("Location: " . sprintf("%s/%s?from=1", Config::$baseUrl, (string) $_GET["page"]));',
+                'error_message' => 'TaintedRedirect',
+            ],
+            'locationHeaderValueAfterAnUnknownStart' => [
+                'code' => '<?php
+                    final class Config { public static string $baseUrl = ""; }
+
+                    header("Location: " . Config::$baseUrl . (string) $_GET["page"]);',
+                'error_message' => 'TaintedRedirect',
+            ],
+            'locationHeaderValueAfterAQueryInOneBranchOnly' => [
+                'code' => '<?php
+                    $start = rand(0, 1) ? "?page=" : "/";
+                    header("Location: " . $start . (string) $_GET["page"]);',
+                'error_message' => 'TaintedRedirect',
+            ],
+            'locationHeaderValueAfterAQuestionMarkTheInputMayHold' => [
+                'code' => '<?php
+                    /** @psalm-taint-source html */
+                    function readTitle(): string { return ""; }
+
+                    // a `?` the title may hold is not known to be there
+                    header("Location: " . readTitle() . (string) $_GET["page"]);',
+                'error_message' => 'TaintedRedirect',
+            ],
+            'locationHeaderQueryAfterAnUnknownStart' => [
+                'code' => '<?php
+                    final class Config { public static string $baseUrl = ""; }
+
+                    // `&admin=1` changes the query of the URL
+                    header("Location: " . Config::$baseUrl . "?page=" . (string) $_GET["page"]);',
+                'error_message' => 'TaintedUrlComponent',
+            ],
+            'locationHeaderOfAQueryAlone' => [
+                'code' => '<?php
+                    // the URL is the current one with another query
+                    header("Location: ?" . (string) $_GET["query"]);',
+                'error_message' => 'TaintedUrlComponent',
+            ],
+            'ssrfAfterAQueryOfATaintedHost' => [
+                'code' => '<?php
+                    $host = (string) $_GET["host"];
+                    file_get_contents($host . "?page=" . rawurlencode((string) $_GET["page"]));',
+                'error_message' => 'TaintedSSRF',
+            ],
+            'ssrfAfterAQueryOfAnUnknownUrl' => [
+                'code' => '<?php
+                    final class Config { public static string $baseUrl = ""; }
+
+                    // with a base URL of `php://filter/read=string.tolower`, `/resource=http://evil.example/` is fetched
+                    getimagesize(Config::$baseUrl . "?" . (string) $_GET["page"]);',
+                'error_message' => 'TaintedSSRF',
             ],
             'headerWhoseNameIsTaintedIsNoRedirect' => [
                 'code' => '<?php

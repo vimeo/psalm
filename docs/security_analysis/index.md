@@ -875,13 +875,17 @@ under the CGI SAPI — acts as an output sink just like `echo`. This covers:
 
 **Redirects:** For a `Location` header, `header()` reports `redirect`, `url_component` and `url_path` instead of
 `header`. If the header value starts with a literal URL or path (`https://example.com/`, `/account`), only
-`url_component` and `url_path` are reported:
+`url_component` and `url_path` are reported. A value after a literal `?` or `#` only reports `url_component`, whatever
+comes before it:
 
 ```php
 <?php
 header('Location: ' . $_GET['next']); // TaintedRedirect
 header('Location: https://example.com/' . $_GET['page']); // TaintedUrlComponent
 header('Location: /account?tab=' . urlencode((string) $_GET['tab'])); // no issue
+header('Location: ' . $_SERVER['APP_URL'] . '?tab=' . $_GET['tab']); // TaintedUrlComponent
+header('Location: ' . $_SERVER['APP_URL'] . '?tab=' . urlencode((string) $_GET['tab'])); // no issue
+header('Location: ' . $_GET['url'] . '?tab=' . urlencode((string) $_GET['tab'])); // TaintedRedirect
 ```
 
 **Sessions:** A value stored in `$_SESSION` flows to every read of the same key, in any function. As with
