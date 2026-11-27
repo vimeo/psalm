@@ -51,6 +51,7 @@ use Psalm\Type\Atomic\TNonFalsyLowercaseString;
 use Psalm\Type\Atomic\TNonspecificLiteralInt;
 use Psalm\Type\Atomic\TNonspecificLiteralString;
 use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Atomic\TNumeric;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
@@ -537,12 +538,16 @@ trait UnionTrait
 
         $types = $this->types;
 
-        if (isset($types['null'])) {
-            if (count($types) > 1 && $analysis_php_version_id >= 7_01_00) {
-                unset($types['null']);
-            } else {
+        if (isset($types['null']) && count($types) > 1) {
+            if ($analysis_php_version_id < 7_01_00) {
                 return false;
             }
+
+            unset($types['null']);
+        }
+
+        if (isset($types['false']) && count($types) > 1) {
+            unset($types['false']);
         }
 
         foreach ($types as $t) {
@@ -634,7 +639,7 @@ trait UnionTrait
      */
     public function isTemplatedClassString(): bool
     {
-        if (!$this->isSingle()) {
+        if (!$this->isSingleAtomic()) {
             return false;
         }
         $has = false;
@@ -1163,59 +1168,52 @@ trait UnionTrait
     }
 
     /**
+     * Whether the union holds exactly one atomic type, which getSingleAtomic() then returns
+     *
+     * @psalm-mutation-free
+     */
+    public function isSingleAtomic(): bool
+    {
+        return count($this->types) === 1;
+    }
+
+    /**
+     * Whether the union is one type once its literals are grouped by kind: `1|2` and `A::class|B::class` are single,
+     * but getSingleAtomic() then returns only their first literal
+     *
+     * @deprecated use isSingleAtomic() before getSingleAtomic(), or allIntLiterals(), allStringLiterals() and
+     *     allFloatLiterals() for a union of literals. It will be removed in Psalm 8.
      * @psalm-mutation-free
      */
     public function isSingle(): bool
     {
-        $type_count = count($this->types);
+        return $this->countTypesWithLiteralsGroupedByKind() === 1;
+    }
 
-        $int_literal_count = count($this->literal_int_types);
-        $string_literal_count = count($this->literal_string_types);
-        $float_literal_count = count($this->literal_float_types);
-
-        if (($int_literal_count && $string_literal_count)
-            || ($int_literal_count && $float_literal_count)
-            || ($string_literal_count && $float_literal_count)
-        ) {
-            return false;
-        }
-
-        if ($int_literal_count || $string_literal_count || $float_literal_count) {
-            $type_count -= $int_literal_count + $string_literal_count + $float_literal_count - 1;
-        }
-
-        return $type_count === 1;
+    /**
+     * Whether PHP writes the union as one type besides `null`: literals are written as their kind (`4|20` is `int`)
+     *
+     * @psalm-mutation-free
+     */
+    public function isSingleAndMaybeNullable(): bool
+    {
+        return $this->countTypesWithLiteralsGroupedByKind() - (int) isset($this->types['null']) === 1;
     }
 
     /**
      * @psalm-mutation-free
      */
-    public function isSingleAndMaybeNullable(): bool
+    private function countTypesWithLiteralsGroupedByKind(): int
     {
-        $is_nullable = isset($this->types['null']);
-
         $type_count = count($this->types);
 
-        if ($type_count === 1 && $is_nullable) {
-            return false;
+        foreach ([$this->literal_int_types, $this->literal_string_types, $this->literal_float_types] as $literals) {
+            if ($literals !== []) {
+                $type_count -= count($literals) - 1;
+            }
         }
 
-        $int_literal_count = count($this->literal_int_types);
-        $string_literal_count = count($this->literal_string_types);
-        $float_literal_count = count($this->literal_float_types);
-
-        if (($int_literal_count && $string_literal_count)
-            || ($int_literal_count && $float_literal_count)
-            || ($string_literal_count && $float_literal_count)
-        ) {
-            return false;
-        }
-
-        if ($int_literal_count || $string_literal_count || $float_literal_count) {
-            $type_count -= $int_literal_count + $string_literal_count + $float_literal_count - 1;
-        }
-
-        return ($type_count - (int) $is_nullable) === 1;
+        return $type_count;
     }
 
     /**
@@ -1243,11 +1241,17 @@ trait UnionTrait
      */
     public function isFloat(): bool
     {
-        if (!$this->isSingle()) {
+        if ($this->types === []) {
             return false;
         }
 
-        return isset($this->types['float']) || $this->literal_float_types;
+        foreach ($this->types as $type) {
+            if (!$type instanceof TFloat) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**
@@ -1297,11 +1301,12 @@ trait UnionTrait
      */
     public function isBool(): bool
     {
-        if (!$this->isSingle()) {
-            return false;
+        foreach ($this->types as $type) {
+            if (!$type instanceof TBool) {
+                return false;
+            }
         }
-
-        return isset($this->types['bool']);
+        return true;
     }
 
     /**
@@ -1310,11 +1315,12 @@ trait UnionTrait
      */
     public function isArray(): bool
     {
-        if (!$this->isSingle()) {
-            return false;
+        foreach ($this->types as $type) {
+            if (!($type instanceof TArray || $type instanceof TKeyedArray || $type instanceof TClassStringMap)) {
+                return false;
+            }
         }
-
-        return isset($this->types['array']);
+        return true;
     }
 
     /**
@@ -1875,6 +1881,11 @@ trait UnionTrait
             return $input_taints & ~TaintKind::NUMERIC_ONLY;
         }
 
+        // a numeric string can also hold whitespace, such as a newline
+        if ($atomic instanceof TNumeric) {
+            return $input_taints & ~(TaintKind::NUMERIC_ONLY | TaintKind::INPUT_SHELL | TaintKind::INPUT_HEADER);
+        }
+
         if ($atomic instanceof TBool) {
             return $input_taints & ~TaintKind::BOOL_ONLY;
         }
@@ -1885,9 +1896,27 @@ trait UnionTrait
             return TaintKind::ARRAY_ONLY;
         }
 
-        // neither can any other scalar, such as scalar, array-key or numeric
+        // neither can any other scalar, such as scalar or array-key
         if ($atomic instanceof Scalar) {
             return TaintKind::ARRAY_ONLY;
+        }
+
+        // nor a BSON value: the driver stores it as that BSON type, never as a document that could hold an operator.
+        // These classes are final, unlike their interfaces, which a class of the code can implement and then be stored
+        // as the document of its properties. A regex or JavaScript code chooses what matches, and a Document or a
+        // PackedArray is a document, so those keep it.
+        if ($atomic instanceof TNamedObject) {
+            return match (strtolower($atomic->value)) {
+                'mongodb\\bson\\objectid',
+                'mongodb\\bson\\utcdatetime',
+                'mongodb\\bson\\decimal128',
+                'mongodb\\bson\\int64',
+                'mongodb\\bson\\binary',
+                'mongodb\\bson\\timestamp',
+                'mongodb\\bson\\minkey',
+                'mongodb\\bson\\maxkey' => TaintKind::ARRAY_ONLY,
+                default => 0,
+            };
         }
 
         // an array holds what its keys and its values can hold: the keys of an array shape are written by the code

@@ -889,6 +889,69 @@ final class IncludeTest extends TestCase
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'limit.php',
                 ],
             ],
+            'requireOfATernaryBetweenTwoFiles' => [
+                'files' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'main.php' => '<?php
+                        require PHP_VERSION_ID < 80200 ? __DIR__ . "/old.php" : __DIR__ . "/new.php";
+                        libfn();
+                        echo $version;',
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'old.php' => '<?php
+                        function libfn(): void {}
+                        $version = "old";',
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'new.php' => '<?php
+                        function libfn(): void {}
+                        $version = "new";',
+                ],
+                'files_to_check' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'main.php',
+                ],
+            ],
+            'requireOfANestedTernary' => [
+                'files' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'main.php' => '<?php
+                        require PHP_VERSION_ID < 80000
+                            ? __DIR__ . "/old.php"
+                            : (PHP_VERSION_ID < 80200 ? __DIR__ . "/mid.php" : __DIR__ . "/new.php");
+                        echo $version;',
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'old.php' => '<?php
+                        $version = "old";',
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'mid.php' => '<?php
+                        $version = "mid";',
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'new.php' => '<?php
+                        $version = "new";',
+                ],
+                'files_to_check' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'main.php',
+                ],
+            ],
+            'requireOfAShortTernary' => [
+                'files' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'main.php' => '<?php
+                        $file = PHP_VERSION_ID < 80200 ? __DIR__ . "/old.php" : "";
+                        require $file ?: __DIR__ . "/new.php";
+                        echo $version;',
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'old.php' => '<?php
+                        $version = "old";',
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'new.php' => '<?php
+                        $version = "new";',
+                ],
+                'files_to_check' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'main.php',
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'old.php',
+                ],
+            ],
+            'requireOfATernaryWithABranchCheckedByFileExists' => [
+                'files' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'main.php' => '<?php
+                        $file = (string) getenv("CONFIG_FILE");
+                        require file_exists($file) ? $file : __DIR__ . "/default.php";',
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'default.php' => '<?php
+                        echo "default";',
+                ],
+                'files_to_check' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'main.php',
+                ],
+            ],
         ];
     }
 
@@ -1204,6 +1267,60 @@ final class IncludeTest extends TestCase
                 'files_to_check' => [(string) getcwd() . DIRECTORY_SEPARATOR . 'test.php'],
                 'error_message' => 'MissingFile',
                 'directories' => [(string) getcwd() . DIRECTORY_SEPARATOR],
+            ],
+            'requireOfATernaryAnalyzesTheIncludedFiles' => [
+                'files' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'main.php' => '<?php
+                        require PHP_VERSION_ID < 80200 ? __DIR__ . "/old.php" : __DIR__ . "/new.php";',
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'old.php' => '<?php
+                        echo $undefined;',
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'new.php' => '<?php
+                        echo "new";',
+                ],
+                'files_to_check' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'main.php',
+                ],
+                'error_message' => 'UndefinedGlobalVariable',
+            ],
+            'requireOfATernaryReturnsWhatEitherFileReturns' => [
+                'files' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'main.php' => '<?php
+                        function takesInt(int $i): void {}
+                        $value = require PHP_VERSION_ID < 80200 ? __DIR__ . "/old.php" : __DIR__ . "/new.php";
+                        takesInt($value);',
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'old.php' => '<?php
+                        return 1;',
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'new.php' => '<?php
+                        return "new";',
+                ],
+                'files_to_check' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'main.php',
+                ],
+                'error_message' => 'InvalidScalarArgument - main.php:4:34 - Argument 1 of takesInt expects int, but \'new\'|1 provided',
+            ],
+            'requireOfATernaryWithABranchToAMissingFile' => [
+                'files' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'main.php' => '<?php
+                        require PHP_VERSION_ID < 80200 ? __DIR__ . "/missing.php" : __DIR__ . "/new.php";',
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'new.php' => '<?php
+                        echo "new";',
+                ],
+                'files_to_check' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'main.php',
+                ],
+                'error_message' => 'MissingFile',
+            ],
+            'requireOfATernaryWithAnUnresolvableBranch' => [
+                'files' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'main.php' => '<?php
+                        require (string) getenv("FILE") ?: __DIR__ . "/new.php";',
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'new.php' => '<?php
+                        echo "new";',
+                ],
+                'files_to_check' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'main.php',
+                ],
+                'error_message' => 'UnresolvableInclude',
             ],
         ];
     }
@@ -1779,6 +1896,125 @@ final class IncludeTest extends TestCase
                 echo 1;',
             'expected_issues' => ['main.php: InvalidArgument@6'],
         ];
+    }
+
+    /**
+     * Psalm scans the files that a dependency's file requires, including each branch of a ternary. A class
+     * declared in several of them, or also in the project, has one declaration and its subclasses are analysed.
+     *
+     * @param array<string, string> $required_files the files beside the dependency's file
+     * @param 'before'|'after'|null $project_base whether the project declares the class too, before or after the
+     *                                           dependency is registered
+     */
+    #[DataProvider('providerFilesRequiredByADependency')]
+    public function testFilesRequiredByADependencyAreScanned(
+        string $require,
+        array $required_files,
+        ?string $project_base = null,
+    ): void {
+        $dir = (string) getcwd() . DIRECTORY_SEPARATOR . 'vendor' . DIRECTORY_SEPARATOR . 'lib' . DIRECTORY_SEPARATOR;
+        $src = 'src' . DIRECTORY_SEPARATOR;
+        $files_to_analyze = [$src . 'Mine.php'];
+
+        if ($project_base !== null) {
+            $files_to_analyze[] = $src . 'Base.php';
+        }
+
+        $add_project_base = function () use ($src): void {
+            $this->addFile((string) getcwd() . DIRECTORY_SEPARATOR . $src . 'Base.php', '<?php
+                namespace Lib;
+                class Base { public function both(): void {} }');
+        };
+
+        if ($project_base === 'before') {
+            $add_project_base();
+        }
+
+        foreach ($required_files as $file_name => $contents) {
+            $this->file_provider->registerFile($dir . $file_name, $contents);
+        }
+
+        $this->addFile($dir . 'A.php', '<?php
+            namespace Lib;
+            ' . $require . '
+            class A extends Base {}');
+        $this->addFile((string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'Mine.php', '<?php
+            final class Mine extends Lib\A {
+                public function f(): int {
+                    $this->both();
+                    return "not an int";
+                }
+            }');
+
+        if ($project_base === 'after') {
+            $add_project_base();
+        }
+
+        $this->assertSame(
+            [$src . 'Mine.php: InvalidReturnStatement@5', $src . 'Mine.php: InvalidReturnType@3'],
+            $this->analyzeFilesInOrder($files_to_analyze),
+        );
+    }
+
+    /**
+     * @return iterable<string, array{
+     *     require: string,
+     *     required_files: array<string, string>,
+     *     project_base?: 'before'|'after',
+     * }>
+     * @psalm-pure
+     */
+    public static function providerFilesRequiredByADependency(): iterable
+    {
+        $base = '<?php
+            namespace Lib;
+            if (!class_exists(Base::class, false)) {
+                class Base { public function both(): void {} }
+            }';
+
+        yield 'ternary' => [
+            'require' => 'require PHP_VERSION_ID < 80200 ? __DIR__ . "/Old.php" : __DIR__ . "/New.php";',
+            'required_files' => ['Old.php' => $base, 'New.php' => $base],
+        ];
+
+        yield 'short ternary' => [
+            'require' => 'require getenv("BASE_FILE") ?: __DIR__ . "/New.php";',
+            'required_files' => ['New.php' => $base],
+        ];
+
+        yield 'nested ternary' => [
+            'require' => 'require PHP_VERSION_ID < 80000
+                ? __DIR__ . "/Old.php"
+                : (PHP_VERSION_ID < 80200 ? __DIR__ . "/Mid.php" : __DIR__ . "/New.php");',
+            'required_files' => ['Old.php' => $base, 'Mid.php' => $base, 'New.php' => $base],
+        ];
+
+        yield 'ternary with a branch to a missing file' => [
+            'require' => 'require PHP_VERSION_ID < 80200 ? __DIR__ . "/Missing.php" : __DIR__ . "/New.php";',
+            'required_files' => ['New.php' => $base],
+        ];
+
+        yield 'if and else requiring a file each' => [
+            'require' => 'if (PHP_VERSION_ID < 80200) {
+                require __DIR__ . "/Old.php";
+            } else {
+                require __DIR__ . "/New.php";
+            }',
+            'required_files' => ['Old.php' => $base, 'New.php' => $base],
+        ];
+
+        yield 'one file' => [
+            'require' => 'require __DIR__ . "/New.php";',
+            'required_files' => ['New.php' => $base],
+        ];
+
+        foreach (['before', 'after'] as $project_base) {
+            yield "ternary, and the project declaring the class $project_base" => [
+                'require' => 'require PHP_VERSION_ID < 80200 ? __DIR__ . "/Old.php" : __DIR__ . "/New.php";',
+                'required_files' => ['Old.php' => $base, 'New.php' => $base],
+                'project_base' => $project_base,
+            ];
+        }
     }
 
     /**

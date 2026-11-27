@@ -42,13 +42,13 @@ final class FileStorageProvider
      */
     public function get(string $file_path): FileStorage
     {
-        $file_path = strtolower($file_path);
+        $key = strtolower($file_path);
 
-        if (!isset(self::$storage[$file_path])) {
+        if (!isset(self::$storage[$key])) {
             throw new InvalidArgumentException('Could not get file storage for ' . $file_path);
         }
 
-        return self::$storage[$file_path];
+        return self::$storage[$key];
     }
 
     /**

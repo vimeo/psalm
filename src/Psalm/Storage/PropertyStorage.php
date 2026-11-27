@@ -77,6 +77,12 @@ final class PropertyStorage implements HasAttributesInterface
 
     public bool $has_default = false;
 
+    /**
+     * Whether the running PHP declares a native type of the property of a reflected builtin class that isn't recorded,
+     * as the PHP version analysed is older
+     */
+    public bool $has_unrecorded_signature_type = false;
+
     public bool $deprecated = false;
 
     /**

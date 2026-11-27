@@ -285,22 +285,34 @@ final class TypeParseTest extends TestCase
 
     public function testGenericWithInlineCovariant(): void
     {
-        $this->assertSame('B<int>', (string) Type::parseString('B<covariant int>'));
+        $this->assertSame('B<covariant int>', (string) Type::parseString('B<covariant int>'));
     }
 
     public function testGenericWithInlineContravariant(): void
     {
-        $this->assertSame('B<int>', (string) Type::parseString('B<contravariant int>'));
+        $this->assertSame('B<contravariant int>', (string) Type::parseString('B<contravariant int>'));
     }
 
     public function testGenericWithMultipleInlineVariance(): void
     {
-        $this->assertSame('B<int, string>', (string) Type::parseString('B<covariant int, contravariant string>'));
+        $this->assertSame(
+            'B<covariant int, contravariant string>',
+            (string) Type::parseString('B<covariant int, contravariant string>'),
+        );
     }
 
     public function testGenericWithInlineVarianceAndUnion(): void
     {
-        $this->assertSame('B<int|string>', (string) Type::parseString('B<covariant int|string>'));
+        $this->assertSame('B<covariant int|string>', (string) Type::parseString('B<covariant int|string>'));
+    }
+
+    public function testInlineVarianceIsPartOfTheType(): void
+    {
+        $covariant = Type::parseString('B<covariant int>');
+
+        $this->assertFalse($covariant->equals(Type::parseString('B<int>')));
+        $this->assertFalse($covariant->equals(Type::parseString('B<contravariant int>')));
+        $this->assertTrue($covariant->equals(Type::parseString('B<covariant int>')));
     }
 
     public function testIntersection(): void
@@ -2188,7 +2200,25 @@ final class TypeParseTest extends TestCase
         yield 'union of starred and concrete' => ['Pair<int, *>|Pair<int, stdClass>', 'Pair<int, *>|Pair<int, stdClass>'];
     }
 
+    /**
+     * @return iterable<string, array{string, string}>
+     * @psalm-pure
+     */
+    public static function callSiteVarianceProvider(): iterable
+    {
+        yield 'parenthesized union' => ['B<covariant (A|C)>', 'B<covariant A|C>'];
+        yield 'nested' => ['B<covariant B<contravariant int>>', 'B<covariant B<contravariant int>>'];
+        yield 'next to a star' => ['B<*, covariant int>', 'B<*, covariant int>'];
+        yield 'class-string' => ['class-string<B<covariant int>>', 'class-string<B<covariant int>>'];
+        yield 'padded key' => ['Traversable<covariant int>', 'Traversable<mixed, covariant int>'];
+        yield 'padded arguments' => ['Generator<int, covariant string>', 'Generator<int, covariant string, mixed, mixed>'];
+        yield 'array, dropped' => ['array<covariant int>', 'array<array-key, int>'];
+        yield 'list, dropped' => ['list<contravariant int>', 'list<int>'];
+        yield 'iterable, dropped' => ['iterable<covariant int>', 'iterable<mixed, int>'];
+    }
+
     #[DataProvider('starProjectionProvider')]
+    #[DataProvider('callSiteVarianceProvider')]
     public function testStarProjectionRoundTrip(string $string, string $expected_id): void
     {
         $type = Type::parseString($string);
@@ -2462,6 +2492,20 @@ final class TypeParseTest extends TestCase
         yield 'nullable array-key' => ['array-key|null', 8_00_00, 'int|string|null', true];
         yield 'array-key and string' => ['array-key|string', 8_00_00, 'int|string', true];
         yield 'key-of' => ['key-of<array{a: int}>', 8_00_00, null, false];
+        yield 'true before PHP 8.2' => ['true', 8_01_00, 'bool', false];
+        yield 'true' => ['true', 8_02_00, 'true', true];
+        yield 'false before PHP 8.2' => ['false', 8_01_00, 'bool', false];
+        yield 'false' => ['false', 8_02_00, 'false', true];
+        yield 'null before PHP 8.2' => ['null', 8_01_00, null, false];
+        yield 'null' => ['null', 8_02_00, 'null', true];
+        yield 'nullable true before PHP 8.2' => ['true|null', 8_01_00, 'bool|null', false];
+        yield 'nullable true' => ['true|null', 8_02_00, 'true|null', true];
+        yield 'nullable false' => ['false|null', 8_02_00, 'false|null', true];
+        yield 'string|true before PHP 8.2' => ['string|true', 8_01_00, 'string|bool', false];
+        yield 'string|true' => ['string|true', 8_02_00, 'string|true', true];
+        yield 'string|false' => ['string|false', 8_02_00, 'string|false', true];
+        yield 'string|false before PHP 8.2' => ['string|false', 8_00_00, 'string|false', true];
+        yield 'nullable false before PHP 8.2' => ['false|null', 8_01_00, 'bool|null', false];
     }
 
     #[DataProvider('nativeTypeProvider')]

@@ -1127,7 +1127,7 @@ final class UnionTypeComparator
      */
     private static function isMixedOfOppositeTruthiness(Union $mixed, Union $other): bool
     {
-        if (!$mixed->isSingle()) {
+        if (!$mixed->isSingleAtomic()) {
             return false;
         }
 

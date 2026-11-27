@@ -37,6 +37,7 @@ use Psalm\Issue\TooManyArguments;
 use Psalm\Issue\UndefinedFunction;
 use Psalm\Issue\UnusedBaselineEntry;
 use Psalm\Issue\VariableIssue;
+use Psalm\Issue\WeakHash;
 use Psalm\Tests\Config\Plugin\FileTypeSelfRegisteringPlugin;
 use Psalm\Tests\Config\Plugin\TestPluginIssue;
 use Psalm\Tests\Config\Plugin\TestPluginIssueDefaultLevel;
@@ -285,6 +286,15 @@ final class ConfigTest extends DeferredAnalyzerTestCase
 
         $this->assertTrue($config->isInProjectDirs((string) realpath('src/Psalm/Type.php')));
         $this->assertFalse($config->isInProjectDirs((string) realpath('examples/TemplateScanner.php')));
+    }
+
+    public function testLoadFromXMLFileThrowsOnADirectory(): void
+    {
+        $this->expectException(ConfigException::class);
+        $this->expectExceptionMessage('Cannot read the config file ' . __DIR__);
+        ErrorHandler::install();
+
+        Config::loadFromXMLFile(__DIR__, __DIR__);
     }
 
     public function testIgnoreProjectDirectory(): void
@@ -2779,7 +2789,8 @@ final class ConfigTest extends DeferredAnalyzerTestCase
                         ord($glob1);
                         ord($glob2["str"]);
                         $glob3->func();
-                        ord($glob4);
+                        // the function can be called before the assert above: $glob4 has its declared type
+                        ord($glob4 ?? "");
                         ord($_GET["str"]);
                     }
 
@@ -2836,6 +2847,111 @@ final class ConfigTest extends DeferredAnalyzerTestCase
                     }
                 }',
         );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    /**
+     * @psalm-pure
+     * @return iterable<string, array{string, string, ?string}>
+     */
+    public static function providerGlobalTypeOverFileScope(): iterable
+    {
+        yield 'coalesceAssignInFunction' => [
+            'int|null',
+            '$x = null;
+            function f(): void {
+                global $x;
+                $x ??= 1;
+            }',
+            null,
+        ];
+        yield 'methodCallInFunction' => [
+            'Foo',
+            '$x = null;
+            function f(): void {
+                global $x;
+                $x->test();
+            }',
+            null,
+        ];
+        yield 'fileScopeKeepsAssignedType' => [
+            'Foo',
+            '$x = null;
+            $x->test();',
+            'NullReference',
+        ];
+        yield 'globalAtFileScopeKeepsAssignedType' => [
+            'Foo',
+            '$x = null;
+            /** @psalm-suppress InvalidGlobal */
+            global $x;
+            $x->test();',
+            'NullReference',
+        ];
+        yield 'globalAtFileScopeReadsDeclaredTypeAfterCall' => [
+            'Foo|null',
+            'function clearX(): void {
+                global $x;
+                $x = null;
+            }
+            $x = new Foo();
+            /** @psalm-suppress InvalidGlobal */
+            global $x;
+            clearX();
+            $x->test();',
+            'PossiblyNullReference',
+        ];
+        yield 'assignmentInFunctionWins' => [
+            'Foo',
+            'function f(): void {
+                global $x;
+                $x = null;
+                $x->test();
+            }',
+            'NullReference',
+        ];
+        yield 'inlineVarWins' => [
+            'Foo',
+            'function f(): void {
+                /** @var Foo|null */
+                global $x;
+                $x->test();
+            }',
+            'PossiblyNullReference',
+        ];
+    }
+
+    #[DataProvider('providerGlobalTypeOverFileScope')]
+    public function testGlobalTypeOverFileScope(string $type, string $code, ?string $error): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <globals>
+                        <var name="x" type="' . $type . '" />
+                    </globals>
+                </psalm>',
+            ),
+        );
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+            final class Foo {
+                public function test(): void {}
+            }
+            ' . $code,
+        );
+
+        if ($error !== null) {
+            $this->expectException(CodeException::class);
+            $this->expectExceptionMessage($error . ' - ');
+        }
 
         $this->analyzeFile($file_path, new Context());
     }
@@ -4050,6 +4166,39 @@ final class ConfigTest extends DeferredAnalyzerTestCase
         $this->assertFalse($config->isSuppressible('TaintedHtml'));
         $this->assertFalse($config->isSuppressible('TaintedSql'));
         $this->assertFalse($config->isSuppressible('MixedArgument'));
+        $this->assertTrue($config->isSuppressible('InvalidArgument'));
+    }
+
+    public function testUnsuppressibleSecurityIssues(): void
+    {
+        $config = Config::loadFromXML(
+            (string) getcwd(),
+            <<<XML
+            <?xml version="1.0"?>
+            <psalm errorLevel="8">
+                <issueHandlers>
+                    <WeakHash errorLevel="suppress" />
+                </issueHandlers>
+                <unsuppressibleIssues>
+                    <issue name="SecurityIssue" />
+                </unsuppressibleIssues>
+            </psalm>
+            XML,
+        );
+
+        $this->assertSame(
+            Config::REPORT_ERROR,
+            $config->getReportingLevelForIssue(
+                new WeakHash(
+                    'md5 is a weak hash',
+                    new Raw('aaa', 'aaa.php', 'aaa.php', 1, 2),
+                ),
+            ),
+        );
+        $this->assertFalse($config->isSuppressible('WeakHash'));
+        $this->assertFalse($config->isSuppressible('InsecureCookie'));
+        $this->assertFalse($config->isSuppressible('TaintedInput'));
+        $this->assertFalse($config->isSuppressible('TaintedSql'));
         $this->assertTrue($config->isSuppressible('InvalidArgument'));
     }
 

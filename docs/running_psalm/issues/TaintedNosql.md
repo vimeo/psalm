@@ -12,7 +12,10 @@ array/object instead of a scalar. For example, a request like `?username[$ne]=` 
 
 Because of this, only values that can hold an array (or object) can carry the `nosql` taint —
 a scalar can never be a NoSQL query, so casting user input to `string`, `int`, `float` or
-`bool` removes the taint.
+`bool` removes the taint. Neither can a BSON value (`MongoDB\BSON\ObjectId`, `UTCDateTime`,
+`Decimal128`, `Int64`, `Binary`, `Timestamp`, `MinKey`, `MaxKey`): the driver stores it as that
+type. A `Regex`, `Javascript`, `Document` or `PackedArray`, and a class of your own implementing
+one of their interfaces, can still carry it.
 
 A string decoded back into an array or an object can be a query again, though: what
 `json_decode()`, `unserialize()`, `parse_str()`, `parse_ini_string()` and the other decoders

@@ -181,7 +181,7 @@ final class TypeCombiner
             if (isset($combination->value_types['true'])) {
                 return Type::getTrue($from_docblock);
             }
-        } elseif (isset($combination->value_types['void'])) {
+        } elseif (isset($combination->value_types['void']) && !self::isVoidWithOnlyNever($combination)) {
             unset($combination->value_types['void']);
 
             // if we're merging with another type, we cannot represent it in PHP
@@ -418,6 +418,28 @@ final class TypeCombiner
         }
 
         return $union_type;
+    }
+
+    /**
+     * `never` adds nothing to a union, so `void|never` stays `void` instead of becoming `null`
+     *
+     * @psalm-mutation-free
+     */
+    private static function isVoidWithOnlyNever(TypeCombination $combination): bool
+    {
+        return count($combination->value_types) === 2
+            && isset($combination->value_types['never'])
+            && $combination->named_object_types === []
+            && $combination->array_type_params === []
+            && $combination->builtin_type_params === []
+            && $combination->object_type_params === []
+            && $combination->objectlike_entries === []
+            && $combination->strings === []
+            && $combination->ints === []
+            && $combination->floats === []
+            && $combination->class_string_types === []
+            && $combination->extra_types === []
+            && $combination->class_string_map_names === [];
     }
 
     /**
@@ -1231,8 +1253,12 @@ final class TypeCombiner
                 unset($combination->value_types['string']);
             } elseif (!empty($combination->objectlike_entries) && $combination->all_arrays_callable) {
                 $combination->objectlike_entries = [];
-            } elseif (isset($combination->value_types['callable-object'])) {
-                unset($combination->value_types['callable-object']);
+            } else {
+                foreach ($combination->value_types as $key => $value_type) {
+                    if ($value_type instanceof TCallableObject) {
+                        unset($combination->value_types[$key]);
+                    }
+                }
             }
         }
 

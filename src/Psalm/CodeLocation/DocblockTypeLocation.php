@@ -35,7 +35,5 @@ final class DocblockTypeLocation extends CodeLocation
         $this->single_line = false;
 
         $this->preview_start = $this->file_start;
-
-        $this->docblock_line_number = $line_number;
     }
 }

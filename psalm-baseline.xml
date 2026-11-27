@@ -36,7 +36,6 @@
       <code><![CDATA[$this->docblock_line_number]]></code>
       <code><![CDATA[$this->docblock_line_number]]></code>
       <code><![CDATA[$this->docblock_start]]></code>
-      <code><![CDATA[$this->docblock_start_line_number]]></code>
       <code><![CDATA[$this->text]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
@@ -509,7 +508,6 @@
       <code><![CDATA[$expr->getArgs()[0]]]></code>
       <code><![CDATA[$expr->getArgs()[1]]]></code>
       <code><![CDATA[$expr->getArgs()[1]]]></code>
-      <code><![CDATA[$expr->getArgs()[1]]]></code>
       <code><![CDATA[$get_debug_type_expr->getArgs()[0]]]></code>
       <code><![CDATA[$gettype_expr->getArgs()[0]]]></code>
     </PossiblyUndefinedIntArrayOffset>
@@ -520,7 +518,6 @@
       <code><![CDATA[$array_root]]></code>
       <code><![CDATA[$count_equality_position]]></code>
       <code><![CDATA[$false_position]]></code>
-      <code><![CDATA[$first_var_name]]></code>
       <code><![CDATA[$first_var_name]]></code>
       <code><![CDATA[$first_var_name]]></code>
       <code><![CDATA[$first_var_name]]></code>
@@ -1202,9 +1199,6 @@
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/Cli/Psalm.php">
-    <InvalidScalarArgument>
-      <code><![CDATA[$options['f'] ?? null]]></code>
-    </InvalidScalarArgument>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[!$config->error_baseline]]></code>
       <code><![CDATA[!$paths_to_check]]></code>
@@ -1676,7 +1670,6 @@
       <code><![CDATA[!$skip_if_descendants]]></code>
       <code><![CDATA[!$skip_if_descendants]]></code>
       <code><![CDATA[$include_path]]></code>
-      <code><![CDATA[$path_to_file]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/PhpVisitor/Reflector/FunctionLikeDocblockParser.php">
@@ -3234,11 +3227,6 @@
     <ImplicitToStringCast>
       <code><![CDATA[$this->type]]></code>
     </ImplicitToStringCast>
-  </file>
-  <file src="src/Psalm/Type/MutableUnion.php">
-    <RiskyTruthyFalsyComparison>
-      <code><![CDATA[strpos($type_string, '(')]]></code>
-    </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Type/Reconciler.php">
     <ImplicitToStringCast>

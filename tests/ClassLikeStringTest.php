@@ -1236,17 +1236,131 @@ final class ClassLikeStringTest extends TestCase
                         new \RuntimeException();
                     }',
             ],
-            'convertToStringClassExistsNegated' => [
+            'classStringStaysClassStringWhenClassExistsNegated' => [
                 'code' => '<?php
-                    /** @param class-string $className */
-                    $className = stdClass::class;
+                    /** @return class-string */
+                    function getClassName(): string {
+                        return stdClass::class;
+                    }
+                    $className = getClassName();
                     if (class_exists($className)) {
                         throw new \RuntimeException($className);
                     }',
                 'assertions' => [
-                    '$className===' => 'string',
+                    '$className===' => 'class-string',
                 ],
+            ],
+            'typedClassStringStaysWhenClassExistsNegated' => [
+                'code' => '<?php
+                    interface Collection {}
 
+                    /** @return class-string<Collection> */
+                    function getClassName(): string {
+                        throw new RuntimeException();
+                    }
+                    $className = getClassName();
+                    if (class_exists($className)) {
+                        throw new \RuntimeException($className);
+                    }',
+                'assertions' => [
+                    '$className===' => 'class-string<Collection>',
+                ],
+            ],
+            'typedClassStringStaysClassStringForIsAWhenClassExistsNegated' => [
+                'code' => '<?php
+                    interface Collection {}
+
+                    /** @param class-string $collectionClass */
+                    function supports(string $collectionClass, string $type): bool {
+                        if (!is_a($type, Collection::class, true)) {
+                            return false;
+                        }
+                        if (class_exists($type)) {
+                            return true;
+                        }
+                        return is_a($collectionClass, $type, true);
+                    }',
+            ],
+            'interfaceStringStaysWhenInterfaceExistsNegated' => [
+                'code' => '<?php
+                    /** @return interface-string */
+                    function getName(): string {
+                        return Countable::class;
+                    }
+                    $name = getName();
+                    if (interface_exists($name)) {
+                        throw new \RuntimeException($name);
+                    }',
+                'assertions' => [
+                    '$name===' => 'interface-string',
+                ],
+            ],
+            'enumStringStaysWhenEnumExistsNegated' => [
+                'code' => '<?php
+                    /** @return enum-string */
+                    function getName(): string {
+                        throw new RuntimeException();
+                    }
+                    $name = getName();
+                    if (enum_exists($name)) {
+                        throw new \RuntimeException($name);
+                    }',
+                'assertions' => [
+                    '$name===' => 'enum-string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'traitStringStaysWhenTraitExistsNegated' => [
+                'code' => '<?php
+                    /** @return trait-string */
+                    function getName(): string {
+                        throw new RuntimeException();
+                    }
+                    $name = getName();
+                    if (trait_exists($name)) {
+                        throw new \RuntimeException($name);
+                    }',
+                'assertions' => [
+                    '$name===' => 'trait-string',
+                ],
+            ],
+            'typedClassStringAssertionStillNarrowsWhenNegated' => [
+                'code' => '<?php
+                    interface Collection {}
+
+                    /** @psalm-assert-if-true class-string<Collection> $x */
+                    function isCollectionClass(mixed $x): bool {
+                        return true;
+                    }
+
+                    /** @return class-string<Collection>|int */
+                    function getValue(): string|int {
+                        return 0;
+                    }
+                    $value = getValue();
+                    if (isCollectionClass($value)) {
+                        throw new \RuntimeException();
+                    }',
+                'assertions' => [
+                    '$value===' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'classStringStaysClassStringWhenInterfaceExistsNegated' => [
+                'code' => '<?php
+                    /** @return class-string */
+                    function getClassName(): string {
+                        return stdClass::class;
+                    }
+                    $className = getClassName();
+                    if (interface_exists($className)) {
+                        throw new \RuntimeException($className);
+                    }',
+                'assertions' => [
+                    '$className===' => 'class-string',
+                ],
             ],
             'createNewObjectFromGetClass' => [
                 'code' => '<?php

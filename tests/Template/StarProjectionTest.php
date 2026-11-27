@@ -2556,6 +2556,26 @@ final class StarProjectionTest extends TestCase
                     }',
                 'error_message' => 'ArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:16:45 - Argument 1 of takesStdClassReader expects Reader<stdClass>, but parent type ObjectReader<*> provided',
             ],
+            'starProjectionOfAWrappedUnboundedTemplateIsNotAMixedValue' => [
+                'code' => '<?php
+                    /** @template-covariant T */
+                    interface Reader {}
+
+                    /**
+                     * @template T
+                     * @implements Reader<list<T>>
+                     */
+                    final class ListReader implements Reader {}
+
+                    /** @param Reader<list<string>> $r */
+                    function takesStrings(Reader $r): void {}
+
+                    /** @param ListReader<*> $r */
+                    function f(ListReader $r): void {
+                        takesStrings($r);
+                    }',
+                'error_message' => 'ArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:16:38 - Argument 1 of takesStrings expects Reader<list<string>>, but parent type ListReader<*> provided',
+            ],
             'starProjectionDoesNotBindATemplateArgument' => [
                 'code' => '<?php
                     /** @template T */

@@ -6,6 +6,7 @@ namespace Psalm\Internal\Type;
 
 use Psalm\CodeLocation;
 use Psalm\Codebase;
+use Psalm\Exception\TypeParseTreeException;
 use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\CoalesceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -23,6 +24,7 @@ use Psalm\IssueBuffer;
 use Psalm\Storage\Assertion;
 use Psalm\Storage\Assertion\ArrayKeyExists;
 use Psalm\Storage\Assertion\Falsy;
+use Psalm\Storage\Assertion\HasArrayValue;
 use Psalm\Storage\Assertion\HasAtLeastCount;
 use Psalm\Storage\Assertion\HasExactCount;
 use Psalm\Storage\Assertion\IsAClass;
@@ -44,6 +46,7 @@ use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TCallable;
+use Psalm\Type\Atomic\TCallableObject;
 use Psalm\Type\Atomic\TCallableString;
 use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TClassString;
@@ -73,6 +76,7 @@ use Psalm\Type\Atomic\TNonEmptyString;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TNumeric;
 use Psalm\Type\Atomic\TObject;
+use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TScalar;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateKeyOf;
@@ -278,6 +282,16 @@ final class AssertionReconciler extends Reconciler
             );
         }
 
+        if ($assertion instanceof HasArrayValue) {
+            return ArrayValueAssertionReconciler::reconcileHasArrayValue(
+                $assertion,
+                $existing_var_type,
+                $statements_analyzer,
+                $inside_loop,
+                $failed_reconciliation,
+            );
+        }
+
         $assertion_type = $assertion->getAtomicType();
 
         if ($assertion_type instanceof TLiteralInt
@@ -396,7 +410,7 @@ final class AssertionReconciler extends Reconciler
             return [$template_of];
         }
 
-        $template = $template_of->as->isSingle() ? $template_of->as->getSingleAtomic() : null;
+        $template = $template_of->as->isSingleAtomic() ? $template_of->as->getSingleAtomic() : null;
         $key_type = TKeyOf::getArrayKeyType($template_of->as);
         $value_type = TValueOf::getValueType($template_of->as, $codebase);
 
@@ -749,7 +763,7 @@ final class AssertionReconciler extends Reconciler
         }
 
         if ($new_type_part instanceof TTemplateParam
-            && $new_type_part->as->isSingle()
+            && $new_type_part->as->isSingleAtomic()
         ) {
             $new_as_atomic = $new_type_part->as->getSingleAtomic();
 
@@ -1293,7 +1307,7 @@ final class AssertionReconciler extends Reconciler
             foreach ($extended_params as $parent_template_name => $extended_type) {
                 $offset = array_search($parent_template_name, $parent_template_names, true);
 
-                if ($offset === false || !isset($parent->type_params[$offset]) || !$extended_type->isSingle()) {
+                if ($offset === false || !isset($parent->type_params[$offset]) || !$extended_type->isSingleAtomic()) {
                     continue;
                 }
 
@@ -1305,8 +1319,10 @@ final class AssertionReconciler extends Reconciler
                 ) {
                     $inferred = $parent->type_params[$offset];
 
-                    if ($parent->getProjection($offset) === TypeArgumentProjection::Star) {
-                        $projections[count($type_params)] = TypeArgumentProjection::Star;
+                    $projection = $parent->getProjection($offset);
+
+                    if ($projection?->isUnknown()) {
+                        $projections[count($type_params)] = $projection;
                     }
 
                     break;
@@ -1343,7 +1359,11 @@ final class AssertionReconciler extends Reconciler
         ))->setProjections($projections);
 
         // a `*` passed down holds the bound of the child's template, with the child's other arguments applied
-        return StarProjection::resolve($narrowed, $codebase, array_keys($projections));
+        return StarProjection::resolve(
+            $narrowed,
+            $codebase,
+            array_keys($projections, TypeArgumentProjection::Star, true),
+        );
     }
 
     /**
@@ -1917,11 +1937,11 @@ final class AssertionReconciler extends Reconciler
     ): ?Atomic {
         if ($type_2_atomic::class === TNamedObject::class
             && $type_1_atomic instanceof TGenericObject
-            && $type_1_atomic->hasStarProjection()
+            && $type_1_atomic->hasUnknownArgument()
         ) {
-            // what a `*` leaves unknown stays unknown: `Pair<int, *>` narrowed to `Pair` is still a `Pair<int, *>`
-            // (with the intersection asserted next to it), and narrowed to a `Child` that `@extends Pair<int, T>` is a
-            // `Child<*>`, not one of the template's bound
+            // what a `*`, `covariant` or `contravariant` argument leaves unknown stays unknown: `Pair<int, *>` narrowed
+            // to `Pair` is still a `Pair<int, *>` (with the intersection asserted next to it). Narrowed to a `Child`
+            // that `@extends Pair<int, T>`, a `*` makes a `Child<*>`, not one of the template's bound
             return strtolower($type_2_atomic->value) === strtolower($type_1_atomic->value)
                 ? $type_1_atomic->setIntersectionTypes([...$type_1_atomic->extra_types, ...$type_2_atomic->extra_types])
                 : self::inferTemplateParamsFromParent($codebase, $type_2_atomic, $type_1_atomic, true);
@@ -1952,6 +1972,20 @@ final class AssertionReconciler extends Reconciler
             }
 
             return $type_1_atomic->replaceAs($type_1_as);
+        } elseif ($type_1_atomic instanceof TNamedObject
+            && $type_2_atomic instanceof TNamedObject
+            && strtolower($type_1_atomic->value) === strtolower($type_2_atomic->value)
+            && ($type_1_atomic->extra_types['object'] ?? null) instanceof TObjectWithProperties
+            && ($type_2_atomic->extra_types['object'] ?? null) instanceof TObjectWithProperties
+        ) {
+            // contained by the other's class, but each has properties the other doesn't
+            $intersection = Type::intersectUnionTypes(
+                new Union([$type_1_atomic]),
+                new Union([$type_2_atomic]),
+                $codebase,
+            );
+
+            return $intersection !== null && $intersection->isSingleAtomic() ? $intersection->getSingleAtomic() : null;
         } else {
             return $type_2_atomic;
         }
@@ -2994,6 +3028,39 @@ final class AssertionReconciler extends Reconciler
         } else {
             return [new TMixed()];
         }
+    }
+
+    /**
+     * @param TNamedObject|TTemplateParam|TObjectWithProperties|TCallableObject $type
+     * @param TNamedObject|TTemplateParam|TIterable|TObjectWithProperties|TCallableObject $part
+     * @return TNamedObject|TTemplateParam|TObjectWithProperties|TCallableObject|null null when no value has both
+     *     types of a property of two object shapes
+     */
+    public static function addIntersectionPart(Codebase $codebase, Atomic $type, Atomic $part): ?Atomic
+    {
+        if (!$part instanceof TObjectWithProperties) {
+            return $type->addIntersectionType($part);
+        }
+
+        if ($type instanceof TObjectWithProperties) {
+            try {
+                return TypeParser::mergeObjectShapes($codebase, $type, $part);
+            } catch (TypeParseTreeException) {
+                return null;
+            }
+        }
+
+        $shape = $type->extra_types['object'] ?? null;
+
+        if ($shape instanceof TObjectWithProperties) {
+            try {
+                $part = TypeParser::mergeObjectShapes($codebase, $shape, $part);
+            } catch (TypeParseTreeException) {
+                return null;
+            }
+        }
+
+        return $type->addIntersectionType($part);
     }
 
     /**

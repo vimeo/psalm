@@ -233,6 +233,35 @@ final class MissingPropertyTypeTest extends FileManipulationTestCase
                 'issues_to_fix' => ['MissingPropertyType'],
                 'safe_types' => true,
             ],
+            'addMissingTrueTypeSetInBranches82' => [
+                'input' => '<?php
+                    class A {
+                        public $v;
+
+                        public function __construct() {
+                            if (rand(0, 1)) {
+                                $this->v = true;
+                            } else {
+                                $this->v = null;
+                            }
+                        }
+                    }',
+                'output' => '<?php
+                    class A {
+                        public true|null $v;
+
+                        public function __construct() {
+                            if (rand(0, 1)) {
+                                $this->v = true;
+                            } else {
+                                $this->v = null;
+                            }
+                        }
+                    }',
+                'php_version' => '8.2',
+                'issues_to_fix' => ['MissingPropertyType'],
+                'safe_types' => true,
+            ],
             'addMissingDocblockTypesSpacedProperly' => [
                 'input' => '<?php
                     class A {

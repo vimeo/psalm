@@ -699,6 +699,9 @@ final class PureAnnotationTest extends TestCase
                             return $this->source->valid();
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
         ];
     }

@@ -10,11 +10,14 @@ use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 use Psalm\Type;
 use Psalm\Type\Atomic;
+use Psalm\Type\Atomic\TCallable;
+use Psalm\Type\Atomic\TCallableObject;
 use Psalm\Type\Atomic\TConditional;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TTemplateParamClass;
+use Psalm\Type\Union;
 
 use function array_reverse;
 use function ini_get;
@@ -127,6 +130,48 @@ final class TypeCombinationTest extends TestCase
             '(T is int ? string : bool)|(T is string ? int : float)',
             TypeCombiner::combine([$int_conditional, $string_conditional])->getId(),
         );
+    }
+
+    public function testCallableObjectsWithDifferentIntersectionsAreKeptApart(): void
+    {
+        $countable = (new TCallableObject())->addIntersectionType(new TNamedObject('Countable'));
+        $traversable = (new TCallableObject())->addIntersectionType(new TNamedObject('Traversable'));
+
+        $this->assertSame(
+            'callable-object&Countable|callable-object&Traversable',
+            TypeCombiner::combine([$countable, $traversable])->getId(),
+        );
+    }
+
+    public function testCallableObjectsWhoseIntersectionReadsLikeTheirReturnTypeAreKeptApart(): void
+    {
+        $iterator_returning_countable = (new TCallableObject(
+            false,
+            new TCallable([], new Union([new TNamedObject('Countable')])),
+        ))->addIntersectionType(new TNamedObject('Iterator'));
+        $returning_countable_iterator = new TCallableObject(
+            false,
+            new TCallable(
+                [],
+                new Union([(new TNamedObject('Countable'))->addIntersectionType(new TNamedObject('Iterator'))]),
+            ),
+        );
+
+        $this->assertCount(
+            2,
+            TypeCombiner::combine([$iterator_returning_countable, $returning_countable_iterator])->getAtomicTypes(),
+        );
+    }
+
+    public function testCallableAbsorbsCallableObjects(): void
+    {
+        $countable = (new TCallableObject())->addIntersectionType(new TNamedObject('Countable'));
+        $with_signature = new TCallableObject(false, new TCallable([], Type::getInt()));
+
+        $this->assertSame('callable[impure]', TypeCombiner::combine([$countable, new TCallable()])->getId());
+        $this->assertSame('callable[impure]', TypeCombiner::combine([new TCallable(), $countable])->getId());
+        $this->assertSame('callable[impure]', TypeCombiner::combine([$with_signature, new TCallable()])->getId());
+        $this->assertSame('callable[impure]', TypeCombiner::combine([new TCallable(), $with_signature])->getId());
     }
 
     public function testClassStringsOfTemplatesOfDifferentScopesAreKeptApart(): void
@@ -588,6 +633,45 @@ final class TypeCombinationTest extends TestCase
                 [
                     'never',
                     'mixed',
+                ],
+            ],
+            'voidOrNever' => [
+                'void',
+                [
+                    'void',
+                    'never',
+                ],
+            ],
+            'voidOrNeverOrString' => [
+                'null|string',
+                [
+                    'void',
+                    'never',
+                    'string',
+                ],
+            ],
+            'voidOrNeverOrLiteralString' => [
+                "'hello'|null",
+                [
+                    'void',
+                    'never',
+                    "'hello'",
+                ],
+            ],
+            'voidOrNeverOrNull' => [
+                'null',
+                [
+                    'void',
+                    'never',
+                    'null',
+                ],
+            ],
+            'voidOrNeverOrArray' => [
+                'array<array-key, mixed>|null',
+                [
+                    'void',
+                    'never',
+                    'array',
                 ],
             ],
             'mixedOrObject' => [

@@ -52,7 +52,7 @@ final class MinMaxReturnTypeProvider implements FunctionReturnTypeProviderInterf
 
         if (count($call_args) === 1
             && ($array_arg_type = $nodeTypeProvider->getType($call_args[0]->value))
-            && $array_arg_type->isSingle()
+            && $array_arg_type->isSingleAtomic()
             && $array_arg_type->hasArray()
             && ($array_type = ArrayType::infer($array_arg_type->getSingleAtomic()))
         ) {
@@ -65,7 +65,7 @@ final class MinMaxReturnTypeProvider implements FunctionReturnTypeProviderInterf
         foreach ($call_args as $arg) {
             if ($arg_type = $nodeTypeProvider->getType($arg->value)) {
                 if ($arg->unpack) {
-                    if (!$arg_type->isSingle() || !$arg_type->isArray()) {
+                    if (!$arg_type->isSingleAtomic() || !$arg_type->isArray()) {
                         return Type::getMixed();
                     } else {
                         $array_arg_type = $arg_type->getArray();
@@ -138,7 +138,7 @@ final class MinMaxReturnTypeProvider implements FunctionReturnTypeProviderInterf
         foreach ($call_args as $arg) {
             if ($arg_type = $nodeTypeProvider->getType($arg->value)) {
                 if ($arg->unpack) {
-                    if ($arg_type->isSingle() && $arg_type->isArray()) {
+                    if ($arg_type->isSingleAtomic() && $arg_type->isArray()) {
                         $array_type = ArrayType::infer($arg_type->getSingleAtomic());
                         assert($array_type !== null);
                         $additional_type = $array_type->value;

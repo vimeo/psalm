@@ -23,6 +23,124 @@ final class ValueOfTemplateTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'assertionOfValueOfABackedEnumTemplateNarrowsAnIntOrString' => [
+                'code' => '<?php
+                    /** @template T of BackedEnum */
+                    final class EnumValue {
+                        /** @param class-string<T> $enum */
+                        public function __construct(private string $enum, private bool $stringBacked) {}
+
+                        /** @psalm-assert-if-true value-of<T> $value */
+                        public function matches(mixed $value): bool {
+                            return (is_string($value) || is_int($value)) && $this->enum::tryFrom($value) !== null;
+                        }
+
+                        /** @return value-of<T> */
+                        public function coerce(mixed $value): string|int {
+                            $case = $this->stringBacked ? (string) $value : (int) $value;
+                            if ($this->matches($case)) {
+                                return $case;
+                            }
+                            throw new RuntimeException();
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'assertionOfValueOfAnArrayTemplateWithSeveralValueTypesNarrowsTheirUnion' => [
+                'code' => '<?php
+                    /** @template T of array<string, int|string> */
+                    final class Values {
+                        /** @param T $values */
+                        public function __construct(private array $values) {}
+
+                        /** @psalm-assert-if-true value-of<T> $value */
+                        public function matches(mixed $value): bool {
+                            return in_array($value, $this->values, true);
+                        }
+
+                        /** @return value-of<T> */
+                        public function coerce(int|string $value): int|string {
+                            if ($this->matches($value)) {
+                                return $value;
+                            }
+                            throw new RuntimeException();
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'valueOfTheCaseOfATemplateOfASpecificEnumIsValueOfTheTemplate' => [
+                'code' => '<?php
+                    enum EnumA: string {
+                        case FOO = "foo";
+                        case BAR = "bar";
+                    }
+
+                    /**
+                     * @template T of EnumA
+                     */
+                    final class C {
+                        /**
+                         * @var value-of<T>
+                         */
+                        private $data;
+
+                        /**
+                         * @param T $data
+                         */
+                        public function __construct($data) {
+                            $this->data = $data->value;
+                        }
+
+                        /**
+                         * @return value-of<T>
+                         */
+                        public function get() {
+                            return $this->data;
+                        }
+                    }
+
+                    $foo = (new C(EnumA::FOO))->get();',
+                'assertions' => [
+                    '$foo===' => '\'foo\'',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'valueOfATemplateOfBackedEnumKeysAnArray' => [
+                'code' => '<?php
+                    /**
+                     * @template TEnum of BackedEnum
+                     * @template TValue
+                     * @param class-string<TEnum> $enum
+                     * @param callable(TEnum): TValue $getValue
+                     * @return array<value-of<TEnum>, TValue>
+                     */
+                    function buildCasesArray(string $enum, callable $getValue): array {
+                        $cases = [];
+
+                        foreach ($enum::cases() as $case) {
+                            $cases[$case->value] = $getValue($case);
+                        }
+
+                        return $cases;
+                    }
+
+                    enum Suit: string {
+                        case Hearts = "h";
+                        case Spades = "s";
+                    }
+
+                    $labels = buildCasesArray(Suit::class, fn(Suit $suit): string => $suit->name);',
+                'assertions' => [
+                    '$labels' => 'array<string, string>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'scalarCanBeIdenticalToAKeyOrAValueOfATemplateBoundedByArray' => [
                 'code' => '<?php
                     /**
@@ -714,6 +832,19 @@ final class ValueOfTemplateTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'valueOfATemplateOfUnitEnumIsNoArrayKey' => [
+                'code' => '<?php
+                    /**
+                     * @template TEnum of UnitEnum
+                     * @return array<value-of<TEnum>, int>
+                     */
+                    function cases(): array {
+                        return [];
+                    }',
+                'error_message' => 'MismatchingDocblockReturnType',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'intCannotBeIdenticalToAValueOfATemplateBoundedByAStringArray' => [
                 'code' => '<?php
                     /**

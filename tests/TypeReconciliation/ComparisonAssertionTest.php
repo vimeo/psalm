@@ -78,6 +78,33 @@ final class ComparisonAssertionTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'getClassIdenticalToAUnionOfClassStringsNarrowsToEachOfThem' => [
+                'code' => '<?php
+                    final class A {}
+                    final class B {}
+                    final class C {}
+
+                    /** @param A::class|B::class $c */
+                    function f(A|B|C $o, string $c): void {
+                        if (get_class($o) === $c) {
+                            /** @psalm-check-type-exact $o = A|B */
+                            echo "same";
+                        }
+
+                        if ($c === $o::class) {
+                            /** @psalm-check-type-exact $o = A|B */
+                            echo "same";
+                        }
+
+                        if (get_class($o) !== $c) {
+                            /** @psalm-check-type-exact $o = A|B|C */
+                            echo "other";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'looseComparisonOfNumericStringLiteralsIsByTheirNumbers' => [
                 'code' => '<?php
                     $one = "1";
@@ -666,6 +693,17 @@ final class ComparisonAssertionTest extends TestCase
                             /** @psalm-check-type-exact $a = array<never, never> */;
                         }
                     }',
+            ],
+            'countOfAnEmptyArrayIdenticalToAPositiveIntIsImpossible' => [
+                'code' => '<?php
+                    function f(): void {
+                        $a = [];
+                        if (count($a) === 2) {
+                            /** @psalm-check-type-exact $a = never */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['TypeDoesNotContainType'],
             ],
             'identicalToAUnionOfClassStringsKeepsEachOfThem' => [
                 'code' => '<?php

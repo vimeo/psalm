@@ -3736,6 +3736,9 @@ final class ArrayAccessTest extends TestCase
                     $test = new test(1);
                     $a = [1 => $test];
                     unset($a[$test->value]);',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'nestedUnsetAfterIssetOnMixedArray' => [
                 'code' => '<?php

@@ -111,6 +111,54 @@ final class FunctionTemplateTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'offsetOfATemplateBoundByAUnionReadsEachTypeOfTheBound' => [
+                'code' => '<?php
+                    /**
+                     * @template T of "ab"|"cd"
+                     * @param T $s
+                     */
+                    function firstChar(string $s): string {
+                        /** @psalm-check-type $c = non-empty-string */
+                        $c = $s[0];
+
+                        return $c;
+                    }
+
+                    /**
+                     * @template T of array<int>|string
+                     * @param T $a
+                     */
+                    function first($a): int|string {
+                        /** @psalm-check-type $f = int|non-empty-string */
+                        $f = $a[0];
+
+                        return $f;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'indexedAccessOfATemplateShapeByAUnionOfKeys' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array
+                     * @template K of key-of<T>
+                     * @param T $a
+                     * @param K $k
+                     * @return T[K]
+                     */
+                    function get(array $a, $k) {
+                        return $a[$k];
+                    }
+
+                    $a = get(["a" => 1, "b" => "str"], rand(0, 1) ? "a" : "b");
+                    $b = get(["a" => 1, "b" => "str"], "b");
+                ',
+                'assertions' => [
+                    '$a===' => "'str'|1",
+                    '$b===' => "'str'",
+                ],
+            ],
             'classStringOrTemplateIsBoundToTheClassOfAClassString' => [
                 'code' => '<?php
                     final class Foo {}
@@ -4093,6 +4141,9 @@ final class FunctionTemplateTest extends TestCase
                             return fn() => fn() => $this->value;
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'nullAcceptedAsTheDefaultOfATemplateParameterAndComparedWithIt' => [
                 'code' => '<?php

@@ -6,6 +6,7 @@ namespace Psalm\Type;
 
 use Override;
 use Psalm\Internal\DataFlow\DataFlowNode;
+use Psalm\Internal\Type\StringRefinement;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Internal\TypeVisitor\FromDocblockSetter;
 use Psalm\Type;
@@ -16,6 +17,7 @@ use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIntRange;
+use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
@@ -26,7 +28,7 @@ use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Atomic\TTrue;
 
-use function strpos;
+use function str_starts_with;
 
 /**
  * @api
@@ -204,6 +206,7 @@ final class MutableUnion implements TypeNode
         $this->literal_string_types = [];
         $this->typed_class_strings = [];
         $this->checked = false;
+        $this->bustCache();
 
         $from_docblock = false;
         $keyed_types = [];
@@ -211,20 +214,7 @@ final class MutableUnion implements TypeNode
         foreach ($types as $type) {
             $key = $type->getKey();
             $keyed_types[$key] = $type;
-
-            if ($type instanceof TLiteralInt) {
-                $this->literal_int_types[$key] = $type;
-            } elseif ($type instanceof TLiteralString) {
-                $this->literal_string_types[$key] = $type;
-            } elseif ($type instanceof TLiteralFloat) {
-                $this->literal_float_types[$key] = $type;
-            } elseif ($type instanceof TClassString
-                && ($type->as_type || $type instanceof TTemplateParamClass)
-            ) {
-                $this->typed_class_strings[$key] = $type;
-            } elseif ($type instanceof TNever) {
-                $this->explicit_never = true;
-            }
+            $this->registerSideMaps($key, $type);
 
             $from_docblock = $from_docblock || $type->from_docblock;
         }
@@ -238,25 +228,67 @@ final class MutableUnion implements TypeNode
     /**
      * @psalm-external-mutation-free
      */
+    private function registerSideMaps(string $key, Atomic $type): void
+    {
+        if ($type instanceof TLiteralInt) {
+            $this->literal_int_types[$key] = $type;
+        } elseif ($type instanceof TLiteralString) {
+            $this->literal_string_types[$key] = $type;
+        } elseif ($type instanceof TLiteralFloat) {
+            $this->literal_float_types[$key] = $type;
+        } elseif ($type instanceof TClassString
+            && ($type->as_type || $type instanceof TTemplateParamClass)
+        ) {
+            $this->typed_class_strings[$key] = $type;
+        } elseif ($type instanceof TNever) {
+            $this->explicit_never = true;
+        }
+    }
+
+    /**
+     * @psalm-external-mutation-free
+     */
     public function addType(Atomic $type): self
     {
-        $this->types[$type->getKey()] = $type;
+        $type_key = $type->getKey();
+        $this->types[$type_key] = $type;
 
         if ($type instanceof TLiteralString) {
-            $this->literal_string_types[$type->getKey()] = $type;
+            $this->literal_string_types[$type_key] = $type;
         } elseif ($type instanceof TLiteralInt) {
-            $this->literal_int_types[$type->getKey()] = $type;
+            $this->literal_int_types[$type_key] = $type;
         } elseif ($type instanceof TLiteralFloat) {
-            $this->literal_float_types[$type->getKey()] = $type;
-        } elseif ($type instanceof TString && $this->literal_string_types) {
-            foreach ($this->literal_string_types as $key => $_) {
-                unset($this->literal_string_types[$key], $this->types[$key]);
+            $this->literal_float_types[$type_key] = $type;
+        } elseif ($type instanceof TString && ($refinements = StringRefinement::get($type)) !== null) {
+            // drop the literals and class-strings the added type contains
+            foreach ($this->literal_string_types as $key => $literal_string_type) {
+                if (((StringRefinement::get($literal_string_type) ?? 0) & $refinements) === $refinements) {
+                    unset($this->literal_string_types[$key], $this->types[$key]);
+                }
             }
-            if (!$type instanceof TClassString
-                || (!$type->as_type && !$type instanceof TTemplateParamClass)
-            ) {
-                foreach ($this->typed_class_strings as $key => $_) {
-                    unset($this->typed_class_strings[$key], $this->types[$key]);
+            if ($refinements === 0) {
+                // template class-strings stay, they are needed to infer their template
+                foreach ($this->typed_class_strings as $key => $typed_class_string) {
+                    if (!$typed_class_string instanceof TTemplateParamClass) {
+                        unset($this->typed_class_strings[$key], $this->types[$key]);
+                    }
+                }
+            }
+        } elseif ($type instanceof TClassString) {
+            if ($type->as_type || $type instanceof TTemplateParamClass) {
+                $this->typed_class_strings[$type_key] = $type;
+            } elseif ($type::class === TClassString::class && $type_key === 'class-string') {
+                foreach ($this->literal_string_types as $key => $literal_string_type) {
+                    if ($literal_string_type instanceof TLiteralClassString) {
+                        unset($this->literal_string_types[$key], $this->types[$key]);
+                    }
+                }
+                foreach ($this->typed_class_strings as $key => $typed_class_string) {
+                    if (!$typed_class_string instanceof TTemplateParamClass
+                        && str_starts_with($key, 'class-string<')
+                    ) {
+                        unset($this->typed_class_strings[$key], $this->types[$key]);
+                    }
                 }
             }
         } elseif ($type instanceof TInt && $this->literal_int_types) {
@@ -286,15 +318,13 @@ final class MutableUnion implements TypeNode
     public function removeType(string $type_string): bool
     {
         if (isset($this->types[$type_string])) {
-            unset($this->types[$type_string]);
-
-            if (strpos($type_string, '(')) {
-                unset(
-                    $this->literal_string_types[$type_string],
-                    $this->literal_int_types[$type_string],
-                    $this->literal_float_types[$type_string],
-                );
-            }
+            unset(
+                $this->types[$type_string],
+                $this->literal_string_types[$type_string],
+                $this->literal_int_types[$type_string],
+                $this->literal_float_types[$type_string],
+                $this->typed_class_strings[$type_string],
+            );
 
             $this->bustCache();
 
@@ -316,7 +346,12 @@ final class MutableUnion implements TypeNode
                 $this->typed_class_strings = [];
             }
 
-            unset($this->types['class-string'], $this->types['trait-string']);
+            unset(
+                $this->types['class-string'],
+                $this->types['interface-string'],
+                $this->types['enum-string'],
+                $this->types['trait-string'],
+            );
         } elseif ($type_string === 'int' && $this->literal_int_types) {
             foreach ($this->literal_int_types as $literal_key => $_) {
                 unset($this->types[$literal_key]);
@@ -327,7 +362,11 @@ final class MutableUnion implements TypeNode
                 unset($this->types[$literal_key]);
             }
             $this->literal_float_types = [];
+        } else {
+            return false;
         }
+
+        $this->bustCache();
 
         return false;
     }
@@ -397,10 +436,10 @@ final class MutableUnion implements TypeNode
                     }
 
                     if ($old_type_part instanceof TArray
-                        && !isset($this->types['traversable'])
+                        && !isset($this->types['Traversable'])
                     ) {
                         $this->removeType('iterable');
-                        $this->types['traversable'] = new TNamedObject('Traversable');
+                        $this->types['Traversable'] = new TNamedObject('Traversable');
                     }
                 } elseif (isset($this->types['array-key'])) {
                     if ($old_type_part instanceof TString
@@ -430,6 +469,8 @@ final class MutableUnion implements TypeNode
                 } else {
                     $this->types[$key] = TypeCombiner::combine([$new_type_part, $this->types[$key]])->getSingleAtomic();
                 }
+
+                $this->registerSideMaps($key, $this->types[$key]);
             }
         } elseif ($this->isUnionEmpty()) {
             $this->types['mixed'] = new TMixed();

@@ -46,7 +46,7 @@ use function substr_compare;
  * @psalm-consistent-constructor
  * @internal
  * @psalm-external-mutation-free
- * @psalm-type CallableKind = 'builtin'|'inherited-method'|'magic-method'|'dynamic-function-call'|'dynamic-instantiation'|'callable-object'
+ * @psalm-type CallableKind = 'builtin'|'inherited-method'|'magic-method'|'dynamic-function-call'|'dynamic-instantiation'|'dynamic-method-call'|'callable-object'
  */
 final class DataFlowNode implements Stringable
 {
