@@ -95,6 +95,29 @@ final class InternalAnnotationTest extends TestCase
                         }
                     }',
             ],
+            'traitInstantiatesTheInternalClassUsingItThroughItsConstructor' => [
+                'code' => '<?php
+                    namespace App {
+                        trait MakesSelf {
+                            public static function makeStatic(): static {
+                                return new static();
+                            }
+
+                            public static function makeSelf(): self {
+                                return new self();
+                            }
+                        }
+                    }
+
+                    namespace Tests {
+                        /** @psalm-internal Tests */
+                        final class Greeter {
+                            use \App\MakesSelf;
+
+                            public function __construct() {}
+                        }
+                    }',
+            ],
             'instancePropertyReadAsStaticIsOnlyUndefined' => [
                 'code' => '<?php
                     namespace A\B {
@@ -977,6 +1000,28 @@ final class InternalAnnotationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'traitInstantiatesTheClassUsingItThroughAnInternalConstructorOfItsParent' => [
+                'code' => '<?php
+                    namespace App {
+                        trait MakesSelf {
+                            public static function make(): static {
+                                return new static();
+                            }
+                        }
+                    }
+
+                    namespace Tests {
+                        class Base {
+                            /** @psalm-internal Tests */
+                            public function __construct() {}
+                        }
+
+                        final class Greeter extends Base {
+                            use \App\MakesSelf;
+                        }
+                    }',
+                'error_message' => 'InternalMethod',
+            ],
             'internalStaticPropertyReadFromAnotherClass' => [
                 'code' => '<?php
                     namespace A\\B {

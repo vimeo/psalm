@@ -739,7 +739,9 @@ final class NewAnalyzer extends CallAnalyzer
                 $method_storage = $codebase->methods->getStorage($declaring_method_id);
 
                 $caller_identifier = $statements_analyzer->getFullyQualifiedFunctionMethodOrNamespaceName() ?? '';
-                if (!NamespaceAnalyzer::isWithinAny($caller_identifier, $method_storage->internal)) {
+                if (strtolower($declaring_method_id->fq_class_name) !== strtolower($context->self ?? '')
+                    && !NamespaceAnalyzer::isWithinAny($caller_identifier, $method_storage->internal)
+                ) {
                     IssueBuffer::maybeAdd(
                         new InternalMethod(
                             'Constructor ' . $codebase->methods->getCasedMethodId($declaring_method_id)
