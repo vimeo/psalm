@@ -24,7 +24,6 @@ use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodVisibilityAn
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MissingMethodCallHandler;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\NewAnalyzer;
-use Psalm\Internal\Analyzer\Statements\Expression\Call\OverloadSelector;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\StaticCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -153,7 +152,7 @@ final class AtomicStaticCallAnalyzer
             $fq_class_name = 'object';
 
             if ($lhs_type_part->as_type->hasObjectType()
-                && $lhs_type_part->as_type->isSingle()
+                && $lhs_type_part->as_type->isSingleAtomic()
             ) {
                 foreach ($lhs_type_part->as_type->getAtomicTypes() as $typeof_type_atomic) {
                     if ($typeof_type_atomic instanceof TNamedObject) {
@@ -241,19 +240,6 @@ final class AtomicStaticCallAnalyzer
                 $inferred_template_result,
             );
         } else {
-            if ($stmt->name instanceof PhpParser\Node\Expr) {
-                $was_inside_general_use = $context->inside_general_use;
-                $context->inside_general_use = true;
-                // the name is read even in isset mode
-                $was_inside_isset = $context->inside_isset;
-                $context->inside_isset = false;
-
-                ExpressionAnalyzer::analyze($statements_analyzer, $stmt->name, $context);
-
-                $context->inside_general_use = $was_inside_general_use;
-                $context->inside_isset = $was_inside_isset;
-            }
-
             if (!$context->ignore_variable_method) {
                 $codebase->analyzer->addMixedMemberName(
                     strtolower($fq_class_name) . '::',
@@ -1098,17 +1084,29 @@ final class AtomicStaticCallAnalyzer
     ): ?bool {
         $codebase = $statements_analyzer->getCodebase();
 
-        $overloads = $class_storage->pseudo_static_method_overloads[$method_id->method_name] ?? null;
-
-        if ($overloads !== null) {
-            $pseudo_method_storage = OverloadSelector::select(
-                $statements_analyzer,
-                $codebase,
-                $args,
-                $context,
-                $overloads,
-            );
-        }
+        $pseudo_method_storage = MissingMethodCallHandler::selectOverload(
+            $statements_analyzer,
+            $codebase,
+            $args,
+            $context,
+            $class_storage->pseudo_static_method_overloads[$method_id->method_name] ?? null,
+            $pseudo_method_storage,
+            // `static` in the params is the class the method is called on: that class itself when the call names it,
+            // a subclass too when it is called on an object or a class-string, or through `self::`/`parent::`, which
+            // forward the late static binding
+            $lhs_type_part instanceof TNamedObject
+                ? static fn(MethodStorage $storage): MethodStorage => MissingMethodCallHandler::resolveStaticInParams(
+                    $codebase,
+                    $storage,
+                    $class_storage,
+                    $lhs_type_part,
+                    $static_class_storage->final
+                        || ($stmt->class instanceof PhpParser\Node\Name
+                            && !$lhs_type_part->is_static
+                            && !in_array($stmt->class->toLowerString(), ['self', 'parent'], true)),
+                )
+                : null,
+        );
 
         if (!$context->isSuppressingExceptions($statements_analyzer)) {
             $context->mergeFunctionExceptions(

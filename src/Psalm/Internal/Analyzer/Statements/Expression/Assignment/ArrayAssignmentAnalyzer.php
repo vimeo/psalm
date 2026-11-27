@@ -72,6 +72,7 @@ use function implode;
 use function is_int;
 use function is_string;
 use function preg_match;
+use function reset;
 use function sort;
 use function spl_object_id;
 use function str_contains;
@@ -881,9 +882,17 @@ final class ArrayAssignmentAnalyzer
         $has_matching_string = false;
 
         $changed = false;
+        $had_null = false;
         $types = [];
         foreach ($child_stmt_type->getAtomicTypes() as $type) {
             $old_type = $type;
+            if ($type instanceof TNull && $child_stmt_type->hasArray()) {
+                // a null array becomes an array holding only the assigned offset
+                $had_null = true;
+                $changed = true;
+                continue;
+            }
+
             if ($type instanceof TTemplateParam) {
                 $type = $type->replaceAs(self::updateTypeWithKeyValues(
                     $codebase,
@@ -942,37 +951,55 @@ final class ArrayAssignmentAnalyzer
             $changed = $changed || $old_type !== $type;
         }
 
-        if ($changed) {
+        if ($changed && $types !== []) {
             $child_stmt_type = $child_stmt_type->getBuilder()->setTypes($types)->freeze();
         }
 
-        if (!$has_matching_objectlike_property && !$has_matching_string) {
-            $properties = [];
-            $classStrings = [];
-            $current_type = $current_type->setPossiblyUndefined(
-                $current_type->possibly_undefined || count($key_values) > 1,
-            );
-            foreach ($key_values as $key_value) {
-                $properties[$key_value->value] = $current_type;
-                if ($key_value instanceof TLiteralClassString) {
-                    $classStrings[$key_value->value] = true;
-                }
+        $adds_offset = !$has_matching_objectlike_property && !$has_matching_string;
+
+        if (!$adds_offset && !$had_null) {
+            return $child_stmt_type;
+        }
+
+        $properties = [];
+        $classStrings = [];
+        $offset_type = $current_type->setPossiblyUndefined(
+            $current_type->possibly_undefined || count($key_values) > 1,
+        );
+        foreach ($key_values as $key_value) {
+            $properties[$key_value->value] = $offset_type;
+            if ($key_value instanceof TLiteralClassString) {
+                $classStrings[$key_value->value] = true;
             }
-            $object_like = TKeyedArray::make(
-                $properties,
-                $classStrings ?: null,
-            );
-
-            $array_assignment_type = new Union([
-                $object_like,
-            ]);
-
-            return Type::combineUnionTypes(
+        }
+        if ($adds_offset) {
+            $child_stmt_type = Type::combineUnionTypes(
                 $child_stmt_type,
-                $array_assignment_type,
+                new Union([
+                    TKeyedArray::make(
+                        $properties,
+                        $classStrings ?: null,
+                    ),
+                ]),
                 $codebase,
                 true,
                 false,
+            );
+        }
+
+        if ($had_null) {
+            // the other offsets of the array may be missing
+            $child_stmt_type = Type::combineUnionTypes(
+                $child_stmt_type,
+                new Union([
+                    TKeyedArray::make(
+                        $properties,
+                        $classStrings ?: null,
+                        null,
+                        array_keys($properties) === [0],
+                    ),
+                ]),
+                $codebase,
             );
         }
 
@@ -1457,7 +1484,7 @@ final class ArrayAssignmentAnalyzer
                     $key_type = Type::getArrayKey();
                 }
 
-                if ($key_type->isSingle()) {
+                if ($key_type->isSingleAtomic()) {
                     $key_type_type = $key_type->getSingleAtomic();
 
                     if (($key_type_type instanceof TIntRange
@@ -1467,9 +1494,9 @@ final class ArrayAssignmentAnalyzer
                     }
 
                     if ($key_type_type instanceof TTemplateParam
-                        && $key_type_type->as->isSingle()
-                        && $root_type->isSingle()
-                        && $value_type->isSingle()
+                        && $key_type_type->as->isSingleAtomic()
+                        && $root_type->isSingleAtomic()
+                        && $value_type->isSingleAtomic()
                     ) {
                         $key_type_as_type = $key_type_type->as->getSingleAtomic();
                         $value_atomic_type = $value_type->getSingleAtomic();
@@ -1909,7 +1936,7 @@ final class ArrayAssignmentAnalyzer
             if ($is_last) {
                 // we need this slight hack as the type we're putting it has to be
                 // different from the type we're getting out
-                if ($array_type->isSingle() && $array_type->hasClassStringMap()) {
+                if ($array_type->isSingleAtomic() && $array_type->hasClassStringMap()) {
                     $assignment_type = $child_stmt_type;
                 }
 
@@ -2222,6 +2249,10 @@ final class ArrayAssignmentAnalyzer
                 }
 
                 if ($key !== $written_key) {
+                    if (self::isDifferentLiteralKey($key, $written_key_type)) {
+                        continue 2;
+                    }
+
                     $key_types[$key] ??= self::getArrayKeysOfOffsetType(
                         self::getTypeOfOffset($context, substr($key, 1, -1)),
                     );
@@ -2245,6 +2276,37 @@ final class ArrayAssignmentAnalyzer
                 $context->removeVarFromConflictingClauses($var_id);
             }
         }
+    }
+
+    /**
+     * Whether the offset of a var id is a literal key that differs from the only key the written offset may be:
+     * those two never alias, which spares comparing their types
+     *
+     * @psalm-pure
+     */
+    private static function isDifferentLiteralKey(string $offset_key, Union $written_key_type): bool
+    {
+        // not isSingle(): that takes several literals of one kind for a single type
+        $written_atomics = $written_key_type->getAtomicTypes();
+
+        if (count($written_atomics) !== 1) {
+            return false;
+        }
+
+        $written_atomic = reset($written_atomics);
+
+        if ($written_atomic instanceof TLiteralInt) {
+            $written_key = $written_atomic->value;
+        } elseif ($written_atomic instanceof TLiteralString) {
+            $int_key = ArrayAnalyzer::getLiteralArrayKeyInt($written_atomic->value);
+            $written_key = $int_key === false ? $written_atomic->value : $int_key;
+        } else {
+            return false;
+        }
+
+        $literal_key = self::getLiteralKeyOfOffset(substr($offset_key, 1, -1));
+
+        return $literal_key !== null && $literal_key !== $written_key;
     }
 
     /**

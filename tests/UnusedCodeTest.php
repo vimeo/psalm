@@ -245,6 +245,43 @@ final class UnusedCodeTest extends TestCase
         $this->assertSame([], IssueBuffer::getIssuesDataForFile($src_file_path));
     }
 
+    public function testUnusedDocblockParamIsLocatedOnItsName(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $this->project_analyzer->setPhpVersion('7.4', 'tests');
+        $file_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            "<?php\n"
+            . "/**\n"
+            . " * @param int \$b\n"
+            . " */\n"
+            . "\$f = function (string \$a): void { echo \$a; };\n"
+            . "\$f('x');\n"
+            . "/** @param int \$c */\n"
+            . "\$g = fn(string \$a): string => \$a;\n"
+            . "echo \$g('x');\n"
+            . "/**\n"
+            . " * @param int \$d\tdescription\n"
+            . " */\n"
+            . "function h(string \$a): void { echo \$a; }\n"
+            . "h('x');\n",
+        );
+        $this->analyzeFile($file_path, new Context(), false);
+        $this->project_analyzer->consolidateAnalyzedData();
+
+        $issues = [];
+        foreach (IssueBuffer::getIssuesDataForFile($file_path) as $issue) {
+            if ($issue->type === 'UnusedDocblockParam') {
+                $issues[] = $issue->line_from . ':' . $issue->column_from . '-' . $issue->column_to
+                    . ' ' . $issue->selected_text;
+            }
+        }
+
+        $this->assertSame(['3:15-17 $b', '7:16-18 $c', '11:15-17 $d'], $issues);
+    }
+
     public function testSeesClassesUsedAfterUnevaluatedCodeIssue(): void
     {
         $this->project_analyzer->getConfig()->throw_exception = false;
@@ -275,6 +312,70 @@ final class UnusedCodeTest extends TestCase
         $issue = IssueBuffer::getIssuesDataForFile($file_path)[0];
         $this->assertSame('UnevaluatedCode', $issue->type);
         $this->assertSame(4, $issue->line_from);
+    }
+
+    public function testAFixableIssueOfALoopBodyStaysFixable(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                function int(): int {
+                    return 1;
+                }
+
+                /** @param list<int> $ints */
+                function f(array $ints): void {
+                    foreach ($ints as $_) {
+                        /** @var int $a */
+                        $a = int();
+                        echo $a;
+                    }
+                }
+            ',
+        );
+        $this->analyzeFile($file_path, new Context(), false);
+        $this->project_analyzer->consolidateAnalyzedData();
+
+        $issue = IssueBuffer::getIssuesDataForFile($file_path)[0];
+        $this->assertSame('UnnecessaryVarAnnotation', $issue->type);
+        $this->assertTrue($issue->is_fixable);
+    }
+
+    public function testAFixableIssueOfTheBodyOfALoopOverNeverStaysFixable(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                function int(): int {
+                    return 1;
+                }
+
+                /** @return list<never> */
+                function nothing(): array {
+                    return [];
+                }
+
+                function f(): void {
+                    foreach (nothing() as $item) {
+                        /** @var int $a */
+                        $a = int();
+                        echo $a, count($item);
+                    }
+                }
+            ',
+        );
+        $this->analyzeFile($file_path, new Context(), false);
+        $this->project_analyzer->consolidateAnalyzedData();
+
+        $issue = IssueBuffer::getIssuesDataForFile($file_path)[0];
+        $this->assertSame('UnnecessaryVarAnnotation', $issue->type);
+        $this->assertTrue($issue->is_fixable);
     }
 
     public function testTheArgumentsOfACallOfAMissingClassAreNotAnalysed(): void
@@ -1256,6 +1357,60 @@ final class UnusedCodeTest extends TestCase
                     function f(array $values): void {
                         /** @psalm-suppress UnusedVariable */
                         foreach ($values as $value) {
+                        }
+                    }',
+            ],
+            'variableUsedOnlyInTheBodyOfALoopOverNothingIsUsed' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-api
+                     * @param list<never> $nothing
+                     */
+                    function f(array $nothing): void {
+                        $prefix = "item";
+
+                        foreach ($nothing as $item) {
+                            echo $prefix, count($item);
+                        }
+                    }',
+            ],
+            'variableUsedAfterAMethodCallOnTheItemOfALoopOverNothingIsUsed' => [
+                'code' => '<?php
+                    /** @psalm-api */
+                    final class User {
+                        public function name(): string {
+                            return "";
+                        }
+                    }
+
+                    /**
+                     * @psalm-api
+                     * @param list<never> $nothing
+                     */
+                    function f(array $nothing): void {
+                        $prefix = "item";
+
+                        foreach ($nothing as $user) {
+                            $user->name();
+                            echo $prefix;
+                        }
+                    }',
+            ],
+            'copyOfTheItemOfALoopOverNothingIsUsed' => [
+                'code' => '<?php
+                    /** @psalm-api */
+                    final class User {
+                        public int $id = 0;
+                    }
+
+                    /**
+                     * @psalm-api
+                     * @param list<never> $nothing
+                     */
+                    function f(array $nothing): void {
+                        foreach ($nothing as $user) {
+                            $copy = $user;
+                            echo $copy->id;
                         }
                     }',
             ],

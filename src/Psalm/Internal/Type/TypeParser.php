@@ -117,6 +117,7 @@ use function octdec;
 use function preg_match;
 use function preg_replace;
 use function reset;
+use function spl_object_id;
 use function str_contains;
 use function str_ends_with;
 use function str_starts_with;
@@ -831,6 +832,8 @@ final class TypeParser
         $generic_params = [];
         /** @var list<Union> the `*` arguments among the generic params, by identity */
         $star_params = [];
+        /** @var array<int, TypeArgumentProjection> the `covariant` and `contravariant` arguments, by object id */
+        $variance_params = [];
 
         foreach ($parse_tree->children as $i => $child_tree) {
             if ($child_tree instanceof Value && $child_tree->value === StarProjection::NAME) {
@@ -874,6 +877,12 @@ final class TypeParser
                 );
             }
 
+            if (isset($parse_tree->projections[$i])) {
+                // marked by identity, as the `*` arguments are; the parser may share one instance between equal types
+                $tree_type = $tree_type->getBuilder()->freeze();
+                $variance_params[spl_object_id($tree_type)] = $parse_tree->projections[$i];
+            }
+
             $generic_params[] = $tree_type;
         }
 
@@ -908,6 +917,7 @@ final class TypeParser
                 $generic_params,
                 $purity_params,
                 $star_params,
+                $variance_params,
                 $from_docblock,
             );
         }
@@ -1163,7 +1173,7 @@ final class TypeParser
                 throw new TypeParseTreeException($generic_type_value . ' requires exactly one parameter.');
             }
 
-            $template_param = $generic_params[0]->isSingle() ? $generic_params[0]->getSingleAtomic() : null;
+            $template_param = $generic_params[0]->isSingleAtomic() ? $generic_params[0]->getSingleAtomic() : null;
 
             if ($template_param instanceof TTemplateParam
                 && isset($template_type_map[$param_name = $template_param->param_name])
@@ -1252,7 +1262,7 @@ final class TypeParser
             $atomic_types = [];
 
             foreach ($generic_params as $generic_param_offset => $generic_param) {
-                if (!$generic_param->isSingle()) {
+                if (!$generic_param->isSingleAtomic()) {
                     throw new TypeParseTreeException(
                         'int-mask types must all be non-union',
                     );
@@ -1262,7 +1272,10 @@ final class TypeParser
 
                 $atomic_type = reset($generic_param_atomics);
 
-                if ($atomic_type instanceof TNamedObject) {
+                // only a bare name is the name of a global constant, not a generic, an intersection or a callable
+                if ($atomic_type instanceof TNamedObject
+                    && ($parse_tree->children[$generic_param_offset] ?? null) instanceof Value
+                ) {
                     if (defined($atomic_type->value)) {
                         // silenced, as reading a deprecated constant (ASSERT_ACTIVE) emits E_DEPRECATED
                         /** @var mixed */
@@ -1290,7 +1303,7 @@ final class TypeParser
                 }
 
                 if (!$atomic_type instanceof TLiteralInt
-                    && !$atomic_type instanceof TGlobalConstant
+                    && !($atomic_type instanceof TGlobalConstant && !str_contains($atomic_type->const_name, '*'))
                     && !($atomic_type instanceof TClassConstant
                         && !str_contains($atomic_type->const_name, '*'))
                 ) {
@@ -1404,22 +1417,25 @@ final class TypeParser
         }
 
         return (new TGenericObject($generic_type_value, $generic_params, false, false, [], $from_docblock))
-            ->setProjections(self::getStarProjections($generic_params, $star_params));
+            ->setProjections(self::getStarProjections($generic_params, $star_params, $variance_params));
     }
 
     /**
      * @param list<Union> $generic_params
      * @param list<Union> $star_params
+     * @param array<int, TypeArgumentProjection> $variance_params
      * @return array<int, TypeArgumentProjection>
      * @psalm-pure
      */
-    private static function getStarProjections(array $generic_params, array $star_params): array
+    private static function getStarProjections(array $generic_params, array $star_params, array $variance_params): array
     {
         $projections = [];
 
         foreach ($generic_params as $offset => $generic_param) {
             if (in_array($generic_param, $star_params, true)) {
                 $projections[$offset] = TypeArgumentProjection::Star;
+            } elseif (isset($variance_params[spl_object_id($generic_param)])) {
+                $projections[$offset] = $variance_params[spl_object_id($generic_param)];
             }
         }
 
@@ -1433,6 +1449,8 @@ final class TypeParser
      * @param list<Union> $generic_params
      * @param non-empty-list<Union> $purity_params
      * @param list<Union> $star_params the `*` arguments among the generic params, by identity
+     * @param array<int, TypeArgumentProjection> $variance_params the `covariant` and `contravariant` arguments, by
+     *                                                           object id
      * @throws TypeParseTreeException
      * @psalm-pure
      */
@@ -1441,6 +1459,7 @@ final class TypeParser
         array $generic_params,
         array $purity_params,
         array $star_params,
+        array $variance_params,
         bool $from_docblock,
     ): TIterable|TGenericObject {
         if (isset(TypeTokenizer::PSALM_RESERVED_WORDS[$generic_type_value])
@@ -1495,7 +1514,7 @@ final class TypeParser
             false,
             [],
             $from_docblock,
-        ))->setProjections(self::getStarProjections($generic_params, $star_params));
+        ))->setProjections(self::getStarProjections($generic_params, $star_params, $variance_params));
     }
 
     /**
@@ -2442,7 +2461,7 @@ final class TypeParser
 
         if (!$offset_defining_class
             && isset($offset_template_data[''])
-            && $offset_template_data['']->isSingle()
+            && $offset_template_data['']->isSingleAtomic()
         ) {
             $offset_template_type = $offset_template_data['']->getSingleAtomic();
 
@@ -2671,6 +2690,41 @@ final class TypeParser
     }
 
     /**
+     * The shape of the objects having both shapes
+     *
+     * @throws TypeParseTreeException when no value has both types of a property
+     */
+    public static function mergeObjectShapes(
+        Codebase $codebase,
+        TObjectWithProperties $first,
+        TObjectWithProperties $second,
+    ): TObjectWithProperties {
+        $properties = $first->properties;
+
+        foreach ($second->properties as $name => $type) {
+            if (!isset($properties[$name])) {
+                $properties[$name] = $type;
+
+                continue;
+            }
+
+            $intersected_type = Type::intersectUnionTypes($properties[$name], $type, $codebase);
+
+            if ($intersected_type === null) {
+                throw new TypeParseTreeException(
+                    'Incompatible intersection types for "' . $name . '", '
+                    . $properties[$name]->getId() . ' and ' . $type->getId()
+                    . ' provided',
+                );
+            }
+
+            $properties[$name] = $intersected_type;
+        }
+
+        return $first->setProperties($properties)->setMethods([...$first->methods, ...$second->methods]);
+    }
+
+    /**
      * @param TNamedObject|TObjectWithProperties|TCallableObject|TIterable|TTemplateParam|TKeyedArray $intersection_type
      * @psalm-mutation-free
      */
@@ -2715,6 +2769,19 @@ final class TypeParser
             }
 
             $any_object_type_found = true;
+
+            // every object shape has the key `object`: their properties are those of all of them
+            if ($intersection_type instanceof TObjectWithProperties
+                && ($other_shape = $keyed_intersection_types[$intersection_type->getKey()] ?? null)
+                    instanceof TObjectWithProperties
+            ) {
+                $keyed_intersection_types[$intersection_type->getKey()] = self::mergeObjectShapes(
+                    $codebase,
+                    $other_shape,
+                    $intersection_type,
+                );
+                continue;
+            }
 
             if ($intersection_type instanceof TIterable
                 || $intersection_type instanceof TNamedObject

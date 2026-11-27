@@ -330,7 +330,7 @@ final class StubsGenerator
      */
     public static function getParserTypeFromPsalmType(Union $type): ?PhpParser\NodeAbstract
     {
-        if ($type->isSingle()) {
+        if ($type->isSingleAtomic()) {
             $atomic_type = $type->getSingleAtomic();
 
             // types PHP only allows on their own

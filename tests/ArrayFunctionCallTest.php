@@ -190,6 +190,23 @@ final class ArrayFunctionCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'implodeOfAShapeWithAUnionOfLiterals' => [
+                'code' => '<?php
+                    $a = implode(",", ["x", rand(0, 1) ? "a" : "b"]);
+                ',
+                'assertions' => [
+                    '$a===' => 'non-empty-literal-string',
+                ],
+            ],
+            'arraySpliceWithAUnionOfStringLiteralsAsReplacement' => [
+                'code' => '<?php
+                    $a = ["x", "y"];
+                    array_splice($a, 0, 1, rand(0, 1) ? "a" : "b");
+                ',
+                'assertions' => [
+                    '$a===' => "array<int, 'a'|'b'|'x'|'y'>",
+                ],
+            ],
             'arrayKeyExistsNotFindingALiteralFallbackKeyOfAnUnsealedShape' => [
                 'code' => '<?php
                     /**
@@ -288,6 +305,52 @@ final class ArrayFunctionCallTest extends TestCase
                     '$column===' => 'list{0|1|3}',
                     '$vars===' => 'array{value: 0|1|3, ...<string, mixed>}',
                     '$inherited===' => 'array{inherited: 1|2}',
+                ],
+            ],
+            'getObjectVarsSkipsStaticProperties' => [
+                'code' => '<?php
+                    final class WithStatic {
+                        public static int $s = 1;
+                        public int $i = 2;
+                    }
+
+                    final class OnlyStatic {
+                        public static int $s = 1;
+                    }
+
+                    class OpenOnlyStatic {
+                        public static int $s = 1;
+                    }
+
+                    class Base {
+                        public static int $baseStatic = 1;
+                        public int $base = 1;
+                    }
+
+                    final class Child extends Base {
+                        public int $child = 2;
+                    }
+
+                    trait HasStatic {
+                        public static int $traitStatic = 1;
+                        public int $traitInstance = 1;
+                    }
+
+                    final class UsesTrait {
+                        use HasStatic;
+                    }
+
+                    $withStatic = get_object_vars(new WithStatic());
+                    $onlyStatic = get_object_vars(new OnlyStatic());
+                    $openOnlyStatic = get_object_vars(new OpenOnlyStatic());
+                    $child = get_object_vars(new Child());
+                    $usesTrait = get_object_vars(new UsesTrait());',
+                'assertions' => [
+                    '$withStatic===' => 'array{i: int}',
+                    '$onlyStatic===' => 'array<never, never>',
+                    '$openOnlyStatic===' => 'array<string, mixed>',
+                    '$child===' => 'array{base: int, child: int}',
+                    '$usesTrait===' => 'array{traitInstance: int}',
                 ],
             ],
             'arrayWalkRecursiveUsesCallbackOutType' => [
@@ -535,6 +598,75 @@ final class ArrayFunctionCallTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.0',
+            ],
+            'arrayWalkAcceptsCallbacksMatchingTheValueKeyAndExtraArgument' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @param array<string, int> $map
+                     * @param list<string> $list
+                     * @param array<string, string> $strings
+                     * @param array<string, array<int, int>> $nested
+                     */
+                    function visit(array $map, array $list, array $strings, array $nested): void {
+                        array_walk($map, static function (int $value, string $key, string $prefix): void {}, "p");
+                        array_walk($list, static function (string $value, int $key): void {});
+                        array_walk($strings, static function (string ...$parts): void {}, "extra");
+                        array_walk_recursive($nested, static function (int $value, int|string $key): void {});
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['UnusedClosureParam'],
+                'php_version' => '8.0',
+            ],
+            'arrayWalkRecursivePassesOnlyTheKeysOfValuesItDoesNotDescendInto' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @param array<string, list<int>> $nested
+                     * @param array{first: list<int>, second: list<int>} $shape
+                     */
+                    function visit(array $nested, array $shape): void {
+                        array_walk_recursive($nested, static function (int $value, int $key): void {});
+                        array_walk_recursive($shape, static function (int $value, int $key): void {});
+                        $withEmpty = ["items" => [1, 2], "empty" => []];
+                        array_walk_recursive($withEmpty, static function (int $value, int $key): void {});
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['UnusedClosureParam'],
+            ],
+            'arrayWalkSkipsCallbackParametersItCannotCheck' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @template T
+                     * @param T $value
+                     */
+                    function visitAny($value): void {}
+                    /**
+                     * @param array<string, mixed> $mixed
+                     * @param array<string, iterable<int, int>> $iterable
+                     * @param list<string> $strings
+                     * @param list<mixed> $args
+                     */
+                    function visit(array $mixed, array $iterable, array $strings, object $object, array $args): void {
+                        array_walk($mixed, static function (int $value): void {});
+                        array_walk_recursive($iterable, static function (int $value): void {});
+                        array_walk($strings, static function ($value, $key): void {});
+                        array_walk($strings, "visitAny");
+                        array_walk($object, static function (int $value): void {});
+                        array_walk(...$args);
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [
+                    'UnusedClosureParam',
+                    'RawObjectIteration',
+                    'DeprecatedFunction',
+                    'MixedArgument',
+                    'MissingClosureParamType',
+                ],
             ],
             'arrayMergeAfterAnArrayOfAnyLengthPutsTheNextElementsInTheRest' => [
                 'code' => <<<'PHP'
@@ -5967,6 +6099,122 @@ final class ArrayFunctionCallTest extends TestCase
                 ',
                 'error_message' => 'RawObjectIteration',
                 'error_levels' => ['DeprecatedFunction'],
+            ],
+            'arrayWalkWithACallbackNotTakingTheValueType' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param list<string> $values */
+                    function visit(array $values): void {
+                        array_walk($values, static fn(int $value): int => $value + 1);
+                    }
+                    PHP,
+                'error_message' => 'Parameter 1 of closure passed to function array_walk expects int, but string provided',
+            ],
+            'arrayWalkWithACallbackNotTakingTheKeyType' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array<string, string> $values */
+                    function visit(array $values): void {
+                        array_walk($values, static function (string $value, int $key): void {});
+                    }
+                    PHP,
+                'error_message' => 'Parameter 2 of closure passed to function array_walk expects int, but string provided',
+                'error_levels' => ['UnusedClosureParam'],
+            ],
+            'arrayWalkWithACallbackNotTakingTheExtraArgument' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param list<int> $values */
+                    function visit(array $values): void {
+                        array_walk($values, static function (int $value, int $key, int $factor): void {}, "2");
+                    }
+                    PHP,
+                'error_message' => 'Parameter 3 of closure passed to function array_walk expects int, but \'2\' provided',
+                'error_levels' => ['UnusedClosureParam'],
+            ],
+            'arrayWalkWithAVariadicCallbackNotTakingTheKeyType' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param list<string> $values */
+                    function visit(array $values): void {
+                        array_walk($values, static function (string ...$parts): void {});
+                    }
+                    PHP,
+                'error_message' => 'Parameter 2 of closure passed to function array_walk expects string, but int<0, max> provided',
+                'error_levels' => ['UnusedClosureParam'],
+            ],
+            'arrayWalkWithAByRefCallbackNotTakingTheValueType' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param list<string> $values */
+                    function visit(array $values): void {
+                        array_walk($values, static function (int &$value): void {
+                            $value++;
+                        });
+                    }
+                    PHP,
+                'error_message' => 'Parameter 1 of closure passed to function array_walk expects int, but string provided',
+            ],
+            'arrayWalkWithANamedFunctionCallbackNotTakingTheValueType' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function double(int $value): int {
+                        return $value * 2;
+                    }
+                    /** @param list<string> $values */
+                    function visit(array $values): void {
+                        array_walk($values, "double");
+                    }
+                    PHP,
+                'error_message' => 'Parameter 1 of closure passed to function array_walk expects int, but string provided',
+            ],
+            'arrayWalkWithAnInvokableCallbackNotTakingTheValueType' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Doubler {
+                        public function __invoke(int $value): int {
+                            return $value * 2;
+                        }
+                    }
+                    /** @param list<string> $values */
+                    function visit(array $values): void {
+                        array_walk($values, new Doubler());
+                    }
+                    PHP,
+                'error_message' => 'Parameter 1 of closure passed to function array_walk expects int, but string provided',
+            ],
+            'arrayWalkWithNamedArgumentsChecksTheCallback' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param list<string> $values */
+                    function visit(array $values): void {
+                        array_walk(callback: static fn(int $value): int => $value + 1, array: $values);
+                    }
+                    PHP,
+                'error_message' => 'Parameter 1 of closure passed to function array_walk expects int, but string provided',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'arrayWalkRecursiveWithACallbackNotTakingTheLeafType' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array<int, array<int, string>|string> $values */
+                    function visit(array $values): void {
+                        array_walk_recursive($values, static fn(int $value): int => $value + 1);
+                    }
+                    PHP,
+                'error_message' => 'Parameter 1 of closure passed to function array_walk_recursive expects int, but string provided',
+            ],
+            'arrayWalkRecursiveWithACallbackNotTakingTheKeyOfAValueItDoesNotDescendInto' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array<string, int|list<int>> $values */
+                    function visit(array $values): void {
+                        array_walk_recursive($values, static function (int $value, int $key): void {});
+                    }
+                    PHP,
+                'error_message' => 'Parameter 2 of closure passed to function array_walk_recursive expects int, but',
+                'error_levels' => ['UnusedClosureParam'],
             ],
             'implodeWithNonStringableArgs' => [
                 'code' => '<?php

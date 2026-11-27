@@ -35,6 +35,7 @@ use Psalm\Internal\Type\IterationPurity;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Internal\TypeVisitor\ConditionTypeCollector;
 use Psalm\Internal\TypeVisitor\TypeChecker;
 use Psalm\Issue\ImplicitToStringCast;
 use Psalm\Issue\InvalidFalsableReturnType;
@@ -51,6 +52,7 @@ use Psalm\Issue\MoreSpecificReturnType;
 use Psalm\Issue\UnresolvableConstant;
 use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
+use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Storage\TemplateVariance;
@@ -1047,6 +1049,17 @@ final class ReturnTypeAnalyzer
                 $classlike_storage->name ?? null,
                 $classlike_storage->name ?? null,
                 $parent_class,
+                true,
+                true,
+            );
+
+            self::checkConditionTypes(
+                $storage->return_type,
+                $function_like_analyzer,
+                $classlike_storage,
+                $parent_class,
+                $storage,
+                $context,
             );
 
             /** @psalm-suppress UnusedMethodCall Actually generates issues */
@@ -1110,6 +1123,15 @@ final class ReturnTypeAnalyzer
             $fleshed_out_return_type = $storage->return_type;
         }
 
+        $conditions_valid = self::checkConditionTypes(
+            $storage->return_type,
+            $function_like_analyzer,
+            $classlike_storage,
+            $parent_class,
+            $storage,
+            null,
+        );
+
         if (!self::checkTypeAsReturned(
             $fleshed_out_return_type,
             $function_like_analyzer,
@@ -1117,7 +1139,7 @@ final class ReturnTypeAnalyzer
             $storage->suppressed_issues,
             $storage instanceof MethodStorage && $storage->inherited_return_type,
             null,
-        )) {
+        ) || !$conditions_valid) {
             return false;
         }
 
@@ -1329,6 +1351,49 @@ final class ReturnTypeAnalyzer
     }
 
     /**
+     * The types a conditional return type tests its subject against are not part of the expanded type, which
+     * only keeps the branch that applies
+     */
+    private static function checkConditionTypes(
+        Union $return_type,
+        FunctionLikeAnalyzer $function_like_analyzer,
+        ?ClassLikeStorage $classlike_storage,
+        ?string $parent_class,
+        FunctionLikeStorage $storage,
+        ?Context $context,
+    ): bool {
+        if ($storage->return_type_location === null) {
+            return true;
+        }
+
+        $collector = new ConditionTypeCollector();
+        $collector->traverse($return_type);
+
+        $valid = true;
+
+        foreach ($collector->getConditions() as $condition) {
+            if (!self::checkTypeAsReturned(
+                TypeExpander::expandUnion(
+                    $function_like_analyzer->getCodebase(),
+                    $condition,
+                    $classlike_storage->name ?? null,
+                    $classlike_storage->name ?? null,
+                    $parent_class,
+                ),
+                $function_like_analyzer,
+                $storage->return_type_location,
+                $storage->suppressed_issues,
+                false,
+                $context,
+            )) {
+                $valid = false;
+            }
+        }
+
+        return $valid;
+    }
+
+    /**
      * Checks the return type $type of $function_like_analyzer like Union::check(), as an output position for a
      * method: a covariant template may be there, but not in the parameter types of a callable in it (see
      * TypeChecker)
@@ -1369,7 +1434,7 @@ final class ReturnTypeAnalyzer
      */
     private static function getGeneratorReturnType(Union $return_type): ?Union
     {
-        if (!$return_type->isSingle()) {
+        if (!$return_type->isSingleAtomic()) {
             return null;
         }
 

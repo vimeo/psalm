@@ -43,3 +43,19 @@ Generator types support up to four parameters, e.g. `Generator<int, string, mixe
 `Generator<int>` is a shorthand for `Generator<mixed, int, mixed, mixed>`.
 
 `Generator<int, string>` is a shorthand for `Generator<int, string, mixed, mixed>`.
+
+A generator that ends without a value (`return;` or the end of its body) has the `TReturn` `null`. A declared `TReturn` of `void` and `null` are interchangeable:
+
+```php
+/** @return Generator<int, string, mixed, null> */
+function a(): Generator {
+    yield "a";
+    return; // no issue
+}
+
+/** @return Generator<int, string, mixed, void> */
+function b(): Generator {
+    yield "a";
+    return null; // no issue
+}
+```

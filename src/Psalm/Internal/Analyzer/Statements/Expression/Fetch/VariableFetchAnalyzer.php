@@ -959,7 +959,8 @@ final class VariableFetchAnalyzer
                 'REQUEST_TIME'         => $positive_int_helper,
                 'REQUEST_TIME_FLOAT'   => $request_time_float_helper,
                 'QUERY_STRING'         => $string_helper,
-                'DOCUMENT_ROOT'        => $non_empty_string_helper,
+                // empty in CLI
+                'DOCUMENT_ROOT'        => $string_helper,
                 'HTTP_ACCEPT'          => $non_empty_string_helper,
                 'HTTP_ACCEPT_CHARSET'  => $non_empty_string_helper,
                 'HTTP_ACCEPT_ENCODING' => $non_empty_string_helper,
@@ -974,11 +975,13 @@ final class VariableFetchAnalyzer
                 'REMOTE_PORT'          => $string_helper,
                 'REMOTE_USER'          => $non_empty_string_helper,
                 'REDIRECT_REMOTE_USER' => $non_empty_string_helper,
-                'SCRIPT_FILENAME'      => $non_empty_string_helper,
+                // empty for `php -r` and code read from stdin
+                'SCRIPT_FILENAME'      => $string_helper,
                 'SERVER_ADMIN'         => $non_empty_string_helper,
                 'SERVER_PORT'          => $non_empty_string_helper,
                 'SERVER_SIGNATURE'     => $non_empty_string_helper,
-                'PATH_TRANSLATED'      => $non_empty_string_helper,
+                // empty for `php -r` and code read from stdin
+                'PATH_TRANSLATED'      => $string_helper,
                 'SCRIPT_NAME'          => $non_empty_string_helper,
                 'REQUEST_URI'          => $non_empty_string_helper,
                 'PHP_AUTH_DIGEST'      => $non_empty_string_helper,

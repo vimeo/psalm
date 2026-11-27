@@ -3203,8 +3203,8 @@ final class PropertyTypeTest extends TestCase
                          */
                         final public function setOptions(array $opts): void
                         {
-                            $this->a = $opts["a"] ?? "defaultA";
-                            $this->b = $opts["b"] ?? "defaultB";
+                            $this->a = $opts["a"];
+                            $this->b = $opts["b"];
                         }
                     }',
             ],
@@ -3237,8 +3237,8 @@ final class PropertyTypeTest extends TestCase
                          */
                         public function setOptions(array $opts): void
                         {
-                            $this->a = $opts["a"] ?? "defaultA";
-                            $this->b = $opts["b"] ?? "defaultB";
+                            $this->a = $opts["a"];
+                            $this->b = $opts["b"];
                         }
                     }',
             ],
@@ -5948,6 +5948,27 @@ final class PropertyTypeTest extends TestCase
                         }
                     }',
                 'error_message' => 'UndefinedPropertyFetch',
+            ],
+            'issetOnATypedPropertyOfABuiltinClassWithADefault' => [
+                'code' => '<?php
+                    function f(php_user_filter $f): string {
+                        if (isset($f->filtername)) {
+                            return $f->filtername;
+                        }
+                        return "";
+                    }',
+                'error_message' => 'RedundantCondition',
+                'error_levels' => [],
+                'php_version' => '8.6',
+            ],
+            'nullCoalesceOnATypedPropertyOfABuiltinClassWithoutADefault' => [
+                'code' => '<?php
+                    function f(PhpToken $t): string {
+                        return $t->text ?? "";
+                    }',
+                'error_message' => 'RedundantCondition',
+                'error_levels' => [],
+                'php_version' => '8.6',
             ],
             'finalClassFollowsItsOwnOverrideOfTheTraitMethod' => [
                 'code' => '<?php

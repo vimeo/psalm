@@ -1055,7 +1055,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
     {
         if (!$callable instanceof TKeyedArray
             || !isset($callable->properties[0], $callable->properties[1])
-            || !$callable->properties[0]->isSingle()
+            || !$callable->properties[0]->isSingleAtomic()
             || !$callable->properties[1]->isSingleStringLiteral()
         ) {
             return [];
@@ -1319,7 +1319,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         Context $context,
         ?Union $callee_type,
     ): ?array {
-        $closure = $callee_type !== null && $callee_type->isSingle() ? $callee_type->getSingleAtomic() : null;
+        $closure = $callee_type !== null && $callee_type->isSingleAtomic() ? $callee_type->getSingleAtomic() : null;
 
         if (!$closure instanceof TClosure
             || $closure->callable_id === null

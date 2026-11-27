@@ -465,7 +465,7 @@ final class PluginTest extends DeferredAnalyzerTestCase
                         <directory name="src" />
                     </projectFiles>
                     <plugins>
-                        <pluginClass class="Psalm\\Test\\Config\\Plugin\\FilePlugin" />
+                        <pluginClass class="Psalm\\Tests\\Config\\Plugin\\FilePlugin" />
                     </plugins>
                 </psalm>',
             ),
@@ -822,7 +822,7 @@ final class PluginTest extends DeferredAnalyzerTestCase
                         <directory name="src" />
                     </projectFiles>
                     <plugins>
-                        <pluginClass class="Psalm\\Test\\Config\\Plugin\\PropertyPlugin" />
+                        <pluginClass class="Psalm\\Tests\\Config\\Plugin\\PropertyPlugin" />
                     </plugins>
                 </psalm>',
             ),
@@ -861,7 +861,7 @@ final class PluginTest extends DeferredAnalyzerTestCase
                         <directory name="src" />
                     </projectFiles>
                     <plugins>
-                        <pluginClass class="Psalm\\Test\\Config\\Plugin\\MethodPlugin" />
+                        <pluginClass class="Psalm\\Tests\\Config\\Plugin\\MethodPlugin" />
                     </plugins>
                 </psalm>',
             ),
@@ -926,7 +926,7 @@ final class PluginTest extends DeferredAnalyzerTestCase
                         <directory name="src" />
                     </projectFiles>
                     <plugins>
-                        <pluginClass class="Psalm\\Test\\Config\\Plugin\\MethodPlugin" />
+                        <pluginClass class="Psalm\\Tests\\Config\\Plugin\\MethodPlugin" />
                     </plugins>
                 </psalm>',
             ),
@@ -969,7 +969,7 @@ final class PluginTest extends DeferredAnalyzerTestCase
                         <directory name="src" />
                     </projectFiles>
                     <plugins>
-                        <pluginClass class="Psalm\\Test\\Config\\Plugin\\MethodPlugin" />
+                        <pluginClass class="Psalm\\Tests\\Config\\Plugin\\MethodPlugin" />
                     </plugins>
                 </psalm>',
             ),
@@ -1012,7 +1012,7 @@ final class PluginTest extends DeferredAnalyzerTestCase
                         <directory name="src" />
                     </projectFiles>
                     <plugins>
-                        <pluginClass class="Psalm\\Test\\Config\\Plugin\\TypeVariablePlugin" />
+                        <pluginClass class="Psalm\\Tests\\Config\\Plugin\\TypeVariablePlugin" />
                     </plugins>
                 </psalm>',
             ),
@@ -1174,7 +1174,7 @@ final class PluginTest extends DeferredAnalyzerTestCase
                         <directory name="src" />
                     </projectFiles>
                     <plugins>
-                        <pluginClass class="Psalm\\Test\\Config\\Plugin\\TemplateParameterPlugin" />
+                        <pluginClass class="Psalm\\Tests\\Config\\Plugin\\TemplateParameterPlugin" />
                     </plugins>
                 </psalm>',
             ),
@@ -1224,7 +1224,7 @@ final class PluginTest extends DeferredAnalyzerTestCase
                         <directory name="src" />
                     </projectFiles>
                     <plugins>
-                        <pluginClass class="Psalm\\Test\\Config\\Plugin\\MethodPlugin" />
+                        <pluginClass class="Psalm\\Tests\\Config\\Plugin\\MethodPlugin" />
                     </plugins>
                 </psalm>',
             ),
@@ -1301,7 +1301,7 @@ final class PluginTest extends DeferredAnalyzerTestCase
                         <directory name="src" />
                     </projectFiles>
                     <plugins>
-                        <pluginClass class="Psalm\\Test\\Config\\Plugin\\FunctionPlugin" />
+                        <pluginClass class="Psalm\\Tests\\Config\\Plugin\\FunctionPlugin" />
                     </plugins>
                 </psalm>',
             ),
@@ -1337,7 +1337,7 @@ final class PluginTest extends DeferredAnalyzerTestCase
                         <directory name="src" />
                     </projectFiles>
                     <plugins>
-                        <pluginClass class="Psalm\\Test\\Config\\Plugin\\PropertyPlugin" />
+                        <pluginClass class="Psalm\\Tests\\Config\\Plugin\\PropertyPlugin" />
                     </plugins>
                 </psalm>',
             ),
@@ -1378,7 +1378,7 @@ final class PluginTest extends DeferredAnalyzerTestCase
                         <directory name="src" />
                     </projectFiles>
                     <plugins>
-                        <pluginClass class="Psalm\\Test\\Config\\Plugin\\MethodPlugin" />
+                        <pluginClass class="Psalm\\Tests\\Config\\Plugin\\MethodPlugin" />
                     </plugins>
                 </psalm>',
             ),
@@ -1419,7 +1419,7 @@ final class PluginTest extends DeferredAnalyzerTestCase
                         <directory name="src" />
                     </projectFiles>
                     <plugins>
-                        <pluginClass class="Psalm\\Test\\Config\\Plugin\\MethodCapabilitiesPlugin" />
+                        <pluginClass class="Psalm\\Tests\\Config\\Plugin\\MethodCapabilitiesPlugin" />
                     </plugins>
                 </psalm>',
             ),
@@ -1472,7 +1472,7 @@ final class PluginTest extends DeferredAnalyzerTestCase
                         <directory name="src" />
                     </projectFiles>
                     <plugins>
-                        <pluginClass class="Psalm\\Test\\Config\\Plugin\\MethodCapabilitiesPlugin" />
+                        <pluginClass class="Psalm\\Tests\\Config\\Plugin\\MethodCapabilitiesPlugin" />
                     </plugins>
                 </psalm>',
             ),
@@ -1523,7 +1523,7 @@ final class PluginTest extends DeferredAnalyzerTestCase
                         <directory name="src" />
                     </projectFiles>
                     <plugins>
-                        <pluginClass class="Psalm\\Test\\Config\\Plugin\\MethodCapabilitiesPlugin" />
+                        <pluginClass class="Psalm\\Tests\\Config\\Plugin\\MethodCapabilitiesPlugin" />
                     </plugins>
                 </psalm>',
             ),
@@ -1581,7 +1581,7 @@ final class PluginTest extends DeferredAnalyzerTestCase
                         <directory name="src" />
                     </projectFiles>
                     <plugins>
-                        <pluginClass class="Psalm\\Test\\Config\\Plugin\\FunctionPlugin" />
+                        <pluginClass class="Psalm\\Tests\\Config\\Plugin\\FunctionPlugin" />
                     </plugins>
                 </psalm>',
             ),
@@ -1757,7 +1757,7 @@ final class PluginTest extends DeferredAnalyzerTestCase
                         <directory name="src" />
                     </projectFiles>
                     <plugins>
-                        <pluginClass class="Psalm\\Test\\Config\\Plugin\\FunctionPlugin" />
+                        <pluginClass class="Psalm\\Tests\\Config\\Plugin\\FunctionPlugin" />
                     </plugins>
                 </psalm>',
             ),
@@ -1819,7 +1819,7 @@ final class PluginTest extends DeferredAnalyzerTestCase
                         <directory name="src" />
                     </projectFiles>
                     <plugins>
-                        <pluginClass class="Psalm\\Test\\Config\\Plugin\\NullFunctionParamsPlugin" />
+                        <pluginClass class="Psalm\\Tests\\Config\\Plugin\\NullFunctionParamsPlugin" />
                     </plugins>
                 </psalm>',
             ),
@@ -1849,7 +1849,7 @@ final class PluginTest extends DeferredAnalyzerTestCase
                         <directory name="tests/fixtures/DummyProject" />
                     </projectFiles>
                     <plugins>
-                        <pluginClass class="Psalm\\Test\\Config\\Plugin\\AfterAnalysisPlugin" />
+                        <pluginClass class="Psalm\\Tests\\Config\\Plugin\\AfterAnalysisPlugin" />
                     </plugins>
                 </psalm>',
             ),
@@ -2674,7 +2674,7 @@ final class PluginTest extends DeferredAnalyzerTestCase
         require_once __DIR__ . '/Plugin/FilePlugin.php';
 
         $this->project_analyzer = $this->getProjectAnalyzerWithFixableIssuePlugin(
-            other_plugins: '<pluginClass class="Psalm\Test\Config\Plugin\FilePlugin" />',
+            other_plugins: '<pluginClass class="Psalm\Tests\Config\Plugin\FilePlugin" />',
         );
         $this->project_analyzer->setIssuesToFix(['LegacyCall' => true]);
 

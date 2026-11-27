@@ -132,6 +132,24 @@ final class ArrayAssignmentTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'nestedWriteUnderAListedKeyOfAShapeWithAMixedFallback' => [
+                'code' => '<?php
+                    /** @param array{meta: array<string, string>, ...} $payload */
+                    function addId(array $payload): array {
+                        $payload["meta"]["id"] = "foo";
+                        /** @psalm-check-type-exact $payload = array{meta: array{id: \'foo\', ...<string, string>}, ...<array-key, mixed>} */;
+
+                        return $payload;
+                    }
+
+                    /** @param array{blocks: list<int>, ...<string, mixed>} $document */
+                    function addBlock(array $document): array {
+                        $document["blocks"][] = 1;
+                        /** @psalm-check-type-exact $document = array{blocks: non-empty-list<int>, ...<string, mixed>} */;
+
+                        return $document;
+                    }',
+            ],
             'foreachWritingBackUnderItsKeysKeepsTheListShape' => [
                 'code' => '<?php
                     /** @param list{int, int} $l */
@@ -285,6 +303,26 @@ final class ArrayAssignmentTest extends TestCase
                         $a[$k] = "v";
                         /** @psalm-check-type-exact $a = array{0: "v"|2, a: "v"|1, ...<K, "v">} */;
                     }',
+            ],
+            'writeUnderALiteralKeyKeepsTheOffsetsOfOtherLiteralKeysAndForgetsTheSameKey' => [
+                'code' => '<?php
+                    $a = [];
+                    $a["x"] = 1;
+                    $a["y"] = "b";
+                    $a["01"] = true;
+                    $a[1] = 2.5;
+                    $a["1"] = "s";
+                    $a[-1] = null;
+                    $kept = $a["x"];
+                    $kept2 = $a["01"];
+                    $same = $a[1];
+                    $same2 = $a["1"];',
+                'assertions' => [
+                    '$kept===' => '1',
+                    '$kept2===' => 'true',
+                    '$same===' => "'s'",
+                    '$same2===' => "'s'",
+                ],
             ],
             'writeUnderAStringKeyMayReachTheIntKeyOfItsDecimalString' => [
                 'code' => '<?php
@@ -804,6 +842,52 @@ final class ArrayAssignmentTest extends TestCase
 
                         return $roots;
                     }',
+            ],
+            'offsetAssignedToANullableShapeMakesItsOtherOffsetsOptional' => [
+                'code' => '<?php
+                    $a = rand(0, 1) ? ["y" => 1] : null;
+                    $a["x"] = 2;
+
+                    $b = rand(0, 1) ? ["x" => 1, "y" => 1] : null;
+                    $b["x"] = 2;
+
+                    $c = ["y" => 1];
+                    $c["x"] = 2;',
+                'assertions' => [
+                    '$a===' => 'array{x: 2, y?: 1}',
+                    '$b===' => 'array{x: 2, y?: 1}',
+                    '$c===' => 'array{x: 2, y: 1}',
+                ],
+            ],
+            'offsetZeroAssignedToANullableListKeepsItAList' => [
+                'code' => '<?php
+                    /** @return list<int>|null */
+                    function getList(): ?array {
+                        return rand(0, 1) ? [1] : null;
+                    }
+
+                    $a = getList();
+                    $a[0] = 5;
+
+                    $b = rand(0, 1) ? [1, 2] : null;
+                    $b[0] = 5;
+
+                    $c = rand(0, 1) ? [] : null;
+                    $c[0] = 5;
+
+                    /** @param list<int> $l */
+                    function takesList(array $l): void {}
+
+                    /** @param list<int>|null $l */
+                    function f(?array $l): void {
+                        $l[0] = 5;
+                        takesList($l);
+                    }',
+                'assertions' => [
+                    '$a===' => 'list{5, ...<int>}',
+                    '$b===' => 'list{0: 5, 1?: 2}',
+                    '$c===' => 'array{0: 5}',
+                ],
             ],
             'assignToTheItemOfAnArrayAFunctionReturnsByReference' => [
                 'code' => '<?php
@@ -4095,6 +4179,16 @@ final class ArrayAssignmentTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'nestedWriteUnderAnUnlistedKeyOfAShapeWithAMixedFallback' => [
+                'code' => '<?php
+                    /** @param array{meta: array, ...} $payload */
+                    function addId(array $payload): array {
+                        $payload["other"]["id"] = "foo";
+
+                        return $payload;
+                    }',
+                'error_message' => 'MixedArrayAssignment',
+            ],
             'invalidArrayOffsetShowsTheFullKeyType' => [
                 'code' => '<?php
                     $a = [[1] => 2];',

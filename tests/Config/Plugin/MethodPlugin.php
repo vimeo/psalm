@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Psalm\Test\Config\Plugin;
+namespace Psalm\Tests\Config\Plugin;
 
 use Override;
 use Psalm\Plugin\PluginEntryPointInterface;
 use Psalm\Plugin\RegistrationInterface;
-use Psalm\Test\Config\Plugin\Hook\FooMethodProvider;
+use Psalm\Tests\Config\Plugin\Hook\FooMethodProvider;
 use SimpleXMLElement;
 
 /** @psalm-suppress UnusedClass */
