@@ -92,6 +92,25 @@ final class AttributeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'getAttributesOfAUnionOfAttributeClasses' => [
+                'code' => '<?php
+                    #[Attribute(Attribute::TARGET_METHOD)]
+                    final class OnMethod {}
+
+                    #[Attribute(Attribute::TARGET_CLASS)]
+                    final class OnClass {}
+
+                    #[OnClass]
+                    final class X {}
+
+                    /** @param OnMethod::class|OnClass::class $c */
+                    function f(string $c): void {
+                        (new ReflectionClass(X::class))->getAttributes($c);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'attributeOfTheClassConstantTargetOnClassConstants' => [
                 'code' => '<?php
                     #[Attribute(Attribute::TARGET_CLASS_CONSTANT)]
@@ -139,6 +158,9 @@ final class AttributeTest extends TestCase
                             public string $name = "",
                         ) {}
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'functionAttributeExists' => [
                 'code' => '<?php
@@ -583,6 +605,9 @@ final class AttributeTest extends TestCase
                         public function __construct(#[Foo, Bar] private int $test) {}
                     }
                 ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'multipleAttributesInMultipleGroups' => [
                 'code' => '<?php
@@ -769,6 +794,8 @@ final class AttributeTest extends TestCase
                     #[Table()]
                     class Video {}',
                 'error_message' => 'TooFewArguments - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:23',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'invalidArgument' => [
                 'code' => '<?php
@@ -796,6 +823,8 @@ final class AttributeTest extends TestCase
                     #[Table("videos")]
                     function foo() : void {}',
                 'error_message' => 'InvalidAttribute - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:23',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'interfaceCannotBeAttributeClass' => [
                 'code' => '<?php

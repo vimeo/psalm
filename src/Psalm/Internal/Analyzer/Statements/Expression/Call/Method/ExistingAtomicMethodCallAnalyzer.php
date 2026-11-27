@@ -14,6 +14,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentMapPopulator;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\CallPurityResolver;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\FunctionCallAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\OverloadSelector;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
@@ -63,6 +64,8 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
      * @param  TNamedObject|TTemplateParam|null  $static_type
      * @param  list<PhpParser\Node\Arg> $args
      * @param  ?string $mixin_user_class the class whose `@mixin` the method was found through
+     * @param  list<MethodIdentifier> $intersection_method_ids the method as the other members of an intersection
+     *                                                         receiver declare it
      */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
@@ -78,6 +81,7 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
         AtomicMethodCallAnalysisResult $result,
         ?TemplateResult $inferred_template_result = null,
         ?string $mixin_user_class = null,
+        array $intersection_method_ids = [],
     ): Union {
         $config = $codebase->config;
 
@@ -269,6 +273,19 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
 
         $is_first_class_callable = $stmt->isFirstClassCallable();
 
+        $overload = null;
+
+        if ($method_storage && $method_storage->overloads !== [] && !$is_first_class_callable) {
+            $overload = OverloadSelector::selectOrReal(
+                $statements_analyzer,
+                $codebase,
+                $args,
+                $context,
+                $method_storage->overloads,
+                $method_storage,
+            );
+        }
+
         if (!$is_first_class_callable && self::checkMethodArgs(
             $method_id,
             $args,
@@ -276,6 +293,9 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
             $context,
             new CodeLocation($source, $stmt_name),
             $statements_analyzer,
+            false,
+            $overload,
+            $intersection_method_ids,
         ) === false) {
             return Type::getMixed();
         }
@@ -294,6 +314,7 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
             $args,
             $result,
             $template_result,
+            $overload,
         );
 
         if ($method_storage?->has_yield && !$is_first_class_callable) {

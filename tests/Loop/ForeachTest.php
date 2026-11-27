@@ -84,6 +84,42 @@ final class ForeachTest extends TestCase
         );
     }
 
+    public function testInvalidIteratorNamesTheScalarTypeWithoutItsValue(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @param non-empty-string $s */
+                function f(string $s): void {
+                    foreach (5 as $_) {}
+                    foreach (1.5 as $_) {}
+                    foreach ("abc" as $_) {}
+                    foreach (true as $_) {}
+                    foreach ($s as $_) {}
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        self::assertSame(
+            [
+                'Cannot iterate over int',
+                'Cannot iterate over float',
+                'Cannot iterate over string',
+                'Cannot iterate over true',
+                'Cannot iterate over string',
+            ],
+            array_map(
+                static fn(IssueData $issue): string => $issue->message,
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
+        );
+    }
+
     public function testAnItemAssignedToAVariableOfAPreviousIterationCreatesTheArray(): void
     {
         $this->project_analyzer->getConfig()->throw_exception = false;
@@ -210,6 +246,84 @@ final class ForeachTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'breakTwoDoesNotRedefineAfterTheInnerLoop' => [
+                'code' => '<?php
+                    /** @return list<int> */
+                    function ints(): array {
+                        return [1];
+                    }
+
+                    $v = 1;
+                    $after_inner = 1;
+
+                    foreach (ints() as $_) {
+                        foreach (ints() as $_) {
+                            $v = "s";
+                            break 2;
+                        }
+
+                        $after_inner = $v;
+                    }
+
+                    $after_outer = $v;',
+                'assertions' => [
+                    '$after_inner===' => '1',
+                    '$after_outer===' => "'s'|1",
+                ],
+            ],
+            'variableAssignedBeforeABreakTwoLevelsOutInsideALoopIsDefinedAfterTheLoopItLeaves' => [
+                'code' => '<?php
+                    /** @param non-empty-list<non-empty-list<string>> $rows */
+                    function pick(array $rows): void {
+                        foreach ([1, 2] as $_) {
+                            foreach ($rows as $row) {
+                                foreach ($row as $cell) {
+                                    $picked = $cell;
+                                    if ($cell === "x") {
+                                        break 2;
+                                    }
+                                }
+                            }
+                            /** @psalm-check-type-exact $picked = string */;
+                        }
+                    }',
+            ],
+            'variableAssignedBeforeEveryBreakAndContinueOfALoopInsideALoopIsDefinedAfterIt' => [
+                'code' => '<?php
+                    /** @param non-empty-list<string> $candidates */
+                    function pick(array $candidates): void {
+                        foreach ([1, 2] as $_) {
+                            foreach ($candidates as $candidate) {
+                                if ($candidate === "y") {
+                                    $picked = 1;
+                                    continue;
+                                }
+                                $picked = 2;
+                                if (rand(0, 1)) {
+                                    break;
+                                }
+                            }
+                            /** @psalm-check-type-exact $picked = 1|2 */;
+                        }
+                    }',
+            ],
+            'variableAssignedBeforeEveryBreakOfALoopInsideALoopKeepsEveryBreakType' => [
+                'code' => '<?php
+                    /** @param non-empty-list<string> $candidates */
+                    function pick(array $candidates): void {
+                        foreach ([1, 2] as $_) {
+                            foreach ($candidates as $candidate) {
+                                if ($candidate === "y") {
+                                    $picked = 1;
+                                    break;
+                                }
+                                $picked = "s";
+                                break;
+                            }
+                            /** @psalm-check-type-exact $picked = 1|"s" */;
+                        }
+                    }',
+            ],
             'propertyNarrowedBeforeTheLoopIsKeptAfterABreakNotReassigningItsObject' => [
                 'code' => '<?php
                     final class D {
@@ -1522,6 +1636,42 @@ final class ForeachTest extends TestCase
                         /** @psalm-check-type-exact $continued = list<\'skipped\'|null> */;
                     }',
             ],
+            'variableAssignedBeforeEveryBreakOfANonEmptyLoopInsideALoopIsDefinedAfterIt' => [
+                'code' => '<?php
+                    /** @param non-empty-list<string> $candidates */
+                    function pick(array $candidates): void {
+                        foreach ([1, 2] as $_) {
+                            foreach ($candidates as $candidate) {
+                                $picked = $candidate;
+                                if ($picked !== "x") {
+                                    break;
+                                }
+                            }
+                            /** @psalm-check-type-exact $picked = string */;
+                        }
+                    }',
+            ],
+            'variablePossiblyUndefinedFromATryAssignedBeforeEveryBreakIsDefinedAfterTheLoop' => [
+                'code' => '<?php
+                    function mayThrow(): int {
+                        return 1;
+                    }
+
+                    /** @param non-empty-list<string> $candidates */
+                    function pick(array $candidates): void {
+                        try {
+                            $picked = mayThrow();
+                        } catch (Exception $_) {
+                        }
+                        foreach ($candidates as $candidate) {
+                            $picked = $candidate;
+                            if ($candidate !== "x") {
+                                break;
+                            }
+                        }
+                        /** @psalm-check-type-exact $picked = string */;
+                    }',
+            ],
             'superglobalReadInALoopIsDefinedAfterIt' => [
                 'code' => '<?php
                     function f(): array {
@@ -1532,6 +1682,35 @@ final class ForeachTest extends TestCase
                         }
 
                         return array_keys($GLOBALS);
+                    }',
+            ],
+            'unknownVariableAfterExtractNarrowedByACallInALoop' => [
+                'code' => '<?php
+                    function takesInt(int $_i): void {}
+
+                    /**
+                     * @param list<string> $rows
+                     * @param array<string, mixed> $vars
+                     */
+                    function render(array $rows, array $vars): void {
+                        extract($vars);
+                        foreach ($rows as $_row) {
+                            takesInt($campaignid);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedArgument'],
+            ],
+            'variableDefinedByAByRefClosureUseInALoop' => [
+                'code' => '<?php
+                    /** @param list<int> $c */
+                    function f(array $c): void {
+                        foreach ($c as $_) {
+                            $f = function () use (&$cu): void {
+                                $cu = 1;
+                            };
+                            $f();
+                        }
                     }',
             ],
             'switchVariableWithContinue' => [
@@ -2805,7 +2984,8 @@ final class ForeachTest extends TestCase
 
                     unset($v);',
                 'assertions' => [
-                    '$a===' => "non-empty-array<int, 'x'|1|2|5>",
+                    // what the closure leaves: its body saw the literals of the capture widened
+                    '$a===' => "non-empty-array<int, 'x'|int>",
                 ],
             ],
             'foreachByReferenceReplacesTheItemTypesWhenAClosureCapturedTheArrayByValue' => [
@@ -3480,6 +3660,335 @@ final class ForeachTest extends TestCase
                     }
                 PHP,
             ],
+            'foreachOverAListTheCovariantTemplateOfNewInferredAsNeverHasNoItem' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @template-covariant T of Countable */
+                    final class Bounded {
+                        /** @return list<T> */
+                        public function all(): array {
+                            return [];
+                        }
+                    }
+
+                    function f(): void {
+                        foreach ((new Bounded())->all() as $x) {
+                            echo count($x);
+                        }
+                    }
+                PHP,
+            ],
+            'foreachOverAnEmptyArrayHasNoItem' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(): void {
+                        foreach ([] as $x) {
+                            echo count($x);
+                        }
+                    }
+                PHP,
+            ],
+            'foreachOverAnEmptyArrayVariableHasNoItem' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(): void {
+                        $items = [];
+
+                        foreach ($items as $item) {
+                            echo count($item);
+                        }
+                    }
+                PHP,
+            ],
+            'foreachOverAListOfNeverHasNoItem' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @return list<never> */
+                    function nothing(): array {
+                        return [];
+                    }
+
+                    function f(): void {
+                        foreach (nothing() as $x) {
+                            echo count($x);
+                        }
+                    }
+                PHP,
+            ],
+            'foreachOverAnArrayOfNeverHasNoKeyAndNoItem' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @return array<string, never> */
+                    function nothing(): array {
+                        return [];
+                    }
+
+                    function f(): void {
+                        foreach (nothing() as $k => $v) {
+                            echo strlen($k), count($v);
+                        }
+                    }
+                PHP,
+            ],
+            'foreachDestructuringAListOfNeverHasNoItem' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @return list<never> */
+                    function nothing(): array {
+                        return [];
+                    }
+
+                    function f(): void {
+                        foreach (nothing() as [$a, $b]) {
+                            echo count($a), count($b);
+                        }
+                    }
+                PHP,
+            ],
+            'foreachOverAnIterableOfNeverHasNoItem' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param iterable<int, never> $items */
+                    function f(iterable $items): void {
+                        foreach ($items as $k => $x) {
+                            echo $k, count($x);
+                        }
+                    }
+                PHP,
+            ],
+            'foreachOverATraversableOfNeverHasNoItem' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param Traversable<int, never> $items */
+                    function f(Traversable $items): void {
+                        foreach ($items as $x) {
+                            echo count($x);
+                        }
+                    }
+                PHP,
+            ],
+            'foreachOverAnIteratorAggregateOfNeverHasNoItem' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @implements IteratorAggregate<int, never> */
+                    final class Nothing implements IteratorAggregate {
+                        public function getIterator(): Iterator {
+                            return new ArrayIterator([]);
+                        }
+                    }
+
+                    function f(Nothing $nothing): void {
+                        foreach ($nothing as $x) {
+                            echo count($x);
+                        }
+                    }
+                PHP,
+            ],
+            'foreachByReferenceOverAnEmptyArrayHasNoItem' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(): void {
+                        $items = [];
+
+                        foreach ($items as &$item) {
+                            $item = count($item);
+                        }
+
+                        unset($item);
+                    }
+                PHP,
+            ],
+            'foreachOverNeverStillGivesTheVariablesTheBodyWritesTheirTypeOfAnyLoop' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @return list<never> */
+                    function nothing(): array {
+                        return [];
+                    }
+
+                    function f(): bool {
+                        $found = false;
+                        $total = 0;
+
+                        foreach (nothing() as $x) {
+                            if (count($x) > 1) {
+                                $found = true;
+                            }
+
+                            $total += count($x);
+                        }
+
+                        /** @psalm-check-type-exact $found = bool */;
+                        /** @psalm-check-type-exact $total = int<0, max> */;
+
+                        return $found;
+                    }
+                PHP,
+            ],
+            'foreachOverAnArrayTheOuterLoopFillsAfterItsFirstIterationStillChecksItsItems' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param list<int> $input */
+                    function f(array $input): int {
+                        $seen = [];
+                        $sum = 0;
+
+                        foreach ($input as $i) {
+                            foreach ($seen as $s) {
+                                /** @psalm-check-type-exact $s = int */;
+                                $sum += $s;
+                            }
+
+                            $seen[] = $i;
+                        }
+
+                        return $sum;
+                    }
+                PHP,
+            ],
+            'foreachOverNeverReportsNothingForWhatTheBodyDoesWithTheItem' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class User {
+                        public int $id = 0;
+
+                        public function name(): string {
+                            return '';
+                        }
+                    }
+
+                    /** @return list<never> */
+                    function nothing(): array {
+                        return [];
+                    }
+
+                    function takesUser(User $user): void {
+                        echo $user->id;
+                    }
+
+                    function f(): int {
+                        foreach (nothing() as $key => $user) {
+                            $copy = $user;
+                            echo $copy->id, $user->id, $user->name(), $user['a'], $user + 1, 'a' . $user;
+                            echo (string) $user;
+                            takesUser($user);
+                            $users = [$user];
+                            $users[$user] = 1;
+                            foreach ($user as $inner) {
+                                echo $inner;
+                            }
+                            if ($user instanceof User) {
+                                echo $key + 1;
+                            }
+                            $closure = fn() => $user->id;
+                            $user->id = 5;
+                            echo json_encode([$user, $closure]);
+
+                            return $user;
+                        }
+
+                        return 0;
+                    }
+
+                    function g(): void {
+                        foreach (nothing() as [$a, $b]) {
+                            echo count($a), count($b);
+                        }
+                    }
+                PHP,
+            ],
+            'foreachOverNeverReportsNothingForTheChecksCallsAndReturnsOfTheItem' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Foo {
+                        public const C = 1;
+
+                        public static function m(): int {
+                            return 1;
+                        }
+                    }
+
+                    /** @return list<never> */
+                    function nothing(): array {
+                        return [];
+                    }
+
+                    function takesInt(int $i): int {
+                        return $i;
+                    }
+
+                    /** @return Generator<int, mixed> */
+                    function gen(): Generator {
+                        foreach (nothing() as $item) {
+                            yield $item;
+                        }
+                    }
+
+                    function f(): void {
+                        foreach (nothing() as $item) {
+                            if (is_string($item) || is_int($item) || is_array($item) || is_object($item)) {
+                                echo 1;
+                            }
+
+                            if ($item instanceof Foo) {
+                                echo 2;
+                            }
+
+                            if ($item === 1 || $item == 'a') {
+                                echo 3;
+                            }
+
+                            echo match ($item) {
+                                1 => 'a',
+                                default => 'b',
+                            };
+
+                            switch ($item) {
+                                case 1:
+                                    echo 4;
+                                    break;
+                                default:
+                                    echo 5;
+                            }
+
+                            $item();
+                            $item::m();
+                            echo $item::C;
+                            $object = new $item();
+                            $copy = clone $item;
+                            echo takesInt($item);
+                            $typed = static fn(): int => $item;
+                            $typedToo = function () use ($item): int {
+                                return $item;
+                            };
+                            echo "x {$item} y $item";
+                            echo json_encode([$object, $copy, $typed, $typedToo]);
+                        }
+                    }
+                PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'foreachOverAnEmptyListOrAListOfIntsHasIntItems' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @return list<never>|list<int> */
+                    function items(): array {
+                        return [];
+                    }
+
+                    function f(): int {
+                        foreach (items() as $item) {
+                            /** @psalm-check-type-exact $item = int */;
+
+                            return $item;
+                        }
+
+                        return 0;
+                    }
+                PHP,
+            ],
         ];
     }
 
@@ -3490,6 +3999,121 @@ final class ForeachTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'variableNotAssignedBeforeAContinueInsideALoopIsPossiblyUndefinedAfterIt' => [
+                'code' => '<?php
+                    /** @param non-empty-list<string> $candidates */
+                    function pick(array $candidates): void {
+                        foreach ([1, 2] as $_) {
+                            foreach ($candidates as $candidate) {
+                                if ($candidate === "y") {
+                                    continue;
+                                }
+                                $picked = $candidate;
+                                if ($picked !== "x") {
+                                    break;
+                                }
+                            }
+                            echo $picked;
+                        }
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'undefinedVariableReadInALoopIsMixedOnEveryIteration' => [
+                'code' => '<?php
+                    function takesInt(int $_i): void {}
+
+                    /** @param list<string> $rows */
+                    function render(array $rows): void {
+                        foreach ($rows as $_row) {
+                            takesInt($campaignid);
+                        }
+                    }',
+                'error_message' => 'MixedArgument',
+                'error_levels' => ['UndefinedVariable'],
+            ],
+            'undefinedVariableAssignedOnAnotherPathIsMixedOnEveryIterationOfALoop' => [
+                'code' => '<?php
+                    function takesInt(int $_i): void {}
+
+                    /** @param list<string> $rows */
+                    function render(array $rows): void {
+                        if (rand(0, 1)) {
+                            $campaignid = 5;
+                            return;
+                        }
+                        foreach ($rows as $_row) {
+                            takesInt($campaignid);
+                        }
+                    }',
+                'error_message' => 'MixedArgument',
+                'error_levels' => ['UndefinedVariable'],
+            ],
+            'variableReadWhereUndefinedOnOnePathBeforeALoopKeepsWhatTheLoopAssigns' => [
+                'code' => '<?php
+                    function takesInt(int $_i): void {}
+
+                    /** @param list<string> $rows */
+                    function f(array $rows): void {
+                        if (rand(0, 1)) {
+                            $x = 1;
+                        } else {
+                            /** @psalm-suppress UndefinedVariable, MixedArgument */
+                            takesInt($x);
+                        }
+                        foreach ($rows as $row) {
+                            if (isset($x)) {
+                                takesInt($x);
+                            }
+                            $x = $row;
+                        }
+                    }',
+                'error_message' => 'InvalidScalarArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:14:42 - Argument 1 of takesInt expects int, but 1|string provided',
+            ],
+            'byRefOutParamAfterAnUndefinedReadInALoopKeepsItsType' => [
+                'code' => '<?php
+                    function takesString(string $_s): void {}
+
+                    /** @param list<string> $rows */
+                    function f(array $rows): void {
+                        foreach ($rows as $row) {
+                            /** @psalm-suppress UndefinedVariable, MixedArgument */
+                            if (is_string($matches)) {
+                                takesString($matches);
+                            }
+                            if (preg_match("/a/", $row, $matches)) {
+                                takesString($matches[0]);
+                            }
+                        }
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+            ],
+            'invalidGeneratorIteratorShowsTheRefinedSendType' => [
+                'code' => '<?php
+                    /** @return Generator<int, int, non-empty-string, void> */
+                    function g(): Generator {
+                        $x = yield 1;
+                        echo $x;
+                    }
+
+                    foreach (g() as $_) {}',
+                'error_message' => 'non-null send() type Generator<int, int, non-empty-string',
+            ],
+            'possiblyInvalidGeneratorIteratorShowsTheSendType' => [
+                'code' => '<?php
+                    /** @param list<int>|Generator<int, int, string, void> $a */
+                    function f($a): void {
+                        foreach ($a as $_) {}
+                    }',
+                'error_message' => 'Cannot iterate over generator with non-null send() type Generator<int, int, string',
+            ],
+            'nullableIteratorShowsTheRefinedType' => [
+                'code' => '<?php
+                    /** @param list{5, non-empty-string}|null $a */
+                    function f(?array $a): void {
+                        foreach ($a as $_) {}
+                    }',
+                'error_message' => 'PossiblyNullIterator - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:34 - Cannot iterate over nullable var list{5, non-empty-string}|null',
+            ],
             'propertyNarrowedBeforeTheLoopIsForgottenAfterABreakReassigningItsObject' => [
                 'code' => '<?php
                     final class D {
@@ -3984,6 +4608,40 @@ final class ForeachTest extends TestCase
                     }',
                 'error_message' => 'PossiblyUndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:38',
             ],
+            'variableAssignedAfterABreakTwoLevelsOutIsPossiblyUndefinedAfterIt' => [
+                'code' => '<?php
+                    /** @param non-empty-list<non-empty-list<string>> $rows */
+                    function pick(array $rows): void {
+                        foreach ([1, 2] as $_) {
+                            foreach ($rows as $row) {
+                                foreach ($row as $cell) {
+                                    if ($cell === "x") {
+                                        break 2;
+                                    }
+                                    $picked = $cell;
+                                }
+                            }
+                            echo $picked;
+                        }
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'variableAssignedAfterABreakInsideALoopIsPossiblyUndefinedAfterIt' => [
+                'code' => '<?php
+                    /** @param non-empty-list<string> $candidates */
+                    function pick(array $candidates): void {
+                        foreach ([1, 2] as $_) {
+                            foreach ($candidates as $candidate) {
+                                if ($candidate === "x") {
+                                    break;
+                                }
+                                $picked = $candidate;
+                            }
+                            echo $picked;
+                        }
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
             'foreachKeyAndDestructuredValueNotNullAfterBreakingLoopOnNonEmptyArray' => [
                 'code' => '<?php
                     /** @param non-empty-array<int, array{int, string|null}> $argument_map */
@@ -4295,6 +4953,245 @@ final class ForeachTest extends TestCase
                         return $z;
                     }',
                 'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'foreachOverNeverLeavesAVariableOnlyItsBodyAssignsPossiblyUndefined' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @return list<never> */
+                    function nothing(): array {
+                        return [];
+                    }
+
+                    function f(): int {
+                        foreach (nothing() as $x) {
+                            $seen = 1;
+                        }
+
+                        return $seen;
+                    }
+                PHP,
+                'error_message' => 'PossiblyUndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:12:16',
+            ],
+            'foreachOverNeverDoesNotSilenceTheRestOfTheLoopItIsIn' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @return list<never> */
+                    function nothing(): array {
+                        return [];
+                    }
+
+                    /** @param list<int> $ints */
+                    function f(array $ints): void {
+                        foreach ($ints as $i) {
+                            foreach (nothing() as $x) {
+                                echo count($x);
+                            }
+
+                            echo strlen($i);
+                        }
+                    }
+                PHP,
+                'error_message' => 'InvalidScalarArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:14:25',
+            ],
+            'foreachOverAListOfNeverStillReportsUndefinedFunctionOfTheBody' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @return list<never> */
+                    function nothing(): array {
+                        return [];
+                    }
+
+                    function f(): void {
+                        foreach (nothing() as $item) {
+                            echo count($item);
+                            undefined_function();
+                        }
+                    }
+                PHP,
+                'error_message' => 'UndefinedFunction',
+            ],
+            'foreachOverAStaleEmptyPropertyStillReportsUndefinedFunctionOfTheBody' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Collector {
+                        /** @var list<int> */
+                        public array $ids = [];
+                    }
+
+                    function fill(Collector $c): void {
+                        $c->ids[] = 1;
+                    }
+
+                    function f(): void {
+                        $c = new Collector();
+                        $c->ids = [];
+                        fill($c);
+
+                        foreach ($c->ids as $item) {
+                            echo count($item);
+                            undefined_function();
+                        }
+                    }
+                PHP,
+                'error_message' => 'UndefinedFunction',
+            ],
+            'foreachOverAListOfNeverStillReportsUndefinedVariableOfTheBody' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @return list<never> */
+                    function nothing(): array {
+                        return [];
+                    }
+
+                    function f(): void {
+                        foreach (nothing() as $item) {
+                            echo count($item);
+                            echo $undefined;
+                        }
+                    }
+                PHP,
+                'error_message' => 'UndefinedVariable',
+            ],
+            'foreachOverAStaleEmptyPropertyStillReportsUndefinedVariableOfTheBody' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Collector {
+                        /** @var list<int> */
+                        public array $ids = [];
+                    }
+
+                    function fill(Collector $c): void {
+                        $c->ids[] = 1;
+                    }
+
+                    function f(): void {
+                        $c = new Collector();
+                        $c->ids = [];
+                        fill($c);
+
+                        foreach ($c->ids as $item) {
+                            echo count($item);
+                            echo $undefined;
+                        }
+                    }
+                PHP,
+                'error_message' => 'UndefinedVariable',
+            ],
+            'foreachOverAListOfNeverStillReportsInvalidArgumentOfTheBody' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @return list<never> */
+                    function nothing(): array {
+                        return [];
+                    }
+
+                    function f(): void {
+                        foreach (nothing() as $item) {
+                            echo count($item);
+                            echo strlen([]);
+                        }
+                    }
+                PHP,
+                'error_message' => 'InvalidArgument',
+            ],
+            'foreachOverAStaleEmptyPropertyStillReportsInvalidArgumentOfTheBody' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Collector {
+                        /** @var list<int> */
+                        public array $ids = [];
+                    }
+
+                    function fill(Collector $c): void {
+                        $c->ids[] = 1;
+                    }
+
+                    function f(): void {
+                        $c = new Collector();
+                        $c->ids = [];
+                        fill($c);
+
+                        foreach ($c->ids as $item) {
+                            echo count($item);
+                            echo strlen([]);
+                        }
+                    }
+                PHP,
+                'error_message' => 'InvalidArgument',
+            ],
+            'foreachOverNeverMethodCallOnTheItemDoesNotHideTheRestOfTheBody' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class User {
+                        public function name(): string {
+                            return '';
+                        }
+                    }
+
+                    /** @return list<never> */
+                    function nothing(): array {
+                        return [];
+                    }
+
+                    function f(): void {
+                        foreach (nothing() as $user) {
+                            $user->name();
+                            undefined_function();
+                        }
+                    }
+                PHP,
+                'error_message' => 'UndefinedFunction - src' . DIRECTORY_SEPARATOR . 'somefile.php:16:13',
+            ],
+            'foreachOverNeverMethodCallOnTheItemDoesNotHideAnInvalidArgumentAfterIt' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class User {
+                        public function name(): string {
+                            return '';
+                        }
+                    }
+
+                    /** @return list<never> */
+                    function nothing(): array {
+                        return [];
+                    }
+
+                    function f(): void {
+                        foreach (nothing() as $user) {
+                            $user->name();
+                            echo strlen([]);
+                        }
+                    }
+                PHP,
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:16:25',
+            ],
+            'foreachOverAnEmptyListOrAListOfIntsStillChecksItsInts' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @return list<never>|list<int> */
+                    function items(): array {
+                        return [];
+                    }
+
+                    function f(): void {
+                        foreach (items() as $item) {
+                            echo strlen($item);
+                        }
+                    }
+                PHP,
+                'error_message' => 'InvalidScalarArgument',
+            ],
+            'foreachOverAPossiblyEmptyListStillChecksItsItems' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param list<int> $items */
+                    function f(array $items): void {
+                        foreach ($items as $item) {
+                            echo strlen($item);
+                        }
+                    }
+                PHP,
+                'error_message' => 'InvalidScalarArgument',
             ],
         ];
     }

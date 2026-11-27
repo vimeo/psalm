@@ -167,6 +167,12 @@ final class ArrayAssignmentAnalyzer
 
         $root_type = $statements_analyzer->node_data->getType($root_array_expr) ?? Type::getMixed();
 
+        // an array that cannot be (in code a condition proved unreachable) is not made by writing to it; a property is
+        // also never where it is not initialized yet (`!isset($this->p)`), which the write initializes
+        $root_is_never = $root_type->isNever()
+            && !$root_array_expr instanceof PhpParser\Node\Expr\PropertyFetch
+            && !$root_array_expr instanceof PhpParser\Node\Expr\StaticPropertyFetch;
+
         if ($root_type->hasMixed()) {
             $vars_before_read = $context->vars_in_scope;
 
@@ -307,7 +313,9 @@ final class ArrayAssignmentAnalyzer
         $new_child_type->removeType('null');
         $new_child_type = $new_child_type->freeze();
 
-        if (!$root_type->hasObjectType()) {
+        if ($root_is_never) {
+            $root_type = Type::getNever()->setParentNodes($new_child_type->parent_nodes);
+        } elseif (!$root_type->hasObjectType()) {
             $root_type = $new_child_type;
         }
 
@@ -873,9 +881,17 @@ final class ArrayAssignmentAnalyzer
         $has_matching_string = false;
 
         $changed = false;
+        $had_null = false;
         $types = [];
         foreach ($child_stmt_type->getAtomicTypes() as $type) {
             $old_type = $type;
+            if ($type instanceof TNull && $child_stmt_type->hasArray()) {
+                // a null array becomes an array holding only the assigned offset
+                $had_null = true;
+                $changed = true;
+                continue;
+            }
+
             if ($type instanceof TTemplateParam) {
                 $type = $type->replaceAs(self::updateTypeWithKeyValues(
                     $codebase,
@@ -934,37 +950,55 @@ final class ArrayAssignmentAnalyzer
             $changed = $changed || $old_type !== $type;
         }
 
-        if ($changed) {
+        if ($changed && $types !== []) {
             $child_stmt_type = $child_stmt_type->getBuilder()->setTypes($types)->freeze();
         }
 
-        if (!$has_matching_objectlike_property && !$has_matching_string) {
-            $properties = [];
-            $classStrings = [];
-            $current_type = $current_type->setPossiblyUndefined(
-                $current_type->possibly_undefined || count($key_values) > 1,
-            );
-            foreach ($key_values as $key_value) {
-                $properties[$key_value->value] = $current_type;
-                if ($key_value instanceof TLiteralClassString) {
-                    $classStrings[$key_value->value] = true;
-                }
+        $adds_offset = !$has_matching_objectlike_property && !$has_matching_string;
+
+        if (!$adds_offset && !$had_null) {
+            return $child_stmt_type;
+        }
+
+        $properties = [];
+        $classStrings = [];
+        $offset_type = $current_type->setPossiblyUndefined(
+            $current_type->possibly_undefined || count($key_values) > 1,
+        );
+        foreach ($key_values as $key_value) {
+            $properties[$key_value->value] = $offset_type;
+            if ($key_value instanceof TLiteralClassString) {
+                $classStrings[$key_value->value] = true;
             }
-            $object_like = TKeyedArray::make(
-                $properties,
-                $classStrings ?: null,
-            );
-
-            $array_assignment_type = new Union([
-                $object_like,
-            ]);
-
-            return Type::combineUnionTypes(
+        }
+        if ($adds_offset) {
+            $child_stmt_type = Type::combineUnionTypes(
                 $child_stmt_type,
-                $array_assignment_type,
+                new Union([
+                    TKeyedArray::make(
+                        $properties,
+                        $classStrings ?: null,
+                    ),
+                ]),
                 $codebase,
                 true,
                 false,
+            );
+        }
+
+        if ($had_null) {
+            // the other offsets of the array may be missing
+            $child_stmt_type = Type::combineUnionTypes(
+                $child_stmt_type,
+                new Union([
+                    TKeyedArray::make(
+                        $properties,
+                        $classStrings ?: null,
+                        null,
+                        array_keys($properties) === [0],
+                    ),
+                ]),
+                $codebase,
             );
         }
 
@@ -1437,6 +1471,7 @@ final class ArrayAssignmentAnalyzer
     ): Union {
         $templated_assignment = false;
 
+        $array_atomic_key_type = null;
         $array_atomic_type_class_string = null;
         $array_atomic_type_array = null;
         $array_atomic_type_list = null;
@@ -1448,7 +1483,7 @@ final class ArrayAssignmentAnalyzer
                     $key_type = Type::getArrayKey();
                 }
 
-                if ($key_type->isSingle()) {
+                if ($key_type->isSingleAtomic()) {
                     $key_type_type = $key_type->getSingleAtomic();
 
                     if (($key_type_type instanceof TIntRange
@@ -1458,9 +1493,9 @@ final class ArrayAssignmentAnalyzer
                     }
 
                     if ($key_type_type instanceof TTemplateParam
-                        && $key_type_type->as->isSingle()
-                        && $root_type->isSingle()
-                        && $value_type->isSingle()
+                        && $key_type_type->as->isSingleAtomic()
+                        && $root_type->isSingleAtomic()
+                        && $value_type->isSingleAtomic()
                     ) {
                         $key_type_as_type = $key_type_type->as->getSingleAtomic();
                         $value_atomic_type = $value_type->getSingleAtomic();
@@ -1552,9 +1587,9 @@ final class ArrayAssignmentAnalyzer
 
         $array_atomic_type = self::writeUnknownKeyOfTheRootShape(
             $root_type,
-            $current_dim,
-            $array_atomic_type_array,
-            $array_atomic_type_list,
+            $array_atomic_key_type,
+            $value_type,
+            $offset_already_existed,
         );
         if ($array_atomic_type === null && !$current_dim && !$context->inside_loop) {
             $atomic_root_types = $root_type->getAtomicTypes();
@@ -1738,16 +1773,15 @@ final class ArrayAssignmentAnalyzer
     }
 
     /**
-     * The shape an array is after a write under a key whose value isn't known, or an append
+     * The shape an array is after a write under a key whose value isn't known, or an append (no key)
      *
-     * @param array{Union, Union}|null $written
      * @psalm-capabilities read-props|write-this-props
      */
     private static function writeUnknownKeyOfTheRootShape(
         Union $root_type,
-        ?PhpParser\Node\Expr $current_dim,
-        ?array $written,
-        ?Union $appended,
+        ?Union $key_type,
+        Union $value_type,
+        bool $key_exists,
     ): ?TKeyedArray {
         $root_array_type = $root_type->getAtomicTypes()['array'] ?? null;
 
@@ -1755,13 +1789,9 @@ final class ArrayAssignmentAnalyzer
             return null;
         }
 
-        if ($written !== null) {
-            return ArrayFetchAnalyzer::writeUnknownKeyOfAShape($root_array_type, $written[0], $written[1]);
-        }
-
-        return !$current_dim && $appended !== null
-            ? ArrayFetchAnalyzer::writeUnknownKeyOfAShape($root_array_type, Type::getInt(), $appended, true)
-            : null;
+        return $key_type !== null
+            ? ArrayFetchAnalyzer::writeUnknownKeyOfAShape($root_array_type, $key_type, $value_type, false, $key_exists)
+            : ArrayFetchAnalyzer::writeUnknownKeyOfAShape($root_array_type, Type::getInt(), $value_type, true);
     }
 
     /**
@@ -1905,7 +1935,7 @@ final class ArrayAssignmentAnalyzer
             if ($is_last) {
                 // we need this slight hack as the type we're putting it has to be
                 // different from the type we're getting out
-                if ($array_type->isSingle() && $array_type->hasClassStringMap()) {
+                if ($array_type->isSingleAtomic() && $array_type->hasClassStringMap()) {
                     $assignment_type = $child_stmt_type;
                 }
 
@@ -2055,21 +2085,20 @@ final class ArrayAssignmentAnalyzer
                 }
 
                 $written_key_type = $current_dim ? $statements_analyzer->node_data->getType($current_dim) : null;
-                $child_shape = self::writeUnknownKeyOfTheRootShape(
-                    $child_stmt_type,
-                    $current_dim,
-                    $written_key_type
-                        ? [
-                            $written_key_type->hasMixed()
+                $child_shape = $current_dim && !$written_key_type
+                    ? null
+                    : self::writeUnknownKeyOfTheRootShape(
+                        $child_stmt_type,
+                        $written_key_type
+                            ? ($written_key_type->hasMixed()
                                 ? Type::getArrayKey()
                                 : ArrayFetchAnalyzer::castOffsetTypeOfAWrite(
                                     ArrayFetchAnalyzer::replaceOffsetTypeWithInts($written_key_type),
-                                ),
-                            $current_type,
-                        ]
-                        : null,
-                    $current_type,
-                );
+                                ))
+                            : null,
+                        $current_type,
+                        false,
+                    );
 
                 $new_child_type = $child_shape
                     ? $child_stmt_type->setTypes([$child_shape])
@@ -2543,7 +2572,7 @@ final class ArrayAssignmentAnalyzer
             if ($object_id) {
                 $var_id_addition = '[' . $object_id . '->' . $child_stmt->dim->name->name . ']';
             } else {
-                $var_id_addition = '[' . $child_stmt_dim_type . ']';
+                $var_id_addition = '[' . $child_stmt_dim_type->getId(false) . ']';
             }
 
             return [null, $var_id_addition, true];
@@ -2562,7 +2591,7 @@ final class ArrayAssignmentAnalyzer
             return [null, $var_id_addition, true];
         }
 
-        $var_id_addition = '[' . $child_stmt_dim_type . ']';
+        $var_id_addition = '[' . $child_stmt_dim_type->getId(false) . ']';
 
         return [null, $var_id_addition, false];
     }

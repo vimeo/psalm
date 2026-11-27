@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Psalm\Test\Config\Plugin\Hook;
+namespace Psalm\Tests\Config\Plugin\Hook;
 
 use Override;
 use Psalm\Plugin\EventHandler\AfterFileAnalysisInterface;

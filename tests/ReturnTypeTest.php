@@ -823,6 +823,29 @@ final class ReturnTypeTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'voidNeverDeclaredWithAnExitPathAndAnExplicitReturn' => [
+                'code' => '<?php
+                    /**
+                     * @return void|never
+                     */
+                    function foo() {
+                        if (rand(0, 10) > 5) {
+                            exit;
+                        }
+
+                        return;
+                    }',
+            ],
+            'voidNeverDeclaredOnAFunctionThatAlwaysExits' => [
+                'code' => '<?php
+                    /**
+                     * @return void|never
+                     */
+                    function foo() {
+                        echo "bye";
+                        exit;
+                    }',
+            ],
             'nullableDocblockReturnWithoutReturnStatements' => [
                 'code' => '<?php
                     /**
@@ -3397,6 +3420,18 @@ final class ReturnTypeTest extends TestCase
                     }',
                 'error_message' => 'MoreSpecificReturnType',
             ],
+            'voidNeverDeclaredWithOnlyAnExplicitReturn' => [
+                'code' => '<?php
+                    /**
+                     * @return void|never
+                     */
+                    function foo() {
+                        if (rand(0, 10) > 5) {
+                            return;
+                        }
+                    }',
+                'error_message' => 'MoreSpecificReturnType',
+            ],
             'nativeArrayReturnTypeMustRespectTheInheritedIterableDocblock' => [
                 'code' => '<?php
                     abstract class Base {
@@ -4339,7 +4374,7 @@ final class ReturnTypeTest extends TestCase
                         }
                     }',
                 'error_message' => 'InvalidReturnType',
-                'error_levels' => ['UnusedVariable'],
+                'error_levels' => ['UnusedVariable', 'InvalidArrayOffset'],
             ],
             'codeAfterExhaustiveTypeChecksIsAnalyzed' => [
                 'code' => '<?php

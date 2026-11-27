@@ -211,7 +211,7 @@ final class TKeyedArray extends Atomic
     }
 
     #[Override]
-    public function getId(bool $exact = true, bool $nested = false): string
+    public function getId(bool $exact = true): string
     {
         return $this->format(
             static fn(Union $type): string => $type->getId($exact),
@@ -642,7 +642,6 @@ final class TKeyedArray extends Atomic
             ], $this->from_docblock);
         }
         $cloned->properties = $properties;
-        /** @psalm-suppress PropertyTypeCoercion */
         $cloned->fallback_params = $fallback_params;
         return $cloned;
     }
@@ -682,7 +681,6 @@ final class TKeyedArray extends Atomic
                 ], $this->from_docblock);
             }
             $cloned->properties = $properties;
-            /** @psalm-suppress PropertyTypeCoercion */
             $cloned->fallback_params = $fallback_params;
             return $cloned;
         }

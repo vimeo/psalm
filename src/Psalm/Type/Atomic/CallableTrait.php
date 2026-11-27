@@ -249,7 +249,7 @@ trait CallableTrait
     }
 
     #[Override]
-    public function getId(bool $exact = true, bool $nested = false): string
+    public function getId(bool $exact = true): string
     {
         $param_string = '';
         $return_type_string = '';

@@ -22,6 +22,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Codebase\AssertionsFromInheritanceResolver;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
+use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Provider\NodeDataProvider;
@@ -48,6 +49,7 @@ use Psalm\IssueBuffer;
 use Psalm\Node\Expr\BinaryOp\VirtualIdentical;
 use Psalm\Node\Expr\VirtualConstFetch;
 use Psalm\Node\VirtualName;
+use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Plugin\EventHandler\Event\AfterMethodCallAnalysisEvent;
 use Psalm\StatementsSource;
 use Psalm\Storage\Assertion\Falsy;
@@ -58,20 +60,30 @@ use Psalm\Storage\Assertion\IsNotLooselyEqual;
 use Psalm\Storage\Assertion\IsType;
 use Psalm\Storage\Assertion\Truthy;
 use Psalm\Storage\ClassLikeStorage;
+use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\FunctionStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Storage\Possibilities;
 use Psalm\Type;
 use Psalm\Type\Atomic\Scalar;
+use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TBool;
+use Psalm\Type\Atomic\TFloat;
+use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Reconciler;
+use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function array_any;
+use function array_count_values;
 use function array_filter;
 use function array_keys;
 use function array_map;
@@ -188,7 +200,15 @@ abstract class CallAnalyzer
 
             $class_analyzer = $source->getSource();
 
-            $is_final = $method_storage->final;
+            // nothing can override a method of a final class, also one it takes from a trait (a parent's method is
+            // followed with the parent's own rules)
+            $appearing_in_self = $codebase->methods->getAppearingMethodId(
+                new MethodIdentifier($context->self, $method_name_lc),
+            );
+            $is_final = $method_storage->final
+                || ($appearing_in_self !== null
+                    && strtolower($appearing_in_self->fq_class_name) === strtolower($context->self)
+                    && $codebase->classlike_storage_provider->get($context->self)->final);
 
             $visibility = $method_storage->visibility;
 
@@ -315,6 +335,8 @@ abstract class CallAnalyzer
 
     /**
      * @param  list<PhpParser\Node\Arg>   $args
+     * @param  list<MethodIdentifier> $intersection_method_ids the method as the other members of an intersection
+     *                                                         receiver declare it
      */
     public static function checkMethodArgs(
         ?MethodIdentifier $method_id,
@@ -324,6 +346,8 @@ abstract class CallAnalyzer
         CodeLocation $code_location,
         StatementsAnalyzer $statements_analyzer,
         bool $static_is_called_class = false,
+        ?FunctionLikeStorage $overload = null,
+        array $intersection_method_ids = [],
     ): bool {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -338,7 +362,7 @@ abstract class CallAnalyzer
             ) !== false;
         }
 
-        $method_params = $codebase->methods->getMethodParams(
+        $method_params = $overload !== null ? [] : $codebase->methods->getMethodParams(
             $method_id,
             $statements_analyzer,
             $args,
@@ -433,6 +457,13 @@ abstract class CallAnalyzer
             }
         }
 
+        // one storage per call, as for functions: the parameters and the return type of the overload, the sinks,
+        // `@param-out` and the rest of what the real parameters declare
+        if ($overload !== null) {
+            $method_storage = $method_storage?->withOverload($overload);
+            $method_params = $method_storage->params ?? $overload->params;
+        }
+
         if (ArgumentsAnalyzer::analyze(
             $statements_analyzer,
             $args,
@@ -449,6 +480,18 @@ abstract class CallAnalyzer
                 $statements_analyzer,
                 $class_storage->declaring_method_ids[$method_name] ?? $method_id,
                 $args,
+                $code_location,
+            );
+        }
+
+        if ($intersection_method_ids) {
+            $method_params = self::widenIntersectionParams(
+                $codebase,
+                $statements_analyzer,
+                $method_params,
+                $intersection_method_ids,
+                $args,
+                $context,
                 $code_location,
             );
         }
@@ -478,6 +521,146 @@ abstract class CallAnalyzer
         }
 
         return true;
+    }
+
+    /**
+     * An object of an intersection type implements the method of every member, so an argument may fit any of their
+     * declarations: a parameter whose own declaration doesn't accept its argument takes the argument's type when each
+     * of its parts fits one of the declarations
+     *
+     * @param  list<FunctionLikeParameter> $method_params
+     * @param  list<MethodIdentifier> $intersection_method_ids
+     * @param  list<PhpParser\Node\Arg> $args
+     * @return list<FunctionLikeParameter>
+     */
+    private static function widenIntersectionParams(
+        Codebase $codebase,
+        StatementsAnalyzer $statements_analyzer,
+        array $method_params,
+        array $intersection_method_ids,
+        array $args,
+        Context $context,
+        CodeLocation $code_location,
+    ): array {
+        $declared_params = [];
+
+        foreach ($intersection_method_ids as $other_method_id) {
+            $other_class_storage = $codebase->classlike_storage_provider->get($other_method_id->fq_class_name);
+
+            $declared_params[] = [
+                $other_class_storage,
+                $codebase->methods->getMethodParams(
+                    $other_method_id,
+                    $statements_analyzer,
+                    $args,
+                    $context,
+                    $code_location,
+                ),
+            ];
+        }
+
+        $param_offsets = [];
+
+        foreach ($args as $argument_offset => $arg) {
+            if ($arg->unpack) {
+                continue;
+            }
+
+            $param_offsets[$argument_offset] = $argument_offset;
+
+            if ($arg->name !== null) {
+                unset($param_offsets[$argument_offset]);
+
+                foreach ($method_params as $offset => $method_param) {
+                    if ($method_param->name === $arg->name->name) {
+                        $param_offsets[$argument_offset] = $offset;
+                        break;
+                    }
+                }
+            }
+        }
+
+        // a parameter several arguments go to (a named argument repeating a positional one) keeps its declared type
+        $argument_counts = array_count_values($param_offsets);
+
+        foreach ($param_offsets as $argument_offset => $i) {
+            $arg = $args[$argument_offset];
+            $param = $method_params[$i] ?? null;
+            $arg_type = $statements_analyzer->node_data->getType($arg->value);
+
+            if ($argument_counts[$i] > 1
+                || $param === null
+                || $param->type === null
+                || $param->by_ref
+                || $param->is_variadic
+                || $param->type->hasTemplate()
+                || $arg_type === null
+                || $arg_type->hasMixed()
+                || $arg_type->hasTemplate()
+                || UnionTypeComparator::isContainedBy($codebase, $arg_type, $param->type)
+            ) {
+                continue;
+            }
+
+            $declared_types = [$param->type];
+
+            foreach ($declared_params as [$other_class_storage, $other_params]) {
+                $other_param = $other_params[$i] ?? null;
+
+                // the other declaration may name its parameters in another order
+                if ($arg->name !== null) {
+                    $other_param = null;
+
+                    foreach ($other_params as $candidate_param) {
+                        if ($candidate_param->name === $arg->name->name) {
+                            $other_param = $candidate_param;
+                            break;
+                        }
+                    }
+                }
+
+                if ($other_param === null
+                    || $other_param->by_ref
+                    || $other_param->is_variadic
+                    || $other_param->type?->hasTemplate()
+                ) {
+                    continue;
+                }
+
+                $declared_types[] = $other_param->type
+                    ? TypeExpander::expandUnion(
+                        $codebase,
+                        $other_param->type,
+                        $other_class_storage->name,
+                        $other_class_storage->name,
+                        $other_class_storage->parent_class,
+                    )
+                    : Type::getMixed();
+            }
+
+            foreach ($arg_type->getAtomicTypes() as $arg_atomic_type) {
+                $arg_part_type = new Union([$arg_atomic_type]);
+
+                if (!array_any(
+                    $declared_types,
+                    static fn(Union $declared_type): bool => UnionTypeComparator::isContainedBy(
+                        $codebase,
+                        $arg_part_type,
+                        $declared_type,
+                    ),
+                )) {
+                    continue 2;
+                }
+            }
+
+            $param = clone $param;
+            $param->type = $arg_type;
+            $param->signature_type = null;
+            $method_params[$i] = $param;
+        }
+
+        // only existing offsets were replaced
+        return array_values($method_params);
     }
 
     /**
@@ -596,11 +779,14 @@ abstract class CallAnalyzer
 
     /**
      * @param PhpParser\Node\Scalar\String_|PhpParser\Node\Expr\Array_|PhpParser\Node\Expr\BinaryOp\Concat $callable_arg
+     * @param ?Context $context resolves the variable of an `[$object, 'method']` argument that is not analysed yet,
+     *                          as in a params provider
      * @return list<non-empty-string>
      */
     public static function getFunctionIdsFromCallableArg(
         FileSource $file_source,
         PhpParser\Node\Expr $callable_arg,
+        ?Context $context = null,
     ): array {
         if ($callable_arg instanceof PhpParser\Node\Expr\BinaryOp\Concat) {
             if ($callable_arg->left instanceof PhpParser\Node\Expr\ClassConstFetch
@@ -666,9 +852,19 @@ abstract class CallAnalyzer
             return [$fq_class_name . '::' . $method_name_arg->value];
         }
 
-        if (!$file_source instanceof StatementsAnalyzer
-            || !($class_arg_type = $file_source->node_data->getType($class_arg))
+        $class_arg_type = $file_source instanceof StatementsAnalyzer
+            ? $file_source->node_data->getType($class_arg)
+            : null;
+
+        if (!$class_arg_type
+            && $context
+            && $class_arg instanceof PhpParser\Node\Expr\Variable
+            && is_string($class_arg->name)
         ) {
+            $class_arg_type = $context->vars_in_scope['$' . $class_arg->name] ?? null;
+        }
+
+        if (!$class_arg_type) {
             return [];
         }
 
@@ -1926,5 +2122,77 @@ abstract class CallAnalyzer
                 }
             }
         }
+    }
+
+    /**
+     * The value naming the method of a call (`$object->$name()`, `A::$name()`) chooses the code it runs, like the name
+     * of `$name()` or the method of `[$object, $name]()`.
+     */
+    public static function addMethodNameSink(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr $stmt,
+        PhpParser\Node\Expr $name,
+        Context $context,
+    ): void {
+        $taint_flow_graph = $statements_analyzer->taint_flow_graph;
+        $name_type = $statements_analyzer->node_data->getType($name);
+        $codebase = $statements_analyzer->getCodebase();
+
+        if (!$taint_flow_graph
+            || $name_type === null
+            || $name_type->parent_nodes === []
+            || !self::canBeMethodName($name_type)
+            || $codebase->config->suppressesIssueType($statements_analyzer->getSuppressedIssues(), 'TaintedInput')
+        ) {
+            return;
+        }
+
+        $sink = DataFlowNode::getForCallableArg(
+            'dynamic-method-call',
+            'variable-method-call',
+            0,
+            new CodeLocation($statements_analyzer->getSource(), $name),
+            TaintKind::INPUT_CALLABLE,
+        );
+
+        $taint_flow_graph->addSink($sink);
+
+        $event = new AddRemoveTaintsEvent($stmt, $context, $statements_analyzer, $codebase);
+
+        $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
+        $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
+
+        $taints = $added_taints & ~$removed_taints;
+        if ($taints !== 0) {
+            $taint_flow_graph->addSource($sink->setTaints($taints));
+        }
+
+        foreach ($name_type->parent_nodes as $parent_node) {
+            $taint_flow_graph->addPath($parent_node, $sink, 'call', $added_taints, $removed_taints);
+        }
+    }
+
+    /**
+     * PHP throws before the call for a method name that is not a string, objects with `__toString()` included.
+     *
+     * @psalm-pure
+     */
+    private static function canBeMethodName(Union $name_type): bool
+    {
+        foreach ($name_type->getAtomicTypes() as $atomic) {
+            if (!$atomic instanceof TArray
+                && !$atomic instanceof TKeyedArray
+                && !$atomic instanceof TNamedObject
+                && !$atomic instanceof TObject
+                && !$atomic instanceof TNull
+                && !$atomic instanceof TBool
+                && !$atomic instanceof TInt
+                && !$atomic instanceof TFloat
+            ) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

@@ -49,6 +49,7 @@ use Psalm\Issue\PositionalArgumentNotAllowed;
 use Psalm\Issue\PossiblyInvalidArgument;
 use Psalm\IssueBuffer;
 use Psalm\Node\VirtualArg;
+use Psalm\Plugin\EventHandler\Event\AddRemoveCallTaintsEvent;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\FunctionLikeStorage;
@@ -876,7 +877,7 @@ final class ArgumentAnalyzer
             // the template a conditional return type reads a parameter through stands for the argument itself:
             // an argument that does not fit the parameter is still what the condition is about
             $is_param_itself = str_starts_with($template_type->param_name, 'TGeneratedFromParam')
-                && $declared_param_type->isSingle()
+                && $declared_param_type->isSingleAtomic()
                 && ($declared_atomic = $declared_param_type->getSingleAtomic()) instanceof TTemplateParam
                 && $declared_atomic->param_name === $template_type->param_name
                 && !$arg_type->hasMixed();
@@ -1181,7 +1182,7 @@ final class ArgumentAnalyzer
             $param_type = self::resolveTypeVariablesInCallables($param_type, $input_type, $codebase);
         }
 
-        if ($param_type->hasCallableType() && $param_type->isSingle()) {
+        if ($param_type->hasCallableType() && $param_type->isSingleAtomic()) {
             // we do this replacement early because later we don't have access to the
             // $statements_analyzer, which is necessary to understand string function names
             $input_type = $input_type->getBuilder();
@@ -1617,7 +1618,7 @@ final class ArgumentAnalyzer
                 $method_storage = $codebase->methods->getStorage($potential_method_id);
 
                 $lhs_atomic = $lhs->getSingleAtomic();
-                if ($lhs->isSingle()
+                if ($lhs->isSingleAtomic()
                     && $lhs->hasNamedObjectType()
                     && ($lhs->isStaticObject()
                         || ($lhs_atomic instanceof TNamedObject
@@ -1649,7 +1650,7 @@ final class ArgumentAnalyzer
                             return false;
                         }
                     }
-                } elseif ($lhs->isSingle()) {
+                } elseif ($lhs->isSingleAtomic()) {
                     // a function calling the callback from the class of its method reaches the non-public ones
                     $non_public_reachable = !self::isCalledOutsideOfTheClassScope(
                         $potential_method_id,
@@ -1738,7 +1739,7 @@ final class ArgumentAnalyzer
         foreach ($param_type->getAtomicTypes() as $param_type_part) {
             if ($param_type_part instanceof TClassString
                 && $input_expr instanceof PhpParser\Node\Scalar\String_
-                && $param_type->isSingle()
+                && $param_type->isSingleAtomic()
             ) {
                 if (ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
                     $statements_analyzer,
@@ -1940,8 +1941,11 @@ final class ArgumentAnalyzer
             $statements_analyzer->getFQCLN(),
             $statements_analyzer,
         );
-        
-        if (!$var_id) {
+
+        // the call doesn't define an undefined variable
+        if (!$var_id
+            || ($input_expr instanceof PhpParser\Node\Expr\Variable && !isset($context->vars_in_scope[$var_id]))
+        ) {
             return;
         }
 
@@ -2060,6 +2064,48 @@ final class ArgumentAnalyzer
     }
 
     /**
+     * What the handlers add to and remove from an argument, and what it can't carry: the HTML of what code running
+     * from the command line prints, and, where taint analysis runs, what the call taint handlers remove and what its
+     * type can't hold
+     *
+     * @return array{int, int}
+     */
+    private static function getArgumentTaints(
+        StatementsAnalyzer $statements_analyzer,
+        Context $context,
+        PhpParser\Node\Expr $expr,
+        string $cased_method_id,
+        int $argument_offset,
+        Union $input_type,
+        CodeLocation $arg_location,
+    ): array {
+        $codebase = $statements_analyzer->getCodebase();
+        $dispatcher = $codebase->config->eventDispatcher;
+
+        $event = new AddRemoveTaintsEvent($expr, $context, $statements_analyzer, $codebase);
+        $added_taints = $dispatcher->dispatchAddTaints($event);
+        $removed_taints = $dispatcher->dispatchRemoveTaints($event);
+
+        // printed by code only running from the command line: to a terminal
+        if ($expr->getAttribute(CliOutput::PRINTED_ATTRIBUTE) === true) {
+            $removed_taints |= CliOutput::HTML_TAINTS;
+        }
+
+        if (!$statements_analyzer->getTaintFlowGraphWithSuppressed()) {
+            return [$added_taints, $removed_taints];
+        }
+
+        [$call_added_taints, $call_removed_taints] = $dispatcher->dispatchAddRemoveCallTaints(
+            new AddRemoveCallTaintsEvent($codebase, $cased_method_id, $argument_offset, $input_type, $arg_location),
+        );
+
+        return [
+            $added_taints | $call_added_taints,
+            $removed_taints | $call_removed_taints | $input_type->getTaintsToRemove($codebase->getInputTaints()),
+        ];
+    }
+
+    /**
      * @psalm-pure
      */
     private static function hasStringableObject(Union $type): bool
@@ -2132,17 +2178,15 @@ final class ArgumentAnalyzer
         }
         $taint_flow_graph = $statements_analyzer->getTaintFlowGraphWithSuppressed();
 
-        $removed_taints = $taint_flow_graph ? $input_type->getTaintsToRemove($codebase->getInputTaints()) : 0;
-
-        $event = new AddRemoveTaintsEvent($expr, $context, $statements_analyzer, $codebase);
-
-        $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
-        $removed_taints |= $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
-
-        // printed by code only running from the command line: to a terminal
-        if ($expr->getAttribute(CliOutput::PRINTED_ATTRIBUTE) === true) {
-            $removed_taints |= CliOutput::HTML_TAINTS;
-        }
+        [$added_taints, $removed_taints] = self::getArgumentTaints(
+            $statements_analyzer,
+            $context,
+            $expr,
+            $cased_method_id,
+            $argument_offset,
+            $input_type,
+            $arg_location,
+        );
 
         $callable_kind = $in_call_map ? 'builtin' : ($method_id ? 'magic-method' : 'callable-object');
 
@@ -2324,8 +2368,10 @@ final class ArgumentAnalyzer
             }
         }
 
+        // each parameter an unpacked argument fills takes its own elements of it
         $argument_value_node = DataFlowNode::getForAssignment(
-            'call to ' . $cased_method_id,
+            'call to ' . $cased_method_id
+                . ($unpacked_argument_offset !== null ? ' unpacked #' . ($unpacked_argument_offset + 1) : ''),
             $arg_location,
         );
 
@@ -2577,7 +2623,9 @@ final class ArgumentAnalyzer
 
         if ($unpacked_argument_offset !== null && $function_param->is_variadic) {
             $unpacked_type = $statements_analyzer->node_data->getType($expr);
-            $unpacked_array = $unpacked_type && $unpacked_type->isSingle() ? $unpacked_type->getSingleAtomic() : null;
+            $unpacked_array = $unpacked_type && $unpacked_type->isSingleAtomic()
+                ? $unpacked_type->getSingleAtomic()
+                : null;
 
             if (!$unpacked_array instanceof TKeyedArray || $unpacked_array->fallback_params !== null) {
                 $arguments = [[$param_offset, null, true, null]];

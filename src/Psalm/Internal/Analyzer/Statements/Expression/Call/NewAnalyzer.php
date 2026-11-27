@@ -36,6 +36,7 @@ use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\Type\TypeVariableBounds;
+use Psalm\Internal\TypeVisitor\ContainsStaticVisitor;
 use Psalm\Issue\AbstractInstantiation;
 use Psalm\Issue\DeprecatedClass;
 use Psalm\Issue\ImpureMethodCall;
@@ -92,7 +93,6 @@ use function in_array;
 use function is_int;
 use function is_string;
 use function ltrim;
-use function preg_match;
 use function reset;
 use function strtolower;
 
@@ -355,7 +355,12 @@ final class NewAnalyzer extends CallAnalyzer
             }
 
             if ($stmt->class instanceof PhpParser\Node\Stmt\Class_) {
-                $extends = $stmt->class->extends ? (string) $stmt->class->extends : null;
+                $extends = $stmt->class->extends
+                    ? ClassLikeAnalyzer::getFQCLNFromNameObject(
+                        $stmt->class->extends,
+                        $statements_analyzer->getAliases(),
+                    )
+                    : null;
                 $result_atomic_type = new TAnonymousClassInstance($fq_class_name, false, $extends);
             } else {
                 //if the class is a Name, it can't represent a child
@@ -578,9 +583,13 @@ final class NewAnalyzer extends CallAnalyzer
             if ($source instanceof FunctionLikeAnalyzer) {
                 $function_storage = $source->getFunctionLikeStorage($statements_analyzer);
 
-                if ($function_storage->return_type
-                    && preg_match('/\bstatic\b/', $function_storage->return_type->getId())
-                ) {
+                $static_visitor = new ContainsStaticVisitor();
+
+                if ($function_storage->return_type) {
+                    $static_visitor->traverse($function_storage->return_type);
+                }
+
+                if ($static_visitor->matches()) {
                     IssueBuffer::maybeAdd(
                         new UnsafeGenericInstantiation(
                             'Cannot safely instantiate generic class ' . $fq_class_name
@@ -1499,7 +1508,7 @@ final class NewAnalyzer extends CallAnalyzer
         Context $context,
         Union $stmt_class_type,
     ): ?string {
-        if (!$stmt_class_type->isSingle()) {
+        if (!$stmt_class_type->isSingleAtomic()) {
             return null;
         }
 
@@ -1721,7 +1730,7 @@ final class NewAnalyzer extends CallAnalyzer
                         $generated_type = new TObject();
 
                         if ($lhs_type_part->as_type->hasObjectType()
-                            && $lhs_type_part->as_type->isSingle()
+                            && $lhs_type_part->as_type->isSingleAtomic()
                         ) {
                             foreach ($lhs_type_part->as_type->getAtomicTypes() as $typeof_type_atomic) {
                                 if ($typeof_type_atomic instanceof TNamedObject) {

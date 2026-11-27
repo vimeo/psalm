@@ -58,6 +58,21 @@ final class UnusedVariableTest extends TestCase
     public static function providerValidCodeParse(): array
     {
         return [
+            'methodNameOfAStaticCallOnAStringIsUsed' => [
+                'code' => '<?php
+                    function f(string $class): void {
+                        $name = "run";
+                        $class::$name();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['InvalidStringClass'],
+            ],
+            'methodNameOfAStaticCallOnAnUndefinedClassIsUsed' => [
+                'code' => '<?php
+                    $name = "run";
+                    /** @psalm-suppress UndefinedClass */
+                    MissingLibrary::$name();',
+            ],
             'variableIncrementedInTheConditionOfAnIfInALoopIsUsed' => [
                 'code' => '<?php
                     /**
@@ -98,6 +113,20 @@ final class UnusedVariableTest extends TestCase
                     echo f("x");',
                 'assertions' => [],
                 'ignored_issues' => ['UndefinedClass', 'MixedReturnStatement', 'MixedInferredReturnType'],
+            ],
+            'paramWrittenToAnArrayInAnImpossibleBranchIsUsed' => [
+                'code' => '<?php
+                    function f(int $v): void {
+                        $a = ["test" => null];
+
+                        if ($a["test"] !== null) {
+                            $a["x"] = $v;
+                        }
+
+                        echo $a["test"];
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['TypeDoesNotContainType'],
             ],
             'assignmentBeforeABreakInTheElseIsReadAfterTheIf' => [
                 'code' => '<?php
@@ -3167,6 +3196,9 @@ final class UnusedVariableTest extends TestCase
                             return new self($value);
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'noUnusedVariableDefinedInBranchOfIf' => [
                 'code' => '<?php

@@ -179,7 +179,7 @@ final class ArrayAnalyzer
                 ) {
                     IssueBuffer::maybeAdd(
                         new InvalidArrayOffset(
-                            'Cannot create offset of type ' . $item_key_type->getKey() . ', expecting array-key',
+                            'Cannot create offset of type ' . $item_key_type->getId() . ', expecting array-key',
                             new CodeLocation($statements_analyzer->getSource(), $stmt),
                         ),
                         $statements_analyzer->getSuppressedIssues(),
@@ -281,7 +281,7 @@ final class ArrayAnalyzer
         $has_int = false;
         foreach ($input_types as $atomic_type) {
             if ($atomic_type instanceof TNumericString
-                || ($atomic_type instanceof TInt && $atomic_type->getKey() === 'int')
+                || $atomic_type::class === TInt::class
             ) {
                 $has_int = true;
             }
@@ -532,7 +532,7 @@ final class ArrayAnalyzer
 
                     $added_taints = 0;
                     $removed_taints = 0;
-                    if ($item_value_type->isSingle() && $item_value_type->hasLiteralValue()) {
+                    if ($item_value_type->allSpecificLiterals()) {
                         // literal values carry no taint
                         $removed_taints = TaintKind::ALL;
                     } elseif ($taint_flow_graph) {
@@ -580,7 +580,7 @@ final class ArrayAnalyzer
 
                     $added_taints = 0;
                     $removed_taints = 0;
-                    if ($item_key_type->isSingle() && $item_key_type->hasLiteralValue()) {
+                    if ($item_key_type->allSpecificLiterals()) {
                         // literal keys carry no taint
                         $removed_taints = TaintKind::ALL;
                     } elseif ($taint_flow_graph) {

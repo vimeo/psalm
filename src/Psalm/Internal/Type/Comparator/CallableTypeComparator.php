@@ -40,8 +40,10 @@ use function array_slice;
 use function assert;
 use function count;
 use function end;
+use function in_array;
 use function is_numeric;
 use function ltrim;
+use function str_contains;
 use function str_starts_with;
 use function strpos;
 use function strtolower;
@@ -450,7 +452,7 @@ final class CallableTypeComparator
             );
 
             // a receiver of a template type is the type it is bound by
-            if ($callable_object instanceof TTemplateParam && $callable_object->as->isSingle()) {
+            if ($callable_object instanceof TTemplateParam && $callable_object->as->isSingleAtomic()) {
                 $callable_object = $callable_object->as->getSingleAtomic();
             }
 
@@ -804,7 +806,7 @@ final class CallableTypeComparator
             $method_id = self::getCallableMethodIdFromTKeyedArray($input_type_part, $codebase);
             if ($method_id && $method_id !== 'not-callable') {
                 $callable_object = isset($input_type_part->properties[0])
-                    && $input_type_part->properties[0]->isSingle()
+                    && $input_type_part->properties[0]->isSingleAtomic()
                     ? $input_type_part->properties[0]->getSingleAtomic()
                     : null;
 
@@ -1017,6 +1019,75 @@ final class CallableTypeComparator
     }
 
     /**
+     * `["Class", "method"]` or `[$object_of_a_final_class, "method"]` with a literal method name, where the class has
+     * no such method: neither a real one, nor one from `@method`, `@mixin`, `__call` or `__callStatic`
+     */
+    public static function isLiteralPairOfNoMethod(Codebase $codebase, TKeyedArray $pair): bool
+    {
+        if (count($pair->properties) !== 2
+            || $pair->fallback_params !== null
+            || !isset($pair->properties[0], $pair->properties[1])
+            || !$pair->properties[1]->isSingleStringLiteral()
+            // `parent::method` is resolved by PHP
+            || str_contains($pair->properties[1]->getSingleStringLiteral()->value, '::')
+        ) {
+            return false;
+        }
+
+        $class_type = $pair->properties[0];
+
+        if ($class_type->isSingleStringLiteral()) {
+            $class_name_lc = strtolower($class_type->getSingleStringLiteral()->value);
+
+            // `self`, `parent` and `static` are not resolved here
+            if (in_array($class_name_lc, ['self', 'parent', 'static'], true)) {
+                return false;
+            }
+        } elseif (!$class_type->isSingleAtomic()
+            || !($object_type = $class_type->getSingleAtomic()) instanceof TNamedObject
+            || $object_type->extra_types
+            // the object can be of a subclass that declares the method
+            || !$codebase->classExists($object_type->value)
+            || !$codebase->classlike_storage_provider->get($object_type->value)->final
+        ) {
+            return false;
+        }
+
+        $method_id = self::getCallableMethodIdFromTKeyedArray($pair, $codebase);
+
+        if (!$method_id instanceof MethodIdentifier) {
+            return $method_id === 'not-callable';
+        }
+
+        if ($codebase->classlike_storage_provider->has($method_id->fq_class_name)) {
+            $storage = $codebase->classlike_storage_provider->get($method_id->fq_class_name);
+
+            if (isset($storage->pseudo_methods[$method_id->method_name])
+                || isset($storage->pseudo_static_methods[$method_id->method_name])
+                || $codebase->methodExists(new MethodIdentifier($method_id->fq_class_name, '__call'))
+                || $codebase->methodExists(new MethodIdentifier($method_id->fq_class_name, '__callstatic'))
+            ) {
+                return false;
+            }
+
+            foreach ([
+                $storage->name,
+                ...$storage->parent_classes,
+                ...$storage->used_traits,
+                ...$storage->class_implements,
+            ] as $declaring_class) {
+                if ($codebase->classlike_storage_provider->has($declaring_class)
+                    && $codebase->classlike_storage_provider->get($declaring_class)->getMixins() !== []
+                ) {
+                    return false;
+                }
+            }
+        }
+
+        return self::getCallableFromAtomic($codebase, $pair) === null;
+    }
+
+    /**
      * The classes of an intersection, through template bounds and nested intersections
      *
      * @param array<Atomic> $types
@@ -1101,7 +1172,7 @@ final class CallableTypeComparator
                         );
                     } elseif ($lhs_atomic_type instanceof TTemplateParam) {
                         $lhs_template_type = $lhs_atomic_type->as;
-                        if ($lhs_template_type->isSingle()) {
+                        if ($lhs_template_type->isSingleAtomic()) {
                             $lhs_template_atomic_type = $lhs_template_type->getSingleAtomic();
                             $member_id = null;
                             if ($lhs_template_atomic_type instanceof TNamedObject) {
@@ -1139,7 +1210,7 @@ final class CallableTypeComparator
             if ($codebase) {
                 $class_name = $codebase->classlikes->getUnAliasedName($class_name);
             }
-        } elseif ($lhs->isSingle()) {
+        } elseif ($lhs->isSingleAtomic()) {
             foreach ($lhs->getAtomicTypes() as $lhs_atomic_type) {
                 if ($lhs_atomic_type instanceof TNamedObject) {
                     $class_name = $lhs_atomic_type->value;
@@ -1155,7 +1226,7 @@ final class CallableTypeComparator
                     }
                 } elseif ($lhs_atomic_type instanceof TTemplateParam) {
                     $lhs_template_type = $lhs_atomic_type->as;
-                    if ($lhs_template_type->isSingle()) {
+                    if ($lhs_template_type->isSingleAtomic()) {
                         $lhs_template_atomic_type = $lhs_template_type->getSingleAtomic();
                         if ($lhs_template_atomic_type instanceof TNamedObject) {
                             $class_name = $lhs_template_atomic_type->value;

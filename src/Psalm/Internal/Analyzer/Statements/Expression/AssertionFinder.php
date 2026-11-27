@@ -31,6 +31,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ArrayFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
+use Psalm\Internal\Codebase\CanonicalPaths;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Codebase\StringContext;
 use Psalm\Internal\Codebase\TaintValidations;
@@ -58,6 +59,7 @@ use Psalm\Storage\Assertion\ArrayKeyExists;
 use Psalm\Storage\Assertion\DoesNotHaveAtLeastCount;
 use Psalm\Storage\Assertion\Empty_;
 use Psalm\Storage\Assertion\Falsy;
+use Psalm\Storage\Assertion\HasArrayValue;
 use Psalm\Storage\Assertion\HasAtLeastCount;
 use Psalm\Storage\Assertion\HasExactCount;
 use Psalm\Storage\Assertion\HasMethod;
@@ -126,6 +128,7 @@ use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function array_all;
+use function array_any;
 use function array_filter;
 use function array_keys;
 use function array_map;
@@ -136,6 +139,7 @@ use function count;
 use function explode;
 use function in_array;
 use function is_int;
+use function is_nan;
 use function is_numeric;
 use function is_string;
 use function ltrim;
@@ -515,6 +519,12 @@ final class AssertionFinder
             return self::getPatternMatchAssertions($pattern_match, $source, $this_class_name, $negated);
         }
 
+        if ($source instanceof StatementsAnalyzer
+            && ($prefix_assertions = self::getCanonicalPathPrefixAssertions($conditional, $source, $negated)) !== []
+        ) {
+            return $prefix_assertions;
+        }
+
         $null_position = self::hasNullVariable($conditional, $source);
 
         if ($null_position !== null) {
@@ -795,6 +805,17 @@ final class AssertionFinder
     /**
      * @psalm-pure
      */
+    private static function isLiteralClassStringUnion(Union $type): bool
+    {
+        return !$type->isUnionEmpty() && array_all(
+            $type->getAtomicTypes(),
+            static fn(Atomic $atomic): bool => $atomic instanceof TLiteralClassString,
+        );
+    }
+
+    /**
+     * @psalm-pure
+     */
     private static function withPolarity(Assertion $assertion, bool $negated): Assertion
     {
         return $negated ? $assertion->getNegation() : $assertion;
@@ -840,6 +861,11 @@ final class AssertionFinder
         bool $negated,
     ): void {
         if (UnionTypeComparator::canExpressionTypesBeIdentical($codebase, $value_type, $var_type)) {
+            return;
+        }
+
+        // a possibly undefined variable read in isset mode (`$a?->b ?? 1`) is null, as the reconciler takes it
+        if ($var_type->possibly_undefined && !$var_type->possibly_undefined_from_try && $value_type->isNull()) {
             return;
         }
 
@@ -975,15 +1001,12 @@ final class AssertionFinder
                 $if_types[$first_var_name] = [[new HasMethod($expr->getArgs()[1]->value->value)]];
             }
         } elseif ($function_id === 'in_array'
-            && self::hasTrueThirdArg($expr)
             && $source instanceof StatementsAnalyzer
-            && isset($expr->getArgs()[1])
         ) {
             return self::getInarrayAssertions(
                 $expr,
                 $source,
-                $first_var_name ?? self::getStringCastNeedleVarId($expr, $source, $this_class_name),
-                self::getOperandId($expr->getArgs()[1]->value, $this_class_name, $source),
+                $this_class_name,
             );
         } elseif ($function_id === 'array_key_exists' || $function_id === 'key_exists') {
             return self::getArrayKeyExistsAssertions(
@@ -1018,6 +1041,7 @@ final class AssertionFinder
             return [
                 ...self::processCustomAssertion($expr, $this_class_name, $source),
                 ...self::getUrlStartAssertions($expr, $source, $this_class_name),
+                ...CanonicalPaths::getAssertions($source, $expr->getArgs(), false),
             ];
         } else {
             return self::processCustomAssertion($expr, $this_class_name, $source);
@@ -1212,7 +1236,7 @@ final class AssertionFinder
             return false;
         }
 
-        return $type->getId() === 'bool' && !$type->possibly_undefined;
+        return $type->isBool() && !$type->isTrue() && !$type->isFalse() && !$type->possibly_undefined;
     }
 
     /**
@@ -1300,6 +1324,22 @@ final class AssertionFinder
                 );
             }
         }
+    }
+
+    /**
+     * Whether the expression is a call of a function-like with `@psalm-assert-if-true` or `@psalm-assert-if-false`
+     *
+     * @psalm-capabilities read-props
+     */
+    private static function hasConditionalAssertions(PhpParser\Node\Expr $expr, FileSource $source): bool
+    {
+        return ($expr instanceof PhpParser\Node\Expr\FuncCall
+                || $expr instanceof PhpParser\Node\Expr\MethodCall
+                || $expr instanceof PhpParser\Node\Expr\StaticCall)
+            && !$expr->isFirstClassCallable()
+            && $source instanceof StatementsAnalyzer
+            && ($source->node_data->getIfTrueAssertions($expr) !== null
+                || $source->node_data->getIfFalseAssertions($expr) !== null);
     }
 
     /**
@@ -2043,7 +2083,9 @@ final class AssertionFinder
         if (!$left_variable_class_const) {
             $left_type = $source->node_data->getType($conditional->left);
 
-            if ($left_type && $left_type->isSingle()) {
+            if ($left_type
+                && ($left_type->isSingleAtomic() || self::isLiteralClassStringUnion($left_type))
+            ) {
                 foreach ($left_type->getAtomicTypes() as $type_part) {
                     if ($type_part instanceof TClassString || $type_part instanceof TLiteralClassString) {
                         $left_class_string_t = true;
@@ -2077,7 +2119,9 @@ final class AssertionFinder
         if (!$right_variable_class_const) {
             $right_type = $source->node_data->getType($conditional->right);
 
-            if ($right_type && $right_type->isSingle()) {
+            if ($right_type
+                && ($right_type->isSingleAtomic() || self::isLiteralClassStringUnion($right_type))
+            ) {
                 foreach ($right_type->getAtomicTypes() as $type_part) {
                     if ($type_part instanceof TClassString || $type_part instanceof TLiteralClassString) {
                         $right_class_string_t = true;
@@ -2462,18 +2506,6 @@ final class AssertionFinder
             || strtolower($second_arg->name->getFirst()) !== 'true';
     }
 
-    private static function hasTrueThirdArg(PhpParser\Node\Expr\FuncCall $stmt): bool
-    {
-        if (!isset($stmt->getArgs()[2])) {
-            return false;
-        }
-
-        $third_arg = $stmt->getArgs()[2]->value;
-
-        return $third_arg instanceof PhpParser\Node\Expr\ConstFetch
-            && strtolower($third_arg->name->getFirst()) === 'true';
-    }
-
     /**
      * A nullsafe chain that is null only by short-circuiting is null exactly when the receiver of its nullsafe link
      * is, which holds for a single link: with several, a null intermediate value says nothing. A nullsafe property
@@ -2656,7 +2688,7 @@ final class AssertionFinder
         if ($var_name) {
             if ($base_conditional instanceof PhpParser\Node\Expr\Assign
                 || $base_conditional instanceof PhpParser\Node\Expr\AssignRef
-                || $base_conditional instanceof PhpParser\Node\Expr\AssignOp\Coalesce
+                || $base_conditional instanceof PhpParser\Node\Expr\AssignOp
             ) {
                 $var_name = '=' . $var_name;
             }
@@ -2738,11 +2770,16 @@ final class AssertionFinder
 
         [$base_conditional] = self::getOperands($conditional, $bool_position);
 
-        $var_name = ExpressionIdentifier::getExtendedVarId(
+        $call_var_id = ExpressionIdentifier::getExtendedVarId(
             $base_conditional,
             $this_class_name,
             $source,
         );
+
+        // a call Psalm remembers the result of has an id, but its `@psalm-assert-if-*` assertions say more: they are
+        // given, and the call's own assertion is added to them
+        $has_conditional_assertions = self::hasConditionalAssertions($base_conditional, $source);
+        $var_name = $has_conditional_assertions ? null : $call_var_id;
 
         if ($var_name) {
             if ($strict && !self::isBoolVariable($base_conditional, $source)) {
@@ -2763,6 +2800,12 @@ final class AssertionFinder
                 : [];
 
             $if_types = $operand_holds ? $base_assertions : self::getNegatedAssertions($base_assertions);
+            $if_types = self::addCallAssertion(
+                $if_types,
+                $has_conditional_assertions ? $call_var_id : null,
+                self::isBoolVariable($base_conditional, $source) ? new Falsy() : new IsType(new TFalse()),
+                $negated,
+            );
         } else {
             if ($base_conditional instanceof PhpParser\Node\Expr\FuncCall
                 && !$base_conditional->isFirstClassCallable()
@@ -2814,6 +2857,14 @@ final class AssertionFinder
             }
 
             $if_types = $operand_holds ? $base_assertions : self::getNegatedAssertions($base_assertions);
+            $if_types = self::addCallAssertion(
+                $if_types,
+                $has_conditional_assertions ? $call_var_id : null,
+                $strict && !self::isBoolVariable($base_conditional, $source)
+                    ? new IsType($value ? new TTrue() : new TFalse())
+                    : ($value ? new Truthy() : new Falsy()),
+                $negated,
+            );
         }
 
         if ($strict
@@ -2823,7 +2874,7 @@ final class AssertionFinder
         ) {
             if ($operand_holds
                 && !$codebase->config->allow_bool_to_literal_bool_comparison
-                && $var_type->isSingle()
+                && $var_type->isSingleAtomic()
                 && $var_type->hasBool()
                 && !$var_type->from_docblock
                 && !$conditional instanceof VirtualIdentical
@@ -2850,6 +2901,28 @@ final class AssertionFinder
         }
 
         /** @psalm-suppress LessSpecificReturnStatement */
+        return $if_types;
+    }
+
+    /**
+     * The assertion on a remembered call's own id, as one more conjunct of the call's `@psalm-assert-if-*` assertions
+     *
+     * @param list<array<string, non-empty-list<non-empty-list<Assertion>>>> $if_types
+     * @return list<array<string, non-empty-list<non-empty-list<Assertion>>>>
+     * @psalm-pure
+     */
+    private static function addCallAssertion(
+        array $if_types,
+        ?string $call_var_id,
+        Assertion $assertion,
+        bool $negated,
+    ): array {
+        if ($call_var_id === null) {
+            return $if_types;
+        }
+
+        $if_types[] = [$call_var_id => [[self::withPolarity($assertion, $negated)]]];
+
         return $if_types;
     }
 
@@ -3122,7 +3195,18 @@ final class AssertionFinder
         } else {
             $type = $source->node_data->getType($whichclass_expr);
 
-            if ($type && $var_name) {
+            if ($type && $var_name !== null && !$type->isSingleAtomic() && self::isLiteralClassStringUnion($type)) {
+                $class_assertions = [];
+
+                foreach ($type->getLiteralStrings() as $class_string) {
+                    $class_assertions[] = new IsClassEqual($class_string->value);
+                }
+
+                // the object is of one of the classes, but not being of the class the value holds tells nothing
+                if (!$negated && $class_assertions !== []) {
+                    $if_types[$var_name] = [$class_assertions];
+                }
+            } elseif ($type && $var_name) {
                 foreach ($type->getAtomicTypes() as $type_part) {
                     if ($type_part instanceof TTemplateParamClass) {
                         $if_types[$var_name] = [[self::withPolarity(
@@ -3133,10 +3217,10 @@ final class AssertionFinder
                             )),
                             $negated,
                         )]];
-                    } elseif ($type->isSingle() && $type_part instanceof TLiteralClassString) {
+                    } elseif ($type->isSingleAtomic() && $type_part instanceof TLiteralClassString) {
                         $if_types[$var_name] = [[self::withPolarity(new IsClassEqual($type_part->value), $negated)]];
                     } elseif (!$negated
-                        && $type->isSingle()
+                        && $type->isSingleAtomic()
                         && $type_part instanceof TClassString
                         && $type_part->as_type
                     ) {
@@ -3414,7 +3498,7 @@ final class AssertionFinder
 
             while ($operand instanceof PhpParser\Node\Expr\Assign
                 || $operand instanceof PhpParser\Node\Expr\AssignRef
-                || $operand instanceof PhpParser\Node\Expr\AssignOp\Coalesce
+                || $operand instanceof PhpParser\Node\Expr\AssignOp
                 || $operand instanceof PhpParser\Node\Expr\PreInc
                 || $operand instanceof PhpParser\Node\Expr\PreDec
             ) {
@@ -3555,6 +3639,39 @@ final class AssertionFinder
         return $haystack_var_id === null
             ? []
             : [[$haystack_var_id => [[new MatchesPattern(TaintKind::INPUT_URL_SCHEME)]]]];
+    }
+
+    /**
+     * The assertion that a canonical path starts with a directory (`strpos($path, '/var/app/') === 0`), or none
+     *
+     * @return list<non-empty-array<string, non-empty-list<non-empty-list<Assertion>>>>
+     */
+    private static function getCanonicalPathPrefixAssertions(
+        PhpParser\Node\Expr\BinaryOp $conditional,
+        StatementsAnalyzer $source,
+        bool $negated,
+    ): array {
+        // `strpos() == 0` is also true when it didn't find the prefix (false)
+        if (!$conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical
+            && !$conditional instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical
+        ) {
+            return [];
+        }
+
+        $sides = [[$conditional->left, $conditional->right], [$conditional->right, $conditional->left]];
+        foreach ($sides as [$call, $zero]) {
+            if ($call instanceof PhpParser\Node\Expr\FuncCall
+                && $call->name instanceof PhpParser\Node\Name
+                && $call->name->toLowerString() === 'strpos'
+                && !$call->isFirstClassCallable()
+                && $zero instanceof PhpParser\Node\Scalar\Int_
+                && $zero->value === 0
+            ) {
+                return CanonicalPaths::getAssertions($source, $call->getArgs(), $negated);
+            }
+        }
+
+        return [];
     }
 
     /**
@@ -3744,14 +3861,86 @@ final class AssertionFinder
     private static function getInarrayAssertions(
         PhpParser\Node\Expr\FuncCall $expr,
         StatementsAnalyzer $source,
-        ?string $first_var_name,
-        string $haystack,
+        ?string $this_class_name,
     ): array {
+        $args = $expr->getArgs();
+        $has_unpack = array_any($args, static fn(PhpParser\Node\Arg $arg): bool => $arg->unpack);
+
+        $needle_arg = self::getArgumentOfParameter($args, 0, 'needle');
+        $haystack_arg = self::getArgumentOfParameter($args, 1, 'haystack');
+
+        if ($needle_arg === null || $haystack_arg === null) {
+            return [];
+        }
+
+        $strict_arg = self::getArgumentOfParameter($args, 2, 'strict');
+        $strict = null;
+
+        if ($strict_arg !== null) {
+            $strict_type = $source->node_data->getType($strict_arg->value);
+
+            if ($strict_type !== null) {
+                if ($strict_type->isTrue()) {
+                    $strict = true;
+                } elseif ($strict_type->isFalse()) {
+                    $strict = false;
+                }
+            } elseif ($strict_arg->value instanceof PhpParser\Node\Expr\ConstFetch) {
+                $const_name = strtolower($strict_arg->value->name->getFirst());
+                if ($const_name === 'true') {
+                    $strict = true;
+                } elseif ($const_name === 'false') {
+                    $strict = false;
+                }
+            }
+        } elseif (!$has_unpack) {
+            $strict = false;
+        }
+
+        if ($strict === null) {
+            return [];
+        }
+
+        $first_arg = $needle_arg->value;
+        $haystack_expr = $haystack_arg->value;
+
+        $second_arg_type = $source->node_data->getType($haystack_expr);
+
+        if ($second_arg_type === null) {
+            return [];
+        }
+
+        $first_var_name = ExpressionIdentifier::getExtendedVarId($first_arg, $this_class_name, $source)
+            ?? ($strict ? self::getStringCastNeedleVarId($expr, $source, $this_class_name) : null);
+
+        $haystack_var_name = ExpressionIdentifier::getExtendedVarId($haystack_expr, $this_class_name, $source);
+        $needle_type = $source->node_data->getType($first_arg);
+        $needle_singleton = $needle_type !== null ? self::getInArraySingletonNeedle($needle_type) : null;
+        $is_array_template = $second_arg_type->isSingleAtomic()
+            && self::isArrayTemplate($second_arg_type->getSingleAtomic());
+
+        // When the needle is a single known value, assert on the haystack alone so negating the call yields
+        // a single-variable clause that narrows the haystack's element type.
+        if ($needle_singleton !== null
+            && $haystack_var_name !== null
+            && $haystack_var_name !== $first_var_name
+            && (!$strict
+                || $first_var_name === null
+                || $first_arg instanceof PhpParser\Node\Expr\ClassConstFetch
+                || !$is_array_template)
+        ) {
+            return [[$haystack_var_name => [[new HasArrayValue($needle_singleton, $strict)]]]];
+        }
+
+        if (!$strict) {
+            return [];
+        }
+
+        $haystack = self::getOperandId($haystack_expr, $this_class_name, $source);
         $if_types = [];
 
-        if ($first_var_name
-            && ($second_arg_type = $source->node_data->getType($expr->getArgs()[1]->value))
-            && ($first_arg = $expr->getArgs()[0]->value ?? null)
+        if ($first_var_name !== null
+            && $first_var_name !== ''
             && !$first_arg instanceof PhpParser\Node\Expr\ClassConstFetch
         ) {
             foreach ($second_arg_type->getAtomicTypes() as $atomic_type) {
@@ -3778,7 +3967,7 @@ final class AssertionFinder
                         // - The array may have one of the types but not the others.
                         //
                         // NOTE: the negation of the negation is the original assertion.
-                        if ($value_type->getId() !== '' && !$value_type->isMixed() && !$value_type->hasTemplate()) {
+                        if (!$value_type->isUnionEmpty() && !$value_type->isMixed() && !$value_type->hasTemplate()) {
                             $assertions[] = new InArray($value_type, $haystack);
                         }
                     } else {
@@ -3806,7 +3995,7 @@ final class AssertionFinder
                     if ($assertions !== []) {
                         $if_types[$first_var_name] = [$assertions];
                     }
-                } elseif ($second_arg_type->isSingle() && self::isArrayTemplate($atomic_type)) {
+                } elseif ($second_arg_type->isSingleAtomic() && self::isArrayTemplate($atomic_type)) {
                     $value_of_type = new Union([new TTemplateValueOf(
                         $atomic_type->param_name,
                         $atomic_type->defining_class,
@@ -3814,8 +4003,8 @@ final class AssertionFinder
                     )]);
 
                     // the values of two templates can't be intersected
-                    if (($first_var_type = $source->node_data->getType($first_arg))
-                        && Type::intersectUnionTypes($value_of_type, $first_var_type, $source->getCodebase()) !== null
+                    if ($needle_type !== null
+                        && Type::intersectUnionTypes($value_of_type, $needle_type, $source->getCodebase()) !== null
                     ) {
                         $if_types[$first_var_name] = [[new InArray($value_of_type, $haystack)]];
                     }
@@ -3824,6 +4013,33 @@ final class AssertionFinder
         }
 
         return $if_types ? [$if_types] : [];
+    }
+
+    /**
+     * A needle type that stands for a single runtime value (excluding NAN, which never equals itself).
+     *
+     * @psalm-pure
+     */
+    private static function getInArraySingletonNeedle(Union $needle_type): ?Atomic
+    {
+        if (count($needle_type->getAtomicTypes()) !== 1) {
+            return null;
+        }
+
+        $atomic = $needle_type->getSingleAtomic();
+
+        if ($atomic instanceof TNull
+            || $atomic instanceof TFalse
+            || $atomic instanceof TTrue
+            || $atomic instanceof TLiteralInt
+            || $atomic instanceof TLiteralString
+            || $atomic instanceof TEnumCase
+            || ($atomic instanceof TLiteralFloat && !is_nan($atomic->value))
+        ) {
+            return $atomic;
+        }
+
+        return null;
     }
 
     /**
@@ -3850,12 +4066,14 @@ final class AssertionFinder
     private static function getIntKeyAssertions(int $key, Union $looked_up_type): array
     {
         foreach ($looked_up_type->getAtomicTypes() as $atomic_type) {
-            if ($atomic_type instanceof TTemplateParam) {
-                $atomic_type = $atomic_type->as->isSingle() ? $atomic_type->as->getSingleAtomic() : $atomic_type;
-            }
+            $atomic_types = $atomic_type instanceof TTemplateParam
+                ? $atomic_type->as->getAtomicTypes()
+                : [$atomic_type];
 
-            if (!$atomic_type instanceof TInt && !$atomic_type instanceof TString) {
-                return [new IsLooselyEqual(new TLiteralInt($key))];
+            foreach ($atomic_types as $bound_atomic_type) {
+                if (!$bound_atomic_type instanceof TInt && !$bound_atomic_type instanceof TString) {
+                    return [new IsLooselyEqual(new TLiteralInt($key))];
+                }
             }
         }
 
@@ -3882,7 +4100,7 @@ final class AssertionFinder
         ?string $this_class_name,
         StatementsAnalyzer $source,
     ): ?InArray {
-        $array_atomic = $array_type->isSingle() ? $array_type->getSingleAtomic() : null;
+        $array_atomic = $array_type->isSingleAtomic() ? $array_type->getSingleAtomic() : null;
 
         if (!self::isArrayTemplate($array_atomic)) {
             return null;

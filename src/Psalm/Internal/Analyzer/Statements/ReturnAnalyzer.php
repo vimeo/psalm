@@ -16,6 +16,7 @@ use Psalm\Internal\Analyzer\ClassLikeNameOptions;
 use Psalm\Internal\Analyzer\ClosureAnalyzer;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\ConstructorExits;
+use Psalm\Internal\Analyzer\FunctionLike\ReturnTypeAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\MethodAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
@@ -93,7 +94,7 @@ final class ReturnAnalyzer
 
         $template_type_map = $statements_analyzer->getTemplateTypeMap() ?? [];
 
-        if (!$literal_type->isSingle()) {
+        if (!$literal_type->isSingleAtomic()) {
             return null;
         }
 
@@ -104,7 +105,7 @@ final class ReturnAnalyzer
         }
 
         foreach ($context->vars_in_scope as $var_type) {
-            if ($var_type->isSingle()
+            if ($var_type->isSingleAtomic()
                 && !$var_type->possibly_undefined
                 && ($template_param = $var_type->getSingleAtomic()) instanceof TTemplateParam
                 && $template_param->as->getId() === $literal_type->getId()
@@ -477,6 +478,19 @@ final class ReturnAnalyzer
                     );
                 }
 
+                // a docblock type that the signature rules out is reported where the function is checked; what the
+                // body returns is checked against what PHP enforces
+                if ($storage->signature_return_type
+                    && ReturnTypeAnalyzer::isDocblockReturnTypeRejected(
+                        $codebase,
+                        $storage,
+                        $context->self,
+                        $statements_analyzer->getSource() instanceof ClosureAnalyzer,
+                    )
+                ) {
+                    $declared_return_type = $storage->signature_return_type;
+                }
+
                 if ($declared_return_type && !$declared_return_type->hasMixed()) {
                     $local_return_type = $source->getLocalReturnType(
                         $declared_return_type,
@@ -819,7 +833,11 @@ final class ReturnAnalyzer
 
         $return_type = TypeCombiner::combine($return_types, $codebase);
 
-        return $return_type->hasMixed() ? null : $return_type;
+        // a generator declared with TReturn void may return null
+        return $return_type->hasMixed()
+            || ($return_type->hasType('void') && $statements_analyzer->node_data->getType($stmt)?->isNull())
+            ? null
+            : $return_type;
     }
 
     /**
@@ -1012,7 +1030,7 @@ final class ReturnAnalyzer
         }
 
         // cannot infer if we have union/intersection types
-        if (!$parent_fn_storage->return_type->isSingle()) {
+        if (!$parent_fn_storage->return_type->isSingleAtomic()) {
             return;
         }
 

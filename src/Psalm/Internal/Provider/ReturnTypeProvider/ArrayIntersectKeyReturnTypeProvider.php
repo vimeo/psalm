@@ -41,7 +41,7 @@ final class ArrayIntersectKeyReturnTypeProvider implements FunctionReturnTypePro
 
         if (count($call_args) < 2
             || !($array_arg_type = $type_provider->getType($call_args[0]->value))
-            || !$array_arg_type->isSingle()
+            || !$array_arg_type->isSingleAtomic()
             || !$array_arg_type->hasArray()
             || !($array_type = ArrayType::infer($array_arg_type->getArray()))
         ) {
@@ -55,7 +55,7 @@ final class ArrayIntersectKeyReturnTypeProvider implements FunctionReturnTypePro
             if ($call_arg->unpack
                 || $call_arg->name
                 || !($other_arg_type = $type_provider->getType($call_arg->value))
-                || !$other_arg_type->isSingle()
+                || !$other_arg_type->isSingleAtomic()
             ) {
                 return null;
             }

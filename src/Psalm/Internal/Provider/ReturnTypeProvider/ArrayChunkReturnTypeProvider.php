@@ -36,13 +36,13 @@ final class ArrayChunkReturnTypeProvider implements FunctionReturnTypeProviderIn
         $statements_source = $event->getStatementsSource();
         if (count($call_args) >= 2
             && ($array_arg_type = $statements_source->getNodeTypeProvider()->getType($call_args[0]->value))
-            && $array_arg_type->isSingle()
+            && $array_arg_type->isSingleAtomic()
             && $array_arg_type->hasArray()
             && ($array_type = ArrayType::infer($array_arg_type->getArray()))
         ) {
             $preserve_keys = isset($call_args[2])
                 && ($preserve_keys_arg_type = $statements_source->getNodeTypeProvider()->getType($call_args[2]->value))
-                && (string) $preserve_keys_arg_type !== 'false';
+                && !$preserve_keys_arg_type->isFalse();
 
             return Type::getList(
                 new Union([

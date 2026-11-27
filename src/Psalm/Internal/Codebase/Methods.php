@@ -831,7 +831,7 @@ final class Methods
                 && isset($args[0])
                 && $source_analyzer
                 && ($first_arg_type = $source_analyzer->getNodeTypeProvider()->getType($args[0]->value))
-                && $first_arg_type->isSingle()
+                && $first_arg_type->isSingleAtomic()
             ) {
                 foreach ($first_arg_type->getAtomicTypes() as $atomic_type) {
                     if ($atomic_type instanceof TCallable

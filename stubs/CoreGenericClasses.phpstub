@@ -756,6 +756,7 @@ class DateInterval
     /**
      * @throws Exception when the $duration cannot be parsed as an interval.
      * @link https://php.net/manual/en/dateinterval.construct.php
+     * @psalm-pure
      */
     public function __construct(string $duration = '') {}
 
@@ -780,6 +781,11 @@ class DateInterval
 
 class DateTime implements DateTimeInterface
 {
+    /**
+     * @psalm-capabilities time
+     */
+    public function __construct(string $datetime = "now", ?DateTimeZone $timezone = null) {}
+
     /**
      * @psalm-mutation-free
      * @psalm-ignore-falsable-return

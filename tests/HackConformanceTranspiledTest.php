@@ -288,6 +288,53 @@ final class HackConformanceTranspiledTest extends TestCase
                 'ignored_issues' => ['InvalidTemplateParam'],
                 'php_version' => '8.3',
             ],
+            'type_variables/foreach_over_covariant_nothing' => [
+                // a loop over the `vec<TValue>` of a covariant `new` that nothing constrains
+                // (`TValue` is `nothing`) accepts any use of its item.
+                'code' => '<?php
+                    /** @template-covariant TValue of Countable */
+                    final class Bounded {
+                        /**
+                         * @psalm-impure
+                         * @return list<TValue>
+                         */
+                        public function all(): array { return []; }
+                    }
+
+                    /** @psalm-impure */
+                    function run(): void {
+                        foreach ((new Bounded())->all() as $item) {
+                            echo count($item);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'type_variables/foreach_over_nothing' => [
+                // a loop over a `vec<nothing>` accepts any use of its item: nothing is a
+                // subtype of every type, so any use of the item is accepted.
+                'code' => '<?php
+                    final class User {
+                        public int $id = 0;
+                    }
+
+                    /**
+                     * @psalm-impure
+                     * @return list<never>
+                     */
+                    function nothing(): array { return []; }
+
+                    /** @psalm-impure */
+                    function run(): void {
+                        foreach (nothing() as $user) {
+                            echo $user->id;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
             'type_variables/method_call_on_element' => [
                 // method call on a foreach element of a type-variable list.
                 'code' => '<?php

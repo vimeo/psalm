@@ -112,17 +112,19 @@ use function explode;
 use function hexdec;
 use function in_array;
 use function is_int;
-use function is_numeric;
 use function ltrim;
 use function octdec;
 use function preg_match;
 use function preg_replace;
 use function reset;
+use function spl_object_id;
 use function str_contains;
 use function str_ends_with;
 use function str_starts_with;
 use function strlen;
 use function strpos;
+use function strrev;
+use function strspn;
 use function strtolower;
 use function strtr;
 use function substr;
@@ -157,14 +159,7 @@ final class TypeParser
             $only_token = $type_tokens[0];
 
             // Note: valid identifiers can include class names or $this
-            if (!preg_match('@^(\$this|\\\\?[a-zA-Z_\x7f-\xff][\\\\\-0-9a-zA-Z_\x7f-\xff]*)$@', $only_token[0])) {
-                if (!is_numeric($only_token[0])
-                    && str_contains($only_token[0], '\'')
-                    && str_contains($only_token[0], '"')
-                ) {
-                    throw new TypeParseTreeException("Invalid type '$only_token[0]'");
-                }
-            } else {
+            if (preg_match('@^(\$this|\\\\?[a-zA-Z_\x7f-\xff][\\\\\-0-9a-zA-Z_\x7f-\xff]*)$@', $only_token[0])) {
                 $only_token[0] = TypeTokenizer::fixScalarTerms($only_token[0], $analysis_php_version_id);
 
                 $atomic = Atomic::create(
@@ -563,10 +558,7 @@ final class TypeParser
         }
 
         if ($parse_tree->value[0] === '"' || $parse_tree->value[0] === '\'') {
-            return Type::getAtomicStringFromLiteral(
-                self::unescapeStringLiteral(substr($parse_tree->value, 1, -1), $parse_tree->value[0]),
-                $from_docblock,
-            );
+            return Type::getAtomicStringFromLiteral(self::getStringLiteralValue($parse_tree->value), $from_docblock);
         }
 
         if (strpos($parse_tree->value, '::')) {
@@ -840,6 +832,8 @@ final class TypeParser
         $generic_params = [];
         /** @var list<Union> the `*` arguments among the generic params, by identity */
         $star_params = [];
+        /** @var array<int, TypeArgumentProjection> the `covariant` and `contravariant` arguments, by object id */
+        $variance_params = [];
 
         foreach ($parse_tree->children as $i => $child_tree) {
             if ($child_tree instanceof Value && $child_tree->value === StarProjection::NAME) {
@@ -883,6 +877,12 @@ final class TypeParser
                 );
             }
 
+            if (isset($parse_tree->projections[$i])) {
+                // marked by identity, as the `*` arguments are; the parser may share one instance between equal types
+                $tree_type = $tree_type->getBuilder()->freeze();
+                $variance_params[spl_object_id($tree_type)] = $parse_tree->projections[$i];
+            }
+
             $generic_params[] = $tree_type;
         }
 
@@ -917,6 +917,7 @@ final class TypeParser
                 $generic_params,
                 $purity_params,
                 $star_params,
+                $variance_params,
                 $from_docblock,
             );
         }
@@ -1027,7 +1028,7 @@ final class TypeParser
                     continue;
                 }
 
-                throw new TypeParseTreeException('Invalid array key type ' . $atomic_type->getKey());
+                throw new TypeParseTreeException('Invalid array key type ' . $atomic_type->getId());
             }
 
             return $generic_type_value === 'array'
@@ -1172,17 +1173,12 @@ final class TypeParser
                 throw new TypeParseTreeException($generic_type_value . ' requires exactly one parameter.');
             }
 
-            $param_name = (string) $generic_params[0];
+            $template_param = $generic_params[0]->isSingleAtomic() ? $generic_params[0]->getSingleAtomic() : null;
 
-            if (isset($template_type_map[$param_name])
+            if ($template_param instanceof TTemplateParam
+                && isset($template_type_map[$param_name = $template_param->param_name])
                 && ($defining_class = array_key_first($template_type_map[$param_name])) !== null
             ) {
-                $template_param = $generic_params[0]->getSingleAtomic();
-                if (!$template_param instanceof TTemplateParam) {
-                    throw new TypeParseTreeException(
-                        $generic_type_value . '<' . $param_name . '> must be a TTemplateParam.',
-                    );
-                }
                 if ($template_param->getIntersectionTypes()) {
                     throw new TypeParseTreeException(
                         $generic_type_value . '<' . $param_name . '> must be a TTemplateParam'
@@ -1266,7 +1262,7 @@ final class TypeParser
             $atomic_types = [];
 
             foreach ($generic_params as $generic_param_offset => $generic_param) {
-                if (!$generic_param->isSingle()) {
+                if (!$generic_param->isSingleAtomic()) {
                     throw new TypeParseTreeException(
                         'int-mask types must all be non-union',
                     );
@@ -1418,22 +1414,25 @@ final class TypeParser
         }
 
         return (new TGenericObject($generic_type_value, $generic_params, false, false, [], $from_docblock))
-            ->setProjections(self::getStarProjections($generic_params, $star_params));
+            ->setProjections(self::getStarProjections($generic_params, $star_params, $variance_params));
     }
 
     /**
      * @param list<Union> $generic_params
      * @param list<Union> $star_params
+     * @param array<int, TypeArgumentProjection> $variance_params
      * @return array<int, TypeArgumentProjection>
      * @psalm-pure
      */
-    private static function getStarProjections(array $generic_params, array $star_params): array
+    private static function getStarProjections(array $generic_params, array $star_params, array $variance_params): array
     {
         $projections = [];
 
         foreach ($generic_params as $offset => $generic_param) {
             if (in_array($generic_param, $star_params, true)) {
                 $projections[$offset] = TypeArgumentProjection::Star;
+            } elseif (isset($variance_params[spl_object_id($generic_param)])) {
+                $projections[$offset] = $variance_params[spl_object_id($generic_param)];
             }
         }
 
@@ -1447,6 +1446,8 @@ final class TypeParser
      * @param list<Union> $generic_params
      * @param non-empty-list<Union> $purity_params
      * @param list<Union> $star_params the `*` arguments among the generic params, by identity
+     * @param array<int, TypeArgumentProjection> $variance_params the `covariant` and `contravariant` arguments, by
+     *                                                           object id
      * @throws TypeParseTreeException
      * @psalm-pure
      */
@@ -1455,6 +1456,7 @@ final class TypeParser
         array $generic_params,
         array $purity_params,
         array $star_params,
+        array $variance_params,
         bool $from_docblock,
     ): TIterable|TGenericObject {
         if (isset(TypeTokenizer::PSALM_RESERVED_WORDS[$generic_type_value])
@@ -1509,7 +1511,7 @@ final class TypeParser
             false,
             [],
             $from_docblock,
-        ))->setProjections(self::getStarProjections($generic_params, $star_params));
+        ))->setProjections(self::getStarProjections($generic_params, $star_params, $variance_params));
     }
 
     /**
@@ -2456,7 +2458,7 @@ final class TypeParser
 
         if (!$offset_defining_class
             && isset($offset_template_data[''])
-            && $offset_template_data['']->isSingle()
+            && $offset_template_data['']->isSingleAtomic()
         ) {
             $offset_template_type = $offset_template_data['']->getSingleAtomic();
 
@@ -2585,7 +2587,7 @@ final class TypeParser
 
                 // a quoted key is the string PHP reads from the literal (`"a\nb"` holds a line break)
                 if ($property_key[0] === '\'' || $property_key[0] === '"') {
-                    $property_key = self::unescapeStringLiteral(substr($property_key, 1, -1), $property_key[0]);
+                    $property_key = self::getStringLiteralValue($property_key);
                 }
             } else {
                 throw new TypeParseTreeException(
@@ -2641,13 +2643,8 @@ final class TypeParser
             return new TArray([Type::getNever($from_docblock), Type::getNever($from_docblock)], $from_docblock);
         }
 
+        $fallback_params = null;
         if ($extra_params) {
-            if ($is_list && count($extra_params) !== 1) {
-                throw new TypeParseTreeException('Must have exactly one extra field!');
-            }
-            if (!$is_list && count($extra_params) !== 2) {
-                throw new TypeParseTreeException('Must have exactly two extra fields!');
-            }
             $final_extra_params = $is_list ? [Type::getListKey(true)] : [];
             foreach ($extra_params as $child_tree) {
                 $child_type = self::getTypeFromTree(
@@ -2663,7 +2660,12 @@ final class TypeParser
                 }
                 $final_extra_params []= $child_type;
             }
-            $extra_params = $final_extra_params;
+            if (count($final_extra_params) !== 2) {
+                throw new TypeParseTreeException(
+                    $is_list ? 'Must have exactly one extra field!' : 'Must have exactly two extra fields!',
+                );
+            }
+            $fallback_params = $final_extra_params;
         }
         return $callable
             ? TKeyedArray::makeCallable(
@@ -2674,7 +2676,7 @@ final class TypeParser
             ) : TKeyedArray::make(
                 $properties,
                 $class_strings,
-                $extra_params ?? ($sealed
+                $fallback_params ?? ($sealed
                     ? null
                     : [$is_list ? Type::getListKey() : Type::getArrayKey(), Type::getMixed()]
                 ),
@@ -2682,6 +2684,41 @@ final class TypeParser
                 $from_docblock,
             )
         ;
+    }
+
+    /**
+     * The shape of the objects having both shapes
+     *
+     * @throws TypeParseTreeException when no value has both types of a property
+     */
+    public static function mergeObjectShapes(
+        Codebase $codebase,
+        TObjectWithProperties $first,
+        TObjectWithProperties $second,
+    ): TObjectWithProperties {
+        $properties = $first->properties;
+
+        foreach ($second->properties as $name => $type) {
+            if (!isset($properties[$name])) {
+                $properties[$name] = $type;
+
+                continue;
+            }
+
+            $intersected_type = Type::intersectUnionTypes($properties[$name], $type, $codebase);
+
+            if ($intersected_type === null) {
+                throw new TypeParseTreeException(
+                    'Incompatible intersection types for "' . $name . '", '
+                    . $properties[$name]->getId() . ' and ' . $type->getId()
+                    . ' provided',
+                );
+            }
+
+            $properties[$name] = $intersected_type;
+        }
+
+        return $first->setProperties($properties)->setMethods([...$first->methods, ...$second->methods]);
     }
 
     /**
@@ -2729,6 +2766,19 @@ final class TypeParser
             }
 
             $any_object_type_found = true;
+
+            // every object shape has the key `object`: their properties are those of all of them
+            if ($intersection_type instanceof TObjectWithProperties
+                && ($other_shape = $keyed_intersection_types[$intersection_type->getKey()] ?? null)
+                    instanceof TObjectWithProperties
+            ) {
+                $keyed_intersection_types[$intersection_type->getKey()] = self::mergeObjectShapes(
+                    $codebase,
+                    $other_shape,
+                    $intersection_type,
+                );
+                continue;
+            }
 
             if ($intersection_type instanceof TIterable
                 || $intersection_type instanceof TNamedObject
@@ -2898,6 +2948,26 @@ final class TypeParser
             false,
             $from_docblock,
         );
+    }
+
+    /**
+     * The value of a quoted string literal token, as PHP reads it
+     *
+     * @psalm-pure
+     */
+    private static function getStringLiteralValue(string $token): string
+    {
+        $quote = $token[0];
+        $closing_quote = strlen($token) - 1;
+
+        if ($closing_quote === 0
+            || $token[$closing_quote] !== $quote
+            || strspn(strrev(substr($token, 1, -1)), '\\') % 2 === 1
+        ) {
+            throw new TypeParseTreeException('Unterminated string literal ' . $token);
+        }
+
+        return self::unescapeStringLiteral(substr($token, 1, -1), $quote);
     }
 
     /**

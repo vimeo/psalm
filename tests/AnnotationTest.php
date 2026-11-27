@@ -9,8 +9,13 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
+use Psalm\Internal\Analyzer\IssueData;
+use Psalm\IssueBuffer;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+
+use function array_column;
+use function array_map;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -189,6 +194,179 @@ final class AnnotationTest extends TestCase
         );
 
         $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testBodyIsAnalyzedAfterMismatchingDocblockReturnType(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @return iterable<string> */
+                function foo(): array {
+                    echo $undefined;
+                    return [];
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        self::assertSame(
+            ['MismatchingDocblockReturnType', 'UndefinedVariable', 'MixedArgument'],
+            array_column(IssueBuffer::getIssuesDataForFile($file_path), 'type'),
+        );
+    }
+
+    public function testReturnOfAFunctionWithAMismatchingDocblockIsCheckedAgainstTheSignature(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @return int */
+                function matches(): string {
+                    return "a";
+                }
+
+                /** @return int */
+                function differs(): string {
+                    return 5;
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        self::assertSame(
+            [
+                ['MismatchingDocblockReturnType', 2],
+                ['MismatchingDocblockReturnType', 7],
+                ['InvalidReturnStatement', 9],
+                ['InvalidReturnType', 7],
+            ],
+            array_map(
+                static fn(IssueData $issue): array => [$issue->type, $issue->line_from],
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
+        );
+        self::assertStringContainsString(
+            "does not match the declared return type 'string'",
+            IssueBuffer::getIssuesDataForFile($file_path)[2]->message,
+        );
+    }
+
+    public function testReturnOfAMethodWithAMismatchingDocblockIsCheckedAgainstTheSignature(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                class A {
+                    /** @return int */
+                    public function run(): string {
+                        return "x";
+                    }
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        self::assertSame(
+            ['MismatchingDocblockReturnType'],
+            array_column(IssueBuffer::getIssuesDataForFile($file_path), 'type'),
+        );
+    }
+
+    public function testReturnOfAClosureWithAMismatchingDocblockIsCheckedAgainstItsDocblock(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                $c = /** @return int */ function (): string {
+                    return "a";
+                };
+
+                $d = /** @return int */ fn(): string => "a";
+
+                echo $c() . $d();',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        self::assertSame(
+            [
+                ['InvalidReturnStatement', 3],
+                ['InvalidReturnType', 2],
+                ['InvalidReturnStatement', 6],
+                ['InvalidReturnType', 6],
+            ],
+            array_map(
+                static fn(IssueData $issue): array => [$issue->type, $issue->line_from],
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
+        );
+    }
+
+    public function testValidDocblockReturnTypeContainedBySignatureIsStillChecked(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @return numeric */
+                function f(mixed $v): int|float|string {
+                    return "abc";
+                }',
+        );
+
+        $this->project_analyzer->setPhpVersion('8.0', 'tests');
+        $this->analyzeFile($file_path, new Context());
+
+        self::assertContains(
+            'InvalidReturnStatement',
+            array_column(IssueBuffer::getIssuesDataForFile($file_path), 'type'),
+        );
+    }
+
+    public function testMethodBodyIsAnalyzedAfterMismatchingDocblockReturnType(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                class A {
+                    /** @return iterable<string> */
+                    public function foo(): array {
+                        echo $this->missing();
+                        return [];
+                    }
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        self::assertSame(
+            ['MismatchingDocblockReturnType', 'UndefinedMethod', 'MixedArgument'],
+            array_column(IssueBuffer::getIssuesDataForFile($file_path), 'type'),
+        );
     }
 
     public function testInvalidParamDefault(): void
@@ -2077,6 +2255,9 @@ final class AnnotationTest extends TestCase
 
                     new UserRole(new stdClass(), new stdClass());
                     ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'promotedPropertiesDocumentationForPropertyAndSignature' => [
                 'code' => '<?php
@@ -2090,6 +2271,9 @@ final class AnnotationTest extends TestCase
                         ) {
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'globalDocBlock' => [
                 'code' => '<?php
@@ -2549,6 +2733,14 @@ final class AnnotationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'invalidArrayKeyTypeIsShownWhole' => [
+                'code' => '<?php
+                    /**
+                     * @param array<list<int>, string> $a
+                     */
+                    function foo(array $a): void {}',
+                'error_message' => 'Invalid array key type list<int> in docblock for foo',
+            ],
             'duplicatedCallableParamTagsAreStillReported' => [
                 'code' => '<?php
                     /**
@@ -3615,6 +3807,8 @@ final class AnnotationTest extends TestCase
                     new UserRole("a");
                     ',
                 'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'promotedPropertiesDocumentationFailsWhenSendingBadTypeAgainstProperty' => [
                 'code' => '<?php
@@ -3630,6 +3824,8 @@ final class AnnotationTest extends TestCase
                     new UserRole("a");
                     ',
                 'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'promotedPropertyDuplicateDoc' => [
                 'code' => '<?php
@@ -3644,6 +3840,8 @@ final class AnnotationTest extends TestCase
                     }
                     ',
                 'error_message' => 'InvalidDocblock',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'promotedPropertyWithParamDocblockAndSignatureType' => [
                 'code' => '<?php
@@ -3662,6 +3860,8 @@ final class AnnotationTest extends TestCase
 
                     echo $a->licenseType;',
                 'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'malformedConditionalReturnTypeDoesNotCrash' => [
                 'code' => '<?php

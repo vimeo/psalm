@@ -35,6 +35,7 @@ use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\Statements\GlobalAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
+use Psalm\Internal\Codebase\CanonicalPaths;
 use Psalm\Internal\Codebase\CombinedFlowGraph;
 use Psalm\Internal\Codebase\DataFlowGraph;
 use Psalm\Internal\Codebase\DatabaseTaints;
@@ -929,6 +930,19 @@ final class AssignmentAnalyzer
                     $context->vars_in_scope[$var_id] = $new_mutable->freeze();
                     $context->has_returned = false;
                 } else {
+                    // what is read of the variable is a use of what it is assigned, never or not
+                    self::analyzeAssignValueDataFlow(
+                        $statements_analyzer,
+                        $codebase,
+                        $assign_var,
+                        $assign_value,
+                        $assign_expr,
+                        $assign_value_type,
+                        $var_id,
+                        $context,
+                        $removed_taints,
+                    );
+
                     $context->inside_assignment = $was_in_assignment;
 
                     return $context->vars_in_scope[$var_id];
@@ -2536,7 +2550,8 @@ final class AssignmentAnalyzer
         if ($array instanceof TArray) {
             $can_be_empty = !$array instanceof TNonEmptyArray;
 
-            return $array->type_params[1];
+            // an empty array has no item
+            return $array->type_params[1]->isNever() ? null : $array->type_params[1];
         }
 
         $location = new CodeLocation($statements_analyzer->getSource(), $item->value);
@@ -2729,9 +2744,11 @@ final class AssignmentAnalyzer
         $has_other_type = false;
 
         foreach ($array_type->getAtomicTypes() as $atomic_type) {
-            if ($atomic_type instanceof TKeyedArray
-                && !isset($atomic_type->properties[$offset_value])
-                && ($atomic_type->fallback_params === null || ($atomic_type->is_list && is_string($offset_value)))
+            if (($atomic_type instanceof TKeyedArray
+                    && !isset($atomic_type->properties[$offset_value])
+                    && ($atomic_type->fallback_params === null
+                        || ($atomic_type->is_list && is_string($offset_value))))
+                || ($atomic_type instanceof TArray && $atomic_type->isEmptyArray())
             ) {
                 $has_type_without_key = true;
             } elseif (!$atomic_type instanceof TNull && !$atomic_type instanceof TFalse) {
@@ -2928,7 +2945,10 @@ final class AssignmentAnalyzer
                     if ($offset_value !== null
                         && isset($assign_value_atomic_type->properties[$offset_value])
                     ) {
-                        $value_type = $assign_value_atomic_type->properties[$offset_value];
+                        $value_type = TypeVariableResolver::resolveTopLevel(
+                            $assign_value_atomic_type->properties[$offset_value],
+                            $codebase,
+                        );
 
                         if ($value_type->possibly_undefined) {
                             IssueBuffer::maybeAdd(
@@ -3064,7 +3084,7 @@ final class AssignmentAnalyzer
                             $array_id,
                             $assign_value_type,
                             $offset_value,
-                            $item_type,
+                            TypeVariableResolver::resolveTopLevel($item_type, $codebase),
                         );
 
                         $new_assign_type = Type::combineUnionTypes($item_type, $new_assign_type);
@@ -3376,7 +3396,7 @@ final class AssignmentAnalyzer
                     ? $assign_value->expr
                     : $assign_value;
 
-                if ($assign_value_type->getId() === 'bool'
+                if ($assign_value_type->isBool()
                     && $assign_value !== null
                     && ($assigned_condition instanceof PhpParser\Node\Expr\BinaryOp
                         || $assigned_condition instanceof PhpParser\Node\Expr\Instanceof_
@@ -3635,6 +3655,7 @@ final class AssignmentAnalyzer
                             $assigned_type,
                             $var_node,
                         );
+                        CanonicalPaths::recordFlow($taint_flow_graph, $assigned_type->parent_nodes, $var_node);
                     }
                 }
             }

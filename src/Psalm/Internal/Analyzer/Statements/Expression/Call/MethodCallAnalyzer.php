@@ -101,12 +101,20 @@ final class MethodCallAnalyzer extends CallAnalyzer
 
         if (!$stmt->name instanceof PhpParser\Node\Identifier) {
             $context->inside_call = true;
+            // the name is read even in isset mode
+            $was_inside_isset = $context->inside_isset;
+            $context->inside_isset = false;
 
             if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->name, $context) === false) {
                 $context->inside_call = $was_inside_call;
+                $context->inside_isset = $was_inside_isset;
 
                 return false;
             }
+
+            $context->inside_isset = $was_inside_isset;
+
+            self::addMethodNameSink($statements_analyzer, $stmt, $stmt->name, $context);
         }
 
         $context->inside_call = $was_inside_call;
@@ -455,7 +463,8 @@ final class MethodCallAnalyzer extends CallAnalyzer
         if ($stmt_type) {
             $statements_analyzer->node_data->setType($stmt, $stmt_type);
 
-            if ($stmt_type->isNever()) {
+            // a method of a receiver that is never is not known: the call is never, but nothing says it exits
+            if ($stmt_type->isNever() && !$class_type->isNever()) {
                 $context->has_returned = true;
             }
         }

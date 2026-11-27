@@ -21,6 +21,36 @@ final class CastTest extends TestCase
     #[Override]
     public static function providerValidCodeParse(): iterable
     {
+        yield 'templateBoundedByAClassAndIntersectedWithStringableCastsToString' => [
+            'code' => '<?php
+                interface Foo {}
+
+                /**
+                 * @template T as Foo
+                 * @param T&Stringable $n
+                 */
+                function cast($n): string {
+                    return (string) $n;
+                }',
+            'assertions' => [],
+            'ignored_issues' => [],
+            'php_version' => '8.0',
+        ];
+
+        yield 'templateBoundedByObjectAndIntersectedWithStringableCastsToString' => [
+            'code' => '<?php
+                /**
+                 * @template T as object
+                 * @param T&Stringable $n
+                 */
+                function cast($n): string {
+                    return (string) $n;
+                }',
+            'assertions' => [],
+            'ignored_issues' => [],
+            'php_version' => '8.0',
+        ];
+
         yield 'intCastOfStringNotRepresentableAsInt' => [
             'code' => '<?php
                 $a = (int) "1e999";
@@ -490,6 +520,9 @@ final class CastTest extends TestCase
                     /** @psalm-check-type-exact $twice = string */
                 }
             ',
+            'assertions' => [],
+            'ignored_issues' => [],
+            'php_version' => '8.0',
         ];
         yield 'interpolationWithClassStringUnionStaysNonEmpty' => [
             'code' => '<?php
@@ -573,6 +606,56 @@ final class CastTest extends TestCase
     #[Override]
     public static function providerInvalidCodeParse(): iterable
     {
+        yield 'redundantCastNamesTheCastOperator' => [
+            'code' => '<?php
+                function f(int $i): int {
+                    return (int) $i;
+                }',
+            'error_message' => 'Redundant cast (int) applied to int',
+        ];
+
+        yield 'redundantCastShowsTheRefinedType' => [
+            'code' => '<?php
+                function f(string $s): string {
+                    if ($s === "") {
+                        return "";
+                    }
+                    return (string) $s;
+                }',
+            'error_message' => 'Redundant cast (string) applied to non-empty-string',
+        ];
+
+        yield 'redundantCastGivenDocblockTypeShowsTheRefinedType' => [
+            'code' => '<?php
+                /** @param non-empty-string $s */
+                function f($s): string {
+                    return (string) $s;
+                }',
+            'error_message' => 'Redundant cast (string) applied to non-empty-string given docblock-provided type',
+        ];
+
+        yield 'redundantBoolCastOnTrue' => [
+            'code' => '<?php
+                function f(bool $b): bool {
+                    if ($b) {
+                        return (bool) $b;
+                    }
+                    return false;
+                }',
+            'error_message' => 'Redundant cast (bool) applied to true',
+        ];
+
+        yield 'redundantBoolCastOnFalse' => [
+            'code' => '<?php
+                function f(bool $b): bool {
+                    if (!$b) {
+                        return (bool) $b;
+                    }
+                    return true;
+                }',
+            'error_message' => 'Redundant cast (bool) applied to false',
+        ];
+
         yield 'unsetCastIsRemovedInPhpEight' => [
             'code' => '<?php
                 $foo = 1;

@@ -538,6 +538,12 @@ final class IfAnalyzer
 
         $redefined_vars = $if_context->getRedefinedVars($outer_context->vars_in_scope);
 
+        foreach ($redefined_vars as $var_id => $type) {
+            if ($type->equals($outer_context->vars_in_scope[$var_id], true, false)) {
+                $if_scope->data_flow_only_redefined_vars[$var_id] = true;
+            }
+        }
+
         foreach (array_diff_key($if_context->vars_in_scope, $outer_context->vars_in_scope) as $new_var => $type) {
             // only variables the branch defines: `$a->b` and `$a['b']` are narrowings of an expression, `isset($a)`
             // doesn't define `$a`, and the type of a variable possibly defined before the branch (by an earlier
@@ -621,8 +627,11 @@ final class IfAnalyzer
                 && self::isNarrowedMixed($codebase, $type, $outer_context->vars_in_scope[$var_id])
                 && !self::mayAssignAsAWhole($branch_nodes, $var_id, $statements_analyzer)
             ) {
+                // with the data flow of the branch only: where the variable keeps the nodes it had before, another
+                // way past the if keeps them, and when every other branch leaves, a type narrowed away from taints
+                // (see Reconciler) would get them back
                 $possibly_redefined_vars[$var_id] = $outer_context->vars_in_scope[$var_id]
-                    ->addParentNodes($type->parent_nodes);
+                    ->setParentNodes($type->parent_nodes);
             }
         }
 

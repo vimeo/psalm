@@ -181,6 +181,10 @@ foreach (get_defined_functions() as $sub) {
 // Interfaces are not included in get_declared_classes(); their signatures need separate callmap entries.
 foreach (array_merge(get_declared_classes(), get_declared_interfaces()) as $class) {
     $refl = new ReflectionClass($class);
+    // what an anonymous class of the PHP library of an extension (swoole) declares can't be called by name
+    if ($refl->isAnonymous()) {
+        continue;
+    }
 
     foreach ($refl->getMethods() as $method) {
         $args = paramsToEntries($method, $method->getName() === '__construct' ? 'void' : 'mixed');
