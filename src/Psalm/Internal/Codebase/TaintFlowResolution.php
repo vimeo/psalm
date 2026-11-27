@@ -2250,7 +2250,9 @@ final class TaintFlowResolution
                     || count($this->call_entries_reaching[$id] ?? []) > 1
                     || !$this->hasLocation($id))
             ) {
-                $this->enterConvergence($state, $id);
+                if (!$this->revealHiddenTaints($state)) {
+                    $this->enterConvergence($state, $id);
+                }
             } else {
                 $this->walkEdges($state, $id);
             }
@@ -2313,7 +2315,9 @@ final class TaintFlowResolution
         ) {
             // like any node many flows reach (see enterConvergence()): else each would leave through all its call
             // sites, a function-like's return reached from many convergences through a property its class sets
-            $this->enterConvergence($state, $id);
+            if (!$this->revealHiddenTaints($state)) {
+                $this->enterConvergence($state, $id);
+            }
 
             return;
         }
@@ -2620,6 +2624,40 @@ final class TaintFlowResolution
     }
 
     /**
+     * Where many flows converge (see enterConvergence()), one that a place in a string removed taints of, keeping
+     * their shadows (see getHiddenShadows()), gets them back first: a convergence for each set of hidden taints would
+     * walk what is reachable from there again for each. The state is reached again with them. Returns whether it was.
+     *
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    private function revealHiddenTaints(int $state): bool
+    {
+        $hidden = $this->getHiddenShadows($state);
+
+        if ($hidden === 0) {
+            return false;
+        }
+
+        $context = $this->state_contexts[$state];
+        $hidden_of_calls = $context === -1 ? 0 : $this->entry_hidden[$this->entry_bases[$context]];
+        $kept = $this->state_kept[$state];
+        $added = $this->state_added[$state];
+
+        $this->reach(
+            $this->state_nodes[$state],
+            $context,
+            $this->state_open_assignments[$state],
+            $kept | TaintShadows::restore($kept & ~$hidden_of_calls),
+            $added | TaintShadows::restore($added | ($kept & $hidden_of_calls)),
+            $state,
+            0,
+            $this->getPathTypeId('='),
+        );
+
+        return true;
+    }
+
+    /**
      * A flow enters the shared body of a specialized function-like through the specialized node of state
      * $caller of the call identified by $specialization_key.
      *
@@ -2682,7 +2720,7 @@ final class TaintFlowResolution
                 self::ENTRY_CONVERGENCE,
                 $caller,
                 $this->getConvergenceOpenAssignments($caller, $id),
-                $this->getHiddenShadows($caller),
+                0,
             ),
             $caller,
             null,
