@@ -1599,7 +1599,9 @@ final class LoopAnalyzer
             && $loop_scope->final_actions !== [ScopeAnalyzer::ACTION_BREAK];
 
         foreach ($context->vars_possibly_in_scope as $var_id => $_) {
-            if (isset($context->vars_in_scope[$var_id])
+            // a pseudo-variable (an extension check) that only some ways out set says nothing after the loop
+            if (!str_starts_with($var_id, '$')
+                || isset($context->vars_in_scope[$var_id])
                 || isset($vars_possibly_in_scope_before_loop[$var_id])
                 || !self::isLoopVar($var_id)
                 || isset($inner_context->references_in_scope[$var_id])
