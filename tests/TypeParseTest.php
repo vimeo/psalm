@@ -1619,6 +1619,14 @@ final class TypeParseTest extends TestCase
         yield 'union after an optional type' => ['callable(int=|string): void'];
         yield 'list after a variadic type' => ['callable(int...[]): void'];
         yield 'variadic name with a default' => ['callable(int ...$values = 1): void'];
+        yield 'question mark after an optional type' => ['callable(int=?): void'];
+        yield 'question mark after a variadic type' => ['callable(int...?): void'];
+        yield 'type after an optional type' => ['callable(int=string): void'];
+        yield 'constant after an optional type' => ['callable(int=::FOO): void'];
+        yield 'condition after a variadic type' => ['callable(int... is int ? A : B): void'];
+        yield 'union in place of a variadic type' => ['callable(...|int): void'];
+        yield 'list in place of a variadic type' => ['callable(...[]): void'];
+        yield 'mismatched brackets in a default' => ['callable(int $value = [1, 2}, string $name): void'];
     }
 
     #[DataProvider('malformedCallableParamProvider')]
@@ -1637,6 +1645,10 @@ final class TypeParseTest extends TestCase
         yield 'empty array' => ['callable(int $value = []): void', 'callable[impure](int=):void'];
         yield 'array with a comma' => [
             'callable(int $value = [1, 2], string $name): void',
+            'callable[impure](int=, string):void',
+        ];
+        yield 'nested array with a comma' => [
+            'callable(int $value = [1, [2, 3]], string $name): void',
             'callable[impure](int=, string):void',
         ];
         yield 'array()' => ['callable(int $value = array(1)): void', 'callable[impure](int=):void'];

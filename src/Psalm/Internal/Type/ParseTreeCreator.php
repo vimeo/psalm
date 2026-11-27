@@ -50,6 +50,31 @@ final class ParseTreeCreator
         'impure-Closure',
     ];
 
+    /**
+     * The opening brackets in the default value of a parameter, with the bracket that closes each
+     */
+    private const DEFAULT_VALUE_BRACKETS = ['(' => ')', '[' => ']', '{' => '}'];
+
+    /**
+     * The tokens that continue a type, so none of them can start the type of a parameter (`callable(...|int)`)
+     */
+    private const TYPE_CONTINUATION_TOKENS = [
+        '|' => true,
+        '&' => true,
+        '[' => true,
+        ']' => true,
+        '{' => true,
+        '}' => true,
+        '<' => true,
+        '>' => true,
+        ':' => true,
+        '::' => true,
+        'is' => true,
+        'is not' => true,
+        'as' => true,
+        'of' => true,
+    ];
+
     private ParseTree $parse_tree;
 
     private ParseTree $current_leaf;
@@ -335,28 +360,29 @@ final class ParseTreeCreator
      * moves to the last token before the `,` or `)` that ends the parameter
      *
      * @return string|null the default value, or null if there is none
-     *
      * @throws TypeParseTreeException if anything else follows the name: `int $x|string`, `int $x[]`, `int $x $y`
-     *
      * @psalm-capabilities read-props|write-this-props|write-refs
      */
     private function readParamDefault(string $unterminated_message): ?string
     {
         $end = null;
-        $depth = 0;
+        // the closing brackets the default value still needs, innermost last
+        $closers = [];
 
         for ($j = $this->t + 1; $j < $this->type_token_count; ++$j) {
             $token = $this->type_tokens[$j][0];
 
-            if ($depth === 0 && ($token === ',' || $token === ')')) {
+            if (!$closers && ($token === ',' || $token === ')')) {
                 $end = $j;
                 break;
             }
 
-            if ($token === '(' || $token === '[' || $token === '{') {
-                ++$depth;
+            if (isset(self::DEFAULT_VALUE_BRACKETS[$token])) {
+                $closers[] = self::DEFAULT_VALUE_BRACKETS[$token];
             } elseif ($token === ')' || $token === ']' || $token === '}') {
-                --$depth;
+                if (array_pop($closers) !== $token) {
+                    throw new TypeParseTreeException('Unexpected token ' . $token);
+                }
             }
         }
 
@@ -502,8 +528,7 @@ final class ParseTreeCreator
 
     private function handleOpenSquareBracket(): void
     {
-        // a parameter of a callable type ends before an operator: `int...[]`, `int=|string`
-        if ($this->current_leaf instanceof Root || $this->current_leaf instanceof CallableParamTree) {
+        if ($this->current_leaf instanceof Root) {
             throw new TypeParseTreeException('Unexpected token [');
         }
 
@@ -779,6 +804,39 @@ final class ParseTreeCreator
         $current_parent->children[] = $new_leaf;
 
         $this->current_leaf = $new_leaf;
+
+        $this->readAfterCallableParamMarker($new_leaf);
+    }
+
+    /**
+     * After the `...` or `=` that makes a callable parameter, the parameter ends (`int...`, `int=`) or its name
+     * follows (`int... $x`, `int...$x`), and after a bare `...` its type (`...int`)
+     */
+    private function readAfterCallableParamMarker(CallableParamTree $param): void
+    {
+        $next_token = $this->t + 1 < $this->type_token_count ? $this->type_tokens[$this->t + 1][0] : null;
+
+        if ($next_token === null || $next_token === ',' || $next_token === ')' || $next_token === ' ') {
+            return;
+        }
+
+        if (!$param->children) {
+            if (isset(self::TYPE_CONTINUATION_TOKENS[$next_token])) {
+                throw new TypeParseTreeException('Unexpected token ' . $next_token);
+            }
+
+            return;
+        }
+
+        if ($next_token[0] !== '$' || strlen($next_token) < 2) {
+            throw new TypeParseTreeException('Unexpected token ' . $next_token . ' after the type of a parameter');
+        }
+
+        ++$this->t;
+        /** @var non-empty-string $name */
+        $name = substr($next_token, 1);
+        $param->name = $name;
+        $this->readCallableParamDefault($param);
     }
 
     private function handleColon(): void
@@ -962,7 +1020,7 @@ final class ParseTreeCreator
 
     private function handleBar(): void
     {
-        if ($this->current_leaf instanceof Root || $this->current_leaf instanceof CallableParamTree) {
+        if ($this->current_leaf instanceof Root) {
             throw new TypeParseTreeException('Unexpected token |');
         }
 
@@ -1013,7 +1071,7 @@ final class ParseTreeCreator
 
     private function handleAmpersand(): void
     {
-        if ($this->current_leaf instanceof Root || $this->current_leaf instanceof CallableParamTree) {
+        if ($this->current_leaf instanceof Root) {
             throw new TypeParseTreeException(
                 'Unexpected &',
             );
@@ -1159,7 +1217,8 @@ final class ParseTreeCreator
     {
         $new_parent = !$this->current_leaf instanceof Root ? $this->current_leaf : null;
 
-        if ($this->current_leaf instanceof MethodTree && $type_token[0][0] === '$') {
+        // `$this` is never the name of a parameter, but its type: `@method void accept($this $value)`
+        if ($this->current_leaf instanceof MethodTree && $type_token[0][0] === '$' && $type_token[0] !== '$this') {
             $this->createMethodParam($type_token, $this->current_leaf);
             return;
         }
