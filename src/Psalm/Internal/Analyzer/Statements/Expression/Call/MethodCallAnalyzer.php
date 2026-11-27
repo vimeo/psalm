@@ -113,6 +113,8 @@ final class MethodCallAnalyzer extends CallAnalyzer
             }
 
             $context->inside_isset = $was_inside_isset;
+
+            self::addMethodNameSink($statements_analyzer, $stmt, $stmt->name, $context);
         }
 
         $context->inside_call = $was_inside_call;
@@ -461,7 +463,8 @@ final class MethodCallAnalyzer extends CallAnalyzer
         if ($stmt_type) {
             $statements_analyzer->node_data->setType($stmt, $stmt_type);
 
-            if ($stmt_type->isNever()) {
+            // a method of a receiver that is never is not known: the call is never, but nothing says it exits
+            if ($stmt_type->isNever() && !$class_type->isNever()) {
                 $context->has_returned = true;
             }
         }

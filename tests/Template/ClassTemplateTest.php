@@ -451,6 +451,8 @@ final class ClassTemplateTest extends TestCase
 
                     $pager = new PagerOnQuery($items);',
                 'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'closureOfAMethodOfAGenericObject' => [
                 'code' => '<?php
@@ -738,6 +740,8 @@ final class ClassTemplateTest extends TestCase
                     '$copy===' => 'Coll<stdClass>&static',
                     '$std_copy===' => 'StdColl',
                 ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'templateIntersection' => [
                 'code' => '<?php
@@ -4284,6 +4288,8 @@ final class ClassTemplateTest extends TestCase
                 'assertions' => [
                     '$b===' => '1|2',
                 ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'generaliseTemplatedString' => [
                 'code' => '<?php
@@ -4637,6 +4643,9 @@ final class ClassTemplateTest extends TestCase
                     final class One {}
                     final class Two {}
                     final class Three {}',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'refineTemplateTypeOfUnionMoreComplex' => [
                 'code' => '<?php
@@ -4657,6 +4666,9 @@ final class ClassTemplateTest extends TestCase
                     final class One {}
                     final class Two {}
                     final class Three {}',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'issue7825' => [
                 'code' => '<?php
@@ -4765,6 +4777,8 @@ final class ClassTemplateTest extends TestCase
                     '$a===' => 'FutureB<123>',
                     '$r===' => 'ArrayObject<int, 123>',
                 ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'return TemplatedClass<static>' => [
                 'code' => '<?php
@@ -4803,6 +4817,9 @@ final class ClassTemplateTest extends TestCase
                             return Maybe::just(new static());
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'return list<static> created in a static method of another class' => [
                 'code' => '<?php
@@ -4870,6 +4887,9 @@ final class ClassTemplateTest extends TestCase
                             return $maybe->value;
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'static is the return type of an analyzed static method' => [
                 'code' => '<?php
@@ -6691,6 +6711,9 @@ final class ClassTemplateTest extends TestCase
                             return new Wrapper($c);
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'newOfTheClassItselfWithTheInstancesOwnTemplateKeepsIt' => [
                 'code' => '<?php
@@ -6704,6 +6727,9 @@ final class ClassTemplateTest extends TestCase
                             return new Box($this->item);
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'templateNestedInACovariantGenericParamAcceptsASubtype' => [
                 'code' => '<?php
@@ -6934,6 +6960,8 @@ final class ClassTemplateTest extends TestCase
 
                     $pager = new PagerOnQuery($items);',
                 'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'closureOfAMethodOfAnObjectWithTheTemplatesOfTheCaller' => [
                 'code' => '<?php
@@ -7129,7 +7157,7 @@ final class ClassTemplateTest extends TestCase
                      * @template T = Missing
                      */
                     final class C {}',
-                'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:33 - Class, interface or enum named Missing does not exist',
+                'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:24 - Class, interface or enum named Missing does not exist',
             ],
             'partialGenericNextToASelfNamingDefaultChecksItsDefaults' => [
                 'code' => '<?php
@@ -7968,6 +7996,8 @@ final class ClassTemplateTest extends TestCase
                     final class Two {}
                     final class Three {}',
                 'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:12:40 - The inferred type \'T:A as One|Two\' ',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'preventMixedNestedCoercion' => [
                 'code' => '<?php
@@ -7985,6 +8015,8 @@ final class ClassTemplateTest extends TestCase
                         return $c;
                     }',
                 'error_message' => 'InvalidReturnStatement',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'noCrashOnBrokenTemplate' => [
                 'code' => <<<'PHP'
@@ -8046,7 +8078,7 @@ final class ClassTemplateTest extends TestCase
                      * @template T of int = string
                      */
                     abstract class Bad {}',
-                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:36 - The default string of template T is not within its bound int',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:24 - The default string of template T is not within its bound int',
             ],
             'classTemplateDefaultUsingLaterTemplate' => [
                 'code' => '<?php
@@ -8055,7 +8087,7 @@ final class ClassTemplateTest extends TestCase
                      * @template U = int
                      */
                     abstract class Fwd {}',
-                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:36 - The default of template T uses template U, which is not declared before it',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:24 - The default of template T uses template U, which is not declared before it',
             ],
             'interfaceTemplateDefaultOutsideBoundNamingEarlierTemplate' => [
                 'code' => '<?php
@@ -8064,7 +8096,7 @@ final class ClassTemplateTest extends TestCase
                      * @template U of T = stdClass
                      */
                     interface Corr {}',
-                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:31 - The default stdClass of template U is not within its bound T:Corr as object',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:24 - The default stdClass of template U is not within its bound T:Corr as object',
             ],
             'traitTemplateDefaultUsingItself' => [
                 'code' => '<?php
@@ -8072,7 +8104,7 @@ final class ClassTemplateTest extends TestCase
                      * @template T = list<T>
                      */
                     trait SelfRef {}',
-                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:27 - The default of template T uses template T, which is not declared before it',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:24 - The default of template T uses template T, which is not declared before it',
             ],
             'partialGenericArgumentIsCheckedAgainstNestedDefault' => [
                 'code' => '<?php
@@ -8210,7 +8242,7 @@ final class ClassTemplateTest extends TestCase
                      * @template T of int =
                      */
                     final class A {}',
-                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:33 - Missing default after = for template T in docblock for A',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:24 - Missing default after = for template T in docblock for A',
             ],
             'methodParamBoundByTheReceiverIsInvariantOnAnArgument' => [
                 'code' => '<?php
@@ -8288,6 +8320,8 @@ final class ClassTemplateTest extends TestCase
                         take($onlyA);
                     }',
                 'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'templateNestedInAnInvariantGenericParamStillConflictsWithAnotherArgument' => [
                 'code' => '<?php

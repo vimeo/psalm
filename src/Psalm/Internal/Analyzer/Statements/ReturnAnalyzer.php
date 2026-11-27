@@ -833,7 +833,11 @@ final class ReturnAnalyzer
 
         $return_type = TypeCombiner::combine($return_types, $codebase);
 
-        return $return_type->hasMixed() ? null : $return_type;
+        // a generator declared with TReturn void may return null
+        return $return_type->hasMixed()
+            || ($return_type->hasType('void') && $statements_analyzer->node_data->getType($stmt)?->isNull())
+            ? null
+            : $return_type;
     }
 
     /**

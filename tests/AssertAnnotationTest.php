@@ -1097,7 +1097,7 @@ final class AssertAnnotationTest extends TestCase
                     assertA($b);
                     assertB($b);',
                 'assertions' => [
-                    '$b===' => 'object{a:int}&object{b:string}',
+                    '$b===' => 'object{a:int, b:string}',
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.0',
@@ -2128,6 +2128,9 @@ final class AssertAnnotationTest extends TestCase
                         $owner->assertKnownType();
                         /** @psalm-check-type-exact $owner->type = \'organization\'|\'prof\' */;
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'implicitAssertInstanceOfB' => [
                 'code' => '<?php
@@ -4503,6 +4506,9 @@ final class AssertAnnotationTest extends TestCase
                         }
                         public function getA(): a { return $this->a; }
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'assertWithEmptyStringOnKeyedArray' => [
                 'code' => '<?php
@@ -6173,6 +6179,18 @@ final class AssertAnnotationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'assertNonEmptyArrayOnAnEmptyArray' => [
+                'code' => '<?php
+                    /**
+                     * @param mixed $x
+                     * @psalm-assert non-empty-array $x
+                     */
+                    function assertNonEmpty($x): void {}
+
+                    $a = [];
+                    assertNonEmpty($a);',
+                'error_message' => 'TypeDoesNotContainType',
+            ],
             'assertIfTrueOfAMemoizedMethodComparedWithFalseThenTheMethodIsNeverTrue' => [
                 'code' => '<?php
                     final class Name {

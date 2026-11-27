@@ -2,11 +2,11 @@
 
 This is a **security issue**, reported by [security analysis](https://psalm.dev/docs/security_analysis/): it flags a potential vulnerability.
 
-Emitted when tainted text is used in an arbitrary function call.
+Emitted when tainted text names the function, method or class that the code calls or instantiates.
 
 ## Risk
 
-An attacker who controls the function name can run any function that is callable from there, with arguments of their choice, which usually ends in code execution.
+An attacker who controls a function name can run any function that is callable from there, with the arguments the call passes, which usually ends in code execution. An attacker who controls a method name can run any method of that object or class, including ones the code never meant to expose.
 
 This can lead to dangerous situations, like running arbitrary functions.
 
@@ -24,10 +24,28 @@ function evalCode(string $name) {
 }
 ```
 
+A method name works the same way, whether it names a method of an object or of a class:
+
+```php
+<?php
+
+final class Account {
+    public function delete(): void {}
+}
+
+$action = (string) $_GET["action"];
+(new Account())->$action(); // TaintedCallable
+[new Account(), $action](); // TaintedCallable
+
+if ($action === "delete") {
+    (new Account())->$action(); // no issue
+}
+```
+
 ## Mitigations
 
-- Don't build the name of the function from user input: map known values to functions with an allowlist (`$handlers[$input]`).
-- If the input must select a function, check it against a fixed list before the call.
+- Don't build the name of the function or method from user input: map known values to functions with an allowlist (`$handlers[$input]`).
+- If the input must select a function or method, check it against a fixed list before the call.
 
 ## Further resources
 

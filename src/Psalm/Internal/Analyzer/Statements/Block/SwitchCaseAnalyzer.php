@@ -16,6 +16,7 @@ use Psalm\Internal\Analyzer\ScopeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\IntMaskComparisonAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Clause;
 use Psalm\Internal\Codebase\PhpDeprecations;
 use Psalm\Internal\PhpVisitor\ConditionCloningVisitor;
 use Psalm\Internal\PhpVisitor\TypeMappingVisitor;
@@ -96,6 +97,48 @@ final class SwitchCaseAnalyzer
         $case_scope = $case_context->case_scope = new CaseScope($case_context);
         $case_scope->outer_case_scope = $original_context->case_scope;
 
+        // what the earlier cases said of a variable this case condition assigns is not true of the new value
+        if ($case->cond) {
+            $switch_scope->negated_clauses = FormulaGenerator::withoutClausesOfVarsAssignedIn(
+                $switch_scope->negated_clauses,
+                $case->cond,
+                $context->self,
+                $statements_analyzer->node_data,
+            );
+
+            $switch_scope->fall_through_negated_clauses = FormulaGenerator::withoutClausesOfVarsAssignedIn(
+                $switch_scope->fall_through_negated_clauses,
+                $case->cond,
+                $context->self,
+                $statements_analyzer->node_data,
+            );
+        }
+
+        $entry_formula = $switch_scope->negated_clauses && count($switch_scope->negated_clauses) < 50
+            ? Algebra::simplifyCNF([...$original_context->clauses, ...$switch_scope->negated_clauses])
+            : $original_context->clauses;
+
+        // a case is only compared once the ones before it didn't match
+        if ($case->cond && $switch_scope->negated_clauses && count($switch_scope->negated_clauses) < 50) {
+            $negated_truths = Algebra::getTruthsFromFormula($entry_formula);
+
+            if ($negated_truths) {
+                $changed_var_ids = [];
+
+                [$case_context->vars_in_scope, $case_context->references_in_scope] = Reconciler::reconcileKeyedTypes(
+                    $negated_truths,
+                    [],
+                    $case_context->vars_in_scope,
+                    $case_context->references_in_scope,
+                    $changed_var_ids,
+                    [],
+                    $statements_analyzer,
+                    [],
+                    $case_context->inside_loop,
+                );
+            }
+        }
+
         $case_equality_expr = null;
 
         $old_node_data = $statements_analyzer->node_data;
@@ -117,7 +160,13 @@ final class SwitchCaseAnalyzer
             $was_inside_conditional = $case_context->inside_conditional;
             $case_context->inside_conditional = true;
 
-            if (ExpressionAnalyzer::analyze($statements_analyzer, $case->cond, $case_context) === false) {
+            if (!self::analyzeCaseCondition(
+                $statements_analyzer,
+                $switch_scope,
+                $case->cond,
+                $case_context,
+                $entry_formula,
+            )) {
                 unset($case_scope->parent_context);
                 unset($case_context->case_scope);
 
@@ -189,39 +238,15 @@ final class SwitchCaseAnalyzer
         }
 
         if (!$has_leaving_statements && !$is_last) {
-            if (!$case_equality_expr) {
-                $case_equality_expr = new VirtualFuncCall(
-                    new VirtualFullyQualified(['rand']),
-                    [
-                        new VirtualArg(new VirtualInt(0)),
-                        new VirtualArg(new VirtualInt(1)),
-                    ],
-                    $case->getAttributes(),
-                );
-            }
-
-            $switch_scope->leftover_case_equality_expr = $switch_scope->leftover_case_equality_expr
-                ? new VirtualBooleanOr(
-                    $switch_scope->leftover_case_equality_expr,
-                    $case_equality_expr,
-                    $case->cond ? $case->cond->getAttributes() : $case->getAttributes(),
-                )
-                : $case_equality_expr;
-
-            if ($continue_case_equality_expr
-                && $switch_scope->leftover_statements[0] instanceof PhpParser\Node\Stmt\If_
-            ) {
-                $case_if_stmt = $switch_scope->leftover_statements[0];
-                $case_if_stmt->cond = $switch_scope->leftover_case_equality_expr;
-            } else {
-                $case_if_stmt = new VirtualIf(
-                    $switch_scope->leftover_case_equality_expr,
-                    ['stmts' => $case_stmts],
-                    [...$case->getAttributes(), 'switchFallthrough' => true],
-                );
-
-                $switch_scope->leftover_statements = [$case_if_stmt];
-            }
+            self::addFallThroughCase(
+                $statements_analyzer,
+                $switch_scope,
+                $case,
+                $case_equality_expr,
+                $case_stmts,
+                $continue_case_equality_expr,
+                $context,
+            );
 
             unset($case_scope->parent_context);
             unset($case_context->case_scope);
@@ -284,133 +309,18 @@ final class SwitchCaseAnalyzer
         $switch_scope->leftover_statements = [];
         $switch_scope->leftover_case_equality_expr = null;
 
-        $case_clauses = [];
-
-        if ($case_equality_expr) {
-            $case_equality_expr_id = spl_object_id($case_equality_expr);
-            $case_clauses = FormulaGenerator::getFormula(
-                $case_equality_expr_id,
-                $case_equality_expr_id,
-                $case_equality_expr,
-                $context->self,
-                $statements_analyzer,
-                $codebase,
-                false,
-                false,
-            );
-        }
-
-        // what the earlier conditions said of a variable the case assigns is not true of the new value
-        $entry_clauses = FormulaGenerator::withoutClausesOfVarsAssignedIn(
-            $switch_scope->negated_clauses && count($switch_scope->negated_clauses) < 50
-                ? Algebra::simplifyCNF([...$original_context->clauses, ...$switch_scope->negated_clauses])
-                : $original_context->clauses,
+        self::addCaseClauses(
+            $statements_analyzer,
+            $codebase,
+            $stmt,
+            $case,
+            $case_context,
+            $context,
+            $switch_scope,
+            $switch_var_id,
+            $entry_formula,
             $case_equality_expr,
-            $context->self,
-            $statements_analyzer->node_data,
         );
-
-        if ($case_clauses && $case->cond) {
-            // this will see whether any of the clauses in set A conflict with the clauses in set B
-            AlgebraAnalyzer::checkForParadox(
-                $entry_clauses,
-                $case_clauses,
-                $statements_analyzer,
-                $case->cond,
-                [],
-            );
-
-            if (count($entry_clauses) + count($case_clauses) < 50) {
-                $case_context->clauses = Algebra::simplifyCNF([...$entry_clauses, ...$case_clauses]);
-            } else {
-                $case_context->clauses = [...$entry_clauses, ...$case_clauses];
-            }
-        } else {
-            $case_context->clauses = $entry_clauses;
-        }
-
-        $reconcilable_if_types = Algebra::getTruthsFromFormula($case_context->clauses);
-
-        $is_switch_true = $case->cond !== null
-            && $stmt->cond instanceof PhpParser\Node\Expr\ConstFetch
-            && strtolower($stmt->cond->name->getFirst()) === 'true';
-
-        // if the if has an || in the conditional, we cannot easily reason about it
-        if ($reconcilable_if_types) {
-            $changed_var_ids = [];
-
-            $suppressed_issues = $statements_analyzer->getSuppressedIssues();
-
-            if (!isset($suppressed_issues['RedundantCondition'])) {
-                $statements_analyzer->addSuppressedIssues(['RedundantCondition']);
-            }
-
-            if (!isset($suppressed_issues['RedundantConditionGivenDocblockType'])) {
-                $statements_analyzer->addSuppressedIssues(['RedundantConditionGivenDocblockType']);
-            }
-
-            [$case_vars_in_scope_reconciled, $case_references_in_scope_reconciled] =
-                Reconciler::reconcileKeyedTypes(
-                    $reconcilable_if_types,
-                    // the conditions of `switch (true)` are checked like those of an `if`
-                    $is_switch_true ? $reconcilable_if_types : [],
-                    $case_context->vars_in_scope,
-                    $case_context->references_in_scope,
-                    $changed_var_ids,
-                    $is_switch_true
-                        ? $case_context->cond_referenced_var_ids
-                        : ($case->cond && $switch_var_id ? [$switch_var_id => true] : []),
-                    $statements_analyzer,
-                    [],
-                    $case_context->inside_loop,
-                    new CodeLocation(
-                        $statements_analyzer->getSource(),
-                        $case->cond ?? $case,
-                        $context->include_location,
-                    ),
-                );
-
-            if (!isset($suppressed_issues['RedundantCondition'])) {
-                $statements_analyzer->removeSuppressedIssues(['RedundantCondition']);
-            }
-
-            if (!isset($suppressed_issues['RedundantConditionGivenDocblockType'])) {
-                $statements_analyzer->removeSuppressedIssues(['RedundantConditionGivenDocblockType']);
-            }
-
-            $case_context->vars_in_scope = $case_vars_in_scope_reconciled;
-            $case_context->references_in_scope = $case_references_in_scope_reconciled;
-            foreach ($reconcilable_if_types as $var_id => $_) {
-                $case_context->vars_possibly_in_scope[$var_id] = true;
-            }
-
-            if ($changed_var_ids) {
-                $case_context->clauses = AlgebraAnalyzer::removeReconciledClauses(
-                    $case_context->clauses,
-                    $changed_var_ids,
-                    $case_context->vars_in_scope,
-                    $statements_analyzer,
-                )[0];
-            }
-        }
-
-        if ($case_clauses && $case_equality_expr) {
-            try {
-                $negated_case_clauses = FormulaGenerator::getNegatedFormula(
-                    $case_clauses,
-                    $case_equality_expr,
-                    spl_object_id($case_equality_expr),
-                    $context->self,
-                    $statements_analyzer,
-                    $codebase,
-                    true,
-                );
-            } catch (ComplicatedExpressionException) {
-                $negated_case_clauses = [];
-            }
-
-            $switch_scope->negated_clauses = [...$switch_scope->negated_clauses, ...$negated_case_clauses];
-        }
 
         $statements_analyzer->analyze($case_stmts, $case_context);
 
@@ -548,6 +458,352 @@ final class SwitchCaseAnalyzer
         unset($case_context->case_scope);
 
         return null;
+    }
+
+    /**
+     * Sets the clauses known inside the case, and adds its negation to those of the cases after it
+     *
+     * @param list<Clause> $entry_formula
+     */
+    private static function addCaseClauses(
+        StatementsAnalyzer $statements_analyzer,
+        Codebase $codebase,
+        PhpParser\Node\Stmt\Switch_ $stmt,
+        PhpParser\Node\Stmt\Case_ $case,
+        Context $case_context,
+        Context $context,
+        SwitchScope $switch_scope,
+        ?string $switch_var_id,
+        array $entry_formula,
+        ?PhpParser\Node\Expr $case_equality_expr,
+    ): void {
+        $case_clauses = [];
+
+        if ($case_equality_expr) {
+            $case_equality_expr_id = spl_object_id($case_equality_expr);
+            $case_clauses = FormulaGenerator::getFormula(
+                $case_equality_expr_id,
+                $case_equality_expr_id,
+                $case_equality_expr,
+                $context->self,
+                $statements_analyzer,
+                $codebase,
+                false,
+                false,
+            );
+        }
+
+        // what the earlier conditions said of a variable the case assigns is not true of the new value
+        $entry_clauses = FormulaGenerator::withoutClausesOfVarsAssignedIn(
+            $entry_formula,
+            $case_equality_expr,
+            $context->self,
+            $statements_analyzer->node_data,
+        );
+
+        if ($case_clauses && $case->cond) {
+            // this will see whether any of the clauses in set A conflict with the clauses in set B
+            AlgebraAnalyzer::checkForParadox(
+                $entry_clauses,
+                $case_clauses,
+                $statements_analyzer,
+                $case->cond,
+                [],
+            );
+
+            if (count($entry_clauses) + count($case_clauses) < 50) {
+                $case_context->clauses = Algebra::simplifyCNF([...$entry_clauses, ...$case_clauses]);
+            } else {
+                $case_context->clauses = [...$entry_clauses, ...$case_clauses];
+            }
+        } else {
+            $case_context->clauses = $entry_clauses;
+        }
+
+        self::reconcileCaseClauses($statements_analyzer, $stmt, $case, $case_context, $context, $switch_var_id);
+
+        if ($case_clauses && $case_equality_expr) {
+            try {
+                $negated_case_clauses = FormulaGenerator::getNegatedFormula(
+                    $case_clauses,
+                    $case_equality_expr,
+                    spl_object_id($case_equality_expr),
+                    $context->self,
+                    $statements_analyzer,
+                    $codebase,
+                    true,
+                );
+            } catch (ComplicatedExpressionException) {
+                $negated_case_clauses = [];
+            }
+
+            $switch_scope->negated_clauses = [...$switch_scope->negated_clauses, ...$negated_case_clauses];
+        }
+    }
+
+    private static function addFallThroughNegation(
+        StatementsAnalyzer $statements_analyzer,
+        SwitchScope $switch_scope,
+        PhpParser\Node\Expr $case_equality_expr,
+        Context $context,
+    ): void {
+        $codebase = $statements_analyzer->getCodebase();
+        $expr_id = spl_object_id($case_equality_expr);
+
+        try {
+            $negated_clauses = FormulaGenerator::getNegatedFormula(
+                FormulaGenerator::getFormula(
+                    $expr_id,
+                    $expr_id,
+                    $case_equality_expr,
+                    $context->self,
+                    $statements_analyzer,
+                    $codebase,
+                    false,
+                    false,
+                ),
+                $case_equality_expr,
+                $expr_id,
+                $context->self,
+                $statements_analyzer,
+                $codebase,
+                true,
+            );
+        } catch (ComplicatedExpressionException) {
+            return;
+        }
+
+        $switch_scope->fall_through_negated_clauses = [
+            ...$switch_scope->fall_through_negated_clauses,
+            ...FormulaGenerator::withoutClausesOfVarsAssignedIn(
+                $negated_clauses,
+                $case_equality_expr,
+                $context->self,
+                $statements_analyzer->node_data,
+            ),
+        ];
+    }
+
+    /**
+     * Narrows the case context by what is known where its body runs
+     */
+    private static function reconcileCaseClauses(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Stmt\Switch_ $stmt,
+        PhpParser\Node\Stmt\Case_ $case,
+        Context $case_context,
+        Context $context,
+        ?string $switch_var_id,
+    ): void {
+        $reconcilable_if_types = Algebra::getTruthsFromFormula($case_context->clauses);
+
+        // if the if has an || in the conditional, we cannot easily reason about it
+        if (!$reconcilable_if_types) {
+            return;
+        }
+
+        $is_switch_true = $case->cond !== null
+            && $stmt->cond instanceof PhpParser\Node\Expr\ConstFetch
+            && strtolower($stmt->cond->name->getFirst()) === 'true';
+
+        $changed_var_ids = [];
+
+        $suppressed_issues = $statements_analyzer->getSuppressedIssues();
+
+        if (!isset($suppressed_issues['RedundantCondition'])) {
+            $statements_analyzer->addSuppressedIssues(['RedundantCondition']);
+        }
+
+        if (!isset($suppressed_issues['RedundantConditionGivenDocblockType'])) {
+            $statements_analyzer->addSuppressedIssues(['RedundantConditionGivenDocblockType']);
+        }
+
+        [$case_vars_in_scope_reconciled, $case_references_in_scope_reconciled] =
+            Reconciler::reconcileKeyedTypes(
+                $reconcilable_if_types,
+                // the conditions of `switch (true)` are checked like those of an `if`
+                $is_switch_true ? $reconcilable_if_types : [],
+                $case_context->vars_in_scope,
+                $case_context->references_in_scope,
+                $changed_var_ids,
+                $is_switch_true
+                    ? $case_context->cond_referenced_var_ids
+                    : ($case->cond && $switch_var_id ? [$switch_var_id => true] : []),
+                $statements_analyzer,
+                [],
+                $case_context->inside_loop,
+                new CodeLocation(
+                    $statements_analyzer->getSource(),
+                    $case->cond ?? $case,
+                    $context->include_location,
+                ),
+            );
+
+        if (!isset($suppressed_issues['RedundantCondition'])) {
+            $statements_analyzer->removeSuppressedIssues(['RedundantCondition']);
+        }
+
+        if (!isset($suppressed_issues['RedundantConditionGivenDocblockType'])) {
+            $statements_analyzer->removeSuppressedIssues(['RedundantConditionGivenDocblockType']);
+        }
+
+        $case_context->vars_in_scope = $case_vars_in_scope_reconciled;
+        $case_context->references_in_scope = $case_references_in_scope_reconciled;
+        foreach ($reconcilable_if_types as $var_id => $_) {
+            $case_context->vars_possibly_in_scope[$var_id] = true;
+        }
+
+        if ($changed_var_ids) {
+            $case_context->clauses = AlgebraAnalyzer::removeReconciledClauses(
+                $case_context->clauses,
+                $changed_var_ids,
+                $case_context->vars_in_scope,
+                $statements_analyzer,
+            )[0];
+        }
+    }
+
+    /**
+     * Records a case that falls through: its statements run under its condition or that of a case before it
+     *
+     * @param array<PhpParser\Node\Stmt> $case_stmts
+     */
+    private static function addFallThroughCase(
+        StatementsAnalyzer $statements_analyzer,
+        SwitchScope $switch_scope,
+        PhpParser\Node\Stmt\Case_ $case,
+        ?PhpParser\Node\Expr $case_equality_expr,
+        array $case_stmts,
+        bool $continue_case_equality_expr,
+        Context $context,
+    ): void {
+        if ($case->cond && $case_equality_expr) {
+            self::addFallThroughNegation($statements_analyzer, $switch_scope, $case_equality_expr, $context);
+        }
+
+        if (!$case_equality_expr) {
+            $case_equality_expr = new VirtualFuncCall(
+                new VirtualFullyQualified(['rand']),
+                [
+                    new VirtualArg(new VirtualInt(0)),
+                    new VirtualArg(new VirtualInt(1)),
+                ],
+                $case->getAttributes(),
+            );
+        }
+
+        $switch_scope->leftover_case_equality_expr = $switch_scope->leftover_case_equality_expr
+            ? new VirtualBooleanOr(
+                $switch_scope->leftover_case_equality_expr,
+                $case_equality_expr,
+                $case->cond ? $case->cond->getAttributes() : $case->getAttributes(),
+            )
+            : $case_equality_expr;
+
+        if ($continue_case_equality_expr
+            && $switch_scope->leftover_statements[0] instanceof PhpParser\Node\Stmt\If_
+        ) {
+            $case_if_stmt = $switch_scope->leftover_statements[0];
+            $case_if_stmt->cond = $switch_scope->leftover_case_equality_expr;
+        } else {
+            $case_if_stmt = new VirtualIf(
+                $switch_scope->leftover_case_equality_expr,
+                ['stmts' => $case_stmts],
+                [...$case->getAttributes(), 'switchFallthrough' => true],
+            );
+
+            $switch_scope->leftover_statements = [$case_if_stmt];
+        }
+    }
+
+    /**
+     * @param list<Clause> $entry_formula
+     */
+    private static function analyzeCaseCondition(
+        StatementsAnalyzer $statements_analyzer,
+        SwitchScope $switch_scope,
+        PhpParser\Node\Expr $cond,
+        Context $case_context,
+        array $entry_formula,
+    ): bool {
+        $vars_before_cond = $case_context->vars_in_scope;
+        $vars_narrowed_for_cond = self::narrowForCaseCondition(
+            $statements_analyzer,
+            $switch_scope,
+            $case_context,
+            $entry_formula,
+        );
+
+        if (ExpressionAnalyzer::analyze($statements_analyzer, $cond, $case_context) === false) {
+            return false;
+        }
+
+        // the body can also be reached by falling through, where those conditions held
+        foreach ($vars_narrowed_for_cond as $var_id => $narrowed_type) {
+            if (($case_context->vars_in_scope[$var_id] ?? null) !== $narrowed_type) {
+                continue;
+            }
+
+            if (isset($vars_before_cond[$var_id])) {
+                $case_context->vars_in_scope[$var_id] = $vars_before_cond[$var_id];
+            } else {
+                unset($case_context->vars_in_scope[$var_id]);
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Applies the negations of the conditions that fell through to the case context
+     *
+     * @param list<Clause> $entry_formula
+     * @return array<string, Type\Union> the variables this changed, with their narrowed types
+     */
+    private static function narrowForCaseCondition(
+        StatementsAnalyzer $statements_analyzer,
+        SwitchScope $switch_scope,
+        Context $case_context,
+        array $entry_formula,
+    ): array {
+        $fall_through_clauses = $switch_scope->fall_through_negated_clauses;
+
+        if (!$fall_through_clauses || count($fall_through_clauses) + count($entry_formula) >= 50) {
+            return [];
+        }
+
+        $truths = Algebra::getTruthsFromFormula(Algebra::simplifyCNF([...$entry_formula, ...$fall_through_clauses]));
+
+        if (!$truths) {
+            return [];
+        }
+
+        $changed_var_ids = [];
+
+        // reconciled on a copy: only the types the condition narrows are copied back, so the reference slots of
+        // $case_context->vars_in_scope and the offsets of the narrowed variables stay as they were
+        [$narrowed_vars] = Reconciler::reconcileKeyedTypes(
+            $truths,
+            [],
+            $case_context->vars_in_scope,
+            $case_context->references_in_scope,
+            $changed_var_ids,
+            [],
+            $statements_analyzer,
+            [],
+            $case_context->inside_loop,
+        );
+
+        $narrowed = [];
+
+        foreach ($narrowed_vars as $var_id => $type) {
+            if (($case_context->vars_in_scope[$var_id] ?? null) !== $type) {
+                $case_context->vars_in_scope[$var_id] = $type;
+                $narrowed[$var_id] = $type;
+            }
+        }
+
+        return $narrowed;
     }
 
     /**

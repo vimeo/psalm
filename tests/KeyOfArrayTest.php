@@ -5,13 +5,52 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Override;
+use Psalm\Context;
+use Psalm\Internal\Analyzer\IssueData;
+use Psalm\IssueBuffer;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+
+use function array_map;
 
 final class KeyOfArrayTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
+
+    public function testUndefinedClassAndConstantInKeyOfAreReported(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                class A {}
+
+                /** @param key-of<Missing::FOO> $k */
+                function f($k): void {}
+
+                /** @param key-of<A::FOO> $k */
+                function g($k): void {}',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        self::assertSame(
+            [
+                ['UnresolvableConstant', 4],
+                ['UndefinedDocblockClass', 4],
+                ['UnresolvableConstant', 7],
+                ['UndefinedConstant', 7],
+            ],
+            array_map(
+                static fn(IssueData $issue): array => [$issue->type, $issue->line_from],
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
+        );
+    }
 
     /**
      * @psalm-pure

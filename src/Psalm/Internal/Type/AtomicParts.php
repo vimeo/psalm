@@ -98,6 +98,27 @@ final class AtomicParts
                 new TNumericString($from_docblock),
             ],
             TArrayKey::class => [new TInt($from_docblock), new TString($from_docblock)],
+            TEmptyNumeric::class => [
+                new TLiteralInt(0, $from_docblock),
+                new TLiteralFloat(0.0, $from_docblock),
+                TLiteralString::make('0', $from_docblock),
+            ],
+            default => self::getScalarParts($type),
+        };
+    }
+
+    /**
+     * The parts of a scalar, of a non-empty-scalar (what is not falsy) and of an empty-scalar (what is falsy, or the
+     * string '0')
+     *
+     * @return non-empty-list<Atomic>|null
+     * @psalm-pure
+     */
+    public static function getScalarParts(Atomic $type): ?array
+    {
+        $from_docblock = $type->from_docblock;
+
+        return match ($type::class) {
             TScalar::class => [
                 new TInt($from_docblock),
                 new TFloat($from_docblock),
@@ -118,13 +139,28 @@ final class AtomicParts
                 TLiteralString::make('0', $from_docblock),
                 new TFalse($from_docblock),
             ],
-            TEmptyNumeric::class => [
-                new TLiteralInt(0, $from_docblock),
-                new TLiteralFloat(0.0, $from_docblock),
-                TLiteralString::make('0', $from_docblock),
-            ],
             default => null,
         };
+    }
+
+    /**
+     * The parts of a scalar that are of one kind, as a runtime check proves them (not docblock-only)
+     *
+     * @param class-string<TInt>|class-string<TFloat>|class-string<TString>|class-string<TBool> $kind
+     * @return list<Atomic>
+     * @psalm-pure
+     */
+    public static function getScalarPartsOfKind(TScalar $type, string $kind): array
+    {
+        $parts = [];
+
+        foreach (self::getScalarParts($type) ?? [] as $part) {
+            if ($part instanceof $kind) {
+                $parts[] = $part->setFromDocblock(false);
+            }
+        }
+
+        return $parts;
     }
 
     /**

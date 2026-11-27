@@ -465,7 +465,7 @@ final class PluginTest extends DeferredAnalyzerTestCase
                         <directory name="src" />
                     </projectFiles>
                     <plugins>
-                        <pluginClass class="Psalm\\Test\\Config\\Plugin\\FilePlugin" />
+                        <pluginClass class="Psalm\\Tests\\Config\\Plugin\\FilePlugin" />
                     </plugins>
                 </psalm>',
             ),
@@ -822,7 +822,7 @@ final class PluginTest extends DeferredAnalyzerTestCase
                         <directory name="src" />
                     </projectFiles>
                     <plugins>
-                        <pluginClass class="Psalm\\Test\\Config\\Plugin\\PropertyPlugin" />
+                        <pluginClass class="Psalm\\Tests\\Config\\Plugin\\PropertyPlugin" />
                     </plugins>
                 </psalm>',
             ),
@@ -861,7 +861,7 @@ final class PluginTest extends DeferredAnalyzerTestCase
                         <directory name="src" />
                     </projectFiles>
                     <plugins>
-                        <pluginClass class="Psalm\\Test\\Config\\Plugin\\MethodPlugin" />
+                        <pluginClass class="Psalm\\Tests\\Config\\Plugin\\MethodPlugin" />
                     </plugins>
                 </psalm>',
             ),
@@ -926,7 +926,7 @@ final class PluginTest extends DeferredAnalyzerTestCase
                         <directory name="src" />
                     </projectFiles>
                     <plugins>
-                        <pluginClass class="Psalm\\Test\\Config\\Plugin\\MethodPlugin" />
+                        <pluginClass class="Psalm\\Tests\\Config\\Plugin\\MethodPlugin" />
                     </plugins>
                 </psalm>',
             ),
@@ -969,7 +969,7 @@ final class PluginTest extends DeferredAnalyzerTestCase
                         <directory name="src" />
                     </projectFiles>
                     <plugins>
-                        <pluginClass class="Psalm\\Test\\Config\\Plugin\\MethodPlugin" />
+                        <pluginClass class="Psalm\\Tests\\Config\\Plugin\\MethodPlugin" />
                     </plugins>
                 </psalm>',
             ),
@@ -1012,7 +1012,7 @@ final class PluginTest extends DeferredAnalyzerTestCase
                         <directory name="src" />
                     </projectFiles>
                     <plugins>
-                        <pluginClass class="Psalm\\Test\\Config\\Plugin\\TypeVariablePlugin" />
+                        <pluginClass class="Psalm\\Tests\\Config\\Plugin\\TypeVariablePlugin" />
                     </plugins>
                 </psalm>',
             ),
@@ -1174,7 +1174,7 @@ final class PluginTest extends DeferredAnalyzerTestCase
                         <directory name="src" />
                     </projectFiles>
                     <plugins>
-                        <pluginClass class="Psalm\\Test\\Config\\Plugin\\TemplateParameterPlugin" />
+                        <pluginClass class="Psalm\\Tests\\Config\\Plugin\\TemplateParameterPlugin" />
                     </plugins>
                 </psalm>',
             ),
@@ -1224,7 +1224,7 @@ final class PluginTest extends DeferredAnalyzerTestCase
                         <directory name="src" />
                     </projectFiles>
                     <plugins>
-                        <pluginClass class="Psalm\\Test\\Config\\Plugin\\MethodPlugin" />
+                        <pluginClass class="Psalm\\Tests\\Config\\Plugin\\MethodPlugin" />
                     </plugins>
                 </psalm>',
             ),
@@ -1301,7 +1301,7 @@ final class PluginTest extends DeferredAnalyzerTestCase
                         <directory name="src" />
                     </projectFiles>
                     <plugins>
-                        <pluginClass class="Psalm\\Test\\Config\\Plugin\\FunctionPlugin" />
+                        <pluginClass class="Psalm\\Tests\\Config\\Plugin\\FunctionPlugin" />
                     </plugins>
                 </psalm>',
             ),
@@ -1337,7 +1337,7 @@ final class PluginTest extends DeferredAnalyzerTestCase
                         <directory name="src" />
                     </projectFiles>
                     <plugins>
-                        <pluginClass class="Psalm\\Test\\Config\\Plugin\\PropertyPlugin" />
+                        <pluginClass class="Psalm\\Tests\\Config\\Plugin\\PropertyPlugin" />
                     </plugins>
                 </psalm>',
             ),
@@ -1378,7 +1378,7 @@ final class PluginTest extends DeferredAnalyzerTestCase
                         <directory name="src" />
                     </projectFiles>
                     <plugins>
-                        <pluginClass class="Psalm\\Test\\Config\\Plugin\\MethodPlugin" />
+                        <pluginClass class="Psalm\\Tests\\Config\\Plugin\\MethodPlugin" />
                     </plugins>
                 </psalm>',
             ),
@@ -1419,7 +1419,7 @@ final class PluginTest extends DeferredAnalyzerTestCase
                         <directory name="src" />
                     </projectFiles>
                     <plugins>
-                        <pluginClass class="Psalm\\Test\\Config\\Plugin\\MethodCapabilitiesPlugin" />
+                        <pluginClass class="Psalm\\Tests\\Config\\Plugin\\MethodCapabilitiesPlugin" />
                     </plugins>
                 </psalm>',
             ),
@@ -1472,7 +1472,7 @@ final class PluginTest extends DeferredAnalyzerTestCase
                         <directory name="src" />
                     </projectFiles>
                     <plugins>
-                        <pluginClass class="Psalm\\Test\\Config\\Plugin\\MethodCapabilitiesPlugin" />
+                        <pluginClass class="Psalm\\Tests\\Config\\Plugin\\MethodCapabilitiesPlugin" />
                     </plugins>
                 </psalm>',
             ),
@@ -1523,7 +1523,7 @@ final class PluginTest extends DeferredAnalyzerTestCase
                         <directory name="src" />
                     </projectFiles>
                     <plugins>
-                        <pluginClass class="Psalm\\Test\\Config\\Plugin\\MethodCapabilitiesPlugin" />
+                        <pluginClass class="Psalm\\Tests\\Config\\Plugin\\MethodCapabilitiesPlugin" />
                     </plugins>
                 </psalm>',
             ),
@@ -1581,7 +1581,7 @@ final class PluginTest extends DeferredAnalyzerTestCase
                         <directory name="src" />
                     </projectFiles>
                     <plugins>
-                        <pluginClass class="Psalm\\Test\\Config\\Plugin\\FunctionPlugin" />
+                        <pluginClass class="Psalm\\Tests\\Config\\Plugin\\FunctionPlugin" />
                     </plugins>
                 </psalm>',
             ),
@@ -1596,6 +1596,178 @@ final class PluginTest extends DeferredAnalyzerTestCase
             '<?php
                 magicFunction(5);',
         );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testFunctionParamsProviderResolvesThisCallableArg(): void
+    {
+        $this->expectExceptionMessageMatches('/^InvalidScalarArgument - .*somefile\.php:8:59 - Argument 2 of forwardToCallable expects int,/');
+        $this->expectException(CodeException::class);
+
+        $this->analyzeWithFunctionPlugin(
+            '<?php
+                function forwardToCallable(callable $callable, mixed ...$args): void {}
+
+                final class Bar {
+                    public function run(int $a): void {}
+
+                    public function init(): void {
+                        forwardToCallable([$this, "run"], "hello");
+                    }
+                }',
+        );
+    }
+
+    public function testFunctionParamsProviderResolvesThisCallableArgToInheritedMethod(): void
+    {
+        $this->expectExceptionMessageMatches('/^InvalidScalarArgument - .*somefile\.php:10:59 - Argument 2 of forwardToCallable expects int,/');
+        $this->expectException(CodeException::class);
+
+        $this->analyzeWithFunctionPlugin(
+            '<?php
+                function forwardToCallable(callable $callable, mixed ...$args): void {}
+
+                abstract class Base {
+                    public function run(int $a): void {}
+                }
+
+                final class Child extends Base {
+                    public function init(): void {
+                        forwardToCallable([$this, "run"], "hello");
+                    }
+                }',
+        );
+    }
+
+    public function testFunctionParamsProviderResolvesThisCallableArgInTrait(): void
+    {
+        $this->expectExceptionMessageMatches('/^InvalidScalarArgument - .*somefile\.php:8:59 - Argument 2 of forwardToCallable expects int,/');
+        $this->expectException(CodeException::class);
+
+        $this->analyzeWithFunctionPlugin(
+            '<?php
+                function forwardToCallable(callable $callable, mixed ...$args): void {}
+
+                trait T {
+                    public function run(int $a): void {}
+
+                    public function init(): void {
+                        forwardToCallable([$this, "run"], "hello");
+                    }
+                }
+
+                final class Bar {
+                    use T;
+                }',
+        );
+    }
+
+    public function testFunctionParamsProviderResolvesThisCallableArgInTraitToUsingClassMethod(): void
+    {
+        $this->expectExceptionMessageMatches('/^InvalidScalarArgument - .*somefile\.php:6:59 - Argument 2 of forwardToCallable expects int,/');
+        $this->expectException(CodeException::class);
+
+        $this->analyzeWithFunctionPlugin(
+            '<?php
+                function forwardToCallable(callable $callable, mixed ...$args): void {}
+
+                trait T {
+                    public function init(): void {
+                        forwardToCallable([$this, "run"], "hello");
+                    }
+                }
+
+                final class Bar {
+                    use T;
+
+                    public function run(int $a): void {}
+                }',
+        );
+    }
+
+    public function testFunctionParamsProviderResolvesThisCallableArgInClosure(): void
+    {
+        $this->expectExceptionMessageMatches('/^InvalidScalarArgument - .*somefile\.php:9:63 - Argument 2 of forwardToCallable expects int,/');
+        $this->expectException(CodeException::class);
+
+        $this->analyzeWithFunctionPlugin(
+            '<?php
+                function forwardToCallable(callable $callable, mixed ...$args): void {}
+
+                final class Bar {
+                    public function run(int $a): void {}
+
+                    public function init(): void {
+                        $f = function (): void {
+                            forwardToCallable([$this, "run"], "hello");
+                        };
+                        $f();
+                    }
+                }',
+        );
+    }
+
+    public function testFunctionParamsProviderResolvesLocalVariableCallableArg(): void
+    {
+        $this->expectExceptionMessageMatches('/^InvalidScalarArgument - .*somefile\.php:9:48 - Argument 2 of forwardToCallable expects int,/');
+        $this->expectException(CodeException::class);
+
+        $this->analyzeWithFunctionPlugin(
+            '<?php
+                function forwardToCallable(callable $callable, mixed ...$args): void {}
+
+                final class Bar {
+                    public function run(int $a): void {}
+                }
+
+                $b = new Bar();
+                forwardToCallable([$b, "run"], "hello");',
+        );
+    }
+
+    public function testFunctionParamsProviderAcceptsValidArgForThisCallableArg(): void
+    {
+        $this->analyzeWithFunctionPlugin(
+            '<?php
+                function forwardToCallable(callable $callable, mixed ...$args): void {}
+
+                final class Bar {
+                    public function run(int $a): void {}
+
+                    public function init(): void {
+                        forwardToCallable([$this, "run"], 5);
+                    }
+                }',
+        );
+    }
+
+    private function analyzeWithFunctionPlugin(string $code): void
+    {
+        require_once __DIR__ . '/Plugin/FunctionPlugin.php';
+
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                    <plugins>
+                        <pluginClass class="Psalm\\Tests\\Config\\Plugin\\FunctionPlugin" />
+                    </plugins>
+                </psalm>',
+            ),
+        );
+
+        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile($file_path, $code);
 
         $this->analyzeFile($file_path, new Context());
     }
@@ -1647,7 +1819,7 @@ final class PluginTest extends DeferredAnalyzerTestCase
                         <directory name="src" />
                     </projectFiles>
                     <plugins>
-                        <pluginClass class="Psalm\\Test\\Config\\Plugin\\NullFunctionParamsPlugin" />
+                        <pluginClass class="Psalm\\Tests\\Config\\Plugin\\NullFunctionParamsPlugin" />
                     </plugins>
                 </psalm>',
             ),
@@ -1677,7 +1849,7 @@ final class PluginTest extends DeferredAnalyzerTestCase
                         <directory name="tests/fixtures/DummyProject" />
                     </projectFiles>
                     <plugins>
-                        <pluginClass class="Psalm\\Test\\Config\\Plugin\\AfterAnalysisPlugin" />
+                        <pluginClass class="Psalm\\Tests\\Config\\Plugin\\AfterAnalysisPlugin" />
                     </plugins>
                 </psalm>',
             ),
@@ -2502,7 +2674,7 @@ final class PluginTest extends DeferredAnalyzerTestCase
         require_once __DIR__ . '/Plugin/FilePlugin.php';
 
         $this->project_analyzer = $this->getProjectAnalyzerWithFixableIssuePlugin(
-            other_plugins: '<pluginClass class="Psalm\Test\Config\Plugin\FilePlugin" />',
+            other_plugins: '<pluginClass class="Psalm\Tests\Config\Plugin\FilePlugin" />',
         );
         $this->project_analyzer->setIssuesToFix(['LegacyCall' => true]);
 
