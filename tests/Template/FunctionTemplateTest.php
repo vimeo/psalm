@@ -128,6 +128,24 @@ final class FunctionTemplateTest extends TestCase
                         /** @psalm-check-type-exact $s = string */
                     }, ["a" => 1], ["a" => 2]);',
             ],
+            'keyOfTemplateBoundByAnotherTemplateWithoutLowerBound' => [
+                'code' => '<?php
+                    /**
+                     * @template TKey of key-of<TArr>
+                     * @template TArr of TInput
+                     * @template TInput of array<string, int>
+                     * @param callable(TKey, TArr): void $c
+                     */
+                    function codex2(callable $c): void {}
+
+                    codex2(function ($k, $a): void {
+                        /** @psalm-check-type-exact $k = string */
+                        /** @psalm-check-type-exact $a = array<string, int> */
+                        $_ = 1;
+                    });',
+                'assertions' => [],
+                'ignored_issues' => [],
+            ],
             'offsetOfATemplateBoundByAUnionReadsEachTypeOfTheBound' => [
                 'code' => '<?php
                     /**
