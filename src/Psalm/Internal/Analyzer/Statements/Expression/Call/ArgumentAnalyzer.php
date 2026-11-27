@@ -18,6 +18,7 @@ use Psalm\Internal\Analyzer\Statements\Block\ForeachAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CastAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
+use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ArrayFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\TypeMismatch\ArgumentTypeMismatchReporter;
 use Psalm\Internal\Analyzer\Statements\TypeMismatch\TypeMismatchReporter;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -2131,6 +2132,99 @@ final class ArgumentAnalyzer
     }
 
     /**
+     * The int key of a shape that fills the parameter at $offset: its int keys fill the parameters in order, before
+     * its string keys can fill any by name. Null when that is not known, as when other int keys can come before them.
+     *
+     * @psalm-pure
+     */
+    private static function getPositionalKey(TKeyedArray $array, int $offset): ?int
+    {
+        if ($array->fallback_params && !$array->fallback_params[0]->isString()) {
+            return null;
+        }
+        $int_keys = array_values(array_filter(array_keys($array->properties), is_int(...)));
+        for ($i = 0; $i <= $offset; $i++) {
+            if (!isset($int_keys[$i]) || $array->properties[$int_keys[$i]]->possibly_undefined) {
+                return null;
+            }
+        }
+        return $int_keys[$offset];
+    }
+
+    /**
+     * Links the element of the unpacked array $expr that the parameter takes to the array, as a fetch of it under the
+     * key it has there
+     */
+    private static function taintUnpackedElement(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr $expr,
+        Union $element_type,
+        FunctionLikeParameter $function_param,
+        int $unpacked_argument_offset,
+    ): Union {
+        $unpacked_type = $statements_analyzer->node_data->getType($expr);
+
+        if (!$statements_analyzer->data_flow_graph || !$unpacked_type || !$unpacked_type->hasArray()) {
+            return $element_type;
+        }
+
+        $unpacked_array = $unpacked_type->getArray();
+        $positional_array = self::getPositionalShape($unpacked_array);
+        // a string key passes its element to the parameter of that name only
+        $by_name = !$function_param->is_variadic
+            && $statements_analyzer->getCodebase()->analysis_php_version_id >= 8_00_00;
+
+        // the key of the element, as checkFunctionLikeTypeMatches() takes it from the array
+        if ($positional_array instanceof TArray) {
+            $element_key = $by_name && $positional_array->type_params[0]->isString()
+                ? Type::getString($function_param->name)
+                : $positional_array->type_params[0];
+        } elseif (!$positional_array instanceof TKeyedArray || !$unpacked_array instanceof TKeyedArray) {
+            return $element_type;
+        } elseif ($function_param->is_variadic) {
+            $element_key = $positional_array->getGenericKeyType();
+        } elseif ($by_name && isset($positional_array->properties[$function_param->name])) {
+            $element_key = Type::getString($function_param->name);
+        } elseif ($positional_array->is_list
+            && (isset($positional_array->properties[$unpacked_argument_offset])
+                || $positional_array->fallback_params)
+        ) {
+            // the key it has in the array, before getPositionalShape() renumbered it
+            $key = array_keys($unpacked_array->properties)[$unpacked_argument_offset] ?? $unpacked_argument_offset;
+            $element_key = is_int($key) ? Type::getInt(false, $key) : Type::getString($key);
+        } elseif (($key = self::getPositionalKey($unpacked_array, $unpacked_argument_offset)) !== null) {
+            // checkFunctionLikeTypeMatches() doesn't take the element under this key, so its type has no flow of it
+            $element_type = $unpacked_array->properties[$key];
+            $element_key = Type::getInt(false, $key);
+        } elseif ($positional_array->fallback_params) {
+            // past the int keys of a shape whose other keys are strings, the parameter is filled by name only
+            $element_key = $by_name
+                && $positional_array->fallback_params[0]->isString()
+                && array_all(
+                    $positional_array->properties,
+                    static fn(Union $item, int|string $key): bool => !is_int($key) || !$item->possibly_undefined,
+                )
+                ? Type::getString($function_param->name)
+                : $positional_array->getGenericKeyType();
+        } else {
+            // the parameter takes its default
+            return $element_type;
+        }
+
+        ArrayFetchAnalyzer::taintArrayFetch(
+            $statements_analyzer,
+            $expr,
+            'unpacked #' . ($unpacked_argument_offset + 1) . '[' . $element_key->getId() . ']',
+            $element_type,
+            $element_key,
+            null,
+            $unpacked_type,
+        );
+
+        return $element_type;
+    }
+
+    /**
      * The argument with the objects its parameter converts to strings converted: their __toString calls are signalled,
      * and what they return goes into the argument. A builtin (named by $builtin_id) without a string parameter that
      * takes an array of strings (vsprintf, str_replace) converts the objects among its values, and one in
@@ -2235,6 +2329,16 @@ final class ArgumentAnalyzer
         bool $converts_to_string = false,
     ): void {
         $codebase = $statements_analyzer->getCodebase();
+
+        if ($unpacked_argument_offset !== null) {
+            $input_type = self::taintUnpackedElement(
+                $statements_analyzer,
+                $expr,
+                $input_type,
+                $function_param,
+                $unpacked_argument_offset,
+            );
+        }
 
         $input_type = self::convertArgumentObjects(
             $statements_analyzer,
