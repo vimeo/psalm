@@ -609,6 +609,48 @@ final class IntersectionTypeTest extends TestCase
                         takesShape($value);
                     }',
             ],
+            'optionalPropertyOfAShapeIsNotNeededFromAShapeIntersectedWithAClass' => [
+                'code' => '<?php
+                    class Card {
+                        public string $brand = "visa";
+                    }
+
+                    /** @param object{a: int, b?: string} $shape */
+                    function takesShape(object $shape): void {}
+
+                    /** @param object{a: int}&Card $card */
+                    function pay(object $card): void {
+                        takesShape($card);
+                    }',
+            ],
+            'optionalPropertyOfAShapeIsNotNeededFromAClassIntersectedWithAShape' => [
+                'code' => '<?php
+                    class Card {
+                        public string $brand = "visa";
+                    }
+
+                    /** @param object{a: int, b?: string} $shape */
+                    function takesShape(object $shape): void {}
+
+                    /** @param Card&object{a: int} $card */
+                    function pay(object $card): void {
+                        takesShape($card);
+                    }',
+            ],
+            'optionalPropertyOfAShapeDeclaredByAClassOfTheIntersectionIsThere' => [
+                'code' => '<?php
+                    class Card {
+                        public int $a = 1;
+                    }
+
+                    /** @param object{a: int} $shape */
+                    function takesShape(object $shape): void {}
+
+                    /** @param object{a?: int}&Card $card */
+                    function pay(object $card): void {
+                        takesShape($card);
+                    }',
+            ],
             'methodOfAnObjectShapeDeclaredByMethodExistsIsCaseInsensitive' => [
                 'code' => '<?php
                     final class Card {}
@@ -730,6 +772,36 @@ final class IntersectionTypeTest extends TestCase
                     function takesShape(object $shape): void {}
 
                     /** @param Card&object{last4: int} $card */
+                    function pay(object $card): void {
+                        takesShape($card);
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'optionalPropertyOfAShapeIntersectedWithAClassIsNotARequiredOne' => [
+                'code' => '<?php
+                    class Card {
+                        public string $brand = "visa";
+                    }
+
+                    /** @param object{a: int} $shape */
+                    function takesShape(object $shape): void {}
+
+                    /** @param object{a?: int}&Card $card */
+                    function pay(object $card): void {
+                        takesShape($card);
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'optionalPropertyOfAClassIntersectedWithAShapeIsNotARequiredOne' => [
+                'code' => '<?php
+                    class Card {
+                        public string $brand = "visa";
+                    }
+
+                    /** @param object{a: int} $shape */
+                    function takesShape(object $shape): void {}
+
+                    /** @param Card&object{a?: int} $card */
                     function pay(object $card): void {
                         takesShape($card);
                     }',

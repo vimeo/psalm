@@ -260,7 +260,9 @@ final class KeyedArrayComparator
 
         foreach ($container_type_part->properties as $property_name => $container_property_type) {
             if (!isset($input_property_types[$property_name])) {
-                $all_types_contain = false;
+                if (!$container_property_type->possibly_undefined) {
+                    $all_types_contain = false;
+                }
 
                 continue;
             }
@@ -313,6 +315,11 @@ final class KeyedArrayComparator
         bool $allow_interface_equality,
         TypeComparisonResult $comparison_result,
     ): bool {
+        // a property that may be missing is no coercion of one that must be there
+        if ($input_property_type->possibly_undefined && !$container_property_type->possibly_undefined) {
+            return false;
+        }
+
         $property_type_comparison = new TypeComparisonResult();
 
         if ($input_property_type->isNever()
