@@ -302,6 +302,7 @@ final class IssetTest extends TestCase
                 'assertions' => [
                     '$a===' => 'array{k: string}',
                 ],
+                'ignored_issues' => ['RedundantConditionGivenDocblockType'],
             ],
             'negatedIssetKeepsRequiredNullableOffset' => [
                 'code' => '<?php
@@ -717,7 +718,7 @@ final class IssetTest extends TestCase
                         }
 
                         if (isset($a[$k])) {
-                            /** @psalm-check-type-exact $a = list<int> */
+                            /** @psalm-check-type-exact $a = list{0: int, 1: int, 2?: int, ...<int>} */
                         }
 
                         if (isset($a[0])) {
@@ -2744,6 +2745,77 @@ final class IssetTest extends TestCase
                 'ignored_issues' => ['RedundantCondition', 'RedundantConditionGivenDocblockType', 'TypeDoesNotContainType'],
                 'php_version' => '8.1',
             ],
+            'assertionOnAListItemWithAUnionKeyOnlyRequiresTheItemsUpToTheSmallestKey' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param list<array{string}|string> $l */
+                    function bigFirst(array $l, bool $b): void {
+                        $i = $b ? 5 : 2;
+                        if (is_array($l[$i])) {
+                            /** @psalm-check-type-exact $l = list{0: list{string}|string, 1: list{string}|string, 2: list{string}|string, 3?: list{string}|string, 4?: list{string}|string, 5?: list{string}, ...<list{string}|string>} */
+                        }
+                    }
+
+                    /** @param list<array{string}|string> $l */
+                    function smallFirst(array $l, bool $b): void {
+                        $i = $b ? 2 : 5;
+                        if (is_array($l[$i])) {
+                            /** @psalm-check-type-exact $l = list{0: list{string}|string, 1: list{string}|string, 2: list{string}|string, 3?: list{string}|string, 4?: list{string}|string, 5?: list{string}, ...<list{string}|string>} */
+                        }
+                    }
+
+                    /** @param list<string> $l */
+                    function issetBigFirst(array $l, bool $b): void {
+                        $i = $b ? 5 : 2;
+                        if (isset($l[$i])) {
+                            /** @psalm-check-type-exact $l = list{0: string, 1: string, 2: string, 3?: string, 4?: string, 5?: string, ...<string>} */
+                        }
+                    }
+
+                    /** @param list<string> $l */
+                    function notIsset(array $l, bool $b): void {
+                        $i = $b ? 5 : 2;
+                        if (!isset($l[$i])) {
+                            /** @psalm-check-type-exact $l = list<string> */
+                        }
+                    }
+                    PHP,
+            ],
+            'issetOnAListItemWithAUnionKeyIgnoresTheNegativeKeysForTheItemsItRequires' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param list<string> $l */
+                    function negativeLast(array $l, bool $b): void {
+                        $i = $b ? 5 : -1;
+                        if (isset($l[$i])) {
+                            /** @psalm-check-type-exact $l = list{string, string, string, string, string, string, ...<string>} */
+                        }
+                    }
+
+                    /** @param list<string> $l */
+                    function negativeFirst(array $l, bool $b): void {
+                        $i = $b ? -1 : 5;
+                        if (isset($l[$i])) {
+                            /** @psalm-check-type-exact $l = list{string, string, string, string, string, string, ...<string>} */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['InvalidArrayOffset'],
+            ],
+            'checkOfEachItemOfAnArrayInALoopNarrowsAllTheItems' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(array $payload): void {
+                        foreach (['iv', 'mac'] as $item) {
+                            if (!isset($payload[$item]) || !is_string($payload[$item])) {
+                                return;
+                            }
+                        }
+                        /** @psalm-check-type-exact $payload = array{iv?: string, mac?: string, ...<array-key, mixed>} */
+                    }
+                    PHP,
+            ],
             'comparisonOfAnItemWithAUnionKeyKeepsTheOtherItemsDefined' => [
                 'code' => <<<'PHP'
                     <?php
@@ -3276,6 +3348,20 @@ final class IssetTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'listItemAfterTheSmallestKeyOfAUnionKeyAssertionIsPossiblyUndefined' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param list<string> $l */
+                    function f(array $l, bool $b): string {
+                        $i = $b ? 5 : 2;
+                        if (isset($l[$i])) {
+                            return $l[4];
+                        }
+                        return '';
+                    }
+                    PHP,
+                'error_message' => 'PossiblyUndefinedArrayOffset',
+            ],
             'appendUnderAnIntOffsetOfADeclaredStringCheckedWithIssetIsReported' => [
                 'code' => '<?php
                     /** @param array{x: non-empty-array|non-empty-string|ArrayAccess} $a */

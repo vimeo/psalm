@@ -3670,6 +3670,23 @@ final class UnusedVariableTest extends TestCase
                     }',
                 'error_message' => 'UnusedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:29',
             ],
+            'overwrittenAssignmentInTheIfIsUnusedWhenTheElseAssignsInANestedIf' => [
+                'code' => '<?php
+                    /** @param list<string> $list */
+                    function f(array $list, bool $b): string {
+                        if ($b) {
+                            $found = "dead";
+                            $found = "a";
+                        } else {
+                            if ($list) {
+                                $found = $list[0];
+                            }
+                        }
+
+                        return is_string($found ?? null) ? "found" : "";
+                    }',
+                'error_message' => 'UnusedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:29',
+            ],
             'valueOverwrittenInTheCatchOfANestedTryAndNeverReadIsUnused' => [
                 'code' => '<?php
                     function f(): void {

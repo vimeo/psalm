@@ -682,7 +682,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
         }
 
         return Type::getFQCLNFromString(
-            $class_name->toString(),
+            $class_name->toCodeString(),
             $aliases,
         );
     }

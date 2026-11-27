@@ -1907,6 +1907,38 @@ final class TypeParseTest extends TestCase
         Type::parseString('int-mask<A::*>');
     }
 
+    public function testIntMaskWithWildcardGlobalConstant(): void
+    {
+        $this->expectException(TypeParseTreeException::class);
+        $this->expectExceptionMessage('int-mask types must all be integer values');
+
+        Type::parseString('int-mask<PHP_URL_*>');
+    }
+
+    public function testIntMaskWithGenericGlobalConstant(): void
+    {
+        $this->expectException(TypeParseTreeException::class);
+        $this->expectExceptionMessage('int-mask types must all be integer values');
+
+        Type::parseString('int-mask<E_ALL<int>>');
+    }
+
+    public function testIntMaskWithCallableGlobalConstant(): void
+    {
+        $this->expectException(TypeParseTreeException::class);
+        $this->expectExceptionMessage('int-mask types must all be integer values');
+
+        Type::parseString('int-mask<Closure(): int>');
+    }
+
+    public function testIntMaskWithIntersectionOfGlobalConstants(): void
+    {
+        $this->expectException(TypeParseTreeException::class);
+        $this->expectExceptionMessage('int-mask types must all be integer values');
+
+        Type::parseString('int-mask<E_ALL&E_ERROR>');
+    }
+
     public function testIntMaskOfWithValidClassConstant(): void
     {
         $docblock_type = Type::parseString('int-mask-of<A::*>');
