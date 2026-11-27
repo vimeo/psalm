@@ -264,65 +264,130 @@ final class KeyedArrayComparator
 
     public static function isContainedByObjectWithProperties(
         Codebase $codebase,
-        TNamedObject $input_type_part,
+        TNamedObject|TObjectWithProperties $input_type_part,
         TObjectWithProperties $container_type_part,
         bool $allow_interface_equality,
         ?TypeComparisonResult $atomic_comparison_result,
     ): bool {
         $all_types_contain = true;
 
-        $input_object_with_keys = self::coerceToObjectWithProperties(
-            $codebase,
-            $input_type_part,
-            $container_type_part,
-        );
+        // the value has the properties of every class and object shape of an intersection
+        $input_property_types = [];
+
+        foreach ([$input_type_part, ...$input_type_part->extra_types] as $input_member) {
+            if ($input_member instanceof TObjectWithProperties) {
+                $member_properties = $input_member->properties;
+            } elseif ($input_member instanceof TNamedObject) {
+                $member_properties = self::coerceToObjectWithProperties(
+                    $codebase,
+                    $input_member,
+                    $container_type_part,
+                )?->properties ?? [];
+            } else {
+                continue;
+            }
+
+            foreach ($member_properties as $property_name => $property_type) {
+                $input_property_types[$property_name][] = $property_type;
+            }
+        }
 
         foreach ($container_type_part->properties as $property_name => $container_property_type) {
-            if (!$input_object_with_keys || !isset($input_object_with_keys->properties[$property_name])) {
-                $all_types_contain = false;
+            if (!isset($input_property_types[$property_name])) {
+                if (!$container_property_type->possibly_undefined) {
+                    $all_types_contain = false;
+                }
 
                 continue;
             }
 
-            $input_property_type = $input_object_with_keys->properties[$property_name];
+            // the property's value is of every member's type: one contained member is enough,
+            // and a coercion is possible only if every member can hold the container type
+            $is_contained = false;
+            $all_members_coerced = true;
 
-            $property_type_comparison = new TypeComparisonResult();
+            foreach ($input_property_types[$property_name] as $input_property_type) {
+                $member_comparison = new TypeComparisonResult();
 
-            if (!$input_property_type->isNever()
-                && !UnionTypeComparator::isContainedBy(
+                if (self::isPropertyContainedBy(
                     $codebase,
                     $input_property_type,
                     $container_property_type,
-                    false,
-                    false,
-                    $property_type_comparison,
                     $allow_interface_equality,
-                )
-                && !$property_type_comparison->type_coerced_from_scalar
-            ) {
-                $inverse_property_type_comparison = new TypeComparisonResult();
+                    $member_comparison,
+                )) {
+                    $is_contained = true;
 
-                if (UnionTypeComparator::isContainedBy(
-                    $codebase,
-                    $container_property_type,
-                    $input_property_type,
-                    false,
-                    false,
-                    $inverse_property_type_comparison,
-                    $allow_interface_equality,
-                )
-                || $inverse_property_type_comparison->type_coerced_from_scalar
-                ) {
-                    if ($atomic_comparison_result) {
-                        $atomic_comparison_result->type_coerced = true;
-                    }
+                    break;
                 }
 
-                $all_types_contain = false;
+                $all_members_coerced = $all_members_coerced && $member_comparison->type_coerced === true;
+            }
+
+            if ($is_contained) {
+                continue;
+            }
+
+            $all_types_contain = false;
+
+            if ($all_members_coerced && $atomic_comparison_result) {
+                $atomic_comparison_result->type_coerced = true;
             }
         }
 
         return $all_types_contain;
+    }
+
+    /**
+     * Whether a property of $input_property_type is one of $container_property_type, recording in
+     * $comparison_result a container type the input type contains as a coercion
+     */
+    private static function isPropertyContainedBy(
+        Codebase $codebase,
+        Union $input_property_type,
+        Union $container_property_type,
+        bool $allow_interface_equality,
+        TypeComparisonResult $comparison_result,
+    ): bool {
+        // a property that may be missing is no coercion of one that must be there
+        if ($input_property_type->possibly_undefined && !$container_property_type->possibly_undefined) {
+            return false;
+        }
+
+        $property_type_comparison = new TypeComparisonResult();
+
+        if ($input_property_type->isNever()
+            || UnionTypeComparator::isContainedBy(
+                $codebase,
+                $input_property_type,
+                $container_property_type,
+                false,
+                false,
+                $property_type_comparison,
+                $allow_interface_equality,
+            )
+            || $property_type_comparison->type_coerced_from_scalar
+        ) {
+            return true;
+        }
+
+        $inverse_property_type_comparison = new TypeComparisonResult();
+
+        if (UnionTypeComparator::isContainedBy(
+            $codebase,
+            $container_property_type,
+            $input_property_type,
+            false,
+            false,
+            $inverse_property_type_comparison,
+            $allow_interface_equality,
+        )
+            || $inverse_property_type_comparison->type_coerced_from_scalar
+        ) {
+            $comparison_result->type_coerced = true;
+        }
+
+        return false;
     }
 
     /**

@@ -439,6 +439,20 @@ final class AtomicTypeComparator
             return true;
         }
 
+        // an object shape intersected with classes has their properties too
+        if ($container_type_part instanceof TObjectWithProperties
+            && $input_type_part instanceof TObjectWithProperties
+            && $input_type_part->extra_types
+        ) {
+            return KeyedArrayComparator::isContainedByObjectWithProperties(
+                $codebase,
+                $input_type_part,
+                $container_type_part,
+                $allow_interface_equality,
+                $atomic_comparison_result,
+            );
+        }
+
         if (($container_type_part instanceof TKeyedArray
                 && $input_type_part instanceof TKeyedArray)
             || ($container_type_part instanceof TObjectWithProperties
