@@ -1130,20 +1130,21 @@ final class TypeExpander
                 || $static_class_type instanceof TTemplateParam)
         ) {
             $return_type_types = $return_type->getIntersectionTypes();
-            $cloned_static = $static_class_type->setIntersectionTypes([]);
-            $extra_static = $static_class_type->extra_types;
 
-            if ($cloned_static->getKey(false) !== $return_type->getKey(false)) {
-                $return_type_types[$cloned_static->getKey()] = $cloned_static;
-            }
-
-            foreach ($extra_static as $extra_static_type) {
-                if ($extra_static_type->getKey(false) !== $return_type->getKey(false)) {
-                    $return_type_types[$extra_static_type->getKey()] = $extra_static_type;
+            foreach ([$static_class_type->setIntersectionTypes([]), ...$static_class_type->extra_types] as $added) {
+                if ($added->getKey(false) === $return_type->getKey(false)) {
+                    continue;
                 }
+
+                // the called class's `static` is bound here, a later call on another receiver must not rebind it
+                if ($added instanceof TNamedObject && $added->is_static) {
+                    $added = $added->setIsStatic(true, true);
+                }
+
+                $return_type_types[$added->getKey()] = $added;
             }
             $return_type = $return_type->setIntersectionTypes($return_type_types)
-                ->setIsStatic(true, true);
+                ->setIsStatic(!$final, true);
         } elseif ($return_type->is_static
             && !$return_type->is_static_resolved
             && $return_type::class === TNamedObject::class

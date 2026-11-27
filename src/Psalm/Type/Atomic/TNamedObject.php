@@ -128,11 +128,7 @@ class TNamedObject extends Atomic
     #[Override]
     public function getId(bool $exact = true): string
     {
-        if ($this->extra_types) {
-            return $this->value . $this->getIntersectionTypesId($exact);
-        }
-
-        return $this->is_static && $exact ? $this->value . '&static' : $this->value;
+        return $this->value . ($this->is_static && $exact ? '&static' : '') . $this->getIntersectionTypesId($exact);
     }
 
     /**
