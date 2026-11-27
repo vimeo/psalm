@@ -1,24 +1,19 @@
 name: StructArmed
 
 on:
-  push:
-    branches: [master]
-    paths:
-      - '**.php'
-      - 'composer.json'
-      - '.github/workflows/structarmed.yml'
   pull_request:
     paths:
       - '**.php'
       - 'composer.json'
+      - 'vendor-bin/structarmed/composer.json'
       - '.github/workflows/structarmed.yml'
 permissions:
   contents: read
 
-# A new push to a pull request cancels its previous run; pushes to branches always run to the end.
+# A new push to a pull request cancels its previous run.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
 
 jobs:
   structarmed:
@@ -60,7 +55,9 @@ jobs:
             ${{ runner.os }}-composer-
 
       - name: Run composer install
-        run: composer install -o
+        run: |
+          composer install -o
+          composer bin structarmed install
         env:
           COMPOSER_ROOT_VERSION: dev-master
 
