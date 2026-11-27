@@ -4031,7 +4031,8 @@ final class Config
     }
 
     /**
-     * The lowest PHP version (`8.2`) the `php` requirement of a composer.json allows
+     * The lowest PHP version (`8.2`) the `php` requirement of a composer.json allows, or else the PHP version its
+     * `config.platform` installs the dependencies for
      *
      * @param array<array-key, mixed> $composer_json
      * @psalm-suppress MixedAssignment
@@ -4040,7 +4041,11 @@ final class Config
     private static function getLowestPhpVersion(array $composer_json): ?string
     {
         // php-64bit is the platform package of a 64-bit php: it constrains the version just as well
-        $php_version = $composer_json['require']['php'] ?? $composer_json['require']['php-64bit'] ?? null;
+        $php_version = $composer_json['require']['php']
+            ?? $composer_json['require']['php-64bit']
+            ?? $composer_json['config']['platform']['php']
+            ?? $composer_json['config']['platform']['php-64bit']
+            ?? null;
 
         if (is_string($php_version)) {
             $version_parser = new VersionParser();
