@@ -5752,6 +5752,25 @@ final class TaintTest extends TestCase
                         query(["name" => rand(0, 1) ? ["\$regex" => new Regex((string) $value)] : $value]);
                     }',
             ],
+            'nosqlSinkNotTaintedByScalarNarrowingOfAnIfThatLeaves' => [
+                'code' => '<?php
+                    /** @psalm-taint-sink nosql $filter */
+                    function query(array $filter): void {}
+
+                    /** @psalm-taint-source input */
+                    function input(): mixed {
+                        return null;
+                    }
+
+                    // past an if that leaves unless the value is a scalar, it holds no NoSQL query document
+                    function search(bool $regex): void {
+                        $value = input();
+                        if (!is_scalar($value)) {
+                            return;
+                        }
+                        query(["name" => $regex ? [] : $value]);
+                    }',
+            ],
             'nosqlSinkNotTaintedByABsonValue' => [
                 'code' => '<?php
                     use MongoDB\BSON\ObjectId;
@@ -14158,6 +14177,48 @@ final class TaintTest extends TestCase
                         show((string) $_GET["x"]);
                     }',
                 'error_message' => 'TaintedHtml',
+            ],
+            'nosqlSinkTaintedPastAnIfNarrowingAMixedValueThatDoesNotLeave' => [
+                'code' => '<?php
+                    /** @psalm-taint-sink nosql $filter */
+                    function query(array $filter): void {}
+
+                    /** @psalm-taint-source input */
+                    function input(): mixed {
+                        return null;
+                    }
+
+                    // the implicit else keeps the value as it was: it can still be a query document
+                    function search(bool $regex): void {
+                        $value = input();
+                        if (is_scalar($value)) {
+                            echo "scalar";
+                        }
+                        query(["name" => $regex ? [] : $value]);
+                    }',
+                'error_message' => 'TaintedNosql',
+            ],
+            'nosqlSinkTaintedPastANestedIfThatLeavesOnlyOnOneWay' => [
+                'code' => '<?php
+                    /** @psalm-taint-sink nosql $filter */
+                    function query(array $filter): void {}
+
+                    /** @psalm-taint-source input */
+                    function input(): mixed {
+                        return null;
+                    }
+
+                    // only one way past the outer if narrowed the value
+                    function search(bool $regex, bool $check): void {
+                        $value = input();
+                        if ($check) {
+                            if (!is_scalar($value)) {
+                                return;
+                            }
+                        }
+                        query(["name" => $regex ? [] : $value]);
+                    }',
+                'error_message' => 'TaintedNosql',
             ],
             'nosqlSinkTaintedByAnEqualityOperandInExpr' => [
                 'code' => '<?php
