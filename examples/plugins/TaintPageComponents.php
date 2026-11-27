@@ -42,7 +42,7 @@ final class TaintPageComponents implements AfterExpressionAnalysisInterface
 
         $node_types = $source->getNodeTypeProvider();
         $page_type = $node_types->getType($call->var);
-        $page = $page_type !== null && $page_type->isSingle() ? $page_type->getSingleAtomic() : null;
+        $page = $page_type !== null && $page_type->isSingleAtomic() ? $page_type->getSingleAtomic() : null;
         $args = $call->getArgs();
         $component_type = isset($args[0]) ? $node_types->getType($args[0]->value) : null;
         if (!$page instanceof TNamedObject

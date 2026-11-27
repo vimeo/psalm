@@ -8,7 +8,7 @@ Input such as `$_GET['id']`, `$_POST['email']` or `$_COOKIE['token']` is a **sou
 not reach unescaped, such as `<div id="section_<?= $id ?>">` or
 `$pdo->exec("select * from users where name='" . $name . "'")`.
 
-Taint analysis runs by default alongside type checking.
+Taint analysis runs by default alongside type checking. `--no-taint-analysis` skips it for one run.
 
 **On this page:**
 
@@ -171,6 +171,7 @@ A value can only carry taints that its type is capable of holding:
 | `int`, `float` | `sleep` only — never HTML, SQL, paths, etc. |
 | `bool`, `null`, `literal-string` | None |
 | `string` | All user-input taints except `nosql` (until decoded into an array/object by `json_decode()`, `unserialize()`, `parse_str()`, ...) |
+| `MongoDB\BSON\ObjectId`, `UTCDateTime` and the other BSON values | All but `nosql` ([`Regex`, `Javascript`, `Document` and `PackedArray` keep it](../running_psalm/issues/TaintedNosql.md)) |
 | `array<K, V>` | Whatever its keys `K` and values `V` can carry (`list<int>` carries no HTML; `array<string, int>` can carry anything in its keys) |
 | Union (`A\|B`) | Whatever any member type can carry |
 

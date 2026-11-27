@@ -427,44 +427,62 @@ final class ExpressionScanner
             );
         }
 
-        if ($stmt->expr instanceof PhpParser\Node\Scalar\String_) {
-            $path_to_file = $stmt->expr->value;
+        foreach (self::getIncludablePathExprs($stmt->expr) as $path_expr) {
+            if ($path_expr instanceof PhpParser\Node\Scalar\String_) {
+                $path_to_file = $path_expr->value;
 
-            // attempts to resolve using get_include_path dirs
-            $include_path = IncludeAnalyzer::resolveIncludePath($path_to_file, dirname($file_storage->file_path));
-            $path_to_file = $include_path ?: $path_to_file;
+                // attempts to resolve using get_include_path dirs
+                $include_path = IncludeAnalyzer::resolveIncludePath($path_to_file, dirname($file_storage->file_path));
+                $path_to_file = $include_path ?: $path_to_file;
 
-            if (Path::isRelative($path_to_file)) {
-                $path_to_file = $config->base_dir . DIRECTORY_SEPARATOR . $path_to_file;
+                if (Path::isRelative($path_to_file)) {
+                    $path_to_file = $config->base_dir . DIRECTORY_SEPARATOR . $path_to_file;
+                }
+            } else {
+                $path_to_file = IncludeAnalyzer::getPathTo(
+                    $path_expr,
+                    null,
+                    null,
+                    $file_storage->file_path,
+                    $config,
+                );
             }
-        } else {
-            $path_to_file = IncludeAnalyzer::getPathTo(
-                $stmt->expr,
-                null,
-                null,
-                $file_storage->file_path,
-                $config,
-            );
-        }
 
-        if ($path_to_file) {
+            if ($path_to_file === null || $path_to_file === '') {
+                continue;
+            }
+
             $path_to_file = IncludeAnalyzer::normalizeFilePath($path_to_file);
 
-            if ($file_storage->file_path === $path_to_file) {
-                return;
+            if ($file_storage->file_path === $path_to_file || !$codebase->fileExists($path_to_file)) {
+                continue;
             }
 
-            if ($codebase->fileExists($path_to_file)) {
-                if ($scan_deep) {
-                    $codebase->scanner->addFileToDeepScan($path_to_file);
-                } else {
-                    $codebase->scanner->addFileToShallowScan($path_to_file);
-                }
-
-                $file_storage->required_file_paths[strtolower($path_to_file)] = $path_to_file;
-
-                return;
+            if ($scan_deep) {
+                $codebase->scanner->addFileToDeepScan($path_to_file);
+            } else {
+                $codebase->scanner->addFileToShallowScan($path_to_file);
             }
+
+            $file_storage->required_file_paths[strtolower($path_to_file)] = $path_to_file;
         }
+    }
+
+    /**
+     * Each branch of a ternary may be the included path, depending on runtime values
+     *
+     * @return list<PhpParser\Node\Expr>
+     * @psalm-mutation-free
+     */
+    private static function getIncludablePathExprs(PhpParser\Node\Expr $expr): array
+    {
+        if ($expr instanceof PhpParser\Node\Expr\Ternary) {
+            return [
+                ...self::getIncludablePathExprs($expr->if ?? $expr->cond),
+                ...self::getIncludablePathExprs($expr->else),
+            ];
+        }
+
+        return [$expr];
     }
 }

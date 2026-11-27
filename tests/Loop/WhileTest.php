@@ -21,6 +21,74 @@ final class WhileTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
+    public function testAVariableDefinedOnSomeWaysOutOfTheLoopKeepsItsType(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                function nextRow(): ?int {
+                    return rand(0, 1) ? 1 : null;
+                }
+
+                function inAWhile(): void {
+                    while ($row = nextRow()) {
+                        $last = $row;
+                    }
+                    /** @psalm-check-type-exact $last? = int */;
+                }
+
+                function atABreakOfAWhile(int $i): void {
+                    while ($i > 0) {
+                        if ($i === 5) {
+                            $found = "a";
+                            break;
+                        }
+                        $i--;
+                    }
+                    /** @psalm-check-type-exact $found? = "a" */;
+                }
+
+                function inAFor(int $n): void {
+                    for ($i = 0; $i < $n; $i++) {
+                        $x = $i;
+                    }
+                    /** @psalm-check-type-exact $x? = int<0, max> */;
+                }
+
+                function notFromTheEndOfALoopOnlyLeftByABreak(): void {
+                    while (true) {
+                        $x = 1;
+                        if (rand(0, 1)) {
+                            unset($x);
+                            break;
+                        }
+                        if (rand(0, 1)) {
+                            continue;
+                        }
+                    }
+                    echo $x;
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        self::assertSame(
+            [
+                'PossiblyUndefinedVariable 42:26',
+                'MixedArgument 42:26',
+            ],
+            array_map(
+                static fn(IssueData $issue): string
+                    => $issue->type . ' ' . $issue->line_from . ':' . $issue->column_from,
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
+        );
+    }
+
     public function testAnIssueInTheLoopDoesNotChangeTheUndefinedVariableIssues(): void
     {
         $this->project_analyzer->getConfig()->throw_exception = false;
@@ -246,6 +314,51 @@ final class WhileTest extends TestCase
                 'assertions' => [
                     '$afterLoop===' => '10',
                     '$concatenated===' => '\'1a\'|\'other\'',
+                ],
+            ],
+            'assignmentInsideACompoundAssignmentIsFollowedByTheLoop' => [
+                'code' => '<?php
+                    $a = null;
+                    $b = null;
+                    $c = null;
+                    $s = "";
+                    while (rand(0, 1)) {
+                        $c = $b;
+                        $s .= ($b = $a) ? "x" : "y";
+                        $a = 1;
+                    }',
+                'assertions' => [
+                    '$c===' => '1|null',
+                ],
+            ],
+            'assignmentInsideACoalesceAssignmentIsFollowedByTheLoop' => [
+                'code' => '<?php
+                    $a = null;
+                    $b = null;
+                    $c = null;
+                    $x = null;
+                    while (rand(0, 1)) {
+                        $c = $b;
+                        $x ??= ($b = $a);
+                        $a = 1;
+                    }',
+                'assertions' => [
+                    '$c===' => '1|null',
+                ],
+            ],
+            'assignmentInsideTheOffsetOfAnIncrementIsFollowedByTheLoop' => [
+                'code' => '<?php
+                    $a = null;
+                    $b = null;
+                    $c = null;
+                    $counts = [0, 0];
+                    while (rand(0, 1)) {
+                        $c = $b;
+                        $counts[($b = $a) ? 1 : 0]++;
+                        $a = 1;
+                    }',
+                'assertions' => [
+                    '$c===' => '1|null',
                 ],
             ],
             'variableAssignedInALoopOverARangeStartBelowTheEndIsDefined' => [

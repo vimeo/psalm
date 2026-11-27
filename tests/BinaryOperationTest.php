@@ -14,6 +14,7 @@ use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
 use function array_map;
+use function hrtime;
 use function implode;
 use function range;
 use function sort;
@@ -727,6 +728,28 @@ final class BinaryOperationTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
+    public function testArithmeticOnLargeUnionsOfLiteralsCombinesTheResultsOnce(): void
+    {
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @var ' . implode('|', range(0, 249)) . ' */
+                $a = $GLOBALS["a"];
+
+                $sum = $a + $a;',
+        );
+
+        $context = new Context();
+
+        $start = hrtime(true);
+        $this->analyzeFile('somefile.php', $context);
+        $nanoseconds = hrtime(true) - $start;
+
+        $this->assertSame(implode('|', range(0, 498)), $context->vars_in_scope['$sum']->getId());
+        // combining each of the 62 500 results into the hundreds of results before it takes tens of seconds
+        $this->assertLessThan(5_000_000_000, $nanoseconds);
+    }
+
     /**
      * @param list<int> $suffixes
      * @psalm-pure
@@ -746,6 +769,88 @@ final class BinaryOperationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'arithmeticOnUnionsOfLiteralsKeepsEachResult' => [
+                'code' => '<?php
+                    /** @var 1|3 */
+                    $a = $GLOBALS["a"];
+                    /** @var 2|4 */
+                    $b = $GLOBALS["b"];
+                    /** @var 0|-2|5 */
+                    $c = $GLOBALS["c"];
+
+                    $minus = $a - $b;
+                    $times = $c * $a;
+                    $divided = $a / $c;
+                    $modulo = $a % $c;
+                    $shifted = $a << $c;',
+                'assertions' => [
+                    '$minus===' => '-3|-1|1',
+                    '$times===' => '-6|-2|0|5|15',
+                    '$divided===' => 'float(-0.5)|float(-1.5)|float(0.2)|float(0.6)',
+                    '$modulo===' => '1|3',
+                    '$shifted===' => '1|3|32|96',
+                ],
+            ],
+            'arithmeticOnUnionsOfLiteralsAndOfOtherTypes' => [
+                'code' => '<?php
+                    /** @var 1|3 */
+                    $a = $GLOBALS["a"];
+                    /** @var 2|4 */
+                    $b = $GLOBALS["b"];
+                    /** @var 1|9223372036854775807 */
+                    $max = $GLOBALS["max"];
+                    /** @var int */
+                    $i = $GLOBALS["i"];
+
+                    $plusRange = $a + ($i > 0 ? $i : 7);
+                    $minusRange = $a - ($i > 0 ? $b : $i);
+                    $overflow = $max + $a;',
+                'assertions' => [
+                    '$plusRange===' => 'int<2, max>',
+                    '$minusRange===' => 'int<-3, max>',
+                    '$overflow===' => '2|4|float(9.223372036854776E+18)',
+                ],
+            ],
+            'arithmeticOnUnionsOfLiteralsWithMoreResultsThanTheLiteralLimit' => [
+                'code' => '<?php
+                    /** @var ' . implode('|', range(0, 29)) . ' */
+                    $a = $GLOBALS["a"];
+                    /** @var ' . implode('|', range(0, 29 * 30, 30)) . ' */
+                    $b = $GLOBALS["b"];
+
+                    $nonNegative = $a + $b;
+                    $withNegatives = $a - $b;',
+                'assertions' => [
+                    '$nonNegative===' => 'int<0, max>',
+                    '$withNegatives===' => 'literal-int',
+                ],
+            ],
+            'arithmeticOnUnionsOfLiteralsWidensByTheFirstResultsPastTheLiteralLimit' => [
+                'code' => '<?php
+                    /** @var ' . implode('|', [...range(1000, 1028), -5000]) . ' */
+                    $a = $GLOBALS["a"];
+                    /** @var ' . implode('|', range(0, 870, 30)) . ' */
+                    $b = $GLOBALS["b"];
+
+                    $difference = $a - $b;',
+                'assertions' => [
+                    '$difference===' => 'int<-5870, max>',
+                ],
+            ],
+            'concatOfAMixedAndAUnionOfStringLiterals' => [
+                'code' => '<?php
+                    /** @var mixed */
+                    $u = json_decode("1");
+
+                    $a = $u . (rand(0, 1) ? "a" : "b");
+                    $b = $u . (rand(0, 1) ? "a" : "");
+                ',
+                'assertions' => [
+                    '$a===' => 'non-falsy-string',
+                    '$b===' => 'string',
+                ],
+                'ignored_issues' => ['MixedOperand'],
+            ],
             'secondArrayUnionKeepsTheRestOfTheArrayForTheOtherKey' => [
                 'code' => '<?php
                     /** @var array<string, int> $arr */

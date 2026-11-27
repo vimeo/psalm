@@ -47,6 +47,10 @@ final class InterfaceAnalyzer extends ClassLikeAnalyzer
             throw new LogicException('Something went badly wrong');
         }
 
+        if (!self::isStorageDeclaration($this->storage, $this->class, $this->getFilePath())) {
+            return;
+        }
+
         $project_analyzer = $this->file_analyzer->project_analyzer;
         $codebase = $project_analyzer->getCodebase();
         $config = $project_analyzer->getConfig();

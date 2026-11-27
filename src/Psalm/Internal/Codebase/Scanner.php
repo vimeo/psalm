@@ -7,6 +7,7 @@ namespace Psalm\Internal\Codebase;
 use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\IssueData;
+use Psalm\Internal\Crash\CrashContext;
 use Psalm\Internal\ErrorHandler;
 use Psalm\Internal\Fork\InitScannerTask;
 use Psalm\Internal\Fork\Pool;
@@ -27,6 +28,7 @@ use Psalm\Storage\FunctionStorage;
 use Psalm\Type;
 use Psalm\Type\Union;
 use ReflectionClass;
+use RuntimeException;
 use Throwable;
 use UnexpectedValueException;
 
@@ -42,6 +44,7 @@ use function enum_exists;
 use function error_reporting;
 use function explode;
 use function file_exists;
+use function hash;
 use function interface_exists;
 use function ksort;
 use function ltrim;
@@ -67,7 +70,9 @@ use const SORT_STRING;
  *     array<string, string>,
  *     array<string, bool>,
  *     array<string, bool>,
- *     array<string, bool>
+ *     array<string, bool>,
+ *     array<string, string>,
+ *     array<string, true>
  * }
  *
  * @psalm-type  PoolData = array{
@@ -140,6 +145,20 @@ final class Scanner
      * @var array<string, bool>
      */
     private array $scanned_files = [];
+
+    /**
+     * The xxh128 hash of the contents of each deep-scanned file, as scanned
+     *
+     * @var array<string, string>
+     */
+    private array $scanned_file_hashes = [];
+
+    /**
+     * The files that were queued for the scan and gone when their turn came
+     *
+     * @var array<string, true>
+     */
+    private array $vanished_files = [];
 
     /**
      * The deep-scanned files whose classes queueFilesOfInheritedMethods() went through => true
@@ -261,7 +280,7 @@ final class Scanner
      */
     public function removeFile(string $file_path): void
     {
-        unset($this->scanned_files[$file_path]);
+        unset($this->scanned_files[$file_path], $this->scanned_file_hashes[$file_path]);
     }
 
     /**
@@ -538,7 +557,8 @@ final class Scanner
         }
 
         // Each scanning process takes its files in path order, so the declaration of a class it keeps is the
-        // one in the smallest path; the pool's merge then picks the smallest path among the processes.
+        // one in the smallest path; the pool's merge then picks the smallest path among the processes, unless
+        // the class was already held before the pool.
         // Stub files keep the order they are registered in: a later stub refines an earlier one.
         if (!$this->codebase->register_stub_files) {
             ksort($files_to_scan, SORT_STRING);
@@ -552,6 +572,9 @@ final class Scanner
         $this->progress->expand($file_count);
         if ($pool_size > 1) {
             $this->progress->debug('Forking process for scanning' . PHP_EOL);
+
+            // the workers forget these (InitScannerTask), so the merge has to keep them over a later declaration
+            $earlier_classlike_storages = ClassLikeStorageProvider::getAll();
 
             // Run scanning one file at a time, splitting the set of
             // files up among a given number of child processes.
@@ -606,7 +629,11 @@ final class Scanner
                 }
 
                 $this->codebase->file_storage_provider->addMore($pool_data['file_storage']);
-                $this->codebase->classlike_storage_provider->addMore($pool_data['classlike_storage']);
+                $this->codebase->classlike_storage_provider->addMore(
+                    $pool_data['classlike_storage'],
+                    $earlier_classlike_storages,
+                    $this->codebase->analysis_php_version_id,
+                );
 
                 $this->codebase->classlikes->addThreadData($pool_data['classlikes_data']);
 
@@ -708,8 +735,11 @@ final class Scanner
             throw new UnexpectedValueException('Should not be rescanning ' . $file_path);
         }
 
-        if (!$this->file_provider->fileExists($file_path) && $this->config->mustBeIgnored($file_path)) {
-            // this should not happen, but might if the file was temporary
+        if (!$this->file_provider->fileExists($file_path)) {
+            // deleted since it was queued, as shouldScan() skips a file that doesn't exist; if it is back by the
+            // analysis, Analyzer::analyzeFiles() reports it
+            $this->vanished_files[$file_path] = true;
+
             return;
         }
 
@@ -726,6 +756,10 @@ final class Scanner
         }
 
         $this->scanned_files[$file_path] = $will_analyze;
+
+        if ($will_analyze) {
+            $this->scanned_file_hashes[$file_path] = hash('xxh128', $file_contents);
+        }
 
         $file_storage = $this->file_storage_provider->get($file_path);
 
@@ -870,6 +904,42 @@ final class Scanner
     }
 
     /**
+     * The files that were queued for the scan and gone when their turn came
+     *
+     * @return array<string, true>
+     * @psalm-mutation-free
+     */
+    public function getVanishedFiles(): array
+    {
+        return $this->vanished_files;
+    }
+
+    /**
+     * Whether a file differs from the one that was scanned: it was not scanned, or its contents are not the ones
+     * that were, or can't be read now. Never throws, as it runs while a crash is being reported.
+     */
+    public function changedSinceScan(string $file_path): bool
+    {
+        if (!isset($this->scanned_files[$file_path])) {
+            return true;
+        }
+
+        $hash = $this->scanned_file_hashes[$file_path] ?? null;
+
+        if ($hash === null) {
+            return false;
+        }
+
+        try {
+            return $hash !== $this->file_provider->getContentsHash($file_path);
+        } catch (RuntimeException) {
+            // a file that is gone, or a directory, makes getContentsHash() throw, and a warning raised by an
+            // unreadable one is turned into an exception by ErrorHandler
+            return true;
+        }
+    }
+
+    /**
      * Checks whether a class exists, and if it does then records what file it's in
      * for later checking
      */
@@ -983,6 +1053,8 @@ final class Scanner
             $this->deep_scanned_classlike_files,
             $this->scanned_files,
             $this->reflected_classlikes_lc,
+            $this->scanned_file_hashes,
+            $this->vanished_files,
         ];
     }
 
@@ -1002,6 +1074,8 @@ final class Scanner
             $deep_scanned_classlike_files,
             $scanned_files,
             $reflected_classlikes_lc,
+            $scanned_file_hashes,
+            $vanished_files,
         ] = $thread_data;
 
         $this->files_to_scan = array_merge($files_to_scan, $this->files_to_scan);
@@ -1034,6 +1108,8 @@ final class Scanner
             $this->scanned_files[$file_path] = $deep || ($this->scanned_files[$file_path] ?? false);
         }
         $this->reflected_classlikes_lc = array_merge($reflected_classlikes_lc, $this->reflected_classlikes_lc);
+        $this->scanned_file_hashes = array_merge($scanned_file_hashes, $this->scanned_file_hashes);
+        $this->vanished_files = array_merge($vanished_files, $this->vanished_files);
     }
 
     /**
@@ -1046,24 +1122,29 @@ final class Scanner
 
     public function scanAPath(string $file_path): void
     {
-        if (Perf\Collector::$enabled) {
-            $deep = isset($this->files_to_deep_scan[$file_path]);
-            $perf_start = Perf\Collector::fileStart();
-            // what it stays at if the file is not scanned at all
-            Perf\Collector::setScan('cold', 0);
-            $this->scanFile($file_path, $this->config->getFiletypeScanners(), $deep);
-            Perf\Collector::scanEnd(
-                $file_path,
-                $this->config->shortenFileName($file_path),
-                $perf_start,
-                $deep,
-            );
-        } else {
-            $this->scanFile(
-                $file_path,
-                $this->config->getFiletypeScanners(),
-                isset($this->files_to_deep_scan[$file_path]),
-            );
+        try {
+            if (Perf\Collector::$enabled) {
+                $deep = isset($this->files_to_deep_scan[$file_path]);
+                $perf_start = Perf\Collector::fileStart();
+                // what it stays at if the file is not scanned at all
+                Perf\Collector::setScan('cold', 0);
+                $this->scanFile($file_path, $this->config->getFiletypeScanners(), $deep);
+                Perf\Collector::scanEnd(
+                    $file_path,
+                    $this->config->shortenFileName($file_path),
+                    $perf_start,
+                    $deep,
+                );
+            } else {
+                $this->scanFile(
+                    $file_path,
+                    $this->config->getFiletypeScanners(),
+                    isset($this->files_to_deep_scan[$file_path]),
+                );
+            }
+        } catch (Throwable $e) {
+            CrashContext::recordFile($e, 'scanning', $file_path);
+            throw $e;
         }
     }
 }

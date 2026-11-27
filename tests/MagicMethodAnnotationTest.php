@@ -450,6 +450,79 @@ final class MagicMethodAnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'staticInTheParamsOfAStaticMethodTagOrOfAMixinMethodTag' => [
+                'code' => '<?php
+                    /**
+                     * @method static ($other is null ? int : string) make(static|null $other = null)
+                     * @method ($other is null ? int : string) compare(static|null $other = null)
+                     */
+                    class Magic {
+                        public function __call(string $name, array $args): mixed {
+                            throw new RuntimeException();
+                        }
+
+                        public static function __callStatic(string $name, array $args): mixed {
+                            throw new RuntimeException();
+                        }
+                    }
+
+                    /**
+                     * @method ($other is null ? int : string) compare(static|null $other = null)
+                     */
+                    final class FinalMagic {
+                        public function __call(string $name, array $args): mixed {
+                            throw new RuntimeException();
+                        }
+                    }
+
+                    /** @mixin FinalMagic */
+                    final class Holder {
+                        public function __call(string $name, array $args): mixed {
+                            throw new RuntimeException();
+                        }
+                    }
+
+                    function made(Magic $m): string {
+                        return Magic::make($m);
+                    }
+
+                    function viaMixin(Holder $h, FinalMagic $m): string {
+                        return $h->compare($m);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'staticParamOfAMixinMethodTagIsTheMixinAndItsThisReturnTheCaller' => [
+                'code' => '<?php
+                    /**
+                     * @method $this with(static $other)
+                     * @method ($other is null ? $this : int) pick(static|null $other = null)
+                     */
+                    final class MixedIn {
+                        public function __call(string $name, array $args): mixed {
+                            throw new RuntimeException();
+                        }
+                    }
+
+                    /** @mixin MixedIn */
+                    final class Caller {
+                        public function __call(string $name, array $args): mixed {
+                            throw new RuntimeException();
+                        }
+                    }
+
+                    $result = (new Caller)->with(new MixedIn);
+                    $picked = (new Caller)->pick();
+                    $number = (new Caller)->pick(new MixedIn);',
+                'assertions' => [
+                    '$result' => 'Caller',
+                    '$picked' => 'Caller',
+                    '$number===' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'shapeReturnTypesOfAMethod' => [
                 'code' => <<<'PHP'
                     <?php
@@ -485,6 +558,90 @@ final class MagicMethodAnnotationTest extends TestCase
                     '$nonEmptyList===' => 'non-empty-list<int>',
                     '$callableArray===' => 'callable-list{object, string}',
                 ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'staticInTheParamsOfAMethodTagOfAnInterfaceIsTheObjectItIsCalledOn' => [
+                'code' => '<?php
+                    /**
+                     * @method ($o is null ? int : string) cmp(static|null $o = null)
+                     */
+                    interface Box {}
+
+                    function getBox(): Box {
+                        throw new RuntimeException();
+                    }
+
+                    $b = getBox();
+                    $r = $b->cmp($b);',
+                'assertions' => [
+                    '$r===' => 'string',
+                ],
+                'ignored_issues' => ['ArgumentTypeCoercion'],
+                'php_version' => '8.0',
+            ],
+            'staticInTheParamsOfAStaticMethodTagIsTheNamedClass' => [
+                'code' => '<?php
+                    /** @method static int make(static $o) */
+                    class SM {
+                        public static function __callStatic(string $name, array $args): mixed {
+                            throw new RuntimeException();
+                        }
+                    }
+
+                    final class SMB extends SM {}
+
+                    function f(SMB $smb): void {
+                        SM::make($smb);
+                        SMB::make($smb);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'staticInTheParamsOfOverloadedMethodTagsIsResolvedBeforeTheOverloadIsChosen' => [
+                'code' => '<?php
+                    /**
+                     * @method int pick(static $o)
+                     * @method string pick(int $o)
+                     * @method static int spick(static $o)
+                     * @method static string spick(int $o)
+                     */
+                    final class OBox {
+                        public function __call(string $name, array $args): mixed { throw new RuntimeException(); }
+                        public static function __callStatic(string $name, array $args): mixed {
+                            throw new RuntimeException();
+                        }
+                    }
+
+                    function ov(OBox $b): void {
+                        $b->pick($b);
+                        OBox::spick($b);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'staticInTheParamsOfAMethodTagIsTheClassItIsCalledOn' => [
+                'code' => '<?php
+                    /**
+                     * @method ($other is null ? int : string) compare(static|null $other = null)
+                     * @method ($callback is null ? int : string) tap((callable(static): mixed)|null $callback = null)
+                     */
+                    final class MagicBox {
+                        public function __call(string $name, array $args): mixed {
+                            throw new RuntimeException();
+                        }
+                    }
+
+                    function compared(MagicBox $box): string {
+                        return $box->compare($box);
+                    }
+
+                    function tapped(MagicBox $box): string {
+                        return $box->tap(fn (MagicBox $_x): int => 1);
+                    }',
+                'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
@@ -637,6 +794,21 @@ final class MagicMethodAnnotationTest extends TestCase
                     '$paged===' => 'PagedResult',
                     '$plain===' => 'PlainResult',
                 ],
+            ],
+            'firstClassCallableOfAnOverloadedMethodTagOfAnInterface' => [
+                'code' => '<?php
+                    /**
+                     * @method int search(string $q)
+                     * @method string search(int $q)
+                     */
+                    interface Searcher {}
+
+                    function f(Searcher $searcher): Closure {
+                        return $searcher->search(...);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
             'magicMethodOverloadsAreChosenByTheNumberOfArguments' => [
                 'code' => '<?php
@@ -2527,6 +2699,93 @@ final class MagicMethodAnnotationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'staticInTheParamsOfAMethodTagRejectsAnotherClass' => [
+                'code' => '<?php
+                    /**
+                     * @method ($other is null ? int : string) compare(static|null $other = null)
+                     * @method ($callback is null ? int : string) tap((callable(static): mixed)|null $callback = null)
+                     */
+                    final class MagicBox {
+                        public function __call(string $name, array $args): mixed {
+                            throw new RuntimeException();
+                        }
+                    }
+
+                    final class Other {}
+
+                    function compared(MagicBox $box): void {
+                        $box->compare(new Other());
+                    }',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'staticInTheParamsOfAMethodTagOfAnInterfaceMayBeAnotherImplementation' => [
+                'code' => '<?php
+                    /** @method ($o is null ? int : string) cmp(static|null $o = null) */
+                    interface MBox {}
+
+                    final class MBoxB implements MBox {}
+
+                    function f(MBox $b, MBoxB $other): void {
+                        $b->cmp($other);
+                    }',
+                'error_message' => 'ArgumentTypeCoercion',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'staticInTheParamsOfAStaticMethodTagCalledOnAnObjectMayBeASubclass' => [
+                'code' => '<?php
+                    /** @method static int make(static $o) */
+                    class SM {
+                        public static function __callStatic(string $name, array $args): mixed {
+                            throw new RuntimeException();
+                        }
+                    }
+
+                    final class SMB extends SM {}
+
+                    function f(SM $o, SMB $smb): void {
+                        $o::make($smb);
+                    }',
+                'error_message' => 'ArgumentTypeCoercion',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'staticInTheParamsOfAStaticMethodTagCalledThroughSelfMayBeASubclass' => [
+                'code' => '<?php
+                    /** @method static int make(static $o) */
+                    class SM {
+                        public static function __callStatic(string $name, array $args): mixed {
+                            throw new RuntimeException();
+                        }
+
+                        public static function viaSelf(SM $o): void {
+                            self::make($o);
+                        }
+                    }',
+                'error_message' => 'ArgumentTypeCoercion',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'staticInTheParamsOfAStaticMethodTagCalledThroughParentMayBeASubclass' => [
+                'code' => '<?php
+                    /** @method static int make(static $o) */
+                    class SM {
+                        public static function __callStatic(string $name, array $args): mixed {
+                            throw new RuntimeException();
+                        }
+                    }
+
+                    class SMC extends SM {
+                        public static function viaParent(SM $o): void {
+                            parent::make($o);
+                        }
+                    }',
+                'error_message' => 'ArgumentTypeCoercion',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'intersectionTypeOfAMethodParamIsEnforced' => [
                 'code' => '<?php
                     interface I1 {}

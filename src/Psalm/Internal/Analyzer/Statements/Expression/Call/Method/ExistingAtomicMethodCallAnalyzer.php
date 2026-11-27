@@ -64,6 +64,8 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
      * @param  TNamedObject|TTemplateParam|null  $static_type
      * @param  list<PhpParser\Node\Arg> $args
      * @param  ?string $mixin_user_class the class whose `@mixin` the method was found through
+     * @param  list<MethodIdentifier> $intersection_method_ids the method as the other members of an intersection
+     *                                                         receiver declare it
      */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
@@ -79,6 +81,7 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
         AtomicMethodCallAnalysisResult $result,
         ?TemplateResult $inferred_template_result = null,
         ?string $mixin_user_class = null,
+        array $intersection_method_ids = [],
     ): Union {
         $config = $codebase->config;
 
@@ -237,7 +240,23 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
             $template_result->lower_bounds += $inferred_template_result->lower_bounds;
         }
         if ($method_storage && $method_storage->template_types) {
-            $template_result->template_types += $method_storage->template_types;
+            $receiver_bindings = $class_template_params ?? [];
+            $method_template_types = $method_storage->template_types;
+
+            // the `as` types of the method's templates name the class templates, which take the receiver's bindings
+            if ($receiver_bindings !== []) {
+                $receiver_template_result = new TemplateResult([], $receiver_bindings);
+
+                foreach ($method_template_types as $template_name => $type_map) {
+                    foreach ($type_map as $defining_id => $as_type) {
+                        $method_template_types[$template_name][$defining_id]
+                            = TemplateInferredTypeReplacer::replace($as_type, $receiver_template_result, $codebase);
+                        $template_result->receiver_bound_template_types[$template_name][$defining_id] = true;
+                    }
+                }
+            }
+
+            $template_result->template_types += $method_template_types;
         }
 
         // a template (or intersection) receiver keeps `static` as declared, which the return type expansion resolves;
@@ -292,6 +311,7 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
             $statements_analyzer,
             false,
             $overload,
+            $intersection_method_ids,
         ) === false) {
             return Type::getMixed();
         }

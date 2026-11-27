@@ -56,7 +56,7 @@ final class GetObjectVarsReturnTypeProvider implements FunctionReturnTypeProvide
     ): Atomic {
         self::$fallback ??= new TArray([Type::getString(), Type::getMixed()]);
 
-        if ($first_arg_type->isSingle()) {
+        if ($first_arg_type->isSingleAtomic()) {
             $atomics = $first_arg_type->getAtomicTypes();
             $object_type = reset($atomics);
 
@@ -107,6 +107,11 @@ final class GetObjectVarsReturnTypeProvider implements FunctionReturnTypeProvide
 
                 $properties = [];
                 foreach ($class_storage->appearing_property_ids as $name => $property_id) {
+                    // static properties belong to the class, not to the object
+                    if ($codebase->properties->getStorage($property_id)->is_static) {
+                        continue;
+                    }
+
                     if (ClassAnalyzer::checkPropertyVisibility(
                         $property_id,
                         $context,

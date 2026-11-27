@@ -114,7 +114,7 @@ final class IteratorToArrayReturnTypeProvider implements FunctionReturnTypeProvi
                     $key_type = Type::getArrayKey();
                 }
 
-                if ($key_type->isSingle() && $key_type->hasTemplate()) {
+                if ($key_type->isSingleAtomic() && $key_type->hasTemplate()) {
                     $template_types = $key_type->getTemplateTypes();
                     $template_type = array_shift($template_types);
                     assert($template_type !== null);

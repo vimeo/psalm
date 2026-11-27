@@ -994,6 +994,40 @@ final class PropertyTypeTest extends TestCase
         );
     }
 
+    public function testEachPromotedPropertyIsReportedBeforePhp8(): void
+    {
+        $this->testConfig->throw_exception = false;
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile($file_path, '<?php
+            final class A {
+                public function __construct(
+                    public int $a,
+                    int $b,
+                    private int $c,
+                ) {}
+            }
+        ');
+
+        $this->project_analyzer->setPhpVersion('7.4', 'tests');
+        $this->analyzeFile($file_path, new Context());
+
+        $issues = [];
+
+        foreach (IssueBuffer::getIssuesDataForFile($file_path) as $issue) {
+            $issues[] = $issue->type . ':' . $issue->line_from . ' ' . $issue->message;
+        }
+
+        self::assertSame(
+            [
+                'ParseError:4 Constructor property promotion is only available in PHP 8.0 and later, but A::$a uses it',
+                'ParseError:6 Constructor property promotion is only available in PHP 8.0 and later, but A::$c uses it',
+            ],
+            $issues,
+        );
+    }
+
     /**
      * @return iterable<string, array{string}>
      * @psalm-pure
@@ -1125,6 +1159,8 @@ final class PropertyTypeTest extends TestCase
                 'assertions' => [
                     '$b===' => 'Box<int>|null',
                 ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'offsetWriteInitializesAnUninitializedArrayProperty' => [
                 'code' => '<?php
@@ -1164,6 +1200,181 @@ final class PropertyTypeTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.1',
+            ],
+            'propertyNamedByOneOfSeveralLiteralsHasTheTypeOfEach' => [
+                'code' => '<?php
+                    final class A {
+                        public string $x = "";
+                        public bool $y = false;
+                    }
+
+                    final class B {
+                        public int $x = 1;
+                        public float $y = 1.2;
+                    }
+
+                    final class C {
+                        public string $x = "";
+                        private int $z = 0;
+
+                        /** @param "x"|"z" $p */
+                        public function own(string $p): int|string {
+                            return $this->{$p};
+                        }
+                    }
+
+                    /** @param "x"|"y" $p */
+                    function get(A|B $o, string $p): bool|float|string|int {
+                        return $o->{$p};
+                    }
+
+                    $p = rand(0, 1) ? "x" : "y";
+                    $value = (new A())->{$p};',
+                'assertions' => [
+                    '$value===' => 'bool|string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'coalesceOfAPropertyNamedByOneOfSeveralLiterals' => [
+                'code' => '<?php
+                    final class A {
+                        public string $x = "";
+                    }
+
+                    /** @param "x"|"w" $p */
+                    function coalesce(A $o, string $p): string {
+                        return $o->{$p} ?? "d";
+                    }',
+            ],
+            'issetGuardsThePropertyNamedByOneOfSeveralLiterals' => [
+                'code' => '<?php
+                    final class A {
+                        public string $x = "";
+                    }
+
+                    function takesString(string $s): void {}
+
+                    /** @param "x"|"w" $p */
+                    function guarded(A $o, string $p): void {
+                        if (isset($o->{$p})) {
+                            takesString($o->{$p});
+                        }
+                    }',
+            ],
+            'notNullNarrowsThePropertyNamedByOneOfSeveralLiterals' => [
+                'code' => '<?php
+                    final class A {
+                        public string $x = "";
+                        public ?string $n = null;
+                    }
+
+                    function takesString(string $s): void {}
+
+                    /** @param "x"|"n" $p */
+                    function narrowed(A $o, string $p): void {
+                        if ($o->{$p} !== null) {
+                            takesString($o->{$p});
+                        }
+                    }
+
+                    /** @param "x"|"n" $p */
+                    function returned(A $o, string $p): string {
+                        if ($o->{$p} === null) {
+                            return "";
+                        }
+
+                        return $o->{$p};
+                    }
+
+                    /** @param "x"|"n" $p */
+                    function otherObjectWritten(A $o, A $o2, string $p): void {
+                        if ($o->{$p} !== null) {
+                            $o2->n = null;
+                            takesString($o->{$p});
+                        }
+                    }',
+            ],
+            'issetGuardsAMagicPropertyNamedByOneOfSeveralLiterals' => [
+                'code' => '<?php
+                    /**
+                     * @property-read string|null $primary
+                     * @property-read string|null $unique
+                     */
+                    final class Fluent {
+                        public function __get(string $k): mixed {
+                            return null;
+                        }
+
+                        public function __isset(string $k): bool {
+                            return false;
+                        }
+                    }
+
+                    function takesString(string $s): void {}
+
+                    /** @param "primary"|"unique" $index */
+                    function f(Fluent $column, string $index): void {
+                        if (isset($column->{$index})) {
+                            takesString($column->{$index});
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'constructorWritingAPropertyNamedByAForeachKeyKeepsTheParentsInitialisations' => [
+                'code' => '<?php
+                    class Base {
+                        protected string $pluginId;
+                        public function __construct(string $id) { $this->pluginId = $id; }
+                    }
+
+                    final class Source extends Base {
+                        private bool $cacheCounts = false;
+                        private bool $skipCount = false;
+
+                        public function __construct(string $id, array $configuration) {
+                            parent::__construct($id);
+                            foreach (["cacheCounts" => "cache_counts", "skipCount" => "skip_count"] as $property => $key) {
+                                if (isset($configuration[$key])) {
+                                    $this->$property = (bool) $configuration[$key];
+                                }
+                            }
+                        }
+                    }',
+            ],
+            'constructorWritingAPropertyNamedByOneOfSeveralLiteralsKeepsTheOtherInitialisations' => [
+                'code' => '<?php
+                    final class Own {
+                        private string $a;
+                        private bool $x = false;
+                        private bool $y = false;
+
+                        /** @param "x"|"y" $p */
+                        public function __construct(string $p) {
+                            $this->a = "v";
+                            $this->{$p} = true;
+                        }
+                    }',
+            ],
+            'writeOfAPropertyNamedByOneOfSeveralLiteralsKeepsWhatIsKnownOfTheOthers' => [
+                'code' => '<?php
+                    final class Narrow {
+                        public ?string $n = null;
+                        public ?string $m = null;
+                        public bool $x = false;
+                    }
+
+                    function takesString(string $s): void {}
+
+                    /** @param "x"|"m" $p */
+                    function narrowedOther(Narrow $o, string $p): void {
+                        if ($o->n !== null) {
+                            $o->{$p} = null;
+                            takesString($o->n);
+                        }
+                    }',
             ],
             'finalClassInitialisesThePropertyThroughAnAliasedTraitMethod' => [
                 'code' => '<?php
@@ -2407,6 +2618,104 @@ final class PropertyTypeTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'promotedPropertyOverwrittenNoConstructor' => [
+                'code' => '<?php
+                    class A
+                    {
+                        public function __construct(
+                            public array $abc,
+                        ) {}
+                    }
+
+                    class B extends A
+                    {
+                        public array $abc;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'promotedPropertyOverwrittenNoConstructorDeep' => [
+                'code' => '<?php
+                    class A
+                    {
+                        public function __construct(
+                            public array $abc,
+                        ) {}
+                    }
+
+                    class B extends A
+                    {
+                    }
+
+                    class C extends B
+                    {
+                        public array $abc;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'promotedPropertyOverwrittenNoConstructorDeep2' => [
+                'code' => '<?php
+                    class A
+                    {
+                        public function __construct(
+                            public array $abc,
+                        ) {}
+                    }
+
+                    class B extends A
+                    {
+                        public array $abc;
+                    }
+
+                    class C extends B
+                    {
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'protectedPromotedPropertyOverwrittenNoConstructor' => [
+                'code' => '<?php
+                    class A
+                    {
+                        public function __construct(
+                            protected array $abc,
+                        ) {}
+                    }
+
+                    class B extends A
+                    {
+                        protected array $abc;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'promotedPropertyOverwrittenInitializedByParentConstructorCall' => [
+                'code' => '<?php
+                    class A
+                    {
+                        public function __construct(
+                            public array $abc,
+                        ) {}
+                    }
+
+                    class B extends A
+                    {
+                        public array $abc;
+
+                        public function __construct()
+                        {
+                            parent::__construct([]);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'propertyWithoutTypeSuppressingIssueAndAssertingNull' => [
                 'code' => '<?php
                     class A {
@@ -2630,6 +2939,96 @@ final class PropertyTypeTest extends TestCase
                 'assertions' => [
                     '$inserted===' => 'int|null',
                     '$error===' => 'MongoDB\Driver\WriteConcernError|null',
+                ],
+            ],
+            'variablePropertyAssignment' => [
+                'code' => '<?php
+                    class MyClass
+                    {
+                        protected int $num;
+
+                        public function __construct()
+                        {
+                            $myString = "num";
+                            $this->$myString = 5;
+                        }
+                    }',
+            ],
+            'variablePropertyAssignmentWithStringName' => [
+                'code' => '<?php
+                    class MyClass
+                    {
+                        protected int $num;
+
+                        public function __construct()
+                        {
+                            $this->{"num"} = 5;
+                        }
+                    }',
+            ],
+            'variablePropertyAssignmentNarrowsTheProperty' => [
+                'code' => '<?php
+                    final class A
+                    {
+                        public int $p = 0;
+                    }
+
+                    $a = new A();
+                    $name = "p";
+                    $a->$name = 5;
+                    $b = $a->p;',
+                'assertions' => [
+                    '$b===' => '5',
+                ],
+            ],
+            'variablePropertyAssignmentOnArrayElementOrMethodCall' => [
+                'code' => '<?php
+                    final class A
+                    {
+                        public int $p = 0;
+
+                        /** @psalm-mutation-free */
+                        public function self(): A
+                        {
+                            return $this;
+                        }
+                    }
+
+                    /** @var array<int, A> */
+                    $arr = [new A()];
+                    $k = 0;
+                    $name = "p";
+                    $arr[$k]->$name = 5;
+                    $b = $arr[$k]->p;
+
+                    $o = new A();
+                    $o->self()->$name = 5;
+                    $c = $o->self()->p;',
+                'assertions' => [
+                    '$b===' => 'int',
+                    '$c===' => 'int',
+                ],
+            ],
+            'variablePropertyNameThatIsNotAnIdentifier' => [
+                'code' => '<?php
+                    $o = new stdClass();
+                    $o->a = [1];
+                    $o->{"a[0]"} = "x";
+                    $v = $o->a[0];
+                    $w = $o->{"a[0]"};',
+                'assertions' => [
+                    '$v===' => '1',
+                    '$w===' => 'mixed',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
+            'variablePropertyAssignmentWithADash' => [
+                'code' => '<?php
+                    $o = new stdClass();
+                    $o->{"a-b"} = 5;
+                    $v = $o->{"a-b"};',
+                'assertions' => [
+                    '$v===' => '5',
                 ],
             ],
             'goodArrayProperties' => [
@@ -2979,8 +3378,8 @@ final class PropertyTypeTest extends TestCase
                          */
                         final public function setOptions(array $opts): void
                         {
-                            $this->a = $opts["a"] ?? "defaultA";
-                            $this->b = $opts["b"] ?? "defaultB";
+                            $this->a = $opts["a"];
+                            $this->b = $opts["b"];
                         }
                     }',
             ],
@@ -3013,8 +3412,8 @@ final class PropertyTypeTest extends TestCase
                          */
                         public function setOptions(array $opts): void
                         {
-                            $this->a = $opts["a"] ?? "defaultA";
-                            $this->b = $opts["b"] ?? "defaultB";
+                            $this->a = $opts["a"];
+                            $this->b = $opts["b"];
                         }
                     }',
             ],
@@ -4508,6 +4907,9 @@ final class PropertyTypeTest extends TestCase
                     }
 
                     echo (new A)->foo;',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'promotedPublicPropertyWithoutDefault' => [
                 'code' => '<?php
@@ -4516,6 +4918,9 @@ final class PropertyTypeTest extends TestCase
                     }
 
                     echo (new A(5))->foo;',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'promotedProtectedProperty' => [
                 'code' => '<?php
@@ -4528,6 +4933,9 @@ final class PropertyTypeTest extends TestCase
                             return $this->foo;
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'skipConstructor' => [
                 'code' => '<?php
@@ -4818,6 +5226,9 @@ final class PropertyTypeTest extends TestCase
                         /** @param array $arr */
                         protected function __construct(public array $arr){}
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'nullsafeShortCircuit' => [
                 'code' => '<?php
@@ -5713,6 +6124,173 @@ final class PropertyTypeTest extends TestCase
                     }',
                 'error_message' => 'UndefinedPropertyFetch',
             ],
+            'propertyNamedByOneOfSeveralLiteralsIsUndefinedForOneOfThem' => [
+                'code' => '<?php
+                    final class A {
+                        public string $x = "";
+                    }
+
+                    /** @param "x"|"w" $p */
+                    function get(A $o, string $p): string {
+                        return (string) $o->{$p};
+                    }',
+                'error_message' => 'UndefinedPropertyFetch',
+            ],
+            'propertyNamedByOneOfSeveralLiteralsIsForgottenWhenTheNameChanges' => [
+                'code' => '<?php
+                    final class A {
+                        public string $x = "";
+                        public ?string $n = null;
+                        public ?string $m = null;
+                    }
+
+                    function takesString(string $s): void {}
+
+                    /**
+                     * @param "x"|"n" $p
+                     * @param "m"|"n" $q
+                     */
+                    function f(A $o, string $p, string $q): void {
+                        if ($o->{$p} !== null) {
+                            $p = $q;
+                            takesString($o->{$p});
+                        }
+                    }',
+                'error_message' => 'PossiblyNullArgument',
+            ],
+            'propertyNamedByOneOfSeveralLiteralsIsForgottenWhenOneOfThemIsWritten' => [
+                'code' => '<?php
+                    final class A {
+                        public string $x = "";
+                        public ?string $n = null;
+                    }
+
+                    function takesString(string $s): void {}
+
+                    /** @param "x"|"n" $p */
+                    function f(A $o, string $p): void {
+                        if ($o->{$p} !== null) {
+                            $o->n = null;
+                            takesString($o->{$p});
+                        }
+                    }',
+                'error_message' => 'PossiblyNullArgument',
+            ],
+            'propertyNamedByOneOfSeveralLiteralsIsForgottenWhenOneOfThemIsUnset' => [
+                'code' => '<?php
+                    final class A {
+                        public string $x = "";
+                        public ?string $n = null;
+                    }
+
+                    function takesString(string $s): void {}
+
+                    /** @param "x"|"n" $p */
+                    function f(A $o, string $p): void {
+                        if ($o->{$p} !== null) {
+                            unset($o->n);
+                            takesString($o->{$p});
+                        }
+                    }',
+                'error_message' => 'PossiblyNullArgument',
+            ],
+            'propertyNamedByOneOfSeveralLiteralsIsForgottenWhenItIsWritten' => [
+                'code' => '<?php
+                    final class A {
+                        public string $x = "";
+                        public ?string $n = null;
+                    }
+
+                    function takesString(string $s): void {}
+
+                    /** @param "x"|"n" $p */
+                    function f(A $o, string $p): void {
+                        if ($o->{$p} !== null) {
+                            $o->{$p} = null;
+                            takesString($o->{$p});
+                        }
+                    }',
+                'error_message' => 'PossiblyNullArgument',
+            ],
+            'writeOfAPropertyNamedByOneOfSeveralLiteralsForgetsEachOfThem' => [
+                'code' => '<?php
+                    final class A {
+                        public ?string $m = null;
+                        public ?string $n = null;
+                    }
+
+                    function takesString(string $s): void {}
+
+                    /** @param "m"|"n" $p */
+                    function f(A $o, string $p): void {
+                        if ($o->n !== null) {
+                            $o->{$p} = null;
+                            takesString($o->n);
+                        }
+                    }',
+                'error_message' => 'PossiblyNullArgument',
+            ],
+            'propertyNamedByOneOfSeveralLiteralsIsForgottenWhenTheObjectIsReassigned' => [
+                'code' => '<?php
+                    final class A {
+                        public string $x = "";
+                        public ?string $n = null;
+                    }
+
+                    function takesString(string $s): void {}
+
+                    /** @param "x"|"n" $p */
+                    function reassigned(A $o, A $o2, string $p): void {
+                        if ($o->{$p} !== null) {
+                            $o = $o2;
+                            takesString($o->{$p});
+                        }
+                    }',
+                'error_message' => 'PossiblyNullArgument',
+            ],
+            'propertyNamedByOneOfSeveralLiteralsIsForgottenAfterAMethodCall' => [
+                'code' => '<?php
+                    final class A {
+                        public string $x = "";
+                        public ?string $n = null;
+
+                        public function reset(): void {
+                            $this->n = null;
+                        }
+                    }
+
+                    function takesString(string $s): void {}
+
+                    /** @param "x"|"n" $p */
+                    function called(A $o, string $p): void {
+                        if ($o->{$p} !== null) {
+                            $o->reset();
+                            takesString($o->{$p});
+                        }
+                    }',
+                'error_message' => 'PossiblyNullArgument',
+            ],
+            'issetOnATypedPropertyOfABuiltinClassWithADefault' => [
+                'code' => '<?php
+                    function f(php_user_filter $f): string {
+                        if (isset($f->filtername)) {
+                            return $f->filtername;
+                        }
+                        return "";
+                    }',
+                'error_message' => 'RedundantCondition',
+                'error_levels' => [],
+                'php_version' => '8.6',
+            ],
+            'nullCoalesceOnATypedPropertyOfABuiltinClassWithoutADefault' => [
+                'code' => '<?php
+                    function f(PhpToken $t): string {
+                        return $t->text ?? "";
+                    }',
+                'error_message' => 'RedundantCondition',
+                'error_levels' => [],
+                'php_version' => '8.6',
+            ],
             'finalClassFollowsItsOwnOverrideOfTheTraitMethod' => [
                 'code' => '<?php
                     interface H {}
@@ -5821,6 +6399,8 @@ final class PropertyTypeTest extends TestCase
                         public function __construct(public int $id) {}
                     }',
                 'error_message' => 'ParseError - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:64 - Promoted property id clashes',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'staticPropertyOfATraitIsSharedWithTheSubclassesOfTheUsingClass' => [
                 'code' => '<?php
@@ -7379,6 +7959,57 @@ final class PropertyTypeTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],
+            'promotedPropertyNotSetInExtendedConstructorDeep' => [
+                'code' => '<?php
+                    class A
+                    {
+                        public function __construct(
+                            public string $name,
+                        ) {}
+                    }
+
+                    class B extends A {}
+
+                    class C extends B
+                    {
+                        public function __construct() {}
+                    }',
+                'error_message' => 'PropertyNotSetInConstructor',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'promotedPropertyOverwrittenParentConstructorNotCalled' => [
+                'code' => '<?php
+                    class A
+                    {
+                        public function __construct(
+                            public array $abc,
+                        ) {}
+                    }
+
+                    class B extends A
+                    {
+                        public array $abc;
+
+                        public function __construct() {}
+                    }',
+                'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:38 - Property B::$abc',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'variablePropertyAssignmentWithNonLiteralName' => [
+                'code' => '<?php
+                    class MyClass
+                    {
+                        protected int $num;
+
+                        public function __construct(string $name)
+                        {
+                            $this->$name = 5;
+                        }
+                    }',
+                'error_message' => 'PropertyNotSetInConstructor',
+            ],
             'nullableTypedPropertyNoConstructor' => [
                 'code' => '<?php
                     class A {
@@ -7573,6 +8204,42 @@ final class PropertyTypeTest extends TestCase
 
                     echo (new A)->foo;',
                 'error_message' => 'InaccessibleProperty',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'promotedPropertyBeforePhp8' => [
+                'code' => '<?php
+                    final class A {
+                        public function __construct(private int $foo) {}
+                    }',
+                'error_message' => 'ParseError - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:53 - '
+                    . 'Constructor property promotion is only available in PHP 8.0 and later, but A::$foo uses it',
+                'error_levels' => [],
+                'php_version' => '7.4',
+            ],
+            'promotedPropertyInTraitBeforePhp8' => [
+                'code' => '<?php
+                    trait T {
+                        public function __construct(protected string $name) {}
+                    }
+
+                    final class A {
+                        use T;
+                    }',
+                'error_message' => 'ParseError - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:53 - '
+                    . 'Constructor property promotion is only available in PHP 8.0 and later, but T::$name uses it',
+                'error_levels' => [],
+                'php_version' => '7.4',
+            ],
+            'promotedPropertyInAnonymousClassBeforePhp8' => [
+                'code' => '<?php
+                    $a = new class (1) {
+                        public function __construct(public int $foo) {}
+                    };',
+                'error_message' => 'ParseError - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:53 - '
+                    . 'Constructor property promotion is only available in PHP 8.0 and later',
+                'error_levels' => [],
+                'php_version' => '7.4',
             ],
             'undefinedClassInDocblockOfTypedPropertyIsReportedAtTheDocblock' => [
                 'code' => '<?php

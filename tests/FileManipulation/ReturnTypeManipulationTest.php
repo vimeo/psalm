@@ -68,6 +68,44 @@ final class ReturnTypeManipulationTest extends FileManipulationTestCase
                 'issues_to_fix' => ['InvalidReturnType'],
                 'safe_types' => true,
             ],
+            'fixInvalidNativeReturnTypeToNever81' => [
+                'input' => '<?php
+                    function foo(): string {
+                        exit;
+                    }',
+                'output' => '<?php
+                    function foo(): never {
+                        exit;
+                    }',
+                'php_version' => '8.1',
+                'issues_to_fix' => ['InvalidReturnType'],
+                'safe_types' => false,
+            ],
+            'dontFixInvalidNativeReturnTypeToNeverInTrait81' => [
+                'input' => '<?php
+                    trait T {
+                        public function foo(): string {
+                            exit;
+                        }
+                    }
+
+                    final class A {
+                        use T;
+                    }',
+                'output' => '<?php
+                    trait T {
+                        public function foo(): string {
+                            exit;
+                        }
+                    }
+
+                    final class A {
+                        use T;
+                    }',
+                'php_version' => '8.1',
+                'issues_to_fix' => ['InvalidReturnType'],
+                'safe_types' => false,
+            ],
             'fixInvalidIntReturnType70' => [
                 'input' => '<?php
                     /**

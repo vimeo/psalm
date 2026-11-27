@@ -16,6 +16,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAss
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ByRefArgumentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\CallPurityResolver;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\NoDiscardAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\GlobalStateAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ReturnAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -31,6 +32,7 @@ use Psalm\IssueBuffer;
 use Psalm\Storage\Capabilities;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FunctionLikeStorage;
+use Psalm\Storage\FunctionStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Storage\PropertyStorage;
 use Psalm\Type;
@@ -383,7 +385,7 @@ final class MethodCallPurityAnalyzer
             return false;
         }
 
-        $return_template = $return_type->isSingle() ? $return_type->getSingleAtomic() : null;
+        $return_template = $return_type->isSingleAtomic() ? $return_type->getSingleAtomic() : null;
 
         // `($callback is null ? Proxy<T> : T)`: the branch the arguments select
         if ($template_result !== null && $return_template instanceof TConditional) {
@@ -395,7 +397,7 @@ final class MethodCallPurityAnalyzer
                 clone $template_result,
                 $codebase,
             );
-            $selected_type = $selected_type->isSingle() ? $selected_type->getSingleAtomic() : null;
+            $selected_type = $selected_type->isSingleAtomic() ? $selected_type->getSingleAtomic() : null;
 
             $return_template = match ($selected_type instanceof TTemplateParam ? $selected_type->param_name : null) {
                 self::RETURNED_TEMPLATE . 'if' => $if_template,
@@ -515,7 +517,7 @@ final class MethodCallPurityAnalyzer
      */
     private static function markReturnedTemplate(Union $branch, string $name): array
     {
-        $template = $branch->isSingle() ? $branch->getSingleAtomic() : null;
+        $template = $branch->isSingleAtomic() ? $branch->getSingleAtomic() : null;
 
         if (!$template instanceof TTemplateParam) {
             return [null, $branch];
@@ -530,7 +532,7 @@ final class MethodCallPurityAnalyzer
     /** @psalm-pure */
     private static function isTemplate(Union $type, TTemplateParam $template): bool
     {
-        if (!$type->isSingle()) {
+        if (!$type->isSingleAtomic()) {
             return false;
         }
 
@@ -758,6 +760,27 @@ final class MethodCallPurityAnalyzer
             'method ' . $cased_method_id,
         );
 
+        $containing_class_capabilities = $method_storage->containing_class_capabilities;
+
+        // the storage of a trait's method is shared by the classes using it, and holds the trait's capabilities only,
+        // so add those of the class using the trait, and of the receiver's class, which may extend it
+        if ($method_storage->defining_fqcln !== null
+            && $codebase->classlike_storage_provider->has($method_storage->defining_fqcln)
+            && $codebase->classlike_storage_provider->get($method_storage->defining_fqcln)->is_trait
+        ) {
+            $containing_class_capabilities |= $class_storage->capabilities;
+
+            $appearing_method_id = $codebase->methods->getAppearingMethodId(
+                new MethodIdentifier($class_storage->name, $method_id->method_name),
+            );
+
+            if ($appearing_method_id !== null) {
+                $containing_class_capabilities |= $codebase->classlike_storage_provider
+                    ->get($appearing_method_id->fq_class_name)
+                    ->capabilities;
+            }
+        }
+
         if (!$context->inside_unset
             && $method_storage->isMutationFree()
             && $call_is_mutation_free
@@ -768,7 +791,7 @@ final class MethodCallPurityAnalyzer
                 // the class is immutable, or pure
                 && (Capabilities::allowsAnyOf(
                     Capabilities::MUTATION_FREE,
-                    $method_storage->containing_class_capabilities,
+                    $containing_class_capabilities,
                 )
                     || $config->remember_property_assignments_after_call
                 )
@@ -781,7 +804,7 @@ final class MethodCallPurityAnalyzer
 
                     if (Capabilities::allowsAnyOf(
                         Capabilities::MUTATION_FREE,
-                        $method_storage->containing_class_capabilities,
+                        $containing_class_capabilities,
                     )) {
                         $stmt->setAttribute('pure', true);
                     }
@@ -792,7 +815,7 @@ final class MethodCallPurityAnalyzer
                 // the class is neither immutable nor pure
                 if (!Capabilities::allowsAnyOf(
                     Capabilities::MUTATION_FREE,
-                    $method_storage->containing_class_capabilities,
+                    $containing_class_capabilities,
                 )) {
                     $result->memoized_result_has_mutations = true;
                 }
@@ -1122,6 +1145,115 @@ final class MethodCallPurityAnalyzer
         }
 
         return $kept_types ? new Union($kept_types) : $declared_type;
+    }
+
+    /**
+     * The memoized results a call of the method through the callable array `[$object, 'method']` cannot change, as
+     * a call `$object->method()` keeps them (see getUnaffectedPropertyGetters()): none when the object isn't
+     * written in the array or isn't of a single class
+     *
+     * @return array<string, true>
+     */
+    public static function getMemoizedResultsKeptByCallableCall(
+        Context $context,
+        Codebase $codebase,
+        Atomic $callable,
+        Expr $function_name,
+        MethodStorage $method_storage,
+    ): array {
+        $object_type = $callable instanceof TKeyedArray
+            && isset($callable->properties[0])
+            && $callable->properties[0]->isSingleAtomic()
+                ? $callable->properties[0]->getSingleAtomic()
+                : null;
+
+        $receiver_id = $function_name instanceof Expr\Array_
+            && isset($function_name->items[0])
+            && !$function_name->items[0]->unpack
+                ? ExpressionIdentifier::getExtendedVarId($function_name->items[0]->value, null)
+                : null;
+
+        if ($method_storage->this_property_mutations === null
+            || $method_storage->this_property_mutations === []
+            || !$method_storage->writes_only_this_properties
+            || $method_storage->overridden_downstream
+            || !$object_type instanceof TNamedObject
+            || $receiver_id === null
+            || !$codebase->classlike_storage_provider->has($object_type->value)
+        ) {
+            return [];
+        }
+
+        return self::getUnaffectedPropertyGetters(
+            $context,
+            $codebase,
+            $receiver_id,
+            $codebase->classlike_storage_provider->get($object_type->value),
+            $method_storage->this_property_mutations,
+        );
+    }
+
+    /**
+     * What calling a closure created in this scope forgets of the memoized results, as the calls and writes of its
+     * body would where it is called: calling a named function forgets nothing, writing a property of `$this` or
+     * calling a method of `$this` that writes only those forgets what such a method call does (see analyze()). Null
+     * when its body may do anything else.
+     *
+     * @return array{CapabilitySet, array<string, true>}|null the capabilities to forget for, and the results kept
+     */
+    public static function getMemoizedResultsKeptByClosureCall(
+        Context $context,
+        Codebase $codebase,
+        FunctionStorage $closure_storage,
+    ): ?array {
+        if (!$closure_storage->writes_only_this_properties) {
+            return null;
+        }
+
+        $written_properties = $closure_storage->this_property_mutations ?? [];
+
+        if ($closure_storage->this_method_calls !== []) {
+            if ($context->self === null || !isset($context->vars_in_scope['$this'])) {
+                return null;
+            }
+
+            foreach ($closure_storage->this_method_calls as $method_name => $_) {
+                $declaring_method_id = $codebase->methods->getDeclaringMethodId(
+                    new MethodIdentifier($context->self, $method_name),
+                );
+
+                if ($declaring_method_id === null) {
+                    return null;
+                }
+
+                $method_storage = $codebase->methods->getStorage($declaring_method_id);
+
+                if (!$method_storage->writes_only_this_properties || $method_storage->overridden_downstream) {
+                    return null;
+                }
+
+                $written_properties += $method_storage->this_property_mutations ?? [];
+            }
+        }
+
+        if ($written_properties === []) {
+            return [Capabilities::NONE, []];
+        }
+
+        if ($context->self === null || !$codebase->classlike_storage_provider->has($context->self)) {
+            return null;
+        }
+
+        return [
+            Capabilities::WRITE_PROPS,
+            self::getUnaffectedPropertyGetters(
+                $context,
+                $codebase,
+                '$this',
+                $codebase->classlike_storage_provider->get($context->self),
+                $written_properties,
+            ),
+        ];
     }
 
     /**

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Psalm\Test\Config\Plugin\Hook;
+namespace Psalm\Tests\Config\Plugin\Hook;
 
 use Override;
 use PhpParser\Node\Expr\MethodCall;
@@ -48,7 +48,7 @@ final class TemplateParameterProvider implements MethodReturnTypeProviderInterfa
             $receiver = $stmt instanceof MethodCall
                 ? $event->getSource()->getNodeTypeProvider()->getType($stmt->var)
                 : null;
-            $receiver_atomic = $receiver?->isSingle() ? $receiver->getSingleAtomic() : null;
+            $receiver_atomic = $receiver?->isSingleAtomic() ? $receiver->getSingleAtomic() : null;
 
             if (!$receiver_atomic instanceof TGenericObject) {
                 return null;

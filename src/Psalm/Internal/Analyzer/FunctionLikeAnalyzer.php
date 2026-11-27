@@ -1160,6 +1160,22 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     ),
                 );
 
+                // what a call of the closure leaves in the variables it writes through the references: what they hold
+                // where it returns
+                $byref_use_types = [];
+
+                if ($this instanceof ClosureAnalyzer) {
+                    foreach ($this->captured_by_ref_writes as $var_id => $_) {
+                        if (isset($byref_vars[$var_id])) {
+                            $byref_use_types[substr($var_id, 1)] = self::combineByRefPathTypes(
+                                $context->has_returned ? null : $context->vars_in_scope[$var_id] ?? null,
+                                $this->captured_by_ref_types_at_return[$var_id] ?? [],
+                                $codebase,
+                            );
+                        }
+                    }
+                }
+
                 // a closure is a fresh object: its enclosing scope may call it freely
                 $statements_analyzer->node_data->setType(
                     $this->function,
@@ -1173,6 +1189,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                             $closure_atomic->from_docblock,
                             $closure_atomic->callable_id,
                             $closure_atomic->byref_use_scopes,
+                            $byref_use_types,
                         ),
                     ], ['reference_free' => true]),
                 );
@@ -2401,7 +2418,9 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
                 // `static` is what `$this` is, with the templates of the class, and the class itself in a final one
                 $this_type = $context->vars_in_scope['$this'] ?? null;
-                $this_object = $this_type !== null && $this_type->isSingle() ? $this_type->getSingleAtomic() : null;
+                $this_object = $this_type !== null && $this_type->isSingleAtomic()
+                    ? $this_type->getSingleAtomic()
+                    : null;
 
                 try {
                     $param_type = TypeExpander::expandUnion(
@@ -2940,6 +2959,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 $this->source->getFQCLN(),
                 true,
             ),
+            $inferred_return_type->canBeFullyExpressedInPhp($codebase->analysis_php_version_id),
         );
     }
 

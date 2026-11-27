@@ -31,9 +31,12 @@ wrong is where the fix belongs: a missing return type, a missing template, an un
 
 ## Psalm crashes or hangs
 
-- Exit code `1` with a PHP error or "Psalm crashed": rerun with `--debug` (it runs on one thread) to see the
-  last file it was working on.
-- To find the statement: `--debug-by-line <file>`.
+- Exit code `1` with "Psalm crashed": the output names the plugin that threw, the statement it was analysing
+  ("while analysing ... at file:line"), and after `Full report:` a file with the versions, config and whole
+  trace (`PSALM_CRASH_REPORT=<dir>` moves it, `PSALM_CRASH_REPORT=0` turns it off). A crash in a plugin goes
+  to the plugin's tracker; the link Psalm prints fills in the issue.
+- No statement named: rerun with `--debug` (it runs on one thread) to see the last file it was working on,
+  then `--debug-by-line <file>` to find the statement.
 - Memory: `--memory-limit=4G`.
 - Slow: `--no-cache --debug-performance` (short name `--profile`) prints where the time went (`docs/running_psalm/performance.md`).
 - Reduce it to a small repro: [bug-report.md](bug-report.md).

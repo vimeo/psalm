@@ -735,12 +735,22 @@ final class FunctionLikeNodeScanner
 
                 $property_id = $fq_classlike_name . '::$' . $param_storage->name;
 
+                $param_location = new CodeLocation($this->file_scanner, $param, null, true);
+
+                if ($this->codebase->analysis_php_version_id < 8_00_00) {
+                    $classlike_storage->docblock_issues[] = new ParseError(
+                        'Constructor property promotion is only available in PHP 8.0 and later, but '
+                            . $property_id . ' uses it',
+                        $param_location,
+                    );
+                }
+
                 PropertyVisibilityResolver::resolve(
                     $this->codebase,
                     $classlike_storage,
                     $property_storage,
                     $param->flags,
-                    new CodeLocation($this->file_scanner, $param, null, true),
+                    $param_location,
                     $property_id,
                 );
 
@@ -1397,9 +1407,9 @@ final class FunctionLikeNodeScanner
                 // would collide). Unlike classes/functions, this is signature selection rather
                 // than an availability gate.
                 $doc_comment = $stmt->getDocComment();
+                $docblock_info = null;
 
                 if ($doc_comment) {
-                    $docblock_info = null;
                     try {
                         $code_location = new CodeLocation($this->file_scanner, $stmt, null, true);
                         $docblock_info = FunctionLikeDocblockParser::parse(
@@ -1429,6 +1439,15 @@ final class FunctionLikeNodeScanner
 
                 $is_functionlike_override = true;
                 $storage = $this->storage = $classlike_storage->methods[$method_name_lc];
+
+                // the `$this` return and the overloads refine the return type, so a docblock declaring the result
+                // replaces them
+                if ($docblock_info !== null
+                    && ($docblock_info->return_type !== null || $docblock_info->overloads !== [])
+                ) {
+                    $storage->returns_this = false;
+                    $storage->overloads = [];
+                }
             }
 
             if (!$storage) {

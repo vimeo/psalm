@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Tests\Cache;
 
 use Override;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\CacheMode;
@@ -23,12 +24,13 @@ use Psalm\Type\Union;
 
 use function microtime;
 use function serialize;
+use function sprintf;
 use function unserialize;
 
 use const DIRECTORY_SEPARATOR;
 
 /**
- * The `*` of a type argument is kept by the storages that come from the cache
+ * The `*`, `covariant` or `contravariant` of a type argument is kept by the storages that come from the cache
  */
 final class StarProjectionCacheTest extends TestCase
 {
@@ -40,7 +42,7 @@ final class StarProjectionCacheTest extends TestCase
         /** @param Box<DateTime> $b */
         function takesDate(Box $b): void {}
 
-        /** @param Box<*> $b */
+        /** @param %s $b */
         function f(Box $b): void {
             takesDate($b);
         }
@@ -75,7 +77,19 @@ final class StarProjectionCacheTest extends TestCase
         parent::tearDown();
     }
 
-    public function testStarProjectionSurvivesTheCache(): void
+    /**
+     * @return iterable<string, array{string}>
+     * @psalm-pure
+     */
+    public static function projectionProvider(): iterable
+    {
+        yield 'star' => ['Box<*>'];
+        yield 'covariant' => ['Box<covariant DateTimeInterface>'];
+        yield 'contravariant' => ['Box<contravariant DateTime>'];
+    }
+
+    #[DataProvider('projectionProvider')]
+    public function testStarProjectionSurvivesTheCache(string $param_type): void
     {
         $config = Config::loadFromXML(
             __DIR__ . DIRECTORY_SEPARATOR . 'test_base_dir',
@@ -101,22 +115,23 @@ final class StarProjectionCacheTest extends TestCase
         );
 
         $file_path = $config->base_dir . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'Box.php';
-        $file_provider->registerFile($file_path, self::CODE);
+        $code = sprintf(self::CODE, $param_type);
+        $file_provider->registerFile($file_path, $code);
 
         $cold = $this->analyze($config, $providers);
         self::assertSame(['ArgumentTypeCoercion'], $cold);
         self::assertSame($cold, $this->analyze($config, $providers));
 
-        $cached = $providers->file_storage_provider->cache?->getLatestFromCache($file_path, self::CODE);
+        $cached = $providers->file_storage_provider->cache?->getLatestFromCache($file_path, $code);
         self::assertNotNull($cached);
 
         $type = $cached->functions['f']->params[0]->type;
         self::assertInstanceOf(Union::class, $type);
-        self::assertSame('Box<*>', $type->getId());
+        self::assertSame($param_type, $type->getId());
 
         /** @var Union $unserialized */
         $unserialized = unserialize(serialize($type));
-        self::assertSame('Box<*>', $unserialized->getId());
+        self::assertSame($param_type, $unserialized->getId());
         self::assertTrue($type->equals($unserialized));
     }
 

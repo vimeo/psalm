@@ -9,6 +9,7 @@ use PhpParser;
 use Psalm\Internal\Analyzer\ConstructorExits;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\ArrayAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
@@ -857,13 +858,28 @@ final class Context
         StatementsAnalyzer $statements_analyzer,
         array $block_nodes,
     ): void {
+        $this->detachReferencesReboundWhere($block_context->references_in_scope, $statements_analyzer, $block_nodes);
+    }
+
+    /**
+     * {@see self::detachReferencesReboundIn()} for a place the block goes on from (its end, or a `break` in it)
+     *
+     * @param array<string, string> $block_references_in_scope the references where the block goes on
+     * @param array<PhpParser\Node> $block_nodes
+     * @internal
+     */
+    public function detachReferencesReboundWhere(
+        array $block_references_in_scope,
+        StatementsAnalyzer $statements_analyzer,
+        array $block_nodes,
+    ): void {
         $rebindings = [];
         $was_reference = [];
 
         foreach ($this->references_in_scope as $reference_id => $referenced_id) {
             foreach ([$reference_id, $referenced_id] as $var_id) {
                 if (!isset($rebindings[$var_id])
-                    && ($block_context->references_in_scope[$var_id] ?? null)
+                    && ($block_references_in_scope[$var_id] ?? null)
                         !== ($this->references_in_scope[$var_id] ?? null)
                     && ($rebinding = self::findReferenceRebinding($block_nodes, $var_id)) !== null
                 ) {
@@ -1246,6 +1262,11 @@ final class Context
 
         unset($this->vars_possibly_in_scope[$remove_var_id], $this->null_array_offsets_read[$remove_var_id]);
         $this->forgetNullArrayOffsets($remove_var_id);
+
+        // `$o->{$p}` is also removed when `$p` changes, which changes no property
+        if (!str_ends_with($remove_var_id, '}')) {
+            $this->forgetPropertiesAliasedBy($remove_var_id);
+        }
     }
 
     /**
@@ -1361,7 +1382,7 @@ final class Context
             $quoted_remove_var_id = preg_quote($remove_var_id, '/');
 
             foreach ($clause->possibilities as $var_id => $_) {
-                if (preg_match('/' . $quoted_remove_var_id . '[\]\[\-]/', $var_id)) {
+                if (preg_match('/' . $quoted_remove_var_id . '[\]\[\-}]/', $var_id)) {
                     continue 2;
                 }
             }
@@ -1502,6 +1523,90 @@ final class Context
         foreach ($this->getVarsBoundTo($remove_var_id) as $bound_var_id) {
             $this->clauses = self::filterClauses($bound_var_id, $this->clauses, $new_type, $statements_analyzer);
             $this->parent_remove_vars[$bound_var_id] = ++self::$clause_removal_count;
+        }
+    }
+
+    /**
+     * `$o->{$p}` is one of the properties `$p` names: a change of a property of `$o` changes it, and a change of it
+     * changes the properties `$p` names (any property of `$o` when those are unknown)
+     *
+     * @param Union|null $assigned_type what `$o->{$p}` was set to, null when it was unset: each property `$p` names
+     *     may now hold it
+     */
+    public function forgetPropertiesAliasedBy(string $property_var_id, ?Union $assigned_type = null): void
+    {
+        $divider = strrpos($property_var_id, '->');
+
+        if ($divider === false || strcspn($property_var_id, '[]', $divider) !== strlen($property_var_id) - $divider) {
+            return;
+        }
+
+        $prefix = substr($property_var_id, 0, $divider + 2);
+        $property_name = substr($property_var_id, $divider + 2);
+        $is_dynamic = str_starts_with($property_name, '{');
+
+        $named = $is_dynamic && isset($this->vars_in_scope[substr($property_name, 1, -1)])
+            ? ExpressionIdentifier::getLiteralPropertyNames($this->vars_in_scope[substr($property_name, 1, -1)])
+            : [];
+
+        foreach ($named as $name) {
+            $named_id = $prefix . $name;
+
+            foreach ($this->vars_in_scope as $var_id => $type) {
+                if ($var_id === $named_id) {
+                    if ($assigned_type !== null) {
+                        $this->vars_in_scope[$var_id] = Type::combineUnionTypes($type, $assigned_type);
+                    } else {
+                        unset($this->vars_in_scope[$var_id]);
+                    }
+                } elseif (str_starts_with($var_id, $named_id . '->') || str_starts_with($var_id, $named_id . '[')) {
+                    unset($this->vars_in_scope[$var_id]);
+                }
+            }
+
+            $this->clauses = self::filterClauses($named_id, $this->clauses);
+            $this->parent_remove_vars[$named_id] = ++self::$clause_removal_count;
+        }
+
+        $var_ids = array_keys($this->vars_in_scope);
+
+        foreach ($this->clauses as $clause) {
+            foreach ($clause->possibilities as $var_id => $_) {
+                $var_ids[] = $var_id;
+            }
+        }
+
+        $aliased_ids = [];
+
+        foreach ($var_ids as $var_id) {
+            if (!str_starts_with($var_id, $prefix)) {
+                continue;
+            }
+
+            $rest = substr($var_id, strlen($prefix));
+            $member = substr($rest, 0, strcspn($rest, '-['));
+
+            if ($member !== ''
+                && $member !== $property_name
+                && !str_ends_with($member, '()')
+                && (($is_dynamic && $named === []) || str_starts_with($member, '{'))
+            ) {
+                $aliased_ids[$prefix . $member] = true;
+            }
+        }
+
+        foreach ($aliased_ids as $aliased_id => $_) {
+            foreach ($this->vars_in_scope as $var_id => $_type) {
+                if ($var_id === $aliased_id
+                    || str_starts_with($var_id, $aliased_id . '->')
+                    || str_starts_with($var_id, $aliased_id . '[')
+                ) {
+                    unset($this->vars_in_scope[$var_id]);
+                }
+            }
+
+            $this->clauses = self::filterClauses($aliased_id, $this->clauses);
+            $this->parent_remove_vars[$aliased_id] = ++self::$clause_removal_count;
         }
     }
 
@@ -1694,7 +1799,7 @@ final class Context
         );
 
         foreach ($this->vars_in_scope as $var_id => &$type) {
-            if (preg_match('/' . preg_quote($remove_var_id, '/') . '[\]\[\-]/', $var_id)) {
+            if (preg_match('/' . preg_quote($remove_var_id, '/') . '[\]\[\-}]/', $var_id)) {
                 $this->remove($var_id, false);
             }
 
@@ -1903,11 +2008,13 @@ final class Context
      *
      * @param CapabilitySet $callee_capabilities
      * @param array<string, true> $preserved_methods Memoized results that cannot be affected by this call
+     * @param ?string $object_var_id the object whose properties the callee may write, null for any
      */
     public function removeMutableObjectVars(
         bool $methods_only = false,
         int $callee_capabilities = Capabilities::ALL,
         array $preserved_methods = [],
+        ?string $object_var_id = null,
     ): void {
         $forget_properties
             = ($callee_capabilities & (Capabilities::WRITE_PROPS | Capabilities::WRITE_THIS_PROPS)) !== 0;
@@ -1917,12 +2024,17 @@ final class Context
             return;
         }
 
+        $property_prefix = $object_var_id === null ? null : $object_var_id . '->';
+
         $vars_to_remove = [];
 
         foreach ($this->vars_in_scope as $var_id => $type) {
             if (!isset($preserved_methods[$var_id])
                 && $type->has_mutations
-                && (($forget_properties && str_contains($var_id, '->'))
+                && (($forget_properties
+                        && ($property_prefix === null
+                            ? str_contains($var_id, '->')
+                            : str_starts_with($var_id, $property_prefix)))
                     || ($forget_statics && (str_contains($var_id, '::') || self::isInSuperGlobal($var_id))))
                 && (!$methods_only || strpos($var_id, '()'))
             ) {
@@ -1949,7 +2061,10 @@ final class Context
 
             foreach ($clause->possibilities as $key => $_) {
                 if (!isset($preserved_methods[$key])
-                    && (($forget_properties && str_contains($key, '->'))
+                    && (($forget_properties
+                            && ($property_prefix === null
+                                ? str_contains($key, '->')
+                                : str_starts_with($key, $property_prefix)))
                         || ($forget_statics && (str_contains($key, '::') || self::isInSuperGlobal($key))))
                     && (!$methods_only || strpos($key, '()'))
                 ) {
@@ -2026,6 +2141,7 @@ final class Context
         $this->forgetNullArrayOffsets($property_id);
         $this->releaseKeysBoundToList($property_id);
         $this->removeVarFromConflictingClauses($property_id);
+        $this->forgetPropertiesAliasedBy($property_id);
 
         // `$a[$this->p]` too
         $descendent_pattern = '/' . preg_quote($property_id, '/') . '[\]\[\-]/';

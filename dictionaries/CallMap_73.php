@@ -90134,11 +90134,291 @@ return array (
     0 => 'string',
     'file_name' => 'string',
   ),
+  'ssh2_auth_agent' => 
+  array (
+    0 => 'bool',
+    'session' => 'resource',
+    'username' => 'string',
+    -2 => 'none',
+  ),
+  'ssh2_auth_hostbased_file' => 
+  array (
+    0 => 'bool',
+    'session' => 'resource',
+    'username' => 'string',
+    'hostname' => 'string',
+    'pubkeyfile' => 'string',
+    'privkeyfile' => 'string',
+    'passphrase=' => 'null|string',
+    'local_username=' => 'null|string',
+    -2 => 'none',
+  ),
+  'ssh2_auth_none' => 
+  array (
+    0 => 'bool',
+    'session' => 'resource',
+    'username' => 'string',
+    -2 => 'none',
+  ),
+  'ssh2_auth_password' => 
+  array (
+    0 => 'bool',
+    'session' => 'resource',
+    'username' => 'string',
+    'password' => 'string',
+    -2 => 'none',
+  ),
+  'ssh2_auth_pubkey' => 
+  array (
+    0 => 'bool',
+    'session' => 'resource',
+    'username' => 'string',
+    'pubkey' => 'string',
+    'privkey' => 'string',
+    'passphrase=' => 'null|string',
+    -2 => 'none',
+  ),
+  'ssh2_auth_pubkey_file' => 
+  array (
+    0 => 'bool',
+    'session' => 'resource',
+    'username' => 'string',
+    'pubkeyfile' => 'string',
+    'privkeyfile' => 'string',
+    'passphrase=' => 'null|string',
+    -2 => 'none',
+  ),
+  'ssh2_connect' => 
+  array (
+    0 => 'false|resource',
+    'host' => 'string',
+    'port=' => 'int',
+    'methods=' => 'array<array-key, mixed>|null',
+    'callbacks=' => 'array<array-key, mixed>|null',
+    -2 => 'none',
+  ),
+  'ssh2_disconnect' => 
+  array (
+    0 => 'bool',
+    'session' => 'resource',
+    -2 => 'none',
+  ),
+  'ssh2_exec' => 
+  array (
+    0 => 'false|resource',
+    'session' => 'resource',
+    'command' => 'string',
+    'pty=' => 'null|string',
+    'env=' => 'array<array-key, mixed>|null',
+    'width=' => 'int',
+    'height=' => 'int',
+    'width_height_type=' => 'int',
+    -2 => 'none',
+  ),
+  'ssh2_fetch_stream' => 
+  array (
+    0 => 'false|resource',
+    'channel' => 'resource',
+    'streamid' => 'int',
+    -2 => 'none',
+  ),
+  'ssh2_fingerprint' => 
+  array (
+    0 => 'false|string',
+    'session' => 'resource',
+    'flags=' => 'int',
+    -2 => 'none',
+  ),
+  'ssh2_forward_accept' => 
+  array (
+    0 => 'false|resource',
+    'listener' => 'resource',
+    '&host=' => 'mixed',
+    'port=' => 'mixed',
+    -2 => 'none',
+  ),
+  'ssh2_forward_listen' => 
+  array (
+    0 => 'false|resource',
+    'session' => 'resource',
+    'port' => 'int',
+    'host=' => 'string',
+    'max_connections=' => 'int',
+    -2 => 'none',
+  ),
+  'ssh2_methods_negotiated' => 
+  array (
+    0 => 'array<array-key, mixed>',
+    'session' => 'resource',
+    -2 => 'none',
+  ),
   'ssh2_poll' => 
   array (
     0 => 'int',
     '&polldes' => 'array<array-key, mixed>',
     'timeout=' => 'int',
+    -2 => 'none',
+  ),
+  'ssh2_publickey_add' => 
+  array (
+    0 => 'bool',
+    'pkey' => 'resource',
+    'algoname' => 'string',
+    'blob' => 'string',
+    'overwrite=' => 'bool',
+    'attributes=' => 'array<array-key, mixed>|null',
+    -2 => 'none',
+  ),
+  'ssh2_publickey_init' => 
+  array (
+    0 => 'false|resource',
+    'session' => 'resource',
+    -2 => 'none',
+  ),
+  'ssh2_publickey_list' => 
+  array (
+    0 => 'array<array-key, mixed>|false',
+    'pkey' => 'resource',
+    -2 => 'none',
+  ),
+  'ssh2_publickey_remove' => 
+  array (
+    0 => 'bool',
+    'pkey' => 'resource',
+    'algoname' => 'string',
+    'blob' => 'string',
+    -2 => 'none',
+  ),
+  'ssh2_scp_recv' => 
+  array (
+    0 => 'bool',
+    'session' => 'resource',
+    'remote_file' => 'string',
+    'local_file' => 'string',
+    -2 => 'none',
+  ),
+  'ssh2_scp_send' => 
+  array (
+    0 => 'bool',
+    'session' => 'resource',
+    'local_file' => 'string',
+    'remote_file' => 'string',
+    'create_mode=' => 'int',
+    -2 => 'none',
+  ),
+  'ssh2_send_eof' => 
+  array (
+    0 => 'bool',
+    'channel' => 'resource',
+    -2 => 'none',
+  ),
+  'ssh2_sftp' => 
+  array (
+    0 => 'false|resource',
+    'session' => 'resource',
+    -2 => 'none',
+  ),
+  'ssh2_sftp_chmod' => 
+  array (
+    0 => 'bool',
+    'sftp' => 'resource',
+    'filename' => 'string',
+    'mode' => 'int',
+    -2 => 'none',
+  ),
+  'ssh2_sftp_lstat' => 
+  array (
+    0 => 'array{0: int, 10: int, 11: int, 12: int, 1: int, 2: int, 3: int, 4: int, 5: int, 6: int, 7: int, 8: int, 9: int, atime: int, blksize: int, blocks: int, ctime: int, dev: int, gid: int, ino: int, mode: int, mtime: int, nlink: int, rdev: int, size: int, uid: int}|false',
+    'sftp' => 'resource',
+    'path' => 'string',
+    -2 => 'none',
+  ),
+  'ssh2_sftp_mkdir' => 
+  array (
+    0 => 'bool',
+    'sftp' => 'resource',
+    'dirname' => 'string',
+    'mode=' => 'int',
+    'recursive=' => 'bool',
+    -2 => 'none',
+  ),
+  'ssh2_sftp_readlink' => 
+  array (
+    0 => 'false|non-falsy-string',
+    'sftp' => 'resource',
+    'link' => 'string',
+    -2 => 'none',
+  ),
+  'ssh2_sftp_realpath' => 
+  array (
+    0 => 'false|non-falsy-string',
+    'sftp' => 'resource',
+    'filename' => 'string',
+    -2 => 'none',
+  ),
+  'ssh2_sftp_rename' => 
+  array (
+    0 => 'bool',
+    'sftp' => 'resource',
+    'from' => 'string',
+    'to' => 'string',
+    -2 => 'none',
+  ),
+  'ssh2_sftp_rmdir' => 
+  array (
+    0 => 'bool',
+    'sftp' => 'resource',
+    'dirname' => 'string',
+    -2 => 'none',
+  ),
+  'ssh2_sftp_stat' => 
+  array (
+    0 => 'array{0: int, 10: int, 11: int, 12: int, 1: int, 2: int, 3: int, 4: int, 5: int, 6: int, 7: int, 8: int, 9: int, atime: int, blksize: int, blocks: int, ctime: int, dev: int, gid: int, ino: int, mode: int, mtime: int, nlink: int, rdev: int, size: int, uid: int}|false',
+    'sftp' => 'resource',
+    'path' => 'string',
+    -2 => 'none',
+  ),
+  'ssh2_sftp_symlink' => 
+  array (
+    0 => 'bool',
+    'sftp' => 'resource',
+    'target' => 'string',
+    'link' => 'string',
+    -2 => 'none',
+  ),
+  'ssh2_sftp_unlink' => 
+  array (
+    0 => 'bool',
+    'sftp' => 'resource',
+    'filename' => 'string',
+    -2 => 'none',
+  ),
+  'ssh2_shell' => 
+  array (
+    0 => 'false|resource',
+    'session' => 'resource',
+    'termtype=' => 'string',
+    'env=' => 'array<array-key, mixed>|null',
+    'width=' => 'int',
+    'height=' => 'int',
+    'width_height_type=' => 'int',
+    -2 => 'none',
+  ),
+  'ssh2_shell_resize' => 
+  array (
+    0 => 'bool',
+    'session' => 'resource',
+    'width' => 'int',
+    'height' => 'int',
+    -2 => 'none',
+  ),
+  'ssh2_tunnel' => 
+  array (
+    0 => 'false|resource',
+    'session' => 'resource',
+    'host' => 'string',
+    'port' => 'int',
+    -2 => 'none',
   ),
   'stat' => 
   array (

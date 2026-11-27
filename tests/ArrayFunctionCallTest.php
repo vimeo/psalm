@@ -127,6 +127,33 @@ final class ArrayFunctionCallTest extends TestCase
         self::assertSame(['InvalidArgument 8:27', 'NoValue 8:17'], $issues);
     }
 
+    public function testArrayMultisortInvalidSortArgumentIsOnlyReportedByTheProvider(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @param list<int> $a */
+                function f(array $a): void {
+                    array_multisort($a, 8);
+                    array_multisort($a, SORT_STRING, SORT_DESC);
+                    array_multisort($a, SORT_STRING, SORT_NUMERIC);
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        $issues = array_map(
+            static fn(IssueData $issue): string => $issue->type . ' ' . $issue->line_from . ':' . $issue->column_from,
+            IssueBuffer::getIssuesDataForFile($file_path),
+        );
+
+        self::assertSame(['InvalidArgument 4:21', 'InvalidArgument 5:21', 'InvalidArgument 6:21'], $issues);
+    }
+
     public function testSortFlagsAreCheckedWithoutReadingTheDeprecatedLocaleStringConstant(): void
     {
         // PHP 8.6+ reports SORT_LOCALE_STRING as deprecated when its value is read
@@ -163,6 +190,23 @@ final class ArrayFunctionCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'implodeOfAShapeWithAUnionOfLiterals' => [
+                'code' => '<?php
+                    $a = implode(",", ["x", rand(0, 1) ? "a" : "b"]);
+                ',
+                'assertions' => [
+                    '$a===' => 'non-empty-literal-string',
+                ],
+            ],
+            'arraySpliceWithAUnionOfStringLiteralsAsReplacement' => [
+                'code' => '<?php
+                    $a = ["x", "y"];
+                    array_splice($a, 0, 1, rand(0, 1) ? "a" : "b");
+                ',
+                'assertions' => [
+                    '$a===' => "array<int, 'a'|'b'|'x'|'y'>",
+                ],
+            ],
             'arrayKeyExistsNotFindingALiteralFallbackKeyOfAnUnsealedShape' => [
                 'code' => '<?php
                     /**
@@ -261,6 +305,52 @@ final class ArrayFunctionCallTest extends TestCase
                     '$column===' => 'list{0|1|3}',
                     '$vars===' => 'array{value: 0|1|3, ...<string, mixed>}',
                     '$inherited===' => 'array{inherited: 1|2}',
+                ],
+            ],
+            'getObjectVarsSkipsStaticProperties' => [
+                'code' => '<?php
+                    final class WithStatic {
+                        public static int $s = 1;
+                        public int $i = 2;
+                    }
+
+                    final class OnlyStatic {
+                        public static int $s = 1;
+                    }
+
+                    class OpenOnlyStatic {
+                        public static int $s = 1;
+                    }
+
+                    class Base {
+                        public static int $baseStatic = 1;
+                        public int $base = 1;
+                    }
+
+                    final class Child extends Base {
+                        public int $child = 2;
+                    }
+
+                    trait HasStatic {
+                        public static int $traitStatic = 1;
+                        public int $traitInstance = 1;
+                    }
+
+                    final class UsesTrait {
+                        use HasStatic;
+                    }
+
+                    $withStatic = get_object_vars(new WithStatic());
+                    $onlyStatic = get_object_vars(new OnlyStatic());
+                    $openOnlyStatic = get_object_vars(new OpenOnlyStatic());
+                    $child = get_object_vars(new Child());
+                    $usesTrait = get_object_vars(new UsesTrait());',
+                'assertions' => [
+                    '$withStatic===' => 'array{i: int}',
+                    '$onlyStatic===' => 'array<never, never>',
+                    '$openOnlyStatic===' => 'array<string, mixed>',
+                    '$child===' => 'array{base: int, child: int}',
+                    '$usesTrait===' => 'array{traitInstance: int}',
                 ],
             ],
             'arrayWalkRecursiveUsesCallbackOutType' => [
@@ -508,6 +598,75 @@ final class ArrayFunctionCallTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.0',
+            ],
+            'arrayWalkAcceptsCallbacksMatchingTheValueKeyAndExtraArgument' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @param array<string, int> $map
+                     * @param list<string> $list
+                     * @param array<string, string> $strings
+                     * @param array<string, array<int, int>> $nested
+                     */
+                    function visit(array $map, array $list, array $strings, array $nested): void {
+                        array_walk($map, static function (int $value, string $key, string $prefix): void {}, "p");
+                        array_walk($list, static function (string $value, int $key): void {});
+                        array_walk($strings, static function (string ...$parts): void {}, "extra");
+                        array_walk_recursive($nested, static function (int $value, int|string $key): void {});
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['UnusedClosureParam'],
+                'php_version' => '8.0',
+            ],
+            'arrayWalkRecursivePassesOnlyTheKeysOfValuesItDoesNotDescendInto' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @param array<string, list<int>> $nested
+                     * @param array{first: list<int>, second: list<int>} $shape
+                     */
+                    function visit(array $nested, array $shape): void {
+                        array_walk_recursive($nested, static function (int $value, int $key): void {});
+                        array_walk_recursive($shape, static function (int $value, int $key): void {});
+                        $withEmpty = ["items" => [1, 2], "empty" => []];
+                        array_walk_recursive($withEmpty, static function (int $value, int $key): void {});
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['UnusedClosureParam'],
+            ],
+            'arrayWalkSkipsCallbackParametersItCannotCheck' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @template T
+                     * @param T $value
+                     */
+                    function visitAny($value): void {}
+                    /**
+                     * @param array<string, mixed> $mixed
+                     * @param array<string, iterable<int, int>> $iterable
+                     * @param list<string> $strings
+                     * @param list<mixed> $args
+                     */
+                    function visit(array $mixed, array $iterable, array $strings, object $object, array $args): void {
+                        array_walk($mixed, static function (int $value): void {});
+                        array_walk_recursive($iterable, static function (int $value): void {});
+                        array_walk($strings, static function ($value, $key): void {});
+                        array_walk($strings, "visitAny");
+                        array_walk($object, static function (int $value): void {});
+                        array_walk(...$args);
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [
+                    'UnusedClosureParam',
+                    'RawObjectIteration',
+                    'DeprecatedFunction',
+                    'MixedArgument',
+                    'MissingClosureParamType',
+                ],
             ],
             'arrayMergeAfterAnArrayOfAnyLengthPutsTheNextElementsInTheRest' => [
                 'code' => <<<'PHP'
@@ -4153,6 +4312,78 @@ final class ArrayFunctionCallTest extends TestCase
                     '$a===' => 'list{3, 1}',
                 ],
             ],
+            'arrayMultisortSortOrderNotLiteral' => [
+                'code' => '<?php
+                    /** @var list<int> $a */
+                    /** @var bool $desc */
+                    array_multisort($a, $desc ? SORT_DESC : SORT_ASC, SORT_STRING);',
+                'assertions' => [
+                    '$a===' => 'list<int>',
+                ],
+            ],
+            'arrayMultisortUnpackedArguments' => [
+                'code' => '<?php
+                    /** @var list<int> $a */
+                    /** @var list<string> $b */
+                    /** @var non-empty-list<list<int>> $arrays */
+                    array_multisort($a, ...[$b]);
+                    array_multisort(...$arrays);',
+                'assertions' => [
+                    '$a===' => 'list<int>',
+                ],
+            ],
+            'arrayMultisortArgumentOfUnknownKind' => [
+                'code' => '<?php
+                    /** @var list<int> $a */
+                    /** @var array<string, list<int>> $by_key */
+                    array_multisort($a, $by_key["k"] ?? []);',
+                'assertions' => [
+                    '$a===' => 'list<int>',
+                ],
+            ],
+            'arrayMultisortArrayItemKeepsItsType' => [
+                'code' => '<?php
+                    /** @var array<string, list<int>> $m */
+                    /** @var string $k */
+                    array_multisort($m[$k]);',
+                'assertions' => [
+                    '$m===' => 'array<string, list<int>>',
+                ],
+            ],
+            'arrayMultisortNullableArrayKeepsItsType' => [
+                'code' => '<?php
+                    /** @var list<int>|null $a */
+                    array_multisort($a);',
+                'assertions' => [
+                    '$a===' => 'list<int>|null',
+                ],
+                'ignored_issues' => ['PossiblyNullArgument'],
+            ],
+            'arrayMultisortPropertiesAndConstantsKeepTheirType' => [
+                'code' => '<?php
+                    final class Listeners {
+                        public const KEYS = [2, 1];
+
+                        /** @var array<string, array{0: bool, 1: int[], 2: callable[]}> */
+                        private array $listeners = [];
+
+                        /** @var array<array-key, int> */
+                        public array $values = [];
+
+                        public function sort(string $event_name): void {
+                            array_multisort(
+                                $this->listeners[$event_name][1],
+                                SORT_NUMERIC,
+                                $this->listeners[$event_name][2],
+                            );
+                        }
+
+                        public function sortValues(int $order): void {
+                            array_multisort($this->values, SORT_ASC);
+                            array_multisort(self::KEYS, $order, $this->values);
+                        }
+                    }',
+            ],
             'arrayMapGenericObject' => [
                 'code' => '<?php
                     /**
@@ -5869,6 +6100,122 @@ final class ArrayFunctionCallTest extends TestCase
                 'error_message' => 'RawObjectIteration',
                 'error_levels' => ['DeprecatedFunction'],
             ],
+            'arrayWalkWithACallbackNotTakingTheValueType' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param list<string> $values */
+                    function visit(array $values): void {
+                        array_walk($values, static fn(int $value): int => $value + 1);
+                    }
+                    PHP,
+                'error_message' => 'Parameter 1 of closure passed to function array_walk expects int, but string provided',
+            ],
+            'arrayWalkWithACallbackNotTakingTheKeyType' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array<string, string> $values */
+                    function visit(array $values): void {
+                        array_walk($values, static function (string $value, int $key): void {});
+                    }
+                    PHP,
+                'error_message' => 'Parameter 2 of closure passed to function array_walk expects int, but string provided',
+                'error_levels' => ['UnusedClosureParam'],
+            ],
+            'arrayWalkWithACallbackNotTakingTheExtraArgument' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param list<int> $values */
+                    function visit(array $values): void {
+                        array_walk($values, static function (int $value, int $key, int $factor): void {}, "2");
+                    }
+                    PHP,
+                'error_message' => 'Parameter 3 of closure passed to function array_walk expects int, but \'2\' provided',
+                'error_levels' => ['UnusedClosureParam'],
+            ],
+            'arrayWalkWithAVariadicCallbackNotTakingTheKeyType' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param list<string> $values */
+                    function visit(array $values): void {
+                        array_walk($values, static function (string ...$parts): void {});
+                    }
+                    PHP,
+                'error_message' => 'Parameter 2 of closure passed to function array_walk expects string, but int<0, max> provided',
+                'error_levels' => ['UnusedClosureParam'],
+            ],
+            'arrayWalkWithAByRefCallbackNotTakingTheValueType' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param list<string> $values */
+                    function visit(array $values): void {
+                        array_walk($values, static function (int &$value): void {
+                            $value++;
+                        });
+                    }
+                    PHP,
+                'error_message' => 'Parameter 1 of closure passed to function array_walk expects int, but string provided',
+            ],
+            'arrayWalkWithANamedFunctionCallbackNotTakingTheValueType' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function double(int $value): int {
+                        return $value * 2;
+                    }
+                    /** @param list<string> $values */
+                    function visit(array $values): void {
+                        array_walk($values, "double");
+                    }
+                    PHP,
+                'error_message' => 'Parameter 1 of closure passed to function array_walk expects int, but string provided',
+            ],
+            'arrayWalkWithAnInvokableCallbackNotTakingTheValueType' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Doubler {
+                        public function __invoke(int $value): int {
+                            return $value * 2;
+                        }
+                    }
+                    /** @param list<string> $values */
+                    function visit(array $values): void {
+                        array_walk($values, new Doubler());
+                    }
+                    PHP,
+                'error_message' => 'Parameter 1 of closure passed to function array_walk expects int, but string provided',
+            ],
+            'arrayWalkWithNamedArgumentsChecksTheCallback' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param list<string> $values */
+                    function visit(array $values): void {
+                        array_walk(callback: static fn(int $value): int => $value + 1, array: $values);
+                    }
+                    PHP,
+                'error_message' => 'Parameter 1 of closure passed to function array_walk expects int, but string provided',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'arrayWalkRecursiveWithACallbackNotTakingTheLeafType' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array<int, array<int, string>|string> $values */
+                    function visit(array $values): void {
+                        array_walk_recursive($values, static fn(int $value): int => $value + 1);
+                    }
+                    PHP,
+                'error_message' => 'Parameter 1 of closure passed to function array_walk_recursive expects int, but string provided',
+            ],
+            'arrayWalkRecursiveWithACallbackNotTakingTheKeyOfAValueItDoesNotDescendInto' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array<string, int|list<int>> $values */
+                    function visit(array $values): void {
+                        array_walk_recursive($values, static function (int $value, int $key): void {});
+                    }
+                    PHP,
+                'error_message' => 'Parameter 2 of closure passed to function array_walk_recursive expects int, but',
+                'error_levels' => ['UnusedClosureParam'],
+            ],
             'implodeWithNonStringableArgs' => [
                 'code' => '<?php
                     implode(",", [new stdClass]);
@@ -5950,6 +6297,40 @@ final class ArrayFunctionCallTest extends TestCase
                         SORT_FLAG_CASE,
                     );',
                 'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:21 - Argument 2 of array_multisort sort order/flag contains an invalid value of 8',
+            ],
+            'arrayMultisortFirstArgumentNotArray' => [
+                'code' => '<?php
+                    /** @var string $s */
+                    array_multisort($s);',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:37 - Argument 1 of array_multisort expects array<array-key, mixed>, but string provided',
+            ],
+            'arrayMultisortArgumentNeitherArrayNorSortFlag' => [
+                'code' => '<?php
+                    /** @var list<int> $a */
+                    array_multisort($a, "x");',
+                'error_message' => 'InvalidScalarArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:41 - Argument 2 of array_multisort expects array<array-key, mixed>|int, but \'x\' provided',
+            ],
+            'arrayFilterWithoutCallbackChecksTheArray' => [
+                'code' => '<?php
+                    /** @var string $s */
+                    $r = array_filter($s);',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:39 - Argument 1 of array_filter expects array<array-key, mixed>, but string provided',
+            ],
+            'arrayMultisortNullableArray' => [
+                'code' => '<?php
+                    /** @var list<int>|null $a */
+                    array_multisort($a);',
+                'error_message' => 'PossiblyNullArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:37 - Argument 1 of array_multisort',
+            ],
+            'arrayMultisortUndefinedVariable' => [
+                'code' => '<?php
+                    array_multisort($undefined);',
+                'error_message' => 'UndefinedGlobalVariable',
+            ],
+            'arrayMultisortWithoutArguments' => [
+                'code' => '<?php
+                    array_multisort();',
+                'error_message' => 'TooFewArguments',
             ],
             'arrayMultisortInvalidSortFlags' => [
                 'code' => '<?php

@@ -93,6 +93,7 @@ use function preg_match;
 use function reset;
 use function str_contains;
 use function str_ends_with;
+use function str_starts_with;
 use function strtolower;
 use function strtoupper;
 use function substr;
@@ -169,6 +170,8 @@ final class ArgumentsAnalyzer
                 $context,
                 $arg->value,
             );
+
+            ClosureAnalyzer::addTypesWrittenByCall($statements_analyzer, $context, $arg->value, $written_var_ids);
 
             foreach ($written_var_ids as $var_id => $_) {
                 $context->releaseKeysBoundToList($var_id);
@@ -582,7 +585,7 @@ final class ArgumentsAnalyzer
         $unpacked_type = $statements_analyzer->node_data->getType($arg->value);
 
         if (!$unpacked_type
-            || !$unpacked_type->isSingle()
+            || !$unpacked_type->isSingleAtomic()
             || !($unpacked_atomic = $unpacked_type->getSingleAtomic()) instanceof TKeyedArray
             || $unpacked_atomic->fallback_params !== null
         ) {
@@ -793,9 +796,28 @@ final class ArgumentsAnalyzer
             }
         }
 
+        $uninferred = [];
+        foreach ($template_result->template_types as $k => $template_map) {
+            foreach ($template_map as $kk => $template_type) {
+                if (($new_bounds[$k][$kk] ?? null) === $template_type) {
+                    $uninferred[$k][$kk] = true;
+                }
+            }
+        }
+
         /** @param array<string, array<string, Union>> $bounds */
-        $replace = static function (Union $type, array $bounds) use ($codebase, $statements_analyzer, $context): Union {
+        $replace_once = static function (
+            Union $type,
+            array $bounds,
+        ) use (
+            $codebase,
+            $statements_analyzer,
+            $context,
+        ): Union {
             $replace_template_result = new TemplateResult($bounds, []);
+            // the bounds are in the caller's terms: a caller's `TKey` given to a call of its own class is not the
+            // callee's `TKey`
+            $replace_template_result->of_receiver = true;
 
             return TemplateInferredTypeReplacer::replace(
                 TemplateStandinTypeReplacer::replace(
@@ -813,24 +835,39 @@ final class ArgumentsAnalyzer
             );
         };
 
+        $receiver_bound = $template_result->receiver_bound_template_types;
+
+        /** @param array<string, array<string, Union>> $bounds */
+        $replace = static function (
+            Union $type,
+            array $bounds,
+        ) use (
+            $uninferred,
+            $receiver_bound,
+            $replace_once,
+        ): Union {
+            $resolved = [];
+            self::resolveUninferredBounds($type, $bounds, $uninferred, $receiver_bound, $resolved, $replace_once);
+
+            return $replace_once($type, $bounds);
+        };
+
         // a closure param takes the declared types with `static` of the call, as the argument is checked against
         // them, before the bounds, which may hold the `static` of the caller, are put in them
         $replace_static_of_call = static function (
             string|TNamedObject|null $static_type,
             bool $final,
         ) use (
-            $template_result,
+            $uninferred,
             $new_bounds,
             $replaced_type,
             $expand_static,
             $replace,
         ): ?Union {
             $bounds = $new_bounds;
-            foreach ($template_result->template_types as $k => $template_map) {
-                foreach ($template_map as $kk => $template_type) {
-                    if (($new_bounds[$k][$kk] ?? null) === $template_type) {
-                        $bounds[$k][$kk] = $expand_static($template_type, $static_type, $final);
-                    }
+            foreach ($uninferred as $k => $template_map) {
+                foreach ($template_map as $kk => $_) {
+                    $bounds[$k][$kk] = $expand_static($new_bounds[$k][$kk], $static_type, $final);
                 }
             }
 
@@ -965,6 +1002,16 @@ final class ArgumentsAnalyzer
                                     // provisional, not definitive: keep the declared type
                                     continue;
                                 }
+                            } elseif ($param_storage->signature_type
+                                && !UnionTypeComparator::isContainedBy(
+                                    $codebase,
+                                    $replaced_param_type,
+                                    $param_storage->signature_type,
+                                )
+                            ) {
+                                // a type inferred for another receiver of the call (a member of an intersection) is
+                                // not replaced by one the parameter's declared type doesn't accept
+                                continue;
                             }
 
                             $newly_inferred_type = Type::combineUnionTypes(
@@ -994,6 +1041,62 @@ final class ArgumentsAnalyzer
                     $closure_param_offset === 1 && $method_id !== 'array_map' && $method_id !== 'array_filter',
                 );
             }
+        }
+    }
+
+    /**
+     * The `as` type of a template inferred from nothing is in the callee's terms, and takes the bounds of the templates
+     * it names before $type takes it. One with the receiver's bindings already ($receiver_bound) only takes those of
+     * the function-like templates: the class templates it names are the caller's.
+     *
+     * @param array<string, array<string, Union>> $bounds
+     * @param array<string, array<string, true>> $uninferred
+     * @param array<string, array<string, true>> $receiver_bound
+     * @param array<string, array<string, true>> $resolved
+     * @param callable(Union, array<string, array<string, Union>>): Union $replace_once
+     */
+    private static function resolveUninferredBounds(
+        Union $type,
+        array &$bounds,
+        array $uninferred,
+        array $receiver_bound,
+        array &$resolved,
+        callable $replace_once,
+    ): void {
+        $collector = new TemplateTypeCollector(true);
+        $collector->traverseArray($type->getAtomicTypes());
+
+        foreach ($collector->getTemplateTypes() as $template) {
+            $k = $template->param_name;
+            $kk = $template->defining_class;
+
+            if (!isset($uninferred[$k][$kk]) || isset($resolved[$k][$kk])) {
+                continue;
+            }
+
+            $resolved[$k][$kk] = true;
+
+            self::resolveUninferredBounds(
+                $bounds[$k][$kk],
+                $bounds,
+                $uninferred,
+                $receiver_bound,
+                $resolved,
+                $replace_once,
+            );
+
+            $as_bounds = $bounds;
+            if (isset($receiver_bound[$k][$kk])) {
+                foreach ($bounds as $as_k => $template_map) {
+                    foreach ($template_map as $defining_id => $_) {
+                        if (!str_starts_with($defining_id, 'fn-')) {
+                            unset($as_bounds[$as_k][$defining_id]);
+                        }
+                    }
+                }
+            }
+
+            $bounds[$k][$kk] = $replace_once($bounds[$k][$kk], $as_bounds);
         }
     }
 
@@ -1799,6 +1902,29 @@ final class ArgumentsAnalyzer
             );
 
             return null;
+        }
+
+        if (($method_id === 'array_walk' || $method_id === 'array_walk_recursive')
+            && isset($function_params[0], $function_params[1])
+            && !array_any($args, static fn(PhpParser\Node\Arg $arg): bool => $arg->unpack)
+            && ($array_arg = self::getArgForParam($args, $function_params, $function_params[0]->name))
+            && ($array_type = $statements_analyzer->node_data->getType($array_arg->value))
+            && ($callback_arg = self::getArgForParam($args, $function_params, $function_params[1]->name))
+            && ($callback_type = $statements_analyzer->node_data->getType($callback_arg->value))
+        ) {
+            $extra_arg = isset($function_params[2])
+                ? self::getArgForParam($args, $function_params, $function_params[2]->name)
+                : null;
+
+            ArrayFunctionArgumentsAnalyzer::checkArrayWalkCallback(
+                $statements_analyzer,
+                $context,
+                $method_id,
+                $array_type,
+                $callback_arg,
+                $callback_type,
+                $extra_arg ? $statements_analyzer->node_data->getType($extra_arg->value) ?? Type::getMixed() : null,
+            );
         }
 
         if ($method_id === 'get_class' && $args === []) {
@@ -2912,7 +3038,7 @@ final class ArgumentsAnalyzer
                             return;
                         }
 
-                        if ($arg_value_type->isSingle()
+                        if ($arg_value_type->isSingleAtomic()
                             && ($atomic_arg_type = $arg_value_type->getSingleAtomic()) instanceof TKeyedArray
                             && !$atomic_arg_type->is_list
                             // integer keys name no parameter: they pass as many arguments as there are keys
@@ -3029,8 +3155,8 @@ final class ArgumentsAnalyzer
                     // a default that is one of the own atomic types of the parameter (`null` for `T|null`) says
                     // nothing about a template that an argument bound already, and that has no default of its own
                     // to fall back to
-                    if ($default_type->isSingle()
-                        && !$param->type->isSingle()
+                    if ($default_type->isSingleAtomic()
+                        && !$param->type->isSingleAtomic()
                         && isset($param->type->getAtomicTypes()[$default_type->getSingleAtomic()->getKey()])
                         && array_all(
                             $param->type->getTemplateTypes(),

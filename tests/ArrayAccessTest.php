@@ -2632,6 +2632,21 @@ final class ArrayAccessTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => ['MixedAssignment'],
             ],
+            'offsetOfAnArrayUnionCombinedWithAShapeDeclaringItIsNotOptional' => [
+                'code' => '<?php
+                    function f(array $a, bool $c): int {
+                        $x = $c ? $a + ["alpha" => 0] : ["red" => 1, "alpha" => 2];
+                        return (int) $x["red"];
+                    }',
+            ],
+            'offsetOfAnIntArrayUnionCombinedWithAShapeDeclaringItIsNotOptional' => [
+                'code' => '<?php
+                    /** @param array<array-key, int> $a */
+                    function f(array $a, bool $c): int {
+                        $x = $c ? $a + ["alpha" => 0] : ["red" => 1, "alpha" => 2];
+                        return $x["red"];
+                    }',
+            ],
             'offsetOfUnsealedArrayNarrowedInIfWithoutElseIsNotOptional' => [
                 'code' => '<?php
                     function f(array $a): string {
@@ -3721,6 +3736,9 @@ final class ArrayAccessTest extends TestCase
                     $test = new test(1);
                     $a = [1 => $test];
                     unset($a[$test->value]);',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'nestedUnsetAfterIssetOnMixedArray' => [
                 'code' => '<?php
@@ -4736,6 +4754,22 @@ final class ArrayAccessTest extends TestCase
                         echo $items[$key];
                     }',
                 'error_message' => 'PossiblyInvalidArrayOffset - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:30 - Cannot access value on variable $items using possibly false offset array-key|false, which is 0',
+            ],
+            'offsetOfAnArrayUnionCombinedWithAShapeLackingItIsOptional' => [
+                'code' => '<?php
+                    function f(array $a, bool $c): int {
+                        $x = $c ? $a + ["red" => 1, "alpha" => 0] : ["alpha" => 2];
+                        return (int) $x["red"];
+                    }',
+                'error_message' => 'PossiblyUndefinedArrayOffset',
+            ],
+            'offsetOfAnArrayUnionCombinedWithAShapeDeclaringItOptionalIsOptional' => [
+                'code' => '<?php
+                    function f(array $a, bool $c, bool $d): int {
+                        $x = $c ? $a + ["alpha" => 0] : ($d ? ["red" => 1, "alpha" => 2] : ["alpha" => 3]);
+                        return (int) $x["red"];
+                    }',
+                'error_message' => 'PossiblyUndefinedArrayOffset',
             ],
             'declaredOptionalOffsetOfUnsealedArrayNarrowedInIfWithoutElseStaysOptional' => [
                 'code' => '<?php
