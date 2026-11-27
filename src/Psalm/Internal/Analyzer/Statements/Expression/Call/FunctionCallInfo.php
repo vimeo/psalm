@@ -5,12 +5,16 @@ declare(strict_types=1);
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
 
 use PhpParser;
+use Psalm\Storage\Capabilities;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Type\Union;
 
+use function array_intersect_key;
+
 /**
  * @internal
+ * @psalm-import-type CapabilitySet from Capabilities
  */
 final class FunctionCallInfo
 {
@@ -79,6 +83,36 @@ final class FunctionCallInfo
      * @var array<string, true>
      */
     public array $closure_written_var_ids = [];
+
+    /**
+     * What the callable values the call may run (a closure, a callable string or array) may write: of the caller's
+     * `$this` (write-this-props), other objects (write-props) or global state
+     *
+     * @var CapabilitySet
+     */
+    public int $callable_capabilities = Capabilities::NONE;
+
+    /**
+     * The memoized method results no callable value the call may run can change, null before one is known
+     *
+     * @var array<string, true>|null
+     */
+    public ?array $kept_memoized_results = null;
+
+    /**
+     * A callable value the call may run, what it may write and the memoized method results it cannot change
+     *
+     * @param CapabilitySet $capabilities
+     * @param array<string, true> $kept_memoized_results
+     * @psalm-capabilities read-props|write-this-props
+     */
+    public function addCallable(int $capabilities, array $kept_memoized_results = []): void
+    {
+        $this->callable_capabilities |= $capabilities;
+        $this->kept_memoized_results = $this->kept_memoized_results === null
+            ? $kept_memoized_results
+            : array_intersect_key($this->kept_memoized_results, $kept_memoized_results);
+    }
 
     /**
      * @mutation-free
