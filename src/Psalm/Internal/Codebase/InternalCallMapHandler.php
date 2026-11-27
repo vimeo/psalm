@@ -110,6 +110,11 @@ final class InternalCallMapHandler
     private static ?array $taint_store_map = null;
 
     /**
+     * @var array<lowercase-string, non-empty-list<non-empty-string>>|null
+     */
+    private static ?array $taint_callable_flow_map = null;
+
+    /**
      * @var array<lowercase-string, non-empty-list<key-of<TaintKind::TAINT_NAMES>>>|null
      */
     private static ?array $taint_escape_map = null;
@@ -599,6 +604,7 @@ final class InternalCallMapHandler
         }
 
         self::addTaintStoreFlows($storage, $function_id);
+        self::addCallableTaintFlows($storage, $function_id);
 
         $storage->removed_taints |= self::getReturnRemovedTaints($function_id);
     }
@@ -627,6 +633,85 @@ final class InternalCallMapHandler
         }
 
         return $flows !== [];
+    }
+
+    /**
+     * Makes the builtin function or method $function_id call the callables given to its parameters with what its other
+     * parameters are given, and return what they return, as dictionaries/InternalTaintCallableFlowMap.php says
+     */
+    public static function addCallableTaintFlows(FunctionLikeStorage $storage, string $function_id): void
+    {
+        if (self::$taint_callable_flow_map === null) {
+            /** @var array<lowercase-string, non-empty-list<non-empty-string>> */
+            self::$taint_callable_flow_map = require(
+                dirname(__DIR__, 4) . '/dictionaries/InternalTaintCallableFlowMap.php'
+            );
+        }
+
+        foreach (self::$taint_callable_flow_map[strtolower($function_id)] ?? [] as $annotation) {
+            $flow = TaintFlowAnnotation::parse($annotation);
+            if (is_string($flow)) {
+                throw new UnexpectedValueException($flow . ' in the callable flows of ' . $function_id);
+            }
+
+            $callable_offset = null;
+            if ($flow->kind === TaintFlowAnnotation::CALLABLE_ARGUMENTS) {
+                $callable_offset = self::getAnalysedParamOffset($function_id, (string) $flow->callable_param, $storage);
+                if ($callable_offset === null) {
+                    continue;
+                }
+            } elseif ($flow->kind !== TaintFlowAnnotation::RETURN) {
+                throw new UnexpectedValueException('Only callable and return flows can be in the callable flows of '
+                    . $function_id);
+            }
+
+            foreach ($flow->sources as $source) {
+                // what the callables given to the parameter return
+                $returns = str_ends_with($source, '()');
+                $offset = self::getAnalysedParamOffset(
+                    $function_id,
+                    $returns ? substr($source, 0, -2) : $source,
+                    $storage,
+                );
+                if ($offset === null) {
+                    continue;
+                }
+
+                if ($callable_offset === null) {
+                    if ($returns) {
+                        $storage->return_source_callable_params[$offset] = $flow->path_type;
+                    } else {
+                        $storage->return_source_params[$offset] = $flow->path_type;
+                    }
+                } elseif ($returns) {
+                    $storage->callable_param_argument_callable_sources[$callable_offset][$offset] = $flow->path_type;
+                } else {
+                    $storage->callable_param_argument_sources[$callable_offset][$offset] = $flow->path_type;
+                }
+            }
+        }
+    }
+
+    /**
+     * The offset of the parameter of the builtin $function_id the newest PHP version names $newest_name, or null if
+     * the analysed version has none (see getAnalysedParamName())
+     *
+     * @psalm-capabilities read-props|read-globals|write-globals|io
+     */
+    private static function getAnalysedParamOffset(
+        string $function_id,
+        string $newest_name,
+        FunctionLikeStorage $storage,
+    ): ?int {
+        $name = self::getAnalysedParamName($function_id, $newest_name, $storage->params);
+
+        foreach ($storage->params as $offset => $param) {
+            if ($param->name === $name) {
+                return $offset;
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -706,7 +791,8 @@ final class InternalCallMapHandler
             $root = dirname(__DIR__, 4) . '/dictionaries/';
             /** @var array<lowercase-string, mixed> $taint_functions */
             $taint_functions = (require($root . 'InternalTaintFlowMap.php'))
-                + (require($root . 'InternalTaintByRefFlowMap.php'));
+                + (require($root . 'InternalTaintByRefFlowMap.php'))
+                + (require($root . 'InternalTaintCallableFlowMap.php'));
 
             self::$newest_param_names = [];
             $file = fopen($root . 'CallMap_' . self::MAX_CALLMAP_VERSION . '.php', 'rb');

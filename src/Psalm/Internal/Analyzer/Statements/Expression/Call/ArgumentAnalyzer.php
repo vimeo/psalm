@@ -2354,6 +2354,7 @@ final class ArgumentAnalyzer
             if (!$in_call_map
                 || isset($callable_param_storage->return_source_callable_params[$callable_param_offset])
                 || isset($callable_param_storage->callable_param_argument_sources[$callable_param_offset])
+                || isset($callable_param_storage->callable_param_argument_callable_sources[$callable_param_offset])
             ) {
                 FunctionCallReturnTypeFetcher::taintCallablePassedToParam(
                     $statements_analyzer,

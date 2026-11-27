@@ -27,7 +27,8 @@ use function trim;
  * - `($a, $b) -> return` (RETURN): what a call returns holds what is given to the parameters, what the object it is
  *   called on holds for `$this`, and what the callable given to a parameter returns for `$name()`;
  * - `($a) -> $callback()` (CALLABLE_ARGUMENTS): a call calls the callables given to `$callback` with what is given to
- *   the parameters;
+ *   the parameters, and with what the callables given to a parameter return for `$name()`, as array_reduce() calls its
+ *   callback with what the callback returned before;
  * - `($value) -> Store::$data[$key]` (STORE_WRITE): a call stores what is given to the parameters under a key (see
  *   TaintStore);
  * - `Store::$data[$key] -> return` (STORE_READ): a call returns what is stored under a key;
@@ -177,9 +178,9 @@ final class TaintFlowAnnotation
             }
 
             if (preg_match('/^\$(\w+)\(\)$/', $target, $matches) === 1 && isset($matches[1]) && $matches[1] !== '') {
-                // what the callables are called with comes from the arguments
+                // what the callables are called with comes from the arguments, or from what callables return
                 foreach ($sources as $source) {
-                    if ($source === 'this' || str_ends_with($source, '()')) {
+                    if ($source === 'this') {
                         return self::getMalformedMessage($annotation);
                     }
                 }

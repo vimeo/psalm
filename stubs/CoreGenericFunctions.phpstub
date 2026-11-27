@@ -305,6 +305,10 @@ function rsort(array &$array, int $flags = SORT_REGULAR): bool
  * @param array<TValue> $array
  * @param callable(mixed, TValue): mixed $callback
  * @param mixed $initial
+ *
+ * @psalm-taint-specialize
+ * @psalm-flow ($array) -(arrayvalue-fetch)-> $callback()
+ * @psalm-flow ($initial, $callback()) -> $callback()
  */
 function array_reduce(array $array, callable $callback, mixed $initial = null): mixed {}
 
@@ -320,6 +324,9 @@ function array_reduce(array $array, callable $callback, mixed $initial = null): 
  *
  * @psalm-capabilities write-refs
  * @psalm-purity-from-template P
+ *
+ * @psalm-taint-specialize
+ * @psalm-flow ($array) -(arrayvalue-fetch)-> $callback()
  */
 function usort(array &$array, callable $callback): bool
 {
@@ -338,6 +345,9 @@ function usort(array &$array, callable $callback): bool
  *
  * @psalm-capabilities write-refs
  * @psalm-purity-from-template P
+ *
+ * @psalm-taint-specialize
+ * @psalm-flow ($array) -(arrayvalue-fetch)-> $callback()
  */
 function uasort(array &$array, callable $callback): bool
 {
@@ -356,6 +366,9 @@ function uasort(array &$array, callable $callback): bool
  *
  * @psalm-capabilities write-refs
  * @psalm-purity-from-template P
+ *
+ * @psalm-taint-specialize
+ * @psalm-flow ($array) -(arraykey-fetch)-> $callback()
  */
 function uksort(array &$array, callable $callback): bool
 {
@@ -1431,6 +1444,9 @@ function iterator_count(Traversable $iterator): int {}
  * @psalm-pure
  * @psalm-purity-from-template P
  * @psalm-purity-from-template Q
+ *
+ * @psalm-taint-specialize
+ * @psalm-flow ($args) -(arrayvalue-fetch)-> $callback()
  */
 function iterator_apply(Traversable $iterator, callable $callback, ?array $args = null): int {}
 
@@ -2133,6 +2149,10 @@ function get_browser(?string $user_agent = null, bool $return_array = false): ob
  * @psalm-taint-sink callable $callback
  * @psalm-pure
  * @psalm-purity-from-template P
+ *
+ * @psalm-taint-specialize
+ * @psalm-flow ($args) -> $callback()
+ * @psalm-flow ($callback()) -> return
  */
 function forward_static_call(callable $callback, mixed ...$args): mixed {}
 
@@ -2142,11 +2162,18 @@ function forward_static_call(callable $callback, mixed ...$args): mixed {}
  * @psalm-taint-sink callable $callback
  * @psalm-pure
  * @psalm-purity-from-template P
+ *
+ * @psalm-taint-specialize
+ * @psalm-flow ($args) -(arrayvalue-fetch)-> $callback()
+ * @psalm-flow ($callback()) -> return
  */
 function forward_static_call_array(callable $callback, array $args): mixed {}
 
 /**
  * @psalm-taint-sink callable $callback
+ *
+ * @psalm-taint-specialize
+ * @psalm-flow ($args) -> $callback()
  */
 function register_shutdown_function(callable $callback, mixed ...$args): void {}
 

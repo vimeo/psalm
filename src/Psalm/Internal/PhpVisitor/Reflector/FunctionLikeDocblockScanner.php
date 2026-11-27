@@ -1487,8 +1487,19 @@ final class FunctionLikeDocblockScanner
                     }
 
                     foreach ($flow->sources as $source_param) {
+                        // what the callables given to the parameter return
+                        $returns = str_ends_with($source_param, '()');
+                        $source_param = $returns ? substr($source_param, 0, -2) : $source_param;
+
                         foreach ($storage->params as $i => $param_storage) {
-                            if ($param_storage->name === $source_param) {
+                            if ($param_storage->name !== $source_param) {
+                                continue;
+                            }
+
+                            if ($returns) {
+                                $storage->callable_param_argument_callable_sources[$callable_offset][$i]
+                                    = $flow->path_type;
+                            } else {
                                 $storage->callable_param_argument_sources[$callable_offset][$i] = $flow->path_type;
                             }
                         }

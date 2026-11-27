@@ -367,6 +367,15 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
     public array $callable_param_argument_sources = [];
 
     /**
+     * The path types of the flows from what the callables given to a parameter return to the arguments the callables
+     * given to a parameter are called with, by the offset of that parameter, then of the parameter given the callables
+     * returning them: `@psalm-flow ($callback()) -> $callback()`
+     *
+     * @var array<int, array<int, string>>
+     */
+    public array $callable_param_argument_callable_sources = [];
+
+    /**
      * The flows of arguments into keyed stores: `@psalm-flow ($value) -> Store::$data[$key]`. `key` is the offset of
      * the parameter giving the key (a list of keys with `is_list`), null for any key; `params` are those whose
      * arguments are stored, `callable_params` those whose callables' results are (`($compute()) -> ...`).

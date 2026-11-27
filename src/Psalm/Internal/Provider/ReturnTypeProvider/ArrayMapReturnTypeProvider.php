@@ -99,6 +99,12 @@ final class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInte
                 return Type::getNever();
             }
 
+            // without a callback, it returns the elements of the arrays
+            $array_nodes = [];
+            foreach ($call_args as $call_arg) {
+                $array_nodes += $statements_source->node_data->getType($call_arg->value)?->parent_nodes ?? [];
+            }
+
             $array_arg_types = [];
             $orig_types = [];
 
@@ -120,7 +126,7 @@ final class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInte
                     $array_arg_types []= [];
                     $orig_types []= $call_arg_type;
                 } else {
-                    return Type::getArray();
+                    return Type::getArray()->addParentNodes($array_nodes);
                 }
             }
 
@@ -146,7 +152,7 @@ final class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInte
                 return Type::getEmptyArray();
             }
 
-            return new Union([TKeyedArray::make($array_arg_types, null, null, true)]);
+            return (new Union([TKeyedArray::make($array_arg_types, null, null, true)]))->addParentNodes($array_nodes);
         }
 
         $array_arg = $call_args[1] ?? null;
@@ -281,7 +287,8 @@ final class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInte
                 count($call_args),
                 $generic_key_type,
                 $mapping_return_type,
-            )->addParentNodes(self::getElementNodes($statements_source, $event, $mapping_return_type));
+            )->addParentNodes(self::getElementNodes($statements_source, $event, $mapping_return_type))
+                ->addParentNodes(self::getKeyNodes($statements_source, $event));
         }
 
         return count($call_args) === 2 && !($array_arg_type->is_list ?? false)
@@ -335,6 +342,40 @@ final class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInte
         }
 
         return [$element_node->id => $element_node];
+    }
+
+    /**
+     * Given one array, the array it returns keeps its keys: their taints, without those of its values
+     *
+     * @return array<string, DataFlowNode>
+     */
+    private static function getKeyNodes(
+        StatementsAnalyzer $statements_analyzer,
+        FunctionReturnTypeProviderEvent $event,
+    ): array {
+        $call_args = $event->getCallArgs();
+        $graph = $statements_analyzer->getDataFlowGraphWithSuppressed();
+        $array_type = count($call_args) === 2 && isset($call_args[1])
+            ? $statements_analyzer->node_data->getType($call_args[1]->value)
+            : null;
+
+        if ($graph === null || $array_type === null || $array_type->parent_nodes === []) {
+            return [];
+        }
+
+        $location = new CodeLocation($statements_analyzer, $event->getStmt());
+        $fetched_keys_node = DataFlowNode::getForAssignment('array_map keys', $location);
+        $graph->addNode($fetched_keys_node);
+        $keys_node = DataFlowNode::getForAssignment('array_map elements by key', $location);
+        $graph->addNode($keys_node);
+
+        foreach ($array_type->parent_nodes as $parent_node) {
+            $graph->addPath($parent_node, $fetched_keys_node, 'arraykey-fetch');
+        }
+
+        $graph->addPath($fetched_keys_node, $keys_node, 'arraykey-assignment');
+
+        return [$keys_node->id => $keys_node];
     }
 
     /**
