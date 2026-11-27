@@ -613,6 +613,108 @@ final class MagicPropertyTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'propertyOfTheChildHidesThePropertyAnnotationOfTheParent' => [
+                'code' => '<?php
+                    /**
+                     * @property string|null $value
+                     */
+                    abstract class Base {
+                        public function __get(string $name): mixed {
+                            return null;
+                        }
+                        public function __set(string $name, mixed $value): void {}
+                    }
+
+                    class Child extends Base {
+                        public int $value = 0;
+
+                        public function fill(): void {
+                            $this->value = 5;
+                        }
+                    }
+
+                    final class GrandChild extends Child {}
+
+                    $value = (new Child())->value;
+                    $grandChildValue = (new GrandChild())->value;',
+                'assertions' => [
+                    '$value===' => 'int',
+                    '$grandChildValue===' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'propertyOfATraitHidesThePropertyAnnotationOfTheParent' => [
+                'code' => '<?php
+                    /**
+                     * @property string|null $value
+                     */
+                    abstract class Base {
+                        public function __get(string $name): mixed {
+                            return null;
+                        }
+                        public function __set(string $name, mixed $value): void {}
+                    }
+
+                    trait HasValue {
+                        public int $value = 0;
+                    }
+
+                    final class Child extends Base {
+                        use HasValue;
+
+                        public function fill(): void {
+                            $this->value = 5;
+                        }
+                    }
+
+                    $value = (new Child())->value;',
+                'assertions' => [
+                    '$value===' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'propertyAnnotationOfTheChildNarrowsThePropertyOfTheParent' => [
+                'code' => '<?php
+                    abstract class Base {
+                        /** @var mixed */
+                        public $value;
+                    }
+
+                    /**
+                     * @property int $value
+                     */
+                    final class Child extends Base {}
+
+                    $value = (new Child())->value;',
+                'assertions' => [
+                    '$value===' => 'int',
+                ],
+            ],
+            'propertyAnnotationOfTheParentDescribesItsInheritedProperty' => [
+                'code' => '<?php
+                    /**
+                     * @property-read int $value
+                     */
+                    abstract class Base {
+                        /** @var int|string */
+                        protected $value = 0;
+
+                        public function __get(string $name): mixed {
+                            return $this->$name;
+                        }
+                    }
+
+                    final class Child extends Base {}
+
+                    $value = (new Child())->value;',
+                'assertions' => [
+                    '$value===' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'valueOfPseudoPropertyIsNarrowedByAnEqualityCheck' => [
                 'code' => '<?php
                     enum Foo: string {
