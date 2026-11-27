@@ -4270,6 +4270,55 @@ final class FunctionCallTest extends TestCase
                     '$a===' => 'float(10.36)',
                 ],
             ],
+            'roundOfAUnionOfFloatLiterals' => [
+                'code' => '<?php
+                    $a = round(rand(0, 1) ? 1.5 : 2.5);
+                ',
+                'assertions' => [
+                    '$a===' => 'float',
+                ],
+            ],
+            'roundIsALiteralOnlyWhenThePrecisionAndModeAreKnown' => [
+                'code' => '<?php
+                    function getInt(): int {
+                        return 2;
+                    }
+
+                    $a = round(1.234, getInt());
+                    $b = round(1.234, rand(0, 1) ? 1 : 2);
+                    $c = round(1.25, 1, PHP_ROUND_HALF_DOWN);
+                    $d = round(1.25, 1);
+                ',
+                'assertions' => [
+                    '$a===' => 'float',
+                    '$b===' => 'float',
+                    '$c===' => 'float(1.2)',
+                    '$d===' => 'float(1.3)',
+                ],
+            ],
+            'randWithAUnionOfIntLiteralsAsMinimum' => [
+                'code' => '<?php
+                    $a = rand(rand(0, 1) ? 5 : 1, 10);
+                ',
+                'assertions' => [
+                    '$a===' => 'int<min, 10>',
+                ],
+            ],
+            'dirnameIsALiteralOnlyWhenTheLevelIsKnown' => [
+                'code' => '<?php
+                    /** @return positive-int */
+                    function getLevel(): int {
+                        return 2;
+                    }
+
+                    $a = dirname("/a/b/c/d", rand(0, 1) ? 1 : 3);
+                    $b = dirname("/a/b/c/d", getLevel());
+                ',
+                'assertions' => [
+                    '$a===' => 'non-falsy-string',
+                    '$b===' => 'non-falsy-string',
+                ],
+            ],
             'allowConstructorAfterEnumExists' => [
                 'code' => '<?php
                     function foo(string $s) : void {
@@ -4415,6 +4464,67 @@ final class FunctionCallTest extends TestCase
                          throw new \Exception("foo");
                     }
                 ',
+            ],
+            'noNeverReturnErrorNativeTypeBeforePhp81' => [
+                'code' => '<?php
+                    function foo(): string {
+                        exit;
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'noNeverReturnErrorNativeTypeOverridableMethod' => [
+                'code' => '<?php
+                    class A {
+                        public function foo(): string {
+                            exit;
+                        }
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'noNeverReturnErrorTraitMethodUsedByFinalClass' => [
+                'code' => '<?php
+                    trait T {
+                        /**
+                         * @return string
+                         */
+                        public function foo() {
+                            exit;
+                        }
+                    }
+
+                    final class A {
+                        use T;
+                    }
+
+                    class B {
+                        use T;
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'noNeverReturnErrorNativeTraitMethodUsedByFinalClass' => [
+                'code' => '<?php
+                    trait T {
+                        public function foo(): string {
+                            exit;
+                        }
+                    }
+
+                    final class A {
+                        use T;
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
             'noInvalidReturnTypeVoidNeverExplicit' => [
                 'code' => '<?php
@@ -4878,6 +4988,27 @@ final class FunctionCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'possiblyFalseArgumentMessageNamesTheFalseValue' => [
+                'code' => '<?php
+                    function takesString(string $s): void {}
+
+                    /** @return string|false */
+                    function maybeString() {
+                        return rand(0, 1) ? "a" : false;
+                    }
+
+                    takesString(maybeString());',
+                'error_message' => 'PossiblyFalseArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:33 - '
+                    . 'Argument 1 of takesString cannot be false, possibly false value provided',
+            ],
+            'falseArgumentMessageNamesTheFalseValue' => [
+                'code' => '<?php
+                    function takesString(string $s): void {}
+
+                    takesString(false);',
+                'error_message' => 'Argument 1 of takesString cannot be false, false value provided to parameter '
+                    . 'with type string',
+            ],
             'possiblyUndefinedVariableAfterExtractIsMixed' => [
                 'code' => '<?php
                     function takesInt(int $_i): void {}
@@ -6106,6 +6237,56 @@ final class FunctionCallTest extends TestCase
                     $a();',
                 'error_message' => 'PossiblyInvalidFunctionCall',
             ],
+            'assignmentOfVoidOrNeverReturn' => [
+                'code' => '<?php
+                    /**
+                     * @return void|never
+                     */
+                    function foo() {
+                        if (rand(0, 1)) {
+                            exit;
+                        }
+                    }
+
+                    $a = foo();',
+                'error_message' => 'AssignmentToVoid',
+            ],
+            'assignmentOfVoidOrNeverTernary' => [
+                'code' => '<?php
+                    function foo(): void {}
+
+                    /**
+                     * @return never
+                     */
+                    function bar() {
+                        exit;
+                    }
+
+                    $a = rand(0, 1) ? foo() : bar();',
+                'error_message' => 'AssignmentToVoid',
+            ],
+            'voidOrNeverParam' => [
+                'code' => '<?php
+                    /**
+                     * @param void|never $i
+                     */
+                    function foo($i): void {}',
+                'error_message' => 'ParadoxicalCondition',
+            ],
+            'assignmentOfConditionalVoidOrNeverReturn' => [
+                'code' => '<?php
+                    /**
+                     * @return ($ok is true ? void : never)
+                     */
+                    function check(bool $ok) {
+                        if (!$ok) {
+                            exit(1);
+                        }
+                    }
+
+                    $a = check((bool) rand(0, 1));',
+                'error_message' => 'AssignmentToVoid',
+            ],
             'varExportAssignmentToVoid' => [
                 'code' => '<?php
                     $a = var_export(["a"]);',
@@ -6669,6 +6850,50 @@ final class FunctionCallTest extends TestCase
 
                     foo();',
                 'error_message' => 'InvalidReturnType',
+            ],
+            'shouldReturnNeverNotNativeString' => [
+                'code' => '<?php
+                    function finalFunc(): string {
+                        exit;
+                    }',
+                'error_message' => 'InvalidReturnType',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'shouldReturnNeverNotNativeStringFinalMethod' => [
+                'code' => '<?php
+                    final class A {
+                        public function foo(): string {
+                            exit;
+                        }
+                    }',
+                'error_message' => 'InvalidReturnType',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'shouldReturnNeverNotNativeStringClosure' => [
+                'code' => '<?php
+                    $f = function (): string {
+                        exit;
+                    };',
+                'error_message' => 'InvalidReturnType',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'shouldReturnNeverNotNativeStringPrivateTraitMethod' => [
+                'code' => '<?php
+                    trait T {
+                        private function foo(): string {
+                            exit;
+                        }
+                    }
+
+                    class A {
+                        use T;
+                    }',
+                'error_message' => 'InvalidReturnType',
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
             'DontAcceptArrayWithShapesNotContained' => [
                 'code' => '<?php

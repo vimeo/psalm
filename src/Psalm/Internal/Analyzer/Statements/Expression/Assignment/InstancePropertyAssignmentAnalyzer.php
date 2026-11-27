@@ -165,6 +165,7 @@ final class InstancePropertyAssignmentAnalyzer
 
             if ($assigned_var_id !== null) {
                 $context->forgetNarrowedShapeProperty($assigned_var_id);
+                $context->forgetPropertiesAliasedBy($assigned_var_id);
             }
         }
 
@@ -894,6 +895,15 @@ final class InstancePropertyAssignmentAnalyzer
             $statements_analyzer->getFQCLN(),
             $statements_analyzer,
         );
+
+        // `$this->$name = ...` and `$this->{'name'} = ...` assign the property their literal name resolves to
+        if ($var_id === null
+            && $lhs_var_id !== null
+            && !$stmt->name instanceof PhpParser\Node\Identifier
+            && ExpressionIdentifier::isLiteralPropertyNameOfVarId($prop_name)
+        ) {
+            $var_id = $lhs_var_id . '->' . $prop_name;
+        }
 
         if ($var_id) {
             $context->assigned_var_ids[$var_id] = (int)$stmt->var->getAttribute('startFilePos');

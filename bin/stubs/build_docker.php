@@ -33,7 +33,7 @@ const BASE_IMAGE_PACKAGES = [];
 
 /** Extensions installed in every image. */
 const EXTENSIONS = [
-    'memcached', 'grpc', 'soap', 'swoole', 'zookeeper',
+    'memcached', 'grpc', 'soap', 'swoole', 'zookeeper', 'ssh2',
     'amqp', 'apcu', 'zmq', 'ds', 'event', 'ev', 'redis', 'mongodb', 'imagick', 'pcntl',
     'pgsql', 'intl', 'gmp', 'mbstring', 'mysqli', 'pdo_mysql', 'pdo_pgsql',
     'snmp', 'tidy', 'xsl', 'xml', 'dom', 'iconv', 'zip', 'igbinary', 'gd', 'bcmath',
@@ -105,10 +105,11 @@ const PIE_PACKAGES = [
     ],
     'swoole' => [
         'package' => 'swoole/swoole',
-        'apk' => ['openssl-dev', 'curl-dev', 'postgresql-dev', 'linux-headers', 'c-ares-dev', 'brotli-dev', 'sqlite-dev', 'zstd-dev', 'ncurses-dev', 'libssh2-dev', 'liburing-dev'],
+        'apk' => ['openssl-dev', 'curl-dev', 'postgresql-dev', 'linux-headers', 'c-ares-dev', 'brotli-dev', 'sqlite-dev', 'zstd-dev', 'ncurses-dev', 'liburing-dev'],
+        // no --with-swoole-ssh2: it defines the ssh2_* functions of the ssh2 extension, which the images build
         'options' => [
             '--with-openssl-dir=yes', '--enable-mysqlnd', '--enable-swoole-curl', '--enable-cares', '--enable-brotli', '--enable-zstd',
-            '--enable-swoole-pgsql', '--enable-swoole-sqlite', '--enable-iouring', '--enable-uring-socket', '--with-swoole-ssh2=yes',
+            '--enable-swoole-pgsql', '--enable-swoole-sqlite', '--enable-iouring', '--enable-uring-socket',
         ],
     ],
     'amqp' => [
@@ -170,6 +171,7 @@ const SOURCES = [
     'grpc' => 'pecl',
     'swoole' => 'pecl',
     'zookeeper' => 'pecl',
+    'ssh2' => 'pecl',
     'amqp' => 'pecl',
     'apcu' => 'pecl',
     'ds' => 'pecl',

@@ -7,6 +7,7 @@ namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
+use Psalm\Config;
 use Psalm\Context;
 use Psalm\Internal\Algebra;
 use Psalm\Internal\Algebra\FormulaGenerator;
@@ -14,6 +15,7 @@ use Psalm\Internal\Analyzer\AlgebraAnalyzer;
 use Psalm\Internal\Analyzer\ClosureAnalyzer;
 use Psalm\Internal\Analyzer\ExtensionRequirementAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
+use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\PurityWildcardInference;
 use Psalm\Internal\Analyzer\Statements\Expression\ArrayAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallPurityAnalyzer;
@@ -42,10 +44,13 @@ use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\Type\TypeVariableTracker;
 use Psalm\Internal\TypeVisitor\AmbiguousTemplateRemover;
+use Psalm\Internal\TypeVisitor\TemplateTypeCollector;
 use Psalm\Internal\TypeVisitor\TypeVariableResolver;
 use Psalm\Issue\DeprecatedFunction;
 use Psalm\Issue\ImpureFunctionCall;
 use Psalm\Issue\ImpureMethodCall;
+use Psalm\Issue\InternalClass;
+use Psalm\Issue\InternalFunction;
 use Psalm\Issue\InvalidArrayOffset;
 use Psalm\Issue\InvalidFunctionCall;
 use Psalm\Issue\MixedFunctionCall;
@@ -115,6 +120,7 @@ use function reset;
 use function spl_object_id;
 use function str_contains;
 use function str_ends_with;
+use function str_starts_with;
 use function strpos;
 use function strtolower;
 
@@ -267,6 +273,8 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                     }
                 } else {
                     // an unknown function may do anything
+                    $function_call_info->addCallable(Capabilities::ALL);
+
                     $statements_analyzer->signalMutation(
                         Capabilities::ALL,
                         $context,
@@ -398,9 +406,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                     $statements_analyzer->node_data,
                 );
 
-                if (!$function_call_info->is_stubbed
-                    && !$codebase->functions->params_provider->has($function_call_info->function_id)
-                ) {
+                if (!$function_call_info->is_stubbed && !$function_call_info->function_params_from_provider) {
                     $function_call_info->function_params = $function_callable->params;
                 }
             }
@@ -602,6 +608,15 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         }
 
         // a called closure may write what it captured by reference
+        if ($function_name instanceof PhpParser\Node\Expr) {
+            ClosureAnalyzer::addTypesWrittenByCall(
+                $statements_analyzer,
+                $context,
+                $function_name,
+                $function_call_info->closure_written_var_ids,
+            );
+        }
+
         foreach ($function_call_info->closure_written_var_ids as $var_id => $_) {
             $context->removeVarFromConflictingClauses(
                 $var_id,
@@ -609,6 +624,13 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                 $statements_analyzer,
             );
         }
+
+        self::forgetWhatCallablesMayWrite(
+            $context,
+            $config,
+            $function_call_info->callable_capabilities,
+            $function_call_info->kept_memoized_results ?? [],
+        );
 
         if ($function_call_info->function_storage) {
             GlobalAnalyzer::readGlobalsWrittenBy($statements_analyzer, $context, $function_call_info->function_storage);
@@ -745,6 +767,26 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                     $statements_analyzer->getSuppressedIssues(),
                 );
             }
+
+            if ($function_call_info->function_id !== null && !$context->collect_initializations) {
+                $caller_identifier = $statements_analyzer->getFullyQualifiedFunctionMethodOrNamespaceName() ?? '';
+
+                if (!NamespaceAnalyzer::isWithinAny(
+                    $caller_identifier,
+                    $function_call_info->function_storage->internal,
+                )) {
+                    IssueBuffer::maybeAdd(
+                        new InternalFunction(
+                            'The function ' . $function_call_info->function_id . ' is internal to '
+                                . InternalClass::listToPhrase($function_call_info->function_storage->internal)
+                                . ' but called from ' . ($caller_identifier ?: 'root namespace'),
+                            $code_location,
+                            $function_call_info->function_id,
+                        ),
+                        $statements_analyzer->getSuppressedIssues(),
+                    );
+                }
+            }
         }
 
         // a builtin a PHP version deprecates, whether or not a stub declares it
@@ -781,6 +823,38 @@ final class FunctionCallAnalyzer extends CallAnalyzer
     }
 
     /**
+     * Forgets the memoized results of methods the callable values a call ran may have changed: of any object when they
+     * may write properties, of `$this` when they may write those of the caller's `$this`. Without remembered property
+     * assignments, the properties themselves too, as after a call of a named function.
+     *
+     * @param CapabilitySet $capabilities
+     * @param array<string, true> $kept_memoized_results memoized results the callables cannot change
+     */
+    private static function forgetWhatCallablesMayWrite(
+        Context $context,
+        Config $config,
+        int $capabilities,
+        array $kept_memoized_results,
+    ): void {
+        $methods_only = $config->remember_property_assignments_after_call || $context->collect_initializations;
+
+        $context->removeMutableObjectVars(
+            $methods_only,
+            $capabilities & ~Capabilities::WRITE_THIS_PROPS,
+            $kept_memoized_results,
+        );
+
+        if (($capabilities & Capabilities::WRITE_THIS_PROPS) !== 0) {
+            $context->removeMutableObjectVars(
+                $methods_only,
+                Capabilities::WRITE_THIS_PROPS,
+                $kept_memoized_results,
+                '$this',
+            );
+        }
+    }
+
+    /**
      * The capabilities a callable array `[$object, $method]` whose method isn't known requires: any method of the
      * object may run, `__call()` too, which only the class contract of each part of its type caps (see
      * MethodCallPurityAnalyzer::getClassContractCapabilities()). A method writing the object's own properties writes
@@ -809,7 +883,36 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             $capabilities |= MethodCallPurityAnalyzer::getClassContractCapabilities($codebase, $object_type);
         }
 
-        if ($capabilities === Capabilities::ALL) {
+        return self::getCallableArrayReceiverCapabilities(
+            $statements_analyzer,
+            $context,
+            $callable,
+            $function_name,
+            $capabilities,
+        );
+    }
+
+    /**
+     * The capabilities calling a method that may use $capabilities through the callable array `[$object, $method]`
+     * requires, given its object: what the method writes of its own object it writes of the caller's `$this` only
+     * when the object is that `$this` (see MethodCallPurityAnalyzer::getReceiverCallCapabilities()). Of another
+     * callable (`'C::m'`), the method has no object.
+     *
+     * @param CapabilitySet $capabilities
+     * @return CapabilitySet
+     */
+    private static function getCallableArrayReceiverCapabilities(
+        StatementsAnalyzer $statements_analyzer,
+        Context $context,
+        Atomic $callable,
+        PhpParser\Node\Expr $function_name,
+        int $capabilities,
+    ): int {
+        if ($capabilities === Capabilities::ALL
+            || !$callable instanceof TKeyedArray
+            || !isset($callable->properties[0])
+            || count($callable->properties) !== 2
+        ) {
             return $capabilities;
         }
 
@@ -837,9 +940,83 @@ final class FunctionCallAnalyzer extends CallAnalyzer
     }
 
     /**
+     * A call of a callable array or `Class::method` string returns what the method it names returns
+     */
+    private static function setCallableMethodReturnType(
+        StatementsAnalyzer $statements_analyzer,
+        Context $context,
+        PhpParser\Node\Expr\FuncCall $real_stmt,
+        Atomic $var_type_part,
+    ): void {
+        $callable = CallableTypeComparator::getCallableFromAtomic(
+            $statements_analyzer->getCodebase(),
+            $var_type_part,
+            null,
+            $statements_analyzer,
+            $context,
+        );
+
+        if (!$callable instanceof TCallable && !$callable instanceof TClosure) {
+            self::addToTypeOfCall($statements_analyzer, $real_stmt, null);
+
+            return;
+        }
+
+        $return_type = $callable->return_type;
+
+        if ($return_type) {
+            // the arguments aren't matched with the method's own templates here: they give their bounds
+            $collector = new TemplateTypeCollector();
+            $collector->traverse($return_type);
+
+            $method_template_bounds = [];
+
+            foreach ($collector->getTemplateTypes() as $template) {
+                if (str_starts_with($template->defining_class, 'fn-')) {
+                    $method_template_bounds[$template->param_name][$template->defining_class] = $template->as;
+                }
+            }
+
+            if ($method_template_bounds) {
+                $return_type = TemplateInferredTypeReplacer::replace(
+                    $return_type,
+                    new TemplateResult([], $method_template_bounds),
+                    $statements_analyzer->getCodebase(),
+                );
+            }
+        }
+
+        self::addToTypeOfCall($statements_analyzer, $real_stmt, $return_type);
+    }
+
+    /**
+     * What a callable the call may be returns is part of the type of the call, or all of it when it has none yet;
+     * a callable whose return type is unknown (null) makes the call mixed
+     */
+    private static function addToTypeOfCall(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\FuncCall $real_stmt,
+        ?Union $return_type,
+    ): void {
+        $stmt_type = $statements_analyzer->node_data->getType($real_stmt);
+
+        if ($return_type === null || $stmt_type?->isMixed()) {
+            $statements_analyzer->node_data->setType($real_stmt, Type::getMixed());
+
+            return;
+        }
+
+        $statements_analyzer->node_data->setType(
+            $real_stmt,
+            $stmt_type ? Type::combineUnionTypes($stmt_type, $return_type) : $return_type,
+        );
+    }
+
+    /**
      * Charges the call of callable string or array $var_type_part what the method it names requires (see
      * getIntersectionCallableArrayMethods() for one on an intersection), or, if it names none (and isn't the name of
-     * a function, see FunctionCallInfo::$new_function_name), what the class contract of its object allows
+     * a function, see FunctionCallInfo::$new_function_name), what the class contract of its object allows, and gives
+     * the call the return type of the method
      */
     private static function signalCallableArrayCall(
         StatementsAnalyzer $statements_analyzer,
@@ -849,15 +1026,42 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         Atomic $var_type_part,
         ?MethodIdentifier $potential_method_id,
         FunctionCallInfo $function_call_info,
+        PhpParser\Node\Expr\FuncCall $real_stmt,
     ): void {
         $codebase = $statements_analyzer->getCodebase();
         $has_new_function_name = $function_call_info->new_function_name !== null;
 
+        if ($potential_method_id) {
+            self::setCallableMethodReturnType($statements_analyzer, $context, $real_stmt, $var_type_part);
+        } elseif (!$var_type_part instanceof TLiteralString) {
+            // a literal string names a function, whose call gives the type
+            self::addToTypeOfCall($statements_analyzer, $real_stmt, null);
+        }
+
         if ($potential_method_id && $codebase->methods->hasStorage($potential_method_id)) {
             $potential_method_storage = $codebase->methods->getStorage($potential_method_id);
 
-            $statements_analyzer->signalMutation(
+            $capabilities = self::getCallableArrayReceiverCapabilities(
+                $statements_analyzer,
+                $context,
+                $var_type_part,
+                $function_name,
                 $potential_method_storage->capabilities,
+            );
+
+            $function_call_info->addCallable(
+                $capabilities,
+                MethodCallPurityAnalyzer::getMemoizedResultsKeptByCallableCall(
+                    $context,
+                    $codebase,
+                    $var_type_part,
+                    $function_name,
+                    $potential_method_storage,
+                ),
+            );
+
+            $statements_analyzer->signalMutation(
+                $capabilities,
                 $context,
                 'method ' . (string) $potential_method_id,
                 ImpureMethodCall::class,
@@ -874,8 +1078,18 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         ) {
             // a method of another part of an intersection
             foreach ($intersection_method_storages as $intersection_method_storage) {
-                $statements_analyzer->signalMutation(
+                $capabilities = self::getCallableArrayReceiverCapabilities(
+                    $statements_analyzer,
+                    $context,
+                    $var_type_part,
+                    $function_name,
                     $intersection_method_storage->capabilities,
+                );
+
+                $function_call_info->addCallable($capabilities);
+
+                $statements_analyzer->signalMutation(
+                    $capabilities,
                     $context,
                     'method ' . $intersection_method_storage->defining_fqcln . '::'
                         . (string) $intersection_method_storage->cased_name,
@@ -889,19 +1103,23 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         } elseif (!$has_new_function_name) {
             // a callable string or array whose target is unknown may do anything, but a method of an
             // object whose class contract caps them all
-            $statements_analyzer->signalMutation(
-                ByRefArgumentAnalyzer::adjustUnknownParamsCapabilities(
+            $capabilities = ByRefArgumentAnalyzer::adjustUnknownParamsCapabilities(
+                $statements_analyzer,
+                $context,
+                self::getCallableArrayContractCapabilities(
                     $statements_analyzer,
+                    $codebase,
                     $context,
-                    self::getCallableArrayContractCapabilities(
-                        $statements_analyzer,
-                        $codebase,
-                        $context,
-                        $var_type_part,
-                        $function_name,
-                    ),
-                    $stmt->isFirstClassCallable() ? [] : $stmt->getArgs(),
+                    $var_type_part,
+                    $function_name,
                 ),
+                $stmt->isFirstClassCallable() ? [] : $stmt->getArgs(),
+            );
+
+            $function_call_info->addCallable($capabilities);
+
+            $statements_analyzer->signalMutation(
+                $capabilities,
                 $context,
                 'function call on ' . $var_type_part->getId(),
                 ImpureFunctionCall::class,
@@ -921,7 +1139,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
     {
         if (!$callable instanceof TKeyedArray
             || !isset($callable->properties[0], $callable->properties[1])
-            || !$callable->properties[0]->isSingle()
+            || !$callable->properties[0]->isSingleAtomic()
             || !$callable->properties[1]->isSingleStringLiteral()
         ) {
             return [];
@@ -1145,13 +1363,18 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         }
 
         if ($codebase->functions->params_provider->has($function_call_info->function_id)) {
-            $function_call_info->function_params = $codebase->functions->params_provider->getFunctionParams(
+            $provided_params = $codebase->functions->params_provider->getFunctionParams(
                 $statements_analyzer,
                 $function_call_info->function_id,
                 $args,
                 $context,
                 $code_location,
             );
+
+            if ($provided_params !== null) {
+                $function_call_info->function_params = $provided_params;
+                $function_call_info->function_params_from_provider = true;
+            }
         }
 
         if ($codebase->store_node_types
@@ -1180,7 +1403,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         Context $context,
         ?Union $callee_type,
     ): ?array {
-        $closure = $callee_type !== null && $callee_type->isSingle() ? $callee_type->getSingleAtomic() : null;
+        $closure = $callee_type !== null && $callee_type->isSingleAtomic() ? $callee_type->getSingleAtomic() : null;
 
         if (!$closure instanceof TClosure
             || $closure->callable_id === null
@@ -1633,6 +1856,242 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         );
     }
 
+    /**
+     * The function called on a mixed value may do anything
+     */
+    private static function reportCallOfMixed(
+        StatementsAnalyzer $statements_analyzer,
+        Context $context,
+        PhpParser\Node\Expr\FuncCall $stmt,
+        TMixed $var_type_part,
+        FunctionCallInfo $function_call_info,
+    ): void {
+        IssueBuffer::maybeAdd(
+            new MixedFunctionCall(
+                'Cannot call function on ' . $var_type_part->getId(),
+                new CodeLocation($statements_analyzer->getSource(), $stmt),
+            ),
+            $statements_analyzer->getSuppressedIssues(),
+        );
+
+        $function_call_info->addCallable(Capabilities::ALL);
+
+        $statements_analyzer->signalMutation(
+            Capabilities::ALL,
+            $context,
+            'function call on ' . $var_type_part->getId(),
+            ImpureFunctionCall::class,
+            $stmt,
+        );
+    }
+
+    /**
+     * The call of a closure, or of a callable of a known signature: what it requires, and the type it returns
+     */
+    private static function analyzeCallOfAClosure(
+        StatementsAnalyzer $statements_analyzer,
+        Context $context,
+        PhpParser\Node\Expr\FuncCall $stmt,
+        PhpParser\Node\Expr\FuncCall $real_stmt,
+        PhpParser\Node\Expr $function_name,
+        TClosure|TCallable $var_type_part,
+        FunctionCallInfo $function_call_info,
+    ): void {
+        $codebase = $statements_analyzer->getCodebase();
+        $source = $statements_analyzer->getSource();
+
+        $closure_capabilities = self::analyzeClosureCallCapabilities(
+            $statements_analyzer,
+            $context,
+            $stmt,
+            $function_name,
+            $var_type_part,
+            $function_call_info,
+        );
+
+        if ($function_name instanceof PhpParser\Node\Expr\Variable
+            && is_string($function_name->name)
+            && $source instanceof ClosureAnalyzer
+            && $source->getRecursiveVarId() === '$' . $function_name->name
+        ) {
+            // a recursive call of the closure being analysed: not a mutation of its own
+        } elseif ($statements_analyzer->signalMutation(
+            $closure_capabilities,
+            $context,
+            'function call on ' . $var_type_part->getId(),
+            ImpureFunctionCall::class,
+            $stmt,
+            self::isPurityWildcardCandidate($statements_analyzer, $function_name, $var_type_part)
+                ? Capabilities::NONE
+                : null,
+            false,
+            $function_call_info->function_storage,
+        )) {
+            if (!$function_call_info->function_storage) {
+                $function_call_info->function_storage = new FunctionStorage();
+            }
+
+            $function_call_info->function_storage->capabilities |= $closure_capabilities;
+        }
+
+        $function_call_info->function_params = $var_type_part->params;
+
+        // the type variables the closure returns resolve as those a method call returns
+        $closure_return_type = $var_type_part->return_type
+            ? TypeVariableTracker::resolveTypeVariables($var_type_part->return_type, $codebase)
+            : null;
+
+        self::addToTypeOfCall($statements_analyzer, $real_stmt, $closure_return_type);
+
+        if ($var_type_part->callable_id !== null) {
+            // Collect every known underlying id. When the call target is a union of
+            // distinct callables, any of them may run, so the taint behavior of all
+            // of them is re-dispatched on invocation (an over-approximation, which is
+            // the sound direction for taint). Callables with no known id contribute
+            // nothing to re-dispatch and are simply skipped.
+            $function_call_info->addCallableId($var_type_part->callable_id);
+        }
+
+        $function_call_info->function_exists = true;
+    }
+
+    /**
+     * The capabilities of calling the closure, and the checks of the global state its arguments pass it. What it may
+     * write is recorded in $function_call_info: what it writes of its own object is what it writes of the caller's
+     * `$this` only for a closure created in this scope, else of another object.
+     *
+     * @return CapabilitySet
+     */
+    private static function analyzeClosureCallCapabilities(
+        StatementsAnalyzer $statements_analyzer,
+        Context $context,
+        PhpParser\Node\Expr\FuncCall $stmt,
+        PhpParser\Node\Expr $function_name,
+        TClosure|TCallable $closure,
+        FunctionCallInfo $function_call_info,
+    ): int {
+        // the purity of the closure, where a purity template the enclosing function-like
+        // inherits its purity from requires nothing: that is deferred to its callers
+        $closure_capabilities = CallPurityResolver::resolvePurity($closure->purity, $statements_analyzer);
+
+        // a closure created in this scope: what it does to the variables it captured
+        // by reference, and through its by-reference parameters, stays in this scope
+        if ($statements_analyzer->node_data->isPureCompatible($function_name)) {
+            // its `$this` is the caller's: what it writes of it is forgotten, as after a method called on `$this`
+            if ($closure instanceof TClosure
+                && !$stmt->isFirstClassCallable()
+                && ($closure_capabilities & Capabilities::WRITE_THIS_PROPS) !== 0
+                && isset($context->vars_in_scope['$this'])
+                && !self::isStaticClosure($statements_analyzer, $closure)
+            ) {
+                $context->removeMutableObjectVars(false, Capabilities::WRITE_THIS_PROPS, object_var_id: '$this');
+            }
+
+            $closure_capabilities &= ~Capabilities::RECEIVER_LOCAL;
+        }
+
+        $closure_capabilities = ByRefArgumentAnalyzer::adjustCapabilities(
+            $statements_analyzer,
+            $context,
+            $closure_capabilities,
+            $closure->params,
+            $stmt->isFirstClassCallable() ? [] : $stmt->getArgs(),
+        );
+
+        if (!$stmt->isFirstClassCallable()) {
+            if (($closure_capabilities & Capabilities::READ_GLOBALS) !== 0) {
+                $stmt->setAttribute(GlobalStateAnalyzer::ATTRIBUTE, true);
+            }
+
+            GlobalStateAnalyzer::checkArguments(
+                $statements_analyzer,
+                $context,
+                $stmt->getArgs(),
+                $closure_capabilities,
+                ImpureFunctionCall::class,
+                'the closure',
+            );
+        }
+
+        $function_call_info->addCallable(...(self::getFreshClosureMemoizedEffects(
+            $statements_analyzer,
+            $context,
+            $stmt,
+            $function_name,
+            $closure,
+        ) ?? [MethodCallPurityAnalyzer::getCapabilitiesForReceiver($closure_capabilities, false, false)]));
+
+        return $closure_capabilities;
+    }
+
+    /** @psalm-pure */
+    private static function hasCallableWithSignature(Union $callee_type): bool
+    {
+        foreach ($callee_type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TClosure
+                || $atomic_type instanceof TCallable
+                || ($atomic_type instanceof TCallableObject && $atomic_type->callable !== null)
+            ) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Of a closure created in this scope, what calling it forgets of the memoized results when what its body does is
+     * known: as much as its calls and writes would where it is called (see
+     * MethodCallPurityAnalyzer::getMemoizedResultsKeptByClosureCall())
+     *
+     * @return array{CapabilitySet, array<string, true>}|null
+     */
+    private static function getFreshClosureMemoizedEffects(
+        StatementsAnalyzer $statements_analyzer,
+        Context $context,
+        PhpParser\Node\Expr\FuncCall $stmt,
+        PhpParser\Node\Expr $function_name,
+        TClosure|TCallable $closure,
+    ): ?array {
+        $codebase = $statements_analyzer->getCodebase();
+
+        // without remembered property assignments, its calls of named functions forget them
+        if (!$closure instanceof TClosure
+            || $closure->callable_id === null
+            || $stmt->isFirstClassCallable()
+            || !$codebase->config->remember_property_assignments_after_call
+            || !$statements_analyzer->node_data->isPureCompatible($function_name)
+        ) {
+            return null;
+        }
+
+        $closure_storage = $codebase->file_storage_provider
+            ->get($statements_analyzer->getFilePath())
+            ->functions[$closure->callable_id] ?? null;
+
+        return $closure_storage === null
+            ? null
+            : MethodCallPurityAnalyzer::getMemoizedResultsKeptByClosureCall($context, $codebase, $closure_storage);
+    }
+
+    /**
+     * A static closure has no `$this`: its `write-this-props` is only its writes to the variables it captured by
+     * reference, directly or through the closures it calls
+     */
+    private static function isStaticClosure(StatementsAnalyzer $statements_analyzer, TClosure $closure): bool
+    {
+        if ($closure->callable_id === null) {
+            return false;
+        }
+
+        // created in this scope, so declared in the file analyzed
+        $closure_storage = $statements_analyzer->getCodebase()->file_storage_provider
+            ->get($statements_analyzer->getFilePath())
+            ->functions[$closure->callable_id] ?? null;
+
+        return $closure_storage !== null && $closure_storage->is_static;
+    }
+
     private static function getAnalyzeNamedExpression(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\FuncCall $stmt,
@@ -1689,8 +2148,6 @@ final class FunctionCallAnalyzer extends CallAnalyzer
 
             $var_atomic_types = $stmt_name_type->getAtomicTypes();
 
-            $source = $statements_analyzer->getSource();
-
             while ($var_atomic_types) {
                 $var_type_part = array_shift($var_atomic_types);
 
@@ -1706,121 +2163,21 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                 }
 
                 if ($var_type_part instanceof TClosure || $var_type_part instanceof TCallable) {
-                    // the purity of the closure, where a purity template the enclosing function-like
-                    // inherits its purity from requires nothing: that is deferred to its callers
-                    $closure_capabilities = CallPurityResolver::resolvePurity(
-                        $var_type_part->purity,
-                        $statements_analyzer,
-                    );
-
-                    // a closure created in this scope: what it does to the variables it captured
-                    // by reference, and through its by-reference parameters, stays in this scope
-                    if ($statements_analyzer->node_data->isPureCompatible($function_name)) {
-                        $closure_capabilities &= ~Capabilities::RECEIVER_LOCAL;
-                    }
-
-                    $closure_capabilities = ByRefArgumentAnalyzer::adjustCapabilities(
+                    self::analyzeCallOfAClosure(
                         $statements_analyzer,
                         $context,
-                        $closure_capabilities,
-                        $var_type_part->params,
-                        $stmt->isFirstClassCallable() ? [] : $stmt->getArgs(),
-                    );
-
-                    if (!$stmt->isFirstClassCallable()) {
-                        if (($closure_capabilities & Capabilities::READ_GLOBALS) !== 0) {
-                            $stmt->setAttribute(GlobalStateAnalyzer::ATTRIBUTE, true);
-                        }
-
-                        GlobalStateAnalyzer::checkArguments(
-                            $statements_analyzer,
-                            $context,
-                            $stmt->getArgs(),
-                            $closure_capabilities,
-                            ImpureFunctionCall::class,
-                            'the closure',
-                        );
-                    }
-
-                    if ($function_name instanceof PhpParser\Node\Expr\Variable
-                        && is_string($function_name->name)
-                        && $source instanceof ClosureAnalyzer
-                        && $source->getRecursiveVarId() === '$' . $function_name->name
-                    ) {
-                        // a recursive call of the closure being analysed: not a mutation of its own
-                    } elseif ($statements_analyzer->signalMutation(
-                        $closure_capabilities,
-                        $context,
-                        'function call on ' . $var_type_part->getId(),
-                        ImpureFunctionCall::class,
                         $stmt,
-                        self::isPurityWildcardCandidate($statements_analyzer, $function_name, $var_type_part)
-                            ? Capabilities::NONE
-                            : null,
-                        false,
-                        $function_call_info->function_storage,
-                    )) {
-                        if (!$function_call_info->function_storage) {
-                            $function_call_info->function_storage = new FunctionStorage();
-                        }
-
-                        $function_call_info->function_storage->capabilities |= $closure_capabilities;
-                    }
-
-                    $function_call_info->function_params = $var_type_part->params;
-
-                    // the type variables the closure returns resolve as those a method call returns
-                    $closure_return_type = $var_type_part->return_type
-                        ? TypeVariableTracker::resolveTypeVariables($var_type_part->return_type, $codebase)
-                        : null;
-
-                    if (($stmt_type = $statements_analyzer->node_data->getType($real_stmt))
-                        && $closure_return_type
-                    ) {
-                        $statements_analyzer->node_data->setType(
-                            $real_stmt,
-                            Type::combineUnionTypes(
-                                $stmt_type,
-                                $closure_return_type,
-                            ),
-                        );
-                    } else {
-                        $statements_analyzer->node_data->setType(
-                            $real_stmt,
-                            $closure_return_type ?? Type::getMixed(),
-                        );
-                    }
-
-                    if ($var_type_part->callable_id !== null) {
-                        // Collect every known underlying id. When the call target is a union of
-                        // distinct callables, any of them may run, so the taint behavior of all
-                        // of them is re-dispatched on invocation (an over-approximation, which is
-                        // the sound direction for taint). Callables with no known id contribute
-                        // nothing to re-dispatch and are simply skipped.
-                        $function_call_info->addCallableId($var_type_part->callable_id);
-                    }
-
-                    $function_call_info->function_exists = true;
+                        $real_stmt,
+                        $function_name,
+                        $var_type_part,
+                        $function_call_info,
+                    );
                     $has_valid_function_call_type = true;
                 } elseif ($var_type_part instanceof TMixed) {
                     $has_valid_function_call_type = true;
 
-                    IssueBuffer::maybeAdd(
-                        new MixedFunctionCall(
-                            'Cannot call function on ' . $var_type_part->getId(),
-                            new CodeLocation($statements_analyzer->getSource(), $stmt),
-                        ),
-                        $statements_analyzer->getSuppressedIssues(),
-                    );
-
-                    // the callee is unknown, so it may do anything
-                    $statements_analyzer->signalMutation(
-                        Capabilities::ALL,
-                        $context,
-                        'function call on ' . $var_type_part->getId(),
-                        ImpureFunctionCall::class,
-                        $stmt,
-                    );
+                    self::reportCallOfMixed($statements_analyzer, $context, $stmt, $var_type_part, $function_call_info);
+                    self::addToTypeOfCall($statements_analyzer, $real_stmt, null);
                 } elseif ($var_type_part instanceof TCallableObject) {
                     $has_valid_function_call_type = true;
                     self::analyzeInvokeCall(
@@ -1837,6 +2194,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                 ) {
                     // this is fine, but the callee is unknown, so it may do anything
                     $has_valid_function_call_type = true;
+                    $function_call_info->addCallable(Capabilities::ALL);
 
                     $statements_analyzer->signalMutation(
                         Capabilities::ALL,
@@ -1845,6 +2203,14 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                         ImpureFunctionCall::class,
                         $stmt,
                     );
+
+                    // next to a callable declared with a signature, a callable-string is its string form:
+                    // that part gives the type
+                    if (!$var_type_part instanceof TCallableString
+                        || !self::hasCallableWithSignature($stmt_name_type)
+                    ) {
+                        self::addToTypeOfCall($statements_analyzer, $real_stmt, null);
+                    }
                 } elseif ($var_type_part instanceof TString
                     || $var_type_part instanceof TArray
                     || ($var_type_part instanceof TKeyedArray
@@ -1903,6 +2269,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                         $var_type_part,
                         $potential_method_id,
                         $function_call_info,
+                        $real_stmt,
                     );
                 } elseif ($var_type_part instanceof TNull) {
                     // handled above

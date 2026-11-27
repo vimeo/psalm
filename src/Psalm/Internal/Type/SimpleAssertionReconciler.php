@@ -89,6 +89,7 @@ use Psalm\Type\Union;
 use function array_is_list;
 use function array_map;
 use function array_merge;
+use function array_push;
 use function array_reverse;
 use function array_values;
 use function assert;
@@ -153,7 +154,7 @@ final class SimpleAssertionReconciler extends Reconciler
         // `non-empty-mixed` is only known to be truthy, and the type asserted for it stays truthy
         if ($reconciled_type
             && $assertion instanceof IsType
-            && $existing_var_type->isSingle()
+            && $existing_var_type->isSingleAtomic()
             && $existing_var_type->getSingleAtomic() instanceof TNonEmptyMixed
             && !$reconciled_type->hasMixed()
         ) {
@@ -574,7 +575,7 @@ final class SimpleAssertionReconciler extends Reconciler
             );
         }
 
-        if ($existing_var_type->isSingle()
+        if ($existing_var_type->isSingleAtomic()
             && $existing_var_type->hasTemplate()
         ) {
             $types = $existing_var_type->getAtomicTypes();
@@ -839,7 +840,11 @@ final class SimpleAssertionReconciler extends Reconciler
             $array_atomic_type = $existing_var_type->getArray();
             $redundant = true;
 
-            if ($array_atomic_type instanceof TArray) {
+            if ($array_atomic_type instanceof TArray && $array_atomic_type->isEmptyArray()) {
+                // Impossible
+                $existing_var_type->removeType('array');
+                $redundant = false;
+            } elseif ($array_atomic_type instanceof TArray) {
                 if (!$array_atomic_type instanceof TNonEmptyArray
                     || $array_atomic_type->count !== $assertion->count
                 ) {
@@ -1094,7 +1099,10 @@ final class SimpleAssertionReconciler extends Reconciler
             } elseif ($type instanceof TNumeric) {
                 $string_types[] = new TNumericString;
                 $redundant = false;
-            } elseif ($type instanceof TScalar || $type instanceof TArrayKey) {
+            } elseif ($type instanceof TScalar) {
+                array_push($string_types, ...AtomicParts::getScalarPartsOfKind($type, TString::class));
+                $redundant = false;
+            } elseif ($type instanceof TArrayKey) {
                 $string_types[] = new TString;
                 $redundant = false;
             } elseif ($type instanceof TTemplateParam && $assertion instanceof IsLooselyEqual) {
@@ -1203,6 +1211,9 @@ final class SimpleAssertionReconciler extends Reconciler
                 if ($existing_var_type->from_calculation) {
                     $redundant = false;
                 }
+            } elseif ($type instanceof TScalar && !$assertion instanceof IsLooselyEqual) {
+                array_push($int_types, ...AtomicParts::getScalarPartsOfKind($type, TInt::class));
+                $redundant = false;
             } elseif ($type instanceof TNumeric || $type instanceof TScalar || $type instanceof TArrayKey) {
                 // a non-strict comparison with an int juggles the types: `"1" == 1`, `1.0 == 1`
                 $int_types[] = $assertion instanceof IsLooselyEqual ? $type : new TInt;
@@ -1313,7 +1324,7 @@ final class SimpleAssertionReconciler extends Reconciler
                 $type = $type->setFromDocblock(false);
                 $bool_types[] = $type;
             } elseif ($type instanceof TScalar) {
-                $bool_types[] = new TBool;
+                array_push($bool_types, ...AtomicParts::getScalarPartsOfKind($type, TBool::class));
                 $redundant = false;
             } elseif ($type instanceof TTemplateParam) {
                 $bound = self::getTemplateBound($type);
@@ -1549,7 +1560,24 @@ final class SimpleAssertionReconciler extends Reconciler
                 $numeric_types[] = $type;
             } elseif ($type instanceof TScalar) {
                 $redundant = false;
-                $numeric_types[] = new TNumeric();
+
+                if ($type::class === TScalar::class) {
+                    $numeric_types[] = new TNumeric();
+                } else {
+                    // what an empty-scalar or a non-empty-scalar says of its emptiness holds for the numbers in it
+                    foreach (AtomicParts::getScalarParts($type) ?? [] as $scalar_part) {
+                        if ($scalar_part instanceof TNonFalsyString) {
+                            $numeric_types[] = new TNonFalsyNumericString();
+                        } elseif ($scalar_part instanceof TString && !$scalar_part instanceof TLiteralString) {
+                            $numeric_types[] = new TNumericString();
+                        } elseif ($scalar_part instanceof TInt
+                            || $scalar_part instanceof TFloat
+                            || ($scalar_part instanceof TLiteralString && is_numeric($scalar_part->value))
+                        ) {
+                            $numeric_types[] = $scalar_part->setFromDocblock(false);
+                        }
+                    }
+                }
             } elseif ($type instanceof TArrayKey) {
                 $redundant = false;
                 $numeric_types[] = new TInt();
@@ -1626,7 +1654,12 @@ final class SimpleAssertionReconciler extends Reconciler
                 && self::areIntersectionTypesAllowed($codebase, $type)
             ) {
                 /** @var TNamedObject|TTemplateParam|TIterable|TObjectWithProperties|TCallableObject $assertion_type */
-                $object_types[] = $type->addIntersectionType($assertion_type);
+                $intersected_type = AssertionReconciler::addIntersectionPart($codebase, $type, $assertion_type);
+
+                if ($intersected_type !== null) {
+                    $object_types[] = $intersected_type;
+                }
+
                 $redundant = false;
             } elseif ($type instanceof TCallable) {
                 $callable_object = new TCallableObject($type->from_docblock, $type);
@@ -1958,7 +1991,7 @@ final class SimpleAssertionReconciler extends Reconciler
     ): Union {
         $new_var_type = $assertion->type;
 
-        if ($new_var_type->isSingle() && $new_var_type->getSingleAtomic() instanceof TClassConstant) {
+        if ($new_var_type->isSingleAtomic() && $new_var_type->getSingleAtomic() instanceof TClassConstant) {
             // Can't do assertion on const with non-literal type
             return $existing_var_type;
         }
@@ -2115,6 +2148,11 @@ final class SimpleAssertionReconciler extends Reconciler
                 if ($atomic_assertion_type instanceof TNonEmptyArray) {
                     if (!$type instanceof TNonEmptyArray) {
                         $redundant = false;
+                    }
+
+                    // an empty array is never non-empty
+                    if ($type->isEmptyArray()) {
+                        continue;
                     }
 
                     $array_types[] = new TNonEmptyArray(
@@ -2427,7 +2465,7 @@ final class SimpleAssertionReconciler extends Reconciler
 
         foreach ($existing_var_atomic_types as $type) {
             if ($type->isArrayAccessibleWithStringKey($codebase)) {
-                if ($type::class === TArray::class) {
+                if ($type::class === TArray::class && !$type->isEmptyArray()) {
                     $array_types[] = new TNonEmptyArray($type->type_params);
                 } elseif ($type instanceof TKeyedArray && $type->is_list) {
                     $properties = $type->properties;
@@ -2492,7 +2530,7 @@ final class SimpleAssertionReconciler extends Reconciler
 
         foreach ($existing_var_atomic_types as $type) {
             if ($type->isArrayAccessibleWithIntOrStringKey($codebase)) {
-                if ($type::class === TArray::class) {
+                if ($type::class === TArray::class && !$type->isEmptyArray()) {
                     $array_types[] = new TNonEmptyArray($type->type_params);
                 } elseif ($type::class === TString::class) {
                     // a string with a character at an offset has one
@@ -2538,7 +2576,6 @@ final class SimpleAssertionReconciler extends Reconciler
     /**
      * @param   string[]  $suppressed_issues
      * @param Reconciler::RECONCILIATION_* $failed_reconciliation
-     * @psalm-suppress ComplexMethod
      */
     private static function reconcileCallable(
         Assertion $assertion,
@@ -2587,17 +2624,13 @@ final class SimpleAssertionReconciler extends Reconciler
             ) {
                 $callable_types[] = $type;
                 $redundant = false;
-            } elseif ($type instanceof TArray) {
+            } elseif ($type instanceof TArray || $type instanceof TKeyedArray) {
                 $callable_array = self::getCallableArray($codebase, $type);
 
                 if ($callable_array !== null) {
                     $callable_types[] = $callable_array;
                 }
 
-                $redundant = false;
-            } elseif ($type instanceof TKeyedArray && count($type->properties) === 2) {
-                $type = TKeyedArray::makeCallable($type->properties);
-                $callable_types[] = $type;
                 $redundant = false;
             } elseif ($type instanceof TTemplateParam) {
                 $redundant = false;
@@ -2716,22 +2749,60 @@ final class SimpleAssertionReconciler extends Reconciler
     /**
      * The callable arrays (a class or an object, and a method name) among those of an array type, if any
      */
-    private static function getCallableArray(Codebase $codebase, TArray $type): ?TKeyedArray
+    private static function getCallableArray(Codebase $codebase, TArray|TKeyedArray $type): ?TKeyedArray
+    {
+        if ($type instanceof TArray) {
+            if (Type::intersectUnionTypes($type->type_params[0], Type::getInt(), $codebase) === null) {
+                return null;
+            }
+
+            return self::getCallableArrayOfValues($codebase, [$type->type_params[1], $type->type_params[1]]);
+        }
+
+        if (count($type->properties) === 2 && isset($type->properties[0], $type->properties[1])) {
+            return TKeyedArray::makeCallable($type->properties);
+        }
+
+        // an array is callable when it holds two elements, the first naming a class or being an object and the second
+        // a method: any other element has to be optional, and the offsets the shape lacks have to come from the
+        // fallback
+        foreach ($type->properties as $offset => $property) {
+            if ($offset !== 0 && $offset !== 1 && !$property->possibly_undefined) {
+                return null;
+            }
+        }
+
+        $fallback_value = $type->fallback_params !== null
+            && Type::intersectUnionTypes($type->fallback_params[0], Type::getInt(), $codebase) !== null
+            ? $type->fallback_params[1]
+            : null;
+
+        $first = $type->properties[0] ?? $fallback_value;
+        $second = $type->properties[1] ?? $fallback_value;
+
+        if ($first === null || $second === null) {
+            return null;
+        }
+
+        return self::getCallableArrayOfValues($codebase, [$first, $second]);
+    }
+
+    /**
+     * @param array{0: Union, 1: Union} $values
+     */
+    private static function getCallableArrayOfValues(Codebase $codebase, array $values): ?TKeyedArray
     {
         $callable_array = Atomic::create('callable-array');
         assert($callable_array instanceof TKeyedArray);
 
-        if (Type::intersectUnionTypes($type->type_params[0], Type::getInt(), $codebase) === null) {
-            return null;
-        }
-
         $properties = [];
 
         foreach ($callable_array->properties as $offset => $property) {
-            $item = Type::intersectUnionTypes($type->type_params[1], $property, $codebase)
+            $value = $offset === 0 ? $values[0] : $values[1];
+            $item = Type::intersectUnionTypes($value, $property, $codebase)
                 // e.g. a literal-string, which may be the name of a class though Psalm has no type for both
                 ?? Type::intersectUnionTypes(
-                    $type->type_params[1],
+                    $value,
                     $offset === 0
                         ? new Union([new TObject(), new TNonEmptyString()])
                         : Type::getNonEmptyString(),
@@ -3299,7 +3370,7 @@ final class SimpleAssertionReconciler extends Reconciler
     {
         $bound = $template->as;
 
-        while ($bound->isSingle()) {
+        while ($bound->isSingleAtomic()) {
             $atomic = $bound->getSingleAtomic();
 
             if (!$atomic instanceof TTemplateParam) {

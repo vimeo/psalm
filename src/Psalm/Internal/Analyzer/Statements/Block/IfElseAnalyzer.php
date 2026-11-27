@@ -316,6 +316,8 @@ final class IfElseAnalyzer
             );
         }
 
+        $vars_possibly_in_scope_before_if = $context->vars_possibly_in_scope;
+
         $context->vars_possibly_in_scope = [
             ...$context->vars_possibly_in_scope,
             ...$if_scope->new_vars_possibly_in_scope,
@@ -345,8 +347,9 @@ final class IfElseAnalyzer
             foreach ($if_scope->new_vars as $var_id => &$type) {
                 // a variable every branch assigns no longer holds what it held before: only the use of variables
                 // is tracked through the assignments made before then (a branch defining it by narrowing, like
-                // the implicit else of `if (empty($a)) { $a = 1; }`, keeps it, and its taints)
-                if (isset($context->vars_possibly_in_scope[$var_id])
+                // the implicit else of `if (empty($a)) { $a = 1; }`, keeps it, and its taints). What a branch
+                // assigns flows through the type it gives the variable
+                if (isset($vars_possibly_in_scope_before_if[$var_id])
                     && $statements_analyzer->data_flow_graph
                     && ($statements_analyzer->data_flow_graph instanceof VariableUseGraph
                         || !isset($if_scope->assigned_var_ids[$var_id]))
@@ -531,7 +534,7 @@ final class IfElseAnalyzer
             if ($stamp !== ($parent_remove_vars[$changed_var_id] ?? null)
                 && ($changed_var_id === $var_id
                     ? isset($branch_context->vars_possibly_in_scope[$var_id])
-                    : preg_match('/' . preg_quote($changed_var_id, '/') . '[\]\[\-]/', $var_id) === 1)
+                    : preg_match('/' . preg_quote($changed_var_id, '/') . '[\]\[\-}]/', $var_id) === 1)
             ) {
                 return true;
             }

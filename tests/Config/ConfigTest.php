@@ -37,6 +37,7 @@ use Psalm\Issue\TooManyArguments;
 use Psalm\Issue\UndefinedFunction;
 use Psalm\Issue\UnusedBaselineEntry;
 use Psalm\Issue\VariableIssue;
+use Psalm\Issue\WeakHash;
 use Psalm\Tests\Config\Plugin\FileTypeSelfRegisteringPlugin;
 use Psalm\Tests\Config\Plugin\TestPluginIssue;
 use Psalm\Tests\Config\Plugin\TestPluginIssueDefaultLevel;
@@ -66,6 +67,7 @@ use function getenv;
 use function glob;
 use function implode;
 use function in_array;
+use function intdiv;
 use function is_array;
 use function is_dir;
 use function is_link;
@@ -287,6 +289,15 @@ final class ConfigTest extends DeferredAnalyzerTestCase
         $this->assertFalse($config->isInProjectDirs((string) realpath('examples/TemplateScanner.php')));
     }
 
+    public function testLoadFromXMLFileThrowsOnADirectory(): void
+    {
+        $this->expectException(ConfigException::class);
+        $this->expectExceptionMessage('Cannot read the config file ' . __DIR__);
+        ErrorHandler::install();
+
+        Config::loadFromXMLFile(__DIR__, __DIR__);
+    }
+
     public function testIgnoreProjectDirectory(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
@@ -347,7 +358,6 @@ final class ConfigTest extends DeferredAnalyzerTestCase
         $last_error = error_get_last();
         $check_symlink_error =
             !is_array($last_error) ||
-            !isset($last_error['message']) ||
             !in_array($last_error['message'], $no_symlinking_error);
 
         @symlink(dirname(__DIR__, 1) . '/fixtures/symlinktest/a', dirname(__DIR__, 1) . '/fixtures/symlinktest/ignored/b');
@@ -1815,6 +1825,47 @@ final class ConfigTest extends DeferredAnalyzerTestCase
         $this->assertSame([], $mismatches);
     }
 
+    /**
+     * FileFilter reads allowMissingFiles on every element it loads: projectFiles, extraFiles, ignoreFiles (also the
+     * taint analysis one) and each errorLevel
+     */
+    public function testTheSchemaDeclaresAllowMissingFilesWhereFileFilterReadsIt(): void
+    {
+        $schema = new DOMDocument();
+        $schema->load(dirname(__DIR__, 2) . '/config.xsd');
+        $xpath = new DOMXPath($schema);
+        $xpath->registerNamespace('xs', 'http://www.w3.org/2001/XMLSchema');
+
+        $missing = [];
+
+        foreach (['ProjectFilesType', 'IgnoreFilesType'] as $type) {
+            $declared = $xpath->query(
+                '//xs:complexType[@name="' . $type . '"]/xs:attribute[@name="allowMissingFiles"]',
+            );
+
+            if (!$declared || $declared->length === 0) {
+                $missing[] = $type;
+            }
+        }
+
+        $error_levels = $xpath->query('//xs:complexType[substring(@name, string-length(@name) - 15) = '
+            . '"IssueHandlerType"]/xs:sequence/xs:element[@name="errorLevel"]/xs:complexType');
+        $this->assertNotFalse($error_levels);
+        $this->assertGreaterThan(8, $error_levels->length);
+
+        foreach ($error_levels as $error_level) {
+            $this->assertInstanceOf(DOMElement::class, $error_level);
+            $declared = $xpath->query('xs:attribute[@name="allowMissingFiles"]', $error_level);
+
+            if (!$declared || $declared->length === 0) {
+                $handler = $error_level->parentNode?->parentNode?->parentNode;
+                $missing[] = ($handler instanceof DOMElement ? $handler->getAttribute('name') : '?') . '/errorLevel';
+            }
+        }
+
+        $this->assertSame([], $missing);
+    }
+
     public function testAMissingDependencyIsSuppressedByTheNameOfTheDependency(): void
     {
         $this->expectNotToPerformAssertions();
@@ -2738,7 +2789,8 @@ final class ConfigTest extends DeferredAnalyzerTestCase
                         ord($glob1);
                         ord($glob2["str"]);
                         $glob3->func();
-                        ord($glob4);
+                        // the function can be called before the assert above: $glob4 has its declared type
+                        ord($glob4 ?? "");
                         ord($_GET["str"]);
                     }
 
@@ -2795,6 +2847,111 @@ final class ConfigTest extends DeferredAnalyzerTestCase
                     }
                 }',
         );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    /**
+     * @psalm-pure
+     * @return iterable<string, array{string, string, ?string}>
+     */
+    public static function providerGlobalTypeOverFileScope(): iterable
+    {
+        yield 'coalesceAssignInFunction' => [
+            'int|null',
+            '$x = null;
+            function f(): void {
+                global $x;
+                $x ??= 1;
+            }',
+            null,
+        ];
+        yield 'methodCallInFunction' => [
+            'Foo',
+            '$x = null;
+            function f(): void {
+                global $x;
+                $x->test();
+            }',
+            null,
+        ];
+        yield 'fileScopeKeepsAssignedType' => [
+            'Foo',
+            '$x = null;
+            $x->test();',
+            'NullReference',
+        ];
+        yield 'globalAtFileScopeKeepsAssignedType' => [
+            'Foo',
+            '$x = null;
+            /** @psalm-suppress InvalidGlobal */
+            global $x;
+            $x->test();',
+            'NullReference',
+        ];
+        yield 'globalAtFileScopeReadsDeclaredTypeAfterCall' => [
+            'Foo|null',
+            'function clearX(): void {
+                global $x;
+                $x = null;
+            }
+            $x = new Foo();
+            /** @psalm-suppress InvalidGlobal */
+            global $x;
+            clearX();
+            $x->test();',
+            'PossiblyNullReference',
+        ];
+        yield 'assignmentInFunctionWins' => [
+            'Foo',
+            'function f(): void {
+                global $x;
+                $x = null;
+                $x->test();
+            }',
+            'NullReference',
+        ];
+        yield 'inlineVarWins' => [
+            'Foo',
+            'function f(): void {
+                /** @var Foo|null */
+                global $x;
+                $x->test();
+            }',
+            'PossiblyNullReference',
+        ];
+    }
+
+    #[DataProvider('providerGlobalTypeOverFileScope')]
+    public function testGlobalTypeOverFileScope(string $type, string $code, ?string $error): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <globals>
+                        <var name="x" type="' . $type . '" />
+                    </globals>
+                </psalm>',
+            ),
+        );
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+            final class Foo {
+                public function test(): void {}
+            }
+            ' . $code,
+        );
+
+        if ($error !== null) {
+            $this->expectException(CodeException::class);
+            $this->expectExceptionMessage($error . ' - ');
+        }
 
         $this->analyzeFile($file_path, new Context());
     }
@@ -3458,12 +3615,18 @@ final class ConfigTest extends DeferredAnalyzerTestCase
 
         try {
             $config = Config::loadFromXML($root, '<?xml version="1.0"?><psalm/>');
+            // the version the CLI analyses at when neither --php-version nor phpVersion is set
+            $analysis_version = $config->getPHPVersionFromComposerJson();
         } finally {
             unlink($root . DIRECTORY_SEPARATOR . 'composer.json');
             rmdir($root);
         }
 
         $this->assertSame($expected, $config->lowest_composer_php_version_id);
+        $this->assertSame(
+            $expected === null ? null : intdiv($expected, 10_000) . '.' . intdiv($expected, 100) % 100,
+            $analysis_version,
+        );
     }
 
     /**
@@ -3476,6 +3639,14 @@ final class ConfigTest extends DeferredAnalyzerTestCase
         yield 'no php requirement' => ['{"require": {}}', null];
         yield 'one major version' => ['{"require": {"php": "^8.2"}}', 8_02_00];
         yield 'several major versions' => ['{"require": {"php": "^7.3 || ^8.0"}}', 7_03_00];
+        yield 'config.platform.php' => ['{"config": {"platform": {"php": "8.3.0"}}}', 8_03_00];
+        yield 'config.platform.php with a patch version' => ['{"config": {"platform": {"php": "7.4.33"}}}', 7_04_00];
+        yield 'config.platform.php-64bit' => ['{"config": {"platform": {"php-64bit": "8.2"}}}', 8_02_00];
+        yield 'php requirement before config.platform.php' => [
+            '{"require": {"php": "^8.1"}, "config": {"platform": {"php": "8.3.0"}}}',
+            8_01_00,
+        ];
+        yield 'config.platform.php disabled' => ['{"config": {"platform": {"php": false}}}', null];
     }
 
     /**
@@ -4009,6 +4180,39 @@ final class ConfigTest extends DeferredAnalyzerTestCase
         $this->assertFalse($config->isSuppressible('TaintedHtml'));
         $this->assertFalse($config->isSuppressible('TaintedSql'));
         $this->assertFalse($config->isSuppressible('MixedArgument'));
+        $this->assertTrue($config->isSuppressible('InvalidArgument'));
+    }
+
+    public function testUnsuppressibleSecurityIssues(): void
+    {
+        $config = Config::loadFromXML(
+            (string) getcwd(),
+            <<<XML
+            <?xml version="1.0"?>
+            <psalm errorLevel="8">
+                <issueHandlers>
+                    <WeakHash errorLevel="suppress" />
+                </issueHandlers>
+                <unsuppressibleIssues>
+                    <issue name="SecurityIssue" />
+                </unsuppressibleIssues>
+            </psalm>
+            XML,
+        );
+
+        $this->assertSame(
+            Config::REPORT_ERROR,
+            $config->getReportingLevelForIssue(
+                new WeakHash(
+                    'md5 is a weak hash',
+                    new Raw('aaa', 'aaa.php', 'aaa.php', 1, 2),
+                ),
+            ),
+        );
+        $this->assertFalse($config->isSuppressible('WeakHash'));
+        $this->assertFalse($config->isSuppressible('InsecureCookie'));
+        $this->assertFalse($config->isSuppressible('TaintedInput'));
+        $this->assertFalse($config->isSuppressible('TaintedSql'));
         $this->assertTrue($config->isSuppressible('InvalidArgument'));
     }
 

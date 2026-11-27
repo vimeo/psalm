@@ -12,6 +12,8 @@ use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\PrettyPrinter;
+use Psalm\Type\Atomic\TLiteralString;
+use Psalm\Type\Union;
 
 use function addcslashes;
 use function count;
@@ -30,6 +32,8 @@ use function var_export;
  */
 final class ExpressionIdentifier
 {
+    private const MAX_LITERAL_PROPERTY_NAMES = 8;
+
     /**
      * The string offset of an array variable id, escaped so that a key containing quotes can't be
      * mistaken for the end of the offset
@@ -47,6 +51,31 @@ final class ExpressionIdentifier
     public static function unquoteOffset(string $offset): string
     {
         return stripslashes(substr($offset, 1, -1));
+    }
+
+    /**
+     * The names a property fetch reads when its name is one of a few string literals (`$o->{$p}`, `$p: 'x'|'y'`)
+     *
+     * @return list<string>
+     * @psalm-pure
+     */
+    public static function getLiteralPropertyNames(Union $name_type): array
+    {
+        if (count($name_type->getAtomicTypes()) > self::MAX_LITERAL_PROPERTY_NAMES) {
+            return [];
+        }
+
+        $names = [];
+
+        foreach ($name_type->getAtomicTypes() as $atomic_type) {
+            if (!$atomic_type instanceof TLiteralString) {
+                return [];
+            }
+
+            $names[] = $atomic_type->value;
+        }
+
+        return $names;
     }
 
     public static function getVarId(
@@ -159,6 +188,17 @@ final class ExpressionIdentifier
         );
     }
 
+    /**
+     * Whether `$o->{'name'}` can have the id `$o->name`: a name like `a[0]` or `a->b` would make the id of
+     * another expression
+     *
+     * @psalm-pure
+     */
+    public static function isLiteralPropertyNameOfVarId(string $name): bool
+    {
+        return preg_match('/^[\w\x80-\xff.-]+$/D', $name) === 1;
+    }
+
     public static function getExtendedVarId(
         PhpParser\Node\Expr $stmt,
         ?string $this_class_name,
@@ -252,10 +292,26 @@ final class ExpressionIdentifier
                 return $object_id . '->' . $stmt->name;
             }
 
-            if ($source instanceof StatementsAnalyzer
-                && ($stmt_name_type = $source->node_data->getType($stmt->name))
-                && $stmt_name_type->isSingleStringLiteral()) {
+            $stmt_name_type = $source instanceof StatementsAnalyzer
+                ? $source->node_data->getType($stmt->name)
+                : null;
+
+            if ($stmt_name_type === null) {
+                return null;
+            }
+
+            if ($stmt_name_type->isSingleStringLiteral()
+                && self::isLiteralPropertyNameOfVarId($stmt_name_type->getSingleStringLiteral()->value)
+            ) {
                 return $object_id . '->' . $stmt_name_type->getSingleStringLiteral()->value;
+            }
+
+            // like `$a[$k]`, a property named by a variable that holds one of a few literals is `$o->{$p}`
+            if ($stmt->name instanceof PhpParser\Node\Expr\Variable
+                && is_string($stmt->name->name)
+                && self::getLiteralPropertyNames($stmt_name_type) !== []
+            ) {
+                return $object_id . '->{$' . $stmt->name->name . '}';
             }
 
             return null;

@@ -1,0 +1,12 @@
+<?php
+
+/** @template T */
+class StubbedRelation
+{
+    /**
+     * @template N
+     * @param class-string<N> $c
+     * @return static<N|int>
+     */
+    public function usingTwice($c) {}
+}

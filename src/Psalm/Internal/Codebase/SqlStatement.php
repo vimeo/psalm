@@ -1157,7 +1157,7 @@ final class SqlStatement
             $tokens = [$tokens[2]];
         }
 
-        if (count($tokens) !== 1 || !isset($tokens[0])) {
+        if (count($tokens) !== 1) {
             return false;
         }
 

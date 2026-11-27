@@ -173,19 +173,21 @@ final class AndAnalyzer
             $right_context->phantom_functions += $left_context->phantom_functions;
             // while in an and, we allow scope to boil over to support
             // statements of the form if ($x && $x->foo())
-            [$right_context->vars_in_scope, $right_context->references_in_scope] = Reconciler::reconcileKeyedTypes(
-                $left_type_assertions,
-                $active_left_assertions,
-                $right_context->vars_in_scope,
-                $context->references_in_scope,
-                $changed_var_ids,
-                $left_referenced_var_ids,
-                $statements_analyzer,
-                $statements_analyzer->getTemplateTypeMap() ?: [],
-                $context->inside_loop,
-                new CodeLocation($statements_analyzer->getSource(), $stmt->left),
-                $context->inside_negation,
-            );
+            [$right_context->vars_in_scope, $right_context->references_in_scope] =
+                Reconciler::reconcileKeyedTypes(
+                    $left_type_assertions,
+                    // the types of the variables the condition assigns already assume the part before it
+                    self::removeAssignedVarIds($active_left_assertions, $left_assigned_var_ids),
+                    $right_context->vars_in_scope,
+                    $context->references_in_scope,
+                    $changed_var_ids,
+                    $left_referenced_var_ids,
+                    $statements_analyzer,
+                    $statements_analyzer->getTemplateTypeMap() ?: [],
+                    $context->inside_loop,
+                    new CodeLocation($statements_analyzer->getSource(), $stmt->left),
+                    $context->inside_negation,
+                );
         } else {
             $right_context = clone $left_context;
 
@@ -445,9 +447,10 @@ final class AndAnalyzer
     /**
      * Drops the assigned variables and the keys nested in them, which the left side already narrowed.
      *
-     * @param array<string, bool> $referenced_var_ids
+     * @template TValue
+     * @param array<string, TValue> $referenced_var_ids
      * @param array<string, int> $assigned_var_ids
-     * @return array<string, bool>
+     * @return array<string, TValue>
      * @psalm-pure
      */
     public static function removeAssignedVarIds(array $referenced_var_ids, array $assigned_var_ids): array

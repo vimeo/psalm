@@ -63,6 +63,10 @@ abstract class Report
 
     protected bool $in_ci;
 
+    protected bool $agent_output;
+
+    protected bool $show_suggestions;
+
     /**
      * @param array<int, IssueData> $issues_data
      * @param array<string, int> $fixable_issue_counts
@@ -89,6 +93,8 @@ abstract class Report
         $this->show_info = $report_options->show_info;
         $this->pretty = $report_options->pretty;
         $this->in_ci = $report_options->in_ci;
+        $this->agent_output = $report_options->agent_output;
+        $this->show_suggestions = $report_options->show_suggestions;
     }
 
     /**
@@ -106,6 +112,16 @@ abstract class Report
         $label = $issue_data->is_security ? 'SECURITY' : 'ERROR';
 
         return $this->use_color ? "\e[0;31m" . $label . "\e[0m" : $label;
+    }
+
+    /**
+     * The marker after the issue type of an issue that `--alter` can fix, in the agent output
+     *
+     * @psalm-mutation-free
+     */
+    protected function getFixableMarker(IssueData $issue_data): string
+    {
+        return $this->agent_output && $this->show_suggestions && $issue_data->is_fixable ? ' [*]' : '';
     }
 
     /**

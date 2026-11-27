@@ -27,10 +27,13 @@ final class TraitFinder extends PhpParser\NodeVisitorAbstract
     private array $matching_trait_nodes = [];
 
     /**
+     * @param ?int $start_file_pos where the declaration the trait's storage was built from starts: the scanner skips
+     *                             a declaration under a guard it knows to be false
      * @psalm-mutation-free
      */
     public function __construct(
         private readonly string $fq_trait_name,
+        private readonly ?int $start_file_pos = null,
     ) {
     }
 
@@ -69,6 +72,14 @@ final class TraitFinder extends PhpParser\NodeVisitorAbstract
     {
         if (!count($this->matching_trait_nodes)) {
             return null;
+        }
+
+        if ($this->start_file_pos !== null) {
+            foreach ($this->matching_trait_nodes as $node) {
+                if ((int) $node->getAttribute('startFilePos') === $this->start_file_pos) {
+                    return $node;
+                }
+            }
         }
 
         if (count($this->matching_trait_nodes) === 1 || !trait_exists($this->fq_trait_name)) {

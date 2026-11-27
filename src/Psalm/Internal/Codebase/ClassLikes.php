@@ -682,7 +682,7 @@ final class ClassLikes
             $storage->location->file_path,
         );
 
-        $trait_finder = new TraitFinder($fq_trait_name);
+        $trait_finder = new TraitFinder($fq_trait_name, $storage->stmt_location?->raw_file_start);
 
         $traverser = new NodeTraverser();
         $traverser->addVisitor(
@@ -2617,6 +2617,10 @@ final class ClassLikes
                                 }
                             } else {
                                 IssueBuffer::addFixableIssue('MissingParamType');
+                                IssueBuffer::markIssueFixable(
+                                    'MissingParamType',
+                                    $method_storage->params[$offset]->location,
+                                );
                             }
                         }
                     }

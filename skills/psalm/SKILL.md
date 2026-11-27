@@ -40,17 +40,23 @@ vendor/bin/psalm --no-progress --output-format=compact src/Foo.php src/Bar.php
 
 - A run on single files is for iterating: only a full run reports unused code (`UnusedClass`,
   `PossiblyUnusedMethod`, …) and taint paths that cross files.
+  `--no-taint-analysis` speeds up these runs; the final run goes without it.
 - Exit code `0`: no issues. `2`: issues found. `1`: Psalm itself failed (bad config, crash): read the
   message, it says nothing about the code. Judge a run by its exit code, read straight after the command:
-  `compact` and `count` print nothing both on success and when PHP crashes, and a pipe such as `| tail`
-  reports its own exit code instead.
+  `count` prints nothing on success, `compact` prints nothing too unless Psalm detects an AI agent (then it
+  prints `0 issues`), both print nothing when PHP crashes, and a pipe such as `| tail` reports its own exit
+  code instead.
+- Run by an agent, `compact` (and `console`) end with a result line (`3 issues`), then, when there are
+  fixable issues, `[*] 2 fixable with --alter --issues=<types> (add --dry-run to preview)`. A `[*]` after an
+  issue type marks an issue `--alter` can fix.
 - Many issues: `--report=psalm.json` writes a JSON report next to the normal output, then
   `php scripts/summary.php psalm.json` prints counts per type and file; `--type=…`, `--file=…`,
   `--changed` narrow it down (see `--help`).
-- `php scripts/explain.php IssueType` prints the issue's documentation: what it means and how to fix it.
+- `vendor/bin/psalm --explain=IssueType` prints the issue's documentation: what it means and how to fix it.
+  It also takes a shortcode (`--explain=83`) and needs no `psalm.xml`.
 - `SECURITY` lines come in the same run as type errors: taint findings (`Tainted*`, a source → sink path:
   [references/taint.md](references/taint.md)) and unsafe calls (`WeakHash`, `InsecureCookie`, …, fixed as
-  `explain.php` says).
+  `--explain` says).
 - After changing `psalm.xml`, stubs or `composer.json`, add `--no-cache` once.
 - Other output formats (`count`, `json-summary`, `by-issue-level`), cache and threads, `--stats`,
   `--show-info`, `--find-references-to`: [references/cli.md](references/cli.md).

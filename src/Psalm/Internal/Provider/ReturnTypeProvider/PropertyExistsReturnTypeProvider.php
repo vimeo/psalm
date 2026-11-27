@@ -43,7 +43,7 @@ final class PropertyExistsReturnTypeProvider implements FunctionReturnTypeProvid
 
         if ($object_type === null
             || $property_type === null
-            || !$object_type->isSingle()
+            || !$object_type->isSingleAtomic()
             || !$property_type->isSingleStringLiteral()
         ) {
             return null;

@@ -613,7 +613,7 @@ final class CloneAnalyzer
     /** Returns the single named class behind $object_type, or null if not exactly one. */
     private static function getClonedClassName(Codebase $codebase, ?Union $object_type): ?string
     {
-        if ($object_type === null || !$object_type->isSingle()) {
+        if ($object_type === null || !$object_type->isSingleAtomic()) {
             return null;
         }
 

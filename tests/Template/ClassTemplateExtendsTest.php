@@ -663,6 +663,8 @@ final class ClassTemplateExtendsTest extends TestCase
                 'assertions' => [
                     '$items===' => 'list<int>',
                 ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'inheritedDocblockReturnTypeResolvesThroughSubclassTemplates' => [
                 'code' => '<?php
@@ -700,6 +702,8 @@ final class ClassTemplateExtendsTest extends TestCase
                 'assertions' => [
                     '$list===' => 'list<string>',
                 ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'inheritedDocblockReturnTypeResolvesSwappedTemplates' => [
                 'code' => '<?php
@@ -740,6 +744,8 @@ final class ClassTemplateExtendsTest extends TestCase
                 'assertions' => [
                     '$pair===' => 'list{int, string}',
                 ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'newResolvesATemplateNotGivenToTheParentToItsBound' => [
                 'code' => '<?php
@@ -760,6 +766,9 @@ final class ClassTemplateExtendsTest extends TestCase
                     function make(): Table {
                         return new Table([1]);
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'interface' => [
                 'code' => '<?php
@@ -8579,6 +8588,8 @@ final class ClassTemplateExtendsTest extends TestCase
                         takesBox($composed->value);
                     }',
                 'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:22:34 - Argument 1 of takesBox expects Box<object>, but Box<stdClass> provided',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'nonGenericChildBindsItsGenericParentToTheTypeItExtendsOnItsCallables' => [
                 'code' => '<?php

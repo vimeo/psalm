@@ -14,9 +14,11 @@ use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TClassString;
+use Psalm\Type\Atomic\TEnumCase;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIterable;
+use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNonEmptyLowercaseString;
@@ -102,6 +104,27 @@ final class TypeComparatorTest extends TestCase
     {
         yield 'lower bounds' => [false];
         yield 'upper bounds' => [true];
+    }
+
+    public function testFallbackOfAnUnsealedShapeInASealedShapeKeepsItsBound(): void
+    {
+        $input = TKeyedArray::make(
+            ['a' => Type::getInt()],
+            null,
+            [Type::parseString("'b'"), new Union([new TTypeVariable('_test')])],
+        );
+        $result = new TypeComparisonResult();
+        $this->assertTrue(UnionTypeComparator::isContainedBy(
+            $this->project_analyzer->getCodebase(),
+            new Union([$input]),
+            Type::parseString('array{a?: int, b?: int}'),
+            false,
+            false,
+            $result,
+        ));
+        $this->assertCount(1, $result->type_variable_upper_bounds);
+        $this->assertSame('_test', $result->type_variable_upper_bounds[0][0]);
+        $this->assertSame('int', $result->type_variable_upper_bounds[0][1]->type->getId());
     }
 
     public function testSymbolicContainerKeepsIterableBound(): void
@@ -824,6 +847,45 @@ final class TypeComparatorTest extends TestCase
         $this->assertTrue($contained);
         // comparing each of the millions of pairs takes seconds to tens of seconds
         $this->assertLessThan(2_000_000_000, $nanoseconds);
+    }
+
+    public function testLargeEnumCaseUnionIsComparedWithoutComparingEachPair(): void
+    {
+        $cases = [];
+        for ($i = 0; $i < 4_096; $i++) {
+            $cases[] = new TEnumCase('E', 'C' . $i);
+        }
+
+        $container_type = new Union($cases);
+        $input_type = new Union(array_reverse($cases));
+
+        $start = hrtime(true);
+        $contained = UnionTypeComparator::isContainedBy(
+            $this->project_analyzer->getCodebase(),
+            $input_type,
+            $container_type,
+        );
+        $nanoseconds = hrtime(true) - $start;
+
+        $this->assertTrue($contained);
+        // comparing each of the 16.7 million pairs takes seconds
+        $this->assertLessThan(2_000_000_000, $nanoseconds);
+
+        $this->assertFalse(UnionTypeComparator::isContainedBy(
+            $this->project_analyzer->getCodebase(),
+            new Union([new TEnumCase('E', 'C1'), new TEnumCase('E', 'Other')]),
+            $container_type,
+        ));
+        $this->assertFalse(UnionTypeComparator::isContainedBy(
+            $this->project_analyzer->getCodebase(),
+            new Union([new TEnumCase('F', 'C1')]),
+            $container_type,
+        ));
+        $this->assertTrue(UnionTypeComparator::isContainedBy(
+            $this->project_analyzer->getCodebase(),
+            new Union([new TEnumCase('E', 'C1'), new TLiteralInt(5)]),
+            new Union([...$cases, new TInt()]),
+        ));
     }
 
     /**
