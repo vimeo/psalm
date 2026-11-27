@@ -184,6 +184,13 @@ final class TaintFlowResolution
     private const CLASS_LEFT = 5;
 
     /**
+     * How many classes the flows in the node of a property may keep (see reach()): the node of a property of a parent
+     * class of many classes would else see the flows of each apart, through every read under a name of it, for a
+     * precision few of them need.
+     */
+    private const MAX_OBJECT_CLASSES = 8;
+
+    /**
      * Stage => the type of the edge that takes a flow to the next stage (see getObjectClassSlot())
      */
     private const CLASS_STAGE_PATH_TYPES = [
@@ -481,6 +488,13 @@ final class TaintFlowResolution
      * @var array<string, array<string, Path>>
      */
     private array $object_class_edges = [];
+
+    /**
+     * Node id => the lowercase classes kept by the flows in it (see reach())
+     *
+     * @var array<string, array<string, true>>
+     */
+    private array $node_object_classes = [];
 
     /**
      * Two lowercase class names => whether the objects of the first are all of the second (see isNarrowerClass())
@@ -2743,24 +2757,35 @@ final class TaintFlowResolution
             && ($this->object_class_slots[$slot][1] === self::CLASS_STORED
                 || $this->object_class_slots[$slot][1] === self::CLASS_ELEMENT_STORED)
         ) {
-            // In the node of the property, the class only matters to the reads under a name of a variable (see
-            // getObjectClassEdges()): the flows of all classes go past its other edges as one, which the node of a
-            // property of many subclasses would else see as many.
             [$made, $closed] = $this->open_assignments[$open_assignments];
-            $left = $this->getSlot(self::OBJECT_CLASS_MARKER_PREFIX, self::CLASS_LEFT);
-            $this->object_class_slots[$left] ??= ['', self::CLASS_LEFT];
+            $class = strtolower($this->object_class_slots[$slot][0]);
 
-            $this->reach(
-                $node_id,
-                $context,
-                $this->internOpenAssignments($made, $closed, $left),
-                $kept,
-                $added,
-                $predecessor,
-                $link,
-                $path_type,
-                $caller,
-            );
+            if (!isset($this->node_object_classes[$node_id][$class])
+                && count($this->node_object_classes[$node_id] ?? []) >= self::MAX_OBJECT_CLASSES
+            ) {
+                // past MAX_OBJECT_CLASSES, a property of any of them, as without the class
+                $open_assignments = $this->internOpenAssignments($made, $closed);
+            } else {
+                $this->node_object_classes[$node_id][$class] = true;
+
+                // In the node of the property, the class only matters to the reads under a name of a variable (see
+                // getObjectClassEdges()): the flows of all classes go past its other edges as one, which the node of
+                // a property of many subclasses would else see as many.
+                $left = $this->getSlot(self::OBJECT_CLASS_MARKER_PREFIX, self::CLASS_LEFT);
+                $this->object_class_slots[$left] ??= ['', self::CLASS_LEFT];
+
+                $this->reach(
+                    $node_id,
+                    $context,
+                    $this->internOpenAssignments($made, $closed, $left),
+                    $kept,
+                    $added,
+                    $predecessor,
+                    $link,
+                    $path_type,
+                    $caller,
+                );
+            }
         }
 
         $copied_position = $this->copied_position;

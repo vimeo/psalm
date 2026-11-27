@@ -15015,6 +15015,77 @@ final class TaintTest extends TestCase
                     }',
                 'error_message' => 'TaintedHtml',
             ],
+            'propertyReadAndSetUnderTheSameNameThroughAParentClassOfManySubclassesMayTaintAnyOfThem' => [
+                'code' => '<?php
+                    class Record {
+                        /** @psalm-flow ($value) -> $this->$name */
+                        public function __set(string $name, string $value): void {}
+
+                        /** @psalm-flow $this->$name -> return */
+                        public function __get(string $name): string {
+                            return "";
+                        }
+
+                        /** @psalm-flow $this->$name -> return */
+                        public function get(string $name): string {
+                            return "";
+                        }
+
+                        /** @psalm-flow ($value) -> $this->$name */
+                        public function set(string $name, string $value): void {}
+                    }
+
+                    /** @property string $p */
+                    final class A1 extends Record {}
+
+                    /** @property string $p */
+                    final class A2 extends Record {}
+
+                    /** @property string $p */
+                    final class A3 extends Record {}
+
+                    /** @property string $p */
+                    final class A4 extends Record {}
+
+                    /** @property string $p */
+                    final class A5 extends Record {}
+
+                    /** @property string $p */
+                    final class A6 extends Record {}
+
+                    /** @property string $p */
+                    final class A7 extends Record {}
+
+                    /** @property string $p */
+                    final class A8 extends Record {}
+
+                    /** @property string $p */
+                    final class A9 extends Record {}
+
+                    /** @property string $p */
+                    final class B extends Record {}
+
+                    function store(A1 $a1, A2 $a2, A3 $a3, A4 $a4, A5 $a5, A6 $a6, A7 $a7, A8 $a8, A9 $a9): void {
+                        $a1->p = (string) $_GET["x"];
+                        $a2->p = (string) $_GET["x"];
+                        $a3->p = (string) $_GET["x"];
+                        $a4->p = (string) $_GET["x"];
+                        $a5->p = (string) $_GET["x"];
+                        $a6->p = (string) $_GET["x"];
+                        $a7->p = (string) $_GET["x"];
+                        $a8->p = (string) $_GET["x"];
+                        $a9->p = (string) $_GET["x"];
+                    }
+
+                    function touchField(Record $object, string $name): void {
+                        $object->set($name, $object->get($name) . "!");
+                    }
+
+                    function show(B $object): void {
+                        echo $object->p;
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
             'propertySetUnderANameNotKnownIsReadByAGetterOfAnUndeclaredName' => [
                 'code' => '<?php
                     final class Model {
