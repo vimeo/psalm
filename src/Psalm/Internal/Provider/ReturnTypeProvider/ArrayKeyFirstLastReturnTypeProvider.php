@@ -54,7 +54,7 @@ final class ArrayKeyFirstLastReturnTypeProvider implements FunctionReturnTypePro
 
         if ($list_var_id === null
             || $array_type === null
-            || !$array_type->isSingle()
+            || !$array_type->isSingleAtomic()
             || !($list = $array_type->getSingleAtomic()) instanceof TKeyedArray
             || !$list->is_list
         ) {

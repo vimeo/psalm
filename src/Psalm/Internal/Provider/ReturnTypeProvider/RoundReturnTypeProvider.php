@@ -43,7 +43,7 @@ final class RoundReturnTypeProvider implements FunctionReturnTypeProviderInterfa
 
         $float = new Type\Union([new Type\Atomic\TFloat()]);
         $num_arg = $nodeTypeProvider->getType($call_args[0]->value);
-        $num_type = $num_arg?->isSingle() ? $num_arg->getSingleAtomic() : null;
+        $num_type = $num_arg?->isSingleAtomic() ? $num_arg->getSingleAtomic() : null;
 
         if (!$num_type instanceof Type\Atomic\TLiteralFloat && !$num_type instanceof Type\Atomic\TLiteralInt) {
             return $float;

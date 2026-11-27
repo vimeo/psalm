@@ -239,7 +239,7 @@ final class TemplateInferredTypeReplacer
      */
     public static function getIndexedAccessType(Union $array_type, Union $offset_type, ?Codebase $codebase): ?Union
     {
-        $array_atomic = $array_type->isSingle() ? $array_type->getSingleAtomic() : null;
+        $array_atomic = $array_type->isSingleAtomic() ? $array_type->getSingleAtomic() : null;
 
         if (!$array_atomic instanceof TKeyedArray || $offset_type->isUnionEmpty()) {
             return null;
@@ -543,7 +543,7 @@ final class TemplateInferredTypeReplacer
                             if (isset($classlike_storage->template_extended_params[$defining_class])) {
                                 $param_map = $classlike_storage->template_extended_params[$defining_class];
 
-                                $mapped_template = isset($param_map[$key]) && $param_map[$key]->isSingle()
+                                $mapped_template = isset($param_map[$key]) && $param_map[$key]->isSingleAtomic()
                                     ? $param_map[$key]->getSingleAtomic()
                                     : null;
 

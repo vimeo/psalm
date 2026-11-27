@@ -358,7 +358,7 @@ final class ArrayFetchAnalyzer
                 $key_is_declared = !$stmt_type->possibly_undefined
                     && $dim_type !== null
                     && ($dim_type->isSingleStringLiteral() || $dim_type->isSingleIntLiteral())
-                    && $stmt_var_type->isSingle()
+                    && $stmt_var_type->isSingleAtomic()
                     && ($var_atomic = $stmt_var_type->getSingleAtomic()) instanceof TKeyedArray
                     && $var_atomic->fallback_params === null;
 
@@ -1009,7 +1009,7 @@ final class ArrayFetchAnalyzer
                     $codebase,
                 );
 
-                if ($resolved->isSingle()) {
+                if ($resolved->isSingleAtomic()) {
                     $type = $resolved->getSingleAtomic();
                     $original_type = $type;
                     $original_type_real = $type;
@@ -1028,7 +1028,7 @@ final class ArrayFetchAnalyzer
             if ($type instanceof TTemplateParam
                 && !$in_assignment
                 && !$type->as->isMixed()
-                && !$type->as->isSingle()
+                && !$type->as->isSingleAtomic()
             ) {
                 $bound_type = $type->as;
                 $bound_offset_type = $offset_type->freeze();
@@ -1054,7 +1054,7 @@ final class ArrayFetchAnalyzer
             if ($type instanceof TMixed
                 || $type instanceof TTemplateParam
             ) {
-                if (!$type instanceof TTemplateParam || $type->as->isMixed() || !$type->as->isSingle()) {
+                if (!$type instanceof TTemplateParam || $type->as->isMixed() || !$type->as->isSingleAtomic()) {
                     $array_access_type = self::handleMixedArrayAccess(
                         $context,
                         $statements_analyzer,
@@ -2742,7 +2742,7 @@ final class ArrayFetchAnalyzer
         $receiver_types = $array_type->getAtomicTypes();
 
         foreach ($receiver_types as $key => $type) {
-            if ($type instanceof TTemplateParam && $type->as->isSingle()) {
+            if ($type instanceof TTemplateParam && $type->as->isSingleAtomic()) {
                 $type = $type->as->getSingleAtomic();
             }
 

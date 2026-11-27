@@ -48,7 +48,7 @@ final class PowReturnTypeProvider implements FunctionReturnTypeProviderInterface
         $first_arg_literal = null;
         $first_arg_is_int = false;
         $first_arg_is_float = false;
-        if ($first_arg !== null && $first_arg->isSingle()) {
+        if ($first_arg !== null && $first_arg->isSingleAtomic()) {
             $first_atomic_type = $first_arg->getSingleAtomic();
             if ($first_atomic_type instanceof TInt) {
                 $first_arg_is_int = true;
@@ -68,7 +68,7 @@ final class PowReturnTypeProvider implements FunctionReturnTypeProviderInterface
         $second_arg_is_negative = false;
         $second_arg_can_be_negative = false;
         $second_arg_is_positive = false;
-        if ($second_arg !== null && $second_arg->isSingle()) {
+        if ($second_arg !== null && $second_arg->isSingleAtomic()) {
             $second_atomic_type = $second_arg->getSingleAtomic();
             if ($second_atomic_type instanceof TInt) {
                 $second_arg_is_int = true;

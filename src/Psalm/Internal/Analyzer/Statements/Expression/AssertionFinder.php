@@ -2084,7 +2084,7 @@ final class AssertionFinder
             $left_type = $source->node_data->getType($conditional->left);
 
             if ($left_type
-                && ($left_type->isSingle() || self::isLiteralClassStringUnion($left_type))
+                && ($left_type->isSingleAtomic() || self::isLiteralClassStringUnion($left_type))
             ) {
                 foreach ($left_type->getAtomicTypes() as $type_part) {
                     if ($type_part instanceof TClassString || $type_part instanceof TLiteralClassString) {
@@ -2120,7 +2120,7 @@ final class AssertionFinder
             $right_type = $source->node_data->getType($conditional->right);
 
             if ($right_type
-                && ($right_type->isSingle() || self::isLiteralClassStringUnion($right_type))
+                && ($right_type->isSingleAtomic() || self::isLiteralClassStringUnion($right_type))
             ) {
                 foreach ($right_type->getAtomicTypes() as $type_part) {
                     if ($type_part instanceof TClassString || $type_part instanceof TLiteralClassString) {
@@ -2874,7 +2874,7 @@ final class AssertionFinder
         ) {
             if ($operand_holds
                 && !$codebase->config->allow_bool_to_literal_bool_comparison
-                && $var_type->isSingle()
+                && $var_type->isSingleAtomic()
                 && $var_type->hasBool()
                 && !$var_type->from_docblock
                 && !$conditional instanceof VirtualIdentical
@@ -3195,7 +3195,7 @@ final class AssertionFinder
         } else {
             $type = $source->node_data->getType($whichclass_expr);
 
-            if ($type && $var_name !== null && !$type->isSingle() && self::isLiteralClassStringUnion($type)) {
+            if ($type && $var_name !== null && !$type->isSingleAtomic() && self::isLiteralClassStringUnion($type)) {
                 $class_assertions = [];
 
                 foreach ($type->getLiteralStrings() as $class_string) {
@@ -3217,10 +3217,10 @@ final class AssertionFinder
                             )),
                             $negated,
                         )]];
-                    } elseif ($type->isSingle() && $type_part instanceof TLiteralClassString) {
+                    } elseif ($type->isSingleAtomic() && $type_part instanceof TLiteralClassString) {
                         $if_types[$var_name] = [[self::withPolarity(new IsClassEqual($type_part->value), $negated)]];
                     } elseif (!$negated
-                        && $type->isSingle()
+                        && $type->isSingleAtomic()
                         && $type_part instanceof TClassString
                         && $type_part->as_type
                     ) {
@@ -3916,7 +3916,7 @@ final class AssertionFinder
         $haystack_var_name = ExpressionIdentifier::getExtendedVarId($haystack_expr, $this_class_name, $source);
         $needle_type = $source->node_data->getType($first_arg);
         $needle_singleton = $needle_type !== null ? self::getInArraySingletonNeedle($needle_type) : null;
-        $is_array_template = $second_arg_type->isSingle()
+        $is_array_template = $second_arg_type->isSingleAtomic()
             && self::isArrayTemplate($second_arg_type->getSingleAtomic());
 
         // When the needle is a single known value, assert on the haystack alone so negating the call yields
@@ -3995,7 +3995,7 @@ final class AssertionFinder
                     if ($assertions !== []) {
                         $if_types[$first_var_name] = [$assertions];
                     }
-                } elseif ($second_arg_type->isSingle() && self::isArrayTemplate($atomic_type)) {
+                } elseif ($second_arg_type->isSingleAtomic() && self::isArrayTemplate($atomic_type)) {
                     $value_of_type = new Union([new TTemplateValueOf(
                         $atomic_type->param_name,
                         $atomic_type->defining_class,
@@ -4100,7 +4100,7 @@ final class AssertionFinder
         ?string $this_class_name,
         StatementsAnalyzer $source,
     ): ?InArray {
-        $array_atomic = $array_type->isSingle() ? $array_type->getSingleAtomic() : null;
+        $array_atomic = $array_type->isSingleAtomic() ? $array_type->getSingleAtomic() : null;
 
         if (!self::isArrayTemplate($array_atomic)) {
             return null;

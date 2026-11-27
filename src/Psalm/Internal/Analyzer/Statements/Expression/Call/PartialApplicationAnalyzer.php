@@ -97,7 +97,7 @@ final class PartialApplicationAnalyzer
 
             if ($compile_error === null
                 && $callee_type
-                && $callee_type->isSingle()
+                && $callee_type->isSingleAtomic()
                 && ($atomic = $callee_type->getSingleAtomic()) instanceof TClosure
                 && $atomic->params !== null
             ) {
@@ -340,7 +340,7 @@ final class PartialApplicationAnalyzer
         if ($call instanceof MethodCall) {
             $var_type = $statements_analyzer->node_data->getType($call->var);
             $fq_class_name = $var_type
-                && $var_type->isSingle()
+                && $var_type->isSingleAtomic()
                 && ($atomic = $var_type->getSingleAtomic()) instanceof TNamedObject
                 ? $atomic->value
                 : null;

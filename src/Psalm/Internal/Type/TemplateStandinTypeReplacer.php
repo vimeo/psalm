@@ -131,7 +131,7 @@ final class TemplateStandinTypeReplacer
         // never become part of the type inferred for the other atoms, e.g. `null` for `T|null`
         $other_input_type = $input_type;
 
-        if ($input_type && !$input_type->isSingle()) {
+        if ($input_type && !$input_type->isSingleAtomic()) {
             $new_input_type = $input_type->getBuilder();
             $has_template_atom = false;
 
@@ -655,7 +655,7 @@ final class TemplateStandinTypeReplacer
                 }
 
                 if ($inferred_type !== null
-                    && $inferred_type->isSingle()
+                    && $inferred_type->isSingleAtomic()
                     && $template_collector->getTemplateTypes() === []
                 ) {
                     $replaced_atomic_type = $inferred_type->getSingleAtomic();
@@ -943,7 +943,7 @@ final class TemplateStandinTypeReplacer
                     $depth + 1,
                 );
 
-                if ($extra_type->isSingle()) {
+                if ($extra_type->isSingleAtomic()) {
                     $extra_type = $extra_type->getSingleAtomic();
 
                     if ($extra_type instanceof TNamedObject
@@ -1006,7 +1006,7 @@ final class TemplateStandinTypeReplacer
                     ) {
                         $keyed_template = $template_result->template_types[$replacement_atomic_type->param_name][$replacement_atomic_type->defining_class];
 
-                        if ($keyed_template->isSingle()) {
+                        if ($keyed_template->isSingleAtomic()) {
                             $keyed_template = $keyed_template->getSingleAtomic();
                         }
 
@@ -2076,7 +2076,7 @@ final class TemplateStandinTypeReplacer
                     // a `*`, `covariant` or `contravariant` argument of the input is one of the container when the
                     // container's template stands for exactly the template that holds it
                     if (count($candidate_offsets) === 1
-                        && $extended_input_param_type->isSingle()
+                        && $extended_input_param_type->isSingleAtomic()
                         && ($projection = $input_projections[$candidate_offsets[0]] ?? null)?->isUnknown()
                     ) {
                         // a covariant argument of the container reads the bound of a `contravariant X`, which

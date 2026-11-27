@@ -586,7 +586,7 @@ final class ConcatAnalyzer
      */
     private static function getResultTypeFromKnownOperand(Union $known_operand): ?Union
     {
-        if (!$known_operand->isSingle()) {
+        if (!$known_operand->isSingleAtomic()) {
             return null;
         }
 

@@ -423,7 +423,7 @@ trait UnionTrait
             );
         }
 
-        if (!$this->isSinglePhpTypeAndMaybeNullable()) {
+        if (!$this->isSingleAndMaybeNullable()) {
             if ($analysis_php_version_id < 8_00_00) {
                 return null;
             }
@@ -531,7 +531,7 @@ trait UnionTrait
         }
 
         if ($analysis_php_version_id < 7_00_00
-            || (!$this->isSinglePhpTypeAndMaybeNullable() && $analysis_php_version_id < 8_00_00)
+            || (!$this->isSingleAndMaybeNullable() && $analysis_php_version_id < 8_00_00)
         ) {
             return false;
         }
@@ -639,7 +639,7 @@ trait UnionTrait
      */
     public function isTemplatedClassString(): bool
     {
-        if (!$this->isSingle()) {
+        if (!$this->isSingleAtomic()) {
             return false;
         }
         $has = false;
@@ -1168,46 +1168,52 @@ trait UnionTrait
     }
 
     /**
-     * Whether the union holds exactly one atomic type, which getSingleAtomic() then returns.
-     * A union of literals, like `1|2`, is not single.
+     * Whether the union holds exactly one atomic type, which getSingleAtomic() then returns
      *
      * @psalm-mutation-free
      */
-    public function isSingle(): bool
+    public function isSingleAtomic(): bool
     {
         return count($this->types) === 1;
     }
 
     /**
+     * Whether the union is one type once its literals are grouped by kind: `1|2` and `A::class|B::class` are single,
+     * but getSingleAtomic() then returns only their first literal
+     *
+     * @deprecated use isSingleAtomic() before getSingleAtomic(), or allIntLiterals(), allStringLiterals() and
+     *     allFloatLiterals() for a union of literals. It will be removed in Psalm 8.
+     * @psalm-mutation-free
+     */
+    public function isSingle(): bool
+    {
+        return $this->countTypesWithLiteralsGroupedByKind() === 1;
+    }
+
+    /**
+     * Whether PHP writes the union as one type besides `null`: literals are written as their kind (`4|20` is `int`)
+     *
      * @psalm-mutation-free
      */
     public function isSingleAndMaybeNullable(): bool
     {
-        return count($this->types) - (int) isset($this->types['null']) === 1;
+        return $this->countTypesWithLiteralsGroupedByKind() - (int) isset($this->types['null']) === 1;
     }
 
     /**
-     * Whether PHP writes this union as one type besides `null`: literals are written as their kind (`4|20` is `int`)
-     *
      * @psalm-mutation-free
      */
-    private function isSinglePhpTypeAndMaybeNullable(): bool
+    private function countTypesWithLiteralsGroupedByKind(): int
     {
-        $literal_counts = [
-            count($this->literal_int_types),
-            count($this->literal_string_types),
-            count($this->literal_float_types),
-        ];
+        $type_count = count($this->types);
 
-        $php_type_count = count($this->types) - (int) isset($this->types['null']);
-
-        foreach ($literal_counts as $literal_count) {
-            if ($literal_count > 0) {
-                $php_type_count -= $literal_count - 1;
+        foreach ([$this->literal_int_types, $this->literal_string_types, $this->literal_float_types] as $literals) {
+            if ($literals !== []) {
+                $type_count -= count($literals) - 1;
             }
         }
 
-        return $php_type_count === 1;
+        return $type_count;
     }
 
     /**
@@ -1295,7 +1301,7 @@ trait UnionTrait
      */
     public function isBool(): bool
     {
-        if (!$this->isSingle()) {
+        if (!$this->isSingleAtomic()) {
             return false;
         }
 
@@ -1308,7 +1314,7 @@ trait UnionTrait
      */
     public function isArray(): bool
     {
-        if (!$this->isSingle()) {
+        if (!$this->isSingleAtomic()) {
             return false;
         }
 
