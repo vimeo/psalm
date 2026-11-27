@@ -4600,6 +4600,7 @@ final class TaintTest extends TestCase
                     redirectTo("/account?tab=" . rawurlencode($value));
                     redirectTo(same("https://example.com/" . $value));
                     redirectTo(strtolower("https://example.com/" . $value));
+                    redirectTo(trim("https://example.com/" . $value));
                     fetch("https://example.com/" . $value);
                     fetch(same("https://example.com/" . $value));
                     fetch(rtrim("https://example.com/" . $value, "/"));

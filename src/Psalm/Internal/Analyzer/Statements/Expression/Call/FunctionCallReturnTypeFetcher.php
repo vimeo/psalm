@@ -72,6 +72,7 @@ use function is_string;
 use function ltrim;
 use function preg_match;
 use function preg_match_all;
+use function reset;
 use function str_contains;
 use function str_ends_with;
 use function str_replace;
@@ -2208,6 +2209,7 @@ final class FunctionCallReturnTypeFetcher
                     $added_taints,
                     $arg_removed_taints[$arg_index] ?? 0,
                     $position_removed_taints,
+                    self::getRestoredTaints($function_id, $args),
                 );
             }
         }
@@ -2268,6 +2270,7 @@ final class FunctionCallReturnTypeFetcher
         int $added_taints = 0,
         int $arg_removed_taints = 0,
         int $position_removed_taints = 0,
+        int $restored_taints = TaintShadows::ALL,
     ): void {
         $param_name = $function_storage->params[$param_offset]->name;
         $path_removed_taints = isset(self::UNESCAPED_RETURN_FLOWS[$function_id][$param_name])
@@ -2293,20 +2296,26 @@ final class FunctionCallReturnTypeFetcher
                 | ($function_storage->signature_return_type?->getTaintsToRemove($input_taints) ?? 0)
                 | $arg_removed_taints,
             $position_removed_taints,
-            self::getRestoredTaints($function_id),
+            $restored_taints,
         );
     }
 
     /**
      * The taints the flows through a `@psalm-flow` of $function_id get back of the shadows they have (see
      * TaintShadows): what follows a URL start can choose its server again once a builtin cuts the string, or puts
-     * text before it.
+     * text before it. trim() and ltrim() keep the start of a URL when they only remove whitespace: a URL start
+     * doesn't begin with any.
      *
-     * @psalm-pure
+     * @param array<int, PhpParser\Node\Arg> $args
+     * @psalm-mutation-free
      */
-    public static function getRestoredTaints(string $function_id): int
+    private static function getRestoredTaints(string $function_id, array $args): int
     {
-        if (isset(self::START_KEEPING_FLOWS[$function_id])) {
+        if (isset(self::START_KEEPING_FLOWS[$function_id])
+            || (($function_id === 'trim' || $function_id === 'ltrim')
+                && count($args) === 1
+                && !reset($args)->unpack)
+        ) {
             return 0;
         }
 
