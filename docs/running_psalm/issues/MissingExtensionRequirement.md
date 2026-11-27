@@ -70,3 +70,16 @@ function digest(string $s): string {
     return hash('sha256', $s);                              // MissingExtensionRequirement: PHP 7.3 can be built without it
 }
 ```
+
+An extension that a declared or checked extension can't be loaded without needs no declaration either: `libxml` for
+`dom`, `SimpleXML`, `xmlreader` and `xsl` (`xmlwriter` and `soap` from PHP 8.4), `dom` for `xsl` from PHP 8.3, `PDO`
+for its drivers:
+
+```php
+<?php // composer.json requires "ext-dom": "*" and "ext-pdo_sqlite": "*"
+
+function f(): PDO {
+    libxml_use_internal_errors(true);                       // no issue: ext-dom requires ext-libxml
+    return new PDO('sqlite::memory:');                      // no issue: ext-pdo_sqlite requires ext-pdo
+}
+```

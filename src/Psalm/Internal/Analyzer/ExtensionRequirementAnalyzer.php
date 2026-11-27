@@ -40,6 +40,31 @@ final class ExtensionRequirementAnalyzer
     ];
 
     /**
+     * The extensions that can't be loaded without another one (php-src's ZEND_MOD_REQUIRED), by the extension they
+     * require, from the PHP version (as an id) they do
+     */
+    private const REQUIRING_EXTENSIONS = [
+        'dom' => ['xsl' => 8_03_00],
+        'libxml' => [
+            'dom' => 0,
+            'simplexml' => 0,
+            'soap' => 8_04_00,
+            'xmlreader' => 0,
+            'xmlwriter' => 8_04_00,
+            'xsl' => 0,
+        ],
+        'pdo' => [
+            'pdo_dblib' => 0,
+            'pdo_firebird' => 0,
+            'pdo_mysql' => 0,
+            'pdo_oci' => 0,
+            'pdo_odbc' => 0,
+            'pdo_pgsql' => 0,
+            'pdo_sqlite' => 0,
+        ],
+    ];
+
+    /**
      * A call of a builtin function, or a reference to a builtin class, interface or enum. A polyfill doesn't make the
      * extension optional: composer.json declares that with suggest, unless the polyfill package provides it.
      *
@@ -90,17 +115,35 @@ final class ExtensionRequirementAnalyzer
                 continue;
             }
 
-            $composer_name = str_replace(' ', '-', $extension);
-            if (isset($declared_extensions[$composer_name])
-                || ($extension === 'zend opcache' && isset($declared_extensions['opcache']))
-                || ($context?->vars_in_scope[Context::getExtensionVarId($extension)] ?? null)?->isTrue()
-            ) {
+            if (self::isDeclaredOrChecked($extension, $declared_extensions, $context)) {
                 continue;
             }
 
-            return $composer_name;
+            // an extension requiring it can't be loaded without it
+            foreach (self::REQUIRING_EXTENSIONS[$extension] ?? [] as $requiring_extension => $requiring_since) {
+                if ($requiring_since <= $since
+                    && self::isDeclaredOrChecked($requiring_extension, $declared_extensions, $context)
+                ) {
+                    continue 2;
+                }
+            }
+
+            return str_replace(' ', '-', $extension);
         }
 
         return null;
+    }
+
+    /**
+     * @param array<string, true> $declared_extensions
+     */
+    private static function isDeclaredOrChecked(
+        string $extension,
+        array $declared_extensions,
+        ?Context $context,
+    ): bool {
+        return isset($declared_extensions[str_replace(' ', '-', $extension)])
+            || ($extension === 'zend opcache' && isset($declared_extensions['opcache']))
+            || ($context?->vars_in_scope[Context::getExtensionVarId($extension)] ?? null)?->isTrue() === true;
     }
 }
