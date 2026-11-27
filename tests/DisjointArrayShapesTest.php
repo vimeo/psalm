@@ -8,6 +8,8 @@ use Override;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
+use const DIRECTORY_SEPARATOR;
+
 final class DisjointArrayShapesTest extends TestCase
 {
     use ValidCodeAnalysisTestTrait;
@@ -177,6 +179,56 @@ final class DisjointArrayShapesTest extends TestCase
                     '$k===' => "'a'|'b'|'none'",
                 ],
             ],
+            'filteredListIsNonEmptyAfterNotEmpty' => [
+                'code' => '<?php
+                    function maybeSomething(): ?int {
+                        return rand(0, 1) ? 234 : null;
+                    }
+
+                    $a = array_filter([maybeSomething(), maybeSomething()]);
+                    $m = null;
+                    if (!empty($a)) {
+                        $m = min($a);
+                    }',
+                'assertions' => [
+                    '$m===' => 'int|null',
+                ],
+            ],
+            'shapeWithOnlyOptionalKeysIsNonEmptyWhenNotEmpty' => [
+                'code' => '<?php
+                    /** @return array{A?: "A", B?: "B"} */
+                    function build(): array {
+                        $out = [];
+                        if (rand(0, 1)) {
+                            $out["A"] = "A";
+                        }
+                        if (rand(0, 1)) {
+                            $out["B"] = "B";
+                        }
+                        return $out;
+                    }
+
+                    /** @return non-empty-array<string, string>|true */
+                    function runCount(): array|bool {
+                        $out = build();
+                        return count($out) === 0 ? true : $out;
+                    }
+
+                    /** @return non-empty-array<string, string>|true */
+                    function runEmpty(): array|bool {
+                        $out = build();
+                        return empty($out) ? true : $out;
+                    }
+
+                    /** @return non-empty-array<string, string>|true */
+                    function runEquality(): array|bool {
+                        $out = build();
+                        return $out == [] ? true : $out;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'issetOnACountedShapeWithOnlyOptionalKeysLeavesTheOtherKey' => [
                 'code' => '<?php
                     /** @param array{a?: int, b?: string} $x */
@@ -328,6 +380,20 @@ final class DisjointArrayShapesTest extends TestCase
                         return 0;
                     }',
                 'error_message' => 'PossiblyUndefinedArrayOffset',
+            ],
+            'emptyArrayIsNotAssignableToAUnionOfShapes' => [
+                'code' => '<?php
+                    class Foo {
+                        /** @var array{foo: string}|array{bar: string} */
+                        private array $fooOrBar = ["foo" => "a"];
+
+                        public function set(): void {
+                            $this->fooOrBar = ["foo" => "hello"];
+                            $this->fooOrBar = ["bar" => "hello"];
+                            $this->fooOrBar = [];
+                        }
+                    }',
+                'error_message' => 'InvalidPropertyAssignmentValue - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:47',
             ],
         ];
     }
