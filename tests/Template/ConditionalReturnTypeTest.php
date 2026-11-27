@@ -797,6 +797,20 @@ final class ConditionalReturnTypeTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'intIsOutsideAFloatConditionInTheElseBranchOfTheSplit' => [
+                'code' => '<?php
+                    /** @template TKey of int */
+                    interface Box {}
+
+                    interface Make {
+                        /**
+                         * @template T of int|float
+                         * @param T $t
+                         * @return Box<(T is float ? int : T)>
+                         */
+                        public function toKey($t);
+                    }',
+            ],
             'conditionalOnAParamInAnInlineVarIsTheConditionalOfTheReturnType' => [
                 'code' => '<?php
                     /**

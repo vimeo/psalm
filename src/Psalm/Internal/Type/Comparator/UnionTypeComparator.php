@@ -17,6 +17,7 @@ use Psalm\Type\Atomic\TConditional;
 use Psalm\Type\Atomic\TEmptyMixed;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TGenericObject;
+use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TKeyOf;
@@ -1157,6 +1158,32 @@ final class UnionTypeComparator
     }
 
     /**
+     * Whether a value of the atomic type is of the type a conditional checks, as the conditional resolves it: an object
+     * only castable to a string is not of a string condition, and an int is never of a float one
+     */
+    public static function isOfConditionalType(
+        Codebase $codebase,
+        Atomic $candidate,
+        Union $conditional_type,
+        ?TypeComparisonResult $comparison_result = null,
+    ): bool {
+        $comparison_result ??= new TypeComparisonResult();
+
+        return self::isContainedBy(
+            $codebase,
+            new Union([$candidate]),
+            $conditional_type,
+            false,
+            false,
+            $comparison_result,
+            false,
+            false,
+        )
+            && !$comparison_result->to_string_cast
+            && (!$candidate instanceof TInt || !$conditional_type->isFloat());
+    }
+
+    /**
      * A conditional is contained if each of its branches is, possibly by different container parts
      * (`($a is null ? T : TA)` by `T|TA`), so it is compared as the parts of its branches
      *
@@ -1189,9 +1216,9 @@ final class UnionTypeComparator
 
                     $else_parts = array_filter(
                         $as_type->getAtomicTypes(),
-                        static fn(Atomic $part): bool => !self::isContainedBy(
+                        static fn(Atomic $part): bool => !self::isOfConditionalType(
                             $codebase,
-                            new Union([$part]),
+                            $part,
                             $atomic_type->conditional_type,
                         ),
                     );
