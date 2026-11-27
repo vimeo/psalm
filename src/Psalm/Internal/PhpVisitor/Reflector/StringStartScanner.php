@@ -19,15 +19,18 @@ use PhpParser\Node\Expr\New_;
 use PhpParser\Node\Expr\PropertyFetch;
 use PhpParser\Node\Expr\StaticCall;
 use PhpParser\Node\Expr\Variable;
+use PhpParser\Node\FunctionLike;
 use PhpParser\Node\Identifier;
 use PhpParser\Node\InterpolatedStringPart;
 use PhpParser\Node\Name;
 use PhpParser\Node\Param;
 use PhpParser\Node\Scalar\InterpolatedString;
+use PhpParser\Node\Scalar\MagicConst;
 use PhpParser\Node\Scalar\String_;
 use PhpParser\Node\Stmt\ClassLike;
 use PhpParser\Node\Stmt\Function_;
 use PhpParser\Node\Stmt\Return_;
+use PhpParser\Node\Stmt\Trait_;
 use PhpParser\NodeFinder;
 use Psalm\Aliases;
 use Psalm\Codebase;
@@ -61,7 +64,8 @@ use function substr;
  *
  * A start is a list of parts: `L` and a literal, `C` and a class constant (`Class::NAME`), `R` and a property of
  * `$this`, `N` and the offset of an argument of the constructor, `F` and a method called on `$this`, `self` or
- * `static`, then `M` where something the scan doesn't know follows.
+ * `static`, then `M` where something the scan doesn't know follows. The magic constants the scan knows the value of in
+ * a method (see getMagicConstants()) are literals.
  *
  * @internal
  */
@@ -88,7 +92,25 @@ final class StringStartScanner
      */
     private static array $resolving = [];
 
+    /**
+     * The values of the magic constants of the class being scanned that the scan knows, by the spl_object_id() of
+     * their nodes
+     *
+     * @var array<int, string>
+     */
+    private static array $magic_constants = [];
+
     public static function scan(ClassLike $class, ClassLikeStorage $storage, Aliases $aliases): void
+    {
+        self::$magic_constants = self::getMagicConstants($class, $storage->name, $aliases);
+        try {
+            self::scanClass($class, $storage, $aliases);
+        } finally {
+            self::$magic_constants = [];
+        }
+    }
+
+    private static function scanClass(ClassLike $class, ClassLikeStorage $storage, Aliases $aliases): void
     {
         $self = $storage->name;
         $encoded = self::getCallArguments($aliases, $self, $class);
@@ -619,12 +641,64 @@ final class StringStartScanner
     }
 
     /**
+     * The values of the magic constants in the methods of the class that are the same wherever the methods run:
+     * `__NAMESPACE__`, and `__CLASS__`, `__FUNCTION__` and `__METHOD__` unless the class is a trait (whose `__CLASS__`
+     * is the class using it) or anonymous. Not those in the closures, arrow functions, functions and classes declared
+     * in the methods, which have names of their own, nor those of the default values of the parameters.
+     *
+     * @return array<int, string>
+     */
+    private static function getMagicConstants(ClassLike $class, string $self, Aliases $aliases): array
+    {
+        $is_named = $class->name !== null && !$class instanceof Trait_;
+        $finder = new NodeFinder();
+        $values = [];
+        foreach ($class->getMethods() as $method) {
+            $stmts = $method->stmts ?? [];
+            $nested = [];
+            $scopes = $finder->find(
+                $stmts,
+                static fn(Node $node): bool => $node instanceof FunctionLike || $node instanceof ClassLike,
+            );
+            foreach ($finder->findInstanceOf($scopes, MagicConst::class) as $constant) {
+                $nested[spl_object_id($constant)] = true;
+            }
+
+            foreach ($finder->findInstanceOf($stmts, MagicConst::class) as $constant) {
+                if (isset($nested[spl_object_id($constant)])) {
+                    continue;
+                }
+
+                $value = match (true) {
+                    $constant instanceof MagicConst\Namespace_ => $aliases->namespace ?? '',
+                    !$is_named => null,
+                    $constant instanceof MagicConst\Class_ => $self,
+                    $constant instanceof MagicConst\Function_ => $method->name->toString(),
+                    $constant instanceof MagicConst\Method => $self . '::' . $method->name->toString(),
+                    default => null,
+                };
+                if ($value !== null) {
+                    $values[spl_object_id($constant)] = $value;
+                }
+            }
+        }
+
+        return $values;
+    }
+
+    /**
      * @return list<string>
      */
     private static function getStart(Aliases $aliases, string $self, Expr $expr): array
     {
         if ($expr instanceof String_) {
             return ['L' . $expr->value];
+        }
+
+        if ($expr instanceof MagicConst) {
+            $value = self::$magic_constants[spl_object_id($expr)] ?? null;
+
+            return $value === null ? [self::MORE] : ['L' . $value];
         }
 
         if ($expr instanceof ClassConstFetch && $expr->class instanceof Name && $expr->name instanceof Identifier) {
