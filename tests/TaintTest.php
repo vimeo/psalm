@@ -8436,6 +8436,120 @@ final class TaintTest extends TestCase
                         echo $object->b;
                     }',
             ],
+            'propertyReadAndSetUnderTheSameNameThroughAParentClassGoesBackToTheSubclass' => [
+                'code' => '<?php
+                    class Record {
+                        /** @psalm-flow ($value) -> $this->$name */
+                        public function __set(string $name, string $value): void {}
+
+                        /** @psalm-flow $this->$name -> return */
+                        public function __get(string $name): string {
+                            return "";
+                        }
+
+                        /** @psalm-flow $this->$name -> return */
+                        public function get(string $name): string {
+                            return "";
+                        }
+
+                        /** @psalm-flow ($value) -> $this->$name */
+                        public function set(string $name, string $value): void {}
+                    }
+
+                    /** @property string $p */
+                    final class A extends Record {}
+
+                    /** @property string $p */
+                    final class B extends Record {}
+
+                    function store(A $a): void {
+                        $a->p = (string) $_GET["x"];
+                    }
+
+                    function touchField(Record $object, string $name): void {
+                        $object->set($name, $object->get($name) . "!");
+                    }
+
+                    function show(B $object): void {
+                        echo $object->p;
+                    }',
+            ],
+            'propertyReadAndSetUnderTheSameNameThroughAParentClassHavingItGoesBackToTheSubclass' => [
+                'code' => '<?php
+                    /** @property string $p */
+                    class Record {
+                        /** @psalm-flow ($value) -> $this->$name */
+                        public function __set(string $name, string $value): void {}
+
+                        /** @psalm-flow $this->$name -> return */
+                        public function __get(string $name): string {
+                            return "";
+                        }
+
+                        /** @psalm-flow $this->$name -> return */
+                        public function get(string $name): string {
+                            return "";
+                        }
+
+                        /** @psalm-flow ($value) -> $this->$name */
+                        public function set(string $name, string $value): void {}
+                    }
+
+                    /** @property string $p */
+                    final class A extends Record {}
+
+                    /** @property string $p */
+                    final class B extends Record {}
+
+                    function store(A $a): void {
+                        $a->p = (string) $_GET["x"];
+                    }
+
+                    function touchField(Record $object, string $name): void {
+                        $object->set($name, $object->get($name) . "!");
+                    }
+
+                    function show(B $object): void {
+                        echo $object->p;
+                    }',
+            ],
+            'propertyOfOtherNamesReadAndSetUnderTheSameNameThroughAParentClassGoesBackToTheSubclass' => [
+                'code' => '<?php
+                    class Record {
+                        /** @psalm-flow ($value) -> $this->$name */
+                        public function __set(string $name, string $value): void {}
+
+                        /** @psalm-flow $this->$name -> return */
+                        public function __get(string $name): string {
+                            return "";
+                        }
+
+                        /** @psalm-flow $this->$name -> return */
+                        public function get(string $name): string {
+                            return "";
+                        }
+
+                        /** @psalm-flow ($value) -> $this->$name */
+                        public function set(string $name, string $value): void {}
+                    }
+
+                    final class A extends Record {}
+
+                    /** @property string $p */
+                    final class B extends Record {}
+
+                    function store(A $a, string $name): void {
+                        $a->set($name, (string) $_GET["x"]);
+                    }
+
+                    function touchField(Record $object, string $name): void {
+                        $object->set($name, $object->get($name) . "!");
+                    }
+
+                    function show(B $object): void {
+                        echo $object->p;
+                    }',
+            ],
             'propertyReadAndSetUnderTheSameNameInALoopNotAssigningIt' => [
                 'code' => '<?php
                     final class Model {
@@ -14521,6 +14635,346 @@ final class TaintTest extends TestCase
 
                     function show(A12 $object): void {
                         echo $object->p12;
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'propertyReadAndSetUnderTheSameNameThroughAParentClassStaysTaintedInTheSubclass' => [
+                'code' => '<?php
+                    class Record {
+                        /** @psalm-flow ($value) -> $this->$name */
+                        public function __set(string $name, string $value): void {}
+
+                        /** @psalm-flow $this->$name -> return */
+                        public function __get(string $name): string {
+                            return "";
+                        }
+
+                        /** @psalm-flow $this->$name -> return */
+                        public function get(string $name): string {
+                            return "";
+                        }
+
+                        /** @psalm-flow ($value) -> $this->$name */
+                        public function set(string $name, string $value): void {}
+                    }
+
+                    /** @property string $p */
+                    final class A extends Record {}
+
+                    /** @property string $p */
+                    final class B extends Record {}
+
+                    function store(A $a): void {
+                        $a->p = (string) $_GET["x"];
+                    }
+
+                    function touchField(Record $object, string $name): void {
+                        $object->set($name, $object->get($name) . "!");
+                    }
+
+                    function show(A $object): void {
+                        echo $object->p;
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'propertyCopiedUnderAKnownNameThroughAParentClassTaintsThatPropertyOfAnotherClass' => [
+                'code' => '<?php
+                    class Record {
+                        /** @psalm-flow ($value) -> $this->$name */
+                        public function __set(string $name, string $value): void {}
+
+                        /** @psalm-flow $this->$name -> return */
+                        public function __get(string $name): string {
+                            return "";
+                        }
+
+                        /** @psalm-flow $this->$name -> return */
+                        public function get(string $name): string {
+                            return "";
+                        }
+
+                        /** @psalm-flow ($value) -> $this->$name */
+                        public function set(string $name, string $value): void {}
+                    }
+
+                    /** @property string $p */
+                    final class A extends Record {}
+
+                    /** @property string $p */
+                    final class B extends Record {}
+
+                    function store(A $a): void {
+                        $a->p = (string) $_GET["x"];
+                    }
+
+                    function touchField(Record $object, string $name): void {
+                        $object->set($name, $object->get($name) . "!");
+                    }
+
+                    function copyField(Record $a, Record $b): void {
+                        $b->set("p", $a->get("p"));
+                    }
+
+                    function show(B $object): void {
+                        echo $object->p;
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'propertyCopiedUnderTheSameNameThroughAParentClassToAnotherVariableTaintsIt' => [
+                'code' => '<?php
+                    class Record {
+                        /** @psalm-flow ($value) -> $this->$name */
+                        public function __set(string $name, string $value): void {}
+
+                        /** @psalm-flow $this->$name -> return */
+                        public function __get(string $name): string {
+                            return "";
+                        }
+
+                        /** @psalm-flow $this->$name -> return */
+                        public function get(string $name): string {
+                            return "";
+                        }
+
+                        /** @psalm-flow ($value) -> $this->$name */
+                        public function set(string $name, string $value): void {}
+                    }
+
+                    /** @property string $p */
+                    final class A extends Record {}
+
+                    /** @property string $p */
+                    final class B extends Record {}
+
+                    function store(A $a): void {
+                        $a->p = (string) $_GET["x"];
+                    }
+
+                    function touchField(Record $object, string $name): void {
+                        $object->set($name, $object->get($name) . "!");
+                    }
+
+                    function copyField(Record $a, Record $b, string $name): void {
+                        $b->set($name, $a->get($name));
+                    }
+
+                    function show(B $object): void {
+                        echo $object->p;
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'propertyReadAndSetUnderTheSameNameThroughAParentClassOfAnotherObjectInTheVariableTaintsIt' => [
+                'code' => '<?php
+                    class Record {
+                        /** @psalm-flow ($value) -> $this->$name */
+                        public function __set(string $name, string $value): void {}
+
+                        /** @psalm-flow $this->$name -> return */
+                        public function __get(string $name): string {
+                            return "";
+                        }
+
+                        /** @psalm-flow $this->$name -> return */
+                        public function get(string $name): string {
+                            return "";
+                        }
+
+                        /** @psalm-flow ($value) -> $this->$name */
+                        public function set(string $name, string $value): void {}
+                    }
+
+                    /** @property string $p */
+                    final class A extends Record {}
+
+                    /** @property string $p */
+                    final class B extends Record {}
+
+                    function store(A $a): void {
+                        $a->p = (string) $_GET["x"];
+                    }
+
+                    function touchField(Record $object, string $name): void {
+                        $object->set($name, $object->get($name) . "!");
+                    }
+
+                    function moveField(Record $object, Record $other, string $name): void {
+                        $value = $object->get($name);
+                        $object = $other;
+                        $object->set($name, $value . "!");
+                    }
+
+                    function show(B $object): void {
+                        echo $object->p;
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'propertyReadAndSetUnderTheSameNameThroughAParentClassInALoopTaintsTheNextObject' => [
+                'code' => '<?php
+                    class Record {
+                        /** @psalm-flow ($value) -> $this->$name */
+                        public function __set(string $name, string $value): void {}
+
+                        /** @psalm-flow $this->$name -> return */
+                        public function __get(string $name): string {
+                            return "";
+                        }
+
+                        /** @psalm-flow $this->$name -> return */
+                        public function get(string $name): string {
+                            return "";
+                        }
+
+                        /** @psalm-flow ($value) -> $this->$name */
+                        public function set(string $name, string $value): void {}
+                    }
+
+                    /** @property string $p */
+                    final class A extends Record {}
+
+                    /** @property string $p */
+                    final class B extends Record {}
+
+                    function store(A $a): void {
+                        $a->p = (string) $_GET["x"];
+                    }
+
+                    function touchField(Record $object, string $name): void {
+                        $object->set($name, $object->get($name) . "!");
+                    }
+
+                    /** @param list<Record> $objects */
+                    function shiftField(array $objects, string $name): void {
+                        $value = "";
+                        foreach ($objects as $object) {
+                            $object->set($name, $value);
+                            $value = $object->get($name);
+                        }
+                    }
+
+                    function show(B $object): void {
+                        echo $object->p;
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'propertyReadAndSetUnderTheSameNameThroughAParentClassFromItsOwnNodeTaintsAnyProperty' => [
+                'code' => '<?php
+                    class Record {
+                        /** @psalm-flow ($value) -> $this->$name */
+                        public function __set(string $name, string $value): void {}
+
+                        /** @psalm-flow $this->$name -> return */
+                        public function __get(string $name): string {
+                            return "";
+                        }
+
+                        /** @psalm-flow $this->$name -> return */
+                        public function get(string $name): string {
+                            return "";
+                        }
+
+                        /** @psalm-flow ($value) -> $this->$name */
+                        public function set(string $name, string $value): void {}
+                    }
+
+                    final class A extends Record {}
+
+                    /** @property string $p */
+                    final class B extends Record {}
+
+                    function store(A $a): void {
+                        $a->set("p", (string) $_GET["x"]);
+                    }
+
+                    function touchField(Record $object, string $name): void {
+                        $object->set($name, $object->get($name) . "!");
+                    }
+
+                    function show(B $object): void {
+                        echo $object->p;
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'propertyReadAndSetUnderTheSameNameThroughAnInterfaceOfAClassTaintsAnotherInterface' => [
+                'code' => '<?php
+                    /** @property string $body */
+                    interface Store {
+                        /** @psalm-flow $this->$name -> return */
+                        public function get(string $name): string;
+
+                        /** @psalm-flow ($value) -> $this->$name */
+                        public function set(string $name, string $value): void;
+                    }
+
+                    /** @property string $body */
+                    interface Named {
+                        /** @psalm-flow $this->$name -> return */
+                        public function get(string $name): string;
+
+                        /** @psalm-flow ($value) -> $this->$name */
+                        public function set(string $name, string $value): void;
+                    }
+
+                    /** @property string $body */
+                    abstract class Document implements Store {}
+
+                    /** @property string $body */
+                    abstract class Label implements Named {}
+
+                    function save(Document $document): void {
+                        $document->set("body", (string) $_GET["x"]);
+                    }
+
+                    function append(Store|Named $object, string $name): void {
+                        $object->set($name, $object->get($name) . "!");
+                    }
+
+                    function show(Named $named): void {
+                        echo $named->get("body");
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'propertyReadAndSetUnderTheSameNameThroughATraitTaintsASubclass' => [
+                'code' => '<?php
+                    class Record {
+                        /** @psalm-flow ($value) -> $this->$name */
+                        public function __set(string $name, string $value): void {}
+
+                        /** @psalm-flow $this->$name -> return */
+                        public function __get(string $name): string {
+                            return "";
+                        }
+
+                        /** @psalm-flow $this->$name -> return */
+                        public function get(string $name): string {
+                            return "";
+                        }
+
+                        /** @psalm-flow ($value) -> $this->$name */
+                        public function set(string $name, string $value): void {}
+                    }
+
+                    /** @property string $p */
+                    class A extends Record {
+                        use Touches;
+                    }
+
+                    /** @property string $p */
+                    final class B extends A {}
+
+                    trait Touches {
+                        public static function toucher(): Closure {
+                            return static function (self $object, string $name): void {
+                                $object->set($name, $object->get($name) . "!");
+                            };
+                        }
+                    }
+
+                    function store(A $a): void {
+                        $a->p = (string) $_GET["x"];
+                    }
+
+                    function show(B $object): void {
+                        echo $object->p;
                     }',
                 'error_message' => 'TaintedHtml',
             ],

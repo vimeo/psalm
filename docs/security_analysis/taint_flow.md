@@ -428,7 +428,9 @@ function show(Model $model): void {
   that function and functions outside the project (builtins, stubs, vendor code). When both calls are made on the
   same variable, also unchanged in between, the value only goes back to a property of a class the object it was
   read from can be: `$object->set($name, $object->get($name))` with `$object` of type `Article|Comment` doesn't move
-  a property of an `Article` into one of a `Comment`.
+  a property of an `Article` into one of a `Comment`. With `$object` of a parent class `Record` of both, the value
+  also goes into the property of `Record`, where a read through `Record` finds it, but it stays a property of an
+  `Article` when such a call reads it back from there.
 + For a class with [`@psalm-taint-specialize`](index.md#specializing-classes), properties
   are tracked per object.
 

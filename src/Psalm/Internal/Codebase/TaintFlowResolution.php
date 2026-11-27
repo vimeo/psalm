@@ -90,6 +90,12 @@ final class TaintFlowResolution
     private const OVERWRITE_PREFIX = 'arrayvalue-overwrite-';
 
     /**
+     * The start of the marker of a slot of the class of the object a flow is a property of (see getObjectClassSlot()),
+     * followed by the class
+     */
+    private const OBJECT_CLASS_MARKER_PREFIX = 'object-class ';
+
+    /**
      * The class (see getClass()) of an open assignment of an array key: a fetch of an array value ignores
      * it, a fetch of an array key doesn't.
      */
@@ -161,6 +167,27 @@ final class TaintFlowResolution
     private const NO_SLOT = -1;
     private const INHERITED_SLOT = -2;
     private const BLOCKED_SLOT = -3;
+
+    /**
+     * The stages of a flow with a slot of the class of the object it is a property of (see getObjectClassSlot()):
+     * set by a write under a name into the node of a property (CLASS_PUT), or into that of the properties of other
+     * names (CLASS_ELEMENT_PUT), in that node (CLASS_STORED, CLASS_ELEMENT_STORED), and in the node a read under a
+     * name gets it from (CLASS_FETCHED).
+     */
+    private const CLASS_PUT = 0;
+    private const CLASS_STORED = 1;
+    private const CLASS_FETCHED = 2;
+    private const CLASS_ELEMENT_PUT = 3;
+    private const CLASS_ELEMENT_STORED = 4;
+
+    /**
+     * Stage => the type of the edge that takes a flow to the next stage (see getObjectClassSlot())
+     */
+    private const CLASS_STAGE_PATH_TYPES = [
+        self::CLASS_PUT => 'property-assignment',
+        self::CLASS_STORED => 'property-fetch',
+        self::CLASS_ELEMENT_PUT => '=',
+    ];
 
     /**
      * What getNextOpenAssignments() returns for an edge shouldIgnoreFetch() ignores, and for one whose
@@ -435,6 +462,21 @@ final class TaintFlowResolution
      * @var array<string, array{string, array<string, array<string, Path>>, array<string, Path>}|false>
      */
     private array $name_put_edges = [];
+
+    /**
+     * Slot id => [the class, the stage] of a slot of the class of the object a flow is a property of (see
+     * getObjectClassSlot())
+     *
+     * @var array<int, array{string, int}>
+     */
+    private array $object_class_slots = [];
+
+    /**
+     * Two lowercase class names => whether the objects of the first are all of the second (see isNarrowerClass())
+     *
+     * @var array<string, bool>
+     */
+    private array $class_narrowings = [];
 
     /**
      * Two lowercase class names => whether an object may be of both (see mayBeOfBoth())
@@ -1591,6 +1633,14 @@ final class TaintFlowResolution
             return $this->open_assignment_transitions[$open_assignments][$path_type];
         }
 
+        $slot = $this->open_assignment_slots[$open_assignments];
+        if ($slot >= 0 && isset($this->object_class_slots[$slot])) {
+            $next = $this->getNextObjectClassOpenAssignments($open_assignments, $path_type);
+            $this->open_assignment_transitions[$open_assignments][$path_type] = $next;
+
+            return $next;
+        }
+
         [$observed_family, $observed_key] = $this->path_type_effects[$path_type];
         [$made, $closed] = $this->open_assignments[$open_assignments];
         $array_assignments = $made[self::ARRAY_FAMILY] ?? [];
@@ -1804,7 +1854,9 @@ final class TaintFlowResolution
             ) {
                 // the value of the element, or what was made of it, back under its key
                 $made[$added_family][] = $this->slots[$slot][1];
-                $slot = self::NO_SLOT;
+                $slot = $this->slots[$slot][0] === $foreach_marker
+                    ? self::NO_SLOT
+                    : $this->getObjectClassSlot($slot, $foreach_marker, self::CLASS_ELEMENT_PUT);
             } else {
                 $made[$added_family][] = $path_type;
             }
@@ -1875,7 +1927,164 @@ final class TaintFlowResolution
             return self::IGNORED;
         }
 
-        return $this->internOpenAssignments($made, $closed, self::NO_SLOT);
+        return $this->internOpenAssignments($made, $closed, $this->getObjectClassSlot($slot, $marker, self::CLASS_PUT));
+    }
+
+    /**
+     * The slot, at stage $stage (see CLASS_PUT), of the class of the object a flow with element slot $slot read under
+     * a name is a property of, as a write under the name marker $marker that it matches (see matchNameSlot()) sets it
+     * back; NO_SLOT if the node it sets tells as much. When the read and the write are on the same variable, the flow
+     * is a property of an object of the class of the node it was read from (see matchNameSlot()), and the write may
+     * set it into the node of a parent class or of an interface of that class, of whose subclasses a read under a
+     * name there would take it for a property of any. The slot keeps the class until that read (see
+     * getNextObjectClassOpenAssignments()).
+     *
+     * @psalm-external-mutation-free
+     */
+    private function getObjectClassSlot(int $slot, string $marker, int $stage): int
+    {
+        $read_marker = $this->slots[$slot][0];
+        [, $read_object, $read_class] = $this->name_markers[$read_marker] ??= self::parseNameMarker($read_marker);
+        [, $object, $class] = $this->name_markers[$marker] ??= self::parseNameMarker($marker);
+
+        if ($object === '-' || $object !== $read_object) {
+            return self::NO_SLOT;
+        }
+
+        $read_class = str_starts_with($read_class, '*')
+            ? substr($read_class, 1)
+            : explode(':', $read_class, 2)[0];
+
+        if (!$this->isNarrowerClass($read_class, $class)) {
+            return self::NO_SLOT;
+        }
+
+        $id = $this->getSlot(self::OBJECT_CLASS_MARKER_PREFIX . $read_class, $stage);
+        $this->object_class_slots[$id] ??= [$read_class, $stage];
+
+        return $id;
+    }
+
+    /**
+     * The open assignments of a flow with open assignments $open_assignments, with a slot of the class of the object
+     * it is a property of (see getObjectClassSlot()), after it takes an edge of type $path_type, or IGNORED. The edge
+     * goes as without the slot, which it keeps on the way from the write into the node of the property to the read
+     * under a name of it: that read is of an object of the class of the slot, if it is narrower than the class the
+     * read binds (see narrowNameSlot()). Any other edge leaves the property, and the slot.
+     *
+     * @psalm-external-mutation-free
+     */
+    private function getNextObjectClassOpenAssignments(int $open_assignments, int $path_type): int
+    {
+        [$class, $stage] = $this->object_class_slots[$this->open_assignment_slots[$open_assignments]];
+        [$made, $closed] = $this->open_assignments[$open_assignments];
+
+        $next = $this->getNextOpenAssignments($this->internOpenAssignments($made, $closed), $path_type);
+
+        if ($next < 0) {
+            return $next;
+        }
+
+        $next_slot = $this->open_assignment_slots[$next];
+
+        if ($stage === self::CLASS_FETCHED || $stage === self::CLASS_ELEMENT_STORED) {
+            return $next_slot >= 0 ? $this->narrowNameSlot($next, $next_slot, $class) : $next;
+        }
+
+        if ($next_slot !== self::NO_SLOT
+            || (self::CLASS_STAGE_PATH_TYPES[$stage] ?? null) !== $this->path_types[$path_type]
+        ) {
+            return $next;
+        }
+
+        [$next_made, $next_closed] = $this->open_assignments[$next];
+        $id = $this->getSlot(self::OBJECT_CLASS_MARKER_PREFIX . $class, $stage + 1);
+        $this->object_class_slots[$id] ??= [$class, $stage + 1];
+
+        return $this->internOpenAssignments($next_made, $next_closed, $id);
+    }
+
+    /**
+     * The open assignments $open_assignments, with element slot $slot, with the class the slot was read from
+     * replaced by $class if it is that of a name marker of a variable holding the object (see
+     * TaintFlowGraph::NAME_MARKER_PREFIX) and $class is narrower
+     *
+     * @psalm-external-mutation-free
+     */
+    private function narrowNameSlot(int $open_assignments, int $slot, string $class): int
+    {
+        $marker = $this->slots[$slot][0];
+
+        if (!str_starts_with($marker, TaintFlowGraph::NAME_MARKER_PREFIX)) {
+            return $open_assignments;
+        }
+
+        $prefix_length = strlen(TaintFlowGraph::NAME_MARKER_PREFIX);
+        $bounds = (int) strpos($marker, '|');
+        $parts = explode(' ', substr($marker, $prefix_length, $bounds - $prefix_length), 3);
+
+        if (count($parts) !== 3 || $parts[1] === '-') {
+            return $open_assignments;
+        }
+
+        if (str_starts_with($parts[2], '*')) {
+            $read_class = substr($parts[2], 1);
+            $narrowed = '*' . $class;
+        } else {
+            [$read_class, $read_through] = explode(':', $parts[2], 2) + [1 => ''];
+            $narrowed = $class . ':' . $read_through;
+        }
+
+        if (!$this->isNarrowerClass($class, $read_class)) {
+            return $open_assignments;
+        }
+
+        [$made, $closed] = $this->open_assignments[$open_assignments];
+
+        return $this->internOpenAssignments(
+            $made,
+            $closed,
+            $this->getSlot(
+                TaintFlowGraph::NAME_MARKER_PREFIX . $parts[0] . ' ' . $parts[1] . ' ' . $narrowed
+                    . substr($marker, $bounds),
+                $this->slots[$slot][1],
+            ),
+        );
+    }
+
+    /**
+     * Whether knowing an object is of class $class tells more than knowing it is of class $other_class, which it also
+     * is: $class is a class (an interface or a trait tells nothing, see mayBeOfBoth()), and not $other_class nor one
+     * of its parent classes.
+     *
+     * @psalm-external-mutation-free
+     */
+    private function isNarrowerClass(string $class, string $other_class): bool
+    {
+        $class = strtolower($class);
+        $other_class = strtolower($other_class);
+
+        if ($class === $other_class) {
+            return false;
+        }
+
+        if (isset($this->class_narrowings[$class . ' ' . $other_class])) {
+            return $this->class_narrowings[$class . ' ' . $other_class];
+        }
+
+        $provider = $this->codebase->classlike_storage_provider;
+
+        if (!$provider->has($class)) {
+            $narrower = false;
+        } else {
+            $storage = $provider->get($class);
+
+            $narrower = !$storage->is_interface
+                && !$storage->is_trait
+                && (!$provider->has($other_class) || !isset($provider->get($other_class)->parent_classes[$class]));
+        }
+
+        return $this->class_narrowings[$class . ' ' . $other_class] = $narrower;
     }
 
     /**
@@ -2063,7 +2272,9 @@ final class TaintFlowResolution
     {
         $slot = $this->open_assignment_slots[$this->state_open_assignments[$state]];
 
-        return $slot >= 0 && str_starts_with($this->slots[$slot][0], TaintFlowGraph::NAME_MARKER_PREFIX);
+        return $slot >= 0
+            && (str_starts_with($this->slots[$slot][0], TaintFlowGraph::NAME_MARKER_PREFIX)
+                || isset($this->object_class_slots[$slot]));
     }
 
     /**
@@ -2081,6 +2292,11 @@ final class TaintFlowResolution
      */
     private function scopeSlot(int $open_assignments, int $slot, string $node_id): int
     {
+        // kept from the write into the property to the read of it (see getNextObjectClassOpenAssignments())
+        if ($slot >= 0 && isset($this->object_class_slots[$slot])) {
+            return $open_assignments;
+        }
+
         $row = $this->getRow($node_id);
 
         if ($row === null || !$this->table->hasLocation($row)) {
