@@ -176,20 +176,7 @@ final class AssignmentMapVisitor extends PhpParser\NodeVisitorAbstract
             }
 
             // what the sides change themselves (`$x = $counts['one']++`, `$a[$i++] = 1`) is in the map too
-            $inner_visitor = new self($this->this_class_name, $this);
-            $inner_traverser = new PhpParser\NodeTraverser;
-            $inner_traverser->addVisitor($inner_visitor);
-            $inner_traverser->traverse([$node->expr, $node->var]);
-
-            foreach ($inner_visitor->assignment_map as $inner_var_id => $inner_depends_on) {
-                $this->assignment_map[$inner_var_id] = ($this->assignment_map[$inner_var_id] ?? []) + $inner_depends_on;
-            }
-
-            $this->defined_var_ids += $inner_visitor->defined_var_ids;
-            $this->feeding_var_ids += $inner_visitor->feeding_var_ids;
-            $this->written_var_ids += $inner_visitor->written_var_ids;
-            $this->loop_written_var_ids += $inner_visitor->loop_written_var_ids;
-            $this->by_ref_arg_var_ids += $inner_visitor->by_ref_arg_var_ids;
+            $this->visitSides([$node->expr, $node->var]);
 
             // after the writes of the sides: `($p = f())->b` doesn't read the `$p->b` written before
             $this->addFeedingVarIds($read_var_ids);
@@ -213,6 +200,11 @@ final class AssignmentMapVisitor extends PhpParser\NodeVisitorAbstract
             || $node instanceof PhpParser\Node\Expr\AssignOp
         ) {
             $var_id = ExpressionIdentifier::getRootVarId($node->var, $this->this_class_name);
+
+            // `$s .= ($t = $u)`, `$a[$i++]++`
+            $this->visitSides(
+                $node instanceof PhpParser\Node\Expr\AssignOp ? [$node->expr, $node->var] : [$node->var],
+            );
 
             if ($node instanceof PhpParser\Node\Expr\AssignOp) {
                 // `$s .= $t`
@@ -314,6 +306,29 @@ final class AssignmentMapVisitor extends PhpParser\NodeVisitorAbstract
         }
 
         return null;
+    }
+
+    /**
+     * Adds what the sides of a write change themselves, which aren't traversed as children of the write
+     *
+     * @param list<PhpParser\Node\Expr> $sides
+     */
+    private function visitSides(array $sides): void
+    {
+        $inner_visitor = new self($this->this_class_name, $this);
+        $inner_traverser = new PhpParser\NodeTraverser;
+        $inner_traverser->addVisitor($inner_visitor);
+        $inner_traverser->traverse($sides);
+
+        foreach ($inner_visitor->assignment_map as $inner_var_id => $inner_depends_on) {
+            $this->assignment_map[$inner_var_id] = ($this->assignment_map[$inner_var_id] ?? []) + $inner_depends_on;
+        }
+
+        $this->defined_var_ids += $inner_visitor->defined_var_ids;
+        $this->feeding_var_ids += $inner_visitor->feeding_var_ids;
+        $this->written_var_ids += $inner_visitor->written_var_ids;
+        $this->loop_written_var_ids += $inner_visitor->loop_written_var_ids;
+        $this->by_ref_arg_var_ids += $inner_visitor->by_ref_arg_var_ids;
     }
 
     /**

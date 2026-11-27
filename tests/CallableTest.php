@@ -155,6 +155,226 @@ final class CallableTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'callableObjectSignatureConstantIsResolved' => [
+                'code' => '<?php
+                    final class A {
+                        const FOO = 1;
+
+                        /** @return object&callable(): self::FOO */
+                        public function f(): object {
+                            return function (): int { return 1; };
+                        }
+                    }
+
+                    $y = (new A)->f()();
+                ',
+                'assertions' => [
+                    '$y===' => '1',
+                ],
+            ],
+            'callableObjectSignatureWithStaticConstant' => [
+                'code' => '<?php
+                    class A {
+                        const FOO = 1;
+
+                        /** @param object&callable(): static::FOO $o */
+                        public function f(object $o): void {}
+
+                        /** @param class-string<object&callable(): static::FOO> $c */
+                        public function g(string $c): void {}
+                    }
+                ',
+            ],
+            'isCallableOnAShapeWhoseOtherElementsAreOptionalKeepsTheCallableArray' => [
+                'code' => '<?php
+                    /**
+                     * @param list{0: string, 1: string, 2?: string} $sealed
+                     * @param array{a?: string, ...<int, string>} $unsealed
+                     */
+                    function f(array $sealed, array $unsealed): void {
+                        if (is_callable($sealed)) {
+                            /** @psalm-check-type-exact $sealed = callable-array{0: class-string, 1: non-empty-string} */
+                        }
+
+                        if (is_callable($unsealed)) {
+                            /** @psalm-check-type-exact $unsealed = callable-array{0: class-string, 1: non-empty-string} */
+                        }
+                    }',
+            ],
+            'isCallableOnAListOfStringsKeepsTheCallableArray' => [
+                'code' => '<?php
+                    /**
+                     * @param list<string> $list
+                     * @param non-empty-list<scalar> $nonEmptyList
+                     * @param list<object|string> $objectOrStringList
+                     */
+                    function f(array $list, array $nonEmptyList, array $objectOrStringList): void {
+                        if (is_callable($list)) {
+                            /** @psalm-check-type-exact $list = callable-array{0: class-string, 1: non-empty-string} */
+                        }
+
+                        if (is_callable($nonEmptyList)) {
+                            /** @psalm-check-type-exact $nonEmptyList = callable-array{0: class-string, 1: non-empty-string} */
+                        }
+
+                        if (is_callable($objectOrStringList)) {
+                            /** @psalm-check-type-exact $objectOrStringList = callable-array{0: class-string|object, 1: non-empty-string} */
+                        }
+                    }',
+            ],
+            'literalArraysOfAnExistingMethodAreCallableArrays' => [
+                'code' => '<?php
+                    final class Foo {
+                        public static function bar(): void {}
+                        public function inst(): void {}
+                    }
+
+                    final class Magic {
+                        public function __call(string $name, array $args): void {}
+                        public static function __callStatic(string $name, array $args): void {}
+                    }
+
+                    /** @return callable-array{string, string} */
+                    function existingStatic(): array {
+                        return ["Foo", "bar"];
+                    }
+
+                    /** @return callable-array{Foo, string} */
+                    function existingInstance(): array {
+                        return [new Foo(), "inst"];
+                    }
+
+                    /** @return callable-array{string, string} */
+                    function magic(): array {
+                        return ["Magic", "anything"];
+                    }
+
+                    /** @return callable-array{object, string} */
+                    function magicObject(): array {
+                        return [new Magic(), "anything"];
+                    }
+
+                    class Base {
+                        public function __call(string $name, array $args): void {}
+                    }
+
+                    final class Kid extends Base {}
+
+                    /** @return callable-array{object, string} */
+                    function inheritedMagicObject(): array {
+                        return [new Kid(), "anything"];
+                    }
+
+                    /** @param callable-array{object, string} $c */
+                    function takesPair(array $c): void {}
+
+                    takesPair([new Magic(), "anything"]);
+
+                    class Open {}
+
+                    // a subclass of a class that is not final can declare the method
+                    /** @return callable-array{object, string} */
+                    function subclassMayDeclareIt(Open $o): array {
+                        return [$o, "notOnOpen"];
+                    }
+
+                    // a pair that is not a literal is not proven wrong, so it is accepted
+                    /**
+                     * @param array{string, string} $pair
+                     * @return callable-array{string, string}
+                     */
+                    function dynamic(array $pair): array {
+                        return $pair;
+                    }
+
+                    /**
+                     * @method static void pseudoStatic()
+                     * @method void pseudoInst()
+                     */
+                    final class WithMethodTag {}
+
+                    /** @return callable-array{string, string} */
+                    function pseudoStaticMethod(): array {
+                        return ["WithMethodTag", "pseudoStatic"];
+                    }
+
+                    /** @return callable-array{object, string} */
+                    function pseudoInstanceMethod(): array {
+                        return [new WithMethodTag(), "pseudoInst"];
+                    }
+
+                    final class Target {
+                        public function fromMixin(): void {}
+                    }
+
+                    /** @mixin Target */
+                    final class HasMixin {}
+
+                    /** @return callable-array{object, string} */
+                    function mixinMethod(): array {
+                        return [new HasMixin(), "fromMixin"];
+                    }
+
+                    /** @mixin Target */
+                    class ParentWithMixin {}
+
+                    final class KidOfMixin extends ParentWithMixin {}
+
+                    /** @return callable-array{object, string} */
+                    function inheritedMixinMethod(): array {
+                        return [new KidOfMixin(), "fromMixin"];
+                    }
+
+                    /** @mixin Target */
+                    trait TraitWithMixin {}
+
+                    final class UsesTraitWithMixin {
+                        use TraitWithMixin;
+                    }
+
+                    /** @return callable-array{object, string} */
+                    function mixinMethodOfATrait(): array {
+                        return [new UsesTraitWithMixin(), "fromMixin"];
+                    }
+
+                    enum MagicEnum {
+                        case A;
+                        public static function __callStatic(string $n, array $a): mixed { return 1; }
+                    }
+
+                    /** @return callable-array{string, string} */
+                    function magicOfAnEnum(): array {
+                        return ["MagicEnum", "anything"];
+                    }
+
+                    interface MagicInterface {
+                        public static function __callStatic(string $n, array $a): mixed;
+                    }
+
+                    /** @return callable-array{string, string} */
+                    function magicOfAnInterface(): array {
+                        return ["MagicInterface", "anything"];
+                    }
+
+                    /** @return callable-array{string, string} */
+                    function magicOfALeadingBackslash(): array {
+                        return ["\Magic", "anything"];
+                    }
+
+                    class ParentOfPm {
+                        public function pm(): void {}
+                    }
+
+                    final class KidOfPm extends ParentOfPm {}
+
+                    /** @return callable-array{string, string} */
+                    function methodNameWithAScope(): array {
+                        return ["KidOfPm", "parent::pm"];
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'callableOfATemplatedReturnMayBeAClosure' => [
                 'code' => '<?php
                     /**
@@ -4532,6 +4752,24 @@ final class CallableTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'callableObjectIsAcceptedForAnObjectAndForTheSameSignature' => [
+                'code' => '<?php
+                    /** @param object&callable(int): string $o */
+                    function takesIntToString(object $o): void {}
+
+                    /** @param callable-object $o */
+                    function takesAny(object $o): void {}
+
+                    /** @param object&callable(int): string $c */
+                    function f(object $c): void {
+                        takesIntToString($c);
+                        takesAny($c);
+                        echo get_class($c);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
         ];
     }
 
@@ -4542,6 +4780,99 @@ final class CallableTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'callableObjectWithUndefinedParamClass' => [
+                'code' => '<?php
+                    /** @param object&callable(Missing): void $o */
+                    function f(object $o): void {}
+                ',
+                'error_message' => 'UndefinedDocblockClass',
+            ],
+            'callableObjectWithUndefinedReturnClass' => [
+                'code' => '<?php
+                    /** @param object&callable(): Missing $o */
+                    function f(object $o): void {}
+                ',
+                'error_message' => 'UndefinedDocblockClass',
+            ],
+            'classStringOfCallableObjectWithUndefinedParamClass' => [
+                'code' => '<?php
+                    /** @param class-string<object&callable(Missing): void> $c */
+                    function f(string $c): void {}
+                ',
+                'error_message' => 'UndefinedDocblockClass',
+            ],
+            'isCallableOnAListOfIntsIsNeverTrue' => [
+                'code' => '<?php
+                    /** @param list<int> $list */
+                    function f(array $list): void {
+                        if (is_callable($list)) {
+                            echo "callable";
+                        }
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29',
+            ],
+            'isCallableOnAListOfThreeElementsIsNeverTrue' => [
+                'code' => '<?php
+                    /** @param list{string, string, string} $a */
+                    function f(array $a): void {
+                        if (is_callable($a)) {
+                            echo "callable";
+                        }
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29',
+            ],
+            'isCallableOnAListWhoseFirstElementIsAnIntIsNeverTrue' => [
+                'code' => '<?php
+                    /** @param list{int, ...<string>} $a */
+                    function f(array $a): void {
+                        if (is_callable($a)) {
+                            echo "callable";
+                        }
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29',
+            ],
+            'isCallableOnAShapeWithAnotherRequiredKeyIsNeverTrue' => [
+                'code' => '<?php
+                    /** @param array{0: string, a: string, ...<int, string>} $a */
+                    function f(array $a): void {
+                        if (is_callable($a)) {
+                            echo "callable";
+                        }
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29',
+            ],
+            'literalArrayOfAnUnknownClassIsNotACallableArray' => [
+                'code' => '<?php
+                    /** @return callable-array{string, string} */
+                    function ret(): array {
+                        return ["a", "hello"];
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
+            'literalArrayOfAMissingMethodIsNotACallableArray' => [
+                'code' => '<?php
+                    final class Foo {
+                        public static function bar(): void {}
+                    }
+
+                    /** @return callable-array{string, string} */
+                    function ret(): array {
+                        return ["Foo", "nope"];
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
+            'literalArrayOfAnObjectOfAFinalClassWithoutTheMethodIsNotACallableArray' => [
+                'code' => '<?php
+                    final class Foo {
+                        public function bar(): void {}
+                    }
+
+                    /** @return callable-array{object, string} */
+                    function ret(): array {
+                        return [new Foo(), "nope"];
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
             'callableOfStaticOfTheClassUsingATraitIsNotSharedWithOtherUsers' => [
                 'code' => '<?php
                     trait Filters {
@@ -5044,6 +5375,8 @@ final class CallableTest extends TestCase
                         protected static function runLoop(): void {}
                     }',
                 'error_message' => 'expects a public static callable',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'undefinedCallableMethodArray' => [
                 'code' => '<?php
@@ -6033,6 +6366,33 @@ final class CallableTest extends TestCase
                     c("hii");',
                 'error_message' => 'InvalidArgument',
             ],
+            'nonFalsyStringIsNotCallableString' => [
+                'code' => '<?php
+                    /**
+                     * @param callable-string $c
+                     */
+                    function takesCallableString(string $c): void {}
+
+                    /**
+                     * @param non-falsy-string $s
+                     */
+                    function f(string $s): void {
+                        takesCallableString($s);
+                    }',
+                'error_message' => 'ArgumentTypeCoercion',
+            ],
+            'getTypeIsNotCallableString' => [
+                'code' => '<?php
+                    /**
+                     * @param callable-string $c
+                     */
+                    function takesCallableString(string $c): void {}
+
+                    function f(int $x): void {
+                        takesCallableString(gettype($x));
+                    }',
+                'error_message' => 'ArgumentTypeCoercion',
+            ],
             'mismatchParamTypeFromDocblock' => [
                 'code' => '<?php
                     /**
@@ -6345,6 +6705,8 @@ final class CallableTest extends TestCase
                         protected function runLoop(): void {}
                     }',
                 'error_message' => 'expects a public callable',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'emptyStringIsNotCallable' => [
                 'code' => '<?php
@@ -6451,6 +6813,41 @@ final class CallableTest extends TestCase
                 'error_message' => 'InvalidArgument',
                 'error_levels' => [],
                 'php_version' => '8.1',
+            ],
+            'callableObjectIsNotAnObjectShape' => [
+                'code' => '<?php
+                    /** @param object{foo: int} $o */
+                    function takesShape(object $o): void {
+                        echo $o->foo;
+                    }
+
+                    /** @param callable-object $c */
+                    function f(object $c): void {
+                        takesShape($c);
+                    }',
+                'error_message' => 'ArgumentTypeCoercion',
+            ],
+            'callableObjectWithAnotherSignatureIsNotAccepted' => [
+                'code' => '<?php
+                    /** @param object&callable(int): string $o */
+                    function takesIntToString(object $o): void {}
+
+                    /** @param object&callable(string): int $c */
+                    function f(object $c): void {
+                        takesIntToString($c);
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'callableObjectOfUnknownSignatureIsOnlyCoercedToOneWithASignature' => [
+                'code' => '<?php
+                    /** @param object&callable(int): string $o */
+                    function takesIntToString(object $o): void {}
+
+                    /** @param callable-object $c */
+                    function f(object $c): void {
+                        takesIntToString($c);
+                    }',
+                'error_message' => 'MixedArgumentTypeCoercion',
             ],
         ];
     }

@@ -7,6 +7,7 @@ namespace Psalm\Internal\Type;
 use InvalidArgumentException;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\Statements\Expression\ArrayAnalyzer;
+use Psalm\Internal\TypeVisitor\ClassStringMapBoundReplacer;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\Scalar;
@@ -120,6 +121,8 @@ final class TypeCombiner
      * @param  non-empty-list<Atomic>    $types
      * @param  int    $literal_limit any greater number of literal types than this
      *                               will be merged to a scalar
+     * @param  bool   $overwrite_array_values whether $overwrite_empty_array applies to the values of the arrays too,
+     *                               and not only to the empty arrays among them
      */
     public static function combine(
         array $types,
@@ -127,6 +130,7 @@ final class TypeCombiner
         bool $overwrite_empty_array = false,
         bool $allow_mixed_union = true,
         int $literal_limit = 500,
+        bool $overwrite_array_values = true,
     ): Union {
         if (count($types) === 1) {
             return new Union([$types[0]]);
@@ -145,6 +149,7 @@ final class TypeCombiner
                 $combination,
                 $codebase,
                 $overwrite_empty_array,
+                $overwrite_array_values,
                 $allow_mixed_union,
                 $literal_limit,
             );
@@ -180,7 +185,7 @@ final class TypeCombiner
             if (isset($combination->value_types['true'])) {
                 return Type::getTrue($from_docblock);
             }
-        } elseif (isset($combination->value_types['void'])) {
+        } elseif (isset($combination->value_types['void']) && !self::isVoidWithOnlyNever($combination)) {
             unset($combination->value_types['void']);
 
             // if we're merging with another type, we cannot represent it in PHP
@@ -420,6 +425,47 @@ final class TypeCombiner
     }
 
     /**
+     * `never` adds nothing to a union, so `void|never` stays `void` instead of becoming `null`
+     *
+     * @psalm-mutation-free
+     */
+    private static function isVoidWithOnlyNever(TypeCombination $combination): bool
+    {
+        return count($combination->value_types) === 2
+            && isset($combination->value_types['never'])
+            && $combination->named_object_types === []
+            && $combination->array_type_params === []
+            && $combination->builtin_type_params === []
+            && $combination->object_type_params === []
+            && $combination->objectlike_entries === []
+            && $combination->strings === []
+            && $combination->ints === []
+            && $combination->floats === []
+            && $combination->class_string_types === []
+            && $combination->extra_types === []
+            && $combination->class_string_map_names === [];
+    }
+
+    /**
+     * Without $overwrite_array_values, a value written into the array only overwrites an empty array it held
+     *
+     * @psalm-pure
+     */
+    private static function overwritesValues(
+        bool $overwrite_empty_array,
+        bool $overwrite_array_values,
+        ?Union $existing_type,
+    ): bool {
+        if (!$overwrite_empty_array || $overwrite_array_values) {
+            return $overwrite_empty_array;
+        }
+
+        $array = $existing_type?->getAtomicTypes()['array'] ?? null;
+
+        return $array instanceof TArray && $array->isEmptyArray();
+    }
+
+    /**
      * @psalm-external-mutation-free
      * @psalm-suppress ImpurePropertyAssignment We're not actually mutating any external instance
      */
@@ -540,6 +586,7 @@ final class TypeCombiner
         TypeCombination $combination,
         ?Codebase $codebase,
         bool $overwrite_empty_array,
+        bool $overwrite_array_values,
         bool $allow_mixed_union,
         int $literal_limit,
     ): ?Union {
@@ -721,7 +768,11 @@ final class TypeCombiner
                     $combination->array_type_params[$i] ?? null,
                     $type_param,
                     $codebase,
-                    $overwrite_empty_array,
+                    self::overwritesValues(
+                        $overwrite_empty_array,
+                        $overwrite_array_values,
+                        $combination->array_type_params[$i] ?? null,
+                    ),
                 );
             }
 
@@ -757,23 +808,45 @@ final class TypeCombiner
         }
 
         if ($type instanceof TClassStringMap) {
-            foreach ([$type->getStandinKeyParam(), $type->value_param] as $i => $type_param) {
+            // the map's template is only kept if the result is a class-string-map again
+            $type_params = [
+                ClassStringMapBoundReplacer::getKeyType($type),
+                ClassStringMapBoundReplacer::getValueType($type),
+            ];
+
+            foreach ($type_params as $i => $type_param) {
                 // See https://github.com/vimeo/psalm/pull/9439#issuecomment-1464563015
                 /** @psalm-suppress PropertyTypeCoercion */
                 $combination->array_type_params[$i] = Type::combineUnionTypes(
                     $combination->array_type_params[$i] ?? null,
                     $type_param,
                     $codebase,
-                    $overwrite_empty_array,
+                    self::overwritesValues(
+                        $overwrite_empty_array,
+                        $overwrite_array_values,
+                        $combination->array_type_params[$i] ?? null,
+                    ),
                 );
             }
 
             $combination->array_always_filled = false;
+            $combination->all_arrays_lists = false;
+            $combination->all_arrays_callable = false;
 
             if ($combination->all_arrays_class_string_maps !== false) {
                 $combination->all_arrays_class_string_maps = true;
                 $combination->class_string_map_names[$type->param_name] = true;
                 $combination->class_string_map_as_types[(string) $type->as_type] = $type->as_type;
+                $combination->class_string_map_value_param = Type::combineUnionTypes(
+                    $combination->class_string_map_value_param,
+                    $type->value_param,
+                    $codebase,
+                    self::overwritesValues(
+                        $overwrite_empty_array,
+                        $overwrite_array_values,
+                        $combination->class_string_map_value_param,
+                    ),
+                );
             }
 
             return null;
@@ -810,7 +883,11 @@ final class TypeCombiner
                     $combination->builtin_type_params[$type_key][$i] ?? null,
                     $type_param,
                     $codebase,
-                    $overwrite_empty_array,
+                    self::overwritesValues(
+                        $overwrite_empty_array,
+                        $overwrite_array_values,
+                        $combination->builtin_type_params[$type_key][$i] ?? null,
+                    ),
                 );
             }
 
@@ -824,7 +901,11 @@ final class TypeCombiner
                     $combination->object_type_params[$type_key][$i] ?? null,
                     $type_param,
                     $codebase,
-                    $overwrite_empty_array,
+                    self::overwritesValues(
+                        $overwrite_empty_array,
+                        $overwrite_array_values,
+                        $combination->object_type_params[$type_key][$i] ?? null,
+                    ),
                 );
             }
 
@@ -841,10 +922,9 @@ final class TypeCombiner
             $combination->objectlike_sealed = $combination->objectlike_sealed
                 && $type->fallback_params === null;
 
-            if (!$type->fallback_params
-                || ($combination->objectlike_key_type
-                    ? $combination->objectlike_key_type->getId() !== $type->fallback_params[0]->getId()
-                    : $existing_objectlike_entries)
+            if ($type->fallback_params
+                && $combination->objectlike_key_type
+                && $combination->objectlike_key_type->getId() !== $type->fallback_params[0]->getId()
             ) {
                 $combination->objectlike_same_fallback_key = false;
             }
@@ -861,14 +941,19 @@ final class TypeCombiner
                         ->setPossiblyUndefined($existing_objectlike_entries
                             || $candidate_property_type->possibly_undefined);
                     if ($existing_objectlike_entries && $combination->objectlike_same_fallback_key) {
-                        $combination->objectlike_missing_keys[$candidate_property_name] = true;
+                        $combination->objectlike_missing_keys[$candidate_property_name]
+                            = !$combination->objectlike_some_sealed;
                     }
                 } else {
                     $combination->objectlike_entries[$candidate_property_name] = Type::combineUnionTypes(
                         $value_type,
                         $candidate_property_type,
                         $codebase,
-                        $overwrite_empty_array,
+                        self::overwritesValues(
+                            $overwrite_empty_array,
+                            $overwrite_array_values,
+                            $value_type,
+                        ),
                     );
                     if ((!$value_type->possibly_undefined || !$candidate_property_type->possibly_undefined)
                         && $overwrite_empty_array
@@ -880,6 +965,8 @@ final class TypeCombiner
 
                 if (!$candidate_property_type->possibly_undefined) {
                     $has_defined_keys = true;
+                } elseif ($type->fallback_params === null) {
+                    $combination->objectlike_missing_keys[$candidate_property_name] = false;
                 }
 
                 if ($value_type === null && $combination->fallbackKeyContains($candidate_property_name)) {
@@ -887,7 +974,11 @@ final class TypeCombiner
                         $combination->objectlike_entries[$candidate_property_name],
                         $combination->objectlike_value_type,
                         $codebase,
-                        $overwrite_empty_array,
+                        self::overwritesValues(
+                            $overwrite_empty_array,
+                            $overwrite_array_values,
+                            $combination->objectlike_value_type,
+                        ),
                     );
                 }
 
@@ -918,7 +1009,11 @@ final class TypeCombiner
                     $type->fallback_params[1],
                     $combination->objectlike_value_type,
                     $codebase,
-                    $overwrite_empty_array,
+                    self::overwritesValues(
+                        $overwrite_empty_array,
+                        $overwrite_array_values,
+                        $combination->objectlike_value_type,
+                    ),
                 );
             }
 
@@ -944,20 +1039,29 @@ final class TypeCombiner
                 $combination->objectlike_entries[$k] = $combination->objectlike_entries[$k]
                     ->setPossiblyUndefined(true);
                 if ($combination->objectlike_same_fallback_key) {
-                    $combination->objectlike_missing_keys[$k] = true;
+                    $combination->objectlike_missing_keys[$k] = ($combination->objectlike_missing_keys[$k] ?? true)
+                        && $type->fallback_params !== null;
                 }
             }
 
-            if ($combination->objectlike_value_type) {
+            if ($type->fallback_params === null) {
+                $combination->objectlike_some_sealed = true;
+            }
+
+            if ($type->fallback_params) {
                 foreach ($missing_entries as $k => $_) {
                     if (!$combination->fallbackKeyContains($k)) {
                         continue;
                     }
                     $combination->objectlike_entries[$k] =  Type::combineUnionTypes(
                         $combination->objectlike_entries[$k],
-                        $type->fallback_params[1] ?? $combination->objectlike_value_type,
+                        $type->fallback_params[1],
                         $codebase,
-                        $overwrite_empty_array,
+                        self::overwritesValues(
+                            $overwrite_empty_array,
+                            $overwrite_array_values,
+                            $combination->objectlike_entries[$k],
+                        ),
                     );
                 }
             }
@@ -1209,8 +1313,12 @@ final class TypeCombiner
                 unset($combination->value_types['string']);
             } elseif (!empty($combination->objectlike_entries) && $combination->all_arrays_callable) {
                 $combination->objectlike_entries = [];
-            } elseif (isset($combination->value_types['callable-object'])) {
-                unset($combination->value_types['callable-object']);
+            } else {
+                foreach ($combination->value_types as $key => $value_type) {
+                    if ($value_type instanceof TCallableObject) {
+                        unset($combination->value_types[$key]);
+                    }
+                }
             }
         }
 
@@ -1935,9 +2043,10 @@ final class TypeCombiner
             ) {
                 // a key that every array lacking it may hold in its fallback, with the fallback's type, is the fallback
                 $fallback_value_type = $combination->objectlike_value_type;
-                foreach ($combination->objectlike_missing_keys as $k => $_) {
+                foreach ($combination->objectlike_missing_keys as $k => $only_unsealed_lack_it) {
                     $objectlike_entry = $combination->objectlike_entries[$k];
-                    if ($objectlike_entry->possibly_undefined
+                    if ($only_unsealed_lack_it
+                        && $objectlike_entry->possibly_undefined
                         && $combination->fallbackKeyAlwaysContains($k)
                         && ($objectlike_entry->hasMixed()
                             ? $fallback_value_type->hasMixed()
@@ -2151,13 +2260,14 @@ final class TypeCombiner
             }
         } else {
             if ($combination->all_arrays_class_string_maps
+                && $combination->class_string_map_value_param
                 && count($combination->class_string_map_as_types) === 1
                 && count($combination->class_string_map_names) === 1
             ) {
                 $array_type = new TClassStringMap(
                     array_keys($combination->class_string_map_names)[0],
                     array_values($combination->class_string_map_as_types)[0],
-                    $generic_type_params[1],
+                    $combination->class_string_map_value_param,
                 );
             } elseif ($combination->all_arrays_lists) {
                 $array_type = Type::getListAtomic($generic_type_params[1]);

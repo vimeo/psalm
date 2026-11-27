@@ -45,15 +45,20 @@ use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TClosedResource;
 use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TKeyedArray;
+use Psalm\Type\Atomic\TLiteralClassString;
+use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TResource;
+use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_all;
 use function array_filter;
 use function array_pop;
 use function array_shift;
@@ -63,6 +68,7 @@ use function assert;
 use function count;
 use function explode;
 use function in_array;
+use function is_int;
 use function is_numeric;
 use function str_contains;
 use function strtolower;
@@ -88,25 +94,7 @@ final class ArrayFunctionArgumentsAnalyzer
         $out_type = null;
 
         foreach ($callback_type->getAtomicTypes() as $callback_atomic) {
-            // The method-callable path also resolves self/static in output parameter types.
-            if ($callback_atomic instanceof TNamedObject
-                && !$callback_atomic instanceof TClosure
-                && $callback_atomic->value !== 'Closure'
-            ) {
-                $callback_atomic = TKeyedArray::make([
-                    new Union([$callback_atomic]),
-                    Type::getString('__invoke'),
-                ]);
-            }
-
-            $callable = CallableTypeComparator::getCallableFromAtomic(
-                $codebase,
-                $callback_atomic,
-                null,
-                $statements_analyzer,
-                $context,
-                true,
-            );
+            $callable = self::getArrayWalkCallable($statements_analyzer, $context, $callback_atomic);
 
             // Any alternative that cannot be analysed makes the whole result unknown: skipping it
             // would claim a narrower type than the callback can leave behind. Returning null makes
@@ -700,9 +688,11 @@ final class ArrayFunctionArgumentsAnalyzer
         $replacement_arg_type = $statements_analyzer->node_data->getType($replacement_arg);
 
         if ($replacement_arg_type
-            && !$replacement_arg_type->hasArray()
             && $replacement_arg_type->hasString()
-            && $replacement_arg_type->isSingle()
+            && array_all(
+                $replacement_arg_type->getAtomicTypes(),
+                static fn(Atomic $atomic): bool => $atomic instanceof TString,
+            )
         ) {
             $replacement_arg_type = new Union([
                 new TArray([Type::getInt(), $replacement_arg_type]),
@@ -1245,93 +1235,307 @@ final class ArrayFunctionArgumentsAnalyzer
                 );
             }
 
-            $closure_param_type = TypeExpander::expandUnion(
-                $codebase,
+            self::checkClosureParamType(
+                $statements_analyzer,
+                $context,
+                $method_id,
+                $closure_arg,
+                $i,
+                $input_type,
                 $closure_param_type,
-                $context->self,
-                null,
-                $statements_analyzer->getParentFQCLN(),
             );
+        }
+    }
 
-            $union_comparison_results = new TypeComparisonResult();
+    /**
+     * Checks the parameters of the callback of array_walk() and array_walk_recursive() against the value, the key and
+     * the extra argument it is called with
+     */
+    public static function checkArrayWalkCallback(
+        StatementsAnalyzer $statements_analyzer,
+        Context $context,
+        string $method_id,
+        Union $array_type,
+        PhpParser\Node\Arg $callback_arg,
+        Union $callback_type,
+        ?Union $extra_arg_type,
+    ): void {
+        $codebase = $statements_analyzer->getCodebase();
 
-            $type_match_found = UnionTypeComparator::isContainedBy(
+        $element_types = self::getArrayWalkElementTypes(
+            $array_type,
+            $codebase,
+            $method_id === 'array_walk_recursive',
+        );
+
+        if ($element_types === null) {
+            return;
+        }
+
+        $input_types = [$element_types[1], $element_types[0]];
+
+        if ($extra_arg_type !== null) {
+            $input_types[] = $extra_arg_type;
+        }
+
+        foreach ($callback_type->getAtomicTypes() as $callback_atomic) {
+            $callable = self::getArrayWalkCallable($statements_analyzer, $context, $callback_atomic);
+
+            if ($callable === null || $callable->params === null) {
+                continue;
+            }
+
+            $params = $callable->params;
+            $last_param = $params ? $params[count($params) - 1] : null;
+
+            foreach ($input_types as $i => $input_type) {
+                $param = $params[$i] ?? ($last_param !== null && $last_param->is_variadic ? $last_param : null);
+
+                if ($param === null
+                    || $param->type === null
+                    || $param->type->hasTemplate()
+                    || $input_type->hasMixed()
+                ) {
+                    continue;
+                }
+
+                self::checkClosureParamType(
+                    $statements_analyzer,
+                    $context,
+                    $method_id,
+                    $callback_arg,
+                    $i,
+                    $input_type,
+                    $param->type,
+                );
+            }
+        }
+    }
+
+    /**
+     * The key and value types array_walk() passes to its callback, or, for array_walk_recursive(), the keys and the
+     * values of the entries that are not arrays, at any depth. Null when the callback is never called, or when some
+     * value may hold arrays that can't be resolved.
+     *
+     * @return array{Union, Union}|null
+     */
+    private static function getArrayWalkElementTypes(Union $array_type, Codebase $codebase, bool $recursive): ?array
+    {
+        $element_types = self::collectArrayWalkElementTypes($array_type, $recursive);
+
+        if ($element_types === null || $element_types[0] === [] || $element_types[1] === []) {
+            return null;
+        }
+
+        return [
+            TypeCombiner::combine($element_types[0], $codebase),
+            TypeCombiner::combine($element_types[1], $codebase),
+        ];
+    }
+
+    /**
+     * @return array{list<Atomic>, list<Atomic>}|null
+     */
+    private static function collectArrayWalkElementTypes(Union $array_type, bool $recursive): ?array
+    {
+        $key_types = [];
+        $value_types = [];
+
+        foreach ($array_type->getAtomicTypes() as $atomic) {
+            if ($atomic instanceof TKeyedArray && !$recursive) {
+                $atomic = $atomic->getGenericArrayType();
+            }
+
+            if ($atomic instanceof TArray) {
+                $entries = [[$atomic->type_params[0], $atomic->type_params[1]]];
+            } elseif ($atomic instanceof TKeyedArray) {
+                // each entry separately, as only the entries that aren't arrays pass their key to the callback
+                $entries = [];
+
+                foreach ($atomic->properties as $key => $property_type) {
+                    if (is_int($key)) {
+                        $key_type = new TLiteralInt($key);
+                    } elseif (isset($atomic->class_strings[$key])) {
+                        $key_type = new TLiteralClassString($key);
+                    } else {
+                        $key_type = Type::getAtomicStringFromLiteral($key);
+                    }
+
+                    $entries[] = [new Union([$key_type]), $property_type];
+                }
+
+                if ($atomic->fallback_params !== null) {
+                    $entries[] = [$atomic->fallback_params[0], $atomic->fallback_params[1]];
+                }
+            } else {
+                return null;
+            }
+
+            foreach ($entries as [$entry_key_type, $entry_value_type]) {
+                $passes_key = !$recursive;
+
+                foreach ($entry_value_type->getAtomicTypes() as $value_atomic) {
+                    if (!$recursive) {
+                        $value_types[] = $value_atomic;
+                    } elseif ($value_atomic instanceof TNever) {
+                        continue;
+                    } elseif ($value_atomic instanceof TArray || $value_atomic instanceof TKeyedArray) {
+                        $nested_types = self::collectArrayWalkElementTypes(new Union([$value_atomic]), true);
+
+                        if ($nested_types === null) {
+                            return null;
+                        }
+
+                        $key_types = [...$key_types, ...$nested_types[0]];
+                        $value_types = [...$value_types, ...$nested_types[1]];
+                    } elseif ($value_atomic instanceof Scalar
+                        || $value_atomic instanceof TObject
+                        || $value_atomic instanceof TNamedObject
+                        || $value_atomic instanceof TNull
+                        || $value_atomic instanceof TResource
+                        || $value_atomic instanceof TClosedResource
+                    ) {
+                        $value_types[] = $value_atomic;
+                        $passes_key = true;
+                    } else {
+                        return null;
+                    }
+                }
+
+                if ($passes_key) {
+                    $key_types = [...$key_types, ...array_values($entry_key_type->getAtomicTypes())];
+                }
+            }
+        }
+
+        return [$key_types, $value_types];
+    }
+
+    private static function getArrayWalkCallable(
+        StatementsAnalyzer $statements_analyzer,
+        Context $context,
+        Atomic $callback_atomic,
+    ): TClosure|TCallable|null {
+        // The method-callable path also resolves self/static in output parameter types.
+        if ($callback_atomic instanceof TNamedObject
+            && !$callback_atomic instanceof TClosure
+            && $callback_atomic->value !== 'Closure'
+        ) {
+            $callback_atomic = TKeyedArray::make([
+                new Union([$callback_atomic]),
+                Type::getString('__invoke'),
+            ]);
+        }
+
+        return CallableTypeComparator::getCallableFromAtomic(
+            $statements_analyzer->getCodebase(),
+            $callback_atomic,
+            null,
+            $statements_analyzer,
+            $context,
+            true,
+        );
+    }
+
+    private static function checkClosureParamType(
+        StatementsAnalyzer $statements_analyzer,
+        Context $context,
+        string $method_id,
+        PhpParser\Node\Arg $closure_arg,
+        int $param_offset,
+        Union $input_type,
+        Union $closure_param_type,
+    ): void {
+        $codebase = $statements_analyzer->getCodebase();
+
+        $closure_param_type = TypeExpander::expandUnion(
+            $codebase,
+            $closure_param_type,
+            $context->self,
+            null,
+            $statements_analyzer->getParentFQCLN(),
+        );
+
+        $union_comparison_results = new TypeComparisonResult();
+
+        $type_match_found = UnionTypeComparator::isContainedBy(
+            $codebase,
+            $input_type,
+            $closure_param_type,
+            $input_type->ignore_nullable_issues,
+            $input_type->ignore_falsable_issues,
+            $union_comparison_results,
+        );
+
+        if ($union_comparison_results->type_coerced) {
+            if ($union_comparison_results->type_coerced_from_mixed) {
+                IssueBuffer::maybeAdd(
+                    new MixedArgumentTypeCoercion(
+                        'Parameter ' . ($param_offset + 1) . ' of closure passed to function ' . $method_id
+                            . ' expects ' . $closure_param_type->getId()
+                            . ', but parent type ' . $input_type->getId() . ' provided',
+                        new CodeLocation($statements_analyzer->getSource(), $closure_arg),
+                        $method_id,
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
+            } else {
+                IssueBuffer::maybeAdd(
+                    new ArgumentTypeCoercion(
+                        'Parameter ' . ($param_offset + 1) . ' of closure passed to function ' . $method_id
+                            . ' expects ' . $closure_param_type->getId()
+                            . ', but parent type ' . $input_type->getId() . ' provided',
+                        new CodeLocation($statements_analyzer->getSource(), $closure_arg),
+                        $method_id,
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
+            }
+        }
+
+        if (!$union_comparison_results->type_coerced && !$type_match_found) {
+            $can_fit = UnionTypeComparator::canBeContainedBy(
                 $codebase,
                 $input_type,
                 $closure_param_type,
-                $input_type->ignore_nullable_issues,
-                $input_type->ignore_falsable_issues,
-                $union_comparison_results,
+                true,
+                true,
+                coerced_parts_match: true,
             );
 
-            if ($union_comparison_results->type_coerced) {
-                if ($union_comparison_results->type_coerced_from_mixed) {
-                    IssueBuffer::maybeAdd(
-                        new MixedArgumentTypeCoercion(
-                            'Parameter ' . ($i + 1) . ' of closure passed to function ' . $method_id . ' expects ' .
-                                $closure_param_type->getId() .
-                                ', but parent type ' . $input_type->getId() . ' provided',
-                            new CodeLocation($statements_analyzer->getSource(), $closure_arg),
-                            $method_id,
-                        ),
-                        $statements_analyzer->getSuppressedIssues(),
-                    );
-                } else {
-                    IssueBuffer::maybeAdd(
-                        new ArgumentTypeCoercion(
-                            'Parameter ' . ($i + 1) . ' of closure passed to function ' . $method_id . ' expects ' .
-                                $closure_param_type->getId() .
-                                ', but parent type ' . $input_type->getId() . ' provided',
-                            new CodeLocation($statements_analyzer->getSource(), $closure_arg),
-                            $method_id,
-                        ),
-                        $statements_analyzer->getSuppressedIssues(),
-                    );
-                }
-            }
-
-            if (!$union_comparison_results->type_coerced && !$type_match_found) {
-                $can_fit = UnionTypeComparator::canBeContainedBy(
-                    $codebase,
-                    $input_type,
-                    $closure_param_type,
-                    true,
-                    true,
-                    coerced_parts_match: true,
+            if ($union_comparison_results->scalar_type_match_found) {
+                IssueBuffer::maybeAdd(
+                    new InvalidScalarArgument(
+                        'Parameter ' . ($param_offset + 1) . ' of closure passed to function ' . $method_id
+                            . ' expects ' . $closure_param_type->getId() . ', but ' . $input_type->getId()
+                            . ' provided',
+                        new CodeLocation($statements_analyzer->getSource(), $closure_arg),
+                        $method_id,
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
                 );
-
-                if ($union_comparison_results->scalar_type_match_found) {
-                    IssueBuffer::maybeAdd(
-                        new InvalidScalarArgument(
-                            'Parameter ' . ($i + 1) . ' of closure passed to function ' . $method_id . ' expects ' .
-                                $closure_param_type->getId() . ', but ' . $input_type->getId() . ' provided',
-                            new CodeLocation($statements_analyzer->getSource(), $closure_arg),
-                            $method_id,
-                        ),
-                        $statements_analyzer->getSuppressedIssues(),
-                    );
-                } elseif ($can_fit) {
-                    IssueBuffer::maybeAdd(
-                        new PossiblyInvalidArgument(
-                            'Parameter ' . ($i + 1) . ' of closure passed to function ' . $method_id . ' expects '
-                                . $closure_param_type->getId() . ', but possibly different type '
-                                . $input_type->getId() . ' provided',
-                            new CodeLocation($statements_analyzer->getSource(), $closure_arg),
-                            $method_id,
-                        ),
-                        $statements_analyzer->getSuppressedIssues(),
-                    );
-                } else {
-                    IssueBuffer::maybeAdd(
-                        new InvalidArgument(
-                            'Parameter ' . ($i + 1) . ' of closure passed to function ' . $method_id . ' expects ' .
-                            $closure_param_type->getId() . ', but ' . $input_type->getId() . ' provided',
-                            new CodeLocation($statements_analyzer->getSource(), $closure_arg),
-                            $method_id,
-                        ),
-                        $statements_analyzer->getSuppressedIssues(),
-                    );
-                }
+            } elseif ($can_fit) {
+                IssueBuffer::maybeAdd(
+                    new PossiblyInvalidArgument(
+                        'Parameter ' . ($param_offset + 1) . ' of closure passed to function ' . $method_id
+                            . ' expects ' . $closure_param_type->getId() . ', but possibly different type '
+                            . $input_type->getId() . ' provided',
+                        new CodeLocation($statements_analyzer->getSource(), $closure_arg),
+                        $method_id,
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
+            } else {
+                IssueBuffer::maybeAdd(
+                    new InvalidArgument(
+                        'Parameter ' . ($param_offset + 1) . ' of closure passed to function ' . $method_id
+                            . ' expects ' . $closure_param_type->getId() . ', but ' . $input_type->getId()
+                            . ' provided',
+                        new CodeLocation($statements_analyzer->getSource(), $closure_arg),
+                        $method_id,
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
             }
         }
     }

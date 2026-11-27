@@ -5,12 +5,11 @@ declare(strict_types=1);
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
 use Override;
-use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
 
-use function array_values;
+use function array_slice;
 use function count;
 use function round;
 
@@ -42,41 +41,33 @@ final class RoundReturnTypeProvider implements FunctionReturnTypeProviderInterfa
         $statements_source = $event->getStatementsSource();
         $nodeTypeProvider = $statements_source->getNodeTypeProvider();
 
+        $float = new Type\Union([new Type\Atomic\TFloat()]);
         $num_arg = $nodeTypeProvider->getType($call_args[0]->value);
+        $num_type = $num_arg?->isSingleAtomic() ? $num_arg->getSingleAtomic() : null;
+
+        if (!$num_type instanceof Type\Atomic\TLiteralFloat && !$num_type instanceof Type\Atomic\TLiteralInt) {
+            return $float;
+        }
 
         $precision_val = 0;
-        if ($statements_source instanceof StatementsAnalyzer && count($call_args) > 1) {
-            $type = $statements_source->node_data->getType($call_args[1]->value);
-
-            if ($type !== null && $type->isSingle()) {
-                $atomic_type = array_values($type->getAtomicTypes())[0];
-                if ($atomic_type instanceof Type\Atomic\TLiteralInt) {
-                    $precision_val = $atomic_type->value;
-                }
-            }
-        }
-
         $mode_val = PHP_ROUND_HALF_UP;
-        if ($statements_source instanceof StatementsAnalyzer && count($call_args) > 2) {
-            $type = $statements_source->node_data->getType($call_args[2]->value);
 
-            if ($type !== null && $type->isSingle()) {
-                $atomic_type = array_values($type->getAtomicTypes())[0];
-                if ($atomic_type instanceof Type\Atomic\TLiteralInt) {
-                    /** @var positive-int|0 $mode_val */
-                    $mode_val = $atomic_type->value;
-                }
+        // the result is a literal only when the precision and the mode passed are known
+        foreach (array_slice($call_args, 1, 2, true) as $offset => $arg) {
+            $type = $nodeTypeProvider->getType($arg->value);
+
+            if ($arg->unpack || $arg->name !== null || $type === null || !$type->isSingleIntLiteral()) {
+                return $float;
+            }
+
+            if ($offset === 1) {
+                $precision_val = $type->getSingleIntLiteral()->value;
+            } else {
+                /** @var positive-int|0 $mode_val */
+                $mode_val = $type->getSingleIntLiteral()->value;
             }
         }
 
-        if ($num_arg !== null && $num_arg->isSingle()) {
-            $num_type = array_values($num_arg->getAtomicTypes())[0];
-            if ($num_type instanceof Type\Atomic\TLiteralFloat || $num_type instanceof Type\Atomic\TLiteralInt) {
-                $rounded_val = round($num_type->value, $precision_val, $mode_val);
-                return new Type\Union([new Type\Atomic\TLiteralFloat($rounded_val)]);
-            }
-        }
-
-        return new Type\Union([new Type\Atomic\TFloat()]);
+        return new Type\Union([new Type\Atomic\TLiteralFloat(round($num_type->value, $precision_val, $mode_val))]);
     }
 }

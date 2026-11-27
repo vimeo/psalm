@@ -23,10 +23,25 @@ final class TKeyOf extends TArrayKey
         parent::__construct($from_docblock);
     }
 
+    /**
+     * @psalm-pure
+     */
+    #[Override]
+    protected function getChildNodeKeys(): array
+    {
+        return ['type'];
+    }
+
     #[Override]
     public function getKey(bool $include_extra = true): string
     {
         return 'key-of<' . $this->type . '>';
+    }
+
+    #[Override]
+    public function getId(bool $exact = true): string
+    {
+        return 'key-of<' . $this->type->getId() . '>';
     }
 
     /**

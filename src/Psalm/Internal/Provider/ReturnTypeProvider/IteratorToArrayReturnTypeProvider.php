@@ -99,14 +99,14 @@ final class IteratorToArrayReturnTypeProvider implements FunctionReturnTypeProvi
                     : null;
 
                 if ($second_arg_type
-                    && ((string) $second_arg_type === 'false')
+                    && $second_arg_type->isFalse()
                 ) {
                     return Type::getList($value_type);
                 }
 
                 $key_type = $key_type
                     && (!isset($call_args[1])
-                        || ($second_arg_type && ((string) $second_arg_type === 'true')))
+                        || ($second_arg_type && $second_arg_type->isTrue()))
                     ? $key_type
                     : Type::getArrayKey();
 
@@ -114,7 +114,7 @@ final class IteratorToArrayReturnTypeProvider implements FunctionReturnTypeProvi
                     $key_type = Type::getArrayKey();
                 }
 
-                if ($key_type->isSingle() && $key_type->hasTemplate()) {
+                if ($key_type->isSingleAtomic() && $key_type->hasTemplate()) {
                     $template_types = $key_type->getTemplateTypes();
                     $template_type = array_shift($template_types);
                     assert($template_type !== null);

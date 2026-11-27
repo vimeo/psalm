@@ -29,4 +29,10 @@ final class ReportOptions
     public bool $show_suggestions = true;
 
     public bool $in_ci = false;
+
+    /**
+     * The console and compact reports for an AI coding agent: fixable issues are marked `[*]` and the
+     * psalm.dev link of each issue is left out, see {@see \Psalm\IssueBuffer::finish()} for the footer
+     */
+    public bool $agent_output = false;
 }

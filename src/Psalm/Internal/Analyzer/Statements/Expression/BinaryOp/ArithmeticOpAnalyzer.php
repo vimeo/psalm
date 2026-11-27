@@ -157,6 +157,8 @@ final class ArithmeticOpAnalyzer
                 $left_type_parts = self::getLiteralIntsAsRange($left_type_parts);
             }
 
+            $literal_results = [];
+
             foreach ($left_type_parts as $left_type_part) {
                 foreach ($right_type_parts as $right_type_part) {
                     $candidate_result_type = self::analyzeOperands(
@@ -174,6 +176,7 @@ final class ArithmeticOpAnalyzer
                         $has_valid_left_operand,
                         $has_valid_right_operand,
                         $string_increment_message,
+                        $literal_results,
                         $result_type,
                     );
 
@@ -183,6 +186,8 @@ final class ArithmeticOpAnalyzer
                     }
                 }
             }
+
+            self::combineLiteralResults($literal_results, $result_type);
 
             if ($invalid_left_messages && $statements_source) {
                 $first_left_message = $invalid_left_messages[0];
@@ -297,6 +302,24 @@ final class ArithmeticOpAnalyzer
     }
 
     /**
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     * @param array<string, Atomic> $literal_results
+     */
+    private static function combineLiteralResults(array &$literal_results, ?Union &$result_type): void
+    {
+        if ($literal_results === []) {
+            return;
+        }
+
+        // the result comes first, as when each literal is combined into it: past the literal limit, the literals it
+        // widens by are the ones seen first
+        $result_type = $result_type === null
+            ? TypeCombiner::combine(array_values($literal_results))
+            : Type::combineUnionTypes($result_type, new Union(array_values($literal_results)));
+        $literal_results = [];
+    }
+
+    /**
      * @psalm-pure
      */
     private static function isNumeric(Union $type): bool
@@ -325,6 +348,7 @@ final class ArithmeticOpAnalyzer
     /**
      * @param string[] $invalid_left_messages
      * @param string[] $invalid_right_messages
+     * @param array<string, Atomic> $literal_results the results of pairs of literals not combined into the result yet
      * @psalm-suppress ComplexMethod Unavoidably complex method.
      */
     private static function analyzeOperands(
@@ -342,6 +366,7 @@ final class ArithmeticOpAnalyzer
         bool &$has_valid_left_operand,
         bool &$has_valid_right_operand,
         ?string &$string_increment_message,
+        array &$literal_results,
         ?Union &$result_type = null,
     ): ?Union {
         if (($left_type_part instanceof TLiteralInt || $left_type_part instanceof TLiteralFloat)
@@ -378,10 +403,16 @@ final class ArithmeticOpAnalyzer
             );
 
             if ($calculated_type) {
-                $result_type = Type::combineUnionTypes(
-                    $calculated_type,
-                    $result_type,
-                );
+                // combined into the result once for all the pairs of literals: combining each one into the result
+                // collected so far goes through all of it every time
+                foreach ($calculated_type->getAtomicTypes() as $key => $calculated_type_part) {
+                    $literal_results[$key] = $calculated_type_part;
+                }
+
+                // the result keeps no more literals than the literal limit of the combination
+                if (count($literal_results) >= 500) {
+                    self::combineLiteralResults($literal_results, $result_type);
+                }
 
                 $has_valid_left_operand = true;
                 $has_valid_right_operand = true;
@@ -389,6 +420,9 @@ final class ArithmeticOpAnalyzer
                 return null;
             }
         }
+
+        // the other cases may replace the result collected so far rather than add to it
+        self::combineLiteralResults($literal_results, $result_type);
 
         if ($left_type_part instanceof TTypeVariable || $right_type_part instanceof TTypeVariable) {
             // a type-variable operand flows through to the result and is
@@ -945,7 +979,17 @@ final class ArithmeticOpAnalyzer
             }
 
             if ($left_type_part instanceof TInt && $right_type_part instanceof TInt) {
-                if ($parent instanceof PhpParser\Node\Expr\BinaryOp\Div) {
+                $bitwise_and_result = $parent instanceof PhpParser\Node\Expr\BinaryOp\BitwiseAnd
+                    ? self::getBitwiseResultOfNonNegativeRanges(
+                        $parent,
+                        TIntRange::convertToIntRange($left_type_part),
+                        TIntRange::convertToIntRange($right_type_part),
+                    )
+                    : null;
+
+                if ($bitwise_and_result !== null) {
+                    $result_type = Type::combineUnionTypes($bitwise_and_result, $result_type);
+                } elseif ($parent instanceof PhpParser\Node\Expr\BinaryOp\Div) {
                     $result_type = new Union([new TInt(), new TFloat()]);
                 } elseif ($parent instanceof PhpParser\Node\Expr\BinaryOp\Pow
                     && $right_type_part instanceof TLiteralInt
@@ -1497,12 +1541,29 @@ final class ArithmeticOpAnalyzer
         TIntRange $left_type_part,
         TIntRange $right_type_part,
     ): ?Union {
+        $left_max = $left_type_part->max_bound;
+        $right_max = $right_type_part->max_bound;
+
+        if ($parent instanceof PhpParser\Node\Expr\BinaryOp\BitwiseAnd) {
+            // the result has only bits of a non-negative operand, so neither the sign bit nor more than its maximum
+            if (!$left_type_part->isPositiveOrZero()) {
+                if (!$right_type_part->isPositiveOrZero()) {
+                    return null;
+                }
+
+                $max = $right_max;
+            } elseif (!$right_type_part->isPositiveOrZero() || $right_max === null) {
+                $max = $left_max;
+            } else {
+                $max = $left_max === null ? $right_max : min($left_max, $right_max);
+            }
+
+            return $max === 0 ? Type::getInt(false, 0) : Type::getIntRange(0, $max);
+        }
+
         if (!$left_type_part->isPositiveOrZero() || !$right_type_part->isPositiveOrZero()) {
             return null;
         }
-
-        $left_max = $left_type_part->max_bound;
-        $right_max = $right_type_part->max_bound;
 
         if ($parent instanceof PhpParser\Node\Expr\BinaryOp\ShiftLeft) {
             // shifting by 63 or more gives 0 or overflows into the sign bit
@@ -1514,13 +1575,6 @@ final class ArithmeticOpAnalyzer
                 $left_type_part->min_bound << $right_type_part->min_bound,
                 $left_max << $right_max,
             );
-        }
-
-        if ($parent instanceof PhpParser\Node\Expr\BinaryOp\BitwiseAnd) {
-            // the result has only bits of the operand with fewer of them
-            $max = $left_max === null ? $right_max : ($right_max === null ? $left_max : min($left_max, $right_max));
-
-            return Type::getIntRange(0, $max);
         }
 
         if ($left_max === null || $right_max === null) {

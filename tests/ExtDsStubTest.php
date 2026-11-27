@@ -126,6 +126,136 @@ final class ExtDsStubTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'reading a map, a sequence or a set by offset gives its value type' => [
+                'code' => <<<'PHP'
+                    <?php
+                    use Ds\Deque;
+                    use Ds\Map;
+                    use Ds\Set;
+                    use Ds\Vector;
+
+                    /** @var Map<string, int> */
+                    $map = new Map(['a' => 17]);
+                    /** @var Vector<string> */
+                    $vector = new Vector(['x']);
+                    /** @var Deque<float> */
+                    $deque = new Deque([1.5]);
+                    /** @var Set<bool> */
+                    $set = new Set([true]);
+
+                    $fromMap = $map['a'];
+                    $fromMapOrDefault = $map['b'] ?? 35;
+                    $map['c'] ??= 35;
+                    $fromVector = $vector[0];
+                    $fromDeque = $deque[0];
+                    $fromSet = $set[0];
+                    $mapHasKey = isset($map['a']);
+                    $vectorHasIndex = isset($vector[0]);
+                    PHP,
+                'assertions' => [
+                    '$fromMap===' => 'int',
+                    '$fromMapOrDefault===' => 'int',
+                    '$fromVector===' => 'string',
+                    '$fromDeque===' => 'float',
+                    '$fromSet===' => 'bool',
+                    '$mapHasKey===' => 'bool',
+                    '$vectorHasIndex===' => 'bool',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'reading a sequence by offset gives its value type' => [
+                'code' => <<<'PHP'
+                    <?php
+                    use Ds\Sequence;
+
+                    /** @param Sequence<int> $sequence */
+                    function first(Sequence $sequence): int {
+                        $first = $sequence[0];
+                        /** @psalm-check-type-exact $first = int */
+                        return $first;
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'writing to a map, a sequence, a set, a stack or a queue by offset' => [
+                'code' => <<<'PHP'
+                    <?php
+                    use Ds\Deque;
+                    use Ds\Map;
+                    use Ds\Queue;
+                    use Ds\Set;
+                    use Ds\Stack;
+                    use Ds\Vector;
+
+                    /**
+                     * @param Map<string, int> $map
+                     * @param Vector<string> $vector
+                     * @param Deque<string> $deque
+                     * @param Set<string> $set
+                     * @param Stack<string> $stack
+                     * @param Queue<string> $queue
+                     */
+                    function fill(Map $map, Vector $vector, Deque $deque, Set $set, Stack $stack, Queue $queue): void {
+                        $map['a'] = 1;
+                        $vector[] = 'a';
+                        $vector[0] = 'b';
+                        $deque[] = 'a';
+                        $deque[0] = 'b';
+                        $set[] = 'a';
+                        $stack[] = 'a';
+                        $queue[] = 'a';
+                        unset($map['a'], $vector[0], $deque[0]);
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'reading a map, a sequence or a set by offset is mutation-free' => [
+                'code' => <<<'PHP'
+                    <?php
+                    use Ds\Map;
+                    use Ds\Set;
+                    use Ds\Vector;
+
+                    /**
+                     * @param Map<string, int> $map
+                     * @param Vector<int> $vector
+                     * @param Set<int> $set
+                     * @psalm-pure
+                     */
+                    function sum(Map $map, Vector $vector, Set $set): int {
+                        return $map['a'] + $vector[0] + $set[0] + (isset($map['b']) ? 1 : 0);
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'a collection serializes to an array' => [
+                'code' => <<<'PHP'
+                    <?php
+                    use Ds\Map;
+                    use Ds\Vector;
+
+                    /** @var Vector<string> */
+                    $vector = new Vector(['x']);
+                    /** @var Map<string, int> */
+                    $map = new Map(['a' => 17]);
+
+                    $vectorJson = $vector->jsonSerialize();
+                    $mapJson = $map->jsonSerialize();
+                    PHP,
+                'assertions' => [
+                    '$vectorJson===' => 'array<int, string>',
+                    '$mapJson===' => 'array<array-key, mixed>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
         ];
     }
 
@@ -218,6 +348,132 @@ final class ExtDsStubTest extends TestCase
                 'error_message' => 'ImpureMethodCall',
                 'error_levels' => [],
                 'php_version' => '8.0',
+            ],
+            'writing a value of another type to a map by key' => [
+                'code' => <<<'PHP'
+                    <?php
+                    use Ds\Map;
+
+                    /** @param Map<string, int> $map */
+                    function add(Map $map): void {
+                        $map['a'] = 'b';
+                    }
+                    PHP,
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
+            'appending to a map' => [
+                'code' => <<<'PHP'
+                    <?php
+                    use Ds\Map;
+
+                    /** @param Map<string, int> $map */
+                    function add(Map $map): void {
+                        $map[] = 1;
+                    }
+                    PHP,
+                'error_message' => 'NullArgument',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
+            'writing to a vector by a string key' => [
+                'code' => <<<'PHP'
+                    <?php
+                    use Ds\Vector;
+
+                    /** @param Vector<int> $vector */
+                    function add(Vector $vector): void {
+                        $vector['a'] = 1;
+                    }
+                    PHP,
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
+            'appending a value of another type to a vector' => [
+                'code' => <<<'PHP'
+                    <?php
+                    use Ds\Vector;
+
+                    /** @param Vector<int> $vector */
+                    function add(Vector $vector): void {
+                        $vector[] = 'a';
+                    }
+                    PHP,
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
+            'writing to a set by index' => [
+                'code' => <<<'PHP'
+                    <?php
+                    use Ds\Set;
+
+                    /** @param Set<int> $set */
+                    function add(Set $set): void {
+                        $set[0] = 1;
+                    }
+                    PHP,
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
+            'unsetting an index of a set' => [
+                'code' => <<<'PHP'
+                    <?php
+                    use Ds\Set;
+
+                    /** @param Set<int> $set */
+                    function remove(Set $set): void {
+                        unset($set[0]);
+                    }
+                    PHP,
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
+            'reading a stack by index' => [
+                'code' => <<<'PHP'
+                    <?php
+                    use Ds\Stack;
+
+                    /** @param Stack<int> $stack */
+                    function top(Stack $stack): void {
+                        $stack[0];
+                    }
+                    PHP,
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
+            'checking an index of a queue' => [
+                'code' => <<<'PHP'
+                    <?php
+                    use Ds\Queue;
+
+                    /** @param Queue<int> $queue */
+                    function has(Queue $queue): bool {
+                        return isset($queue[0]);
+                    }
+                    PHP,
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
+            'reading a priority queue by index' => [
+                'code' => <<<'PHP'
+                    <?php
+                    use Ds\PriorityQueue;
+
+                    /** @param PriorityQueue<int> $queue */
+                    function first(PriorityQueue $queue): void {
+                        $queue[0];
+                    }
+                    PHP,
+                'error_message' => 'InvalidArrayAccess',
+                'error_levels' => [],
+                'php_version' => '8.3',
             ],
         ];
     }

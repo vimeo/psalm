@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Psalm\Tests\EndToEnd;
 
+use PHPUnit\Framework\Attributes\DataProvider;
+
 use function copy;
 
 use const PHP_BINARY;
@@ -59,6 +61,54 @@ final class PsalmTaintAnalysisEndToEndTest extends PsalmEndToEndTestCase
         $this->assertStringContainsString('TaintedTextWithQuotes', $result['STDOUT']);
         $this->assertStringContainsString('4 errors', $result['STDOUT']);
         $this->assertSame(2, $result['CODE']);
+    }
+
+    public function testNoTaintAnalysisSkipsTheTaintAnalysisTheConfigTurnsOn(): void
+    {
+        $this->runPsalmInit(1);
+
+        $result = $this->runPsalm([], self::$tmpDir, true);
+        $this->assertStringContainsString('TaintedHtml', $result['STDOUT']);
+        $this->assertStringContainsString('4 errors', $result['STDOUT']);
+
+        $result = $this->runPsalm(['--no-taint-analysis'], self::$tmpDir, true);
+        $this->assertStringNotContainsString('Tainted', $result['STDOUT']);
+        $this->assertStringContainsString('2 errors', $result['STDOUT']);
+    }
+
+    /**
+     * @param list<string> $args
+     */
+    #[DataProvider('provideOptionsThatNeedTaintAnalysis')]
+    public function testNoTaintAnalysisCannotBeCombinedWithAnOptionThatNeedsTaintAnalysis(array $args): void
+    {
+        $this->runPsalmInit(1);
+
+        $process = self::newProcess(
+            [PHP_BINARY, $this->psalm, '--no-progress', '--no-taint-analysis', ...$args],
+            self::$tmpDir,
+            self::agentEnvVarsToUnset(),
+        );
+        $process->run();
+
+        $this->assertSame(1, $process->getExitCode(), $process->getOutput() . $process->getErrorOutput());
+        $this->assertStringContainsString(
+            '--no-taint-analysis cannot be combined with --taint-analysis, --track-tainted-input,'
+                . ' --security-analysis or --dump-taint-graph',
+            $process->getErrorOutput(),
+        );
+    }
+
+    /**
+     * @return iterable<string, array{list<string>}>
+     * @psalm-pure
+     */
+    public static function provideOptionsThatNeedTaintAnalysis(): iterable
+    {
+        yield '--taint-analysis' => [['--taint-analysis']];
+        yield '--track-tainted-input' => [['--track-tainted-input']];
+        yield '--security-analysis' => [['--security-analysis']];
+        yield '--dump-taint-graph' => [['--dump-taint-graph=taints.dot']];
     }
 
     public function testTaintGraphDumping(): void

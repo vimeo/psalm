@@ -92,8 +92,10 @@ use function min;
 use function preg_match;
 use function reset;
 use function str_contains;
+use function str_ends_with;
 use function strtolower;
 use function strtoupper;
+use function substr;
 
 /**
  * @internal
@@ -167,6 +169,8 @@ final class ArgumentsAnalyzer
                 $context,
                 $arg->value,
             );
+
+            ClosureAnalyzer::addTypesWrittenByCall($statements_analyzer, $context, $arg->value, $written_var_ids);
 
             foreach ($written_var_ids as $var_id => $_) {
                 $context->releaseKeysBoundToList($var_id);
@@ -580,7 +584,7 @@ final class ArgumentsAnalyzer
         $unpacked_type = $statements_analyzer->node_data->getType($arg->value);
 
         if (!$unpacked_type
-            || !$unpacked_type->isSingle()
+            || !$unpacked_type->isSingleAtomic()
             || !($unpacked_atomic = $unpacked_type->getSingleAtomic()) instanceof TKeyedArray
             || $unpacked_atomic->fallback_params !== null
         ) {
@@ -963,6 +967,16 @@ final class ArgumentsAnalyzer
                                     // provisional, not definitive: keep the declared type
                                     continue;
                                 }
+                            } elseif ($param_storage->signature_type
+                                && !UnionTypeComparator::isContainedBy(
+                                    $codebase,
+                                    $replaced_param_type,
+                                    $param_storage->signature_type,
+                                )
+                            ) {
+                                // a type inferred for another receiver of the call (a member of an intersection) is
+                                // not replaced by one the parameter's declared type doesn't accept
+                                continue;
                             }
 
                             $newly_inferred_type = Type::combineUnionTypes(
@@ -1799,6 +1813,29 @@ final class ArgumentsAnalyzer
             return null;
         }
 
+        if (($method_id === 'array_walk' || $method_id === 'array_walk_recursive')
+            && isset($function_params[0], $function_params[1])
+            && !array_any($args, static fn(PhpParser\Node\Arg $arg): bool => $arg->unpack)
+            && ($array_arg = self::getArgForParam($args, $function_params, $function_params[0]->name))
+            && ($array_type = $statements_analyzer->node_data->getType($array_arg->value))
+            && ($callback_arg = self::getArgForParam($args, $function_params, $function_params[1]->name))
+            && ($callback_type = $statements_analyzer->node_data->getType($callback_arg->value))
+        ) {
+            $extra_arg = isset($function_params[2])
+                ? self::getArgForParam($args, $function_params, $function_params[2]->name)
+                : null;
+
+            ArrayFunctionArgumentsAnalyzer::checkArrayWalkCallback(
+                $statements_analyzer,
+                $context,
+                $method_id,
+                $array_type,
+                $callback_arg,
+                $callback_type,
+                $extra_arg ? $statements_analyzer->node_data->getType($extra_arg->value) ?? Type::getMixed() : null,
+            );
+        }
+
         if ($method_id === 'get_class' && $args === []) {
             //get_class without args only works when inside a class
             if (!$context->self) {
@@ -2168,8 +2205,20 @@ final class ArgumentsAnalyzer
             ) {
                 $by_ref_flow_inputs = self::getByRefFlowInputs($method_id, $function_param, $function_params);
                 foreach ($by_ref_flow_inputs as $input_name => $path_type) {
-                    $input_arg = self::getArgForParam($args, $function_params, $input_name);
+                    // what the callables given to the parameter leave in their by-reference parameters
+                    $from_callable_refs = str_ends_with($input_name, '(&)');
+                    $input_arg = self::getArgForParam(
+                        $args,
+                        $function_params,
+                        $from_callable_refs ? substr($input_name, 0, -3) : $input_name,
+                    );
                     $input_type = $input_arg ? $statements_analyzer->node_data->getType($input_arg->value) : null;
+
+                    if ($from_callable_refs && $input_type) {
+                        $input_type = Type::getMixed()->setParentNodes(
+                            FunctionCallReturnTypeFetcher::getCallableByRefOutNodes($statements_analyzer, $input_type),
+                        );
+                    }
 
                     if (!$input_type || !$input_type->parent_nodes) {
                         continue;
@@ -2262,9 +2311,15 @@ final class ArgumentsAnalyzer
         $analysed_inputs = [];
         foreach ($inputs as $input_key => $input_value) {
             [$input_name, $path_type] = is_int($input_key) ? [$input_value, null] : [$input_key, $input_value];
-            $input_name = InternalCallMapHandler::getAnalysedParamName($function_id, $input_name, $function_params);
+            // `callback(&)`: what the callables given to the parameter leave in their by-reference parameters
+            $suffix = str_ends_with($input_name, '(&)') ? '(&)' : '';
+            $input_name = InternalCallMapHandler::getAnalysedParamName(
+                $function_id,
+                $suffix === '' ? $input_name : substr($input_name, 0, -3),
+                $function_params,
+            );
             if ($input_name !== null) {
-                $analysed_inputs[$input_name] = $path_type;
+                $analysed_inputs[$input_name . $suffix] = $path_type;
             }
         }
 
@@ -2892,7 +2947,7 @@ final class ArgumentsAnalyzer
                             return;
                         }
 
-                        if ($arg_value_type->isSingle()
+                        if ($arg_value_type->isSingleAtomic()
                             && ($atomic_arg_type = $arg_value_type->getSingleAtomic()) instanceof TKeyedArray
                             && !$atomic_arg_type->is_list
                             // integer keys name no parameter: they pass as many arguments as there are keys
@@ -3009,8 +3064,8 @@ final class ArgumentsAnalyzer
                     // a default that is one of the own atomic types of the parameter (`null` for `T|null`) says
                     // nothing about a template that an argument bound already, and that has no default of its own
                     // to fall back to
-                    if ($default_type->isSingle()
-                        && !$param->type->isSingle()
+                    if ($default_type->isSingleAtomic()
+                        && !$param->type->isSingleAtomic()
                         && isset($param->type->getAtomicTypes()[$default_type->getSingleAtomic()->getKey()])
                         && array_all(
                             $param->type->getTemplateTypes(),

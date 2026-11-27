@@ -23,7 +23,8 @@ parameters off at every level — set `findUnusedVariablesAndParams="true"` to k
 ## Phase 0 — Facts
 
 - Current level: `errorLevel` in `psalm.xml`; without the attribute it is `2`.
-- Target PHP version: `phpVersion` in `psalm.xml`, else the lowest version `composer.json` allows. Use it as
+- Target PHP version: `phpVersion` in `psalm.xml`, else the lowest version the `php` requirement of
+  `composer.json` allows, else its `config.platform.php`. Use it as
   `<phpv>` in every Psalter command: the native types Psalter adds must exist in that version.
 - **Gate:** the current level passes (`0`, a baseline counts). If it doesn't, finish the current level first.
 

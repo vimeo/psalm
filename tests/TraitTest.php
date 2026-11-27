@@ -256,6 +256,51 @@ final class TraitTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'selfConstantInTheTypeOfATraitPropertyIsTheOneOfTheUsingClass' => [
+                'code' => '<?php
+                    trait HasKind {
+                        /** @var self::KIND */
+                        public int $kind = 5;
+                    }
+                    final class UsesTrait {
+                        use HasKind;
+                        /** @var 5 */
+                        public const KIND = 5;
+                    }
+                    $kind = (new UsesTrait())->kind;
+                    $vars = get_object_vars(new UsesTrait());',
+                'assertions' => [
+                    '$kind===' => '5',
+                    '$vars===' => 'array{kind: 5}',
+                ],
+            ],
+            'selfConstantInTheTypeOfAStaticTraitPropertyIsTheOneOfTheUsingClass' => [
+                'code' => '<?php
+                    trait HasKind {
+                        /** @var self::KIND */
+                        public static int $kind = 5;
+                    }
+                    class UsesTrait {
+                        use HasKind;
+                        /** @var 5 */
+                        public const KIND = 5;
+                    }
+                    final class OtherUser {
+                        use HasKind;
+                        /** @var 6 */
+                        public const KIND = 6;
+                    }
+                    final class Child extends UsesTrait {}
+                    $kind = UsesTrait::$kind;
+                    $other = OtherUser::$kind;
+                    $inherited = Child::$kind;',
+                'assertions' => [
+                    '$kind===' => '5',
+                    '$other===' => '6',
+                    '$inherited===' => '5',
+                ],
+                'ignored_issues' => ['InvalidPropertyAssignmentValue'],
+            ],
             'constantOfTheFirstTraitDeclaringItWins' => [
                 'code' => '<?php
                     trait HasLimit {
@@ -2218,6 +2263,167 @@ final class TraitTest extends TestCase
                     '$a===' => 'string',
                 ],
             ],
+            'immutableTraitMethodOfAMutableClassForgottenAfterAMutation' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @psalm-immutable */
+                    trait Reads {
+                        public function get(): int {
+                            return $this->value;
+                        }
+                    }
+
+                    final class Counter {
+                        use Reads;
+
+                        private int $value = 0;
+
+                        /** @psalm-capabilities read-props|write-this-props */
+                        public function set(int $value): void {
+                            $this->value = $value;
+                        }
+                    }
+
+                    function f(Counter $c): void {
+                        if ($c->get() === 0) {
+                            $c->set(1);
+                            if ($c->get() === 1) {}
+                        }
+                    }
+                PHP,
+            ],
+            'immutableTraitMethodOfAMutableParentForgottenAfterAMutation' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @psalm-immutable */
+                    trait Reads {
+                        public function get(): int {
+                            return $this->value;
+                        }
+                    }
+
+                    class Counter {
+                        use Reads;
+
+                        private int $value = 0;
+
+                        /** @psalm-capabilities read-props|write-this-props */
+                        public function set(int $value): void {
+                            $this->value = $value;
+                        }
+                    }
+
+                    final class ChildCounter extends Counter {}
+
+                    function f(ChildCounter $c): void {
+                        if ($c->get() === 0) {
+                            $c->set(1);
+                            if ($c->get() === 1) {}
+                        }
+                    }
+                PHP,
+            ],
+            'immutableTraitMethodOfAMutableClassForgottenThroughAnImmutableChild' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @psalm-immutable */
+                    trait Reads {
+                        public function get(): int {
+                            return $this->value;
+                        }
+                    }
+
+                    class Counter {
+                        use Reads;
+
+                        private int $value = 0;
+
+                        /** @psalm-capabilities read-props|write-this-props */
+                        public function set(int $value): void {
+                            $this->value = $value;
+                        }
+                    }
+
+                    /** @psalm-immutable */
+                    final class ChildCounter extends Counter {}
+
+                    function f(ChildCounter $c): void {
+                        if ($c->get() === 0) {
+                            $c->set(1);
+                            if ($c->get() === 1) {}
+                        }
+                    }
+                PHP,
+                'assertions' => [],
+                'ignored_issues' => ['MutableDependency'],
+            ],
+            'immutableTraitMethodOfAnImmutableParentForgottenThroughAMutableChild' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @psalm-immutable */
+                    trait Reads {
+                        public function get(): int {
+                            return $this->value;
+                        }
+                    }
+
+                    /** @psalm-immutable */
+                    class Counter {
+                        use Reads;
+
+                        public function __construct(protected int $value) {}
+                    }
+
+                    final class ChildCounter extends Counter {
+                        /** @psalm-capabilities read-props|write-this-props */
+                        public function set(int $value): void {
+                            $this->value = $value;
+                        }
+                    }
+
+                    function f(ChildCounter $c): void {
+                        if ($c->get() === 0) {
+                            $c->set(1);
+                            if ($c->get() === 1) {}
+                        }
+                    }
+                PHP,
+                'assertions' => [],
+                'ignored_issues' => ['ImmutableDependency', 'InaccessibleProperty'],
+                'php_version' => '8.0',
+            ],
+            'mutatingTraitMethodOfAnImmutableClassForgottenAfterAMutation' => [
+                'code' => <<<'PHP'
+                    <?php
+                    trait Counts {
+                        private int $value = 0;
+
+                        /** @psalm-capabilities read-props */
+                        public function get(): int {
+                            return $this->value;
+                        }
+
+                        /** @psalm-capabilities read-props|write-this-props */
+                        public function set(int $value): void {
+                            $this->value = $value;
+                        }
+                    }
+
+                    /** @psalm-immutable */
+                    final class Counter {
+                        use Counts;
+                    }
+
+                    function f(Counter $c): void {
+                        if ($c->get() === 0) {
+                            $c->set(1);
+                            if ($c->get() === 1) {}
+                        }
+                    }
+                PHP,
+                'assertions' => [],
+                'ignored_issues' => ['MutableDependency'],
+            ],
         ];
     }
 
@@ -2864,6 +3070,43 @@ final class TraitTest extends TestCase
                     (new Child)->product();
                 PHP,
                 'error_message' => 'InaccessibleMethod',
+            ],
+            'immutableTraitMethodOfAnImmutableClassStaysMemoized' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @psalm-immutable */
+                    trait Reads {
+                        public function get(): int {
+                            return $this->value;
+                        }
+                    }
+
+                    /** @psalm-immutable */
+                    final class Counter {
+                        use Reads;
+
+                        public function __construct(private int $value) {}
+                    }
+
+                    final class Other {
+                        private int $value = 0;
+
+                        /** @psalm-capabilities read-props|write-this-props */
+                        public function set(int $value): void {
+                            $this->value = $value;
+                        }
+                    }
+
+                    function f(Counter $c, Other $o): void {
+                        if ($c->get() === 0) {
+                            $o->set(1);
+                            if ($c->get() === 1) {}
+                        }
+                    }
+                PHP,
+                'error_message' => 'TypeDoesNotContainType',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
         ];
     }

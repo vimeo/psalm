@@ -34,7 +34,9 @@ final class TaintSqlTables implements AfterExpressionAnalysisInterface
         $source = $event->getStatementsSource();
         $node_types = $source->getNodeTypeProvider();
         $receiver_type = $node_types->getType($call->var);
-        $receiver = $receiver_type !== null && $receiver_type->isSingle() ? $receiver_type->getSingleAtomic() : null;
+        $receiver = $receiver_type !== null && $receiver_type->isSingleAtomic()
+            ? $receiver_type->getSingleAtomic()
+            : null;
         if (!$receiver instanceof TNamedObject || $receiver->value !== 'app\Db') {
             return null;
         }

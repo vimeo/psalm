@@ -29,6 +29,7 @@ use function count;
 use function in_array;
 use function is_array;
 use function spl_object_id;
+use function str_starts_with;
 
 /**
  * @internal
@@ -40,6 +41,7 @@ final class DoAnalyzer
         PhpParser\Node\Stmt\Do_ $stmt,
         Context $context,
     ): ?bool {
+        $vars_possibly_in_scope_before_loop = $context->vars_possibly_in_scope;
         $do_context = clone $context;
         $do_context->break_types[] = 'loop';
         $do_context->inside_loop = true;
@@ -192,6 +194,19 @@ final class DoAnalyzer
             LoopAnalyzer::addVarsWrittenByTheExitingCondition($context, $loop_scope);
         }
 
+        // the loop is left when the condition is false: what it asserted of an offset or property of a mixed variable,
+        // whose negation is not known, doesn't hold after it (what the body assigned to it does)
+        foreach ($cond_clauses as $cond_clause) {
+            foreach ($cond_clause->possibilities as $key => $_) {
+                if (!isset($negated_while_types[$key])
+                    && !isset($inner_loop_context->assigned_var_ids[$key])
+                    && self::isItemOfMixedVar($key, $mixed_vars)
+                ) {
+                    $context->remove($key);
+                }
+            }
+        }
+
         // the body of a do-while runs once, unless it leaves the loop
         if (!in_array(ScopeAnalyzer::ACTION_BREAK, $loop_scope->final_actions, true)
             && !in_array(ScopeAnalyzer::ACTION_CONTINUE, $loop_scope->final_actions, true)
@@ -210,11 +225,34 @@ final class DoAnalyzer
             ...$do_context->vars_possibly_in_scope,
         ];
 
+        LoopAnalyzer::addVarsPossiblyDefinedInLoop(
+            $context,
+            $inner_loop_context,
+            $loop_scope,
+            $vars_possibly_in_scope_before_loop,
+            $is_only_left_by_break,
+        );
+
         if ($context->collect_exceptions) {
             $context->mergeExceptions($inner_loop_context);
         }
 
         return null;
+    }
+
+    /**
+     * @param array<string, bool> $mixed_vars
+     * @psalm-pure
+     */
+    private static function isItemOfMixedVar(string $key, array $mixed_vars): bool
+    {
+        foreach ($mixed_vars as $mixed_var_id => $_) {
+            if (str_starts_with($key, $mixed_var_id . '[') || str_starts_with($key, $mixed_var_id . '->')) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

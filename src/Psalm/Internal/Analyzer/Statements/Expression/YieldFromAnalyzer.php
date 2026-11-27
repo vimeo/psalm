@@ -82,7 +82,10 @@ final class YieldFromAnalyzer
                         && strtolower($atomic_type->value) === 'generator'
                         && isset($atomic_type->type_params[3])
                     ) {
-                        $yield_from_type = $atomic_type->type_params[3];
+                        // a generator declared with TReturn void returns null
+                        $yield_from_type = $atomic_type->type_params[3]->isVoid()
+                            ? Type::getNull()
+                            : $atomic_type->type_params[3];
                     } elseif ($atomic_type instanceof TArray || $atomic_type instanceof TKeyedArray) {
                         $yield_from_type = Type::getNull();
                     }
@@ -117,7 +120,7 @@ final class YieldFromAnalyzer
 
         $declared_return_type = $source->getFunctionLikeStorage($statements_analyzer)->return_type;
 
-        if ($declared_return_type === null || !$declared_return_type->isSingle()) {
+        if ($declared_return_type === null || !$declared_return_type->isSingleAtomic()) {
             return;
         }
 

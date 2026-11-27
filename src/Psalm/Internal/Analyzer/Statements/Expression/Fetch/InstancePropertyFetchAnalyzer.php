@@ -35,6 +35,8 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Atomic\TTemplateValueOf;
+use Psalm\Type\Atomic\TValueOf;
 use Psalm\Type\Union;
 
 use function array_merge;
@@ -280,9 +282,27 @@ final class InstancePropertyFetchAnalyzer
 
         $stmt_type = $statements_analyzer->node_data->getType($stmt);
 
+        // the value of an enum of a template type is one of the values of that type
+        if ($prop_name === 'value'
+            && !$in_assignment
+            && $stmt_type !== null
+            && $stmt_var_type->isSingleAtomic()
+            && ($template = $stmt_var_type->getSingleAtomic()) instanceof TTemplateParam
+            && $template->as->isSingleAtomic()
+            && $template->as->getSingleAtomic() instanceof TNamedObject
+            && TValueOf::getValueType($template->as, $codebase) !== null
+        ) {
+            $stmt_type = (new Union([new TTemplateValueOf(
+                $template->param_name,
+                $template->defining_class,
+                new Union([$template]),
+            )]))->setParentNodes($stmt_type->parent_nodes);
+            $statements_analyzer->node_data->setType($stmt, $stmt_type);
+        }
+
         // a member of the union that has no such property gives null to isset(), whatever the others give
         if ($missing_in_isset
-            && !$stmt_var_type->isSingle()
+            && !$stmt_var_type->isSingleAtomic()
             && $stmt_type
             && !$stmt_type->isNullable()
             && !$stmt_type->hasMixed()
@@ -377,7 +397,7 @@ final class InstancePropertyFetchAnalyzer
         Union $object_type,
         ?string $property_name,
     ): bool {
-        if ($property_name === null || !$object_type->isSingle()) {
+        if ($property_name === null || !$object_type->isSingleAtomic()) {
             return false;
         }
 
@@ -393,8 +413,16 @@ final class InstancePropertyFetchAnalyzer
             return false;
         }
 
-        $property = $codebase->classlike_storage_provider->get($storage->declaring_property_ids[$property_name])
-            ->properties[$property_name] ?? null;
+        $declaring_storage = $codebase->classlike_storage_provider->get(
+            $storage->declaring_property_ids[$property_name],
+        );
+
+        // what the constructor of a reflected builtin class initializes is not known
+        if (!$declaring_storage->user_defined && !$declaring_storage->stubbed) {
+            return false;
+        }
+
+        $property = $declaring_storage->properties[$property_name] ?? null;
 
         if ($property === null
             || $property->signature_type === null

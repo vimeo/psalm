@@ -2,7 +2,7 @@
 
 /**
  * Refreshes bin/ci/test_times.json, the seconds each test file takes, which generate_testsuites.php
- * balances the CI runners with.
+ * balances the CI runners with. The refresh-test-times workflow runs it weekly.
  *
  * Usage: php bin/ci/update_test_times.php <junit.xml>...
  *

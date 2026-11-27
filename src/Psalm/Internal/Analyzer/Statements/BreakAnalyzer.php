@@ -67,22 +67,27 @@ final class BreakAnalyzer
             // a `break 2` or more out of a nested loop does not land after this loop: it leaves the loops around it too
             $ends_this_loop = !$leaving_switch && $loops_between === 0;
 
-            // a break out of a switch only reaches the end of the switch, which keeps what every case read
-            if (!$leaving_switch) {
+            // a break out of a switch only reaches the end of the switch, which keeps what every case read; one out of
+            // the loops around this one (`break 2`) doesn't go on in this loop either
+            if (!$leaving_switch && $loops_between === 0) {
                 $loop_scope->addJump($context);
             }
 
             if ($ends_this_loop) {
                 $loop_scope->addBreak($context);
+                $loop_scope->references_in_scope_at_breaks[] = $context->references_in_scope;
             }
 
-            $redefined_vars = $context->getRedefinedVars($loop_scope->loop_parent_context->vars_in_scope);
+            // what a `break 2` or more redefines is seen after the loop it targets, not in the loops it passes through
+            if ($loops_between === 0) {
+                $redefined_vars = $context->getRedefinedVars($loop_scope->loop_parent_context->vars_in_scope);
 
-            foreach ($redefined_vars as $var => $type) {
-                $loop_scope->possibly_redefined_loop_parent_vars[$var] = Type::combineUnionTypes(
-                    $type,
-                    $loop_scope->possibly_redefined_loop_parent_vars[$var] ?? null,
-                );
+                foreach ($redefined_vars as $var => $type) {
+                    $loop_scope->possibly_redefined_loop_parent_vars[$var] = Type::combineUnionTypes(
+                        $type,
+                        $loop_scope->possibly_redefined_loop_parent_vars[$var] ?? null,
+                    );
+                }
             }
 
             if ($loop_scope->iteration_count === 0) {
@@ -98,7 +103,11 @@ final class BreakAnalyzer
                 }
 
                 foreach ($context->vars_in_scope as $var_id => $type) {
-                    if (!isset($loop_scope->loop_parent_context->vars_in_scope[$var_id])) {
+                    // an enclosing loop's variable is possibly undefined where its next iteration starts, but
+                    // defined after this loop if every way out of it defines it (see LoopAnalyzer::setLoopVars)
+                    if (!isset($loop_scope->loop_parent_context->vars_in_scope[$var_id])
+                        || $loop_scope->loop_parent_context->vars_in_scope[$var_id]->possibly_undefined
+                    ) {
                         $previous_type = $loop_scope->possibly_defined_loop_parent_vars[$var_id] ?? null;
 
                         if (str_ends_with($var_id, ']')
@@ -138,6 +147,7 @@ final class BreakAnalyzer
                     $target_scope->final_actions[] = ScopeAnalyzer::ACTION_BREAK;
                     $target_scope->addJump($context);
                     $target_scope->addBreak($context);
+                    $target_scope->references_in_scope_at_breaks[] = $context->references_in_scope;
 
                     $target_redefined_vars = $context->getRedefinedVars(
                         $target_scope->loop_parent_context->vars_in_scope,
@@ -152,7 +162,9 @@ final class BreakAnalyzer
 
                     if ($target_scope->iteration_count === 0) {
                         foreach ($context->vars_in_scope as $var_id => $type) {
-                            if (!isset($target_scope->loop_parent_context->vars_in_scope[$var_id])) {
+                            if (!isset($target_scope->loop_parent_context->vars_in_scope[$var_id])
+                                || $target_scope->loop_parent_context->vars_in_scope[$var_id]->possibly_undefined
+                            ) {
                                 $target_scope->possibly_defined_loop_parent_vars[$var_id] = Type::combineUnionTypes(
                                     $type,
                                     $target_scope->possibly_defined_loop_parent_vars[$var_id] ?? null,
@@ -192,6 +204,7 @@ final class BreakAnalyzer
         }
 
         if ($case_scope) {
+            $case_scope->references_in_scope_at_breaks[] = $context->references_in_scope;
             $case_scope->addBreak($context);
 
             $is_first_break = $case_scope->break_vars === null;

@@ -183,7 +183,7 @@ final class HighOrderFunctionArgHandler
         }
 
         // only a closure is a Closure: a string naming a function, or an object, is not
-        if ($container_param->type?->isSingle()
+        if ($container_param->type?->isSingleAtomic()
             && $container_param->type->getSingleAtomic() instanceof TClosure
             && !$input_arg_expr instanceof PhpParser\Node\Expr\FuncCall
             && !$input_arg_expr instanceof PhpParser\Node\Expr\MethodCall
@@ -349,7 +349,7 @@ final class HighOrderFunctionArgHandler
         Union $constant,
         StatementsAnalyzer $statements_analyzer,
     ): ?HighOrderFunctionArgInfo {
-        $literal = $constant->isSingle() ? $constant->getSingleAtomic() : null;
+        $literal = $constant->isSingleAtomic() ? $constant->getSingleAtomic() : null;
 
         if (!$literal instanceof Type\Atomic\TLiteralString || empty($literal->value)) {
             return null;

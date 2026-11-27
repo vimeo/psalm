@@ -455,6 +455,7 @@ final class LoopAnalyzer
                     }
                 }
 
+                $body_has_returned = $continue_context->has_returned;
                 $continue_context->has_returned = false;
 
                 $loop_parent_context->vars_possibly_in_scope += $continue_context->vars_possibly_in_scope;
@@ -475,10 +476,19 @@ final class LoopAnalyzer
                         continue;
                     }
 
-                    $loop_var_types_at_start[$var_id] = Type::combineUnionTypes(
-                        $continue_context->vars_in_scope[$var_id] ?? null,
-                        $loop_scope->possibly_defined_loop_vars[$var_id] ?? null,
-                    )->setPossiblyUndefined(false);
+                    // the end of a body that returns or throws doesn't go on to the next iteration: only its
+                    // continues do
+                    $at_end = $body_has_returned ? null : $continue_context->vars_in_scope[$var_id] ?? null;
+                    $at_continues = $loop_scope->possibly_defined_loop_vars[$var_id] ?? null;
+
+                    if (!$at_end && !$at_continues) {
+                        $continue_context->remove($var_id);
+
+                        continue;
+                    }
+
+                    $loop_var_types_at_start[$var_id] = Type::combineUnionTypes($at_end, $at_continues)
+                        ->setPossiblyUndefined(false);
                     $continue_context->vars_in_scope[$var_id] = $loop_var_types_at_start[$var_id]
                         ->setPossiblyUndefined(true);
                     $continue_context->vars_possibly_in_scope[$var_id] = true;
@@ -703,6 +713,14 @@ final class LoopAnalyzer
         // the body is analysed in the continue context: the loop context does not get what it rebinds
         if (!$does_always_break) {
             $loop_parent_context->detachReferencesReboundIn($continue_context, $statements_analyzer, $loop_nodes);
+        }
+
+        foreach ($loop_scope->references_in_scope_at_breaks as $references_in_scope_at_break) {
+            $loop_parent_context->detachReferencesReboundWhere(
+                $references_in_scope_at_break,
+                $statements_analyzer,
+                $loop_nodes,
+            );
         }
 
         $loop_parent_context->mergeConstraintsOfReferencesReboundIn(
@@ -1066,6 +1084,7 @@ final class LoopAnalyzer
 
         // the variables the condition is first evaluated with
         $entry_vars_in_scope = $context->vars_in_scope;
+        $vars_possibly_in_scope_before_loop = $context->vars_possibly_in_scope;
 
         $for_context = clone $context;
 
@@ -1167,6 +1186,14 @@ final class LoopAnalyzer
                 ...$context->vars_possibly_in_scope,
                 ...$for_context->vars_possibly_in_scope,
             ];
+
+            self::addVarsPossiblyDefinedInLoop(
+                $context,
+                $inner_loop_context,
+                $loop_scope,
+                $vars_possibly_in_scope_before_loop,
+                $while_true,
+            );
         } elseif ($pre_context) {
             $context->vars_possibly_in_scope = $pre_context->vars_possibly_in_scope;
         }
@@ -1554,6 +1581,59 @@ final class LoopAnalyzer
     }
 
     /**
+     * A variable the loop defines on some of the ways out of it is possibly undefined after the loop, and holds what
+     * those ways out left in it
+     *
+     * @param array<string, bool> $vars_possibly_in_scope_before_loop the ones possibly defined before the loop with
+     *                                                                 no known type keep none
+     * @param bool $is_only_left_by_break whether the loop is only left by a break (`while (true)`)
+     */
+    public static function addVarsPossiblyDefinedInLoop(
+        Context $context,
+        Context $inner_context,
+        LoopScope $loop_scope,
+        array $vars_possibly_in_scope_before_loop,
+        bool $is_only_left_by_break = false,
+    ): void {
+        $is_left_after_an_iteration = !$is_only_left_by_break
+            && $loop_scope->final_actions !== [ScopeAnalyzer::ACTION_BREAK];
+
+        foreach ($context->vars_possibly_in_scope as $var_id => $_) {
+            // a pseudo-variable (an extension check) that only some ways out set says nothing after the loop
+            if (!str_starts_with($var_id, '$')
+                || isset($context->vars_in_scope[$var_id])
+                || isset($vars_possibly_in_scope_before_loop[$var_id])
+                || !self::isLoopVar($var_id)
+                || isset($inner_context->references_in_scope[$var_id])
+            ) {
+                continue;
+            }
+
+            $at_breaks = $loop_scope->vars_at_breaks[$var_id] ?? null;
+            $at_continues = $loop_scope->vars_at_continues[$var_id] ?? null;
+
+            // a finally run on the way out changes what the variable holds after the loop
+            if (($at_breaks && $loop_scope->breaks_through_finally)
+                || ($at_continues && $loop_scope->continues_through_finally)
+            ) {
+                continue;
+            }
+
+            // the end of a body that returns or throws is not a way out of the loop
+            $at_end = $inner_context->has_returned ? null : $inner_context->vars_in_scope[$var_id] ?? null;
+
+            $types = array_values(array_filter(
+                $is_left_after_an_iteration ? [$at_breaks, $at_end, $at_continues] : [$at_breaks],
+            ));
+
+            if ($types) {
+                $context->vars_in_scope[$var_id] = Type::combineUnionTypeArray($types, null)
+                    ->setPossiblyUndefined(true);
+            }
+        }
+    }
+
+    /**
      * @param list<string> $always_assigned_before_loop_body_vars
      * @param bool $is_only_left_by_break whether the loop is only left by a break (`while (true)`): the variables then
      *                                    hold what they held at the breaks, not what an iteration ended with
@@ -1825,8 +1905,8 @@ final class LoopAnalyzer
     }
 
     /**
-     * Whether `$i < 10`, `++$i <= 10`, `--$i > 0` ... holds the first time it is evaluated, as `$i` is a literal int
-     * before the loop and the other side is a literal
+     * Whether `$i < 10`, `++$i <= $n`, `--$i > 0` ... holds the first time it is evaluated, as `$i` is an int before
+     * the loop and the other side an int (or a numeric string literal) whose bounds tell
      *
      * @param array<string, Union> $init_var_types
      * @psalm-capabilities read-props
@@ -1837,12 +1917,25 @@ final class LoopAnalyzer
         array $init_var_types,
     ): bool {
         $cond_value = $statements_analyzer->node_data->getType($cond->right);
-        // a non-numeric string is compared as a string since PHP 8, and as 0 before
-        if (!$cond_value
-            || !($cond_value->isSingleIntLiteral()
-                || ($cond_value->isSingleStringLiteral() && is_numeric($cond_value->getSingleStringLiteral()->value)))
-        ) {
+        if (!$cond_value) {
             return false;
+        }
+
+        // a non-numeric string is compared as a string since PHP 8, and as 0 before
+        if ($cond_value->isSingleStringLiteral()) {
+            $value = $cond_value->getSingleStringLiteral()->value;
+
+            if (!is_numeric($value)) {
+                return false;
+            }
+
+            $right_bounds = [$value, $value];
+        } else {
+            $right_bounds = $cond_value->isInt() ? self::getIntBounds($cond_value) : null;
+
+            if ($right_bounds === null) {
+                return false;
+            }
         }
 
         $variable = $cond->left;
@@ -1858,19 +1951,27 @@ final class LoopAnalyzer
         if (!$variable instanceof PhpParser\Node\Expr\Variable
             || !is_string($variable->name)
             || !isset($init_var_types[$variable->name])
-            || !$init_var_types[$variable->name]->isSingleIntLiteral()
+            || !$init_var_types[$variable->name]->isInt()
+            || !($left_bounds = self::getIntBounds($init_var_types[$variable->name]))
         ) {
             return false;
         }
 
-        $init_value = $init_var_types[$variable->name]->getSingleIntLiteral()->value + $adjustment;
-        $cond_value = $cond_value->getSingleLiteral()->value;
+        [$left_min, $left_max] = $left_bounds;
+        [$right_min, $right_max] = $right_bounds;
+
+        $left_min = $left_min === null ? null : $left_min + $adjustment;
+        $left_max = $left_max === null ? null : $left_max + $adjustment;
 
         return match (true) {
-            $cond instanceof PhpParser\Node\Expr\BinaryOp\Smaller => $init_value < $cond_value,
-            $cond instanceof PhpParser\Node\Expr\BinaryOp\SmallerOrEqual => $init_value <= $cond_value,
-            $cond instanceof PhpParser\Node\Expr\BinaryOp\Greater => $init_value > $cond_value,
-            $cond instanceof PhpParser\Node\Expr\BinaryOp\GreaterOrEqual => $init_value >= $cond_value,
+            $cond instanceof PhpParser\Node\Expr\BinaryOp\Smaller
+                => $left_max !== null && $right_min !== null && $left_max < $right_min,
+            $cond instanceof PhpParser\Node\Expr\BinaryOp\SmallerOrEqual
+                => $left_max !== null && $right_min !== null && $left_max <= $right_min,
+            $cond instanceof PhpParser\Node\Expr\BinaryOp\Greater
+                => $left_min !== null && $right_max !== null && $left_min > $right_max,
+            $cond instanceof PhpParser\Node\Expr\BinaryOp\GreaterOrEqual
+                => $left_min !== null && $right_max !== null && $left_min >= $right_max,
             default => false,
         };
     }

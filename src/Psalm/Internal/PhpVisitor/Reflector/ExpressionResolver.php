@@ -34,6 +34,7 @@ use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedShiftRight;
 use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedSubtractionOp;
 use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedTernary;
 use Psalm\Internal\Scanner\UnresolvedConstantComponent;
+use Psalm\Type;
 use ReflectionClass;
 use ReflectionFunction;
 
@@ -200,6 +201,15 @@ final class ExpressionResolver
             // `use const A\SOME;` makes the unqualified `SOME` the constant of A, whatever PHP constant it shadows
             if ($stmt->name->isUnqualified() && isset($aliases->constants[$stmt->name->getFirst()])) {
                 return new Constant($aliases->constants[$stmt->name->getFirst()], true, $aliases->namespace ?? '');
+            }
+
+            // `namespace\SOME` names a constant of the current namespace, and `use const` doesn't apply to it
+            if ($stmt->name instanceof PhpParser\Node\Name\Relative) {
+                return new Constant(
+                    Type::getFQCLNFromString($stmt->name->toCodeString(), $aliases),
+                    true,
+                    $aliases->namespace ?? '',
+                );
             }
 
             return new Constant(
