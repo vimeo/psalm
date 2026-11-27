@@ -84,6 +84,139 @@ final class ForeachTest extends TestCase
         );
     }
 
+    public function testAVariableDefinedOnSomeWaysOutOfTheLoopKeepsItsType(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @param list<string> $list */
+                function atABreak(array $list, string $needle): string {
+                    foreach ($list as $item) {
+                        if ($item === $needle) {
+                            $found = $item;
+                            break;
+                        }
+                    }
+                    return $found ?? "";
+                }
+
+                /** @param non-empty-list<string> $list */
+                function atABreakOfALoopAlwaysEntered(array $list, string $needle): void {
+                    foreach ($list as $item) {
+                        if ($item === $needle) {
+                            $found = $item;
+                            break;
+                        }
+                    }
+                    /** @psalm-check-type-exact $found? = string */;
+                }
+
+                /** @param list<int> $list */
+                function inALoopPossiblyNotEntered(array $list): void {
+                    foreach ($list as $k => $item) {
+                        $last = $item;
+                    }
+                    /** @psalm-check-type-exact $last? = int */;
+                    /** @psalm-check-type-exact $k? = int<0, max> */;
+                    /** @psalm-check-type-exact $item? = int */;
+                }
+
+                /** @param list<int> $list */
+                function atABreakAndAtTheEnd(array $list): void {
+                    foreach ($list as $item) {
+                        if ($item > 2) {
+                            $x = 1;
+                            break;
+                        }
+                        $x = "s";
+                    }
+                    /** @psalm-check-type-exact $x? = "s"|1 */;
+                }
+
+                /** @param list<int> $list */
+                function atAContinue(array $list): void {
+                    foreach ($list as $item) {
+                        if ($item > 2) {
+                            $x = "c";
+                            continue;
+                        }
+                        $x = 1;
+                    }
+                    /** @psalm-check-type-exact $x? = "c"|1 */;
+                }
+
+                /** @param list<list<int>> $lists */
+                function inANestedLoop(array $lists): void {
+                    foreach ($lists as $list) {
+                        foreach ($list as $item) {
+                            $x = $item;
+                        }
+                    }
+                    /** @psalm-check-type-exact $x? = int */;
+                }
+
+                /** @param list<list<int>> $lists */
+                function atABreakOutOfTheOuterLoop(array $lists): void {
+                    foreach ($lists as $list) {
+                        foreach ($list as $item) {
+                            if ($item) {
+                                $x = $item;
+                                break 2;
+                            }
+                        }
+                    }
+                    /** @psalm-check-type-exact $x? = int */;
+                }
+
+                /** @param list<int> $list */
+                function byReference(array $list): void {
+                    foreach ($list as &$item) {
+                        $item++;
+                    }
+                    /** @psalm-check-type-exact $item? = int */;
+                }
+
+                /** @param list<int> $list */
+                function unsetAtTheEnd(array $list): void {
+                    foreach ($list as $item) {
+                        $x = $item;
+                        unset($x);
+                    }
+                    echo $x;
+                }
+
+                /** @param list<string> $list */
+                function readAfterTheLoop(array $list, string $needle): void {
+                    foreach ($list as $item) {
+                        if ($item === $needle) {
+                            $found = $item;
+                            break;
+                        }
+                    }
+                    echo $found;
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        self::assertSame(
+            [
+                'UndefinedVariable 95:26',
+                'MixedArgument 95:26',
+                'PossiblyUndefinedVariable 106:26',
+            ],
+            array_map(
+                static fn(IssueData $issue): string
+                    => $issue->type . ' ' . $issue->line_from . ':' . $issue->column_from,
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
+        );
+    }
+
     public function testInvalidIteratorNamesTheScalarTypeWithoutItsValue(): void
     {
         $this->project_analyzer->getConfig()->throw_exception = false;

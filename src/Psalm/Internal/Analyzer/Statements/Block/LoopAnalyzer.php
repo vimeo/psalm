@@ -1175,6 +1175,8 @@ final class LoopAnalyzer
                 ...$context->vars_possibly_in_scope,
                 ...$for_context->vars_possibly_in_scope,
             ];
+
+            self::addVarsPossiblyDefinedInLoop($context, $inner_loop_context, $loop_scope);
         } elseif ($pre_context) {
             $context->vars_possibly_in_scope = $pre_context->vars_possibly_in_scope;
         }
@@ -1557,6 +1559,47 @@ final class LoopAnalyzer
                     $defined_here,
                     $is_only_left_by_the_condition,
                 );
+            }
+        }
+    }
+
+    /**
+     * A variable the loop defines on some of the ways out of it is possibly undefined after the loop, and holds what
+     * those ways out left in it
+     */
+    public static function addVarsPossiblyDefinedInLoop(
+        Context $context,
+        Context $inner_context,
+        LoopScope $loop_scope,
+    ): void {
+        $is_left_after_an_iteration = $loop_scope->final_actions !== [ScopeAnalyzer::ACTION_BREAK];
+
+        foreach ($context->vars_possibly_in_scope as $var_id => $_) {
+            if (isset($context->vars_in_scope[$var_id])
+                || !self::isLoopVar($var_id)
+                || isset($inner_context->references_in_scope[$var_id])
+            ) {
+                continue;
+            }
+
+            $at_breaks = $loop_scope->vars_at_breaks[$var_id] ?? null;
+            $at_continues = $loop_scope->vars_at_continues[$var_id] ?? null;
+
+            // a finally run on the way out changes what the variable holds after the loop
+            if (($at_breaks && $loop_scope->breaks_through_finally)
+                || ($at_continues && $loop_scope->continues_through_finally)
+            ) {
+                continue;
+            }
+
+            $types = array_filter([
+                $at_breaks,
+                ...($is_left_after_an_iteration ? [$inner_context->vars_in_scope[$var_id] ?? null, $at_continues] : []),
+            ]);
+
+            if ($types) {
+                $context->vars_in_scope[$var_id] = Type::combineUnionTypeArray($types, null)
+                    ->setPossiblyUndefined(true);
             }
         }
     }

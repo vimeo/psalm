@@ -1296,6 +1296,39 @@ final class DoTest extends TestCase
         }
         PHP;
 
+    public function testAVariableDefinedOnlyAtABreakKeepsItsType(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                function f(int $i): void {
+                    do {
+                        if ($i === 5) {
+                            $found = "a";
+                            break;
+                        }
+                        $i--;
+                    } while ($i > 0);
+                    /** @psalm-check-type-exact $found? = "a" */;
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        self::assertSame(
+            [],
+            array_map(
+                static fn(IssueData $issue): string
+                    => $issue->type . ' ' . $issue->line_from . ':' . $issue->column_from,
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
+        );
+    }
+
     public function testDoWhileFirstIterationIssuesAreDefinite(): void
     {
         $this->testConfig->throw_exception = false;

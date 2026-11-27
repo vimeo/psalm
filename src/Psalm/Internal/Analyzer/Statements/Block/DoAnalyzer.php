@@ -224,6 +224,8 @@ final class DoAnalyzer
             ...$do_context->vars_possibly_in_scope,
         ];
 
+        LoopAnalyzer::addVarsPossiblyDefinedInLoop($context, $inner_loop_context, $loop_scope);
+
         if ($context->collect_exceptions) {
             $context->mergeExceptions($inner_loop_context);
         }

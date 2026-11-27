@@ -21,6 +21,57 @@ final class WhileTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
+    public function testAVariableDefinedOnSomeWaysOutOfTheLoopKeepsItsType(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                function nextRow(): ?int {
+                    return rand(0, 1) ? 1 : null;
+                }
+
+                function inAWhile(): void {
+                    while ($row = nextRow()) {
+                        $last = $row;
+                    }
+                    /** @psalm-check-type-exact $last? = int */;
+                }
+
+                function atABreakOfAWhile(int $i): void {
+                    while ($i > 0) {
+                        if ($i === 5) {
+                            $found = "a";
+                            break;
+                        }
+                        $i--;
+                    }
+                    /** @psalm-check-type-exact $found? = "a" */;
+                }
+
+                function inAFor(int $n): void {
+                    for ($i = 0; $i < $n; $i++) {
+                        $x = $i;
+                    }
+                    /** @psalm-check-type-exact $x? = int<0, max> */;
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        self::assertSame(
+            [],
+            array_map(
+                static fn(IssueData $issue): string
+                    => $issue->type . ' ' . $issue->line_from . ':' . $issue->column_from,
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
+        );
+    }
+
     public function testAnIssueInTheLoopDoesNotChangeTheUndefinedVariableIssues(): void
     {
         $this->project_analyzer->getConfig()->throw_exception = false;
