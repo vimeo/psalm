@@ -84,7 +84,15 @@ final class ClassTemplateTest extends TestCase
 
                     final class D {
                         use Tr;
-                    }',
+                    }
+
+                    /**
+                     * @template T of array<TK, resource>
+                     * @template TK of array-key
+                     */
+                    class E {}
+
+                    final class F extends E {}',
                 'assertions' => [],
                 'ignored_issues' => ['MissingTemplateParam'],
             ],

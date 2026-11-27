@@ -643,6 +643,8 @@ final class ClassLikeNodeScanner
                             continue;
                         }
 
+                        $bound = FromDocblockSetter::markResources($bound);
+
                         if ($bound->getId() !== $storage->template_types[$template_name][$fq_classlike_name]->getId()) {
                             $storage->template_types[$template_name] = [$fq_classlike_name => $bound];
                             $settled = false;

@@ -142,6 +142,16 @@ final class FunctionTemplateTest extends TestCase
                         public function m($t) {
                             return $t;
                         }
+                    }
+
+                    /**
+                     * @template T of array<TK, resource>
+                     * @template TK of array-key
+                     * @param T $t
+                     * @return T
+                     */
+                    function g($t) {
+                        return $t;
                     }',
             ],
             'classStringOrTemplateIsBoundToTheClassOfAClassString' => [
