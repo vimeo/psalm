@@ -576,6 +576,18 @@ trait UnionTrait
     }
 
     /**
+     * Whether the type holds a union of array shapes that are kept apart.
+     *
+     * @psalm-mutation-free
+     */
+    public function hasDisjointShapes(): bool
+    {
+        return isset($this->types['array'])
+            && $this->types['array'] instanceof TKeyedArray
+            && $this->types['array']->disjoint_shapes !== null;
+    }
+
+    /**
      * @psalm-mutation-free
      */
     public function hasArray(): bool

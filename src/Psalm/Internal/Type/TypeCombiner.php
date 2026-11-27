@@ -88,6 +88,8 @@ use const ARRAY_FILTER_USE_BOTH;
  */
 final class TypeCombiner
 {
+    private const MAX_DISJOINT_SHAPES = 8;
+
     /**
      * Combines the parts of a declared type. A type variable that stands for `never` until bound adds no value to a
      * union, but what is passed for a param of that type (`T|null`) still binds it.
@@ -737,6 +739,10 @@ final class TypeCombiner
             }
         }
         if ($type instanceof TArray && $type_key === 'array') {
+            if (!$type->isEmptyArray() || !$overwrite_empty_array) {
+                $combination->objectlike_shapes = null;
+            }
+
             foreach ($type->type_params as $i => $type_param) {
                 // See https://github.com/vimeo/psalm/pull/9439#issuecomment-1464563015
                 /** @psalm-suppress PropertyTypeCoercion */
@@ -871,6 +877,22 @@ final class TypeCombiner
         if ($type instanceof TKeyedArray) {
             if ($type->is_callable && isset($combination->value_types['callable[impure]'])) {
                 return null;
+            }
+
+            // only sealed shapes are kept apart: an unsealed one may hold what another says
+            if ($type->is_callable || $type->fallback_params !== null) {
+                $combination->objectlike_shapes = null;
+            } elseif ($combination->objectlike_shapes !== null) {
+                foreach ($type->getDisjointShapes() as $shape) {
+                    $combination->objectlike_shapes = self::addDisjointShape(
+                        $combination->objectlike_shapes,
+                        $shape,
+                        $codebase,
+                    );
+                    if ($combination->objectlike_shapes === null) {
+                        break;
+                    }
+                }
             }
 
             $existing_objectlike_entries = (bool) $combination->objectlike_entries;
@@ -1941,6 +1963,77 @@ final class TypeCombiner
     }
 
     /**
+     * Adds a keyed array to those kept apart, as one shape with another where the two say the same as one.
+     *
+     * @param list<TKeyedArray> $shapes
+     * @return list<TKeyedArray>|null null when there are too many to keep apart
+     */
+    private static function addDisjointShape(array $shapes, TKeyedArray $shape, ?Codebase $codebase): ?array
+    {
+        foreach ($shapes as $i => $existing_shape) {
+            $merged = self::mergeShapesDifferingInOneKey($existing_shape, $shape, $codebase);
+            if ($merged !== null) {
+                unset($shapes[$i]);
+                return self::addDisjointShape(array_values($shapes), $merged, $codebase);
+            }
+        }
+
+        $shapes[] = $shape;
+
+        return count($shapes) > self::MAX_DISJOINT_SHAPES ? null : $shapes;
+    }
+
+    /**
+     * Two sealed shapes that differ in one key hold together what one shape with both types under that key does.
+     */
+    private static function mergeShapesDifferingInOneKey(
+        TKeyedArray $a,
+        TKeyedArray $b,
+        ?Codebase $codebase,
+    ): ?TKeyedArray {
+        if ($a->is_list !== $b->is_list || $a->class_strings != $b->class_strings) {
+            return null;
+        }
+
+        $differing_key = null;
+        foreach ($a->properties + $b->properties as $key => $_) {
+            $a_property = $a->properties[$key] ?? null;
+            $b_property = $b->properties[$key] ?? null;
+            if ($a_property !== null
+                && $b_property !== null
+                && $a_property->possibly_undefined === $b_property->possibly_undefined
+                && $a_property->getId() === $b_property->getId()
+            ) {
+                continue;
+            }
+            if ($differing_key !== null) {
+                return null;
+            }
+            $differing_key = $key;
+        }
+
+        if ($differing_key === null) {
+            return $a;
+        }
+
+        $a_property = $a->properties[$differing_key] ?? null;
+        $b_property = $b->properties[$differing_key] ?? null;
+        $properties = $a->properties;
+        if ($a_property !== null && $b_property !== null) {
+            $properties[$differing_key] = Type::combineUnionTypes($a_property, $b_property, $codebase)
+                ->setPossiblyUndefined($a_property->possibly_undefined || $b_property->possibly_undefined);
+        } else {
+            $properties[$differing_key] = ($a_property ?? $b_property ?? Type::getNever())
+                ->setPossiblyUndefined(true);
+        }
+
+        $merged = $a->setProperties($properties);
+
+        // a list that loses an item in the middle is no list, and no shape says that
+        return $merged instanceof TKeyedArray && $merged->is_list === $a->is_list ? $merged : null;
+    }
+
+    /**
      * @return list<Atomic>
      */
     private static function handleKeyedArrayEntries(
@@ -2038,6 +2131,14 @@ final class TypeCombiner
                         (bool)$combination->all_arrays_lists,
                         $from_docblock,
                     );
+                }
+
+                if ($objectlike instanceof TKeyedArray
+                    && $combination->objectlike_shapes !== null
+                    && !$combination->array_type_params
+                    && !$combination->all_arrays_callable
+                ) {
+                    $objectlike = $objectlike->setDisjointShapes($combination->objectlike_shapes);
                 }
 
                 $new_types[] = $objectlike;

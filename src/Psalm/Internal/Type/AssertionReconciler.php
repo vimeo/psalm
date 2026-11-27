@@ -96,6 +96,7 @@ use function array_keys;
 use function array_merge;
 use function array_search;
 use function array_values;
+use function assert;
 use function count;
 use function is_nan;
 use function is_numeric;
@@ -109,6 +110,79 @@ use function strtolower;
  */
 final class AssertionReconciler extends Reconciler
 {
+    /**
+     * An assertion says of a union of shapes what it says of each of them.
+     *
+     * @param array<string, array<string, Union>> $template_type_map
+     * @param string[] $suppressed_issues
+     * @param-out Reconciler::RECONCILIATION_* $failed_reconciliation
+     */
+    private static function reconcileDisjointShapes(
+        Assertion $assertion,
+        Union $existing_var_type,
+        ?string $key,
+        StatementsAnalyzer $statements_analyzer,
+        bool $inside_loop,
+        array $template_type_map,
+        ?CodeLocation $code_location,
+        array $suppressed_issues,
+        ?int &$failed_reconciliation,
+        bool $negated,
+    ): Union {
+        $codebase = $statements_analyzer->getCodebase();
+        $array_type = $existing_var_type->getArray();
+        assert($array_type instanceof TKeyedArray);
+
+        // what there is to report is reported of the shapes as one
+        $merged_result_type = self::reconcileUnion(
+            $assertion,
+            $existing_var_type->getBuilder()->addType($array_type->setDisjointShapes([]))->freeze(),
+            $key,
+            $statements_analyzer,
+            $inside_loop,
+            $template_type_map,
+            $code_location,
+            $suppressed_issues,
+            $failed_reconciliation,
+            $negated,
+        );
+
+        if ($failed_reconciliation !== Reconciler::RECONCILIATION_OK) {
+            return $failed_reconciliation === Reconciler::RECONCILIATION_REDUNDANT
+                ? $existing_var_type
+                : $merged_result_type;
+        }
+
+        $result_type = null;
+
+        foreach ($array_type->getDisjointShapes() as $shape) {
+            $shape_failed_reconciliation = Reconciler::RECONCILIATION_OK;
+            $shape_result_type = self::reconcileUnion(
+                $assertion,
+                $existing_var_type->getBuilder()->addType($shape)->freeze(),
+                $key,
+                $statements_analyzer,
+                $inside_loop,
+                $template_type_map,
+                null,
+                $suppressed_issues,
+                $shape_failed_reconciliation,
+                $negated,
+            );
+
+            if ($shape_failed_reconciliation === Reconciler::RECONCILIATION_EMPTY
+                || $shape_result_type->isNever()
+                || $shape_result_type->isUnionEmpty()
+            ) {
+                continue;
+            }
+
+            $result_type = Type::combineUnionTypes($shape_result_type, $result_type, $codebase);
+        }
+
+        return $result_type ?? $merged_result_type;
+    }
+
     /**
      * Reconciles types
      *
@@ -133,6 +207,52 @@ final class AssertionReconciler extends Reconciler
         array $suppressed_issues = [],
         ?int &$failed_reconciliation = Reconciler::RECONCILIATION_OK,
         bool $negated = false,
+    ): Union {
+        if ($existing_var_type?->hasDisjointShapes()) {
+            return self::reconcileDisjointShapes(
+                $assertion,
+                $existing_var_type,
+                $key,
+                $statements_analyzer,
+                $inside_loop,
+                $template_type_map,
+                $code_location,
+                $suppressed_issues,
+                $failed_reconciliation,
+                $negated,
+            );
+        }
+
+        return self::reconcileUnion(
+            $assertion,
+            $existing_var_type,
+            $key,
+            $statements_analyzer,
+            $inside_loop,
+            $template_type_map,
+            $code_location,
+            $suppressed_issues,
+            $failed_reconciliation,
+            $negated,
+        );
+    }
+
+    /**
+     * @param   string[]            $suppressed_issues
+     * @param   array<string, array<string, Union>> $template_type_map
+     * @param-out Reconciler::RECONCILIATION_* $failed_reconciliation
+     */
+    private static function reconcileUnion(
+        Assertion $assertion,
+        ?Union $existing_var_type,
+        ?string $key,
+        StatementsAnalyzer $statements_analyzer,
+        bool $inside_loop,
+        array $template_type_map,
+        ?CodeLocation $code_location,
+        array $suppressed_issues,
+        ?int &$failed_reconciliation,
+        bool $negated,
     ): Union {
         $codebase = $statements_analyzer->getCodebase();
 

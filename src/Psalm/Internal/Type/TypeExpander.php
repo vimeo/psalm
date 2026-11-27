@@ -805,6 +805,26 @@ final class TypeExpander
                     $throw_on_unresolvable_constant,
                 ));
             }
+        } elseif ($return_type instanceof TKeyedArray && $return_type->disjoint_shapes !== null) {
+            $shapes = [];
+            foreach ($return_type->disjoint_shapes as $shape) {
+                $shapes = [...$shapes, ...self::expandAtomic(
+                    $codebase,
+                    $shape,
+                    $self_class,
+                    $static_class_type,
+                    $parent_class,
+                    $evaluate_class_constants,
+                    $evaluate_conditional_types,
+                    $final,
+                    $expand_generic,
+                    $expand_templates,
+                    $throw_on_unresolvable_constant,
+                )];
+            }
+            if ($shapes !== $return_type->disjoint_shapes) {
+                return array_values(TypeCombiner::combine($shapes, $codebase)->getAtomicTypes());
+            }
         } elseif ($return_type instanceof TKeyedArray) {
             $properties = $return_type->properties;
             $changed = false;
