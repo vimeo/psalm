@@ -317,15 +317,15 @@ final class FunctionCallAnalyzer extends CallAnalyzer
 
         $function_storage = $function_call_info->function_storage;
 
-        // record the call sites of user functions, as Methods::methodExists() does for methods
-        if ($codebase->collect_locations
-            && $function_storage !== null
+        // record the uses of user functions, as Methods::methodExists() does for methods: the method-level cache
+        // of the language server re-analyses the callers of a function whose signature changed through them
+        if ($function_storage !== null
             && $function_storage->location !== null
             && $function_call_info->function_id !== null
         ) {
             $codebase->addReferenceToFunctionLike(
                 strtolower($function_call_info->function_id),
-                new CodeLocation($statements_analyzer->getSource(), $stmt->name),
+                $codebase->collect_locations ? new CodeLocation($statements_analyzer->getSource(), $stmt->name) : null,
                 $context,
                 $context->insideUse(),
                 $statements_analyzer->getFilePath(),

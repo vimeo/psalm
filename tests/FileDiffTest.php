@@ -2021,9 +2021,63 @@ final class FileDiffTest extends TestCase
                     }',
                 ['foo\a::foo'],
                 [],
-                [],
+                ['foo\bar'],
                 [[0, 0]],
                 [[171, 281]],
+            ],
+            'functionBodyChangeWithoutSignatureChange' => [
+                '<?php
+                namespace Foo;
+
+                function foo() : void {
+                    $a = 1;
+                }
+
+                function bar() : void {
+                    $b = 1;
+                }',
+                '<?php
+                namespace Foo;
+
+                function foo() : void {
+                    $a = 12;
+                }
+
+                function bar() : void {
+                    $b = 1;
+                }',
+                ['foo\bar'],
+                ['foo\foo'],
+                [],
+                [[1, 0]],
+                [[54, 122]],
+            ],
+            'functionSignatureChange' => [
+                '<?php
+                namespace Foo;
+
+                function foo() : int {
+                    return 1;
+                }
+
+                function bar() : void {
+                    $b = 1;
+                }',
+                '<?php
+                namespace Foo;
+
+                function foo() : string {
+                    return "a";
+                }
+
+                function bar() : void {
+                    $b = 1;
+                }',
+                ['foo\bar'],
+                [],
+                ['foo\foo', 'foo\foo'],
+                [[5, 0]],
+                [[54, 123]],
             ],
         ];
     }
