@@ -3279,6 +3279,10 @@ final class AssertionReconciler extends Reconciler
      */
     private static function bindCheckedClasses(Codebase $codebase, Union $narrowed, ?Union $existing_var_type): Union
     {
+        if (!$narrowed->hasNamedObjectType()) {
+            return $narrowed;
+        }
+
         $existing_classes = [];
 
         foreach ($existing_var_type?->getAtomicTypes() ?? [] as $existing_atomic) {
