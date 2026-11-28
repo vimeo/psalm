@@ -479,7 +479,10 @@ final class TypeExpander
                 }
 
                 if ($class_constant) {
-                    return array_values($class_constant->getAtomicTypes());
+                    return array_values(
+                        ($return_type->from_docblock ? $class_constant->setFromDocblock() : $class_constant)
+                            ->getAtomicTypes(),
+                    );
                 }
             }
 
@@ -500,6 +503,10 @@ final class TypeExpander
                 $const_atomic_types = [];
 
                 foreach ($const_types as $const_type) {
+                    if ($return_type->from_docblock) {
+                        $const_type = $const_type->setFromDocblock();
+                    }
+
                     foreach ($const_type->getAtomicTypes() as $const_atomic_type) {
                         $const_atomic_types[] = $const_atomic_type;
                     }
