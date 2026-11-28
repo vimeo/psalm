@@ -1425,7 +1425,7 @@ final class TemporaryUpdateTest extends TestCase
                             }',
                     ],
                 ],
-                'error_positions' => [[306], [306, 452, 452]],
+                'error_positions' => [[306], [306, 452]],
             ],
             'addPropertyDocblock' => [
                 [
