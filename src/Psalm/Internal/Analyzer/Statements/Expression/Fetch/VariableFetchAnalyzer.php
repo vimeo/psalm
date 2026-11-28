@@ -683,16 +683,13 @@ final class VariableFetchAnalyzer
         $codebase = $statements_analyzer->getCodebase();
 
         // Add superglobal server taint sources
-        if ($var_name === '$_GET'
+        $is_input_superglobal = $var_name === '$_GET'
             || $var_name === '$_POST'
             || $var_name === '$_COOKIE'
             || $var_name === '$_REQUEST'
-            || $var_name === '$_ENV'
-        ) {
-            $taints = $codebase->getInputTaints();
-        } else {
-            $taints = 0;
-        }
+            || $var_name === '$_ENV';
+
+        $taints = $is_input_superglobal ? $codebase->getInputTaints() : 0;
 
         // Trigger event to possibly get more/less taints
         $event = new AddRemoveTaintsEvent($stmt, $context, $statements_analyzer, $codebase);
@@ -720,9 +717,10 @@ final class VariableFetchAnalyzer
         );
         $graph->addSource($taint_source);
 
-        $type = $type->setParentNodes([
-            $taint_source->id => $taint_source,
-        ]);
+        // a superglobal read starts a flow of its own, any other variable keeps where its value came from
+        $type = $is_input_superglobal
+            ? $type->setParentNodes([$taint_source->id => $taint_source])
+            : $type->addParentNodes([$taint_source->id => $taint_source]);
     }
 
     /**
