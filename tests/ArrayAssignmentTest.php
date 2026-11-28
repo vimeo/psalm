@@ -132,6 +132,43 @@ final class ArrayAssignmentTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'offsetAssignedToAnObjectOrArrayShapeUpdatesTheShape' => [
+                'code' => '<?php
+                    interface PDI {}
+
+                    /**
+                     * @param PDI|array{w?: int|null} $optional
+                     * @param PDI|array{w: int} $required
+                     * @param PDI|array{w: int, x: int} $other
+                     * @param ArrayAccess<string, int>|array{w: int} $access
+                     * @param PDI|array{w: array{z: int}} $nested
+                     * @param PDI|array{w: int}|null $nullable
+                     * @param PDI|array<string, int> $map
+                     * @psalm-suppress PossiblyInvalidArrayAssignment
+                     */
+                    function f($optional, $required, $other, $access, $nested, $nullable, $map, string $key): void {
+                        $optional["w"] = 0;
+                        /** @psalm-check-type-exact $optional = PDI|array{w: 0} */;
+
+                        $required["w"] = 0;
+                        /** @psalm-check-type-exact $required = PDI|array{w: 0} */;
+
+                        $other["w"] = 0;
+                        /** @psalm-check-type-exact $other = PDI|array{w: 0, x: int} */;
+
+                        $access["w"] = 0;
+                        /** @psalm-check-type-exact $access = ArrayAccess<string, int>|array{w: 0} */;
+
+                        $nested["w"]["z"] = 0;
+                        /** @psalm-check-type-exact $nested = PDI|array{w: array{z: 0}} */;
+
+                        $nullable["w"] = 0;
+                        /** @psalm-check-type-exact $nullable = PDI|array{w: 0} */;
+
+                        $map[$key] = 0;
+                        /** @psalm-check-type-exact $map = PDI|non-empty-array<string, int> */;
+                    }',
+            ],
             'nestedWriteUnderAListedKeyOfAShapeWithAMixedFallback' => [
                 'code' => '<?php
                     /** @param array{meta: array<string, string>, ...} $payload */

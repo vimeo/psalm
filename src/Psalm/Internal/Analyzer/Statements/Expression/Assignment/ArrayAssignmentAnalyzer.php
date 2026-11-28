@@ -320,7 +320,8 @@ final class ArrayAssignmentAnalyzer
 
         if ($root_is_never) {
             $root_type = Type::getNever()->setParentNodes($new_child_type->parent_nodes);
-        } elseif (!$root_type->hasObjectType()) {
+        } elseif (!$root_type->hasObjectType() || $root_type->hasArray()) {
+            // an object is written by its offsetSet() and stays as it is, the arrays beside it take the offset
             $root_type = $new_child_type;
         }
 
