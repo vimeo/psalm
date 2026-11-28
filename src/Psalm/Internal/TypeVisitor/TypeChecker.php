@@ -577,11 +577,17 @@ final class TypeChecker extends TypeVisitor
 
     public function checkScalarClassConstant(TClassConstant $atomic): void
     {
-        $fq_classlike_name = $atomic->fq_classlike_name === 'self'
-            ? $this->source->getClassName()
-            : $atomic->fq_classlike_name;
+        $is_relative = $atomic->fq_classlike_name === 'self' || $atomic->fq_classlike_name === 'static';
+        $fq_classlike_name = $is_relative ? $this->source->getFQCLN() : $atomic->fq_classlike_name;
 
         if (!$fq_classlike_name) {
+            return;
+        }
+
+        // the constants of a trait are the ones of the class using it, which the trait does not know
+        if ($is_relative
+            && $this->source->getCodebase()->classlike_storage_provider->get($fq_classlike_name)->is_trait
+        ) {
             return;
         }
 

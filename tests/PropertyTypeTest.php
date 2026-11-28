@@ -1110,6 +1110,28 @@ final class PropertyTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'intersectionOfClassConstantsWithACommonValueAsAPropertyType' => [
+                'code' => '<?php
+                    namespace App;
+
+                    class Base {
+                        const A = 1;
+                        const B = 2;
+                    }
+
+                    final class Flags extends Base {
+                        /** @var self::A&int<1, 1> */
+                        public int $one = 1;
+
+                        /** @var static::A|self::B */
+                        public int $either = 1;
+                    }
+
+                    trait Flagged {
+                        /** @var self::A&self::B */
+                        public int $flag = 1;
+                    }',
+            ],
             'staticInThePropertyTypeOfAParentIsTheClassOfTheObjectRead' => [
                 'code' => '<?php
                     class Node {
@@ -5978,6 +6000,30 @@ final class PropertyTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'intersectionOfClassConstantsWithNoCommonValueAsAPropertyType' => [
+                'code' => '<?php
+                    namespace App;
+
+                    final class Flags {
+                        const A = 1;
+                        const B = 2;
+
+                        /** @var self::A&self::B */
+                        public int $flag = 1;
+                    }',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:34 - No value has all the types of the intersection',
+            ],
+            'intersectionOfClassConstantsWithNoCommonValueAsAStaticPropertyType' => [
+                'code' => '<?php
+                    final class Flags {
+                        const A = 1;
+                        const B = 2;
+
+                        /** @var self::A&self::B */
+                        public static int $flag = 1;
+                    }',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:34 - No value has all the types of the intersection',
+            ],
             'nullOfAValueDoesNotMakeItPossiblyValidForANullableTemplateProperty' => [
                 'code' => '<?php
                     final class Foo {}
