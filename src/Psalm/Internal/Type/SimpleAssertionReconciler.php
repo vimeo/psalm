@@ -566,6 +566,22 @@ final class SimpleAssertionReconciler extends Reconciler
             return Type::getFloat();
         }
 
+        if ($assertion_type instanceof TFloat
+            && $assertion_type::class === TFloat::class
+            && !$assertion instanceof IsLooselyEqual
+            && $existing_var_type->hasTemplate()
+        ) {
+            return self::reconcileFloat(
+                $assertion,
+                $existing_var_type,
+                $key,
+                $negated,
+                $code_location,
+                $suppressed_issues,
+                $failed_reconciliation,
+            );
+        }
+
         if ($assertion_type instanceof TClassConstant) {
             return self::reconcileClassConstant(
                 $codebase,
@@ -1302,6 +1318,75 @@ final class SimpleAssertionReconciler extends Reconciler
             // strings that are never numeric can't be loosely equal to an int
             $assertion instanceof IsType
                 || ($assertion instanceof IsLooselyEqual && !$int_types && $existing_var_type->isString()),
+            false,
+            $existing_var_type,
+            $old_var_type_string,
+            $key,
+            $assertion,
+            $negated,
+            $code_location,
+            $suppressed_issues,
+            $failed_reconciliation,
+        );
+    }
+
+    /**
+     * A float asserted of a union with a template keeps the template with its bound narrowed, like an int
+     *
+     * @param   string[]  $suppressed_issues
+     * @param Reconciler::RECONCILIATION_* $failed_reconciliation
+     */
+    private static function reconcileFloat(
+        Assertion $assertion,
+        Union $existing_var_type,
+        ?string $key,
+        bool $negated,
+        ?CodeLocation $code_location,
+        array $suppressed_issues,
+        int &$failed_reconciliation,
+    ): Union {
+        if ($existing_var_type->hasMixed()) {
+            return Type::getFloat();
+        }
+
+        $old_var_type_string = $existing_var_type->getId();
+        $float_types = [];
+        $redundant = true;
+
+        foreach ($existing_var_type->getAtomicTypes() as $type) {
+            if ($type instanceof TFloat) {
+                $float_types[] = $type::class === TFloat::class ? $type->setFromDocblock(false) : $type;
+            } elseif ($type instanceof TScalar) {
+                array_push($float_types, ...AtomicParts::getScalarPartsOfKind($type, TFloat::class));
+                $redundant = false;
+            } elseif ($type instanceof TNumeric) {
+                $float_types[] = new TFloat();
+                $redundant = false;
+            } elseif ($type instanceof TTemplateParam) {
+                $bound = self::getTemplateBound($type);
+
+                if ($bound->hasType('float') || $bound->hasMixed() || $bound->hasScalar() || $bound->hasNumeric()) {
+                    $float_types[] = $type->replaceAs(self::reconcileFloat(
+                        $assertion,
+                        $type->as,
+                        null,
+                        false,
+                        null,
+                        $suppressed_issues,
+                        $failed_reconciliation,
+                    ));
+                }
+
+                $redundant = false;
+            } else {
+                $redundant = false;
+            }
+        }
+
+        return self::finishReconciliation(
+            $float_types ? new Union($float_types) : null,
+            $redundant,
+            !$assertion instanceof IsLooselyEqual,
             false,
             $existing_var_type,
             $old_var_type_string,

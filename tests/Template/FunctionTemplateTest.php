@@ -111,6 +111,47 @@ final class FunctionTemplateTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'isFloatKeepsTheTemplateOfAUnionBound' => [
+                'code' => '<?php
+                    /**
+                     * @template T of int|float
+                     * @param T $i
+                     * @return T
+                     */
+                    function ofIntOrFloat($i) {
+                        if (is_float($i)) {
+                            return $i;
+                        }
+
+                        return $i;
+                    }
+
+                    /**
+                     * @template T of scalar
+                     * @param T $i
+                     * @return T
+                     */
+                    function ofScalar($i) {
+                        if (is_float($i)) {
+                            return $i;
+                        }
+
+                        return $i;
+                    }
+
+                    /**
+                     * @template T of numeric
+                     * @param T $i
+                     * @return T
+                     */
+                    function ofNumeric($i) {
+                        if (is_float($i)) {
+                            return $i;
+                        }
+
+                        return $i;
+                    }',
+            ],
             'closureParamWithTemplatesNamingKeyOfAnotherTemplateNotInItsType' => [
                 'code' => '<?php
                     /**
@@ -4513,6 +4554,19 @@ final class FunctionTemplateTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'isFloatOfATemplateBoundByIntIsImpossible' => [
+                'code' => '<?php
+                    /**
+                     * @template T of int
+                     * @param T $i
+                     */
+                    function f($i): void {
+                        if (is_float($i)) {
+                            echo "never";
+                        }
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+            ],
             'classStringAndInvariantParamsOfDifferentClassesAreIncompatible' => [
                 'code' => '<?php
                     final class A {}
