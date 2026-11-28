@@ -40,6 +40,7 @@ use Psalm\Issue\UndefinedThisPropertyAssignment;
 use Psalm\Issue\UndefinedThisPropertyFetch;
 use Psalm\IssueBuffer;
 use Psalm\Node\Expr\VirtualFuncCall;
+use Psalm\Node\VirtualNode;
 use Psalm\Storage\Capabilities;
 use Psalm\Type;
 use Psalm\Type\Atomic;
@@ -552,7 +553,8 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
             );
         }
 
-        if ($codebase->methods_to_rename) {
+        // a name the call doesn't spell (`$object->$name()`) has no source to rename
+        if ($codebase->methods_to_rename && !$stmt_name instanceof VirtualNode) {
             $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
 
             foreach ($codebase->methods_to_rename as $original_method_id => $new_method_name) {

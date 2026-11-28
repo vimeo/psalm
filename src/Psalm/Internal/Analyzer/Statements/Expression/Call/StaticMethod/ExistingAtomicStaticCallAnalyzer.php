@@ -37,6 +37,7 @@ use Psalm\Issue\AbstractMethodCall;
 use Psalm\Issue\ImpureMethodCall;
 use Psalm\Issue\UnusedMethodCall;
 use Psalm\IssueBuffer;
+use Psalm\Node\VirtualNode;
 use Psalm\Storage\Capabilities;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FunctionLikeStorage;
@@ -522,7 +523,8 @@ final class ExistingAtomicStaticCallAnalyzer
             }
         }
 
-        if ($codebase->alter_code) {
+        // a name the call doesn't spell (`A::$name()`) has no source to rewrite
+        if ($codebase->alter_code && !$stmt_name instanceof VirtualNode) {
             foreach ($codebase->call_transforms as $original_pattern => $transformation) {
                 if ($declaring_method_id
                     && strtolower((string) $declaring_method_id) . '\((.*\))' === $original_pattern
