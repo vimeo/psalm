@@ -328,32 +328,16 @@ final class TypeCombiner
                 foreach ($combination->strings as $k => $string) {
                     if ($string instanceof TLiteralClassString) {
                         $combination->class_string_types[$string->value] = new TNamedObject($string->value);
+                        unset($combination->class_string_kinds[$string->value]);
                         unset($combination->strings[$k]);
                     }
                 }
             }
 
-            $has_non_specific_string = isset($combination->value_types['string'])
-                && $combination->value_types['string']::class === TString::class;
-
-            if (!$has_non_specific_string) {
-                $object_type = self::combine(
-                    array_values($combination->class_string_types),
-                    $codebase,
-                );
-
-                foreach ($object_type->getAtomicTypes() as $object_atomic_type) {
-                    if ($object_atomic_type instanceof TNamedObject) {
-                        $class_type = new TClassString($object_atomic_type->value, $object_atomic_type);
-                    } elseif ($object_atomic_type instanceof TObject) {
-                        $class_type = new TClassString();
-                    } else {
-                        continue;
-                    }
-
-                    $new_types[] = $class_type->setFromDocblock($from_docblock);
-                }
-            }
+            $new_types = array_merge(
+                $new_types,
+                self::getClassStringAtomics($combination, $combination->class_string_types, $codebase, $from_docblock),
+            );
         }
 
         if ($combination->strings) {
@@ -1374,6 +1358,120 @@ final class TypeCombiner
         return $non_falsy ? new TNonFalsyString() : new TNonEmptyString();
     }
 
+    /**
+     * Rebuilds the class-string members of a combination from the bounds collected in `class_string_types`.
+     *
+     * @param non-empty-array<string, TNamedObject|TObject> $class_string_types
+     * @return list<TClassString>
+     * @psalm-external-mutation-free
+     */
+    private static function getClassStringAtomics(
+        TypeCombination $combination,
+        array $class_string_types,
+        ?Codebase $codebase,
+        bool $from_docblock,
+    ): array {
+        $has_non_specific_string = isset($combination->value_types['string'])
+            && $combination->value_types['string']::class === TString::class;
+
+        if ($has_non_specific_string) {
+            return [];
+        }
+
+        $object_type = self::combine(
+            array_values($class_string_types),
+            $codebase,
+        );
+
+        if ($combination->class_string_kinds !== []) {
+            return self::getKindAwareClassStringAtomics(
+                $combination,
+                $class_string_types,
+                $object_type,
+                $from_docblock,
+            );
+        }
+
+        $class_strings = [];
+
+        foreach ($object_type->getAtomicTypes() as $object_atomic_type) {
+            if ($object_atomic_type instanceof TNamedObject) {
+                $class_type = new TClassString($object_atomic_type->value, $object_atomic_type);
+            } elseif ($object_atomic_type instanceof TObject) {
+                $class_type = new TClassString();
+            } else {
+                continue;
+            }
+
+            $class_strings[] = $class_type->setFromDocblock($from_docblock);
+        }
+
+        return $class_strings;
+    }
+
+    /**
+     * Like the plain rebuild, but keeps `interface-string` / `enum-string` where every merged class-string has it.
+     *
+     * @param non-empty-array<string, TNamedObject|TObject> $class_string_types
+     * @return list<TClassString>
+     * @psalm-capabilities read-props
+     */
+    private static function getKindAwareClassStringAtomics(
+        TypeCombination $combination,
+        array $class_string_types,
+        Union $object_type,
+        bool $from_docblock,
+    ): array {
+        $members = [];
+        $result_keys = [];
+        foreach ($object_type->getAtomicTypes() as $object_atomic_type) {
+            if ($object_atomic_type instanceof TNamedObject) {
+                $kind_key = $object_atomic_type->value;
+            } elseif ($object_atomic_type instanceof TObject) {
+                $kind_key = 'object';
+            } else {
+                continue;
+            }
+
+            $members[] = [$kind_key, $object_atomic_type];
+            $result_keys[$kind_key] = true;
+        }
+
+        // bounds absorbed into a wider member constrain every member
+        $absorbed_is_interface = true;
+        $absorbed_is_enum = true;
+        foreach ($class_string_types as $key => $_) {
+            if (!isset($result_keys[$key])) {
+                $kind = $combination->class_string_kinds[$key] ?? [false, false];
+                $absorbed_is_interface = $absorbed_is_interface && $kind[0];
+                $absorbed_is_enum = $absorbed_is_enum && $kind[1];
+            }
+        }
+
+        $class_strings = [];
+
+        foreach ($members as [$kind_key, $object_atomic_type]) {
+            // a kind survives only if every class-string merged into this member has it
+            $kind = $combination->class_string_kinds[$kind_key] ?? [false, false];
+            $is_interface = $absorbed_is_interface && $kind[0];
+            $is_enum = $absorbed_is_enum && $kind[1];
+
+            $class_type = $object_atomic_type instanceof TNamedObject
+                ? new TClassString(
+                    $object_atomic_type->value,
+                    $object_atomic_type,
+                    false,
+                    $is_interface,
+                    $is_enum,
+                )
+                : new TClassString('object', null, false, $is_interface, $is_enum);
+
+            $class_strings[] = $class_type->setFromDocblock($from_docblock);
+        }
+
+        return $class_strings;
+    }
+
     private static function scrapeStringProperties(
         string $type_key,
         Atomic $type,
@@ -1414,6 +1512,28 @@ final class TypeCombiner
         if ($type instanceof TTemplateParamClass) {
             $combination->value_types[$type_key] = $type;
         } elseif ($type instanceof TClassString) {
+            $kind_key = $type->as_type ? $type->as : 'object';
+
+            // only non-plain kinds are recorded; an absent key is a plain class-string
+            if (!$type->is_interface && !$type->is_enum) {
+                if (isset($combination->class_string_kinds[$kind_key])) {
+                    unset($combination->class_string_kinds[$kind_key]);
+                }
+            } elseif (isset($combination->class_string_kinds[$kind_key])) {
+                $existing_kind = $combination->class_string_kinds[$kind_key];
+                $is_interface = $existing_kind[0] && $type->is_interface;
+                $is_enum = $existing_kind[1] && $type->is_enum;
+
+                if ($is_interface || $is_enum) {
+                    $combination->class_string_kinds[$kind_key] = [$is_interface, $is_enum];
+                } else {
+                    unset($combination->class_string_kinds[$kind_key]);
+                }
+            } elseif (!isset($combination->class_string_types[$kind_key])) {
+                // not seen before (the key is added below), so nothing plain to preserve
+                $combination->class_string_kinds[$kind_key] = [$type->is_interface, $type->is_enum];
+            }
+
             if (!$type->as_type) {
                 $combination->class_string_types['object'] = new TObject();
             } else {
@@ -1499,8 +1619,10 @@ final class TypeCombiner
                         $first_class = array_keys($mutual)[0];
 
                         $combination->class_string_types[$first_class] = new TNamedObject($first_class);
+                        unset($combination->class_string_kinds[$first_class]);
                     } else {
                         $combination->class_string_types['object'] = new TObject();
+                        unset($combination->class_string_kinds['object']);
                     }
                 } elseif (isset($combination->value_types['string'])
                     && $combination->value_types['string'] instanceof TNonspecificLiteralString

@@ -316,6 +316,31 @@ final class ListTest extends TestCase
                     'PossiblyInvalidArrayAccess',
                 ],
             ],
+            'unsealedShapeWithOneArgumentIsTheValueType' => [
+                'code' => '<?php
+                    /** @var array{a: int, ...<string>} $a */
+                    $a = ["a" => 1];',
+                'assertions' => [
+                    '$a===' => 'array{a: int, ...<array-key, string>}',
+                ],
+            ],
+            'shapesWithoutFieldsCanBeOpen' => [
+                'code' => '<?php
+                    /** @var array{...} $a */
+                    $a = [];
+                    /** @var list{...} $b */
+                    $b = [];
+                    /** @var array{...<int, string>} $c */
+                    $c = [];
+                    /** @var list{...<string>} $d */
+                    $d = [];',
+                'assertions' => [
+                    '$a===' => 'array<array-key, mixed>',
+                    '$b===' => 'list<mixed>',
+                    '$c===' => 'array<int, string>',
+                    '$d===' => 'list<string>',
+                ],
+            ],
         ];
     }
 

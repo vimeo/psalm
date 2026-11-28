@@ -1103,7 +1103,14 @@ final class TypeParser
             $types = [];
             foreach ($generic_params[0]->getAtomicTypes() as $type) {
                 if ($type instanceof TNamedObject) {
-                    $types[] = new TClassString($type->value, $type, false, false, false, $from_docblock);
+                    $types[] = new TClassString(
+                        $type->value,
+                        $type,
+                        false,
+                        false,
+                        $generic_type_value === 'enum-string',
+                        $from_docblock,
+                    );
                     continue;
                 }
 
@@ -1212,6 +1219,10 @@ final class TypeParser
             );
         }
 
+        if (($generic_type_value === 'key-of' || $generic_type_value === 'value-of') && count($generic_params) > 1) {
+            throw new TypeParseTreeException('Too many template parameters for ' . $generic_type_value);
+        }
+
         if ($generic_type_value === 'key-of') {
             $param_name = $generic_params[0]->getId(false);
 
@@ -1268,45 +1279,19 @@ final class TypeParser
                     );
                 }
 
-                $generic_param_atomics = $generic_param->getAtomicTypes();
+                $atomic_type = self::getIntMaskMember(
+                    $generic_param->getSingleAtomic(),
+                    $parse_tree->children[$generic_param_offset] ?? null,
+                    $from_docblock,
+                );
 
-                $atomic_type = reset($generic_param_atomics);
-
-                // only a bare name is the name of a global constant, not a generic, an intersection or a callable
-                if ($atomic_type instanceof TNamedObject
-                    && ($parse_tree->children[$generic_param_offset] ?? null) instanceof Value
-                ) {
-                    if (defined($atomic_type->value)) {
-                        // silenced, as reading a deprecated constant (ASSERT_ACTIVE) emits E_DEPRECATED
-                        /** @var mixed */
-                        $constant_value = @constant($atomic_type->value);
-
-                        if (!is_int($constant_value)) {
-                            throw new TypeParseTreeException(
-                                'int-mask types must all be integer values',
-                            );
-                        }
-
-                        $atomic_type = new TLiteralInt($constant_value, $from_docblock);
-                    } else {
-                        // the constants of the analysed code are not known yet: an unqualified name in a namespace
-                        // falls back to the global constant as in PHP, when it is resolved with the codebase
-                        $constant_tree = $parse_tree->children[$generic_param_offset] ?? null;
-                        $written_name = $constant_tree instanceof Value ? $constant_tree->text : null;
-
-                        $atomic_type = new TGlobalConstant(
-                            ltrim($atomic_type->value, '\\'),
-                            $written_name !== null && !str_contains($written_name, '\\') ? $written_name : null,
-                            $from_docblock,
-                        );
-                    }
+                if ($atomic_type === null) {
+                    throw new TypeParseTreeException(
+                        'int-mask types must all be integer values',
+                    );
                 }
 
-                if (!$atomic_type instanceof TLiteralInt
-                    && !($atomic_type instanceof TGlobalConstant && !str_contains($atomic_type->const_name, '*'))
-                    && !($atomic_type instanceof TClassConstant
-                        && !str_contains($atomic_type->const_name, '*'))
-                ) {
+                if (!self::isIntMaskMember($atomic_type)) {
                     throw new TypeParseTreeException(
                         'int-mask types must all be integer values or scalar class constants',
                     );
@@ -1315,29 +1300,44 @@ final class TypeParser
                 $atomic_types[] = $atomic_type;
             }
 
-            $potential_ints = [];
-            $int_mask_bits = 0;
-
-            foreach ($atomic_types as $atomic_type) {
-                if (!$atomic_type instanceof TLiteralInt) {
-                    return new TIntMask($atomic_types, $from_docblock);
-                }
-
-                $potential_ints[] = $atomic_type->value;
-                $int_mask_bits |= $atomic_type->value;
-            }
-
-            return new Union(
-                self::getComputedIntsFromMask($potential_ints, $from_docblock),
-                ['int_mask_bits' => $int_mask_bits],
-            );
+            return self::getIntMask($atomic_types, $from_docblock);
         }
 
         if ($generic_type_value === 'int-mask-of') {
             $param_union_types = array_values($generic_params[0]->getAtomicTypes());
 
             if (count($param_union_types) > 1) {
-                throw new TypeParseTreeException('Union types are not allowed in value-of type');
+                $union_tree = $parse_tree->children[0] ?? null;
+                $int_mask_members = [];
+
+                // e.g. `int-mask-of<1|2|4>`, which is `int-mask<1, 2, 4>`: the members are read from the tree, as
+                // the type of a union does not tell a global constant from a class name
+                foreach ($union_tree instanceof UnionTree ? $union_tree->children : [] as $member_tree) {
+                    $member_type = self::getTypeFromTree(
+                        $member_tree,
+                        $codebase,
+                        null,
+                        $template_type_map,
+                        $type_aliases,
+                        $from_docblock,
+                    );
+
+                    $int_mask_member = $member_type instanceof Atomic
+                        ? self::getIntMaskMember($member_type, $member_tree, $from_docblock)
+                        : null;
+
+                    if ($int_mask_member === null || !self::isIntMaskMember($int_mask_member)) {
+                        throw new TypeParseTreeException('Union types are not allowed in value-of type');
+                    }
+
+                    $int_mask_members[] = $int_mask_member;
+                }
+
+                if ($int_mask_members === []) {
+                    throw new TypeParseTreeException('Union types are not allowed in value-of type');
+                }
+
+                return self::getIntMask($int_mask_members, $from_docblock);
             }
 
             $param_type = $param_union_types[0];
@@ -1418,6 +1418,74 @@ final class TypeParser
 
         return (new TGenericObject($generic_type_value, $generic_params, false, false, [], $from_docblock))
             ->setProjections(self::getStarProjections($generic_params, $star_params, $variance_params));
+    }
+
+    /**
+     * The atomic type of an `int-mask` member, with the name of a global constant resolved to the constant.
+     * Null for a defined global constant that is not an int.
+     *
+     * @psalm-capabilities read-props
+     */
+    private static function getIntMaskMember(
+        Atomic $atomic_type,
+        ?ParseTree $member_tree,
+        bool $from_docblock,
+    ): ?Atomic {
+        // only a bare name is the name of a global constant, not a generic, an intersection or a callable
+        if (!$atomic_type instanceof TNamedObject || !$member_tree instanceof Value) {
+            return $atomic_type;
+        }
+
+        if (defined($atomic_type->value)) {
+            // silenced, as reading a deprecated constant (ASSERT_ACTIVE) emits E_DEPRECATED
+            /** @var mixed */
+            $constant_value = @constant($atomic_type->value);
+
+            return is_int($constant_value) ? new TLiteralInt($constant_value, $from_docblock) : null;
+        }
+
+        // the constants of the analysed code are not known yet: an unqualified name in a namespace
+        // falls back to the global constant as in PHP, when it is resolved with the codebase
+        return new TGlobalConstant(
+            ltrim($atomic_type->value, '\\'),
+            $member_tree->text !== null && !str_contains($member_tree->text, '\\') ? $member_tree->text : null,
+            $from_docblock,
+        );
+    }
+
+    /**
+     * @psalm-assert-if-true TLiteralInt|TGlobalConstant|TClassConstant $atomic_type
+     * @psalm-pure
+     */
+    private static function isIntMaskMember(Atomic $atomic_type): bool
+    {
+        return $atomic_type instanceof TLiteralInt
+            || (($atomic_type instanceof TGlobalConstant || $atomic_type instanceof TClassConstant)
+                && !str_contains($atomic_type->const_name, '*'));
+    }
+
+    /**
+     * @param non-empty-array<TLiteralInt|TClassConstant|TGlobalConstant> $atomic_types
+     * @psalm-pure
+     */
+    private static function getIntMask(array $atomic_types, bool $from_docblock): TIntMask|Union
+    {
+        $potential_ints = [];
+        $int_mask_bits = 0;
+
+        foreach ($atomic_types as $atomic_type) {
+            if (!$atomic_type instanceof TLiteralInt) {
+                return new TIntMask($atomic_types, $from_docblock);
+            }
+
+            $potential_ints[] = $atomic_type->value;
+            $int_mask_bits |= $atomic_type->value;
+        }
+
+        return new Union(
+            self::getComputedIntsFromMask($potential_ints, $from_docblock),
+            ['int_mask_bits' => $int_mask_bits],
+        );
     }
 
     /**
@@ -2642,13 +2710,18 @@ final class TypeParser
             throw new TypeParseTreeException('A list shape cannot describe a non-list');
         }
 
-        if (!$properties) {
+        // `array{}` and `list{}` are empty, while `array{...}` and `list{...<T>}` have no fields but are open
+        if (!$properties && $sealed && ($extra_params === null || $extra_params === [])) {
             return new TArray([Type::getNever($from_docblock), Type::getNever($from_docblock)], $from_docblock);
         }
 
+        if (!$properties) {
+            $is_list = $type === 'list';
+        }
+
         $fallback_params = null;
-        if ($extra_params) {
-            $final_extra_params = $is_list ? [Type::getListKey(true)] : [];
+        if ($extra_params !== null && $extra_params !== []) {
+            $extra_types = [];
             foreach ($extra_params as $child_tree) {
                 $child_type = self::getTypeFromTree(
                     $child_tree,
@@ -2661,14 +2734,30 @@ final class TypeParser
                 if ($child_type instanceof Atomic) {
                     $child_type = new Union([$child_type]);
                 }
-                $final_extra_params []= $child_type;
+                $extra_types []= $child_type;
             }
-            if (count($final_extra_params) !== 2) {
+
+            // a single argument is the value type, as in PHPStan
+            if (count($extra_types) === 1) {
+                $fallback_params = [
+                    $is_list ? Type::getListKey(true) : Type::getArrayKey($from_docblock),
+                    $extra_types[0],
+                ];
+            } elseif (count($extra_types) === 2 && !$is_list) {
+                $fallback_params = [$extra_types[0], $extra_types[1]];
+            } else {
                 throw new TypeParseTreeException(
-                    $is_list ? 'Must have exactly one extra field!' : 'Must have exactly two extra fields!',
+                    $is_list ? 'Must have exactly one extra field!' : 'Must have one or two extra fields!',
                 );
             }
-            $fallback_params = $final_extra_params;
+        }
+
+        if (!$properties) {
+            $fallback_params ??= [$is_list ? Type::getListKey() : Type::getArrayKey(), Type::getMixed()];
+
+            return $is_list
+                ? Type::getListAtomic($fallback_params[1], $from_docblock)
+                : new TArray($fallback_params, $from_docblock);
         }
         return $callable
             ? TKeyedArray::makeCallable(

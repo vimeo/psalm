@@ -133,6 +133,14 @@ final class TypeCombination
     public ?array $class_string_types = [];
 
     /**
+     * [is_interface, is_enum] shared by every class-string merged into the same `class_string_types` key.
+     * Holds only non-plain kinds; an absent key means a plain class-string.
+     *
+     * @var array<string, array{bool, bool}>
+     */
+    public array $class_string_kinds = [];
+
+    /**
      * @var array<string, TNamedObject|TTemplateParam|TIterable|TObject>
      */
     public array $extra_types = [];

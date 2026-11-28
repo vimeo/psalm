@@ -225,6 +225,8 @@ handleOptions($options);
 /** @param array{someKey: string, ...<array-key, mixed>} */ 
 // But it can be further locked down with a shape ...<TKey, TValue>
 /** @return array{someKey: string, ...<int, bool>} */
+// A single argument is the value type, with array-key keys
+/** @return array{someKey: string, ...<bool>} */
 ```
 
 ## Callable arrays

@@ -2087,6 +2087,44 @@ final class ConstantTest extends TestCase
                     A::foo(3);
                     A::foo(A::D_4);',
             ],
+            'wildcardAtStartOfConstantName' => [
+                'code' => '<?php
+                    class A {
+                        const A_REFERENCE = 1;
+                        const B_REFERENCE = 2;
+                        const OTHER = 3;
+
+                        /**
+                         * @param self::*_REFERENCE $i
+                         */
+                        public static function foo(int $i) : void {}
+                    }
+
+                    A::foo(A::A_REFERENCE);
+                    A::foo(2);',
+            ],
+            'wildcardInMethodTemplateBoundResolvesDeclaringClass' => [
+                'code' => '<?php
+                    interface CI
+                    {
+                        public const REF_A = 1;
+                        public const REF_B = 2;
+
+                        /**
+                         * @template B of self::REF_*
+                         * @param B $invalidBehavior
+                         */
+                        public function get(int $invalidBehavior): void;
+                    }
+                    final class Kernel
+                    {
+                        public function f(CI $c): void
+                        {
+                            $c->get(2);
+                            $c->get(CI::REF_B);
+                        }
+                    }',
+            ],
             'wildcardEnumAnyTemplateExtendConstant' => [
                 'code' => '<?php
                     /**
@@ -3739,6 +3777,45 @@ final class ConstantTest extends TestCase
                     }
 
                     A::bar("d");',
+                'error_message' => 'InvalidArgument',
+            ],
+            'wildcardAtStartOfConstantNameBadValue' => [
+                'code' => '<?php
+                    class A {
+                        const A_REFERENCE = 1;
+                        const B_REFERENCE = 2;
+                        const OTHER = 3;
+
+                        /**
+                         * @param self::*_REFERENCE $i
+                         */
+                        public static function foo(int $i) : void {}
+                    }
+
+                    A::foo(A::OTHER);',
+                'error_message' => 'InvalidArgument',
+            ],
+            'wildcardInMethodTemplateBoundBadValue' => [
+                'code' => '<?php
+                    interface CI
+                    {
+                        public const A_REFERENCE = 1;
+                        public const B_REFERENCE = 2;
+                        public const OTHER = 3;
+
+                        /**
+                         * @template B of self::*_REFERENCE
+                         * @param B $invalidBehavior
+                         */
+                        public function get(int $invalidBehavior): void;
+                    }
+                    final class Kernel
+                    {
+                        public function f(CI $c): void
+                        {
+                            $c->get(3);
+                        }
+                    }',
                 'error_message' => 'InvalidArgument',
             ],
             'wildcardEnumBadValue' => [

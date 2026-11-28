@@ -341,6 +341,17 @@ final class ValueOfTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.1',
             ],
+            'valueOfWithTwoArguments' => [
+                'code' => '<?php
+                    /**
+                     * @return value-of<array<int, string>, int>
+                     */
+                    function getValue() {
+                        return "a";
+                    }
+                ',
+                'error_message' => 'InvalidDocblock',
+            ],
         ];
     }
 }

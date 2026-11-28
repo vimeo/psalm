@@ -276,6 +276,39 @@ final class IntMaskComparisonTest extends TestCase
                         return $m === 0 || $m === 7 || ($m & 2) === 2;
                     }',
             ],
+            'intMaskOfLiteralUnionIsIntMask' => [
+                'code' => '<?php
+                    /** @var int-mask-of<1|2|4> $m */
+                    $m = 0;',
+                'assertions' => [
+                    '$m===' => '0|1|2|3|4|5|6|7',
+                ],
+            ],
+            'intMaskOfGlobalConstantUnionIsIntMask' => [
+                'code' => '<?php
+                    /** @var int-mask-of<E_ERROR|E_WARNING|E_PARSE> $m */
+                    $m = 0;
+
+                    /** @var int-mask<E_ERROR, E_WARNING, E_PARSE> $n */
+                    $n = 0;',
+                'assertions' => [
+                    '$m===' => '0|1|2|3|4|5|6|7',
+                    '$n===' => '0|1|2|3|4|5|6|7',
+                ],
+            ],
+            'intMaskOfUseConstImportsAreResolved' => [
+                'code' => '<?php
+                    namespace N;
+
+                    use const E_ERROR as SORT_ASC;
+                    use const E_WARNING as SORT_DESC;
+
+                    /** @var int-mask-of<SORT_ASC|SORT_DESC> $m */
+                    $m = 0;',
+                'assertions' => [
+                    '$m===' => '0|1|2|3',
+                ],
+            ],
         ];
     }
 
