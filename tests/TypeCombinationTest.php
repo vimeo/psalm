@@ -7,6 +7,7 @@ namespace Psalm\Tests;
 use Override;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Psalm\Internal\Type\TypeCombiner;
+use Psalm\Storage\Capabilities;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 use Psalm\Type;
 use Psalm\Type\Atomic;
@@ -140,6 +141,20 @@ final class TypeCombinationTest extends TestCase
         $this->assertSame(
             'callable-object&Countable|callable-object&Traversable',
             TypeCombiner::combine([$countable, $traversable])->getId(),
+        );
+    }
+
+    public function testCallableObjectsOfADifferentPurityAreKeptApart(): void
+    {
+        $return_type = Type::getString();
+        $pure = new TCallableObject(false, new TCallable([], $return_type, Capabilities::NONE));
+        $impure = new TCallableObject(false, new TCallable([], $return_type));
+
+        $this->assertSame('callable-object[pure]():string', $pure->getId());
+        $this->assertSame('callable-object():string', $impure->getId());
+        $this->assertSame(
+            'callable-object():string|callable-object[pure]():string',
+            TypeCombiner::combine([$pure, $impure])->getId(),
         );
     }
 

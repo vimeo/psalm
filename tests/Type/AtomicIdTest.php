@@ -77,6 +77,11 @@ final class AtomicIdTest extends TestCase
             'callable-object():int',
             'callable-object():int',
         ];
+        yield 'pureCallableObjectWithSignature' => [
+            new TCallableObject(false, new TCallable([], Type::getInt(), Capabilities::NONE)),
+            'callable-object[pure]():int',
+            'callable-object[pure]():int',
+        ];
         yield 'callableString' => [new TCallableString(), 'callable-string', 'callable-string'];
         yield 'capabilities' => [new TCapabilities(Capabilities::MUTATION_FREE), 'read-props', 'read-props'];
         yield 'closedResource' => [new TClosedResource(), 'closed-resource', 'closed-resource'];
