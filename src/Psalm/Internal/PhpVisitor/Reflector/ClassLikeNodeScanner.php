@@ -1589,9 +1589,8 @@ final class ClassLikeNodeScanner
 
             $generic_class_lc = strtolower($atomic_type->value);
 
-            if ($this->reportStarArgument($storage, $node, $atomic_type, $tag)) {
-                continue;
-            }
+            // the argument is still the one the author gave, so the template is not missing
+            $this->reportStarArgument($storage, $node, $atomic_type, $tag);
 
             $type_parameters = [];
 
@@ -1615,9 +1614,9 @@ final class ClassLikeNodeScanner
         PhpParser\Node $node,
         TGenericObject $atomic_type,
         string $tag,
-    ): bool {
+    ): void {
         if (!$atomic_type->hasUnknownArgument()) {
-            return false;
+            return;
         }
 
         $storage->docblock_issues[] = new InvalidDocblock(
@@ -1625,8 +1624,6 @@ final class ClassLikeNodeScanner
                 . ' of ' . $atomic_type->getId() . ' is not allowed in ' . $tag,
             new CodeLocation($this->file_scanner, $node, null, true),
         );
-
-        return true;
     }
 
     private static function registerEmptyConstructor(ClassLikeStorage $class_storage): void

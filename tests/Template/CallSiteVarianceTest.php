@@ -5,9 +5,14 @@ declare(strict_types=1);
 namespace Psalm\Tests\Template;
 
 use Override;
+use Psalm\Context;
+use Psalm\Internal\Analyzer\IssueData;
+use Psalm\IssueBuffer;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+
+use function array_map;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -62,6 +67,75 @@ final class CallSiteVarianceTest extends TestCase
          */
         final class SubBox extends Box {}
         ';
+
+    public function testARejectedArgumentOfAParentIsNotAMissingTemplateParam(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            <<<'PHP'
+                <?php
+                /** @template T */
+                class Box {
+                    /** @return T */
+                    public function get() { throw new Exception(); }
+                }
+                /** @template T */
+                interface Sink {}
+                /** @template T */
+                trait Holder {}
+
+                /** @extends Box<covariant stdClass> */
+                final class A extends Box {}
+
+                /** @extends Box<*> */
+                final class B extends Box {}
+
+                /** @implements Sink<contravariant stdClass> */
+                final class C implements Sink {}
+
+                /** @implements Sink<*> */
+                final class D implements Sink {}
+
+                final class E {
+                    /** @use Holder<covariant stdClass> */
+                    use Holder;
+                }
+
+                final class F {
+                    /** @use Holder<*> */
+                    use Holder;
+                }
+
+                function f(A $a): void {
+                    $x = $a->get();
+                    /** @psalm-check-type-exact $x = stdClass */;
+                }
+                PHP,
+        );
+        $this->analyzeFile($file_path, new Context(), false);
+        $this->project_analyzer->consolidateAnalyzedData();
+
+        $this->assertSame(
+            [
+                'InvalidDocblock: The variance of a type argument of Box<covariant stdClass> is not allowed in '
+                    . '@template-extends',
+                'InvalidDocblock: The * type argument of Box<*> is not allowed in @template-extends',
+                'InvalidDocblock: The variance of a type argument of Sink<contravariant stdClass> is not allowed in '
+                    . '@template-implements',
+                'InvalidDocblock: The * type argument of Sink<*> is not allowed in @template-implements',
+                'InvalidDocblock: The variance of a type argument of Holder<covariant stdClass> is not allowed in '
+                    . '@template-use',
+                'InvalidDocblock: The * type argument of Holder<*> is not allowed in @template-use',
+            ],
+            array_map(
+                static fn(IssueData $issue): string => $issue->type . ': ' . $issue->message,
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
+        );
+    }
 
     /**
      * @psalm-pure
