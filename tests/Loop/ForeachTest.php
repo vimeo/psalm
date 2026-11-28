@@ -460,6 +460,30 @@ final class ForeachTest extends TestCase
                     '$after_outer===' => "'s'|1",
                 ],
             ],
+            'mongodbCursorInterfaceWithoutTypeArgumentsYieldsDocuments' => [
+                'code' => '<?php
+                    function rows(MongoDB\Driver\CursorInterface $cursor): void {
+                        foreach ($cursor as $document) {
+                            /** @psalm-check-type-exact $document = array<array-key, mixed>|object */;
+                        }
+                        $current = $cursor->current();
+                        /** @psalm-check-type-exact $current = array<array-key, mixed>|object */;
+                    }',
+            ],
+            'mongodbCursorInterfaceWithTypeArgumentsYieldsItsKeysAndDocuments' => [
+                'code' => '<?php
+                    /** @param MongoDB\Driver\CursorInterface<int, array<array-key, mixed>> $cursor */
+                    function rows(MongoDB\Driver\CursorInterface $cursor): void {
+                        foreach ($cursor as $key => $document) {
+                            /** @psalm-check-type-exact $key = int */;
+                            /** @psalm-check-type-exact $document = array<array-key, mixed> */;
+                        }
+                        $current = $cursor->current();
+                        /** @psalm-check-type-exact $current = array<array-key, mixed> */;
+                        $currentKey = $cursor->key();
+                        /** @psalm-check-type-exact $currentKey = int */;
+                    }',
+            ],
             'variableAssignedBeforeABreakTwoLevelsOutInsideALoopIsDefinedAfterTheLoopItLeaves' => [
                 'code' => '<?php
                     /** @param non-empty-list<non-empty-list<string>> $rows */

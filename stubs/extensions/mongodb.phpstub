@@ -264,12 +264,22 @@ namespace MongoDB\Driver
 
     /**
      * @template-covariant TKey
-     * @template-covariant TValue
+     * @template-covariant TValue of array|object
      *
      * @template-extends Iterator<TKey, TValue>
      */
     interface CursorInterface extends Iterator
     {
+        /**
+         * @return TValue
+         */
+        public function current(): array|object|null;
+
+        /**
+         * @return TKey
+         */
+        public function key(): int|null;
+
         /**
          * @return array<TValue>
          */
