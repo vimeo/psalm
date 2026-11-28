@@ -656,6 +656,12 @@ final class IntRangeTest extends TestCase
                         return $d;
                     }',
             ],
+            'castOfAnAdditionWithAnIntRangeIsNotRedundant' => [
+                'code' => '<?php
+                    function f(int $a, int $b): int {
+                        return (int) ($a + ($b & 1));
+                    }',
+            ],
             'multiplicationSignMatrix' => [
                 'code' => '<?php
                     /** @return int<0, 0> */
