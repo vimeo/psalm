@@ -1210,6 +1210,51 @@ final class ArrayKeyExistsTest extends TestCase
                         }
                     }',
             ],
+            'arrayKeyExistsAfterNegatedIssetOfAnOptionalNullableKeyLeavesNull' => [
+                'code' => '<?php
+                    /** @param array{b?: ?string} $a */
+                    function f(array $a): void {
+                        if (!isset($a["b"]) && array_key_exists("b", $a)) {
+                            /** @psalm-check-type-exact $a = array{b: null} */;
+                            $b = $a["b"];
+                            /** @psalm-check-type-exact $b = null */;
+                            echo (string) $a["b"];
+                        }
+                    }
+
+                    /** @param array{b?: ?string} $a */
+                    function g(array $a): void {
+                        if (array_key_exists("b", $a) && !isset($a["b"])) {
+                            $b = $a["b"];
+                            /** @psalm-check-type-exact $b = null */;
+                        }
+                    }
+
+                    /** @param array{b?: ?string} $a */
+                    function h(array $a): void {
+                        if (!isset($a["b"]) && !array_key_exists("b", $a)) {
+                            /** @psalm-check-type-exact $a = array{} */;
+                        }
+                    }
+
+                    /** @param array{x: array{b?: ?int}} $a */
+                    function j(array $a): void {
+                        if (!isset($a["x"]["b"]) && array_key_exists("b", $a["x"])) {
+                            $b = $a["x"]["b"];
+                            /** @psalm-check-type-exact $b = null */;
+                        }
+                    }
+
+                    /** @param array{b?: ?string} $a */
+                    function i(array $a): void {
+                        if (isset($a["b"]) || !array_key_exists("b", $a)) {
+                            return;
+                        }
+
+                        $b = $a["b"];
+                        /** @psalm-check-type-exact $b = null */;
+                    }',
+            ],
         ];
     }
 
