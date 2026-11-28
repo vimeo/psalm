@@ -73,10 +73,12 @@ use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TClassStringMap;
 use Psalm\Type\Atomic\TConditional;
+use Psalm\Type\Atomic\TEnumCase;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TKeyedArray;
+use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
@@ -2497,6 +2499,15 @@ class Reconciler
             $not = !$not;
         }
 
+        // a value the variable is, or is not, identical to is written as the type it is
+        $described_assertion = ($assertion instanceof IsIdentical || $assertion instanceof IsNotIdentical)
+            && ($assertion->type instanceof TLiteralString
+                || $assertion->type instanceof TLiteralInt
+                || $assertion->type instanceof TLiteralFloat
+                || $assertion->type instanceof TEnumCase)
+            ? $assertion->type->getId()
+            : $assertion_string;
+
         $existing_var_atomic_types = $existing_var_type->getAtomicTypes();
 
         $from_docblock = $existing_var_type->from_docblock
@@ -2532,7 +2543,7 @@ class Reconciler
                     new RedundantConditionGivenDocblockType(
                         'Docblock-defined type ' . $old_var_type_string
                         . ' for ' . $key
-                        . ' is ' . ($not ? 'never ' : 'always ') . $assertion_string,
+                        . ' is ' . ($not ? 'never ' : 'always ') . $described_assertion,
                         $code_location,
                         $old_var_type_string . ' ' . $assertion_string,
                     ),
@@ -2543,7 +2554,7 @@ class Reconciler
                     new RedundantCondition(
                         'Type ' . $old_var_type_string
                         . ' for ' . $key
-                        . ' is ' . ($not ? 'never ' : 'always ') . $assertion_string,
+                        . ' is ' . ($not ? 'never ' : 'always ') . $described_assertion,
                         $code_location,
                         $old_var_type_string . ' ' . $assertion_string,
                     ),
@@ -2556,7 +2567,7 @@ class Reconciler
                     new DocblockTypeContradiction(
                         'Docblock-defined type ' . $old_var_type_string
                             . ' for ' . $key
-                            . ' is ' . ($not ? 'always ' : 'never ') . $assertion_string,
+                            . ' is ' . ($not ? 'always ' : 'never ') . $described_assertion,
                         $code_location,
                         $old_var_type_string . ' ' . $assertion_string,
                     ),
@@ -2576,8 +2587,8 @@ class Reconciler
                         'Type ' . $old_var_type_string
                             . ' for ' . $key
                             . ' is ' . ($not
-                                ? 'always ' . $assertion_string . ', so its negation can never be true'
-                                : 'never ' . $assertion_string),
+                                ? 'always ' . $described_assertion . ', so its negation can never be true'
+                                : 'never ' . $described_assertion),
                         $code_location,
                         $old_var_type_string . ' ' . $assertion,
                     );

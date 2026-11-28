@@ -218,6 +218,56 @@ final class RedundantConditionTest extends TestCase
         );
     }
 
+    public function testMessagesOfAnIdentityWithALiteralNameTheLiteralAsAType(): void
+    {
+        $this->project_analyzer->setPhpVersion('8.1', 'tests');
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            <<<'PHP'
+                <?php
+                enum E { case A; }
+
+                function f(string $s): void {
+                    $empty = '';
+                    if ($empty === '') {}
+                    if ($s !== '') {
+                        return;
+                    }
+                    if ($s === 'abc') {}
+                    $five = 5;
+                    if ($five === 5) {}
+                    $half = 1.5;
+                    if ($half === 1.5) {}
+                    $case = E::A;
+                    if ($case === E::A) {}
+                    $ten = 10;
+                    if ($ten !== 10) {}
+                }
+                PHP,
+        );
+        $this->analyzeFile($file_path, new Context(), false);
+        $this->project_analyzer->consolidateAnalyzedData();
+
+        $this->assertSame(
+            [
+                "RedundantCondition: Type '' for \$empty is always ''",
+                "TypeDoesNotContainType: 'abc' cannot be identical to ''",
+                "TypeDoesNotContainType: Type '' for \$s is never 'abc'",
+                'RedundantCondition: Type 5 for $five is always 5',
+                'RedundantCondition: Type float(1.5) for $half is always float(1.5)',
+                'RedundantCondition: Type enum(E::A) for $case is always enum(E::A)',
+                'TypeDoesNotContainType: Type 10 for $ten is always 10, so its negation can never be true',
+            ],
+            array_map(
+                static fn(IssueData $issue): string => $issue->type . ': ' . $issue->message,
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
+        );
+    }
+
     /**
      * @psalm-pure
      */
@@ -2280,7 +2330,7 @@ final class RedundantConditionTest extends TestCase
                     function f(int $i): int {
                         return $i !== 1 ? 1 : ($i === 1 ? 2 : 3);
                     }',
-                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:63 - Type 1 for $i is always =int(1), so its negation can never be true',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:63 - Type 1 for $i is always 1, so its negation can never be true',
                 'error_levels' => ['RedundantCondition'],
             ],
             'redundantNegatedAssertionOnATemplateIsReportedAsRedundant' => [
