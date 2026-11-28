@@ -277,6 +277,27 @@ final class LegacySyntaxTest extends TestCase
                     PHP,
                 'error_message' => 'LegacySyntax - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:17 - list<empty> is',
             ],
+            'methodParamOfEmpty' => [
+                'code' => <<<'CODE'
+                    <?php
+                    /** @method list<int> withNone(list<empty> $none, int $limit = 1) */
+                    final class A {}
+                    CODE,
+                'error_message' => 'LegacySyntax - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:32 - list<empty> is',
+            ],
+            'unionMemberOfEmptyOnNextLine' => [
+                'code' => <<<'CODE'
+                    <?php
+                    /**
+                     * @return int
+                     *   |list<empty>
+                     */
+                    function f() {
+                        return [];
+                    }
+                    CODE,
+                'error_message' => 'LegacySyntax - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:7 - list<empty> is',
+            ],
             'suppressedForAnotherIssue' => [
                 'code' => <<<'PHP'
                     <?php

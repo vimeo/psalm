@@ -10,9 +10,10 @@ use Psalm\CodeLocation\DocblockTypeLocation;
 use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider\FileProvider;
-use Psalm\Internal\Type\LegacyEmptyArrayFinder;
+use Psalm\IssueBuffer;
 
 use function array_merge;
+use function krsort;
 use function preg_match;
 use function strlen;
 use function strpos;
@@ -187,16 +188,46 @@ final class FileManipulationBuffer
     /**
      * The docblock a manipulator rewrites whole, with the LegacySyntax fixes, as its edit replaces theirs
      */
-    public static function fixLegacySyntax(Doc $docblock): Doc
+    public static function fixLegacySyntax(Doc $docblock, string $file_path): Doc
     {
-        if (!isset(ProjectAnalyzer::getInstance()->getIssuesToFix()['LegacySyntax'])) {
+        $project_analyzer = ProjectAnalyzer::getInstance();
+
+        if (!isset($project_analyzer->getIssuesToFix()['LegacySyntax'])) {
             return $docblock;
         }
 
+        $text = $docblock->getText();
+        $docblock_start = $docblock->getStartFilePos();
+        $fixes = [];
+
+        $file_storage = $project_analyzer->getCodebase()->file_storage_provider->get($file_path);
+
+        foreach ($file_storage->legacy_syntax_issues as [$legacy_syntax, $suppressed_issues]) {
+            $start = $legacy_syntax->code_location->raw_file_start - $docblock_start;
+
+            if ($start >= 0
+                && $start < strlen($text)
+                && !IssueBuffer::isSuppressedInList($legacy_syntax, $suppressed_issues)
+            ) {
+                $fixes[$start] = $legacy_syntax;
+            }
+        }
+
+        krsort($fixes);
+
+        foreach ($fixes as $start => $legacy_syntax) {
+            $text = substr_replace(
+                $text,
+                $legacy_syntax->replacement,
+                $start,
+                $legacy_syntax->code_location->raw_file_end - $docblock_start - $start,
+            );
+        }
+
         return new Doc(
-            LegacyEmptyArrayFinder::replace($docblock->getText()),
+            $text,
             $docblock->getStartLine(),
-            $docblock->getStartFilePos(),
+            $docblock_start,
             $docblock->getStartTokenPos(),
             $docblock->getEndLine(),
             $docblock->getEndFilePos(),

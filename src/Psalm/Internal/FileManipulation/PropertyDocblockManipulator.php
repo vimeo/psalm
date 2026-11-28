@@ -71,7 +71,7 @@ final class PropertyDocblockManipulator
     private function __construct(
         ProjectAnalyzer $project_analyzer,
         private readonly Property $stmt,
-        string $file_path,
+        private readonly string $file_path,
     ) {
         $docblock = $stmt->getDocComment();
         $this->docblock_start = $docblock ? $docblock->getStartFilePos() : (int)$stmt->getAttribute('startFilePos');
@@ -147,7 +147,9 @@ final class PropertyDocblockManipulator
         $docblock = $this->stmt->getDocComment();
 
         if ($docblock) {
-            $parsed_docblock = DocComment::parsePreservingLength(FileManipulationBuffer::fixLegacySyntax($docblock));
+            $parsed_docblock = DocComment::parsePreservingLength(
+                FileManipulationBuffer::fixLegacySyntax($docblock, $this->file_path),
+            );
         } else {
             $parsed_docblock = new ParsedDocblock('', []);
         }

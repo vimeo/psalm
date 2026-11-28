@@ -36,6 +36,30 @@ final class LegacySyntaxManipulationTest extends FileManipulationTestCase
                 'issues_to_fix' => ['LegacySyntax', 'MissingReturnType'],
                 'safe_types' => true,
             ],
+            'keepSuppressedInDocblockRewrittenForMissingReturnType' => [
+                'input' => '<?php
+                    /**
+                     * @psalm-suppress LegacySyntax
+                     * @param list<empty> $a
+                     */
+                    function f(array $a) {
+                        return $a;
+                    }',
+                'output' => '<?php
+                    /**
+                     * @psalm-suppress LegacySyntax
+                     *
+                     * @param list<empty> $a
+                     *
+                     * @psalm-return array<never, never>
+                     */
+                    function f(array $a): array {
+                        return $a;
+                    }',
+                'php_version' => '7.4',
+                'issues_to_fix' => ['LegacySyntax', 'MissingReturnType'],
+                'safe_types' => true,
+            ],
             'keepSuppressed' => [
                 'input' => '<?php
                     /**

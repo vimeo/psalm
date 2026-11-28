@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Type;
 
-use function array_reverse;
 use function ctype_space;
 use function preg_match;
 use function preg_match_all;
@@ -12,7 +11,6 @@ use function preg_replace;
 use function str_contains;
 use function strlen;
 use function substr;
-use function substr_replace;
 
 use const PREG_OFFSET_CAPTURE;
 use const PREG_SET_ORDER;
@@ -54,6 +52,17 @@ final class LegacyEmptyArrayFinder
 
             if ($tag_name === 'method') {
                 $offset += strlen(self::matchAt('/static\s+(?=\S)/A', $docblock, $offset) ?? '');
+                [$return_type_found, $end] = self::findInType($docblock, $offset);
+                $found = [...$found, ...$return_type_found];
+
+                // the parameters of a method with a return type follow its name
+                $name = self::matchAt('/\s+\w+\s*\(/A', $docblock, $end);
+
+                if ($name !== null) {
+                    $found = [...$found, ...self::findInParams($docblock, $end + strlen($name))];
+                }
+
+                continue;
             } elseif ($tag_name === 'type' || str_contains($tag_name, 'template')) {
                 // the type follows the name of the alias or template, and `=`, `of`, `as` or `super`
                 $name = self::matchAt('/[\w\\\\]+\s*(?:(?:=|of\s|as\s|super\s)\s*)?/A', $docblock, $offset);
@@ -65,31 +74,57 @@ final class LegacyEmptyArrayFinder
                 $offset += strlen($name);
             }
 
-            $found = [...$found, ...self::findInType($docblock, $offset)];
+            $found = [...$found, ...self::findInType($docblock, $offset)[0]];
         }
 
         return $found;
     }
 
     /**
-     * $docblock with array{} in place of each type find() finds
+     * Searches the parameters of a method signature starting at $offset, after its `(`
      *
+     * @return list<array{int, int}>
      * @psalm-pure
      */
-    public static function replace(string $docblock): string
+    private static function findInParams(string $docblock, int $offset): array
     {
-        foreach (array_reverse(self::find($docblock)) as [$start, $end]) {
-            $docblock = substr_replace($docblock, 'array{}', $start, $end - $start);
+        $found = [];
+        $length = strlen($docblock);
+
+        while ($offset < $length) {
+            [$param_found, $i] = self::findInType($docblock, self::skipSpaces($docblock, $offset));
+            $found = [...$found, ...$param_found];
+
+            // the parameter's name and default value
+            for ($depth = 0; $i < $length; $i++) {
+                $char = $docblock[$i];
+
+                if ($char === '\'' || $char === '"') {
+                    $i = self::skipString($docblock, $i);
+                } elseif ($char === '<' || $char === '{' || $char === '(' || $char === '[') {
+                    $depth++;
+                } elseif ($char === '>' || $char === '}' || $char === ')' || $char === ']') {
+                    if ($depth === 0) {
+                        return $found;
+                    }
+
+                    $depth--;
+                } elseif ($char === ',' && $depth === 0) {
+                    break;
+                }
+            }
+
+            $offset = $i + 1;
         }
 
-        return $docblock;
+        return $found;
     }
 
     /**
      * Searches the type starting at $offset, which ends at the first space outside brackets that doesn't separate
      * the members of a union or intersection or a callable's return type
      *
-     * @return list<array{int, int}>
+     * @return array{list<array{int, int}>, int} the types found, and the offset where the type ends
      * @psalm-pure
      */
     private static function findInType(string $docblock, int $offset): array
@@ -107,19 +142,20 @@ final class LegacyEmptyArrayFinder
                 $depth++;
             } elseif ($char === '>' || $char === '}' || $char === ')' || $char === ']') {
                 if ($depth === 0) {
-                    return $found;
+                    return [$found, $i];
                 }
 
                 $depth--;
             } elseif ($depth === 0 && $char === '*' && ($docblock[$i + 1] ?? '') === '/') {
-                return $found;
+                return [$found, $i];
             } elseif ($depth === 0 && ctype_space($char)) {
-                $next = self::skipSpaces($docblock, $i);
+                // a union can go on on the next line, after its `*`
+                $next = $i + strlen(self::matchAt('/(?:\s|\*(?!\/))+/A', $docblock, $i) ?? '');
                 $before = $docblock[$i - 1];
                 $after = $docblock[$next] ?? '';
 
                 if ($before !== '|' && $before !== '&' && $before !== ':' && $after !== '|' && $after !== '&') {
-                    return $found;
+                    return [$found, $i];
                 }
 
                 $i = $next - 1;
@@ -135,7 +171,7 @@ final class LegacyEmptyArrayFinder
             }
         }
 
-        return $found;
+        return [$found, $length];
     }
 
     /**
