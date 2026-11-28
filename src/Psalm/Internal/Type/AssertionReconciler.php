@@ -1968,14 +1968,19 @@ final class AssertionReconciler extends Reconciler
     }
 
     /**
-     * The class a check narrows a `Foo<A>` to, without type arguments of its own: `static` is a `Foo<A>&static`, and a
-     * child class passing its templates straight to those of Foo is a child of those arguments, not of its bounds
+     * The class without type arguments a check narrows a `Foo<A>` to, with what it takes from it: `static` is a
+     * `Foo<A>&static`, and a child class passing its templates straight to those of Foo is a child of those arguments,
+     * not of its bounds. Any other checked type is returned as it is.
      */
-    private static function withArgumentsOf(
-        Codebase $codebase,
-        TGenericObject $generic,
-        TNamedObject $checked,
-    ): TNamedObject {
+    private static function withArgumentsOf(Codebase $codebase, Atomic $generic, Atomic $checked): Atomic
+    {
+        if (!$generic instanceof TGenericObject
+            || $checked::class !== TNamedObject::class
+            || $generic->hasUnknownArgument()
+        ) {
+            return $checked;
+        }
+
         if (strtolower($generic->value) !== strtolower($checked->value)) {
             return self::inferTemplateParamsFromParent($codebase, $checked, $generic);
         }
@@ -1984,6 +1989,20 @@ final class AssertionReconciler extends Reconciler
     }
 
     private static function filterAtomicWithAnother(
+        Atomic &$type_1_atomic,
+        Atomic $type_2_atomic,
+        Codebase $codebase,
+        bool &$any_scalar_type_match_found,
+    ): ?Atomic {
+        return self::filterAtomicWithAnotherOfItsArguments(
+            $type_1_atomic,
+            self::withArgumentsOf($codebase, $type_1_atomic, $type_2_atomic),
+            $codebase,
+            $any_scalar_type_match_found,
+        );
+    }
+
+    private static function filterAtomicWithAnotherOfItsArguments(
         Atomic &$type_1_atomic,
         Atomic $type_2_atomic,
         Codebase $codebase,
@@ -2004,13 +2023,6 @@ final class AssertionReconciler extends Reconciler
 
         if ($type_1_atomic instanceof TNamedObject) {
             $type_1_atomic = $type_1_atomic->setIsStatic(false);
-        }
-
-        if ($type_1_atomic instanceof TGenericObject
-            && $type_2_atomic::class === TNamedObject::class
-            && !$type_1_atomic->hasUnknownArgument()
-        ) {
-            $type_2_atomic = self::withArgumentsOf($codebase, $type_1_atomic, $type_2_atomic);
         }
 
         if ($type_1_atomic instanceof TNamedObject

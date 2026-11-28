@@ -13,6 +13,7 @@ use Psalm\Exception\TypeParseTreeException;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\TypeVisitor\BareUseBoundBinder;
 use Psalm\Internal\TypeVisitor\ContainsExpandableTypeVisitor;
 use Psalm\Internal\TypeVisitor\TemplateDefaultFiller;
 use Psalm\Internal\TypeVisitor\TemplateTypeCollector;
@@ -216,23 +217,16 @@ final class TemplateDefaults
     }
 
     /**
-     * The type with each class written without type arguments in it standing for the bounds of its templates
-     * ({@see self::bindBareUse()})
+     * The type with each class written without type arguments in it, at any depth, standing for the bounds of its
+     * templates ({@see BareUseBoundBinder})
      *
      * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     public static function bindBareUsesToBounds(Union $type, Codebase $codebase): Union
     {
-        $atomics = [];
-        $changed = false;
+        (new BareUseBoundBinder($codebase))->traverse($type);
 
-        foreach ($type->getAtomicTypes() as $atomic) {
-            $bound_use = self::bindBareUse($atomic, $codebase, false);
-            $changed = $changed || $bound_use !== $atomic;
-            $atomics[] = $bound_use;
-        }
-
-        return $changed ? $type->setTypes($atomics) : $type;
+        return $type;
     }
 
     /**

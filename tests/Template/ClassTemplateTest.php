@@ -6712,6 +6712,47 @@ final class ClassTemplateTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'classNestedInATemplateBoundKeepsItsBounds' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-immutable
+                     * @template-covariant TParent of object|null = null
+                     */
+                    abstract class Node {}
+
+                    /**
+                     * @psalm-immutable
+                     * @template-covariant T
+                     */
+                    final class Wrap {}
+
+                    /**
+                     * @psalm-immutable
+                     * @template TList of list<Node>
+                     * @template TMap of array<string, Node>
+                     * @template TWrap of Wrap<Node>
+                     */
+                    final class Holder {
+                        /**
+                         * @param TList $list
+                         * @param TMap $map
+                         * @param TWrap $wrap
+                         */
+                        public function __construct(public array $list, public array $map, public Wrap $wrap) {}
+                    }
+
+                    /**
+                     * @param list<Node<object>> $list
+                     * @param array<string, Node<object>> $map
+                     * @param Wrap<Node<object>> $wrap
+                     */
+                    function f(array $list, array $map, Wrap $wrap): void {
+                        new Holder($list, $map, $wrap);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'instanceofStaticKeepsTheTypeArguments' => [
                 'code' => '<?php
                     /**
