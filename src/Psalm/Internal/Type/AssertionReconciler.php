@@ -1903,6 +1903,7 @@ final class AssertionReconciler extends Reconciler
 
     /**
      * @return array{Union, Union}|null null for an array shape
+     * @psalm-mutation-free
      */
     private static function getGenericArrayParams(Atomic $type): ?array
     {
