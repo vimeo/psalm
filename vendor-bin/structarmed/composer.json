@@ -1,0 +1,5 @@
+{
+    "require": {
+        "boundwize/structarmed": "^0.22.12"
+    }
+}

@@ -275,7 +275,7 @@ final class Pool
         for ($x = 0; $x < $this->threads; $x++) {
             $workers []= $this->pool->getWorker();
         }
-        return array_map(fn(Worker $w): Future => $w->submit($task)->getFuture(), $workers);
+        return array_map(static fn(Worker $w): Future => $w->submit($task)->getFuture(), $workers);
     }
 
     /**

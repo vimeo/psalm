@@ -75,7 +75,7 @@ final class MethodGetCompletionItemsForClassishThingTest extends TestCase
 
         $items = $this->codebase->getCompletionItemsForClassishThing($class_name, $gap, true);
 
-        return array_map(fn($item) => $item->label, $items);
+        return array_map(static fn($item) => $item->label, $items);
     }
 
     /**
