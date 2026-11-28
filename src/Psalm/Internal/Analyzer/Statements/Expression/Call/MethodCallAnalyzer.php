@@ -47,17 +47,14 @@ use Psalm\Type\Atomic\TTemplateValueOf;
 use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Union;
 
-use function array_filter;
 use function array_map;
 use function array_merge;
 use function array_reduce;
-use function array_values;
 use function count;
 use function implode;
+use function in_array;
 use function is_string;
-use function strrpos;
 use function strtolower;
-use function substr;
 
 /**
  * @internal
@@ -131,14 +128,15 @@ final class MethodCallAnalyzer extends CallAnalyzer
         // `$object->$name()` with `$name` one of known strings calls each of those methods
         $literal_method_names = self::getLiteralMethodNames($statements_analyzer, $stmt);
 
-        $called_method_name = $stmt->name instanceof PhpParser\Node\Identifier
-            ? $stmt->name->name
+        $called_method_names = $stmt->name instanceof PhpParser\Node\Identifier
+            ? [$stmt->name->name]
             : ($literal_method_names !== null
-                ? implode('|', array_map(
+                ? array_map(
                     static fn(PhpParser\Node\Identifier $name): string => $name->name,
                     $literal_method_names,
-                ))
+                )
                 : null);
+        $called_method_name = $called_method_names !== null ? implode('|', $called_method_names) : null;
 
         if ($stmt->var instanceof PhpParser\Node\Expr\Variable) {
             if (is_string($stmt->var->name) && $stmt->var->name === 'this' && !$statements_analyzer->getFQCLN()) {
@@ -209,7 +207,9 @@ final class MethodCallAnalyzer extends CallAnalyzer
             && $called_method_name !== null
             && $receiver_type->isNullable()
             && !$receiver_type->ignore_nullable_issues
-            && !($called_method_name === 'offsetGet' && $context->inside_isset)
+            && !($called_method_names !== null
+                && in_array('offsetGet', $called_method_names, true)
+                && $context->inside_isset)
             && !$receiver_state->isNullOnlyByShortCircuit()
         ) {
             IssueBuffer::maybeAdd(
@@ -604,14 +604,35 @@ final class MethodCallAnalyzer extends CallAnalyzer
             $call_count += count($method_names);
         }
 
-        // a call of one of several methods asserts only what each of them asserts
+        // a call of one of several methods asserts only what each method it can run asserts
         $targets_if_true_assertions = [];
         $targets_if_false_assertions = [];
 
+        // `$r instanceof A ? 'a' : 'b'` names a method of each receiver: a method is missing when its receiver has
+        // none of the methods, or when no receiver has it
+        $correlated = $literal_method_names !== null && count($literal_method_names) > 1 && count($lhs_types) > 1;
+        $receivers_with_a_method = [];
+        $names_of_a_method = [];
+        $missing_class_method_ids = [];
+        $missing_interface_method_ids = [];
+        $missing_magic_method_ids = [];
+
         $possible_new_class_types = [];
 
-        foreach ($calls as [$lhs_type_part, $method_names]) {
+        foreach ($calls as $receiver => [$lhs_type_part, $method_names]) {
             foreach ($method_names as $method_name) {
+                $existent_method_ids = $result->existent_method_ids;
+                $had_mixed_method_call = $result->has_mixed_method_call;
+                $non_existent_class_method_ids = $result->non_existent_class_method_ids;
+                $non_existent_interface_method_ids = $result->non_existent_interface_method_ids;
+                $non_existent_magic_method_ids = $result->non_existent_magic_method_ids;
+
+                $result->existent_method_ids = [];
+                $result->has_mixed_method_call = false;
+                $result->non_existent_class_method_ids = [];
+                $result->non_existent_interface_method_ids = [];
+                $result->non_existent_magic_method_ids = [];
+
                 $stmt->name = $method_name;
 
                 try {
@@ -635,10 +656,54 @@ final class MethodCallAnalyzer extends CallAnalyzer
                     $stmt->name = $name;
                 }
 
+                // a receiver without the method (null, false, a missing method) never returns
+                $found_method = $result->existent_method_ids || $result->has_mixed_method_call;
+
+                if ($correlated && $method_name instanceof PhpParser\Node\Identifier) {
+                    if ($found_method) {
+                        $receivers_with_a_method[$receiver] = true;
+                        $names_of_a_method[$method_name->toLowerString()] = true;
+                    }
+
+                    foreach ($result->non_existent_class_method_ids as $method_id) {
+                        $missing_class_method_ids[] = [$receiver, $method_name->toLowerString(), $method_id];
+                    }
+
+                    foreach ($result->non_existent_interface_method_ids as $method_id) {
+                        $missing_interface_method_ids[] = [$receiver, $method_name->toLowerString(), $method_id];
+                    }
+
+                    foreach ($result->non_existent_magic_method_ids as $method_id) {
+                        $missing_magic_method_ids[] = [$receiver, $method_name->toLowerString(), $method_id];
+                    }
+
+                    $result->non_existent_class_method_ids = [];
+                    $result->non_existent_interface_method_ids = [];
+                    $result->non_existent_magic_method_ids = [];
+                }
+
+                $result->existent_method_ids += $existent_method_ids;
+                $result->has_mixed_method_call = $result->has_mixed_method_call || $had_mixed_method_call;
+                $result->non_existent_class_method_ids = [
+                    ...$non_existent_class_method_ids,
+                    ...$result->non_existent_class_method_ids,
+                ];
+                $result->non_existent_interface_method_ids = [
+                    ...$non_existent_interface_method_ids,
+                    ...$result->non_existent_interface_method_ids,
+                ];
+                $result->non_existent_magic_method_ids = [
+                    ...$non_existent_magic_method_ids,
+                    ...$result->non_existent_magic_method_ids,
+                ];
+
                 if ($call_count > 1) {
-                    $targets_if_true_assertions[] = $statements_analyzer->node_data->getIfTrueAssertions($stmt) ?? [];
-                    $targets_if_false_assertions[] = $statements_analyzer->node_data->getIfFalseAssertions($stmt)
-                        ?? [];
+                    if ($found_method) {
+                        $targets_if_true_assertions[] = $statements_analyzer->node_data->getIfTrueAssertions($stmt)
+                            ?? [];
+                        $targets_if_false_assertions[] = $statements_analyzer->node_data->getIfFalseAssertions($stmt)
+                            ?? [];
+                    }
 
                     $statements_analyzer->node_data->setIfTrueAssertions($stmt, []);
                     $statements_analyzer->node_data->setIfFalseAssertions($stmt, []);
@@ -663,37 +728,24 @@ final class MethodCallAnalyzer extends CallAnalyzer
             );
         }
 
-        if ($literal_method_names !== null && count($literal_method_names) > 1 && count($lhs_types) > 1) {
-            // `$r instanceof A ? 'a' : 'b'` names a method of each receiver: a method is missing when no receiver
-            // has it
-            $existent_method_names = [];
-
-            foreach ($result->existent_method_ids as $method_id => $_) {
-                $existent_method_names[self::getMethodNameLc($method_id)] = true;
+        foreach ($missing_class_method_ids as [$receiver, $method_name_lc, $method_id]) {
+            if (!isset($receivers_with_a_method[$receiver]) || !isset($names_of_a_method[$method_name_lc])) {
+                $result->non_existent_class_method_ids[] = $method_id;
             }
+        }
 
-            $is_missing = static fn(string $method_id): bool
-                => !isset($existent_method_names[self::getMethodNameLc($method_id)]);
+        foreach ($missing_interface_method_ids as [$receiver, $method_name_lc, $method_id]) {
+            if (!isset($receivers_with_a_method[$receiver]) || !isset($names_of_a_method[$method_name_lc])) {
+                $result->non_existent_interface_method_ids[] = $method_id;
+            }
+        }
 
-            $result->non_existent_class_method_ids = array_values(
-                array_filter($result->non_existent_class_method_ids, $is_missing),
-            );
-            $result->non_existent_interface_method_ids = array_values(
-                array_filter($result->non_existent_interface_method_ids, $is_missing),
-            );
-            $result->non_existent_magic_method_ids = array_values(
-                array_filter($result->non_existent_magic_method_ids, $is_missing),
-            );
+        foreach ($missing_magic_method_ids as [$receiver, $method_name_lc, $method_id]) {
+            if (!isset($receivers_with_a_method[$receiver]) || !isset($names_of_a_method[$method_name_lc])) {
+                $result->non_existent_magic_method_ids[] = $method_id;
+            }
         }
 
         return $possible_new_class_types;
-    }
-
-    /**
-     * @psalm-pure
-     */
-    private static function getMethodNameLc(string $method_id): string
-    {
-        return strtolower(substr($method_id, (int) strrpos($method_id, ':') + 1));
     }
 }

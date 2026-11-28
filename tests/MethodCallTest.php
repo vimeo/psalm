@@ -4413,6 +4413,89 @@ final class MethodCallTest extends TestCase
                 'assertions' => ['$r===' => 'mixed|null'],
                 'ignored_issues' => ['MixedAssignment'],
             ],
+            'callOnANullableReceiverKeepsItsAssertions' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Foo {
+                        /**
+                         * @param mixed $v
+                         * @psalm-assert-if-true string $v
+                         */
+                        public function check($v): bool { return is_string($v); }
+                    }
+
+                    /** @var mixed */
+                    $v = $_GET['v'];
+                    $o = random_int(0, 1) ? new Foo() : null;
+                    $r = null;
+                    if ($o->check($v)) {
+                        $r = $v;
+                    }
+                PHP,
+                'assertions' => ['$r===' => 'null|string'],
+                'ignored_issues' => ['PossiblyNullReference'],
+            ],
+            'callOnAFalsableReceiverKeepsItsAssertions' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Foo {
+                        /**
+                         * @param mixed $v
+                         * @psalm-assert-if-true string $v
+                         */
+                        public function check($v): bool { return is_string($v); }
+                    }
+
+                    /** @var mixed */
+                    $v = $_GET['v'];
+                    $o = random_int(0, 1) ? new Foo() : false;
+                    $r = null;
+                    if ($o->check($v)) {
+                        $r = $v;
+                    }
+                PHP,
+                'assertions' => ['$r===' => 'null|string'],
+                'ignored_issues' => ['PossiblyFalseReference'],
+            ],
+            'instanceCallOfMethodsNamedByLiteralsOneOfThemUndefinedKeepsTheAssertionsOfTheOthers' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Foo {
+                        /**
+                         * @param mixed $v
+                         * @psalm-assert-if-true string $v
+                         */
+                        public function check($v): bool { return is_string($v); }
+                    }
+
+                    /** @var mixed */
+                    $v = $_GET['v'];
+                    $m = random_int(0, 1) ? 'check' : 'nope';
+                    $r = null;
+                    if ((new Foo())->$m($v)) {
+                        $r = $v;
+                    }
+                PHP,
+                'assertions' => ['$r===' => 'null|string'],
+                'ignored_issues' => ['PossiblyUndefinedMethod'],
+            ],
+            'offsetGetAmongLiteralNamesInIssetOnANullableReceiver' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Foo {
+                        /** @return array<string, int> */
+                        public function offsetGet(string $k): array { return [$k => 1]; }
+
+                        /** @return array<string, int> */
+                        public function other(string $k): array { return [$k => 1]; }
+                    }
+
+                    function f(?Foo $o): bool {
+                        $m = random_int(0, 1) ? 'offsetGet' : 'other';
+                        return isset($o->$m('k')['x']);
+                    }
+                PHP,
+            ],
             'instanceCallOfAMethodNamedForEachReceiver' => [
                 'code' => <<<'PHP'
                     <?php
@@ -6031,6 +6114,24 @@ final class MethodCallTest extends TestCase
                     Foo::$m();
                 PHP,
                 'error_message' => 'InvalidStaticInvocation',
+            ],
+            'instanceCallOfMethodsNamedByLiteralsOnAReceiverWithNoneOfThem' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class C {
+                        public function a(): void {}
+                        public function b(): void {}
+                    }
+                    final class D {}
+
+                    function f(C|D $o): void {
+                        $m = $o instanceof C ? 'a' : 'b';
+                        $o->$m();
+                    }
+                PHP,
+                'error_message' => 'PossiblyUndefinedMethod',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'instanceCallOnAPossiblyNullReceiverOfAMethodNamedByALiteral' => [
                 'code' => <<<'PHP'

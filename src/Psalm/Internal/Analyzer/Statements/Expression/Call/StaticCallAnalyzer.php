@@ -427,13 +427,15 @@ final class StaticCallAnalyzer extends CallAnalyzer
         $name = $stmt->name;
         $method_names = self::getLiteralMethodNames($statements_analyzer, $stmt) ?? [$name];
 
-        // a call to one of several methods asserts only what each of them asserts
+        // a call to one of several methods asserts only what each method it can run asserts
         $targets_if_true_assertions = [];
         $targets_if_false_assertions = [];
 
         foreach ($lhs_type_parts as $lhs_type_part) {
             foreach ($method_names as $method_name) {
                 $stmt->name = $method_name;
+                $had_existing_method = $has_existing_method;
+                $has_existing_method = false;
 
                 try {
                     AtomicStaticCallAnalyzer::analyze(
@@ -452,10 +454,17 @@ final class StaticCallAnalyzer extends CallAnalyzer
                     $stmt->name = $name;
                 }
 
+                $found_method = $has_existing_method;
+                $has_existing_method = $had_existing_method || $found_method;
+
                 if (count($lhs_type_parts) * count($method_names) > 1) {
-                    $targets_if_true_assertions[] = $statements_analyzer->node_data->getIfTrueAssertions($stmt) ?? [];
-                    $targets_if_false_assertions[] = $statements_analyzer->node_data->getIfFalseAssertions($stmt)
-                        ?? [];
+                    // a class without the method never returns
+                    if ($found_method) {
+                        $targets_if_true_assertions[] = $statements_analyzer->node_data->getIfTrueAssertions($stmt)
+                            ?? [];
+                        $targets_if_false_assertions[] = $statements_analyzer->node_data->getIfFalseAssertions($stmt)
+                            ?? [];
+                    }
 
                     $statements_analyzer->node_data->setIfTrueAssertions($stmt, []);
                     $statements_analyzer->node_data->setIfFalseAssertions($stmt, []);
