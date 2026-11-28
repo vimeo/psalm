@@ -66,6 +66,42 @@ final class TemplateInferredTypeReplacer
         TemplateResult $template_result,
         ?Codebase $codebase,
     ): Union {
+        $union = self::replaceTypes($union, $template_result, $codebase);
+
+        if (!$codebase
+            || !array_any($union->getAtomicTypes(), static fn(Atomic $type): bool => $type instanceof TIntersection)
+        ) {
+            return $union;
+        }
+
+        // an intersection is intersected once its templates are replaced
+        $atomic_types = [];
+
+        foreach ($union->getAtomicTypes() as $atomic_type) {
+            if (!$atomic_type instanceof TIntersection) {
+                $atomic_types[] = $atomic_type;
+                continue;
+            }
+
+            /** @psalm-suppress ImpureMethodCall reads codebase storage */
+            foreach (TypeParser::resolveIntersection($atomic_type, $codebase) as $resolved_type) {
+                $atomic_types[] = $resolved_type;
+            }
+        }
+
+        return $union->getBuilder()
+            ->setTypes(TypeCombiner::combine($atomic_types, $codebase)->getAtomicTypes())
+            ->freeze();
+    }
+
+    /**
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
+     */
+    private static function replaceTypes(
+        Union $union,
+        TemplateResult $template_result,
+        ?Codebase $codebase,
+    ): Union {
         $new_types = [];
 
         $is_mixed = false;
@@ -93,8 +129,14 @@ final class TemplateInferredTypeReplacer
 
                 if ($template_type) {
                     $should_set = false;
-                    $is_mixed = $is_mixed || self::hasMixedPart($template_type);
-                    $new_types = [...$new_types, ...array_values($template_type->getAtomicTypes())];
+
+                    foreach ($template_type->getAtomicTypes() as $template_type_part) {
+                        if ($template_type_part instanceof TMixed) {
+                            $is_mixed = true;
+                        }
+
+                        $new_types[] = $template_type_part;
+                    }
                 }
             } elseif ($atomic_type instanceof TTemplateParamClass) {
                 $class_template_types = self::replaceTemplateParamClass(
@@ -110,11 +152,38 @@ final class TemplateInferredTypeReplacer
             } elseif ($atomic_type instanceof TTemplateIndexedAccess) {
                 $should_set = false;
 
-                $template_type = self::replaceTemplateIndexedAccess($codebase, $atomic_type, $inferred_lower_bounds);
+                $template_type = null;
+
+                if (isset($inferred_lower_bounds[$atomic_type->array_param_name][$atomic_type->defining_class])
+                    && !empty($inferred_lower_bounds[$atomic_type->offset_param_name])
+                ) {
+                    $array_template_type
+                        = TemplateStandinTypeReplacer::getReadTypeFromBounds(
+                            $inferred_lower_bounds[$atomic_type->array_param_name][$atomic_type->defining_class],
+                            $codebase,
+                        );
+
+                    $offset_template_type
+                        = TemplateStandinTypeReplacer::getReadTypeFromBounds(
+                            array_values($inferred_lower_bounds[$atomic_type->offset_param_name])[0],
+                            $codebase,
+                        );
+
+                    $template_type = self::getIndexedAccessType(
+                        $array_template_type,
+                        $offset_template_type,
+                        $codebase,
+                    );
+                }
 
                 if ($template_type) {
-                    $is_mixed = $is_mixed || self::hasMixedPart($template_type);
-                    $new_types = [...$new_types, ...array_values($template_type->getAtomicTypes())];
+                    foreach ($template_type->getAtomicTypes() as $template_type_part) {
+                        if ($template_type_part instanceof TMixed) {
+                            $is_mixed = true;
+                        }
+
+                        $new_types[] = $template_type_part;
+                    }
                 } else {
                     $new_types[] = new TMixed();
                 }
@@ -143,8 +212,13 @@ final class TemplateInferredTypeReplacer
                     $new_types = [...$new_types, ...$properties_of_types];
                 }
             } elseif ($atomic_type instanceof TIntersection) {
-                $should_set = false;
-                $new_types = [...$new_types, ...self::replaceIntersection($atomic_type, $template_result, $codebase)];
+                $intersected_types = [];
+
+                foreach ($atomic_type->types as $intersected_type) {
+                    $intersected_types[] = self::replace($intersected_type, $template_result, $codebase);
+                }
+
+                $atomic_type = $atomic_type->setTypes($intersected_types);
             } elseif ($atomic_type instanceof TConditional
                 && $codebase
             ) {
@@ -561,74 +635,6 @@ final class TemplateInferredTypeReplacer
         }
 
         return null;
-    }
-
-    /**
-     * @psalm-pure
-     */
-    private static function hasMixedPart(Union $type): bool
-    {
-        return array_any(
-            $type->getAtomicTypes(),
-            static fn(Atomic $atomic_type): bool => $atomic_type instanceof TMixed,
-        );
-    }
-
-    /**
-     * The type at the inferred offset of the inferred array, or null if either isn't inferred or the offset isn't known
-     *
-     * @param array<string, array<string, non-empty-list<TemplateBound>>> $inferred_lower_bounds
-     * @psalm-capabilities read-props|write-this-props|write-refs
-     */
-    private static function replaceTemplateIndexedAccess(
-        ?Codebase $codebase,
-        TTemplateIndexedAccess $atomic_type,
-        array $inferred_lower_bounds,
-    ): ?Union {
-        if (!isset($inferred_lower_bounds[$atomic_type->array_param_name][$atomic_type->defining_class])
-            || empty($inferred_lower_bounds[$atomic_type->offset_param_name])
-        ) {
-            return null;
-        }
-
-        return self::getIndexedAccessType(
-            TemplateStandinTypeReplacer::getReadTypeFromBounds(
-                $inferred_lower_bounds[$atomic_type->array_param_name][$atomic_type->defining_class],
-                $codebase,
-            ),
-            TemplateStandinTypeReplacer::getReadTypeFromBounds(
-                array_values($inferred_lower_bounds[$atomic_type->offset_param_name])[0],
-                $codebase,
-            ),
-            $codebase,
-        );
-    }
-
-    /**
-     * An intersection with its templates replaced, intersected when Psalm knows the types of its members
-     *
-     * @return non-empty-list<Atomic>
-     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
-     */
-    private static function replaceIntersection(
-        TIntersection $intersection,
-        TemplateResult $template_result,
-        ?Codebase $codebase,
-    ): array {
-        $intersected_types = [];
-
-        foreach ($intersection->types as $intersected_type) {
-            $intersected_types[] = self::replace($intersected_type, $template_result, $codebase);
-        }
-
-        $intersection = $intersection->setTypes($intersected_types);
-
-        if (!$codebase) {
-            return [$intersection];
-        }
-
-        /** @psalm-suppress ImpureMethodCall reads codebase storage */
-        return TypeParser::resolveIntersection($intersection, $codebase);
     }
 
     /**
