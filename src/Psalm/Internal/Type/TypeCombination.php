@@ -134,7 +134,7 @@ final class TypeCombination
 
     /**
      * [is_interface, is_enum] shared by every class-string merged into the same `class_string_types` key.
-     * A missing key means a plain class-string.
+     * Holds only non-plain kinds; an absent key means a plain class-string.
      *
      * @var array<string, array{bool, bool}>
      */
