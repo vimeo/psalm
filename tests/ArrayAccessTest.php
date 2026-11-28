@@ -1725,6 +1725,34 @@ final class ArrayAccessTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'stringOffsetCombinedWithOtherNonEmptyStrings' => [
+                'code' => '<?php
+                    /**
+                     * @param non-empty-string $non_empty
+                     * @param non-falsy-string $non_falsy
+                     * @param numeric-string $numeric
+                     */
+                    function f(string $s, string $non_empty, string $non_falsy, string $numeric, string $any): void {
+                        if ($s === "") {
+                            return;
+                        }
+
+                        $letter = $s[0];
+                        $with_non_empty = rand(0, 1) ? $letter : $non_empty;
+                        $non_empty_first = rand(0, 1) ? $non_empty : $letter;
+                        $with_non_falsy = rand(0, 1) ? $letter : $non_falsy;
+                        $with_numeric = rand(0, 1) ? $numeric : $letter;
+                        $with_any = rand(0, 1) ? $letter : $any;
+                        $with_empty = rand(0, 1) ? $letter : "";
+
+                        /** @psalm-check-type-exact $with_non_empty = non-empty-string */;
+                        /** @psalm-check-type-exact $non_empty_first = non-empty-string */;
+                        /** @psalm-check-type-exact $with_non_falsy = non-empty-string */;
+                        /** @psalm-check-type-exact $with_numeric = non-empty-string */;
+                        /** @psalm-check-type-exact $with_any = string */;
+                        /** @psalm-check-type-exact $with_empty = string */;
+                    }',
+            ],
             'offsetOfADomNamedNodeMapOfEitherKindIsRead' => [
                 'code' => '<?php
                     function either(DOMNamedNodeMap $attributes, int|string $key): ?DOMNode {

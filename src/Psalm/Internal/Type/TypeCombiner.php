@@ -54,6 +54,7 @@ use Psalm\Type\Atomic\TNumericString;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TScalar;
+use Psalm\Type\Atomic\TSingleLetter;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Atomic\TTemplateParam;
@@ -1732,6 +1733,15 @@ final class TypeCombiner
                         && $combination->value_types['string']::class === TNonEmptyNonspecificLiteralString::class
                     ) {
                         $combination->value_types['string'] = $type;
+                    } elseif ($type instanceof TNonEmptyString
+                        && $combination->value_types['string'] instanceof TNonEmptyString
+                        && (
+                            $type instanceof TSingleLetter
+                            || $combination->value_types['string'] instanceof TSingleLetter
+                        )
+                    ) {
+                        // a letter is not empty, but it may be the '0' of a non-falsy string or an uppercase letter
+                        $combination->value_types['string'] = new TNonEmptyString();
                     } else {
                         $combination->value_types['string'] = new TString();
                     }
