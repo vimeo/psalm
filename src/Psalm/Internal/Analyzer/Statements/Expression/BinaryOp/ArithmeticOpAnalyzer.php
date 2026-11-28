@@ -1687,9 +1687,7 @@ final class ArithmeticOpAnalyzer
         $min_value = $calculated_min_type !== null ? $calculated_min_type->getSingleIntLiteral()->value : null;
         $max_value = $calculated_max_type !== null ? $calculated_max_type->getSingleIntLiteral()->value : null;
 
-        $new_result_type = Type::getIntRange($min_value, $max_value);
-
-        $result_type = Type::combineUnionTypes($new_result_type, $result_type);
+        $result_type = Type::combineUnionTypes(self::getCalculatedIntRange($min_value, $max_value), $result_type);
     }
 
     /**
@@ -1735,13 +1733,20 @@ final class ArithmeticOpAnalyzer
         $min_bound = is_int($min_value) ? $min_value : null;
         $max_bound = is_int($max_value) ? $max_value : null;
 
-        // an unbounded side may overflow to a float
-        $new_result_type = new Union(
+        $result_type = Type::combineUnionTypes(self::getCalculatedIntRange($min_bound, $max_bound), $result_type);
+    }
+
+    /**
+     * An unbounded side of the result may be an overflow to a float
+     *
+     * @psalm-pure
+     */
+    private static function getCalculatedIntRange(?int $min_bound, ?int $max_bound): Union
+    {
+        return new Union(
             [$min_bound === null && $max_bound === null ? new TInt() : new TIntRange($min_bound, $max_bound)],
             ['from_calculation' => $min_bound === null || $max_bound === null],
         );
-
-        $result_type = Type::combineUnionTypes($new_result_type, $result_type);
     }
 
     /**

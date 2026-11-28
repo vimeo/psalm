@@ -633,6 +633,29 @@ final class IntRangeTest extends TestCase
                         return $p;
                     }',
             ],
+            'additionAndSubtractionWithAnUnboundedSideMayOverflowToFloat' => [
+                'code' => '<?php
+                    /** @return positive-int */
+                    function getPositive(): int { return 1; }
+                    /** @return int<min, -1> */
+                    function getNegative(): int { return -1; }
+
+                    function add(): int {
+                        $s = getPositive() + getPositive();
+                        if (is_float($s)) {
+                            return 0;
+                        }
+                        return $s;
+                    }
+
+                    function subtract(): int {
+                        $d = getNegative() - getPositive();
+                        if (is_float($d)) {
+                            return 0;
+                        }
+                        return $d;
+                    }',
+            ],
             'multiplicationSignMatrix' => [
                 'code' => '<?php
                     /** @return int<0, 0> */
@@ -1651,6 +1674,20 @@ final class IntRangeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'additionOfBoundedRangesCannotOverflowToFloat' => [
+                'code' => '<?php
+                    /** @return int<1, 3> */
+                    function getSmall(): int { return 1; }
+
+                    function f(): int {
+                        $s = getSmall() + getSmall();
+                        if (is_float($s)) {
+                            return 0;
+                        }
+                        return $s;
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+            ],
             'comparisonBelowTheRangeNamesLessThan' => [
                 'code' => '<?php
                     /**
