@@ -2260,6 +2260,49 @@ final class RedundantConditionTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'comparisonOfAClassConstantDocblockTypeAfterANullCheckIsADocblockContradiction' => [
+                'code' => '<?php
+                    final class C {
+                        public const A = "a";
+                        public const B = "b";
+
+                        /** @param self::*|null $s */
+                        public function f(?string $s): void {
+                            if (null !== $s) {
+                                if ($s === "c") {}
+                            }
+                        }
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+            ],
+            'functionCallOnAClassConstantDocblockTypeAfterANullCheckIsRedundantGivenTheDocblock' => [
+                'code' => '<?php
+                    final class C {
+                        public const A = "a";
+                        public const B = "b";
+
+                        /** @param self::A|self::B|null $s */
+                        public function f(?string $s): void {
+                            if (null !== $s) {
+                                echo strtolower($s);
+                            }
+                        }
+                    }',
+                'error_message' => 'RedundantFunctionCallGivenDocblockType',
+            ],
+            'comparisonOfAGlobalConstantDocblockTypeAfterANullCheckIsADocblockContradiction' => [
+                'code' => '<?php
+                    const G_A = "a";
+                    const G_B = "b";
+
+                    /** @param G_*|null $s */
+                    function f(?string $s): void {
+                        if (null !== $s) {
+                            if ($s === "c") {}
+                        }
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+            ],
             'notIdenticalToTrueOfATemplateBoundedByInt' => [
                 'code' => '<?php
                     /**
