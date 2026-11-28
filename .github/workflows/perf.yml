@@ -6,7 +6,9 @@ name: Perf
 on:
   pull_request:
     branches: [master, 6.x]
-    types: [opened, synchronize, reopened, ready_for_review]
+    # A measurement takes about 35 runner-minutes: it runs when the PR is opened, reopened or marked ready, and
+    # on later pushes only while the PR has the `performances` label (and when the label is added).
+    types: [opened, synchronize, reopened, ready_for_review, labeled]
     # Skips PRs that only change docs, tests or CI, which can't change how fast Psalm runs. The last matching
     # pattern wins, so changes to this workflow still run it.
     paths:
@@ -25,8 +27,16 @@ on:
 
 permissions: {}
 
+# Only a run that measures cancels the previous one: the runs of other pushes and labels are skipped by `plan`, and
+# get a group of their own (the condition is the one of `plan`).
 concurrency:
-  group: perf-${{ github.event.pull_request.number || inputs.pr }}
+  group: >-
+    ${{ (github.event_name == 'workflow_dispatch' || (!github.event.pull_request.draft && (
+      contains(fromJSON('["opened", "reopened", "ready_for_review"]'), github.event.action)
+      || (contains(github.event.pull_request.labels.*.name, 'performances')
+        && (github.event.action != 'labeled' || github.event.label.name == 'performances')))))
+      && format('perf-{0}', github.event.pull_request.number || inputs.pr)
+      || format('perf-skipped-{0}', github.run_id) }}
   cancel-in-progress: true
 
 env:
@@ -39,7 +49,11 @@ defaults:
 jobs:
   plan:
     name: Plan
-    if: ${{ !github.event.pull_request.draft }}
+    if: >-
+      github.event_name == 'workflow_dispatch' || (!github.event.pull_request.draft && (
+        contains(fromJSON('["opened", "reopened", "ready_for_review"]'), github.event.action)
+        || (contains(github.event.pull_request.labels.*.name, 'performances')
+          && (github.event.action != 'labeled' || github.event.label.name == 'performances'))))
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:

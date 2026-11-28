@@ -2,6 +2,8 @@
 
 Every non-draft PR to `master` or `6.x` that changes more than docs, tests or CI (changes to `perf.yml` count) runs Psalm on a pinned corpus of real projects (`corpus.yml`) with the merge-base (base) and the PR head (head) side by side on the same runner, and reports peak memory, wall time, weighted issues and the exact issues added or removed (job summary and the `perf-report` artifact).
 
+It measures when the PR is opened, reopened or marked ready for review. Later pushes are measured only while the PR has the `performances` label, and adding the label measures the current head.
+
 - ❌ fail (only this fails the check): Psalm memory more than 5 % above base (not when the PR changes `composer.json`); head timed out or ran out of memory while base used less than half of that limit; any other head crash.
 - ⚠️ warn: a timeout or memory crash with base already above half of the limit, wall time of a project more than 10 % above base after a re-run, wall time summed over the compared projects more than 5 % above base (neither when the PR changes `composer.json`), a missing or invalid result, a setup failure, or 💥 (base crashed or timed out, so the project is not comparable).
 - ✅ pass: otherwise. Weighted issues never change the verdict.
