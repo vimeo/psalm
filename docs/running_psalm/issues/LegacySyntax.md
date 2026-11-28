@@ -24,10 +24,13 @@ function none(array $ids): array
  * @param array<empty, empty> $a // LegacySyntax: array{}
  * @param array<string, list<empty>> $b // LegacySyntax: array<string, array{}>
  * @param array{} $c // no issue
- * @param mixed $d
- * @psalm-assert list<empty> $d // no issue: assertions are left out
+ * @param list<empty|int> $d // no issue: only an `empty` parameter is reported
+ * @param iterable<empty> $e // no issue: not an array type
+ * @param non-empty-list<empty> $f // no issue: no value is of it, not only the empty array
+ * @param mixed $g
+ * @psalm-assert list<empty> $g // no issue: assertions are left out
  */
-function check(array $a, array $b, array $c, $d): void {}
+function check(array $a, array $b, array $c, array $d, iterable $e, array $f, $g): void {}
 ```
 
 ## How to fix

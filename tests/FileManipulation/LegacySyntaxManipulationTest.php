@@ -6,9 +6,6 @@ namespace Psalm\Tests\FileManipulation;
 
 use Override;
 
-/**
- * @psalm-immutable
- */
 final class LegacySyntaxManipulationTest extends FileManipulationTestCase
 {
     /**
@@ -18,6 +15,48 @@ final class LegacySyntaxManipulationTest extends FileManipulationTestCase
     public static function providerValidCodeParse(): array
     {
         return [
+            'replaceInDocblockRewrittenForMissingReturnType' => [
+                'input' => '<?php
+                    /**
+                     * @param list<empty> $a
+                     */
+                    function f(array $a) {
+                        return $a;
+                    }',
+                'output' => '<?php
+                    /**
+                     * @param array{} $a
+                     *
+                     * @psalm-return array<never, never>
+                     */
+                    function f(array $a): array {
+                        return $a;
+                    }',
+                'php_version' => '7.4',
+                'issues_to_fix' => ['LegacySyntax', 'MissingReturnType'],
+                'safe_types' => true,
+            ],
+            'keepSuppressed' => [
+                'input' => '<?php
+                    /**
+                     * @psalm-suppress LegacySyntax
+                     * @return list<empty>
+                     */
+                    function f(): array {
+                        return [];
+                    }',
+                'output' => '<?php
+                    /**
+                     * @psalm-suppress LegacySyntax
+                     * @return list<empty>
+                     */
+                    function f(): array {
+                        return [];
+                    }',
+                'php_version' => '7.4',
+                'issues_to_fix' => ['LegacySyntax'],
+                'safe_types' => true,
+            ],
             'replaceEmptyArrayTypes' => [
                 'input' => '<?php
                     /**

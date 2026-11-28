@@ -79,6 +79,73 @@ final class LegacySyntaxTest extends TestCase
                     }
                     PHP,
             ],
+            'emptyInTagDescription' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @param int $x if 0, list<empty> is returned
+                     * @return list<int>
+                     */
+                    function f(int $x): array {
+                        return $x === 0 ? [] : [$x];
+                    }
+                    PHP,
+            ],
+            'emptyInLiteralString' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @return 'list<empty>'|int */
+                    function f() {
+                        return 'list<empty>';
+                    }
+                    PHP,
+            ],
+            'aliasNamedEmpty' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @psalm-type Empty = string */
+                    final class A {
+                        /** @param list<Empty> $names */
+                        public function f(array $names): void {}
+                    }
+                    PHP,
+            ],
+            'emptyInUnionParameter' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param list<empty|int> $a */
+                    function f(array $a): void {}
+                    PHP,
+            ],
+            'suppressedOnFunction' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @psalm-suppress LegacySyntax
+                     * @return list<empty>
+                     */
+                    function f(): array {
+                        /** @var list<empty> $a */
+                        $a = [];
+                        return $a;
+                    }
+                    PHP,
+            ],
+            'suppressedOnClass' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @psalm-suppress LegacySyntax */
+                    final class A {
+                        /** @var list<empty> */
+                        public array $a = [];
+
+                        /** @return list<empty> */
+                        public function f(): array {
+                            return [];
+                        }
+                    }
+                    PHP,
+            ],
         ];
     }
 
@@ -178,6 +245,48 @@ final class LegacySyntaxTest extends TestCase
                     <?php
                     /** @psalm-type None = list<empty> */
                     final class A {}
+                    PHP,
+                'error_message' => 'list<empty> is legacy syntax',
+            ],
+            'templateBoundOfEmpty' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @template T of list<empty>
+                     * @param T $a
+                     */
+                    function f(array $a): void {}
+                    PHP,
+                'error_message' => 'list<empty> is legacy syntax',
+            ],
+            'staticMethodReturningEmpty' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @method static list<empty> none() */
+                    final class A {}
+                    PHP,
+                'error_message' => 'list<empty> is legacy syntax',
+            ],
+            'unionMemberOfEmpty' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @return int|list<empty> */
+                    function f() {
+                        return [];
+                    }
+                    PHP,
+                'error_message' => 'LegacySyntax - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:17 - list<empty> is',
+            ],
+            'suppressedForAnotherIssue' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @psalm-suppress InvalidReturnType
+                     * @return list<empty>
+                     */
+                    function f(): array {
+                        return [];
+                    }
                     PHP,
                 'error_message' => 'list<empty> is legacy syntax',
             ],

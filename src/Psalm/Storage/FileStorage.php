@@ -8,6 +8,7 @@ use Psalm\Aliases;
 use Psalm\Internal\Scanner\UnresolvedConstantComponent;
 use Psalm\Internal\Type\TypeAlias;
 use Psalm\Issue\CodeIssue;
+use Psalm\Issue\LegacySyntax;
 use Psalm\Type\Union;
 
 /**
@@ -91,6 +92,13 @@ final class FileStorage
      * @var list<CodeIssue>
      */
     public array $docblock_issues = [];
+
+    /**
+     * The LegacySyntax issues of the file's docblocks, each with the issues suppressed where it is
+     *
+     * @var list<array{LegacySyntax, array<array-key, string>}>
+     */
+    public array $legacy_syntax_issues = [];
 
     /**
      * Issues found while scanning the file, reported when it is analysed

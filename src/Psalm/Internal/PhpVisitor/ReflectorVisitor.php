@@ -608,21 +608,63 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
 
         $this->checked_docblocks[$docblock_start] = true;
         $docblock = $comment->getText();
+        $found = LegacyEmptyArrayFinder::find($docblock);
 
-        foreach (LegacyEmptyArrayFinder::find($docblock) as [$start, $end]) {
+        if (!$found) {
+            return;
+        }
+
+        $suppressed_issues = $this->getSuppressedIssuesAround($comment);
+
+        foreach ($found as [$start, $end]) {
             $type = (string) preg_replace('/\s*\n[\s*]*/', ' ', substr($docblock, $start, $end - $start));
 
-            $this->file_storage->docblock_issues[] = new LegacySyntax(
-                $type . ' is legacy syntax for the empty array, write array{}: empty changes meaning in Psalm 8',
-                new DocblockTypeLocation(
-                    $this->file_scanner,
-                    $docblock_start + $start,
-                    $docblock_start + $end,
-                    $comment->getStartLine() + substr_count($docblock, "\n", 0, $start),
+            $this->file_storage->legacy_syntax_issues[] = [
+                new LegacySyntax(
+                    $type . ' is legacy syntax for the empty array, write array{}: empty changes meaning in Psalm 8',
+                    new DocblockTypeLocation(
+                        $this->file_scanner,
+                        $docblock_start + $start,
+                        $docblock_start + $end,
+                        $comment->getStartLine() + substr_count($docblock, "\n", 0, $start),
+                    ),
+                    'array{}',
                 ),
-                'array{}',
-            );
+                $suppressed_issues,
+            ];
         }
+    }
+
+    /**
+     * The issues suppressed by $comment and by the function-likes and the class-like it is in
+     *
+     * @return array<array-key, string>
+     */
+    private function getSuppressedIssuesAround(PhpParser\Comment\Doc $comment): array
+    {
+        $suppressed_issues = [];
+
+        try {
+            $suppress_entries = DocComment::parsePreservingLength($comment, true)->tags['psalm-suppress'] ?? [];
+        } catch (DocblockParseException) {
+            $suppress_entries = [];
+        }
+
+        foreach ($suppress_entries as $offset => $suppress_entry) {
+            foreach (DocComment::parseSuppressList($suppress_entry) as $issue_offset => $suppressed_issue) {
+                $suppressed_issues[$issue_offset + $offset] = $suppressed_issue;
+            }
+        }
+
+        foreach ($this->functionlike_node_scanners as $functionlike_node_scanner) {
+            $suppressed_issues += $functionlike_node_scanner->storage->suppressed_issues ?? [];
+        }
+
+        if ($this->classlike_node_scanners) {
+            $suppressed_issues += end($this->classlike_node_scanners)->storage->suppressed_issues ?? [];
+        }
+
+        return $suppressed_issues;
     }
 
     /**

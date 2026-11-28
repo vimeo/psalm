@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\FileManipulation;
 
+use PhpParser\Comment\Doc;
 use Psalm\CodeLocation;
 use Psalm\CodeLocation\DocblockTypeLocation;
 use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider\FileProvider;
+use Psalm\Internal\Type\LegacyEmptyArrayFinder;
 
 use function array_merge;
 use function preg_match;
@@ -179,6 +181,26 @@ final class FileManipulationBuffer
                     $comment_text === '',
                 ),
             ],
+        );
+    }
+
+    /**
+     * The docblock a manipulator rewrites whole, with the LegacySyntax fixes, as its edit replaces theirs
+     */
+    public static function fixLegacySyntax(Doc $docblock): Doc
+    {
+        if (!isset(ProjectAnalyzer::getInstance()->getIssuesToFix()['LegacySyntax'])) {
+            return $docblock;
+        }
+
+        return new Doc(
+            LegacyEmptyArrayFinder::replace($docblock->getText()),
+            $docblock->getStartLine(),
+            $docblock->getStartFilePos(),
+            $docblock->getStartTokenPos(),
+            $docblock->getEndLine(),
+            $docblock->getEndFilePos(),
+            $docblock->getEndTokenPos(),
         );
     }
 

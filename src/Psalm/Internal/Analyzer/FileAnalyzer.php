@@ -24,7 +24,6 @@ use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Type\TypeAlias\LinkableTypeAlias;
 use Psalm\Internal\Type\TypeTokenizer;
 use Psalm\Issue\InvalidTypeImport;
-use Psalm\Issue\LegacySyntax;
 use Psalm\Issue\UncaughtThrowInGlobalScope;
 use Psalm\IssueBuffer;
 use Psalm\Node\Stmt\VirtualNop;
@@ -187,21 +186,21 @@ class FileAnalyzer extends SourceAnalyzer
         $statements_analyzer = new StatementsAnalyzer($this, $this->node_data, true);
 
         foreach ($file_storage->docblock_issues as $docblock_issue) {
-            if ($docblock_issue instanceof LegacySyntax) {
-                if ($codebase->alter_code && isset($this->project_analyzer->getIssuesToFix()['LegacySyntax'])) {
-                    FileManipulationBuffer::add($this->file_path, [new FileManipulation(
-                        $docblock_issue->code_location->raw_file_start,
-                        $docblock_issue->code_location->raw_file_end,
-                        $docblock_issue->replacement,
-                    )]);
-                } else {
-                    IssueBuffer::maybeAdd($docblock_issue, [], true);
-                }
-
-                continue;
-            }
-
             IssueBuffer::maybeAdd($docblock_issue);
+        }
+
+        $fix_legacy_syntax = $codebase->alter_code && isset($this->project_analyzer->getIssuesToFix()['LegacySyntax']);
+
+        foreach ($file_storage->legacy_syntax_issues as [$legacy_syntax, $suppressed_issues]) {
+            if (!$fix_legacy_syntax) {
+                IssueBuffer::maybeAdd($legacy_syntax, $suppressed_issues, true);
+            } elseif (!IssueBuffer::isSuppressedInList($legacy_syntax, $suppressed_issues)) {
+                FileManipulationBuffer::add($this->file_path, [new FileManipulation(
+                    $legacy_syntax->code_location->raw_file_start,
+                    $legacy_syntax->code_location->raw_file_end,
+                    $legacy_syntax->replacement,
+                )]);
+            }
         }
 
         // if there are any leftover statements, evaluate them,
