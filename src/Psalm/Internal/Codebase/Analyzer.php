@@ -259,6 +259,9 @@ final class Analyzer
 
         $codebase = $project_analyzer->getCodebase();
 
+        // the stubs and the code their lower bounds name are populated now
+        $codebase->type_template_lower_bounds->reportStubIssues();
+
         $scanned = $codebase->scanner->getScannedFiles();
         $changed_files = [];
 

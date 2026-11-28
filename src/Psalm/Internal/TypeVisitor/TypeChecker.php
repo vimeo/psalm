@@ -14,6 +14,7 @@ use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeNameOptions;
 use Psalm\Internal\Analyzer\MethodAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
+use Psalm\Internal\Type\Comparator\LowerBoundProof;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\PurityArguments;
 use Psalm\Internal\Type\TemplateBound;
@@ -535,6 +536,10 @@ final class TypeChecker extends TypeVisitor
                     );
 
                     $lower_bound = $class_storage->template_lower_bounds[$expected_template_name] ?? null;
+                    $type_lower_bound = $codebase->type_template_lower_bounds->get(
+                        $defining_class,
+                        $expected_template_name,
+                    );
 
                     if (!UnionTypeComparator::isContainedBy($codebase, $type_param, $expected_type_param)) {
                         IssueBuffer::maybeAdd(
@@ -560,6 +565,19 @@ final class TypeChecker extends TypeVisitor
                                     . ' must include at least '
                                     . Capabilities::toString($lower_bound)
                                     . ', ' . $type_param->getId() . ' given',
+                                $this->code_location,
+                            ),
+                            $this->suppressed_issues,
+                        );
+                    } elseif ($type_lower_bound !== null
+                        && !LowerBoundProof::isContainedBy($codebase, $type_lower_bound, $type_param)
+                    ) {
+                        IssueBuffer::maybeAdd(
+                            new InvalidTemplateParam(
+                                'Extended template param ' . $expected_template_name
+                                    . ' of ' . $atomic->getId()
+                                    . ' expects a supertype of ' . $type_lower_bound->getId()
+                                    . ', type ' . $type_param->getId() . ' given',
                                 $this->code_location,
                             ),
                             $this->suppressed_issues,

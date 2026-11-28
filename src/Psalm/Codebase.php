@@ -48,6 +48,7 @@ use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\TaintStore;
 use Psalm\Internal\Codebase\TaintValidations;
 use Psalm\Internal\Codebase\TaintedCall;
+use Psalm\Internal\Codebase\TypeTemplateLowerBounds;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\LanguageServer\PHPMarkdownContent;
 use Psalm\Internal\LanguageServer\Reference;
@@ -212,6 +213,9 @@ final class Codebase
     public Populator $populator;
 
     public CodeUseGraph $code_use_graph;
+
+    /** @internal */
+    public TypeTemplateLowerBounds $type_template_lower_bounds;
 
     public ?TaintFlowGraph $taint_flow_graph = null;
 
@@ -408,12 +412,15 @@ final class Codebase
             $this->classlikes,
         );
 
+        $this->type_template_lower_bounds = new TypeTemplateLowerBounds($this);
+
         $this->populator = new Populator(
             $providers->classlike_storage_provider,
             $providers->file_storage_provider,
             $this->classlikes,
             $providers->file_reference_provider,
             $progress,
+            $this->type_template_lower_bounds,
         );
 
         $this->loadAnalyzer();

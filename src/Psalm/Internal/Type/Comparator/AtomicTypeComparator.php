@@ -47,6 +47,7 @@ use Psalm\Type\Atomic\TScalar;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Atomic\TTemplateValueOf;
 use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Atomic\TValueOf;
@@ -81,7 +82,25 @@ final class AtomicTypeComparator
         bool $allow_float_int_equality = true,
         ?TypeComparisonResult $atomic_comparison_result = null,
     ): bool {
+        if ($container_type_part instanceof TTemplateParam) {
+            // in a lower bound proof a template contains only itself and what its lower bound contains (whatever type
+            // it stands for, not what its upper bound allows); elsewhere a value of its lower bound fits it too
+            if (LowerBoundProof::isRunning()) {
+                return ($input_type_part instanceof TTemplateParam
+                        && $input_type_part->param_name === $container_type_part->param_name
+                        && $input_type_part->defining_class === $container_type_part->defining_class
+                        && array_diff_key($container_type_part->extra_types, $input_type_part->extra_types) === [])
+                    || self::isContainedByLowerBound($codebase, $input_type_part, $container_type_part);
+            }
 
+            if (self::isContainedByLowerBound($codebase, $input_type_part, $container_type_part)) {
+                return true;
+            }
+        } elseif ($container_type_part instanceof TTemplateParamClass && LowerBoundProof::isRunning()) {
+            return $input_type_part instanceof TTemplateParamClass
+                && $input_type_part->param_name === $container_type_part->param_name
+                && $input_type_part->defining_class === $container_type_part->defining_class;
+        }
 
         if (($container_type_part instanceof TTemplateParam
                 || ($container_type_part instanceof TNamedObject
@@ -860,7 +879,8 @@ final class AtomicTypeComparator
         }
 
         if ($container_type_part instanceof TString || $container_type_part instanceof TScalar) {
-            if ($input_type_part instanceof TNamedObject) {
+            // an object with `__toString()` is cast to a string, which is not a subtype in a lower bound proof
+            if ($input_type_part instanceof TNamedObject && !LowerBoundProof::isRunning()) {
                 // check whether the object has a __toString method
                 if ($codebase->classOrInterfaceExists($input_type_part->value)) {
                     $to_string_method_id = new MethodIdentifier(
@@ -947,6 +967,7 @@ final class AtomicTypeComparator
                 }
             } elseif ($input_type_part instanceof TObjectWithProperties
                 && isset($input_type_part->methods['__tostring'])
+                && !LowerBoundProof::isRunning()
             ) {
                 if ($atomic_comparison_result) {
                     $atomic_comparison_result->to_string_cast = true;
@@ -973,7 +994,7 @@ final class AtomicTypeComparator
 
         if ($container_type_part instanceof TCallable &&
             (
-                $input_type_part instanceof TLiteralString
+                ($input_type_part instanceof TLiteralString && !LowerBoundProof::isRunning())
                 || $input_type_part instanceof TCallableString
                 || $input_type_part instanceof TArray
                 || $input_type_part instanceof TKeyedArray
@@ -1509,6 +1530,32 @@ final class AtomicTypeComparator
             if (!UnionTypeComparator::canExpressionTypesBeIdentical($codebase, $key_type, $fallback_key_type)
                 || !UnionTypeComparator::canExpressionTypesBeIdentical($codebase, $property, $fallback_value_type)
             ) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Whether every value of the input is a value of the template, whatever type the template stands for: the input
+     * is within the lower bound of the template (`@template T super Cat`), and within the types it is intersected with
+     */
+    private static function isContainedByLowerBound(
+        Codebase $codebase,
+        Atomic $input_type_part,
+        TTemplateParam $template,
+    ): bool {
+        $lower_bound = $codebase->type_template_lower_bounds->get($template->defining_class, $template->param_name);
+
+        if ($lower_bound === null
+            || !LowerBoundProof::isContainedBy($codebase, new Union([$input_type_part]), $lower_bound)
+        ) {
+            return false;
+        }
+
+        foreach ($template->extra_types as $extra_type) {
+            if (!self::isContainedBy($codebase, $input_type_part, $extra_type)) {
                 return false;
             }
         }

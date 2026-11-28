@@ -8,6 +8,8 @@ use Override;
 use Psalm\CodeLocation;
 use Psalm\CodeLocation\DocblockTypeLocation;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
+use Psalm\Internal\Codebase\TypeTemplateLowerBounds;
+use Psalm\Internal\Type\TemplateResult;
 use Psalm\Issue\CodeIssue;
 use Psalm\Type\Union;
 use Stringable;
@@ -148,6 +150,17 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
      * @var array<string, CodeLocation>
      */
     public array $template_default_locations = [];
+
+    /**
+     * The lower bound of each template that has one (`@template T super Cat`), as declared: what a call infers for the
+     * template includes it, and a value of it fits the template in the function-like. The analysis reads the lower
+     * bounds expanded and validated, from the codebase's index of them.
+     *
+     * @see TypeTemplateLowerBounds
+     * @see TemplateResult::$lower_bounds for the types a call infers for templates, unrelated
+     * @var array<string, Union>
+     */
+    public array $type_template_lower_bounds = [];
 
     /**
      * @var array<int, Possibilities>

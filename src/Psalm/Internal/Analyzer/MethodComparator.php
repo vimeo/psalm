@@ -13,6 +13,7 @@ use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\PhpVisitor\ParamReplacementVisitor;
+use Psalm\Internal\Type\Comparator\LowerBoundProof;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
@@ -50,6 +51,7 @@ use Psalm\Type\Union;
 use function array_any;
 use function array_diff_key;
 use function array_filter;
+use function array_key_first;
 use function array_key_last;
 use function array_values;
 use function in_array;
@@ -119,14 +121,16 @@ final class MethodComparator
         );
 
         // a method a class takes from a trait is bound to what the class binds, not the trait
+        $implementer_scope_storage = $implementer_classlike_storage->is_trait
+            && $codebase->classlike_storage_provider->has($implementer_called_class_name)
+            ? $codebase->classlike_storage_provider->get($implementer_called_class_name)
+            : $implementer_classlike_storage;
+
         self::checkCapabilities(
             $codebase,
             $guide_classlike_storage,
             $implementer_classlike_storage,
-            $implementer_classlike_storage->is_trait
-                && $codebase->classlike_storage_provider->has($implementer_called_class_name)
-                ? $codebase->classlike_storage_provider->get($implementer_called_class_name)
-                : $implementer_classlike_storage,
+            $implementer_scope_storage,
             $guide_method_storage,
             $implementer_method_storage,
             $cased_guide_method_id,
@@ -134,6 +138,21 @@ final class MethodComparator
             $code_location,
             $suppressed_issues,
         );
+
+        if ($prevent_method_signature_mismatch && $implementer_method_storage->type_template_lower_bounds !== []) {
+            self::compareTemplateLowerBounds(
+                $codebase,
+                $implementer_classlike_storage->name,
+                $implementer_scope_storage,
+                $guide_classlike_storage,
+                $guide_method_storage,
+                $implementer_method_storage,
+                $cased_guide_method_id,
+                $cased_implementer_method_id,
+                $code_location,
+                $suppressed_issues,
+            );
+        }
 
         $guide_signature_return_type = $guide_method_storage->signature_return_type;
         $guide_has_tentative_return_type = $guide_method_storage->has_tentative_return_type;
@@ -330,6 +349,77 @@ final class MethodComparator
         }
 
         return null;
+    }
+
+    /**
+     * An override may lower or drop the lower bound of a method template (`@template U super Cat`), but not raise it
+     * or add one (a template without one has the lower bound `never`): wherever the template appears, the override
+     * must take each type the parent method's template may be. The templates of the two methods correspond by
+     * position; one the parent method lacks is not compared. The lower bounds may name the templates of the classes
+     * declaring the methods, which the implementer's class (the one using a trait) binds.
+     *
+     * @param array<string> $suppressed_issues
+     */
+    private static function compareTemplateLowerBounds(
+        Codebase $codebase,
+        string $implementer_class_name,
+        ClassLikeStorage $implementer_scope_storage,
+        ClassLikeStorage $guide_classlike_storage,
+        MethodStorage $guide_method_storage,
+        MethodStorage $implementer_method_storage,
+        string $cased_guide_method_id,
+        string $cased_implementer_method_id,
+        CodeLocation $code_location,
+        array $suppressed_issues,
+    ): void {
+        $bind = static function (string $class_name, Union $type) use ($codebase, $implementer_scope_storage): Union {
+            self::transformTemplates(
+                $implementer_scope_storage->template_extended_params ?? [],
+                $class_name,
+                $type,
+                $codebase,
+                $implementer_scope_storage->name,
+                $implementer_scope_storage->name,
+                $implementer_scope_storage->parent_class,
+            );
+
+            return $type;
+        };
+        $guide_templates = [];
+
+        foreach ($guide_method_storage->template_types ?? [] as $template_name => $type_map) {
+            $guide_templates[] = [$template_name, array_key_first($type_map)];
+        }
+
+        $offset = 0;
+
+        foreach ($implementer_method_storage->template_types ?? [] as $template_name => $type_map) {
+            $guide_template = $guide_templates[$offset++] ?? null;
+            $lower_bound = $codebase->type_template_lower_bounds->get(array_key_first($type_map), $template_name);
+
+            if ($lower_bound === null || $guide_template === null) {
+                continue;
+            }
+
+            $lower_bound = $bind($implementer_class_name, $lower_bound);
+            $guide_lower_bound = $bind(
+                $guide_classlike_storage->name,
+                $codebase->type_template_lower_bounds->get($guide_template[1], $guide_template[0]) ?? Type::getNever(),
+            );
+
+            if (!LowerBoundProof::isContainedBy($codebase, $lower_bound, $guide_lower_bound)) {
+                IssueBuffer::maybeAdd(
+                    new MethodSignatureMismatch(
+                        'Template ' . $template_name . ' of method ' . $cased_implementer_method_id
+                            . ' has the lower bound ' . $lower_bound->getId() . ', which is not within the lower bound '
+                            . $guide_lower_bound->getId() . ' of the corresponding template of parent method '
+                            . $cased_guide_method_id,
+                        $code_location,
+                    ),
+                    $suppressed_issues + $implementer_scope_storage->suppressed_issues,
+                );
+            }
+        }
     }
 
     /**

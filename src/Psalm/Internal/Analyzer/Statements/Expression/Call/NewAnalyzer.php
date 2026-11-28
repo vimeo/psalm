@@ -26,6 +26,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\CliOutput;
 use Psalm\Internal\Codebase\ConditionalTaintSinks;
 use Psalm\Internal\Codebase\ReceiverPropertyTaints;
+use Psalm\Internal\Codebase\TypeTemplateLowerBounds;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
@@ -85,6 +86,7 @@ use UnexpectedValueException;
 use function array_key_first;
 use function array_keys;
 use function array_map;
+use function array_merge;
 use function array_pop;
 use function array_push;
 use function array_search;
@@ -2281,6 +2283,37 @@ final class NewAnalyzer extends CallAnalyzer
                 && !isset($storage->purity_templates[$template_name])
                     ? $inferred_lower_bounds
                     : $template_result->lower_bounds;
+
+            $type_lower_bound = $codebase->type_template_lower_bounds->get(array_key_first($base_type), $template_name);
+
+            // what the object is created with, also through a parent template an inherited constructor takes
+            // (`new Holder(1)` is a `Holder<1|Cat>`)
+            if ($type_lower_bound !== null) {
+                $type = TypeTemplateLowerBounds::infer(
+                    $statements_analyzer,
+                    $type_lower_bound,
+                    array_merge(...self::getTemplateBounds(
+                        $fq_class_name,
+                        $template_name,
+                        $storage->template_extended_params,
+                        $lower_bounds,
+                    )),
+                    self::getTemplateBounds(
+                        $fq_class_name,
+                        $template_name,
+                        $storage->template_extended_params,
+                        $template_result->upper_bounds,
+                    ),
+                    isset($storage->template_defaults[$template_name], $unconstrainable_templates[$template_name]),
+                    $template_name,
+                    new CodeLocation($statements_analyzer->getSource(), $stmt),
+                    $fq_class_name . '::__construct',
+                );
+
+                if ($type !== null && !isset($storage->template_contravariants[count($generic_param_types)])) {
+                    $lower_bounds[$template_name][$fq_class_name] = [new TemplateBound($type)];
+                }
+            }
 
             if (isset($storage->template_contravariants[count($generic_param_types)])) {
                 // a contravariant template is the most general type the arguments allow: what all of them let it

@@ -90,6 +90,7 @@ final class Populator
         private readonly ClassLikes $classlikes,
         private readonly FileReferenceProvider $file_reference_provider,
         private readonly Progress $progress,
+        private readonly TypeTemplateLowerBounds $type_template_lower_bounds,
     ) {
     }
 
@@ -135,6 +136,8 @@ final class Populator
         foreach ($all_file_storage as $file_storage) {
             $this->populateFileStorage($file_storage);
         }
+
+        $this->type_template_lower_bounds->expand();
 
         Perf\Collector::step('populate.dependents');
 

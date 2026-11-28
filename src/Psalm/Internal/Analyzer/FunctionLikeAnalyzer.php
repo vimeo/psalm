@@ -379,6 +379,8 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             $this->getSuppressedIssues(),
         );
 
+        $codebase->type_template_lower_bounds->report($storage->template_types ?? [], $this->getSuppressedIssues());
+
         $function_information = $this->getFunctionInformation(
             $context,
             $codebase,

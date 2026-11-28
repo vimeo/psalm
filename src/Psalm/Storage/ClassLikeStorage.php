@@ -10,7 +10,9 @@ use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
+use Psalm\Internal\Codebase\TypeTemplateLowerBounds;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeAlias\ClassTypeAlias;
 use Psalm\Issue\CodeIssue;
 use Psalm\Issue\DeprecatedClass;
@@ -500,9 +502,22 @@ final class ClassLikeStorage implements HasAttributesInterface
      * what every value of the template requires, so the methods depending on it get these
      * capabilities unconditionally, and subclasses may not bind it to less.
      *
+     * @see self::$type_template_lower_bounds for the lower bounds of type templates
      * @var array<string, CapabilitySet>
      */
     public array $template_lower_bounds = [];
+
+    /**
+     * The lower bound of each type template that has one (`@template T super Cat`), as declared: a value of it fits
+     * the template whatever type the template stands for, and a type argument of the template must be a supertype of
+     * it. The analysis reads the lower bounds expanded and validated, from the codebase's index of them.
+     *
+     * @see TypeTemplateLowerBounds
+     * @see self::$template_lower_bounds for the lower bounds of purity templates
+     * @see TemplateResult::$lower_bounds for the types a call infers for templates, unrelated
+     * @var array<string, Union>
+     */
+    public array $type_template_lower_bounds = [];
 
     /**
      * A map of which generic classlikes are extended or implemented by this class or interface.

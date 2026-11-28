@@ -14,6 +14,7 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Atomic\TVoid;
+use Psalm\Type\Union;
 
 use function count;
 
@@ -243,8 +244,9 @@ final class GenericTypeComparator
                 }
             } elseif (!$input_type_part instanceof TIterable
                 && !$container_type_part instanceof TIterable
-                && !$container_param->hasTemplate()
-                && !$input_param->hasTemplate()
+                && ((!$container_param->hasTemplate() && !$input_param->hasTemplate())
+                    // a value of the lower bound fits the template, but an invariant argument must be the template
+                    || self::hasTemplateWithLowerBound($codebase, $container_param))
             ) {
                 if ($input_param->containsAnyLiteral()) {
                     if ($atomic_comparison_result_type_params !== null) {
@@ -329,6 +331,27 @@ final class GenericTypeComparator
             }
 
             return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @psalm-capabilities read-props
+     */
+    private static function hasTemplateWithLowerBound(Codebase $codebase, Union $type): bool
+    {
+        if ($codebase->type_template_lower_bounds->isEmpty()) {
+            return false;
+        }
+
+        foreach ($type->getTemplateTypes() as $template_type) {
+            if ($codebase->type_template_lower_bounds->get(
+                $template_type->defining_class,
+                $template_type->param_name,
+            ) !== null) {
+                return true;
+            }
         }
 
         return false;

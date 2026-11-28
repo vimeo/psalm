@@ -22,6 +22,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Codebase\AssertionsFromInheritanceResolver;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
+use Psalm\Internal\Codebase\TypeTemplateLowerBounds;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\MethodIdentifier;
@@ -1956,6 +1957,8 @@ abstract class CallAnalyzer
         CodeLocation $code_location,
         ?string $function_id,
     ): void {
+        self::inferTemplatesWithLowerBounds($statements_analyzer, $template_result, $code_location, $function_id);
+
         if ($template_result->lower_bounds && $template_result->upper_bounds) {
             foreach ($template_result->upper_bounds as $template_name => $defining_map) {
                 foreach ($defining_map as $defining_id => $upper_bound) {
@@ -2204,5 +2207,52 @@ abstract class CallAnalyzer
         }
 
         return false;
+    }
+
+    /**
+     * What the call infers for the templates of the function-like called that have a lower bound, by
+     * {@see TypeTemplateLowerBounds::infer()}: the templates of a class are bound by the object, not inferred by a call
+     * of its method
+     */
+    private static function inferTemplatesWithLowerBounds(
+        StatementsAnalyzer $statements_analyzer,
+        TemplateResult $template_result,
+        CodeLocation $code_location,
+        ?string $function_id,
+    ): void {
+        $codebase = $statements_analyzer->getCodebase();
+
+        if ($codebase->type_template_lower_bounds->isEmpty()) {
+            return;
+        }
+
+        foreach ($template_result->template_types as $template_name => $type_map) {
+            foreach ($type_map as $defining_id => $_) {
+                $lower_bound = str_starts_with($defining_id, 'fn-')
+                    ? $codebase->type_template_lower_bounds->get($defining_id, $template_name)
+                    : null;
+
+                if ($lower_bound === null) {
+                    continue;
+                }
+
+                $type = TypeTemplateLowerBounds::infer(
+                    $statements_analyzer,
+                    $lower_bound->hasTemplate()
+                        ? TemplateInferredTypeReplacer::replace($lower_bound, $template_result, $codebase)
+                        : $lower_bound,
+                    $template_result->lower_bounds[$template_name][$defining_id] ?? [],
+                    [],
+                    false,
+                    $template_name,
+                    $code_location,
+                    $function_id,
+                );
+
+                if ($type !== null) {
+                    $template_result->lower_bounds[$template_name][$defining_id] = [new TemplateBound($type)];
+                }
+            }
+        }
     }
 }

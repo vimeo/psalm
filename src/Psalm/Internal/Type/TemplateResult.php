@@ -30,6 +30,9 @@ use function array_replace_recursive;
 final class TemplateResult
 {
     /**
+     * What the call or comparison infers each template is at least, unrelated to the lower bound a template is declared
+     * with ({@see ClassLikeStorage::$type_template_lower_bounds}), which the inference adds to it
+     *
      * @var array<string, array<string, non-empty-list<TemplateBound>>>
      */
     public array $lower_bounds = [];

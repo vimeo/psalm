@@ -283,6 +283,7 @@ final class TemplateDefaults
 
             $default_bound = new TemplateBound(self::resolve($default, $resolving_result, $codebase));
             $default_bound->from_constraint_fallback = true;
+            $default_bound->from_default = true;
 
             $template_result->lower_bounds[$template_name][$defining_id] = [$default_bound];
         }
@@ -415,18 +416,14 @@ final class TemplateDefaults
             }
 
             try {
-                $default = TypeParser::parseTokens(
-                    TypeTokenizer::getFullyQualifiedTokens(
-                        CommentAnalyzer::sanitizeDocblockType($entry['type']),
-                        $aliases,
-                        $scope_template_types,
-                        $type_aliases,
-                        $self_fqcln,
-                        $parent_fqcln,
-                    ),
-                    null,
+                $default = self::parseTagType(
+                    $entry['type'],
+                    $aliases,
                     $scope_template_types,
                     $type_aliases,
+                    $self_fqcln,
+                    $parent_fqcln,
+                    $type_scanner,
                 );
             } catch (TypeParseTreeException $e) {
                 $issues[] = new InvalidDocblock(
@@ -437,8 +434,6 @@ final class TemplateDefaults
 
                 continue;
             }
-
-            $type_scanner->traverseArray($default->getAtomicTypes());
 
             foreach (self::getUsedTemplates($default) as $used_template) {
                 if ($used_template->defining_class === array_key_first($type_map)
@@ -461,6 +456,41 @@ final class TemplateDefaults
         }
 
         return [$defaults, $locations, $issues];
+    }
+
+    /**
+     * Parses a type written in a template tag (a default, or a lower bound) and scans the classes it names
+     *
+     * @param array<string, array<string, Union>> $scope_template_types the templates the type may use
+     * @param array<string, TypeAlias> $type_aliases
+     * @throws TypeParseTreeException
+     */
+    public static function parseTagType(
+        string $type,
+        Aliases $aliases,
+        array $scope_template_types,
+        array $type_aliases,
+        ?string $self_fqcln,
+        ?string $parent_fqcln,
+        TypeScanner $type_scanner,
+    ): Union {
+        $parsed_type = TypeParser::parseTokens(
+            TypeTokenizer::getFullyQualifiedTokens(
+                CommentAnalyzer::sanitizeDocblockType($type),
+                $aliases,
+                $scope_template_types,
+                $type_aliases,
+                $self_fqcln,
+                $parent_fqcln,
+            ),
+            null,
+            $scope_template_types,
+            $type_aliases,
+        );
+
+        $type_scanner->traverseArray($parsed_type->getAtomicTypes());
+
+        return $parsed_type;
     }
 
     /**

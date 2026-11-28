@@ -205,6 +205,13 @@ final class FunctionDocblockComment
     public array $template_defaults = [];
 
     /**
+     * The lower bound of each template that has one (`@template T super Lower`), and its line.
+     *
+     * @var array<string, array{type: string, line_number: int}>
+     */
+    public array $template_lower_bounds = [];
+
+    /**
      * @var array<int, array{type: string, param_name: string}>
      */
     public array $assertions = [];

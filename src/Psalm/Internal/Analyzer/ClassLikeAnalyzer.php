@@ -16,6 +16,7 @@ use Psalm\Internal\Codebase\PhpDeprecations;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Provider\NodeDataProvider;
+use Psalm\Internal\Type\Comparator\LowerBoundProof;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\PurityArguments;
 use Psalm\Internal\Type\TemplateDefaults;
@@ -956,8 +957,8 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
     }
 
     /**
-     * Reports the docblock issues found when the class-like was scanned, and the template defaults naming undefined
-     * classes or outside their bounds, which can only be checked once the codebase is populated.
+     * Reports the docblock issues found when the class-like was scanned, and the template defaults and lower bounds
+     * naming undefined classes or outside their bounds, which can only be checked once the codebase is populated.
      *
      * @param array<string> $suppressed_issues
      */
@@ -980,6 +981,8 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
             $storage->name,
             $suppressed_issues,
         );
+
+        $source->getCodebase()->type_template_lower_bounds->report($storage->template_types ?? [], $suppressed_issues);
     }
 
     /**
@@ -1238,12 +1241,30 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
                     // a parent template left to its default is checked where the default is declared: any of them
                     // when no arguments are written, else a type template past the written type arguments (type
                     // templates come first, so $i is its position among them)
-                    if (!$template_type->isMixed()
-                        && !(isset($parent_storage->template_defaults[$template_name])
-                            && ($given_param_count === 0
-                                || ($i >= $written_type_arg_count
-                                    && !isset($parent_storage->purity_templates[$template_name]))))
+                    $left_to_default = isset($parent_storage->template_defaults[$template_name])
+                        && ($given_param_count === 0
+                            || ($i >= $written_type_arg_count
+                                && !isset($parent_storage->purity_templates[$template_name])));
+
+                    $type_lower_bound = $left_to_default
+                        ? null
+                        : $codebase->type_template_lower_bounds->get($declaring_class, $template_name);
+
+                    if ($type_lower_bound !== null
+                        && !LowerBoundProof::isContainedBy($codebase, $type_lower_bound, $extended_type)
                     ) {
+                        IssueBuffer::maybeAdd(
+                            new InvalidTemplateParam(
+                                'Extended template param ' . $template_name
+                                    . ' expects a supertype of ' . $type_lower_bound->getId()
+                                    . ', type ' . $extended_type->getId() . ' given',
+                                $code_location,
+                            ),
+                            $storage->suppressed_issues + $this->getSuppressedIssues(),
+                        );
+                    }
+
+                    if (!$template_type->isMixed() && !$left_to_default) {
                         $template_result = new TemplateResult(
                             $previous_extended ?: [],
                             [],

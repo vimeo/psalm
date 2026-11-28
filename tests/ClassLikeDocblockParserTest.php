@@ -101,7 +101,7 @@ final class ClassLikeDocblockParserTest extends TestCase
                 ['TA', 'of', '\'a\\\'=b\'', TemplateVariance::Invariant, 17],
                 ['TB', 'of', '"c\\"=d"', TemplateVariance::Invariant, 44],
                 ['TC', 'of', '\'e\\\\\'', TemplateVariance::Invariant, 81],
-                ['TD', 'of', '"f\\\\" description = text', TemplateVariance::Invariant, 114],
+                ['TD', 'of', '"f\\\\"', TemplateVariance::Invariant, 114],
                 ['TE', 'of', 'int', TemplateVariance::Invariant, 158],
                 ['TF', 'of', 'string', TemplateVariance::Invariant, 183],
             ],
@@ -114,6 +114,48 @@ final class ClassLikeDocblockParserTest extends TestCase
                 'TE' => ['type' => '', 'line_number' => 15],
             ],
             $class_docblock->template_defaults,
+        );
+    }
+
+    public function testTemplateLowerBounds(): void
+    {
+        $doc = <<<'DOC'
+            /**
+             * @template TA super Cat
+             * @template TB of Animal super Cat = Animal the item
+             * @template-covariant TC super Cat as Animal description
+             * @template TD of array{super: int} super array{super: int}
+             * @template TE super
+             * @template TF of int of string
+             */
+            DOC;
+        $node = new Class_(null);
+        $class_docblock = ClassLikeDocblockParser::parse($node, new Doc($doc, 10), new Aliases());
+
+        $this->assertSame(
+            [
+                ['TA', null, null, TemplateVariance::Invariant, 17],
+                ['TB', 'of', 'Animal', TemplateVariance::Invariant, 43],
+                ['TC', 'of', 'Animal', TemplateVariance::Covariant, 107],
+                ['TD', 'of', 'array{super: int}', TemplateVariance::Invariant, 155],
+                ['TE', null, null, TemplateVariance::Invariant, 216],
+                ['TF', 'of', 'int', TemplateVariance::Invariant, 238],
+            ],
+            $class_docblock->templates,
+        );
+        $this->assertSame(
+            ['TB' => ['type' => 'Animal', 'line_number' => 12]],
+            $class_docblock->template_defaults,
+        );
+        $this->assertSame(
+            [
+                'TA' => ['type' => 'Cat', 'line_number' => 11],
+                'TB' => ['type' => 'Cat', 'line_number' => 12],
+                'TC' => ['type' => 'Cat', 'line_number' => 13],
+                'TD' => ['type' => 'array{super: int}', 'line_number' => 14],
+                'TE' => ['type' => '', 'line_number' => 15],
+            ],
+            $class_docblock->template_lower_bounds,
         );
     }
 
