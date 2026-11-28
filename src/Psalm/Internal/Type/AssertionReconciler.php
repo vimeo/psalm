@@ -594,6 +594,8 @@ final class AssertionReconciler extends Reconciler
             }
         }
 
+        $new_type_part = self::getCheckedClass($codebase, $new_type_part);
+
         if ($existing_var_type->hasMixed()) {
             if ($assertion instanceof IsLooselyEqual
                 && $new_type_part instanceof Scalar
@@ -3236,6 +3238,27 @@ final class AssertionReconciler extends Reconciler
      * @param array<string>           $suppressed_issues
      * @return non-empty-list<Atomic>
      */
+    /**
+     * A check of the class (`instanceof Foo`, `is_a()`, `@psalm-assert Foo`) says nothing of the type arguments: its
+     * templates stand for their bounds, not for the defaults a declared `Foo` stands for.
+     *
+     * @template TAtomic of Atomic
+     * @param TAtomic $type
+     * @return TAtomic|TGenericObject
+     */
+    private static function getCheckedClass(Codebase $codebase, Atomic $type): Atomic
+    {
+        if ($type::class !== TNamedObject::class || !$codebase->classlike_storage_provider->has($type->value)) {
+            return $type;
+        }
+
+        $class_storage = $codebase->classlike_storage_provider->get($type->value);
+
+        return TemplateDefaults::hasTypeDefaults($class_storage)
+            ? TemplateDefaults::getBareUse($type, $class_storage, $codebase, null)
+            : $type;
+    }
+
     private static function handleIsA(
         IsAClass $assertion,
         Codebase $codebase,
@@ -3247,7 +3270,7 @@ final class AssertionReconciler extends Reconciler
     ): array {
         $allow_string_comparison = $assertion->allow_string;
 
-        $assertion_type = $assertion->type;
+        $assertion_type = self::getCheckedClass($codebase, $assertion->type);
 
         if ($existing_var_type->hasMixed()) {
             if (!$assertion_type instanceof TNamedObject) {

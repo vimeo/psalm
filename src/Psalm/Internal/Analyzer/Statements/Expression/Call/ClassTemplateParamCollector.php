@@ -19,12 +19,14 @@ use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TGenericObject;
+use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
 use function array_keys;
 use function array_merge;
 use function array_search;
+use function strtolower;
 
 /**
  * @internal
@@ -73,6 +75,20 @@ final class ClassTemplateParamCollector
 
         $class_template_params = [];
         $e = $static_class_storage->template_extended_params;
+
+        if (!$self_call
+            && $lhs_type_part !== null
+            && $lhs_type_part::class === TNamedObject::class
+            && strtolower($lhs_type_part->value) === strtolower($static_class_storage->name)
+            && TemplateDefaults::hasTypeDefaults($static_class_storage)
+        ) {
+            $lhs_type_part = TemplateDefaults::getBareUse(
+                $lhs_type_part,
+                $static_class_storage,
+                $codebase,
+                static fn(Union $default): Union => $default,
+            );
+        }
 
         if ($lhs_type_part instanceof TGenericObject) {
             $lhs_type_part = StarProjection::resolveReads($lhs_type_part, $codebase);

@@ -1039,7 +1039,21 @@ final class TypeExpander
                 $value,
             );
 
-            if ($container_class_storage->template_types
+            if (TemplateDefaults::hasTypeDefaults($container_class_storage)) {
+                $return_type = TemplateDefaults::getBareUse(
+                    $return_type,
+                    $container_class_storage,
+                    $codebase,
+                    static fn(Union $default, string $template_name): Union => TemplateDefaults::expandDefault(
+                        $codebase,
+                        $default,
+                        $container_class_storage,
+                        $template_name,
+                    ),
+                );
+
+                $expand_generic = false;
+            } elseif ($container_class_storage->template_types
                 && array_any(
                     $container_class_storage->template_types,
                     static fn($type_map): bool => !reset($type_map)->hasMixed(),
