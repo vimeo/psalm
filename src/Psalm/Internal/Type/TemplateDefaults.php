@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Type;
 
+use AssertionError;
 use Closure;
 use Psalm\Aliases;
 use Psalm\CodeLocation;
@@ -12,15 +13,23 @@ use Psalm\Exception\TypeParseTreeException;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\TypeVisitor\ContainsExpandableTypeVisitor;
 use Psalm\Internal\TypeVisitor\TemplateDefaultFiller;
 use Psalm\Internal\TypeVisitor\TemplateTypeCollector;
 use Psalm\Internal\TypeVisitor\TypeScanner;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
+use Psalm\Storage\Capabilities;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Type;
+use Psalm\Type\Atomic;
+use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TGenericObject;
+use Psalm\Type\Atomic\TIterable;
+use Psalm\Type\Atomic\TKeyedArray;
+use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
@@ -47,8 +56,8 @@ final class TemplateDefaults
 
     /**
      * The type arguments of a use giving only some of them (`Foo<A>`), plus the defaults of the trailing type templates
-     * it leaves out, marked as written where the use is ($from_docblock). A use with no type arguments (`Foo`,
-     * `Foo[pure]`) stands for the bounds and is left alone.
+     * it leaves out, marked as written where the use is ($from_docblock). A use with only purity arguments
+     * (`Foo[pure]`) gets the defaults as well; a use without any (`Foo`) is {@see self::getBareUse()}.
      *
      * @param list<Union> $type_params
      * @return ($type_params is non-empty-list ? non-empty-list<Union> : list<Union>)
@@ -65,11 +74,6 @@ final class TemplateDefaults
         }
 
         [$type_args, $purity_args] = PurityArguments::split($type_params);
-
-        if ($type_args === []) {
-            return $type_params;
-        }
-
         $given = [];
         $i = 0;
 
@@ -97,6 +101,238 @@ final class TemplateDefaults
         }
 
         return [...$type_args, ...$purity_args];
+    }
+
+    /**
+     * The use of the class a use without type arguments (`Foo`) stands for: its type templates bound to their defaults,
+     * expanded in the scope of the class, and the others to their bounds, the type templates among them marked as
+     * left out.
+     *
+     * @psalm-impure
+     */
+    public static function getBareUse(TNamedObject $type, ClassLikeStorage $storage, Codebase $codebase): TGenericObject
+    {
+        $bare_use = self::makeBareUse($type, $storage, $codebase, true, true);
+        $type_args = $bare_use->type_params;
+
+        foreach (array_keys($storage->template_types ?? []) as $i => $template_name) {
+            if (isset($type_args[$i])
+                && $bare_use->getProjection($i) === null
+                && isset($storage->template_defaults[$template_name])
+                && !isset($storage->purity_templates[$template_name])
+            ) {
+                $type_args[$i] = self::expandDefault($codebase, $type_args[$i], $storage, $template_name);
+            }
+        }
+
+        return $bare_use->setHeldTypes($type_args);
+    }
+
+    /**
+     * {@see self::getBareUse()}, with the defaults not expanded, and without $with_expandable_defaults those that need
+     * their class to be expanded left to their bound. A bound naming other templates
+     * (`TIterator of Traversable[TPurity]<TKey, TValue>`) has them replaced by what they stand for.
+     *
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
+     */
+    private static function makeBareUse(
+        TNamedObject $type,
+        ClassLikeStorage $storage,
+        ?Codebase $codebase,
+        bool $with_defaults,
+        bool $with_expandable_defaults,
+    ): TGenericObject {
+        $type_args = [];
+        $projections = [];
+        $given = [];
+
+        foreach ($storage->template_types ?? [] as $template_name => $type_map) {
+            $bound = reset($type_map);
+
+            if ($with_defaults
+                && isset($storage->template_defaults[$template_name])
+                && !isset($storage->purity_templates[$template_name])
+                && ($with_expandable_defaults || !self::isExpandable($storage->template_defaults[$template_name]))
+            ) {
+                $argument = self::resolve(
+                    $storage->template_defaults[$template_name],
+                    new TemplateResult([], $given),
+                    $codebase,
+                )->setFromDocblock(true);
+            } else {
+                $argument = PurityArguments::getOmittedArgument($bound);
+
+                if (!Capabilities::isPurityType($bound)) {
+                    $projections[count($type_args)] = TypeArgumentProjection::Omitted;
+                }
+            }
+
+            $type_args[] = $given[$template_name][array_key_first($type_map)] = $argument;
+        }
+
+        if ($type_args === []) {
+            throw new AssertionError('A class with type defaults has templates');
+        }
+
+        $all_given = new TemplateResult([], $given);
+
+        foreach ($type_args as $i => $type_arg) {
+            if (isset($projections[$i])) {
+                $type_args[$i] = self::resolve($type_arg, $all_given, $codebase);
+            }
+        }
+
+        return (new TGenericObject(
+            $type->value,
+            $type_args,
+            false,
+            $type->is_static,
+            $type->extra_types,
+            $type->from_docblock,
+        ))->setIsStatic($type->is_static, $type->is_static_resolved)->setProjections($projections);
+    }
+
+    /**
+     * A class written without type arguments as {@see self::getBareUse()}, with the defaults that need their class to
+     * be expanded left to their bound, and any other type as it is. A check of the class (`instanceof Foo`, `is_a()`,
+     * `@psalm-assert Foo`) knows nothing of the arguments: it stands for the bounds, without $with_defaults.
+     *
+     * @template TAtomic of Atomic
+     * @param TAtomic $type
+     * @return TAtomic|TGenericObject
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
+     */
+    public static function bindBareUse(Atomic $type, Codebase $codebase, bool $with_defaults): Atomic
+    {
+        if ($type::class !== TNamedObject::class
+            || $type->is_static
+            || !$codebase->classlike_storage_provider->has($type->value)
+        ) {
+            return $type;
+        }
+
+        $storage = $codebase->classlike_storage_provider->get($type->value);
+
+        return self::hasTypeDefaults($storage)
+            ? self::makeBareUse($type, $storage, $codebase, $with_defaults, false)
+            : $type;
+    }
+
+    /**
+     * The type with each class written without type arguments in it, at any depth, standing for the bounds of its
+     * templates ({@see self::bindBareUse()})
+     *
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
+     */
+    public static function bindBareUsesToBounds(Union $type, Codebase $codebase): Union
+    {
+        $atomics = [];
+        $changed = false;
+
+        foreach ($type->getAtomicTypes() as $atomic) {
+            $bound_use = self::bindNestedBareUses($atomic, $codebase);
+            $changed = $changed || $bound_use !== $atomic;
+            $atomics[] = $bound_use;
+        }
+
+        return $changed ? $type->setTypes($atomics) : $type;
+    }
+
+    /**
+     * The bounds of a class are not bound again: they can name the class itself (`@template T of Node` in Node)
+     *
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
+     */
+    private static function bindNestedBareUses(Atomic $atomic, Codebase $codebase): Atomic
+    {
+        $bound_use = self::bindBareUse($atomic, $codebase, false);
+
+        if ($bound_use !== $atomic) {
+            return $bound_use;
+        }
+
+        if ($atomic instanceof TKeyedArray) {
+            return self::bindBareUsesInShape($atomic, $codebase);
+        }
+
+        if (!$atomic instanceof TGenericObject && !$atomic instanceof TArray && !$atomic instanceof TIterable) {
+            return $atomic;
+        }
+
+        if ($atomic instanceof TGenericObject) {
+            $type_params = [];
+
+            foreach ($atomic->type_params as $type_param) {
+                $type_params[] = self::bindBareUsesToBounds($type_param, $codebase);
+            }
+
+            return $type_params === $atomic->type_params ? $atomic : $atomic->setTypeParams($type_params);
+        }
+
+        $type_params = [
+            self::bindBareUsesToBounds($atomic->type_params[0], $codebase),
+            self::bindBareUsesToBounds($atomic->type_params[1], $codebase),
+        ];
+
+        return $type_params === $atomic->type_params ? $atomic : $atomic->setTypeParams($type_params);
+    }
+
+    /**
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
+     */
+    private static function bindBareUsesInShape(TKeyedArray $shape, Codebase $codebase): TKeyedArray|TArray
+    {
+        if ($shape->is_callable || $shape->disjoint_shapes) {
+            return $shape;
+        }
+
+        $properties = [];
+
+        foreach ($shape->properties as $name => $property) {
+            $properties[$name] = self::bindBareUsesToBounds($property, $codebase);
+        }
+
+        $fallback_params = $shape->fallback_params === null ? null : [
+            self::bindBareUsesToBounds($shape->fallback_params[0], $codebase),
+            self::bindBareUsesToBounds($shape->fallback_params[1], $codebase),
+        ];
+
+        return $properties === $shape->properties && $fallback_params === $shape->fallback_params
+            ? $shape
+            : TKeyedArray::make(
+                $properties,
+                $shape->class_strings,
+                $fallback_params,
+                $shape->is_list,
+                $shape->from_docblock,
+            );
+    }
+
+    /**
+     * @psalm-pure
+     */
+    private static function isExpandable(Union $default): bool
+    {
+        $visitor = new ContainsExpandableTypeVisitor();
+        $visitor->traverse($default);
+
+        return $visitor->matches();
+    }
+
+    /**
+     * Whether a use of the class without type arguments binds a template to its default ({@see self::getBareUse()})
+     *
+     * @psalm-mutation-free
+     */
+    public static function hasTypeDefaults(ClassLikeStorage $storage): bool
+    {
+        foreach ($storage->template_defaults as $template_name => $_) {
+            if (!isset($storage->purity_templates[$template_name])) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

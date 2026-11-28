@@ -6243,7 +6243,7 @@ final class ClassTemplateTest extends TestCase
                 'ignored_issues' => ['InvalidDocblock'],
                 'php_version' => '8.0',
             ],
-            'bareGenericTypeIgnoresTemplateDefaults' => [
+            'bareGenericTypeUsesTemplateDefaults' => [
                 'code' => '<?php
                     /**
                      * @psalm-mutable
@@ -6295,24 +6295,563 @@ final class ClassTemplateTest extends TestCase
                         throw new Exception();
                     }
 
-                    /** @psalm-mutable */
-                    function withAuth(PendingRequest $r): int|string {
-                        return $r->get();
+                    function pending(): PendingRequest {
+                        throw new Exception();
                     }
 
                     $m = res()->m();
                     $n = res()->n();
                     $foo = a()->foo;
-                    $plain = withAuth(new PendingRequest());
-                    $async = withAuth((new PendingRequest())->async());',
+                    $plain = pending()->get();',
                 'assertions' => [
-                    '$m===' => 'object',
-                    '$n===' => 'mixed',
-                    '$foo===' => 'null|string',
-                    '$plain===' => 'int|string',
-                    '$async===' => 'int|string',
+                    '$m===' => 'stdClass',
+                    '$n===' => 'int',
+                    '$foo===' => 'null',
+                    '$plain===' => 'string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'bareReceiverResolvesConditionalReturnToTemplateDefault' => [
+                'code' => '<?php
+                    abstract class Node {}
+
+                    final class ArrayNode extends Node {
+                        public function canBeDisabled(): self {
+                            return $this;
+                        }
+                    }
+
+                    final class ScalarNode extends Node {}
+
+                    /**
+                     * @template T of \'array\'|\'scalar\' = \'array\'
+                     */
+                    class Configurator {
+                        /** @var T */
+                        public string $kind;
+
+                        /** @param T $kind */
+                        public function __construct(string $kind) {
+                            $this->kind = $kind;
+                        }
+
+                        /** @return (T is \'array\' ? ArrayNode : ScalarNode) */
+                        public function rootNode(): Node {
+                            throw new Exception();
+                        }
+
+                        /** @return (T is \'array\' ? ArrayNode : ScalarNode) */
+                        public static function make(): Node {
+                            throw new Exception();
+                        }
+                    }
+
+                    final class Holder {
+                        public function __construct(public Configurator $configurator) {}
+                    }
+
+                    function configurator(): Configurator {
+                        throw new Exception();
+                    }
+
+                    function holder(): Holder {
+                        throw new Exception();
+                    }
+
+                    /** @var Configurator $c */
+                    $c = $GLOBALS["c"];
+                    $instance = $c->rootNode();
+                    $chained = $c->rootNode()->canBeDisabled();
+                    $static = Configurator::make();
+                    $kind = $c->kind;
+                    $property = holder()->configurator->rootNode();
+                    $returned = configurator()->rootNode();',
+                'assertions' => [
+                    '$instance===' => 'ArrayNode',
+                    '$chained===' => 'ArrayNode',
+                    '$static===' => 'ArrayNode',
+                    '$kind===' => '\'array\'',
+                    '$property===' => 'ArrayNode',
+                    '$returned===' => 'ArrayNode',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'bareSubclassReceiverUsesTemplateDefaults' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-immutable
+                     * @template T of \'a\'|\'b\' = \'a\'
+                     */
+                    abstract class Base {
+                        /** @param T $kind */
+                        public function __construct(public string $kind) {}
+
+                        /** @return T */
+                        public function get(): string {
+                            throw new Exception();
+                        }
+                    }
+
+                    /** @psalm-immutable */
+                    final class Plain extends Base {}
+
+                    /**
+                     * @psalm-immutable
+                     * @template U of \'a\'|\'b\' = \'b\'
+                     * @extends Base<U>
+                     */
+                    final class OwnDefault extends Base {}
+
+                    /**
+                     * @psalm-immutable
+                     * @template A
+                     * @template B of \'a\'|\'b\' = \'b\'
+                     */
+                    final class Two {
+                        /** @return A */
+                        public function a(): mixed {
+                            throw new Exception();
+                        }
+
+                        /** @return B */
+                        public function b(): string {
+                            throw new Exception();
+                        }
+                    }
+
+                    function plain(): Plain {
+                        throw new Exception();
+                    }
+
+                    function own(): OwnDefault {
+                        throw new Exception();
+                    }
+
+                    function two(): Two {
+                        throw new Exception();
+                    }
+
+                    /** @return Two<int> */
+                    function partial(): Two {
+                        throw new Exception();
+                    }
+
+                    $from_plain = plain()->get();
+                    $plain_property = plain()->kind;
+                    $from_own = own()->get();
+                    $own_property = own()->kind;
+                    $first_bound = two()->a();
+                    $second_default = two()->b();
+                    $partial_first = partial()->a();
+                    $partial_second = partial()->b();',
+                'assertions' => [
+                    '$from_plain===' => '\'a\'',
+                    '$plain_property===' => '\'a\'',
+                    '$from_own===' => '\'b\'',
+                    '$own_property===' => '\'b\'',
+                    '$first_bound===' => 'mixed',
+                    '$second_default===' => '\'b\'',
+                    '$partial_first===' => 'int',
+                    '$partial_second===' => '\'b\'',
                 ],
                 'ignored_issues' => ['MixedAssignment'],
+                'php_version' => '8.0',
+            ],
+            'bareTypeOfClassWithoutDefaultsKeepsBounds' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-immutable
+                     * @template T of \'a\'|\'b\'
+                     */
+                    final class NoDefault {
+                        /** @return T */
+                        public function get(): string {
+                            throw new Exception();
+                        }
+                    }
+
+                    function takesBare(NoDefault $box): void {}
+
+                    function bare(): NoDefault {
+                        throw new Exception();
+                    }
+
+                    /** @return NoDefault<\'b\'> */
+                    function b(): NoDefault {
+                        throw new Exception();
+                    }
+
+                    $value = bare()->get();
+                    takesBare(b());',
+                'assertions' => [
+                    '$value===' => '\'a\'|\'b\'',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'classCheckOfClassWithDefaultsKeepsBounds' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-immutable
+                     * @template T of \'a\'|\'b\' = \'a\'
+                     */
+                    final class Box {
+                        /** @return T */
+                        public function get(): string {
+                            throw new Exception();
+                        }
+                    }
+
+                    /** @psalm-assert Box $value */
+                    function assertBox(mixed $value): void {}
+
+                    $m = $GLOBALS["m"];
+                    $from_instanceof = $m instanceof Box ? $m->get() : "a";
+                    $from_is_a = is_a($m, Box::class) ? $m->get() : "a";
+                    assertBox($m);
+                    $from_assertion = $m->get();',
+                'assertions' => [
+                    '$from_instanceof===' => '\'a\'|\'b\'',
+                    '$from_is_a===' => '\'a\'|\'b\'',
+                    '$from_assertion===' => '\'a\'|\'b\'',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+                'php_version' => '8.0',
+            ],
+            'bareReceiverKeepsAResolvedStaticArgument' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-mutable
+                     * @template TParent of object|null = null
+                     */
+                    class NodeBuilder {
+                        /** @return Leaf<static> */
+                        public function leaf(): Leaf {
+                            throw new Exception();
+                        }
+                    }
+
+                    /**
+                     * @psalm-mutable
+                     * @template TParent of NodeBuilder|null = null
+                     */
+                    final class Leaf {
+                        /** @return TParent */
+                        public function end(): ?NodeBuilder {
+                            throw new Exception();
+                        }
+                    }
+
+                    /** @var NodeBuilder $builder */
+                    $builder = $GLOBALS["b"];
+                    $twice = $builder->leaf()->end()->leaf()->end();',
+                'assertions' => [
+                    '$twice===' => 'NodeBuilder<null>&static',
+                ],
+                'ignored_issues' => ['ClassMustBeFinal'],
+                'php_version' => '8.0',
+            ],
+            'classCheckNarrowsAGenericParentToAChildOfItsArguments' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-immutable
+                     * @template-covariant T of \'a\'|\'b\'|null = null
+                     */
+                    abstract class Base {}
+
+                    /**
+                     * @psalm-immutable
+                     * @template T of \'a\'|\'b\'|null = null
+                     * @extends Base<T>
+                     */
+                    final class Sub extends Base {}
+
+                    function base(): Base {
+                        throw new Exception();
+                    }
+
+                    /** @return Base<\'a\'> */
+                    function baseA(): Base {
+                        throw new Exception();
+                    }
+
+                    $bare = base();
+                    $a = baseA();
+                    $narrowed = $bare instanceof Sub ? $bare : null;
+                    $narrowed_a = $a instanceof Sub ? $a : null;',
+                'assertions' => [
+                    '$narrowed===' => 'Sub<null>|null',
+                    '$narrowed_a===' => 'Sub<\'a\'>|null',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'bareTemplateBoundAcceptsTheSameBareClass' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-immutable
+                     * @template-covariant T of \'a\'|null = null
+                     */
+                    abstract class Node {}
+
+                    /**
+                     * @psalm-immutable
+                     * @template T of Node
+                     */
+                    final class Expr {
+                        /** @param T $node */
+                        public function __construct(public Node $node) {}
+                    }
+
+                    /**
+                     * @psalm-immutable
+                     * @template T of Node
+                     */
+                    final class Rule {
+                        /** @param T $node */
+                        public function __construct(public Node $node) {}
+
+                        /** @return Expr<T> */
+                        public function expr(): Expr {
+                            return new Expr($this->node);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'bareDocblockTypeArgumentInfersTemplateDefaults' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-immutable
+                     * @template T of \'a\'|\'b\' = \'a\'
+                     */
+                    final class Box {
+                        /** @param T $v */
+                        public function __construct(public string $v) {}
+                    }
+
+                    /**
+                     * @template X of \'a\'|\'b\'
+                     * @param Box<X> $box
+                     * @return X
+                     */
+                    function unwrap(Box $box): string {
+                        return $box->v;
+                    }
+
+                    /** @var Box $box */
+                    $box = $GLOBALS["box"];
+                    $unwrapped = unwrap($box);',
+                'assertions' => [
+                    '$unwrapped===' => '\'a\'',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'bareDocblockTypeArgumentWithAClassConstantDefaultInfersTheBound' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-immutable
+                     * @template T of \'a\'|\'b\' = self::A
+                     */
+                    final class Box {
+                        public const A = \'a\';
+
+                        /** @param T $v */
+                        public function __construct(public string $v) {}
+                    }
+
+                    /**
+                     * @template X of \'a\'|\'b\'
+                     * @param Box<X> $box
+                     * @return X
+                     */
+                    function unwrap(Box $box): string {
+                        return $box->v;
+                    }
+
+                    /** @var Box $box */
+                    $box = $GLOBALS["box"];
+                    $unwrapped = unwrap($box);',
+                'assertions' => [
+                    '$unwrapped===' => '\'a\'|\'b\'',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'templateBoundNamingAClassWithDefaultsKeepsItsBounds' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-immutable
+                     * @template T of Node
+                     */
+                    final class Val {
+                        /** @param T $node */
+                        public function __construct(public Node $node) {}
+                    }
+
+                    /**
+                     * @psalm-immutable
+                     * @template-covariant TParent of object|null = null
+                     */
+                    abstract class Node {
+                        /** @return Val<$this> */
+                        public function val(): Val {
+                            return new Val($this);
+                        }
+                    }
+
+                    /** @param Node<object> $node */
+                    function f(Node $node): void {
+                        new Val($node);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'classNestedInATemplateBoundKeepsItsBounds' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-immutable
+                     * @template-covariant TParent of object|null = null
+                     */
+                    abstract class Node {}
+
+                    /**
+                     * @psalm-immutable
+                     * @template-covariant T
+                     */
+                    final class Wrap {}
+
+                    /**
+                     * @psalm-immutable
+                     * @template TList of list<Node>
+                     * @template TMap of array<string, Node>
+                     * @template TWrap of Wrap<Node>
+                     */
+                    final class Holder {
+                        /**
+                         * @param TList $list
+                         * @param TMap $map
+                         * @param TWrap $wrap
+                         */
+                        public function __construct(public array $list, public array $map, public Wrap $wrap) {}
+                    }
+
+                    /**
+                     * @param list<Node<object>> $list
+                     * @param array<string, Node<object>> $map
+                     * @param Wrap<Node<object>> $wrap
+                     */
+                    function f(array $list, array $map, Wrap $wrap): void {
+                        new Holder($list, $map, $wrap);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'instanceofStaticKeepsTheTypeArguments' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-mutable
+                     * @template TAsync of bool = false
+                     */
+                    class Req {
+                        /**
+                         * @param list<Req|int> $bare
+                         * @param list<Req<true>|int> $async
+                         * @return list<Req<bool>>
+                         */
+                        public function pool(array $bare, array $async): array {
+                            $requests = [];
+
+                            foreach ($bare as $item) {
+                                if ($item instanceof static) {
+                                    $requests[] = $item;
+                                }
+                            }
+
+                            foreach ($async as $item) {
+                                if ($item instanceof static) {
+                                    $requests[] = $item;
+                                }
+                            }
+
+                            return $requests;
+                        }
+
+                        /**
+                         * @param list<Req|int> $bare
+                         * @param list<Req<true>|int> $async
+                         * @return list<Req<bool>|int>
+                         */
+                        public function negated(array $bare, array $async): array {
+                            $kept = [];
+
+                            foreach ($bare as $item) {
+                                $kept[] = $item instanceof static ? $item : 0;
+                            }
+
+                            foreach ($async as $item) {
+                                $kept[] = $item instanceof static ? $item : 0;
+                            }
+
+                            return $kept;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['ClassMustBeFinal'],
+                'php_version' => '8.0',
+            ],
+            'classCheckInAnIntersectionKeepsBounds' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-immutable
+                     * @template T of \'a\'|\'b\' = \'a\'
+                     * @implements IteratorAggregate<int, T>
+                     */
+                    final class Coll implements IteratorAggregate {
+                        public function getIterator(): Iterator {
+                            throw new Exception();
+                        }
+                    }
+
+                    /** @return Traversable<int, \'b\'> */
+                    function bs(): Traversable {
+                        throw new Exception();
+                    }
+
+                    $bs = bs();
+                    $coll = $bs instanceof Coll ? $bs : null;',
+                'assertions' => [
+                    '$coll===' => 'Traversable<int, \'b\'>&Coll<\'a\'|\'b\'>|null',
+                ],
+                'ignored_issues' => ['MissingOverrideAttribute'],
+                'php_version' => '8.0',
+            ],
+            'purityOnlyTypeArgumentsUseTemplateDefaults' => [
+                'code' => '<?php
+                    /**
+                     * @template T of \'a\'|\'b\' = \'a\'
+                     * @template TPurity of pure|impure = impure
+                     */
+                    final class Pur {
+                        /** @return T */
+                        public function get(): string {
+                            throw new Exception();
+                        }
+                    }
+
+                    /** @var Pur[pure] $pure */
+                    $pure = $GLOBALS["p"];
+                    $from_pure = $pure->get();',
+                'assertions' => [
+                    '$from_pure===' => '\'a\'',
+                ],
+                'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
             'methodTemplateDefaultNamingClassTemplate' => [
@@ -7066,6 +7605,44 @@ final class ClassTemplateTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'defaultOfANativeBareTypeIsADocblockType' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-immutable
+                     * @template T of \'a\'|\'b\' = \'a\'
+                     */
+                    final class Box {
+                        /** @return T */
+                        public function get(): string {
+                            throw new Exception();
+                        }
+                    }
+
+                    function f(Box $box): void {
+                        if ($box->get() === \'b\') {}
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'bareParamTypeTakesTemplateDefaults' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-immutable
+                     * @template TError of Throwable = RuntimeException
+                     */
+                    final class Result {
+                        /** @param TError $error */
+                        public function __construct(public readonly Throwable $error) {}
+                    }
+
+                    function takesBare(Result $result): void {}
+
+                    takesBare(new Result(new LogicException()));',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:31 - Argument 1 of takesBare expects Result<RuntimeException>, but Result<LogicException> provided',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'classStringOutsideTheBoundAsTheDefaultOfATemplateClassString' => [
                 'code' => '<?php
                     class Animal {}

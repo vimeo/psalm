@@ -342,17 +342,21 @@ final class AssertionReconciler extends Reconciler
             );
         }
 
-        return self::reconcileUnion(
-            $assertion,
+        return self::bindCheckedClasses(
+            $statements_analyzer->getCodebase(),
+            self::reconcileUnion(
+                $assertion,
+                $existing_var_type,
+                $key,
+                $statements_analyzer,
+                $inside_loop,
+                $template_type_map,
+                $code_location,
+                $suppressed_issues,
+                $failed_reconciliation,
+                $negated,
+            ),
             $existing_var_type,
-            $key,
-            $statements_analyzer,
-            $inside_loop,
-            $template_type_map,
-            $code_location,
-            $suppressed_issues,
-            $failed_reconciliation,
-            $negated,
         );
     }
 
@@ -618,7 +622,7 @@ final class AssertionReconciler extends Reconciler
 
         return TypeExpander::expandUnion(
             $codebase,
-            $refined_type,
+            self::bindCheckedClasses($codebase, $refined_type, $existing_var_type),
             null,
             null,
             null,
@@ -1963,7 +1967,42 @@ final class AssertionReconciler extends Reconciler
         return $type_2_atomic->setIntersectionTypes($type_1_atomic->extra_types);
     }
 
+    /**
+     * The class without type arguments a check narrows a `Foo<A>` to, with what it takes from it: `static` is a
+     * `Foo<A>&static`, and a child class passing its templates straight to those of Foo is a child of those arguments,
+     * not of its bounds. Any other checked type is returned as it is.
+     */
+    private static function withArgumentsOf(Codebase $codebase, Atomic $generic, Atomic $checked): Atomic
+    {
+        if (!$generic instanceof TGenericObject
+            || $checked::class !== TNamedObject::class
+            || $generic->hasUnknownArgument()
+        ) {
+            return $checked;
+        }
+
+        if (strtolower($generic->value) !== strtolower($checked->value)) {
+            return self::inferTemplateParamsFromParent($codebase, $checked, $generic);
+        }
+
+        return $checked->is_static ? $generic->setIsStatic(true, $checked->is_static_resolved) : $checked;
+    }
+
     private static function filterAtomicWithAnother(
+        Atomic &$type_1_atomic,
+        Atomic $type_2_atomic,
+        Codebase $codebase,
+        bool &$any_scalar_type_match_found,
+    ): ?Atomic {
+        return self::filterAtomicWithAnotherOfItsArguments(
+            $type_1_atomic,
+            self::withArgumentsOf($codebase, $type_1_atomic, $type_2_atomic),
+            $codebase,
+            $any_scalar_type_match_found,
+        );
+    }
+
+    private static function filterAtomicWithAnotherOfItsArguments(
         Atomic &$type_1_atomic,
         Atomic $type_2_atomic,
         Codebase $codebase,
@@ -3230,6 +3269,68 @@ final class AssertionReconciler extends Reconciler
         }
 
         return null;
+    }
+
+    /**
+     * The narrowed type with the classes the check names without type arguments, and that the existing type does not
+     * hold, standing for their bounds ({@see TemplateDefaults::bindBareUse()})
+     *
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
+     */
+    private static function bindCheckedClasses(Codebase $codebase, Union $narrowed, ?Union $existing_var_type): Union
+    {
+        if (!$narrowed->hasNamedObjectType()) {
+            return $narrowed;
+        }
+
+        $existing_classes = [];
+
+        foreach ($existing_var_type?->getAtomicTypes() ?? [] as $existing_atomic) {
+            if ($existing_atomic instanceof TNamedObject) {
+                foreach ([$existing_atomic, ...$existing_atomic->extra_types] as $existing_class) {
+                    if ($existing_class instanceof TNamedObject) {
+                        $existing_classes[strtolower($existing_class->value)] = true;
+                    }
+                }
+            }
+        }
+
+        $atomics = [];
+        $changed = false;
+
+        foreach ($narrowed->getAtomicTypes() as $atomic) {
+            $bound_use = self::bindCheckedClass($codebase, $atomic, $existing_classes);
+
+            if ($bound_use instanceof TNamedObject && $bound_use->extra_types) {
+                $extra_types = [];
+
+                foreach ($bound_use->extra_types as $extra_type) {
+                    $extra_type = self::bindCheckedClass($codebase, $extra_type, $existing_classes);
+                    $extra_types[$extra_type->getKey()] = $extra_type;
+                }
+
+                $bound_use = $bound_use->setIntersectionTypes($extra_types);
+            }
+
+            $changed = $changed || $bound_use !== $atomic;
+            $atomics[] = $bound_use;
+        }
+
+        return $changed ? $narrowed->setTypes($atomics) : $narrowed;
+    }
+
+    /**
+     * @template TAtomic of Atomic
+     * @param TAtomic $atomic
+     * @param array<lowercase-string, true> $existing_classes
+     * @return TAtomic|TGenericObject
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
+     */
+    private static function bindCheckedClass(Codebase $codebase, Atomic $atomic, array $existing_classes): Atomic
+    {
+        return $atomic instanceof TNamedObject && isset($existing_classes[strtolower($atomic->value)])
+            ? $atomic
+            : TemplateDefaults::bindBareUse($atomic, $codebase, false);
     }
 
     /**

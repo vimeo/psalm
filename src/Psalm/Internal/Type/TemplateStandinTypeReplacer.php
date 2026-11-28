@@ -712,6 +712,7 @@ final class TemplateStandinTypeReplacer
             $input_key = substr($input_key, 0, strcspn($input_key, '<['));
 
             if ($input_key === $key) {
+                $atomic_input_type = TemplateDefaults::bindBareUse($atomic_input_type, $codebase, true);
                 $matching_atomic_types[$atomic_input_type->getId()] = $atomic_input_type;
                 continue;
             }
@@ -916,7 +917,8 @@ final class TemplateStandinTypeReplacer
             return array_values($template_type->getAtomicTypes());
         }
 
-        $replacement_type = $template_type;
+        // a bound (`@template T of Foo`) constrains the arguments: `Foo` stands for its bounds, not its defaults
+        $replacement_type = TemplateDefaults::bindBareUsesToBounds($template_type, $codebase);
 
         $param_name_key = $atomic_type->param_name;
 
@@ -1874,6 +1876,9 @@ final class TemplateStandinTypeReplacer
         ?array &$input_unbound_offsets = null,
     ): array {
         $input_unbound_offsets = [];
+
+        // an input without type arguments stands for the defaults of its class, as a declared one does
+        $input_type_part = TemplateDefaults::bindBareUse($input_type_part, $codebase, true);
 
         if ($input_type_part instanceof TGenericObject || $input_type_part instanceof TIterable) {
             $input_type_params = $input_type_part->type_params;

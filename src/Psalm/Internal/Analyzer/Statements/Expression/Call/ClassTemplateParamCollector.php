@@ -19,6 +19,7 @@ use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TGenericObject;
+use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
@@ -34,8 +35,6 @@ final class ClassTemplateParamCollector
     /**
      * @param lowercase-string $method_name
      * @return array<string, non-empty-array<string, Union>>|null
-     * @psalm-suppress MoreSpecificReturnType
-     * @psalm-suppress LessSpecificReturnStatement
      */
     public static function collect(
         Codebase $codebase,
@@ -44,6 +43,30 @@ final class ClassTemplateParamCollector
         ?string $method_name = null,
         ?Atomic $lhs_type_part = null,
         bool $self_call = false,
+    ): ?array {
+        return self::collectForReceiver(
+            $codebase,
+            $class_storage,
+            $static_class_storage,
+            $method_name,
+            self::getBareReceiverUse($codebase, $lhs_type_part, $self_call),
+            $self_call,
+        );
+    }
+
+    /**
+     * @param lowercase-string $method_name
+     * @return array<string, non-empty-array<string, Union>>|null
+     * @psalm-suppress MoreSpecificReturnType
+     * @psalm-suppress LessSpecificReturnStatement
+     */
+    private static function collectForReceiver(
+        Codebase $codebase,
+        ClassLikeStorage $class_storage,
+        ClassLikeStorage $static_class_storage,
+        ?string $method_name,
+        ?Atomic $lhs_type_part,
+        bool $self_call,
     ): ?array {
         $class_storage = self::getDocumentingClassStorage(
             $codebase,
@@ -203,6 +226,29 @@ final class ClassTemplateParamCollector
         }
 
         return $class_template_params;
+    }
+
+    /**
+     * A receiver without type arguments stands for the defaults of its class ({@see TemplateDefaults::getBareUse()}),
+     * unless the call is on `$this`
+     *
+     * @psalm-impure
+     */
+    private static function getBareReceiverUse(Codebase $codebase, ?Atomic $lhs_type_part, bool $self_call): ?Atomic
+    {
+        if ($self_call
+            || $lhs_type_part === null
+            || $lhs_type_part::class !== TNamedObject::class
+            || !$codebase->classlike_storage_provider->has($lhs_type_part->value)
+        ) {
+            return $lhs_type_part;
+        }
+
+        $storage = $codebase->classlike_storage_provider->get($lhs_type_part->value);
+
+        return TemplateDefaults::hasTypeDefaults($storage)
+            ? TemplateDefaults::getBareUse($lhs_type_part, $storage, $codebase)
+            : $lhs_type_part;
     }
 
     /**

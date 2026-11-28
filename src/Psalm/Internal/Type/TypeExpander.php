@@ -417,9 +417,12 @@ final class TypeExpander
                 );
             }
         } elseif ($return_type instanceof TTemplateParam) {
+            // a bound (`@template T of Foo`) constrains the arguments: `Foo` stands for its bounds, not its defaults
             $new_as_type = self::expandUnion(
                 $codebase,
-                $return_type->as,
+                $expand_generic
+                    ? TemplateDefaults::bindBareUsesToBounds($return_type->as, $codebase)
+                    : $return_type->as,
                 $self_class,
                 $static_class_type,
                 $parent_class,
@@ -1039,7 +1042,11 @@ final class TypeExpander
                 $value,
             );
 
-            if ($container_class_storage->template_types
+            if (TemplateDefaults::hasTypeDefaults($container_class_storage)) {
+                $return_type = TemplateDefaults::getBareUse($return_type, $container_class_storage, $codebase);
+
+                $expand_generic = false;
+            } elseif ($container_class_storage->template_types
                 && array_any(
                     $container_class_storage->template_types,
                     static fn($type_map): bool => !reset($type_map)->hasMixed(),

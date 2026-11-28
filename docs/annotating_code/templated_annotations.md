@@ -248,7 +248,7 @@ interface Repository {}
 function f(Repository $dates): void {}
 ```
 
-A templated class written without type arguments stands for its constraints: `Repository` is `Repository<Model>`, and a `Repository<User>` is not a `Repository<Model>` (see [Template covariance](#template-covariance)). Only a template without a constraint accepts every type argument there. To accept every `Repository`, use a [star projection](#star-projection).
+A templated class written without type arguments stands for its constraints, or its [defaults](#template-defaults): `Repository` is `Repository<Model>`, and a `Repository<User>` is not a `Repository<Model>` (see [Template covariance](#template-covariance)). Only a template without a constraint accepts every type argument there. To accept every `Repository`, use a [star projection](#star-projection).
 
 ```php
 <?php
@@ -281,7 +281,7 @@ function f(Repository $users): void {
 
 Psalm uses the default where the type argument is left out:
 
-* in a generic type that gives only the first type arguments, such as `Result<string>` in a `@param`, `@return`, `@var` or property type;
+* in a class name written without type arguments, such as `Result` in a parameter, return, `@var` or property type, and in a generic type that gives only the first type arguments, such as `Result<string>`;
 * in `@extends`, `@implements` and `@use` that leave out trailing templates;
 * in a class that extends, implements or uses a templated one without that tag. A template without a default gets its constraint there, and Psalm reports [MissingTemplateParam](../running_psalm/issues/MissingTemplateParam.md);
 * in `new`, for a template that the constructor arguments don't infer;
@@ -310,19 +310,27 @@ final class IntResult extends Result {}
 final class EmptyResult extends Result {}
 
 /** @param Result<string> $partial */
-function f(Result $partial, IntResult $int, EmptyResult $empty, Result $bare): void {
+function f(Result $partial, IntResult $int, EmptyResult $empty, Result $bare, object $object): void {
     $partial->error; // RuntimeException|null
     $int->error; // RuntimeException|null
     $empty->value; // null
     $empty->error; // RuntimeException|null
-    $bare->error; // Throwable|null
+    $bare->error; // RuntimeException|null
+
+    if ($object instanceof Result) {
+        $object->error; // Throwable|null
+    }
 }
 
 $result = new Result(); // Result<null, RuntimeException>
 $result = new Result(null, new LogicException()); // Result<null, LogicException>
+
+function takesResult(Result $result): void {}
+
+takesResult($result); // InvalidArgument
 ```
 
-A class name without type arguments does not use the defaults (PHPStan uses them there). `Result` alone stands for [its constraints](#template-constraints), so `$bare->error` is `Throwable|null`.
+A check of the class (`instanceof Result`, `is_a()`, `@psalm-assert Result`) says nothing of the type arguments, so the narrowed type stands for [the constraints](#template-constraints). To accept every `Result`, use a [star projection](#star-projection): `Result<*, *>`.
 
 For an invariant or covariant template, `new` does not use the default if a public method parameter or a public writable property takes the template. The class must declare that method or property itself: inherited, trait, `@method` and `@property` members don't count. Later code in the function can still fix such a template (see [Type variables](type_variables.md)). If no code does, the template stands for its constraint. `new` never leaves a [contravariant](#template-contravariance) template to later code.
 
@@ -763,7 +771,7 @@ function f(Cell $cell): void {
 }
 ```
 
-`*` only affects its own type argument: a `Pair<int, *>` reads and writes its `int` as usual. A `Box<*>` fits a parameter written as `Box` without type arguments, and a covariant `Reader<*>` fits the `Reader` of its whole constraint. `class-string<*>` is `class-string` and `list<*>` is `list<mixed>`.
+`*` only affects its own type argument: a `Pair<int, *>` reads and writes its `int` as usual. A `Box<*>` fits a parameter written as `Box` without type arguments, unless `Box` has [defaults](#template-defaults), and a covariant `Reader<*>` fits the `Reader` of its whole constraint. `class-string<*>` is `class-string` and `list<*>` is `list<mixed>`.
 
 ```php
 <?php

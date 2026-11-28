@@ -27,6 +27,7 @@ use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\StarProjection;
+use Psalm\Internal\Type\TemplateDefaults;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
@@ -1572,7 +1573,7 @@ final class AtomicPropertyFetchAnalyzer
 
         if (count($template_types = $class_storage->getClassTemplateTypes()) !== 0) {
             if (!$lhs_type_part instanceof TGenericObject) {
-                $lhs_type_part = new TGenericObject($lhs_type_part->value, $template_types);
+                $lhs_type_part = self::getBareReceiver($codebase, $lhs_type_part, $class_storage, $template_types);
             }
 
             $stmt_type = self::localizePropertyType(
@@ -1695,6 +1696,26 @@ final class AtomicPropertyFetchAnalyzer
         );
     }
 
+    /**
+     * A receiver without type arguments: the defaults of the templates of its class, and the bounds of the others
+     *
+     * @param non-empty-list<Union> $template_types the bounds of the templates of the class declaring the property
+     */
+    private static function getBareReceiver(
+        Codebase $codebase,
+        TNamedObject $lhs_type_part,
+        ClassLikeStorage $class_storage,
+        array $template_types,
+    ): TGenericObject {
+        if (strtolower($lhs_type_part->value) === strtolower($class_storage->name)
+            && TemplateDefaults::hasTypeDefaults($class_storage)
+        ) {
+            return TemplateDefaults::getBareUse($lhs_type_part, $class_storage, $codebase);
+        }
+
+        return new TGenericObject($lhs_type_part->value, $template_types);
+    }
+
     private static function getClassPropertyType(
         StatementsAnalyzer $statements_analyzer,
         Codebase $codebase,
@@ -1745,7 +1766,7 @@ final class AtomicPropertyFetchAnalyzer
 
             if (count($template_types = $declaring_class_storage->getClassTemplateTypes()) !== 0) {
                 if (!$lhs_type_part instanceof TGenericObject) {
-                    $lhs_type_part = new TGenericObject($lhs_type_part->value, $template_types);
+                    $lhs_type_part = self::getBareReceiver($codebase, $lhs_type_part, $class_storage, $template_types);
                 }
 
                 $class_property_type = self::localizePropertyType(
