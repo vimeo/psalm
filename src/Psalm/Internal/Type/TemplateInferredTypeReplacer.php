@@ -176,19 +176,8 @@ final class TemplateInferredTypeReplacer
                     $new_types = [...$new_types, ...$properties_of_types];
                 }
             } elseif ($atomic_type instanceof TIntersection) {
-                $intersected_types = [];
-
-                foreach ($atomic_type->types as $intersected_type) {
-                    $intersected_types[] = self::replace($intersected_type, $template_result, $codebase);
-                }
-
-                $atomic_type = $atomic_type->setTypes($intersected_types);
-
-                if ($codebase) {
-                    $should_set = false;
-                    /** @psalm-suppress ImpureMethodCall reads codebase storage */
-                    $new_types = [...$new_types, ...TypeParser::resolveIntersection($atomic_type, $codebase)];
-                }
+                $should_set = false;
+                $new_types = [...$new_types, ...self::replaceIntersection($atomic_type, $template_result, $codebase)];
             } elseif ($atomic_type instanceof TConditional
                 && $codebase
             ) {
@@ -605,6 +594,33 @@ final class TemplateInferredTypeReplacer
         }
 
         return null;
+    }
+
+    /**
+     * An intersection with its templates replaced, intersected when Psalm knows the types of its members
+     *
+     * @return non-empty-list<Atomic>
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
+     */
+    private static function replaceIntersection(
+        TIntersection $intersection,
+        TemplateResult $template_result,
+        ?Codebase $codebase,
+    ): array {
+        $intersected_types = [];
+
+        foreach ($intersection->types as $intersected_type) {
+            $intersected_types[] = self::replace($intersected_type, $template_result, $codebase);
+        }
+
+        $intersection = $intersection->setTypes($intersected_types);
+
+        if (!$codebase) {
+            return [$intersection];
+        }
+
+        /** @psalm-suppress ImpureMethodCall reads codebase storage */
+        return TypeParser::resolveIntersection($intersection, $codebase);
     }
 
     /**
