@@ -26,7 +26,6 @@ use Psalm\Type\Union;
 use function array_keys;
 use function array_merge;
 use function array_search;
-use function strtolower;
 
 /**
  * @internal
@@ -76,9 +75,7 @@ final class ClassTemplateParamCollector
         $class_template_params = [];
         $e = $static_class_storage->template_extended_params;
 
-        if (!$self_call && $lhs_type_part !== null) {
-            $lhs_type_part = self::getBareReceiverUse($codebase, $static_class_storage, $lhs_type_part);
-        }
+        $lhs_type_part = self::getBareReceiverUse($codebase, $lhs_type_part, $self_call);
 
         if ($lhs_type_part instanceof TGenericObject) {
             $lhs_type_part = StarProjection::resolveReads($lhs_type_part, $codebase);
@@ -212,19 +209,25 @@ final class ClassTemplateParamCollector
     }
 
     /**
-     * A receiver without type arguments stands for the defaults of its class ({@see TemplateDefaults::getBareUse()})
+     * A receiver without type arguments stands for the defaults of its class ({@see TemplateDefaults::getBareUse()}),
+     * unless the call is on `$this`
      *
      * @psalm-impure
      */
-    private static function getBareReceiverUse(
-        Codebase $codebase,
-        ClassLikeStorage $static_class_storage,
-        Atomic $lhs_type_part,
-    ): Atomic {
-        return $lhs_type_part::class === TNamedObject::class
-            && strtolower($lhs_type_part->value) === strtolower($static_class_storage->name)
-            && TemplateDefaults::hasTypeDefaults($static_class_storage)
-            ? TemplateDefaults::getBareUse($lhs_type_part, $static_class_storage, $codebase)
+    private static function getBareReceiverUse(Codebase $codebase, ?Atomic $lhs_type_part, bool $self_call): ?Atomic
+    {
+        if ($self_call
+            || $lhs_type_part === null
+            || $lhs_type_part::class !== TNamedObject::class
+            || !$codebase->classlike_storage_provider->has($lhs_type_part->value)
+        ) {
+            return $lhs_type_part;
+        }
+
+        $storage = $codebase->classlike_storage_provider->get($lhs_type_part->value);
+
+        return TemplateDefaults::hasTypeDefaults($storage)
+            ? TemplateDefaults::getBareUse($lhs_type_part, $storage, $codebase)
             : $lhs_type_part;
     }
 

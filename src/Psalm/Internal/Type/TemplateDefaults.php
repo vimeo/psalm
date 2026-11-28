@@ -13,6 +13,7 @@ use Psalm\Exception\TypeParseTreeException;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\TypeVisitor\ContainsExpandableTypeVisitor;
 use Psalm\Internal\TypeVisitor\TemplateDefaultFiller;
 use Psalm\Internal\TypeVisitor\TemplateTypeCollector;
 use Psalm\Internal\TypeVisitor\TypeScanner;
@@ -108,7 +109,7 @@ final class TemplateDefaults
      */
     public static function getBareUse(TNamedObject $type, ClassLikeStorage $storage, Codebase $codebase): TGenericObject
     {
-        $bare_use = self::getUnexpandedBareUse($type, $storage, $codebase, true);
+        $bare_use = self::makeBareUse($type, $storage, $codebase, true, true);
         $type_args = $bare_use->type_params;
 
         foreach (array_keys($storage->template_types ?? []) as $i => $template_name) {
@@ -125,17 +126,18 @@ final class TemplateDefaults
     }
 
     /**
-     * {@see self::getBareUse()}, with the defaults not expanded, or, without $with_defaults, every template bound to
-     * its bound, as for an `instanceof Foo` check, which knows nothing of the arguments. A bound naming earlier or
-     * later templates (`TIterator of Traversable[TPurity]<TKey, TValue>`) has them replaced by what they stand for.
+     * {@see self::getBareUse()}, with the defaults not expanded, and without $with_expandable_defaults those that need
+     * their class to be expanded left to their bound. A bound naming other templates
+     * (`TIterator of Traversable[TPurity]<TKey, TValue>`) has them replaced by what they stand for.
      *
      * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
-    public static function getUnexpandedBareUse(
+    private static function makeBareUse(
         TNamedObject $type,
         ClassLikeStorage $storage,
         ?Codebase $codebase,
         bool $with_defaults,
+        bool $with_expandable_defaults,
     ): TGenericObject {
         $type_args = [];
         $projections = [];
@@ -147,6 +149,7 @@ final class TemplateDefaults
             if ($with_defaults
                 && isset($storage->template_defaults[$template_name])
                 && !isset($storage->purity_templates[$template_name])
+                && ($with_expandable_defaults || !self::isExpandable($storage->template_defaults[$template_name]))
             ) {
                 $argument = self::resolve(
                     $storage->template_defaults[$template_name],
@@ -187,9 +190,9 @@ final class TemplateDefaults
     }
 
     /**
-     * A class written without type arguments as {@see self::getUnexpandedBareUse()}, any other type as it is. A check
-     * of the class (`instanceof Foo`, `is_a()`, `@psalm-assert Foo`) knows nothing of the arguments: it stands for
-     * the bounds, without $with_defaults.
+     * A class written without type arguments as {@see self::getBareUse()}, with the defaults that need their class to
+     * be expanded left to their bound, and any other type as it is. A check of the class (`instanceof Foo`, `is_a()`,
+     * `@psalm-assert Foo`) knows nothing of the arguments: it stands for the bounds, without $with_defaults.
      *
      * @template TAtomic of Atomic
      * @param TAtomic $type
@@ -208,8 +211,19 @@ final class TemplateDefaults
         $storage = $codebase->classlike_storage_provider->get($type->value);
 
         return self::hasTypeDefaults($storage)
-            ? self::getUnexpandedBareUse($type, $storage, $codebase, $with_defaults)
+            ? self::makeBareUse($type, $storage, $codebase, $with_defaults, false)
             : $type;
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    private static function isExpandable(Union $default): bool
+    {
+        $visitor = new ContainsExpandableTypeVisitor();
+        $visitor->traverse($default);
+
+        return $visitor->matches();
     }
 
     /**
