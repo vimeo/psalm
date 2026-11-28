@@ -265,12 +265,14 @@ final class TemplateDefaults
             foreach ($atomic->type_params as $type_param) {
                 $type_params[] = self::bindBareUsesToBounds($type_param, $codebase);
             }
-        } else {
-            $type_params = [
-                self::bindBareUsesToBounds($atomic->type_params[0], $codebase),
-                self::bindBareUsesToBounds($atomic->type_params[1], $codebase),
-            ];
+
+            return $type_params === $atomic->type_params ? $atomic : $atomic->setTypeParams($type_params);
         }
+
+        $type_params = [
+            self::bindBareUsesToBounds($atomic->type_params[0], $codebase),
+            self::bindBareUsesToBounds($atomic->type_params[1], $codebase),
+        ];
 
         return $type_params === $atomic->type_params ? $atomic : $atomic->setTypeParams($type_params);
     }
