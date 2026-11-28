@@ -180,6 +180,17 @@ final class Config
      */
     public const INIT_PROJECT_FILES_NOW = false;
 
+    /**
+     * The project files are initialised when the ProjectAnalyzer is built where the constant is overridden (tests)
+     *
+     * @internal
+     * @psalm-pure
+     */
+    public function initProjectFilesNow(): bool
+    {
+        return static::INIT_PROJECT_FILES_NOW;
+    }
+
     final public const DEFAULT_BASELINE_NAME = 'psalm-baseline.xml';
     private const ZSTD_MINIMUM_VERSION = '0.15.0';
 

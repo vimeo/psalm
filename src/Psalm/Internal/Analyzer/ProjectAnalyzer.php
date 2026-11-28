@@ -260,7 +260,7 @@ final class ProjectAnalyzer
 
         $this->config->processPluginFileExtensions($this);
 
-        if ($this->config::INIT_PROJECT_FILES_NOW) {
+        if ($this->config->initProjectFilesNow()) {
             $this->initExtraFiles();
             $this->initProjectFiles();
         }

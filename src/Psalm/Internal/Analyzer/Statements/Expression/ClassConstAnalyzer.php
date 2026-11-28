@@ -425,10 +425,6 @@ final class ClassConstAnalyzer
             }
         }
 
-        if (!$stmt->class instanceof PhpParser\Node\Expr\Variable) {
-            return true;
-        }
-
         $lhs_classes = self::getClassesOfAVariable($statements_analyzer, $codebase, $stmt->class, $lhs_type);
 
         if ($lhs_classes === null) {
