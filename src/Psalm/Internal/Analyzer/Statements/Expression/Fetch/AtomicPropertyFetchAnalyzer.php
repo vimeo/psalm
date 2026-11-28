@@ -1366,7 +1366,10 @@ final class AtomicPropertyFetchAnalyzer
             $has_magic_getter,
         );
 
-        $stmt_type = Type::getMixed();
+        // the read still calls __get(): what it returns flows on (see propertyFetchCanBeAnalyzed())
+        $stmt_type = Type::getMixed()->setParentNodes(
+            $has_magic_getter ? $statements_analyzer->node_data->getType($stmt)?->parent_nodes ?? [] : [],
+        );
 
         $statements_analyzer->node_data->setType($stmt, $stmt_type);
 
