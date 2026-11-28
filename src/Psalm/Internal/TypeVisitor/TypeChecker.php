@@ -9,6 +9,7 @@ use Override;
 use Psalm\CodeLocation;
 use Psalm\CodeLocation\DocblockTypeLocation;
 use Psalm\Context;
+use Psalm\Exception\CircularReferenceException;
 use Psalm\Exception\TypeParseTreeException;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeNameOptions;
@@ -23,6 +24,7 @@ use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeArgumentProjection;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\Type\TypeParser;
+use Psalm\Issue\CircularReference;
 use Psalm\Issue\DeprecatedClass;
 use Psalm\Issue\DeprecatedInterface;
 use Psalm\Issue\InvalidDocblock;
@@ -612,12 +614,25 @@ final class TypeChecker extends TypeVisitor
 
             $is_defined = true;
         } else {
-            $class_constant_type = $this->source->getCodebase()->classlikes->getClassConstantType(
-                $fq_classlike_name,
-                $atomic->const_name,
-                ReflectionProperty::IS_PRIVATE,
-                null,
-            );
+            try {
+                $class_constant_type = $this->source->getCodebase()->classlikes->getClassConstantType(
+                    $fq_classlike_name,
+                    $atomic->const_name,
+                    ReflectionProperty::IS_PRIVATE,
+                    null,
+                );
+            } catch (CircularReferenceException) {
+                IssueBuffer::maybeAdd(
+                    new CircularReference(
+                        'Constant ' . $fq_classlike_name . '::' . $const_name . ' contains a circular reference',
+                        $this->code_location,
+                    ),
+                    $this->source->getSuppressedIssues() + $this->suppressed_issues,
+                );
+
+                $this->has_errors = true;
+                return;
+            }
 
             $is_defined = null !== $class_constant_type;
         }
