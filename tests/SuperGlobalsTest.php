@@ -107,6 +107,40 @@ final class SuperGlobalsTest extends TestCase
             ],
         ];
 
+        yield 'SERVER keys the client or the environment may leave empty are strings' => [
+            'code' => '<?php
+                $referer = $_SERVER["HTTP_REFERER"] ?? null;
+                $agent = $_SERVER["HTTP_USER_AGENT"] ?? null;
+                $auth_user = $_SERVER["PHP_AUTH_USER"] ?? null;
+                $home = $_SERVER["HOME"] ?? null;
+                $env_home = $_ENV["HOME"] ?? null;
+                $path = $_SERVER["PATH"] ?? null;
+                $user = $_SERVER["USER"] ?? null;
+                $is_empty = $referer === "";
+            ',
+            'assertions' => [
+                '$referer===' => 'null|string',
+                '$agent===' => 'null|string',
+                '$auth_user===' => 'null|string',
+                '$home===' => 'null|string',
+                '$env_home===' => 'null|string',
+                '$path===' => 'null|string',
+                '$user===' => 'null|string',
+                '$is_empty===' => 'bool',
+            ],
+        ];
+
+        yield 'SERVER keys the server always sets stay non-empty strings' => [
+            'code' => '<?php
+                $method = $_SERVER["REQUEST_METHOD"] ?? null;
+                $uri = $_SERVER["REQUEST_URI"] ?? null;
+            ',
+            'assertions' => [
+                '$method===' => 'non-empty-string|null',
+                '$uri===' => 'non-empty-string|null',
+            ],
+        ];
+
         yield 'globalSuperGlobalKeepsItsType' => [
             'code' => '<?php
                 function printers(): string {
