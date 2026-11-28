@@ -225,6 +225,20 @@ final class RedundantConditionTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'gettypeAndGetDebugTypeOfAnExpressionThatMayHoldAreNotReported' => [
+                'code' => '<?php
+                    function f(mixed $m, int|string $u): void {
+                        echo gettype($m) === "string" ? 1 : 2;
+                        echo gettype($u ?: 0) === "string" ? 1 : 2;
+                        echo gettype(rand(0, 1) ? 1 : "a") === "string" ? 1 : 2;
+                        echo get_debug_type(rand(0, 1) ? 1 : "a") === "string" ? 1 : 2;
+                        echo get_debug_type(new RuntimeException()) === RuntimeException::class ? 1 : 2;
+                        echo get_debug_type(new RuntimeException()) === Exception::class ? 1 : 2;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'issetOfAnOffsetOfAShapeItemThatMayBeAnArrayAccessObject' => [
                 'code' => '<?php
                     /** @param array{a: array{b: int}|ArrayAccess<string, int>} $t */
@@ -3411,6 +3425,67 @@ final class RedundantConditionTest extends TestCase
                         echo "always";
                     }',
                 'error_message' => 'RedundantConditionGivenDocblockType - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:26 - Docblock type 123 can never contain string',
+            ],
+            'gettypeOfALiteralIsImpossible' => [
+                'code' => '<?php
+                    if (gettype(123) === "string") {
+                        echo "never";
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:25 - 123 does not contain string',
+            ],
+            'gettypeOfAReturnValueIsImpossible' => [
+                'code' => '<?php
+                    /** @return 123 */
+                    function ret(): int {
+                        return 123;
+                    }
+
+                    if (gettype(ret()) === "string") {
+                        echo "never";
+                    }',
+                'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:25 - Docblock type 123 does not contain string',
+            ],
+            'negatedGettypeOfAReturnValueIsRedundant' => [
+                'code' => '<?php
+                    /** @return 123 */
+                    function ret(): int {
+                        return 123;
+                    }
+
+                    if (gettype(ret()) !== "string") {
+                        echo "always";
+                    }',
+                'error_message' => 'RedundantConditionGivenDocblockType - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:25 - Docblock type 123 can never contain string',
+            ],
+            'gettypeOfALiteralThatHoldsIsRedundant' => [
+                'code' => '<?php
+                    if (gettype(123) === "integer") {
+                        echo "always";
+                    }',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:25 - 123 always contains int',
+            ],
+            'getDebugTypeOfAReturnValueIsImpossible' => [
+                'code' => '<?php
+                    /** @return 123 */
+                    function ret(): int {
+                        return 123;
+                    }
+
+                    if (get_debug_type(ret()) === "string") {
+                        echo "never";
+                    }',
+                'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:25 - Docblock type 123 does not contain string',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'getDebugTypeOfALiteralThatHoldsIsRedundant' => [
+                'code' => '<?php
+                    if (get_debug_type(123) === "int") {
+                        echo "always";
+                    }',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:25 - 123 always contains int',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'isFloatOfAnIntLiteralIsImpossible' => [
                 'code' => '<?php

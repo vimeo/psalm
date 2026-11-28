@@ -3056,8 +3056,9 @@ final class AssertionFinder
         [$string_expr, $gettype_expr] = self::getOperands($conditional, $gettype_position);
 
         /** @var PhpParser\Node\Expr\FuncCall $gettype_expr */
+        $argument = $gettype_expr->getArgs()[0]->value;
         $var_name = ExpressionIdentifier::getExtendedVarId(
-            $gettype_expr->getArgs()[0]->value,
+            $argument,
             $this_class_name,
             $source,
         );
@@ -3078,7 +3079,24 @@ final class AssertionFinder
 
         $atomic = self::getGettypeAtomic($type_name);
 
-        if ($var_name === null || $atomic === null) {
+        if ($atomic === null) {
+            return [];
+        }
+
+        if ($var_name === null) {
+            if ($source instanceof StatementsAnalyzer
+                && ($argument_type = $source->node_data->getType($argument))
+            ) {
+                self::processIrreconcilableTypeCheck(
+                    $argument_type,
+                    new IsType($atomic),
+                    $gettype_expr,
+                    $source,
+                    $source->getCodebase(),
+                    $negated,
+                );
+            }
+
             return [];
         }
 
@@ -3099,8 +3117,9 @@ final class AssertionFinder
         [$whichclass_expr, $get_debug_type_expr] = self::getOperands($conditional, $get_debug_type_position);
 
         /** @var PhpParser\Node\Expr\FuncCall $get_debug_type_expr */
+        $argument = $get_debug_type_expr->getArgs()[0]->value;
         $var_name = ExpressionIdentifier::getExtendedVarId(
-            $get_debug_type_expr->getArgs()[0]->value,
+            $argument,
             $this_class_name,
             $source,
         );
@@ -3122,7 +3141,7 @@ final class AssertionFinder
         }
 
         // get_debug_type() never returns ""
-        if ($var_name === null || $type_name === '') {
+        if ($type_name === '') {
             return [];
         }
 
@@ -3139,6 +3158,26 @@ final class AssertionFinder
                 // not a type name, like "1": get_debug_type() never returns it either
                 return [];
             }
+        }
+
+        if ($var_name === null) {
+            // the class get_debug_type() returns is the exact one, which a type check of a subclass doesn't tell
+            if ($assertion instanceof IsType
+                && !$assertion->type instanceof TNamedObject
+                && $source instanceof StatementsAnalyzer
+                && ($argument_type = $source->node_data->getType($argument))
+            ) {
+                self::processIrreconcilableTypeCheck(
+                    $argument_type,
+                    $assertion,
+                    $get_debug_type_expr,
+                    $source,
+                    $source->getCodebase(),
+                    $negated,
+                );
+            }
+
+            return [];
         }
 
         return [[$var_name => [[self::withPolarity($assertion, $negated)]]]];
