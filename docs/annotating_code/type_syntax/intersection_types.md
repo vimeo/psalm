@@ -33,6 +33,38 @@ function foo($a, $b) {
 
 The returned type will contain the properties of both `A` and `B`. In other words, it will be `{a: int, b: int}`.
 
+A template intersected with an array shape is the type the template takes, with the properties of the shape:
+
+```php
+<?php
+
+interface Users
+{
+    /**
+     * @template T of array
+     * @param T $user
+     * @return T&array{id: int}
+     */
+    public function save(array $user): array;
+}
+
+/**
+ * @template T of array
+ * @param T&array{id: int} $user
+ */
+function userId(array $user): int
+{
+    return $user['id']; // no issue
+}
+
+function register(Users $users): void
+{
+    $user = $users->save(['name' => 'Ada']); // array{id: int, name: 'Ada'}
+    echo userId($user); // no issue
+    echo userId(['name' => 'Ada']); // InvalidArgument
+}
+```
+
 Intersections of objects are only valid for lists of only *object types* and lists of only *object-like arrays*.
 
 Scalar types can be intersected too: `lowercase-string&non-empty-string` is a `non-empty-lowercase-string`,

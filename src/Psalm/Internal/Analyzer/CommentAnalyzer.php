@@ -762,7 +762,8 @@ final class CommentAnalyzer
                     $statements_analyzer->getParentFQCLN(),
                 );
 
-                $var_comment_type = $var_comment_type->setFromDocblock();
+                $var_comment_type = TypeParser::narrowIntersectedTemplates($var_comment_type, $codebase)
+                    ->setFromDocblock();
 
                 /** @psalm-suppress UnusedMethodCall */
                 $var_comment_type->check(

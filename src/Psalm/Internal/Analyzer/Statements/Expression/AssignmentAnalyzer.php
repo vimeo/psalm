@@ -51,6 +51,7 @@ use Psalm\Internal\Scanner\VarDocblockComment;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Internal\Type\TypeParser;
 use Psalm\Internal\TypeVisitor\TypeChecker;
 use Psalm\Internal\TypeVisitor\TypeVariableResolver;
 use Psalm\Issue\AssignmentToVoid;
@@ -1189,7 +1190,7 @@ final class AssignmentAnalyzer
                 $statements_analyzer->getParentFQCLN(),
             );
 
-            $var_comment_type = $var_comment_type->setProperties([
+            $var_comment_type = TypeParser::narrowIntersectedTemplates($var_comment_type, $codebase)->setProperties([
                 'from_docblock' => true,
                 'by_ref' => $by_ref,
             ]);
