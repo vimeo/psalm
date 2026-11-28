@@ -309,6 +309,49 @@ final class ConstantTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'constantFetchedOnANonVariableExpressionHasTheTypeOfTheConstant' => [
+                'code' => '<?php
+                    final class Foo {
+                        public const C = 1;
+
+                        public function me(): Foo {
+                            return $this;
+                        }
+                    }
+
+                    $foo = new Foo();
+                    $list = [new Foo()];
+
+                    $a = $foo->me()::C;
+                    $b = $list[0]::C;
+                    $c = (new Foo())::C;',
+                'assertions' => [
+                    '$a===' => '1',
+                    '$b===' => '1',
+                    '$c===' => '1',
+                ],
+            ],
+            'constantFetchedOnAnExpressionOfAnUnionOfClassesIsTheUnionOfTheConstants' => [
+                'code' => '<?php
+                    final class A {
+                        public const C = 1;
+                    }
+
+                    final class B {
+                        public const C = "b";
+                    }
+
+                    function pick(bool $flag): A|B {
+                        return $flag ? new A() : new B();
+                    }
+
+                    $c = pick(true)::C;',
+                'assertions' => [
+                    '$c===' => "'b'|1",
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'lateStaticBoundConstantsKeepTheirDeclaredTypes' => [
                 'code' => '<?php
                     class Service {
@@ -3419,6 +3462,21 @@ final class ConstantTest extends TestCase
                 'error_message' => 'TypeDoesNotContainType',
                 'error_levels' => [],
                 'php_version' => '8.3',
+            ],
+            'constantOfAPossiblyNullExpressionIsAnUndefinedClass' => [
+                'code' => '<?php
+                    final class A {
+                        public const NAME = "a";
+                    }
+
+                    function find(): ?A {
+                        return null;
+                    }
+
+                    function name(): string {
+                        return find()::NAME;
+                    }',
+                'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:32 - Type null cannot be used as a class',
             ],
             'constantOfAPossiblyNullObjectIsAnUndefinedClass' => [
                 'code' => '<?php
