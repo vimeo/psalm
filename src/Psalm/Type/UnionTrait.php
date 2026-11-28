@@ -53,6 +53,7 @@ use Psalm\Type\Atomic\TNonspecificLiteralInt;
 use Psalm\Type\Atomic\TNonspecificLiteralString;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TNumeric;
+use Psalm\Type\Atomic\TNumericString;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
@@ -1914,7 +1915,7 @@ trait UnionTrait
         }
 
         // a numeric string can also hold whitespace, such as a newline
-        if ($atomic instanceof TNumeric) {
+        if ($atomic instanceof TNumeric || $atomic instanceof TNumericString) {
             return $input_taints & ~(TaintKind::NUMERIC_ONLY | TaintKind::INPUT_SHELL | TaintKind::INPUT_HEADER);
         }
 
