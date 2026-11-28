@@ -385,6 +385,8 @@ final class ClassLikeStorage implements HasAttributesInterface
     public array $inheritable_method_ids = [];
 
     /**
+     * @deprecated Never set or read; will be removed in psalm-plugin-api 0.5.0. Psalm finds the classes an inherited
+     *     method goes through when it is called.
      * @var array<lowercase-string, array<string, bool>>
      */
     public array $potential_declaring_method_ids = [];

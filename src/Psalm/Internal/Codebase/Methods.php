@@ -175,13 +175,15 @@ final class Methods
                 );
             }
 
-            if ((string) $method_id !== (string) $declaring_method_id
+            $potential_declaring_method_ids = (string) $method_id !== (string) $declaring_method_id
                 && $class_storage->user_defined
-                && isset($class_storage->potential_declaring_method_ids[$method_name])
-            ) {
-                foreach ($class_storage->potential_declaring_method_ids[$method_name] as $potential_id => $_) {
+                    ? $this->getPotentialDeclaringMethodIds($class_storage, $method_name)
+                    : [];
+
+            if ($potential_declaring_method_ids !== []) {
+                foreach ($potential_declaring_method_ids as $potential_id => $_) {
                     $codebase->addReferenceToFunctionLike(
-                        strtolower($potential_id),
+                        $potential_id,
                         $code_location,
                         $calling_context,
                         $is_used,
@@ -273,6 +275,128 @@ final class Methods
         );
 
         return false;
+    }
+
+    /**
+     * The ids of an inherited method in each class, trait and interface it goes through, from the class it is called
+     * on to the one declaring it
+     *
+     * @param lowercase-string $method_name_lc
+     * @return array<lowercase-string, true>
+     * @psalm-capabilities read-props
+     */
+    private function getPotentialDeclaringMethodIds(ClassLikeStorage $storage, string $method_name_lc): array
+    {
+        $ids = [];
+
+        while (!isset($storage->methods[$method_name_lc])) {
+            $source = $this->getInheritedMethodSource($storage, $method_name_lc);
+
+            if ($source === null) {
+                break;
+            }
+
+            [$parent_storage, $parent_method_name_lc] = $source;
+
+            $parent_method_id = strtolower($parent_storage->name) . '::' . $parent_method_name_lc;
+
+            if (isset($ids[$parent_method_id])) {
+                break;
+            }
+
+            $ids[strtolower($storage->name) . '::' . $parent_method_name_lc] = true;
+            $ids[$parent_method_id] = true;
+
+            $storage = $parent_storage;
+            $method_name_lc = $parent_method_name_lc;
+        }
+
+        return $ids;
+    }
+
+    /**
+     * The used trait, parent class or parent interface the class has a method from, with its name there, in the
+     * order the Populator inherits them
+     *
+     * @param lowercase-string $method_name_lc
+     * @return array{ClassLikeStorage, lowercase-string}|null
+     * @psalm-capabilities read-props
+     */
+    private function getInheritedMethodSource(ClassLikeStorage $storage, string $method_name_lc): ?array
+    {
+        $appearing_method_id = $storage->appearing_method_ids[$method_name_lc] ?? null;
+
+        if ($appearing_method_id === null) {
+            return null;
+        }
+
+        $appearing_method_id_lc = strtolower((string) $appearing_method_id);
+        $fq_class_name_lc = strtolower($storage->name);
+
+        if ($appearing_method_id_lc === $fq_class_name_lc . '::' . $method_name_lc) {
+            foreach ($storage->used_traits as $used_trait_lc => $_) {
+                $trait_storage = $this->getUnAliasedStorage($used_trait_lc);
+
+                if ($trait_storage === null) {
+                    continue;
+                }
+
+                $trait_name_lc = strtolower($trait_storage->name);
+
+                $aliased_method_name_lc = $storage->trait_alias_map[$method_name_lc] ?? null;
+
+                if ($aliased_method_name_lc !== null
+                    && ($storage->trait_alias_trait_map[$method_name_lc] ?? $trait_name_lc) === $trait_name_lc
+                    && isset($trait_storage->appearing_method_ids[$aliased_method_name_lc])
+                ) {
+                    return [$trait_storage, $aliased_method_name_lc];
+                }
+
+                if (!isset($storage->trait_excluded_methods[$method_name_lc][$trait_name_lc])
+                    && isset($trait_storage->appearing_method_ids[$method_name_lc])
+                ) {
+                    return [$trait_storage, $method_name_lc];
+                }
+            }
+
+            return null;
+        }
+
+        $parent_names = [];
+
+        if ($storage->parent_classes) {
+            $parent_names[] = reset($storage->parent_classes);
+        }
+
+        foreach ($storage->direct_interface_parents as $parent_interface_lc => $_) {
+            $parent_names[] = $parent_interface_lc;
+        }
+
+        foreach ($parent_names as $parent_name) {
+            $parent_storage = $this->getUnAliasedStorage($parent_name);
+
+            if ($parent_storage !== null
+                && isset($parent_storage->appearing_method_ids[$method_name_lc])
+                && strtolower((string) $parent_storage->appearing_method_ids[$method_name_lc])
+                    === $appearing_method_id_lc
+            ) {
+                return [$parent_storage, $method_name_lc];
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @psalm-capabilities read-props
+     */
+    private function getUnAliasedStorage(string $fq_classlike_name): ?ClassLikeStorage
+    {
+        try {
+            return $this->classlike_storage_provider->get($this->classlikes->getUnAliasedName($fq_classlike_name));
+        } catch (InvalidArgumentException) {
+            return null;
+        }
     }
 
     /**

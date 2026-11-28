@@ -1965,7 +1965,6 @@ final class Populator
         ClassLikeStorage $parent_storage,
     ): void {
         $fq_class_name = $storage->name;
-        $fq_class_name_lc = strtolower($fq_class_name);
 
         if ($parent_storage->sealed_methods !== null) {
             $storage->sealed_methods = $parent_storage->sealed_methods;
@@ -1987,22 +1986,6 @@ final class Populator
 
                 $storage->appearing_method_ids[$aliased_method_name] =
                     $parent_storage->is_trait ? $implemented_method_id : $appearing_method_id;
-
-                $this_method_id = $fq_class_name_lc . '::' . $method_name_lc;
-
-                if (isset($storage->methods[$aliased_method_name])) {
-                    $storage->potential_declaring_method_ids[$aliased_method_name] = [$this_method_id => true];
-                } else {
-                    if (isset($parent_storage->potential_declaring_method_ids[$aliased_method_name])) {
-                        $storage->potential_declaring_method_ids[$aliased_method_name]
-                            = $parent_storage->potential_declaring_method_ids[$aliased_method_name];
-                    }
-
-                    $storage->potential_declaring_method_ids[$aliased_method_name][$this_method_id] = true;
-
-                    $parent_method_id = strtolower($parent_storage->name) . '::' . $method_name_lc;
-                    $storage->potential_declaring_method_ids[$aliased_method_name][$parent_method_id] = true;
-                }
             }
         }
 

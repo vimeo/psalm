@@ -838,6 +838,291 @@ final class FileReferenceTest extends TestCase
                     ],
                 ],
             ],
+            'interpolateTraitOfTraitCalls' => [
+                '<?php
+                    namespace Foo;
+
+                    trait T2 {
+                        /** @psalm-mutation-free */
+                        public function foo() : void {}
+                    }
+
+                    trait T {
+                        use T2;
+                    }
+
+                    class A {
+                        use T;
+                    }
+
+                    class B extends A {}
+
+                    class D {
+                        /** @psalm-mutation-free */
+                        public function bat() : void {
+                            (new B)->foo();
+                        }
+                    }',
+                [
+                    'class foo\\a' => [
+                        'class foo\\b' => true,
+                    ],
+                    'class foo\\b' => [
+                        'func foo\\d::bat' => true,
+                    ],
+                    'class foo\\t' => [
+                        'class foo\\a' => true,
+                    ],
+                    'class foo\\t2' => [
+                        'class foo\\a' => true,
+                        'func foo\\d::bat' => true,
+                    ],
+                    'func foo\\a::foo' => [
+                        'func foo\\d::bat' => true,
+                    ],
+                    'func foo\\b::foo' => [
+                        'func foo\\d::bat' => true,
+                    ],
+                    'func foo\\t2::foo' => [
+                        'func foo\\d::bat' => true,
+                    ],
+                    'func foo\\t::foo' => [
+                        'func foo\\d::bat' => true,
+                    ],
+                    'missing-method foo\\a::__construct' => [
+                        'func foo\\d::bat' => true,
+                    ],
+                    'missing-method foo\\b::__construct' => [
+                        'func foo\\d::bat' => true,
+                    ],
+                    'use-alias use:B:bcf863c38be34a3d' => [
+                        'func foo\\d::bat' => true,
+                    ],
+                ],
+            ],
+            'interpolateAliasedTraitMethodCalls' => [
+                '<?php
+                    namespace Foo;
+
+                    trait T {
+                        /** @psalm-mutation-free */
+                        public function foo() : void {}
+                    }
+
+                    class A {
+                        use T { foo as bar; }
+                    }
+
+                    class B extends A {}
+
+                    class D {
+                        /** @psalm-mutation-free */
+                        public function bat() : void {
+                            (new B)->bar();
+                        }
+                    }',
+                [
+                    'class foo\\a' => [
+                        'class foo\\b' => true,
+                    ],
+                    'class foo\\b' => [
+                        'func foo\\d::bat' => true,
+                    ],
+                    'class foo\\t' => [
+                        'class foo\\a' => true,
+                        'func foo\\d::bat' => true,
+                    ],
+                    'func foo\\a::bar' => [
+                        'func foo\\d::bat' => true,
+                    ],
+                    'func foo\\a::foo' => [
+                        'func foo\\d::bat' => true,
+                    ],
+                    'func foo\\b::bar' => [
+                        'func foo\\d::bat' => true,
+                    ],
+                    'func foo\\t::foo' => [
+                        'func foo\\d::bat' => true,
+                    ],
+                    'missing-method foo\\a::__construct' => [
+                        'func foo\\d::bat' => true,
+                    ],
+                    'missing-method foo\\b::__construct' => [
+                        'func foo\\d::bat' => true,
+                    ],
+                    'use-alias use:B:bcf863c38be34a3d' => [
+                        'func foo\\d::bat' => true,
+                    ],
+                ],
+            ],
+            'interpolateInsteadofTraitMethodCalls' => [
+                '<?php
+                    namespace Foo;
+
+                    trait T1 {
+                        /** @psalm-mutation-free */
+                        public function foo() : void {}
+                    }
+
+                    trait T2 {
+                        /** @psalm-mutation-free */
+                        public function foo() : void {}
+                    }
+
+                    class A {
+                        use T1, T2 { T2::foo insteadof T1; }
+                    }
+
+                    class B extends A {}
+
+                    class D {
+                        /** @psalm-mutation-free */
+                        public function bat() : void {
+                            (new B)->foo();
+                        }
+                    }',
+                [
+                    'class foo\\a' => [
+                        'class foo\\b' => true,
+                    ],
+                    'class foo\\b' => [
+                        'func foo\\d::bat' => true,
+                    ],
+                    'class foo\\t1' => [
+                        'class foo\\a' => true,
+                    ],
+                    'class foo\\t2' => [
+                        'class foo\\a' => true,
+                        'func foo\\d::bat' => true,
+                    ],
+                    'func foo\\a::foo' => [
+                        'func foo\\d::bat' => true,
+                    ],
+                    'func foo\\b::foo' => [
+                        'func foo\\d::bat' => true,
+                    ],
+                    'func foo\\t2::foo' => [
+                        'func foo\\d::bat' => true,
+                    ],
+                    'missing-method foo\\a::__construct' => [
+                        'func foo\\d::bat' => true,
+                    ],
+                    'missing-method foo\\b::__construct' => [
+                        'func foo\\d::bat' => true,
+                    ],
+                    'use-alias use:B:bcf863c38be34a3d' => [
+                        'func foo\\d::bat' => true,
+                    ],
+                ],
+            ],
+            'interpolateTraitOverParentMethodCalls' => [
+                '<?php
+                    namespace Foo;
+
+                    class P {
+                        /** @psalm-mutation-free */
+                        public function foo() : void {}
+                    }
+
+                    trait T {
+                        /** @psalm-mutation-free */
+                        public function foo() : void {}
+                    }
+
+                    class A extends P {
+                        use T;
+                    }
+
+                    class B extends A {}
+
+                    class D {
+                        /** @psalm-mutation-free */
+                        public function bat() : void {
+                            (new B)->foo();
+                        }
+                    }',
+                [
+                    'class foo\\a' => [
+                        'class foo\\b' => true,
+                    ],
+                    'class foo\\b' => [
+                        'func foo\\d::bat' => true,
+                    ],
+                    'class foo\\p' => [
+                        'class foo\\a' => true,
+                        'func foo\\d::bat' => true,
+                    ],
+                    'class foo\\t' => [
+                        'class foo\\a' => true,
+                        'func foo\\d::bat' => true,
+                    ],
+                    'func foo\\a::foo' => [
+                        'func foo\\d::bat' => true,
+                    ],
+                    'func foo\\b::foo' => [
+                        'func foo\\d::bat' => true,
+                    ],
+                    'func foo\\t::foo' => [
+                        'func foo\\d::bat' => true,
+                    ],
+                    'missing-method foo\\a::__construct' => [
+                        'func foo\\d::bat' => true,
+                    ],
+                    'missing-method foo\\b::__construct' => [
+                        'func foo\\d::bat' => true,
+                    ],
+                    'missing-method foo\\p::__construct' => [
+                        'func foo\\d::bat' => true,
+                    ],
+                    'use-alias use:B:bcf863c38be34a3d' => [
+                        'func foo\\d::bat' => true,
+                    ],
+                ],
+            ],
+            'interpolateParentInterfaceCalls' => [
+                '<?php
+                    namespace Foo;
+
+                    interface I {
+                        /** @psalm-mutation-free */
+                        public function foo() : void;
+                    }
+
+                    interface J extends I {}
+
+                    interface K extends J {}
+
+                    class D {
+                        /** @psalm-mutation-free */
+                        public function bat(K $k) : void {
+                            $k->foo();
+                        }
+                    }',
+                [
+                    'class foo\\i' => [
+                        'class foo\\j' => true,
+                        'func foo\\d::bat' => true,
+                    ],
+                    'class foo\\j' => [
+                        'class foo\\k' => true,
+                    ],
+                    'class foo\\k' => [
+                        'func foo\\d::bat' => true,
+                    ],
+                    'func foo\\i::foo' => [
+                        'func foo\\d::bat' => true,
+                    ],
+                    'func foo\\j::foo' => [
+                        'func foo\\d::bat' => true,
+                    ],
+                    'func foo\\k::foo' => [
+                        'func foo\\d::bat' => true,
+                    ],
+                    'use-alias use:K:bcf863c38be34a3d' => [
+                        'func foo\\d::bat' => true,
+                    ],
+                ],
+            ],
         ];
     }
 }
