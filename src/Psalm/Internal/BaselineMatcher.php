@@ -77,8 +77,8 @@ final class BaselineMatcher
 
     /**
      * The selected text of an issue as the baseline holds it: characters XML 1.0 forbids, even inside a CDATA
-     * section, and invalid UTF-8 become U+FFFD, and CRLF line endings become LF. The text written to the baseline
-     * and the text of an issue are compared in this form.
+     * section, and invalid UTF-8 become U+FFFD, and CRLF and lone CR line endings become LF. The text written to the
+     * baseline and the text of an issue are compared in this form.
      *
      * @psalm-pure
      */
@@ -86,7 +86,7 @@ final class BaselineMatcher
     {
         return htmlspecialchars_decode(
             htmlspecialchars(
-                str_replace("\r\n", "\n", $selected_text),
+                str_replace(["\r\n", "\r"], "\n", $selected_text),
                 ENT_XML1 | ENT_QUOTES | ENT_SUBSTITUTE | ENT_DISALLOWED,
             ),
             ENT_XML1 | ENT_QUOTES,
