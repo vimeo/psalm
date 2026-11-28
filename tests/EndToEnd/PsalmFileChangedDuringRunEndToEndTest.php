@@ -12,7 +12,6 @@ use function file_put_contents;
 use function mkdir;
 use function str_replace;
 use function substr_count;
-use function uniqid;
 use function unlink;
 
 use const PHP_BINARY;
@@ -23,13 +22,6 @@ use const PHP_EOL;
  */
 final class PsalmFileChangedDuringRunEndToEndTest extends PsalmEndToEndTestCase
 {
-    /**
-     * A name of its own for each test, as the tests of the class share the directory of setUpBeforeClass(): Psalm
-     * runs with opcache.validate_timestamps=0, and on Windows a Psalm process of another test (paratest) keeps the
-     * opcache of the plugin an earlier test wrote at the same path alive
-     */
-    private string $plugin_file = 'plugins/plugin.php';
-
     public function testAFileRemovedDuringTheScanAndRestoredBeforeTheAnalysisIsReportedInOneLine(): void
     {
         $this->initProjectOfSixClasses(
@@ -235,7 +227,7 @@ final class PsalmFileChangedDuringRunEndToEndTest extends PsalmEndToEndTestCase
         $this->assertStringStartsWith(
             PHP_EOL . 'Psalm crashed on src/C3.php in a plugin (AfterFileAnalysisInterface, Repro\CrashOnC3)' . PHP_EOL
                 . 'LogicException: plugin boom' . PHP_EOL
-                . '  at ' . $this->plugin_file . ':',
+                . '  at plugins/plugin.php:',
             $result['STDERR'],
         );
         $this->assertSame(1, substr_count($result['STDERR'], 'LogicException: plugin boom'));
@@ -257,19 +249,18 @@ final class PsalmFileChangedDuringRunEndToEndTest extends PsalmEndToEndTestCase
             file_put_contents(self::$tmpDir . "/src/C$i.php", "<?php\n\nfinal class C$i {}\n");
         }
 
-        $this->plugin_file = 'plugins/' . uniqid('plugin') . '.php';
         mkdir(self::$tmpDir . '/plugins');
-        file_put_contents(self::$tmpDir . '/' . $this->plugin_file, $plugin);
+        file_put_contents(self::$tmpDir . '/plugins/plugin.php', $plugin);
         file_put_contents(
             self::$tmpDir . '/psalm.xml',
-            <<<XML
+            <<<'XML'
                 <?xml version="1.0"?>
                 <psalm errorLevel="1" findUnusedCode="false" resolveFromConfigFile="true">
                     <projectFiles>
                         <directory name="src"/>
                     </projectFiles>
                     <plugins>
-                        <plugin filename="{$this->plugin_file}"/>
+                        <plugin filename="plugins/plugin.php"/>
                     </plugins>
                 </psalm>
                 XML,
