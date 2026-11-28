@@ -24,6 +24,8 @@ final class Path
         public readonly int $length,
         public readonly int $added_taints = 0,
         public readonly int $removed_taints = 0,
+        /** the taints a flow gets back of the shadows it has of them (see TaintShadows) */
+        public readonly int $restored_taints = 0,
     ) {
     }
 }

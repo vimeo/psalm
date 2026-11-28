@@ -46,6 +46,17 @@ final class TaintKind
     public const INPUT_XPATH_LITERAL = (1 << 24);
     public const USER_SECRET = (1 << 25);
     public const SYSTEM_SECRET = (1 << 26);
+    /**
+     * @internal What a flow had of `ssrf`, `file`, `url_path` and `redirect` before the place of a value in a string
+     * removed it (see TaintShadows)
+     */
+    public const SHADOW_SSRF = (1 << 27);
+    /** @internal */
+    public const SHADOW_FILE = (1 << 28);
+    /** @internal */
+    public const SHADOW_URL_PATH = (1 << 29);
+    /** @internal */
+    public const SHADOW_REDIRECT = (1 << 30);
 
     /**
      * Bitmask of all INPUT_* taint types. Used as the default taint for
@@ -74,7 +85,7 @@ final class TaintKind
     public const ALL = -1;
 
     /** @internal Keep this synced with the above */
-    public const BUILTIN_TAINT_COUNT = 27;
+    public const BUILTIN_TAINT_COUNT = 31;
 
 
     // Map of taint kind names to their bitmask values, used in taint annotations
