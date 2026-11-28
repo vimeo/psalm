@@ -63,6 +63,7 @@ use function reset;
 use function strlen;
 use function strpbrk;
 use function strtolower;
+use function substr;
 
 /**
  * @internal
@@ -81,14 +82,18 @@ final class ConcatAnalyzer
      * a `..` segment of the path either (`url_path` taint).
      *
      * A path from the root (`/` followed by anything but another `/` or a backslash) is resolved against the server of
-     * the base URL it is sent with, or is a local file: what follows it can't choose a server either.
+     * the base URL it is sent with, or is a local file: what follows it can't choose a server either. Unless
+     * $whole_url, text may be put before $prefix (see TaintShadows): after a `/` or `https:`, a value continuing the
+     * first segment of the path continues a host, which a client is redirected to.
      *
      * @psalm-pure
      */
-    public static function getTaintsRemovedAfterUrlOrigin(string $prefix): int
+    public static function getTaintsRemovedAfterUrlOrigin(string $prefix, bool $whole_url = false): int
     {
         if (preg_match('~^/[^/\\\\]~', $prefix) === 1) {
-            $removed_taints = TaintKind::INPUT_SSRF | TaintKind::INPUT_REDIRECT;
+            $removed_taints = $whole_url || strpbrk(substr($prefix, 1), '/?#') !== false
+                ? TaintKind::INPUT_SSRF | TaintKind::INPUT_REDIRECT
+                : TaintKind::INPUT_SSRF;
             $after_origin = $prefix;
         } elseif (preg_match('~^(?:(https?|ftps?):)?//[^/?#]+([/?#].*)~is', $prefix, $matches) === 1) {
             $removed_taints = ($matches[1] ?? '') === ''
@@ -180,14 +185,14 @@ final class ConcatAnalyzer
      * @param list<string> $prefixes
      * @psalm-pure
      */
-    public static function getTaintsRemovedAfterUrlOrigins(array $prefixes): int
+    public static function getTaintsRemovedAfterUrlOrigins(array $prefixes, bool $whole_url = false): int
     {
         $removed_taints = null;
 
         foreach ($prefixes as $prefix) {
             $removed_taints = $removed_taints === null
-                ? self::getTaintsRemovedAfterUrlOrigin($prefix)
-                : $removed_taints & self::getTaintsRemovedAfterUrlOrigin($prefix);
+                ? self::getTaintsRemovedAfterUrlOrigin($prefix, $whole_url)
+                : $removed_taints & self::getTaintsRemovedAfterUrlOrigin($prefix, $whole_url);
         }
 
         return $removed_taints ?? 0;

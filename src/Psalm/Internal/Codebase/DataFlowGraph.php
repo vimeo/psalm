@@ -57,6 +57,9 @@ abstract class DataFlowGraph
     abstract public function addNode(DataFlowNode $node): void;
 
     /**
+     * A path removing $removed_taints, and $position_removed_taints by where the value is in a string, which keeps
+     * their shadows, and giving back the taints of the shadows in $restored_taints (see TaintShadows)
+     *
      * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     public function addPath(
@@ -65,6 +68,8 @@ abstract class DataFlowGraph
         string $path_type,
         int $added_taints = 0,
         int $removed_taints = 0,
+        int $position_removed_taints = 0,
+        int $restored_taints = 0,
     ): void {
         $from_id = $from->id;
         $to_id = $to->id;
@@ -84,7 +89,13 @@ abstract class DataFlowGraph
             $length = abs($to_line - $from_line);
         }
 
-        $this->forward_edges[$from_id][$to_id] = $this->getPath($path_type, $length, $added_taints, $removed_taints);
+        $this->forward_edges[$from_id][$to_id] = $this->getPath(
+            $path_type,
+            $length,
+            $added_taints | TaintShadows::of($added_taints),
+            $removed_taints | TaintShadows::of($removed_taints) | $position_removed_taints,
+            $restored_taints,
+        );
     }
 
     /**
@@ -92,10 +103,16 @@ abstract class DataFlowGraph
      *
      * @psalm-external-mutation-free
      */
-    protected function getPath(string $type, int $length, int $added_taints = 0, int $removed_taints = 0): Path
-    {
-        return $this->paths[$type . "\0" . $length . "\0" . $added_taints . "\0" . $removed_taints]
-            ??= new Path($type, $length, $added_taints, $removed_taints);
+    protected function getPath(
+        string $type,
+        int $length,
+        int $added_taints = 0,
+        int $removed_taints = 0,
+        int $restored_taints = 0,
+    ): Path {
+        $key = $type . "\0" . $length . "\0" . $added_taints . "\0" . $removed_taints . "\0" . $restored_taints;
+
+        return $this->paths[$key] ??= new Path($type, $length, $added_taints, $removed_taints, $restored_taints);
     }
 
     /**

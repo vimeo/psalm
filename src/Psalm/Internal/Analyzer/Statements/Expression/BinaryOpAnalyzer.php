@@ -18,6 +18,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\CombinedFlowGraph;
 use Psalm\Internal\Codebase\StringContext;
 use Psalm\Internal\Codebase\TaintFlowGraph;
+use Psalm\Internal\Codebase\TaintShadows;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
@@ -46,6 +47,7 @@ use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_all;
 use function array_pop;
 use function array_values;
 use function strlen;
@@ -707,8 +709,6 @@ final class BinaryOpAnalyzer
             );
         }
 
-        // after the start of a URL fixing its server (the left operand's, and the right operand's own literal start
-        // when the left operand is a literal), the right operand can't choose it
         $operand_removed_taints = [
             // a value in a string literal (`"[@id='" . $id . "']"`) can only change an XPath query by ending it
             $removed_taints
@@ -718,10 +718,20 @@ final class BinaryOpAnalyzer
                         ? TaintKind::INPUT_XPATH
                         : 0
                 ),
-            $removed_taints
-                | ConcatAnalyzer::getTaintsRemovedAfterUrlOrigins($literal_prefixes)
-                | $left_context->getRemovedTaints(),
+            $removed_taints | $left_context->getRemovedTaints(),
         ];
+
+        // After the start of a URL fixing its server (the left operand's, and the right operand's own literal start
+        // when the left operand is a literal), the right operand can't choose it. What the right operand's own start
+        // fixed holds only if nothing is put before it (see TaintShadows).
+        $right_position_removed_taints = ConcatAnalyzer::getTaintsRemovedAfterUrlOrigins($literal_prefixes)
+            | $left_context->getPositionRemovedTaints();
+        $left_type = $statements_analyzer->node_data->getType($stmt->left);
+        $right_restored_taints = $left_type
+            && $left_type->allStringLiterals()
+            && array_all(ConcatAnalyzer::getLiteralValues($left_type), static fn(string $value): bool => $value === '')
+                ? 0
+                : TaintShadows::BEFORE_VALUE;
 
         // an object operand is concatenated as what its __toString returns
         foreach ([$stmt->left, $stmt->right] as $offset => $operand) {
@@ -745,6 +755,8 @@ final class BinaryOpAnalyzer
                     'concat' . CastAnalyzer::getArrayConversionSuffix($operand_type),
                     $added_taints,
                     $operand_removed_taints[$offset],
+                    $offset === 1 ? $right_position_removed_taints : 0,
+                    $offset === 1 ? $right_restored_taints : 0,
                 );
             }
 

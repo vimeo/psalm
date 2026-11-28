@@ -14,6 +14,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Call\OutputStreamTaintAnalyzer
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\DataFlowGraph;
+use Psalm\Internal\Codebase\TaintShadows;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Storage\ClassLikeStorage;
@@ -93,8 +94,14 @@ final class NativeClassTaintAnalyzer
 
         $output = self::addLiteralKey($flow['out'], $arg_types, $key_offset);
 
+        // An element of a container comes back as it was put in. What a file object reads is a part of what was
+        // written to it: a value after a URL start can be one alone (see TaintShadows).
+        $restored_taints = $flow['out'] === 'arrayvalue-fetch' || $flow['out'] === 'arraykey-fetch'
+            ? 0
+            : TaintShadows::ALL;
+
         foreach ($object_type->parent_nodes as $parent_node) {
-            $graph->addPath($parent_node, $output_node, $output);
+            $graph->addPath($parent_node, $output_node, $output, 0, 0, 0, $restored_taints);
         }
 
         return $return_type->addParentNodes([$output_node->id => $output_node]);

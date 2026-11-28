@@ -28,6 +28,7 @@ use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Codebase\InternalTaintSourceMap;
 use Psalm\Internal\Codebase\NosqlEqualityOperand;
 use Psalm\Internal\Codebase\TaintFlowGraph;
+use Psalm\Internal\Codebase\TaintShadows;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Provider\ReturnTypeProvider\ArrayMapReturnTypeProvider;
@@ -2321,7 +2322,7 @@ final class ArgumentsAnalyzer
                         continue;
                     }
 
-                    if ($path_type === null) {
+                    if ($path_type === null && $from_callable_refs) {
                         $by_ref_out_type = $by_ref_out_type->addParentNodes($input_type->parent_nodes);
 
                         continue;
@@ -2333,8 +2334,17 @@ final class ArgumentsAnalyzer
                     );
                     $graph->addNode($flow_node);
 
+                    // the parts of a string (preg_match(), sscanf(), ...): a value after a URL start can be one alone
                     foreach ($input_type->parent_nodes as $parent_node) {
-                        $graph->addPath($parent_node, $flow_node, $path_type);
+                        $graph->addPath(
+                            $parent_node,
+                            $flow_node,
+                            $path_type ?? '=',
+                            0,
+                            0,
+                            0,
+                            $from_callable_refs ? 0 : TaintShadows::ALL,
+                        );
                     }
 
                     $by_ref_out_type = $by_ref_out_type->addParentNodes([$flow_node->id => $flow_node]);
@@ -3452,7 +3462,7 @@ final class ArgumentsAnalyzer
         }
 
         return (TaintKind::INPUT_REDIRECT | TaintKind::INPUT_URL_COMPONENT | TaintKind::INPUT_URL_PATH)
-            & ~ConcatAnalyzer::getTaintsRemovedAfterUrlOrigins($urls);
+            & ~ConcatAnalyzer::getTaintsRemovedAfterUrlOrigins($urls, true);
     }
 
     /**

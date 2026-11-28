@@ -3170,6 +3170,61 @@ final class TaintTest extends TestCase
                     redirectTo("https://example.com/" . (string) $_GET["page"]);
                     redirectTo("/docs/" . (string) $_GET["page"]);',
             ],
+            'locationHeaderQueryAfterAnUnknownStartIsNoRedirect' => [
+                'code' => '<?php
+                    final class Config { public static string $baseUrl = ""; }
+                    function baseUrl(): string { return Config::$baseUrl; }
+
+                    $page = rawurlencode((string) $_GET["page"]);
+                    header("Location: " . baseUrl() . "?page=" . $page);
+                    header("Location: " . baseUrl() . "/docs#" . $page);
+                    header("Location: " . baseUrl() . ("?page=" . $page));
+                    $query = "?page=" . $page;
+                    header("Location: " . baseUrl() . $query);
+                    header("Location: " . baseUrl() . "?page=" . $page . "&from=" . $page);',
+            ],
+            'locationHeaderInterpolatedQueryAfterAnUnknownStartIsNoRedirect' => [
+                'code' => '<?php
+                    final class Config { public static string $baseUrl = ""; }
+
+                    $base = Config::$baseUrl;
+                    $page = rawurlencode((string) $_GET["page"]);
+                    header("Location: {$base}#{$page}");
+                    header("Location: {$base}?page={$page}");
+                    header("Location: " . $base . "?page={$page}");',
+            ],
+            'locationHeaderFormattedQueryAfterAnUnknownStartIsNoRedirect' => [
+                'code' => '<?php
+                    final class Config { public static string $baseUrl = ""; }
+
+                    $page = rawurlencode((string) $_GET["page"]);
+                    header("Location: " . sprintf("%s?page=%s", Config::$baseUrl, $page));',
+            ],
+            'locationHeaderOfAQueryAloneIsNoRedirect' => [
+                'code' => '<?php
+                    header("Location: ?page=" . rawurlencode((string) $_GET["page"]));',
+            ],
+            'redirectSinkAfterAQueryOfAnUnknownUrl' => [
+                'code' => '<?php
+                    final class Config { public static string $baseUrl = ""; }
+
+                    /** @psalm-taint-sink redirect $url */
+                    function redirectTo(string $url): void {}
+
+                    redirectTo(Config::$baseUrl . "?next=" . (string) $_GET["next"]);',
+            ],
+            'redirectSinkAfterAQueryWithAnUnknownUrlBeforeIt' => [
+                'code' => '<?php
+                    final class Config { public static string $baseUrl = ""; }
+
+                    /** @psalm-taint-sink redirect $url */
+                    function redirectTo(string $url): void {}
+
+                    $next = (string) $_GET["next"];
+                    $query = "?next={$next}";
+                    redirectTo(Config::$baseUrl . $query);
+                    redirectTo(Config::$baseUrl . "#{$next}");',
+            ],
             'sessionItemStoredButNeverRead' => [
                 'code' => '<?php
                     $_SESSION["user"] = $_GET["user"];',
@@ -4605,6 +4660,51 @@ final class TaintTest extends TestCase
                     request("/v3/clusters/" . $value);
                     request("/topics/{$value}/partitions");
                     request(sprintf("/consumers/%s/instances/%s", $value, $value));',
+            ],
+            'dontTaintAValueAfterAUrlStartThatStaysThere' => [
+                'code' => '<?php // --taint-analysis
+                    /** @psalm-taint-sink redirect $url */
+                    function redirectTo(string $url): void {}
+
+                    /** @psalm-taint-sink ssrf $url */
+                    function fetch(string $url): void {}
+
+                    function same(string $url): string {
+                        return $url;
+                    }
+
+                    $value = (string) $_GET["value"];
+                    redirectTo("https://example.com/" . $value);
+                    redirectTo("/account?tab=" . rawurlencode($value));
+                    redirectTo(same("https://example.com/" . $value));
+                    redirectTo(strtolower("https://example.com/" . $value));
+                    redirectTo(trim("https://example.com/" . $value));
+                    fetch("https://example.com/" . $value);
+                    fetch(same("https://example.com/" . $value));
+                    fetch(rtrim("https://example.com/" . $value, "/"));
+                    fetch("https://example.com" . "/{$value}");
+                    fetch("https://example.com/" . ("/items/" . $value));
+                    $url = "https://example.com/" . $value;
+                    fetch($url);',
+            ],
+            'dontTaintAnEscapedValueCutByABuiltin' => [
+                'code' => '<?php // --taint-analysis
+                    /** @psalm-taint-sink redirect $url */
+                    function redirectTo(string $url): void {}
+
+                    /** @psalm-taint-escape redirect */
+                    function validRedirect(string $url): string {
+                        return $url;
+                    }
+
+                    function after(string $url): string {
+                        return substr($url, 20);
+                    }
+
+                    $value = validRedirect((string) $_GET["value"]);
+                    redirectTo(substr($value, 1));
+                    redirectTo(after($value));
+                    redirectTo(after((string) (int) $_GET["id"]));',
             ],
             'dontTaintUrlPathInTheQueryOrTheFragmentOfAUrl' => [
                 'code' => '<?php // --taint-analysis
@@ -10008,6 +10108,104 @@ final class TaintTest extends TestCase
                     header("Location: https://example.com/docs/" . rawurlencode((string) $_GET["page"]));',
                 'error_message' => 'TaintedUrlPath',
             ],
+            'locationHeaderQueryAfterATaintedStart' => [
+                'code' => '<?php
+                    header("Location: " . (string) $_GET["url"] . "?page=" . rawurlencode((string) $_GET["page"]));',
+                'error_message' => 'TaintedRedirect',
+            ],
+            'locationHeaderValueBeforeAQuery' => [
+                'code' => '<?php
+                    final class Config { public static string $baseUrl = ""; }
+
+                    // `/evil.example` after a base URL of `` is another server
+                    header("Location: " . Config::$baseUrl . "/" . (string) $_GET["page"] . "?from=1");',
+                'error_message' => 'TaintedRedirect',
+            ],
+            'locationHeaderInterpolatedValueBeforeAQuery' => [
+                'code' => '<?php
+                    final class Config { public static string $baseUrl = ""; }
+
+                    $base = Config::$baseUrl;
+                    $page = (string) $_GET["page"];
+                    header("Location: {$base}/{$page}?from=1");',
+                'error_message' => 'TaintedRedirect',
+            ],
+            'locationHeaderFormattedValueBeforeAQuery' => [
+                'code' => '<?php
+                    final class Config { public static string $baseUrl = ""; }
+
+                    header("Location: " . sprintf("%s/%s?from=1", Config::$baseUrl, (string) $_GET["page"]));',
+                'error_message' => 'TaintedRedirect',
+            ],
+            'locationHeaderValueAfterAnUnknownStart' => [
+                'code' => '<?php
+                    final class Config { public static string $baseUrl = ""; }
+
+                    header("Location: " . Config::$baseUrl . (string) $_GET["page"]);',
+                'error_message' => 'TaintedRedirect',
+            ],
+            'locationHeaderValueAfterAQueryInOneBranchOnly' => [
+                'code' => '<?php
+                    $start = rand(0, 1) ? "?page=" : "/";
+                    header("Location: " . $start . (string) $_GET["page"]);',
+                'error_message' => 'TaintedRedirect',
+            ],
+            'locationHeaderValueAfterAQuestionMarkTheInputMayHold' => [
+                'code' => '<?php
+                    /** @psalm-taint-source html */
+                    function readTitle(): string { return ""; }
+
+                    // a `?` the title may hold is not known to be there
+                    header("Location: " . readTitle() . (string) $_GET["page"]);',
+                'error_message' => 'TaintedRedirect',
+            ],
+            'locationHeaderQueryAfterAnUnknownStart' => [
+                'code' => '<?php
+                    final class Config { public static string $baseUrl = ""; }
+
+                    // `&admin=1` changes the query of the URL
+                    header("Location: " . Config::$baseUrl . "?page=" . (string) $_GET["page"]);',
+                'error_message' => 'TaintedUrlComponent',
+            ],
+            'redirectSinkAfterAQueryOfAnUnknownUrlCutBySubstr' => [
+                'code' => '<?php
+                    final class Config { public static string $baseUrl = ""; }
+
+                    /** @psalm-taint-sink redirect $url */
+                    function redirectTo(string $url): void {}
+
+                    // substr() cuts off the `?`
+                    redirectTo(substr(Config::$baseUrl . "?" . (string) $_GET["next"], 1));',
+                'error_message' => 'TaintedRedirect',
+            ],
+            'redirectSinkAfterAFormattedQueryCutBySubstr' => [
+                'code' => '<?php
+                    /** @psalm-taint-sink redirect $url */
+                    function redirectTo(string $url): void {}
+
+                    redirectTo(substr(sprintf("?%s", (string) $_GET["next"]), 1));',
+                'error_message' => 'TaintedRedirect',
+            ],
+            'locationHeaderOfAQueryAlone' => [
+                'code' => '<?php
+                    // the URL is the current one with another query
+                    header("Location: ?" . (string) $_GET["query"]);',
+                'error_message' => 'TaintedUrlComponent',
+            ],
+            'ssrfAfterAQueryOfATaintedHost' => [
+                'code' => '<?php
+                    $host = (string) $_GET["host"];
+                    file_get_contents($host . "?page=" . rawurlencode((string) $_GET["page"]));',
+                'error_message' => 'TaintedSSRF',
+            ],
+            'ssrfAfterAQueryOfAnUnknownUrl' => [
+                'code' => '<?php
+                    final class Config { public static string $baseUrl = ""; }
+
+                    // with a base URL of `php://filter/read=string.tolower`, `/resource=http://evil.example/` is fetched
+                    getimagesize(Config::$baseUrl . "?" . (string) $_GET["page"]);',
+                'error_message' => 'TaintedSSRF',
+            ],
             'headerWhoseNameIsTaintedIsNoRedirect' => [
                 'code' => '<?php
                     header((string) $_GET["header"] . ": /");',
@@ -15314,6 +15512,235 @@ final class TaintTest extends TestCase
                 'code' => '<?php // --taint-analysis
                     file_get_contents(sprintf("https://%s/items", (string) $_GET["value"]));',
                 'error_message' => 'TaintedSSRF',
+            ],
+            'taintSsrfAfterAPathFromTheRootWithTextBeforeIt' => [
+                'code' => '<?php // --taint-analysis
+                    final class Config {
+                        public static string $base = "";
+                    }
+
+                    /** @psalm-taint-sink ssrf $url */
+                    function fetch(string $url): void {}
+
+                    $value = (string) $_GET["value"];
+                    // Config::$base may be `php://filter/read=`: the value can add `/resource=` and any URL
+                    fetch(Config::$base . "/items/{$value}");',
+                'error_message' => 'TaintedSSRF',
+            ],
+            'taintSsrfAfterAUrlStartWithTextBeforeIt' => [
+                'code' => '<?php // --taint-analysis
+                    final class Config {
+                        public static string $base = "";
+                    }
+
+                    /** @psalm-taint-sink ssrf $url */
+                    function fetch(string $url): void {}
+
+                    $value = (string) $_GET["value"];
+                    $url = "https://example.com/" . $value;
+                    fetch(Config::$base . $url);',
+                'error_message' => 'TaintedSSRF',
+            ],
+            'taintRedirectAfterAPathFromTheRootTheValueContinues' => [
+                'code' => '<?php // --taint-analysis
+                    final class Config {
+                        public static string $base = "";
+                    }
+
+                    /** @psalm-taint-sink redirect $url */
+                    function redirectTo(string $url): void {}
+
+                    $value = (string) $_GET["value"];
+                    // with Config::$base `/`, the value continues the host of `//x...`
+                    redirectTo(Config::$base . "/x{$value}");',
+                'error_message' => 'TaintedRedirect',
+            ],
+            'taintRedirectAfterAPathFromTheRootWithASlashBeforeIt' => [
+                'code' => '<?php // --taint-analysis
+                    final class Config {
+                        public static string $base = "";
+                    }
+
+                    /** @psalm-taint-sink redirect $url */
+                    function redirectTo(string $url): void {}
+
+                    $value = (string) $_GET["value"];
+                    redirectTo(Config::$base . "/" . $value);',
+                'error_message' => 'TaintedRedirect',
+            ],
+            'taintRedirectAfterAPathFromTheRootInAVariableWithTextBeforeIt' => [
+                'code' => '<?php // --taint-analysis
+                    final class Config {
+                        public static string $base = "";
+                    }
+
+                    /** @psalm-taint-sink redirect $url */
+                    function redirectTo(string $url): void {}
+
+                    $value = (string) $_GET["value"];
+                    $prefix = Config::$base;
+                    redirectTo($prefix . "/{$value}");',
+                'error_message' => 'TaintedRedirect',
+            ],
+            'taintRedirectAfterAPathFromTheRootCutBySubstr' => [
+                'code' => '<?php // --taint-analysis
+                    final class Config {
+                        public static string $base = "";
+                    }
+
+                    /** @psalm-taint-sink redirect $url */
+                    function redirectTo(string $url): void {}
+
+                    $value = (string) $_GET["value"];
+                    redirectTo(substr("/items/" . $value, 7));',
+                'error_message' => 'TaintedRedirect',
+            ],
+            'taintRedirectAfterARootSlashCutBySubstr' => [
+                'code' => '<?php // --taint-analysis
+                    final class Config {
+                        public static string $base = "";
+                    }
+
+                    /** @psalm-taint-sink redirect $url */
+                    function redirectTo(string $url): void {}
+
+                    $value = (string) $_GET["value"];
+                    redirectTo(substr("/" . $value, 1));',
+                'error_message' => 'TaintedRedirect',
+            ],
+            'taintRedirectAfterAQueryCutByLtrim' => [
+                'code' => '<?php // --taint-analysis
+                    final class Config {
+                        public static string $base = "";
+                    }
+
+                    /** @psalm-taint-sink redirect $url */
+                    function redirectTo(string $url): void {}
+
+                    $value = (string) $_GET["value"];
+                    redirectTo(ltrim("/search?" . $value, "/search?"));',
+                'error_message' => 'TaintedRedirect',
+            ],
+            'taintRedirectAfterAQuestionMarkCutByLtrim' => [
+                'code' => '<?php // --taint-analysis
+                    final class Config {
+                        public static string $base = "";
+                    }
+
+                    /** @psalm-taint-sink redirect $url */
+                    function redirectTo(string $url): void {}
+
+                    $value = (string) $_GET["value"];
+                    redirectTo(ltrim("?" . $value, "?"));',
+                'error_message' => 'TaintedRedirect',
+            ],
+            'taintRedirectAfterAQueryCutByStrReplace' => [
+                'code' => '<?php // --taint-analysis
+                    final class Config {
+                        public static string $base = "";
+                    }
+
+                    /** @psalm-taint-sink redirect $url */
+                    function redirectTo(string $url): void {}
+
+                    $value = (string) $_GET["value"];
+                    redirectTo(str_replace("/search?", "", "/search?" . $value));',
+                'error_message' => 'TaintedRedirect',
+            ],
+            'taintRedirectAfterAQuestionMarkCutByStrReplace' => [
+                'code' => '<?php // --taint-analysis
+                    final class Config {
+                        public static string $base = "";
+                    }
+
+                    /** @psalm-taint-sink redirect $url */
+                    function redirectTo(string $url): void {}
+
+                    $value = (string) $_GET["value"];
+                    redirectTo(str_replace("?", "", "?" . $value));',
+                'error_message' => 'TaintedRedirect',
+            ],
+            'taintRedirectAfterAQueryCutByExplode' => [
+                'code' => '<?php // --taint-analysis
+                    final class Config {
+                        public static string $base = "";
+                    }
+
+                    /** @psalm-taint-sink redirect $url */
+                    function redirectTo(string $url): void {}
+
+                    $value = (string) $_GET["value"];
+                    redirectTo(explode("?", "/search?" . $value)[1]);',
+                'error_message' => 'TaintedRedirect',
+            ],
+            'taintRedirectAfterAQuestionMarkWithTextBeforeItCutByExplode' => [
+                'code' => '<?php // --taint-analysis
+                    final class Config {
+                        public static string $base = "";
+                    }
+
+                    /** @psalm-taint-sink redirect $url */
+                    function redirectTo(string $url): void {}
+
+                    $value = (string) $_GET["value"];
+                    redirectTo(explode("?", Config::$base . "?" . $value)[1]);',
+                'error_message' => 'TaintedRedirect',
+            ],
+            'taintRedirectInAMatchOfAUrl' => [
+                'code' => '<?php // --taint-analysis
+                    final class Config {
+                        public static string $base = "";
+                    }
+
+                    /** @psalm-taint-sink redirect $url */
+                    function redirectTo(string $url): void {}
+
+                    $value = (string) $_GET["value"];
+                    preg_match("~\\\\?(.*)~", "https://example.com/?" . $value, $matches);
+                    redirectTo($matches[1]);',
+                'error_message' => 'TaintedRedirect',
+            ],
+            'taintRedirectInTheCharactersOfAUrl' => [
+                'code' => '<?php // --taint-analysis
+                    final class Config {
+                        public static string $base = "";
+                    }
+
+                    /** @psalm-taint-sink redirect $url */
+                    function redirectTo(string $url): void {}
+
+                    $value = (string) $_GET["value"];
+                    $url = "https://example.com/?" . $value;
+                    $cut = "";
+                    for ($i = 21; $i < strlen($url); $i++) {
+                        $cut .= $url[$i];
+                    }
+                    redirectTo($cut);',
+                'error_message' => 'TaintedRedirect',
+            ],
+            'taintRedirectAfterAUrlStartCutInAFunction' => [
+                'code' => '<?php // --taint-analysis
+                    /** @psalm-taint-sink redirect $url */
+                    function redirectTo(string $url): void {}
+
+                    function after(string $url): string {
+                        return substr($url, 20);
+                    }
+
+                    redirectTo(after("https://example.com/" . (string) $_GET["value"]));',
+                'error_message' => 'TaintedRedirect',
+            ],
+            'taintRedirectAfterAUrlStartAFunctionAddsAndCuts' => [
+                'code' => '<?php // --taint-analysis
+                    /** @psalm-taint-sink redirect $url */
+                    function redirectTo(string $url): void {}
+
+                    function query(string $value): string {
+                        return substr("/search?" . $value, 8);
+                    }
+
+                    redirectTo(query((string) $_GET["value"]));',
+                'error_message' => 'TaintedRedirect',
             ],
             'taintHtmlAfterTheStartOfAUrl' => [
                 'code' => '<?php // --taint-analysis

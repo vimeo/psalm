@@ -59,6 +59,8 @@ final class VariableUseGraph extends DataFlowGraph
         string $path_type,
         int $added_taints = 0,
         int $removed_taints = 0,
+        int $position_removed_taints = 0,
+        int $restored_taints = 0,
     ): void {
         if ($this->taint_flow_graph) {
             $from = $this->taint_flow_graph->withoutSpeculativeSpecialization($from);

@@ -17,8 +17,10 @@ header('Location: ' . $_GET['next']); // TaintedRedirect
 header('Location: /' . $_GET['next']); // TaintedRedirect: `//evil.example` is another server
 header('Location: https://example.com' . $_GET['next']); // TaintedRedirect: `.evil.example` is another server
 header('Location: https://example.com/' . $_GET['page']); // TaintedUrlComponent: the server is fixed, but `?admin=1#` changes the query
+header('Location: ' . substr('https://example.com/' . $_GET['page'], 20)); // TaintedRedirect: substr() cuts off the server
 header('Location: /docs/' . rawurlencode((string) $_GET['page'])); // TaintedUrlPath: `..` reaches another path
 header('Location: /account?tab=' . urlencode((string) $_GET['tab'])); // no issue
+header('Location: ' . $_SERVER['APP_URL'] . '?tab=' . urlencode((string) $_GET['tab'])); // no issue: a value after a literal `?` or `#` can't change the server
 ```
 
 ## Mitigations

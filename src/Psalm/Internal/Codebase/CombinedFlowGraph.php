@@ -41,9 +41,19 @@ final class CombinedFlowGraph extends DataFlowGraph
         string $path_type,
         int $added_taints = 0,
         int $removed_taints = 0,
+        int $position_removed_taints = 0,
+        int $restored_taints = 0,
     ): void {
         $this->variable_use_graph->addPath($from, $to, $path_type, $added_taints, $removed_taints);
-        $this->taint_flow_graph->addPath($from, $to, $path_type, $added_taints, $removed_taints);
+        $this->taint_flow_graph->addPath(
+            $from,
+            $to,
+            $path_type,
+            $added_taints,
+            $removed_taints,
+            $position_removed_taints,
+            $restored_taints,
+        );
     }
 
     /**
