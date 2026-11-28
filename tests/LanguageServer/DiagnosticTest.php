@@ -387,6 +387,17 @@ final class DiagnosticTest extends AsyncTestCase
         $this->assertSame([['a.php', 3]], $published);
     }
 
+    public function testChangesAreDebouncedByDefault(): void
+    {
+        $published = $this->publishedDiagnostics([
+            $this->didChange('a.php', 1),
+            $this->didChange('a.php', 2),
+            $this->didChange('a.php', 3),
+        ], $errors, new ClientConfiguration());
+
+        $this->assertSame([['a.php', 3]], $published);
+    }
+
     public function testAFileClosedBeforeItsDebouncedAnalysisGetsNoDiagnostics(): void
     {
         $published = $this->publishedDiagnostics([
@@ -410,23 +421,28 @@ final class DiagnosticTest extends AsyncTestCase
     }
 
     /**
-     * Sends the notifications about src/a.php and src/b.php after the initialize request, with a 100 ms debounce of
-     * changes and none of opens, and returns the file and version of each publishDiagnostics notification, in order.
+     * Sends the notifications about src/a.php and src/b.php after the initialize request, by default with a 100 ms
+     * debounce of changes and none of opens, and returns the file and version of each publishDiagnostics notification, in order.
      *
      * @param list<array<string, mixed>> $notifications
      * @param-out list<string> $errors the messages logged as errors
      * @return list<array{string, ?int}>
      */
-    private function publishedDiagnostics(array $notifications, ?array &$errors = null): array
-    {
+    private function publishedDiagnostics(
+        array $notifications,
+        ?array &$errors = null,
+        ?ClientConfiguration $clientConfiguration = null,
+    ): array {
         $errors = [];
         $this->codebase->config->throw_exception = false;
         foreach (['a.php', 'b.php'] as $file_name) {
             $this->file_provider->registerFile((string) getcwd() . '/src/' . $file_name, "<?php\necho 0;");
         }
 
-        $clientConfiguration = new ClientConfiguration();
-        $clientConfiguration->onChangeDebounceMs = 100;
+        if ($clientConfiguration === null) {
+            $clientConfiguration = new ClientConfiguration();
+            $clientConfiguration->onChangeDebounceMs = 100;
+        }
         $clientConfiguration->provideDiagnostics = true;
         $clientConfiguration->logLevel = MessageType::ERROR;
 

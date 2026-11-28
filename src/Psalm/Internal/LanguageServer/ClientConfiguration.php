@@ -24,9 +24,9 @@ final class ClientConfiguration
     public ?bool $TCPServerMode = null;
 
     /**
-     * Debounce time in milliseconds for onChange events
+     * Debounce time in milliseconds for onChange events, null to analyze each change right away
      */
-    public ?int $onChangeDebounceMs = null;
+    public ?int $onChangeDebounceMs = 200;
 
     /**
      * Debounce time in milliseconds for onOpen events
