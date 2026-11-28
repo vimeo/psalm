@@ -14,6 +14,7 @@ use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\PhpDeprecations;
+use Psalm\Internal\Codebase\Properties;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Issue\DeprecatedProperty;
@@ -238,7 +239,10 @@ final class PropertyAccessAnalyzer
             $message = null;
         }
 
-        if ($message !== null) {
+        // a hook is part of the property, so it can use the property it declares
+        if ($message !== null
+            && !Properties::isInHookOf($statements_analyzer, $declaring_class_storage->name, $prop_name)
+        ) {
             IssueBuffer::maybeAdd(
                 new DeprecatedProperty(
                     $message,
