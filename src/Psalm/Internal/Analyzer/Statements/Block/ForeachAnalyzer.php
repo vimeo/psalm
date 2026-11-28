@@ -42,6 +42,7 @@ use Psalm\Internal\Type\PurityWildcardPaths;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Internal\Type\TypeParser;
 use Psalm\Internal\TypeVisitor\ClassStringMapBoundReplacer;
 use Psalm\Internal\TypeVisitor\TypeVariableResolver;
 use Psalm\Issue\ImpureMethodCall;
@@ -237,6 +238,7 @@ final class ForeachAnalyzer
                 $context->self,
                 $statements_analyzer->getParentFQCLN(),
             );
+            $comment_type = TypeParser::narrowIntersectedTemplates($comment_type, $codebase);
 
             $type_location = null;
 
@@ -493,6 +495,7 @@ final class ForeachAnalyzer
                 $context->self,
                 $statements_analyzer->getParentFQCLN(),
             );
+            $comment_type = TypeParser::narrowIntersectedTemplates($comment_type, $codebase);
 
             if (isset($foreach_context->vars_in_scope[$var_comment->var_id])) {
                 $existing_var_type = $foreach_context->vars_in_scope[$var_comment->var_id];

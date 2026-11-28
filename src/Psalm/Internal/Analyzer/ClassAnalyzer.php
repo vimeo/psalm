@@ -38,6 +38,7 @@ use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Internal\Type\TypeParser;
 use Psalm\Internal\TypeVisitor\TypeChecker;
 use Psalm\Issue\CircularReference;
 use Psalm\Issue\DeprecatedClass;
@@ -1254,6 +1255,9 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                     }
                 }
             }
+
+            // in its class, a template intersected with an array is the template, with a narrower bound
+            $fleshed_out_type = TypeParser::narrowIntersectedTemplates($fleshed_out_type, $codebase);
 
             if ($property_storage->is_static) {
                 $property_id = $fq_class_name . '::$' . $property_name;

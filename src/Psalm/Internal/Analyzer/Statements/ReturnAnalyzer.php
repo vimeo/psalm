@@ -34,6 +34,7 @@ use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Internal\Type\TypeParser;
 use Psalm\Issue\DeprecatedSyntax;
 use Psalm\Issue\HiddenGeneratorReturn;
 use Psalm\Issue\InvalidDocblock;
@@ -268,6 +269,7 @@ final class ReturnAnalyzer
                     $context->self,
                     $statements_analyzer->getParentFQCLN(),
                 );
+                $comment_type = TypeParser::narrowIntersectedTemplates($comment_type, $codebase);
 
                 if ($codebase->alter_code
                     && $var_comment->type_start

@@ -4293,6 +4293,216 @@ final class FunctionTemplateTest extends TestCase
                         $same(fn() => $x);
                     }',
             ],
+            'templateIntersectedWithArrayShape' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array
+                     * @param T $data
+                     * @return T&array{user_id: int}
+                     */
+                    function appendUser(array $data): array {
+                        throw new RuntimeException();
+                    }
+
+                    /**
+                     * @template T
+                     * @param T $data
+                     * @return T&array{user_id: int}
+                     */
+                    function appendUserToAnything($data): array {
+                        throw new RuntimeException();
+                    }
+
+                    /** @var array<string, int> */
+                    $generic = [];
+
+                    $a = appendUser(["name" => "x"]);
+                    $b = appendUser($generic);
+                    $c = appendUserToAnything(["name" => "x"]);',
+                'assertions' => [
+                    '$a===' => "array{name: 'x', user_id: int}",
+                    '$b===' => 'array{user_id: int, ...<string, int>}',
+                    '$c===' => "array{name: 'x', user_id: int}",
+                ],
+            ],
+            'templateOfEmptyOrGenericArrayIntersectedWithArrayShape' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array
+                     * @param T $data
+                     * @return T&array{user_id: int}
+                     */
+                    function appendUser(array $data): array {
+                        throw new RuntimeException();
+                    }
+
+                    /**
+                     * @template T of array
+                     * @param T $data
+                     * @return T&array{id?: int}
+                     */
+                    function maybeId(array $data): array {
+                        throw new RuntimeException();
+                    }
+
+                    /** @var array<string, string> */
+                    $strings = [];
+
+                    $a = appendUser([]);
+                    $b = maybeId($strings);',
+                'assertions' => [
+                    '$a===' => 'array{user_id: int}',
+                    '$b===' => 'array{id?: never, ...<string, string>}',
+                ],
+            ],
+            'templateIntersectedWithArrayShapes' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T $data
+                     * @return T&array{a: int}&array{b: string}
+                     */
+                    function addAB($data): array {
+                        throw new RuntimeException();
+                    }
+
+                    $a = addAB(["c" => 1.0]);',
+                'assertions' => [
+                    '$a===' => 'array{a: int, b: string, c: float(1)}',
+                ],
+            ],
+            'paramOfTemplateIntersectedWithArrayShape' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array
+                     * @param T&array{id: int} $data
+                     * @return T&array{id: int}
+                     */
+                    function withId(array $data): array {
+                        $id = $data["id"];
+                        echo $id + 1;
+
+                        return $data;
+                    }
+
+                    $a = withId(["id" => 2, "name" => "x"]);',
+                'assertions' => [
+                    '$a===' => "array{id: 2, name: 'x'}",
+                ],
+            ],
+            'propertyOfTemplateIntersectedWithArrayShape' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array
+                     */
+                    final class Holder {
+                        /** @var T&array{id: int} */
+                        public array $v;
+
+                        /** @param T&array{id: int} $v */
+                        public function __construct(array $v) {
+                            $this->v = $v;
+                        }
+
+                        public function id(): int {
+                            return $this->v["id"];
+                        }
+                    }
+
+                    $a = (new Holder(["id" => 1, "n" => "x"]))->v;
+
+                    /** @var Holder<array{z: bool}> $holder */
+                    $holder = new Holder(["id" => 1, "z" => true]);
+                    $b = $holder->v;',
+                'assertions' => [
+                    '$a===' => "array{id: 1, n: 'x'}",
+                    '$b===' => 'array{id: int, z: bool}',
+                ],
+            ],
+            'docblockVarOfTemplateIntersectedWithArrayShape' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array
+                     * @param T $data
+                     * @param list<T> $list
+                     * @return Generator<int, int>
+                     */
+                    function ids(array $data, array $list): Generator {
+                        /** @var T&array{id: int} $data */
+                        $a = $data;
+                        yield $a["id"];
+
+                        /** @var T&array{id: int} $item */
+                        foreach ($list as $item) {
+                            yield $item["id"];
+                        }
+
+                        /** @var T&array{id: int} $b */
+                        $b = $data;
+                        yield $b["id"];
+                    }
+
+                    /**
+                     * @template T of array
+                     * @param T $data
+                     */
+                    function id(array $data): int {
+                        /** @var T&array{id: int} $data */
+                        return $data["id"];
+                    }',
+            ],
+            'nestedTemplateIntersectedWithArrayShape' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array
+                     * @param list<T&array{id: int}> $rows
+                     */
+                    function firstId(array $rows): int {
+                        return $rows[0]["id"] ?? 0;
+                    }
+
+                    /**
+                     * @template T of array
+                     */
+                    final class Rows {
+                        /** @var array<array-key, T&array{id: int}> */
+                        public array $rows = [];
+
+                        public function firstId(): int {
+                            foreach ($this->rows as $row) {
+                                return $row["id"];
+                            }
+
+                            return 0;
+                        }
+                    }',
+            ],
+            'classTemplateIntersectedWithArrayShape' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array
+                     */
+                    final class Row {
+                        /** @param T $values */
+                        public function __construct(private array $values) {}
+
+                        /** @return T&array{id: int} */
+                        public function withId(): array {
+                            throw new RuntimeException();
+                        }
+
+                        public function id(): int {
+                            return $this->withId()["id"];
+                        }
+                    }
+
+                    $a = (new Row(["name" => "x"]))->withId();',
+                'assertions' => [
+                    '$a===' => "array{id: int, name: 'x'}",
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
@@ -5648,6 +5858,44 @@ final class FunctionTemplateTest extends TestCase
                         }
                     }',
                 'error_message' => 'DocblockTypeContradiction',
+            ],
+            'returnTemplateWithoutIntersectedArrayShape' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array
+                     * @param T $data
+                     * @return T&array{id: int}
+                     */
+                    function withId(array $data): array {
+                        return $data;
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
+            'argumentWithoutKeyOfIntersectedArrayShape' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array
+                     * @param T&array{id: int} $data
+                     * @return T
+                     */
+                    function withId(array $data): array {
+                        return $data;
+                    }
+
+                    withId(["name" => "x"]);',
+                'error_message' => 'InvalidArgument',
+            ],
+            'objectTemplateIntersectedWithArrayShape' => [
+                'code' => '<?php
+                    /**
+                     * @template T of object
+                     * @param T $o
+                     * @return T&array{id: int}
+                     */
+                    function withId(object $o): array {
+                        throw new RuntimeException();
+                    }',
+                'error_message' => 'No value has all the types of the intersection',
             ],
         ];
     }

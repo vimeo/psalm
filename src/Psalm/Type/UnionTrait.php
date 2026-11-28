@@ -34,6 +34,7 @@ use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIntRange;
+use Psalm\Type\Atomic\TIntersection;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
@@ -58,6 +59,7 @@ use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Atomic\TTypeAlias;
 
+use function array_any;
 use function array_diff;
 use function array_filter;
 use function array_keys;
@@ -1004,6 +1006,11 @@ trait UnionTrait
                     }
                 }
             }
+            if ($t instanceof TIntersection
+                && array_any($t->types, static fn(Union $type): bool => $type->hasTemplate())
+            ) {
+                return true;
+            }
         }
         return false;
     }
@@ -1039,6 +1046,11 @@ trait UnionTrait
                         return true;
                     }
                 }
+            }
+            if ($t instanceof TIntersection
+                && array_any($t->types, static fn(Union $type): bool => $type->hasTemplateOrStatic())
+            ) {
+                return true;
             }
         }
         return false;

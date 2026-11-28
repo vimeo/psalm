@@ -1108,6 +1108,7 @@ final class PreloaderList {
         \Psalm\Internal\TypeVisitor\DisjointShapeCollapser::class,
         \Psalm\Internal\TypeVisitor\FromDocblockSetter::class,
         \Psalm\Internal\TypeVisitor\FunctionPurityTemplateReplacer::class,
+        \Psalm\Internal\TypeVisitor\IntersectedTemplateNarrower::class,
         \Psalm\Internal\TypeVisitor\PurityWildcardBinder::class,
         \Psalm\Internal\TypeVisitor\PurityWildcardFinder::class,
         \Psalm\Internal\TypeVisitor\TemplateBoundNarrower::class,

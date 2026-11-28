@@ -66,6 +66,42 @@ final class TemplateInferredTypeReplacer
         TemplateResult $template_result,
         ?Codebase $codebase,
     ): Union {
+        $union = self::replaceTypes($union, $template_result, $codebase);
+
+        if (!$codebase
+            || !array_any($union->getAtomicTypes(), static fn(Atomic $type): bool => $type instanceof TIntersection)
+        ) {
+            return $union;
+        }
+
+        // an intersection is intersected once its templates are replaced
+        $atomic_types = [];
+
+        foreach ($union->getAtomicTypes() as $atomic_type) {
+            if (!$atomic_type instanceof TIntersection) {
+                $atomic_types[] = $atomic_type;
+                continue;
+            }
+
+            /** @psalm-suppress ImpureMethodCall reads codebase storage */
+            foreach (TypeParser::resolveIntersection($atomic_type, $codebase) as $resolved_type) {
+                $atomic_types[] = $resolved_type;
+            }
+        }
+
+        return $union->getBuilder()
+            ->setTypes(TypeCombiner::combine($atomic_types, $codebase)->getAtomicTypes())
+            ->freeze();
+    }
+
+    /**
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
+     */
+    private static function replaceTypes(
+        Union $union,
+        TemplateResult $template_result,
+        ?Codebase $codebase,
+    ): Union {
         $new_types = [];
 
         $is_mixed = false;

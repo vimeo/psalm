@@ -50,6 +50,7 @@ use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Internal\Type\TypeParser;
 use Psalm\Internal\TypeVisitor\TypeChecker;
 use Psalm\Issue\DeprecatedSyntax;
 use Psalm\Issue\ImpureFunctionCall;
@@ -2506,6 +2507,8 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 }
 
                 $param_type = $param_type->addParentNodes($parent_nodes);
+
+                $param_type = TypeParser::narrowIntersectedTemplates($param_type, $codebase);
             } else {
                 $param_type = new Union([new TMixed()], [
                     'by_ref' => $function_param->by_ref,
