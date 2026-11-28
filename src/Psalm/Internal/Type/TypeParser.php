@@ -1279,45 +1279,19 @@ final class TypeParser
                     );
                 }
 
-                $generic_param_atomics = $generic_param->getAtomicTypes();
+                $atomic_type = self::getIntMaskMember(
+                    $generic_param->getSingleAtomic(),
+                    $parse_tree->children[$generic_param_offset] ?? null,
+                    $from_docblock,
+                );
 
-                $atomic_type = reset($generic_param_atomics);
-
-                // only a bare name is the name of a global constant, not a generic, an intersection or a callable
-                if ($atomic_type instanceof TNamedObject
-                    && ($parse_tree->children[$generic_param_offset] ?? null) instanceof Value
-                ) {
-                    if (defined($atomic_type->value)) {
-                        // silenced, as reading a deprecated constant (ASSERT_ACTIVE) emits E_DEPRECATED
-                        /** @var mixed */
-                        $constant_value = @constant($atomic_type->value);
-
-                        if (!is_int($constant_value)) {
-                            throw new TypeParseTreeException(
-                                'int-mask types must all be integer values',
-                            );
-                        }
-
-                        $atomic_type = new TLiteralInt($constant_value, $from_docblock);
-                    } else {
-                        // the constants of the analysed code are not known yet: an unqualified name in a namespace
-                        // falls back to the global constant as in PHP, when it is resolved with the codebase
-                        $constant_tree = $parse_tree->children[$generic_param_offset] ?? null;
-                        $written_name = $constant_tree instanceof Value ? $constant_tree->text : null;
-
-                        $atomic_type = new TGlobalConstant(
-                            ltrim($atomic_type->value, '\\'),
-                            $written_name !== null && !str_contains($written_name, '\\') ? $written_name : null,
-                            $from_docblock,
-                        );
-                    }
+                if ($atomic_type === null) {
+                    throw new TypeParseTreeException(
+                        'int-mask types must all be integer values',
+                    );
                 }
 
-                if (!$atomic_type instanceof TLiteralInt
-                    && !($atomic_type instanceof TGlobalConstant && !str_contains($atomic_type->const_name, '*'))
-                    && !($atomic_type instanceof TClassConstant
-                        && !str_contains($atomic_type->const_name, '*'))
-                ) {
+                if (!self::isIntMaskMember($atomic_type)) {
                     throw new TypeParseTreeException(
                         'int-mask types must all be integer values or scalar class constants',
                     );
@@ -1333,20 +1307,34 @@ final class TypeParser
             $param_union_types = array_values($generic_params[0]->getAtomicTypes());
 
             if (count($param_union_types) > 1) {
-                // e.g. `int-mask-of<1|2|4>`, which is `int-mask<1, 2, 4>`
+                $union_tree = $parse_tree->children[0] ?? null;
                 $int_mask_members = [];
 
-                foreach ($param_union_types as $param_union_type) {
-                    if (!$param_union_type instanceof TLiteralInt
-                        && !($param_union_type instanceof TClassConstant
-                            && !str_contains($param_union_type->const_name, '*'))
-                    ) {
-                        throw new TypeParseTreeException(
-                            'int-mask-of union members must all be integer values or scalar class constants',
-                        );
+                // e.g. `int-mask-of<1|2|4>`, which is `int-mask<1, 2, 4>`: the members are read from the tree, as
+                // the type of a union does not tell a global constant from a class name
+                foreach ($union_tree instanceof UnionTree ? $union_tree->children : [] as $member_tree) {
+                    $member_type = self::getTypeFromTree(
+                        $member_tree,
+                        $codebase,
+                        null,
+                        $template_type_map,
+                        $type_aliases,
+                        $from_docblock,
+                    );
+
+                    $int_mask_member = $member_type instanceof Atomic
+                        ? self::getIntMaskMember($member_type, $member_tree, $from_docblock)
+                        : null;
+
+                    if ($int_mask_member === null || !self::isIntMaskMember($int_mask_member)) {
+                        throw new TypeParseTreeException('Union types are not allowed in value-of type');
                     }
 
-                    $int_mask_members[] = $param_union_type;
+                    $int_mask_members[] = $int_mask_member;
+                }
+
+                if ($int_mask_members === []) {
+                    throw new TypeParseTreeException('Union types are not allowed in value-of type');
                 }
 
                 return self::getIntMask($int_mask_members, $from_docblock);
@@ -1430,6 +1418,50 @@ final class TypeParser
 
         return (new TGenericObject($generic_type_value, $generic_params, false, false, [], $from_docblock))
             ->setProjections(self::getStarProjections($generic_params, $star_params, $variance_params));
+    }
+
+    /**
+     * The atomic type of an `int-mask` member, with the name of a global constant resolved to the constant.
+     * Null for a defined global constant that is not an int.
+     *
+     * @psalm-capabilities read-props
+     */
+    private static function getIntMaskMember(
+        Atomic $atomic_type,
+        ?ParseTree $member_tree,
+        bool $from_docblock,
+    ): ?Atomic {
+        // only a bare name is the name of a global constant, not a generic, an intersection or a callable
+        if (!$atomic_type instanceof TNamedObject || !$member_tree instanceof Value) {
+            return $atomic_type;
+        }
+
+        if (defined($atomic_type->value)) {
+            // silenced, as reading a deprecated constant (ASSERT_ACTIVE) emits E_DEPRECATED
+            /** @var mixed */
+            $constant_value = @constant($atomic_type->value);
+
+            return is_int($constant_value) ? new TLiteralInt($constant_value, $from_docblock) : null;
+        }
+
+        // the constants of the analysed code are not known yet: an unqualified name in a namespace
+        // falls back to the global constant as in PHP, when it is resolved with the codebase
+        return new TGlobalConstant(
+            ltrim($atomic_type->value, '\\'),
+            $member_tree->text !== null && !str_contains($member_tree->text, '\\') ? $member_tree->text : null,
+            $from_docblock,
+        );
+    }
+
+    /**
+     * @psalm-assert-if-true TLiteralInt|TGlobalConstant|TClassConstant $atomic_type
+     * @psalm-pure
+     */
+    private static function isIntMaskMember(Atomic $atomic_type): bool
+    {
+        return $atomic_type instanceof TLiteralInt
+            || (($atomic_type instanceof TGlobalConstant || $atomic_type instanceof TClassConstant)
+                && !str_contains($atomic_type->const_name, '*'));
     }
 
     /**

@@ -284,6 +284,18 @@ final class IntMaskComparisonTest extends TestCase
                     '$m===' => '0|1|2|3|4|5|6|7',
                 ],
             ],
+            'intMaskOfGlobalConstantUnionIsIntMask' => [
+                'code' => '<?php
+                    /** @var int-mask-of<E_ERROR|E_WARNING|E_PARSE> $m */
+                    $m = 0;
+
+                    /** @var int-mask<E_ERROR, E_WARNING, E_PARSE> $n */
+                    $n = 0;',
+                'assertions' => [
+                    '$m===' => '0|1|2|3|4|5|6|7',
+                    '$n===' => '0|1|2|3|4|5|6|7',
+                ],
+            ],
         ];
     }
 
