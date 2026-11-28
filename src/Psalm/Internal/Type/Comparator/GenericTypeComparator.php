@@ -106,8 +106,10 @@ final class GenericTypeComparator
             if (($input_projection === TypeArgumentProjection::Covariant && !$container_is_covariant)
                 || ($input_projection === TypeArgumentProjection::Contravariant && !$container_is_contravariant)
             ) {
-                // a left out argument holds any
-                if ($container_projection === TypeArgumentProjection::Omitted) {
+                // a left out argument holds any, as does `contravariant never`: each type is a supertype of never
+                if ($container_projection === TypeArgumentProjection::Omitted
+                    || ($container_is_contravariant && $container_param->isNever())
+                ) {
                     continue;
                 }
 
