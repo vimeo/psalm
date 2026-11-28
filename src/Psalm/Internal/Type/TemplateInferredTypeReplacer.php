@@ -116,29 +116,7 @@ final class TemplateInferredTypeReplacer
             } elseif ($atomic_type instanceof TTemplateIndexedAccess) {
                 $should_set = false;
 
-                $template_type = null;
-
-                if (isset($inferred_lower_bounds[$atomic_type->array_param_name][$atomic_type->defining_class])
-                    && !empty($inferred_lower_bounds[$atomic_type->offset_param_name])
-                ) {
-                    $array_template_type
-                        = TemplateStandinTypeReplacer::getReadTypeFromBounds(
-                            $inferred_lower_bounds[$atomic_type->array_param_name][$atomic_type->defining_class],
-                            $codebase,
-                        );
-
-                    $offset_template_type
-                        = TemplateStandinTypeReplacer::getReadTypeFromBounds(
-                            array_values($inferred_lower_bounds[$atomic_type->offset_param_name])[0],
-                            $codebase,
-                        );
-
-                    $template_type = self::getIndexedAccessType(
-                        $array_template_type,
-                        $offset_template_type,
-                        $codebase,
-                    );
-                }
+                $template_type = self::replaceTemplateIndexedAccess($codebase, $atomic_type, $inferred_lower_bounds);
 
                 if ($template_type) {
                     foreach ($template_type->getAtomicTypes() as $template_type_part) {
@@ -594,6 +572,36 @@ final class TemplateInferredTypeReplacer
         }
 
         return null;
+    }
+
+    /**
+     * The type at the inferred offset of the inferred array, or null if either isn't inferred or the offset isn't known
+     *
+     * @param array<string, array<string, non-empty-list<TemplateBound>>> $inferred_lower_bounds
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    private static function replaceTemplateIndexedAccess(
+        ?Codebase $codebase,
+        TTemplateIndexedAccess $atomic_type,
+        array $inferred_lower_bounds,
+    ): ?Union {
+        if (!isset($inferred_lower_bounds[$atomic_type->array_param_name][$atomic_type->defining_class])
+            || empty($inferred_lower_bounds[$atomic_type->offset_param_name])
+        ) {
+            return null;
+        }
+
+        return self::getIndexedAccessType(
+            TemplateStandinTypeReplacer::getReadTypeFromBounds(
+                $inferred_lower_bounds[$atomic_type->array_param_name][$atomic_type->defining_class],
+                $codebase,
+            ),
+            TemplateStandinTypeReplacer::getReadTypeFromBounds(
+                array_values($inferred_lower_bounds[$atomic_type->offset_param_name])[0],
+                $codebase,
+            ),
+            $codebase,
+        );
     }
 
     /**
