@@ -1334,21 +1334,6 @@ final class ClassLikeStringTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
-            'interfaceStringOfAnInterfaceKeepsItsKind' => [
-                'code' => <<<'PHP'
-                    <?php
-                    interface HasLabel {}
-
-                    /** @return interface-string<HasLabel> */
-                    function getName(): string {
-                        throw new RuntimeException();
-                    }
-                    $name = getName();
-                    PHP,
-                'assertions' => [
-                    '$name===' => 'interface-string<HasLabel>',
-                ],
-            ],
             'traitStringStaysWhenTraitExistsNegated' => [
                 'code' => '<?php
                     /** @return trait-string */

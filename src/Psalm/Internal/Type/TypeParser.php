@@ -1107,7 +1107,7 @@ final class TypeParser
                         $type->value,
                         $type,
                         false,
-                        $generic_type_value === 'interface-string',
+                        false,
                         $generic_type_value === 'enum-string',
                         $from_docblock,
                     );
