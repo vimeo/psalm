@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace Psalm\Internal;
 
 use Psalm\Config;
+use Psalm\Internal\Analyzer\IssueData;
 
 use function array_search;
 use function array_splice;
 use function count;
 use function htmlspecialchars;
 use function htmlspecialchars_decode;
+use function ksort;
 use function str_replace;
 use function trim;
 
@@ -27,6 +29,44 @@ use const ENT_XML1;
  */
 final class BaselineMatcher
 {
+    /**
+     * The issues as reported with the baseline, in their order. Each issue the baseline covers is a copy with
+     * severity info: the issues given may be kept, and the baseline applied to them again.
+     *
+     * @param array<string, list<IssueData>> $issues_data
+     * @param array<string, array<string, array{o: int, s: array<int, string>}>> $issue_baseline
+     */
+    public static function apply(Config $config, array $issues_data, array $issue_baseline): BaselineApplication
+    {
+        $baselined_issue_counts = [];
+
+        foreach ($issues_data as $file_path => $file_issues) {
+            $reported_file_issues = [];
+
+            foreach ($file_issues as $issue_data) {
+                if (self::consume(
+                    $config,
+                    $issue_baseline,
+                    $issue_data->file_name,
+                    $issue_data->type,
+                    $issue_data->selected_text,
+                )) {
+                    $issue_data = clone $issue_data;
+                    $issue_data->severity = IssueData::SEVERITY_INFO;
+                    $baselined_issue_counts[$issue_data->type] = ($baselined_issue_counts[$issue_data->type] ?? 0) + 1;
+                }
+
+                $reported_file_issues[] = $issue_data;
+            }
+
+            $issues_data[$file_path] = $reported_file_issues;
+        }
+
+        ksort($baselined_issue_counts);
+
+        return new BaselineApplication($issues_data, $baselined_issue_counts, $issue_baseline);
+    }
+
     /**
      * Whether the baseline covers an issue of a type the configuration lets a baseline suppress; the entry it
      * takes is used up

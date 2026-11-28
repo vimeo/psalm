@@ -718,7 +718,6 @@ final class LanguageServer extends Dispatcher
             'version' => $version,
         ]);
 
-        //Copy variable here to be able to process it
         $issue_baseline = $this->issue_baseline;
 
         $data = IssueBuffer::clear();
@@ -728,6 +727,12 @@ final class LanguageServer extends Dispatcher
             if (!$config->isInProjectDirs($file_path)) {
                 continue;
             }
+            $baseline_application = BaselineMatcher::apply(
+                $config,
+                [$file_path => $data[$file_path] ?? []],
+                $issue_baseline,
+            );
+            $issue_baseline = $baseline_application->remaining_baseline;
             $diagnostics = array_map(
                 function (IssueData $issue_data): Diagnostic {
                     //$check_name = $issue->check_name;
@@ -776,19 +781,7 @@ final class LanguageServer extends Dispatcher
                     return self::omitNullProperties($diagnostic);
                 },
                 array_filter(
-                    array_map(static function (IssueData $issue_data) use (&$issue_baseline, $config): IssueData {
-                        if (BaselineMatcher::consume(
-                            $config,
-                            $issue_baseline,
-                            $issue_data->file_name,
-                            $issue_data->type,
-                            $issue_data->selected_text,
-                        )) {
-                            $issue_data->severity = IssueData::SEVERITY_INFO;
-                        }
-
-                        return $issue_data;
-                    }, $data[$file_path] ?? []),
+                    $baseline_application->issues_data[$file_path] ?? [],
                     function (IssueData $issue_data) {
                         //Hide Warnings
                         if ($issue_data->severity === IssueData::SEVERITY_INFO &&

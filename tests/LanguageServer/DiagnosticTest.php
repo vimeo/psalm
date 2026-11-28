@@ -32,12 +32,14 @@ use Psalm\Tests\TestConfig;
 
 use function Amp\delay;
 use function array_map;
+use function count;
 use function defined;
 use function file_put_contents;
 use function getcwd;
 use function json_decode;
 use function json_encode;
 use function rand;
+use function sort;
 use function sys_get_temp_dir;
 use function tempnam;
 use function unlink;
@@ -231,9 +233,64 @@ final class DiagnosticTest extends AsyncTestCase
     }
 
     /**
+     * The server keeps the issues of the methods it doesn't analyse again, and applies the baseline to them anew
+     */
+    public function testAnIssueTheBaselineNoLongerCoversIsPublishedAsAnError(): void
+    {
+        $file_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'Baselined'
+            . DIRECTORY_SEPARATOR . 'file.php';
+        $class = static fn(string $first_body): string => '<?php
+            class Baselined
+            {
+                public function first(): void
+                {
+                    ' . $first_body . '
+                }
+
+                public function second(): void
+                {
+                    undefined_function();
+                }
+            }';
+
+        // the first method takes the one baseline entry; the second is not analysed again
+        $published = $this->publishBaselinedVersions($file_path, [$class(''), $class('undefined_function();')]);
+
+        $this->assertSame(
+            [
+                [['UndefinedFunction', DiagnosticSeverity::WARNING]],
+                [['UndefinedFunction', DiagnosticSeverity::ERROR], ['UndefinedFunction', DiagnosticSeverity::WARNING]],
+            ],
+            array_map(
+                static function (array $diagnostics): array {
+                    sort($diagnostics);
+
+                    return $diagnostics;
+                },
+                $published,
+            ),
+        );
+    }
+
+    /**
      * @return list<array{string, int}> the type and the severity of each diagnostic published for the file
      */
     private function publishBaselined(string $file_path): array
+    {
+        return $this->publishBaselinedVersions($file_path, ['<?php
+            function f(): void
+            {
+                undefined_function();
+            }'])[0];
+    }
+
+    /**
+     * Analyses each version of the file in turn, with a baseline that holds one UndefinedFunction of it
+     *
+     * @param non-empty-list<string> $versions the contents of the file, the first saved, the others unsaved changes
+     * @return list<list<array{string, int}>> the type and the severity of each diagnostic, for each version
+     */
+    private function publishBaselinedVersions(string $file_path, array $versions): array
     {
         $baseline = (string) tempnam(sys_get_temp_dir(), 'psalm-baseline');
         file_put_contents($baseline, '<?xml version="1.0" encoding="UTF-8"?>
@@ -245,11 +302,7 @@ final class DiagnosticTest extends AsyncTestCase
               </file>
             </files>');
         $this->codebase->config->throw_exception = false;
-        $this->file_provider->registerFile($file_path, '<?php
-            function f(): void
-            {
-                undefined_function();
-            }');
+        $this->file_provider->registerFile($file_path, $versions[0]);
 
         $client_configuration = new ClientConfiguration();
         $client_configuration->provideDiagnostics = true;
@@ -266,28 +319,52 @@ final class DiagnosticTest extends AsyncTestCase
             new PathMapper((string) getcwd(), (string) getcwd()),
         );
 
-        /** @var DeferredFuture<string> $published */
-        $published = new DeferredFuture;
-        $write->on('message', static function (Message $message) use ($published): void {
-            if ($message->body instanceof Notification && $message->body->method === 'textDocument/publishDiagnostics') {
-                $published->complete((string) $message->body);
-            }
-        });
+        /** @var list<string> $published */
+        $published = [];
+        /** @var DeferredFuture<null> $all_published */
+        $all_published = new DeferredFuture;
+        $write->on(
+            'message',
+            static function (Message $message) use (&$published, $all_published, $versions): void {
+                if ($message->body instanceof Notification
+                    && $message->body->method === 'textDocument/publishDiagnostics'
+                ) {
+                    $published[] = (string) $message->body;
+
+                    if (count($published) === count($versions)) {
+                        $all_published->complete();
+                    }
+                }
+            },
+        );
 
         try {
             $server->initialize(new ClientCapabilities());
-            $server->doVersionedAnalysis([$file_path => 'file://' . $file_path], 1);
-            $json = $published->getFuture()->await(new TimeoutCancellation(5));
+
+            foreach ($versions as $index => $contents) {
+                if ($index > 0) {
+                    $this->codebase->addTemporaryFileChanges($file_path, $contents, $index + 1);
+                }
+
+                $server->doVersionedAnalysis([$file_path => 'file://' . $file_path], $index + 1);
+            }
+
+            $all_published->getFuture()->await(new TimeoutCancellation(5));
         } finally {
             unlink($baseline);
         }
 
-        /** @var array{params: array{diagnostics: list<array{severity: int, data: array{type: string}}>}} $body */
-        $body = json_decode($json, true, 512, JSON_THROW_ON_ERROR);
-
         return array_map(
-            static fn(array $diagnostic): array => [$diagnostic['data']['type'], $diagnostic['severity']],
-            $body['params']['diagnostics'],
+            static function (string $json): array {
+                /** @var array{params: array{diagnostics: list<array{severity: int, data: array{type: string}}>}} $body */
+                $body = json_decode($json, true, 512, JSON_THROW_ON_ERROR);
+
+                return array_map(
+                    static fn(array $diagnostic): array => [$diagnostic['data']['type'], $diagnostic['severity']],
+                    $body['params']['diagnostics'],
+                );
+            },
+            $published,
         );
     }
 
