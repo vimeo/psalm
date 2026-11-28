@@ -22,6 +22,44 @@ final class ListTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'destructuredNullableListGivesNullToTheOffsetAndItsArray' => [
+                'code' => '<?php
+                    /** @param list{int}|null $s */
+                    function f(?array $s): void {
+                        $a = [];
+                        [$a["x"]] = $s;
+                    }
+
+                    /** @var list{int}|null $s */
+                    $s = rand(0, 1) ? [1] : null;
+                    $a = [];
+                    [$a["x"]] = $s;
+                    $t = $a["x"];',
+                'assertions' => [
+                    '$a===' => 'array{x: int|null}',
+                    '$t===' => 'int|null',
+                ],
+            ],
+            'destructuredNullableShapeGivesNullToTheKeyedOffsetAndItsArray' => [
+                'code' => '<?php
+                    /** @var array{k: int}|null $s */
+                    $s = rand(0, 1) ? ["k" => 1] : null;
+                    $a = [];
+                    ["k" => $a["x"]] = $s;',
+                'assertions' => [
+                    '$a===' => 'array{x: int|null}',
+                ],
+            ],
+            'destructuredNonNullListKeepsTheTypeOfTheOffsetsArray' => [
+                'code' => '<?php
+                    /** @var list{int} $s */
+                    $s = [1];
+                    $a = [];
+                    [$a["x"]] = $s;',
+                'assertions' => [
+                    '$a===' => 'array{x: int}',
+                ],
+            ],
             'keyedDestructuringIntoAnOffsetUpdatesTheArray' => [
                 'code' => '<?php
                     $users = [];
@@ -326,6 +364,18 @@ final class ListTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'destructuredNullableListIntoATypedProperty' => [
+                'code' => '<?php
+                    final class P {
+                        public int $p = 0;
+                    }
+
+                    /** @param list{int}|null $s */
+                    function f(?array $s, P $o): void {
+                        [$o->p] = $s;
+                    }',
+                'error_message' => 'PossiblyNullPropertyAssignmentValue',
+            ],
             'keyedDestructuringIntoAPropertyChecksItsType' => [
                 'code' => '<?php
                     final class O {

@@ -3111,6 +3111,11 @@ final class AssignmentAnalyzer
                             $value_type,
                         );
 
+                        // the item of a null the value may be is null too, in the array it is assigned to as well
+                        if ($assign_value_type->isNullable()) {
+                            $value_type = $value_type->getBuilder()->addType(new TNull)->freeze();
+                        }
+
                         self::analyze(
                             $statements_analyzer,
                             $var,
@@ -3251,6 +3256,13 @@ final class AssignmentAnalyzer
                             $statements_analyzer->getSuppressedIssues(),
                         );
                     }
+                }
+
+                // the item of a null the value may be is null too, in the array it is assigned to as well
+                if ($new_assign_type !== null
+                    && ($has_null || ($context->error_suppressing && ($offset || $can_be_empty)))
+                ) {
+                    $new_assign_type = $new_assign_type->getBuilder()->addType(new TNull)->freeze();
                 }
 
                 self::assignDestructuredItem(
