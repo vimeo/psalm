@@ -150,6 +150,18 @@ final class IssetTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'coalesceOfAnOptionalOffsetWhoseValueIsNever' => [
+                'code' => '<?php
+                    /** @param array{id?: never, ...<string, string>} $m */
+                    function f(array $m): string {
+                        return $m["id"] ?? "none";
+                    }
+
+                    /** @param array{id?: never, ...<string, string>} $m */
+                    function other(array $m): string {
+                        return $m["name"] ?? "none";
+                    }',
+            ],
             'offsetOfAnUnsealedShapeSetWhereIssetIsFalseIsDefined' => [
                 'code' => <<<'PHP'
                     <?php
@@ -3385,6 +3397,26 @@ final class IssetTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'plainReadOfAnOptionalOffsetWhoseValueIsNever' => [
+                'code' => '<?php
+                    /** @param array{id?: never, ...<string, string>} $m */
+                    function f(array $m): void {
+                        echo $m["id"];
+                    }',
+                'error_message' => 'PossiblyUndefinedArrayOffset',
+            ],
+            'issetOfAnOptionalOffsetWhoseValueIsNeverIsDeadCode' => [
+                'code' => '<?php
+                    /** @param array{id?: never, ...<string, string>} $m */
+                    function f(array $m): string {
+                        if (isset($m["id"])) {
+                            return $m["id"];
+                        }
+
+                        return "none";
+                    }',
+                'error_message' => 'NoValue',
+            ],
             'listItemAfterTheSmallestKeyOfAUnionKeyAssertionIsPossiblyUndefined' => [
                 'code' => <<<'PHP'
                     <?php

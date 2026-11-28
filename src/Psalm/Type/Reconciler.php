@@ -585,6 +585,17 @@ class Reconciler
             }
 
             if (!$did_type_exist && $result_type->isNever()) {
+                // the offset of a shape that can never hold a value is not possibly undefined where it is asserted
+                // to be set: the branch is not reachable
+                if ($has_isset
+                    && !$has_inverted_isset
+                    && isset($existing_types[$key])
+                    && $existing_types[$key]->isNever()
+                    && $existing_types[$key]->possibly_undefined
+                ) {
+                    $existing_types[$key] = $existing_types[$key]->setPossiblyUndefined(false);
+                }
+
                 continue;
             }
 
