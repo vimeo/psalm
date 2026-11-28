@@ -46,12 +46,17 @@ final class TaintKind
     public const INPUT_XPATH_LITERAL = (1 << 24);
     public const USER_SECRET = (1 << 25);
     public const SYSTEM_SECRET = (1 << 26);
+    /**
+     * A value an attacker must not be able to guess, such as a random token or a hash of data and a secret salt:
+     * comparing it with user input takes a time that depends on how much of it the input matches
+     */
+    public const SECRET_KEY = (1 << 27);
 
     /**
      * Bitmask of all INPUT_* taint types. Used as the default taint for
      * user-controlled sources (e.g. $_GET, $_POST) so they propagate to any
      * input sink.
-     * Excludes USER_SECRET and SYSTEM_SECRET, which represent
+     * Excludes USER_SECRET, SYSTEM_SECRET and SECRET_KEY, which represent
      * sensitive data leaking out rather than untrusted data flowing in.
      */
     public const ALL_INPUT = (1 << 25) - 1;
@@ -74,7 +79,7 @@ final class TaintKind
     public const ALL = -1;
 
     /** @internal Keep this synced with the above */
-    public const BUILTIN_TAINT_COUNT = 27;
+    public const BUILTIN_TAINT_COUNT = 28;
 
 
     // Map of taint kind names to their bitmask values, used in taint annotations
@@ -109,6 +114,7 @@ final class TaintKind
         'extract' => self::INPUT_EXTRACT,
         'user_secret' => self::USER_SECRET,
         'system_secret' => self::SYSTEM_SECRET,
+        'secret_key' => self::SECRET_KEY,
         'llm_prompt' => self::INPUT_LLM_PROMPT,
 
         'input_except_sleep' => self::ALL_INPUT & ~self::INPUT_SLEEP,

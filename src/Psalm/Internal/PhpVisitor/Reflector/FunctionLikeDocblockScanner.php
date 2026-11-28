@@ -1561,6 +1561,28 @@ final class FunctionLikeDocblockScanner
             }
         }
 
+        foreach ($docblock_info->conditional_taint_sources as $source) {
+            $conditional = self::parseTaintConditional(
+                $codebase,
+                $stmt,
+                $aliases,
+                $source,
+                'The taint of a source',
+                $function_template_types,
+                $class_template_types,
+                $type_aliases,
+                $storage,
+                $classlike_storage,
+                $cased_function_id,
+                $file_storage,
+                $file_scanner,
+            );
+
+            if ($conditional !== null) {
+                $storage->conditional_taint_sources[] = $conditional;
+            }
+        }
+
         foreach ($docblock_info->conditional_taint_sink_params as $sink_param) {
             $sink_offset = null;
             foreach ($storage->params as $i => $param_storage) {

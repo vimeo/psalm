@@ -1858,6 +1858,8 @@ function base64_encode(string $string) : string {}
 /**
  * @psalm-pure
  *
+ * @psalm-flow ($string) -> return
+ * @psalm-taint-escape input
  * @template T as string
  * @param T $string
  * @return (T is non-empty-string ? non-empty-string : string)

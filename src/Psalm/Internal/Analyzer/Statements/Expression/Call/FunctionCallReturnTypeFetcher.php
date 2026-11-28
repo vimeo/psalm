@@ -21,6 +21,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\CanonicalPaths;
 use Psalm\Internal\Codebase\CombinedFlowGraph;
 use Psalm\Internal\Codebase\ConditionalTaintSinks;
+use Psalm\Internal\Codebase\ConditionalTaintSources;
 use Psalm\Internal\Codebase\DatabaseTaints;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Codebase\InternalTaintSourceMap;
@@ -658,6 +659,15 @@ final class FunctionCallReturnTypeFetcher
         );
 
         ConditionalTaintSinks::taintCall($statements_analyzer, $graph, $storage, $args, $target_id, $node_location);
+        $stmt_type = ConditionalTaintSources::taintCall(
+            $statements_analyzer,
+            $graph,
+            $storage,
+            $args,
+            $target_id,
+            $node_location,
+            $stmt_type,
+        );
 
         self::taintCallableByRefParams(
             $statements_analyzer,
@@ -1937,6 +1947,16 @@ final class FunctionCallReturnTypeFetcher
                 $stmt->getArgs(),
                 $cased_function_id,
                 $node_location,
+            );
+
+            $stmt_type = ConditionalTaintSources::taintCall(
+                $statements_analyzer,
+                $taint_flow_graph,
+                $function_storage,
+                $stmt->getArgs(),
+                $cased_function_id,
+                $node_location,
+                $stmt_type,
             );
         }
 

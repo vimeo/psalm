@@ -2459,6 +2459,267 @@ final class TaintTest extends TestCase
     }
 
     /**
+     * @param list<string> $expected_issues
+     */
+    #[DataProvider('providerTimingComparisons')]
+    public function testTimingComparisons(string $code, array $expected_issues, bool $track_unused_variables): void
+    {
+        if ($track_unused_variables) {
+            $this->trackUnusedVariables();
+        }
+
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile($file_path, $code);
+        $this->project_analyzer->setPhpVersion('8.0', 'tests');
+        $this->project_analyzer->trackTaintedInputs();
+
+        $this->analyzeFile($file_path, new Context(), false);
+
+        $taint_issues = array_values(array_filter(
+            array_map(
+                static fn(IssueData $issue): string => $issue->type . ' on line ' . $issue->line_from,
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
+            static fn(string $issue): bool => str_starts_with($issue, 'Tainted'),
+        ));
+        sort($taint_issues);
+
+        self::assertSame($expected_issues, $taint_issues);
+    }
+
+    /**
+     * @return array<string, array{string, list<string>, bool}>
+     * @psalm-pure
+     */
+    public static function providerTimingComparisons(): array
+    {
+        $cases = [
+            'comparedWithInput' => [
+                '<?php
+                    $token = token();
+                    $given = (string) $_GET["t"];
+                    if ($token === $given) {}
+                    if ($given !== $token) {}
+                    if ($token == $given) {}
+                    if ($given != $token) {}
+                    if (strcmp($token, $given) === 0) {}
+                    if (strcasecmp($given, $token) === 0) {}
+                    if (strncmp($token, $given, 8) === 0) {}
+                    if (substr_compare($token, $given, 0) === 0) {}
+                    if (strcmp(string2: $token, string1: $given) === 0) {}
+                    if (hash_equals($token, $given)) {}
+                    if ($token === "abc") {}
+                    if ($given === (string) $_GET["u"]) {}
+                    if ($token === token()) {}
+                    if (substr($token, 0, 8) === $given) {}
+                    if (md5($given) === md5($token)) {}
+                    echo $token;
+                    if (strlen($token) === (int) $_GET["n"]) {}
+                    if ($token === $_GET["m"]) {}
+                    if (bin2hex(random_bytes(16)) === $given) {}
+
+                    /** @psalm-taint-source secret_key */
+                    function token(): string { return ""; }',
+                [
+                    'TaintedTimingComparison on line 10',
+                    'TaintedTimingComparison on line 11',
+                    'TaintedTimingComparison on line 12',
+                    'TaintedTimingComparison on line 17',
+                    'TaintedTimingComparison on line 21',
+                    'TaintedTimingComparison on line 4',
+                    'TaintedTimingComparison on line 5',
+                    'TaintedTimingComparison on line 6',
+                    'TaintedTimingComparison on line 7',
+                    'TaintedTimingComparison on line 8',
+                    'TaintedTimingComparison on line 9',
+                ],
+            ],
+            // only a secret a hash is computed from survives it
+            'hashedSecrets' => [
+                '<?php
+                    /** @psalm-taint-source system_secret */
+                    function apiKey(): string { return ""; }
+
+                    $given = (string) $_GET["t"];
+                    $key = token();
+                    if ($given === apiKey()) {}
+                    if (hash_hmac("sha256", $given, $key) === $given) {}
+                    if (hash("sha256", $key . $given) === $given) {}
+                    if (sha1($key) === $given) {}
+                    if (md5($key) === $given) {}
+                    if (crypt($given, $key) === $given) {}
+                    if (hash_pbkdf2("sha256", $key, "salt", 1000) === $given) {}
+                    if (hash_hkdf("sha256", $key) === $given) {}
+                    echo md5($key);
+                    echo md5(apiKey());
+                    echo bin2hex(apiKey());
+                    echo bin2hex($given);
+                    echo base64_encode($key);
+
+                    /** @psalm-taint-source secret_key */
+                    function token(): string { return ""; }',
+                [
+                    'TaintedSystemSecret on line 17',
+                    'TaintedTimingComparison on line 10',
+                    'TaintedTimingComparison on line 11',
+                    'TaintedTimingComparison on line 12',
+                    'TaintedTimingComparison on line 13',
+                    'TaintedTimingComparison on line 14',
+                    'TaintedTimingComparison on line 7',
+                    'TaintedTimingComparison on line 8',
+                    'TaintedTimingComparison on line 9',
+                ],
+            ],
+            // a token stored in the session is read back by the request checking it
+            'sessionToken' => [
+                '<?php
+                    function issueToken(): string {
+                        $hash = bin2hex(token());
+                        $_SESSION["csrf"] = $hash;
+                        return $hash;
+                    }
+
+                    function checkToken(string $hash): bool {
+                        return $_SESSION["csrf"] === $hash;
+                    }
+
+                    echo issueToken();
+                    checkToken((string) $_POST["csrf"]);
+
+                    /** @psalm-taint-source secret_key */
+                    function token(): string { return ""; }',
+                ['TaintedTimingComparison on line 9'],
+            ],
+            'comparedInAHelper' => [
+                '<?php
+                    function same(string $a, string $b): bool {
+                        return $a === $b;
+                    }
+
+                    same(token(), (string) $_GET["t"]);
+
+                    /** @psalm-taint-source secret_key */
+                    function token(): string { return ""; }',
+                ['TaintedTimingComparison on line 3'],
+            ],
+            // the secret goes through an interface method, a property and a callback
+            'secretThroughObjectsAndCallbacks' => [
+                '<?php
+                    interface Signer { public function sign(string $d): string; }
+                    final class HmacSigner implements Signer {
+                        public function __construct(private string $key) {}
+                        public function sign(string $d): string { return hash_hmac("sha256", $d, $this->key); }
+                    }
+                    function verify(Signer $s, string $d, string $given): bool {
+                        return $s->sign($d) === $given;
+                    }
+                    verify(new HmacSigner(token()), "d", (string) $_GET["sig"]);
+                    $signatures = array_map(fn(string $d): string => hash("sha256", token() . $d), ["a"]);
+                    if ($signatures[0] === (string) $_GET["sig"]) {}
+
+                    /** @psalm-taint-source secret_key */
+                    function token(): string { return ""; }',
+                [
+                    'TaintedTimingComparison on line 12',
+                    'TaintedTimingComparison on line 8',
+                ],
+            ],
+            'conditionalSources' => [
+                '<?php
+                    final class Config {
+                        /**
+                         * @psalm-taint-source ($section is "app" ? ($key is "salt" ? "secret_key" : null) : null)
+                         */
+                        public static function get(string $section, string $key): string { return $section . $key; }
+
+                        /** @psalm-taint-source ($key is "salt" ? "secret_key" : null) */
+                        public function read(string $key): string { return $key; }
+                    }
+
+                    /** @psalm-taint-source ($key is "salt" ? "secret_key" : null) */
+                    function conf(string $key): string { return $key; }
+
+                    function anyKey(string $key, string $given): void {
+                        if (conf($key) === $given) {}
+                    }
+
+                    $given = (string) $_GET["t"];
+                    if (md5("a" . Config::get("app", "salt")) === $given) {}
+                    if (md5("a" . Config::get("app", "name")) === $given) {}
+                    if (md5("a" . Config::get("db", "salt")) === $given) {}
+                    if ((new Config())->read("salt") === $given) {}
+                    if ((new Config())->read("name") === $given) {}
+                    if (conf("salt") === $given) {}
+                    if (conf("name") === $given) {}
+                    if (conf(...["salt"]) === $given) {}
+                    anyKey("name", $given);',
+                [
+                    'TaintedTimingComparison on line 16',
+                    'TaintedTimingComparison on line 20',
+                    'TaintedTimingComparison on line 23',
+                    'TaintedTimingComparison on line 25',
+                    'TaintedTimingComparison on line 27',
+                ],
+            ],
+            'constantSources' => [
+                '<?php
+                    class Bearer {
+                        /** @psalm-taint-source secret_key */
+                        protected const SALT = "abc";
+
+                        public const NAME = "x";
+
+                        public function check(string $token): bool {
+                            return $token === md5(self::SALT);
+                        }
+
+                        public function name(string $token): bool {
+                            return $token === md5(self::NAME);
+                        }
+                    }
+
+                    final class Child extends Bearer {
+                        public function checkInherited(string $token): bool {
+                            return $token === md5(static::SALT);
+                        }
+                    }
+
+                    $given = (string) $_GET["t"];
+                    (new Child())->check($given);
+                    (new Child())->name($given);
+                    (new Child())->checkInherited($given);',
+                [
+                    'TaintedTimingComparison on line 19',
+                    'TaintedTimingComparison on line 9',
+                ],
+            ],
+            // a parameter declared as a sink of secret keys compares them in a time that depends on them
+            'declaredSink' => [
+                '<?php
+                    /** @psalm-taint-sink secret_key $token */
+                    function findByToken(string $token): void {}
+
+                    findByToken(token());
+                    findByToken((string) $_GET["t"]);
+
+                    /** @psalm-taint-source secret_key */
+                    function token(): string { return ""; }',
+                ['TaintedTimingComparison on line 3'],
+            ],
+        ];
+
+        $data = [];
+
+        foreach ($cases as $name => [$code, $expected_issues]) {
+            $data[$name] = [$code, $expected_issues, false];
+            $data[$name . ' tracking unused variables'] = [$code, $expected_issues, true];
+        }
+
+        return $data;
+    }
+
+    /**
      * @return array<string, array{string, list<string>, bool}>
      * @psalm-pure
      */
@@ -8884,6 +9145,20 @@ final class TaintTest extends TestCase
     public static function providerInvalidCodeParse(): array
     {
         return [
+            'conditionalTaintSourceThatIsNotAConditional' => [
+                'code' => '<?php
+                    /** @psalm-taint-source ("secret_key") */
+                    function secretKey(): string { return ""; }',
+                'error_message' => 'The taint of a source must be a conditional',
+            ],
+            'conditionalTaintSourceOfAConstant' => [
+                'code' => '<?php
+                    final class A {
+                        /** @psalm-taint-source ($x is "a" ? "secret_key" : null) */
+                        public const KEY = "";
+                    }',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:25 - @psalm-taint-source of a constant expects a taint',
+            ],
             'arrayWalkCallbackWritingTaintedValuesByReference' => [
                 'code' => '<?php
                     $items = ["a"];

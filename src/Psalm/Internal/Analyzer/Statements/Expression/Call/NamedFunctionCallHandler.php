@@ -15,6 +15,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ArrayFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\IncludeAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\TimingComparisonAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\PhpDeprecations;
@@ -241,6 +242,7 @@ final class NamedFunctionCallHandler
         }
 
         self::checkDeprecatedArguments($statements_analyzer, $stmt, $function_id);
+        TimingComparisonAnalyzer::analyzeFunctionCall($statements_analyzer, $stmt, $function_id, $stmt->getArgs());
 
         $first_arg = $stmt->getArgs()[0] ?? null;
 

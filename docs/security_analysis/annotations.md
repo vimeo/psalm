@@ -1,8 +1,10 @@
 # Security analysis annotations
 
-## `@psalm-taint-source <taint-type> [return['key']]`
+## `@psalm-taint-source <taint-type #conditional> [return['key']]`
 
-See [Custom taint sources](custom_taint_sources.md#taint-source-annotation).
+See [Custom taint sources](custom_taint_sources.md#taint-source-annotation),
+[Conditional sources](custom_taint_sources.md#conditional-sources) and
+[Class constants](custom_taint_sources.md#class-constants).
 
 ## `@psalm-taint-sink <taint-type #conditional> <param-name>`
 
@@ -19,7 +21,7 @@ See [What Psalm can't see](index.md#what-psalm-cant-see).
 ## Taint type complements
 
 Wherever these annotations take a `<taint-type>`, `~(<taint-type>|<taint-type>)` (or `~<taint-type>` for one) stands
-for every taint but the ones listed: the built-in ones (`user_secret` and `system_secret` too), the custom ones,
+for every taint but the ones listed: the built-in ones (`user_secret`, `system_secret` and `secret_key` too), the custom ones,
 including those other annotations only register later. The ones listed may be aliases, like `input`. Write it without
 spaces.
 
@@ -29,7 +31,7 @@ spaces.
 /**
  * Taken from the request line, which can't hold a line break: any input but a header injection
  *
- * @psalm-taint-source ~(header|user_secret|system_secret)
+ * @psalm-taint-source ~(header|user_secret|system_secret|secret_key)
  */
 function getRequestPath(): string {}
 ```

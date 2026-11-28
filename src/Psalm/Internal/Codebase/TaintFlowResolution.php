@@ -4180,6 +4180,14 @@ final class TaintFlowResolution
             $taints &= ~TaintKind::INPUT_SQL_UNQUOTED;
         }
 
+        // a compared string is a secret or user input whatever kinds of them reach it: one flow of each is enough
+        // (see TaintFlowGraph::addComparisonSinks())
+        if ($this->graph->isComparisonSink($sink_id)) {
+            $secrets = $taints & TaintFlowGraph::COMPARED_SECRETS;
+            $input_taints = $taints & ~TaintFlowGraph::COMPARED_SECRETS;
+            $taints = ($secrets & -$secrets) | ($input_taints & -$input_taints);
+        }
+
         $sink = $this->table->decode($sink_id, $this->sinks[$sink_id]);
         $predecessor_id = $this->state_nodes[$state];
 

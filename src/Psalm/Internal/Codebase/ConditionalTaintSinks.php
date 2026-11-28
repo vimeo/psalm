@@ -201,7 +201,7 @@ final class ConditionalTaintSinks
     /**
      * The taints the literal strings of the type name, in both branches of a conditional type left unresolved
      */
-    private static function getTaints(Codebase $codebase, Union $type, ?CodeLocation $location): int
+    public static function getTaints(Codebase $codebase, Union $type, ?CodeLocation $location): int
     {
         $taints = 0;
 
