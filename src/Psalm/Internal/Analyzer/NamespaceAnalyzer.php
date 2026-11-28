@@ -90,6 +90,24 @@ final class NamespaceAnalyzer extends SourceAnalyzer
 
                 $leftover_stmts[] = $stmt;
             } else {
+                // the class-likes declared in an `if` are known to the file, which reads what the constructor of a
+                // parent class does of them
+                if ($stmt instanceof PhpParser\Node\Stmt\If_) {
+                    $branches = [$stmt, ...$stmt->elseifs];
+
+                    if ($stmt->else) {
+                        $branches[] = $stmt->else;
+                    }
+
+                    foreach ($branches as $branch) {
+                        foreach ($branch->stmts as $if_stmt) {
+                            if ($if_stmt instanceof PhpParser\Node\Stmt\ClassLike) {
+                                $this->collectAnalyzableClassLike($if_stmt);
+                            }
+                        }
+                    }
+                }
+
                 $leftover_stmts[] = $stmt;
             }
         }
