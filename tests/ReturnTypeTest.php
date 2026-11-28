@@ -136,6 +136,18 @@ final class ReturnTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'emptyArrayForAListWithOptionalElementsOnly' => [
+                'code' => '<?php
+                    /** @return list{0?: int} */
+                    function optional(): array {
+                        return [];
+                    }
+
+                    /** @param list{0?: int} $x */
+                    function arg(array $x): void {}
+
+                    arg([]);',
+            ],
             'returnTypeIsInheritedWhenTheImplementationDocumentsOnlyItsParams' => [
                 'code' => '<?php
                     interface Node {}
@@ -3062,6 +3074,41 @@ final class ReturnTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'emptyArrayReturnedForAListShapeWithRequiredElements' => [
+                'code' => '<?php
+                    /** @return list{int, int} */
+                    function ret(): array {
+                        return [];
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
+            'emptyArrayReturnedForASequentialShapeOfClassStrings' => [
+                'code' => '<?php
+                    /**
+                     * @template R of object
+                     * @return array{class-string<R>, class-string<R>}
+                     */
+                    function ret(): array {
+                        return [];
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
+            'emptyArrayReturnedForANonEmptyListWithAnUnsealedTail' => [
+                'code' => '<?php
+                    /** @return list{int, ...<int>} */
+                    function ret(): array {
+                        return [];
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
+            'emptyArrayPassedForAListShapeWithRequiredElements' => [
+                'code' => '<?php
+                    /** @param array{int, int} $x */
+                    function arg(array $x): void {}
+
+                    arg([]);',
+                'error_message' => 'InvalidArgument',
+            ],
             'returnTypeDocumentedByTheImplementationIsStillCheckedAgainstTheParent' => [
                 'code' => '<?php
                     final class Message {}
