@@ -64,6 +64,10 @@ function buildPlan(array $corpus): array
     return [
         'memory_limit_mb' => memoryLimitMb($corpus['memory_limit']),
         'timeouts' => array_map(static fn(array $p): int => $p['timeout'], $corpus['projects']),
+        'sources' => array_map(
+            static fn(array $p): array => ['repo' => $p['repo'], 'ref' => $p['ref']],
+            $corpus['projects'],
+        ),
         'jobs' => $jobs,
     ];
 }
