@@ -118,6 +118,9 @@ final class TypeChecker extends TypeVisitor
      *                                 assertion types
      * @param bool $from_overridden_method whether the type is one a method takes from the method it overrides,
      *                                     where its templates are checked
+     * @param bool $positions_only whether to report only the templates in a position they are not allowed in, for a
+     *                             type that no analysis visits (a `@method` parameter), whose classes are not
+     *                             reported
      * @psalm-mutation-free
      */
     public function __construct(
@@ -131,6 +134,7 @@ final class TypeChecker extends TypeVisitor
         private readonly ?Context $context = null,
         private readonly bool $only_contravariant = false,
         private readonly bool $from_overridden_method = false,
+        private readonly bool $positions_only = false,
     ) {
     }
 
@@ -152,7 +156,9 @@ final class TypeChecker extends TypeVisitor
         }
 
         if ($type instanceof TNamedObject) {
-            $param_variances = $this->checkNamedObject($type);
+            $param_variances = $this->positions_only
+                ? $this->getTypeParamVariances($type)
+                : $this->checkNamedObject($type);
 
             if ($type instanceof TGenericObject && $param_variances !== null) {
                 // each type param is checked with its own variance, and the siblings with the outer one
@@ -182,6 +188,10 @@ final class TypeChecker extends TypeVisitor
                 $this->markChecked($type);
 
                 return self::DONT_TRAVERSE_CHILDREN;
+            }
+        } elseif ($this->positions_only) {
+            if ($type instanceof TTemplateParam) {
+                $this->checkTemplateParam($type);
             }
         } elseif ($type instanceof TClassConstant) {
             $this->checkScalarClassConstant($type);
@@ -305,10 +315,39 @@ final class TypeChecker extends TypeVisitor
 
     private function markChecked(Atomic|Union|MutableUnion $type): void
     {
+        if ($this->positions_only) {
+            return;
+        }
+
         /** @psalm-suppress InaccessibleProperty Doesn't affect anything else */
         $type->checked = true;
         $this->checked_types[] = $type;
         $this->checked_positions[spl_object_id($type)] = [$this->position, $this->bound_position];
+    }
+
+    /**
+     * @return list<TemplateVariance>|null the variance of each type param of a generic object, as
+     *                                     checkGenericParams() finds it without reporting what is wrong with them
+     */
+    private function getTypeParamVariances(TNamedObject $atomic): ?array
+    {
+        if (!$atomic instanceof TGenericObject) {
+            return null;
+        }
+
+        $class_storage_provider = $this->source->getCodebase()->classlike_storage_provider;
+        $fq_class_name_lc = strtolower($atomic->value);
+
+        if (!$class_storage_provider->has($fq_class_name_lc)) {
+            return null;
+        }
+
+        $class_storage = $class_storage_provider->get($fq_class_name_lc);
+
+        return array_map(
+            static fn(int $i): TemplateVariance => $class_storage->getTemplateVariance($i),
+            array_keys($atomic->type_params),
+        );
     }
 
     /**
@@ -749,7 +788,9 @@ final class TypeChecker extends TypeVisitor
             ? array_search($atomic->param_name, array_keys($class_storage->template_types), true)
             : false;
 
-        if ($template_offset === false) {
+        if ($template_offset === false
+            || ($this->positions_only && isset($class_storage->purity_templates[$atomic->param_name]))
+        ) {
             return;
         }
 
@@ -796,7 +837,7 @@ final class TypeChecker extends TypeVisitor
                     . ' and cannot be used here',
                 $this->code_location,
             ),
-            $this->source->getSuppressedIssues(),
+            $this->source->getSuppressedIssues() + $this->suppressed_issues,
         );
     }
 

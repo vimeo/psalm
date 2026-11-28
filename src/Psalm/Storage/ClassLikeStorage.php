@@ -727,6 +727,39 @@ final class ClassLikeStorage implements HasAttributesInterface
     }
 
     /**
+     * The `@method`s the class-like declares itself, an overloaded one once for each declaration: the others are
+     * inherited, in terms of the templates of the class that declares them
+     *
+     * @return list<MethodStorage>
+     * @psalm-mutation-free
+     */
+    public function getDeclaredPseudoMethods(): array
+    {
+        $declared_methods = [];
+
+        foreach ([
+            [$this->pseudo_methods, $this->pseudo_method_overloads, $this->declaring_pseudo_method_ids],
+            [
+                $this->pseudo_static_methods,
+                $this->pseudo_static_method_overloads,
+                $this->declaring_pseudo_static_method_ids,
+            ],
+        ] as [$pseudo_methods, $overloads, $declaring_ids]) {
+            foreach ($pseudo_methods as $method_name => $pseudo_method) {
+                if (($declaring_ids[$method_name]->fq_class_name ?? $this->name) !== $this->name) {
+                    continue;
+                }
+
+                foreach ($overloads[$method_name] ?? [$pseudo_method] as $overload) {
+                    $declared_methods[] = $overload;
+                }
+            }
+        }
+
+        return $declared_methods;
+    }
+
+    /**
      * How the type arguments of the template at $offset compare.
      *
      * @psalm-mutation-free

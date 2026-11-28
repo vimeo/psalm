@@ -2043,7 +2043,8 @@ final class NewAnalyzer extends CallAnalyzer
     /**
      * Returns the set of class templates with no public channel that can constrain
      * them: a template named anywhere in a public non-constructor method parameter
-     * or a public writable property type is one that later code can still
+     * (a `@method` parameter too) or a public writable property type (a `@property`
+     * or `@property-write` type too) is one that later code can still
      * constrain, anything else can only have been fixed at the construction site and
      * so is pinned eagerly rather than minted as a type variable. A contravariant
      * template is always in the set: what later code gives the object never narrows it.
@@ -2141,6 +2142,34 @@ final class NewAnalyzer extends CallAnalyzer
             if ($property_storage->type) {
                 self::removeConstrainableTemplates($unconstrainable, $property_storage->type, $storage);
             }
+        }
+
+        // a `@method` is called and a `@property` or `@property-write` is assigned like a real one, also when
+        // a parent declares it
+        foreach ([
+            [$storage->pseudo_methods, $storage->declaring_pseudo_method_ids, false],
+            [$storage->pseudo_static_methods, $storage->declaring_pseudo_static_method_ids, true],
+        ] as [$pseudo_methods, $declaring_ids, $is_static]) {
+            foreach ($pseudo_methods as $method_name => $pseudo_method) {
+                $declaring_storage = isset($declaring_ids[$method_name])
+                    ? $codebase->classlike_storage_provider->get($declaring_ids[$method_name]->fq_class_name)
+                    : $storage;
+                $overloads = $is_static
+                    ? $declaring_storage->pseudo_static_method_overloads
+                    : $declaring_storage->pseudo_method_overloads;
+
+                foreach ($overloads[$method_name] ?? [$pseudo_method] as $overload) {
+                    foreach ($overload->params as $param) {
+                        if ($param->type) {
+                            self::removeConstrainableTemplates($unconstrainable, $param->type, $storage);
+                        }
+                    }
+                }
+            }
+        }
+
+        foreach ($storage->pseudo_property_set_types as $pseudo_property_type) {
+            self::removeConstrainableTemplates($unconstrainable, $pseudo_property_type, $storage);
         }
 
         // a purity template is what the object was constructed with: what its methods cost is

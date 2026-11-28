@@ -1930,6 +1930,210 @@ final class TypeVariableTest extends TestCase
                     '$c===' => 'Coll<never>',
                 ],
             ],
+            'constructionOfACovariantTemplateAPseudoMethodTakes' => [
+                'code' => '<?php
+                    /**
+                     * @template-covariant T
+                     * @method void add(T $item)
+                     */
+                    final class Magic {
+                        public function __call(string $name, array $arguments): mixed {
+                            return null;
+                        }
+                    }
+
+                    $m = new Magic();
+                    $m->add(1);',
+                'assertions' => [],
+                'ignored_issues' => ['InvalidTemplateParam'],
+                'php_version' => '8.0',
+            ],
+            'constructionOfAnInvariantTemplateAPseudoMethodTakes' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @method void add(T $item)
+                     */
+                    final class Magic {
+                        public function __call(string $name, array $arguments): mixed {
+                            return null;
+                        }
+                    }
+
+                    /** @param Magic<int> $magic */
+                    function takesInts(Magic $magic): void {}
+
+                    $m = new Magic();
+                    $m->add(1);
+                    takesInts($m);',
+                'assertions' => [
+                    '$m===' => 'Magic<`_0:mixed>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'constructionOfACovariantTemplateAnOverloadedPseudoMethodTakes' => [
+                'code' => '<?php
+                    /**
+                     * @template-covariant T
+                     * @method void add(int $index)
+                     * @method void add(T $item, int $index)
+                     */
+                    final class Magic {
+                        public function __call(string $name, array $arguments): mixed {
+                            return null;
+                        }
+                    }
+
+                    $m = new Magic();
+                    $m->add("a", 1);',
+                'assertions' => [],
+                'ignored_issues' => ['InvalidTemplateParam'],
+                'php_version' => '8.0',
+            ],
+            'constructionOfACovariantTemplateAPseudoPropertyIsAssignedTo' => [
+                'code' => '<?php
+                    /**
+                     * @template-covariant T
+                     * @property-write T $item
+                     */
+                    final class Magic {
+                        public function __set(string $name, mixed $value): void {}
+                    }
+
+                    $m = new Magic();',
+                'assertions' => [
+                    '$m===' => 'Magic<`_0:mixed>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'constructionOfAnInvariantTemplateAParentPseudoMethodTakes' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @method void add(T $item)
+                     */
+                    abstract class Base {
+                        public function __call(string $name, array $arguments): mixed {
+                            return null;
+                        }
+                    }
+
+                    /**
+                     * @template U
+                     * @extends Base<U>
+                     */
+                    final class Child extends Base {}
+
+                    /** @param Child<int> $child */
+                    function takesInts(Child $child): void {}
+
+                    $c = new Child();
+                    $c->add(1);
+                    takesInts($c);',
+                'assertions' => [
+                    '$c===' => 'Child<`_0:mixed>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'constructionOfACovariantTemplateAParentPseudoMethodTakes' => [
+                'code' => '<?php
+                    /**
+                     * @template-covariant T
+                     * @method void add(T $item)
+                     */
+                    abstract class Base {
+                        public function __call(string $name, array $arguments): mixed {
+                            return null;
+                        }
+                    }
+
+                    /**
+                     * @template-covariant U
+                     * @extends Base<U>
+                     */
+                    final class Child extends Base {}
+
+                    $c = new Child();
+                    $c->add(1);',
+                'assertions' => [],
+                'ignored_issues' => ['InvalidTemplateParam'],
+                'php_version' => '8.0',
+            ],
+            'constructionOfACovariantTemplateAPseudoPropertyIsOnlyRead' => [
+                'code' => '<?php
+                    /**
+                     * @template-covariant T
+                     * @property-read T $item
+                     */
+                    final class Magic {
+                        public function __get(string $name): mixed {
+                            return null;
+                        }
+                    }
+
+                    $m = new Magic();',
+                'assertions' => [
+                    '$m===' => 'Magic<never>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'constructionOfABoundedCovariantTemplateNothingCanConstrain' => [
+                'code' => '<?php
+                    /** @template-covariant T of Countable */
+                    final class Bounded {
+                        /** @return list<T> */
+                        public function all(): array {
+                            return [];
+                        }
+                    }
+
+                    /** @return Bounded<ArrayObject> */
+                    function arrayObjects(): Bounded {
+                        return new Bounded();
+                    }
+
+                    $b = new Bounded();',
+                'assertions' => [
+                    '$b===' => 'Bounded<never>',
+                ],
+            ],
+            'constructionOfACovariantTemplateNothingCanConstrainIsGivenAsAnArgument' => [
+                'code' => '<?php
+                    /** @template-covariant T */
+                    final class Coll {
+                        /** @return list<T> */
+                        public function all(): array {
+                            return [];
+                        }
+                    }
+
+                    /** @param Coll<int> $coll */
+                    function takesInts(Coll $coll): void {}
+
+                    takesInts(new Coll());',
+            ],
+            'constructionOfACovariantTemplateAlongsideAPurityTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template-covariant T
+                     * @psalm-purity-template P
+                     */
+                    final class Box {
+                        /** @return list<T> */
+                        public function all(): array {
+                            return [];
+                        }
+                    }
+
+                    $b = new Box();',
+                'assertions' => [
+                    '$b===' => 'Box[impure]<never>',
+                ],
+            ],
             'constructorlessConstructionOfUnconstrainableTemplate' => [
                 'code' => '<?php
                     /** @template T = int */
