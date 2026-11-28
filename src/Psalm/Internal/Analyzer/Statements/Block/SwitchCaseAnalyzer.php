@@ -54,6 +54,7 @@ use function in_array;
 use function is_string;
 use function preg_match;
 use function spl_object_id;
+use function str_contains;
 use function str_ends_with;
 use function str_starts_with;
 use function strlen;
@@ -358,6 +359,45 @@ final class SwitchCaseAnalyzer
             $context->keepReferencesPossiblyBoundIn($case_context);
         } elseif ($case_exit_type !== 'return_throw') {
             $context->removeClausesOfVarsChangedIn($case_context);
+        }
+
+        $reaches_its_end = !$case_context->has_returned
+            && ($case_exit_type === 'break' || $case_exit_type === 'hybrid');
+
+        foreach ($original_context->vars_in_scope as $var_id => $type) {
+            if ((!str_contains($var_id, '[') && !str_contains($var_id, '->'))
+                || isset($switch_scope->forgotten_vars[$var_id])
+            ) {
+                continue;
+            }
+
+            $break_type = $case_scope->break_vars[$var_id] ?? null;
+            $changed_at_breaks = $case_scope->break_vars !== null
+                && ($break_type === null || ($break_type->possibly_undefined && !$type->possibly_undefined));
+
+            // what a way out of the case drops counts only when it changed something the variable depends on: a
+            // variable of which the case only narrowed the object is kept, as after an if
+            if (($changed_at_breaks
+                    && IfElseAnalyzer::isForgottenSince(
+                        $case_scope->parent_remove_vars_at_breaks,
+                        $original_context->parent_remove_vars,
+                        $var_id,
+                        isset($case_context->vars_possibly_in_scope[$var_id]),
+                    ))
+                || ($reaches_its_end
+                    && !isset($case_context->vars_in_scope[$var_id])
+                    && IfElseAnalyzer::isForgottenSince(
+                        $case_context->parent_remove_vars,
+                        $original_context->parent_remove_vars,
+                        $var_id,
+                        isset($case_context->vars_possibly_in_scope[$var_id]),
+                    ))
+            ) {
+                $switch_scope->forgotten_vars[$var_id] = true;
+            } elseif ($changed_at_breaks && $break_type !== null) {
+                // it only became possibly undefined because its object was narrowed
+                $case_scope->break_vars[$var_id] = $break_type->setPossiblyUndefined(false, false);
+            }
         }
 
         if ($case_exit_type !== 'return_throw' && !$ends_unless_breaking) {
