@@ -3170,6 +3170,49 @@ final class TaintTest extends TestCase
                     redirectTo("https://example.com/" . (string) $_GET["page"]);
                     redirectTo("/docs/" . (string) $_GET["page"]);',
             ],
+            'specializedCallWithManyTaintedParametersOnlyReturnsWhatItsOwnArgumentsHold' => [
+                'code' => '<?php
+                    /** @psalm-taint-specialize */
+                    function build(
+                        string $p0 = "",
+                        string $p1 = "",
+                        string $p2 = "",
+                        string $p3 = "",
+                        string $p4 = "",
+                        string $p5 = "",
+                        string $p6 = "",
+                        string $p7 = "",
+                        string $p8 = "",
+                        string $p9 = "",
+                        string $p10 = "",
+                        string $p11 = "",
+                    ): string {
+                        $result = $p0 . $p1 . $p2 . $p3 . $p4 . $p5 . $p6 . $p7 . $p8 . $p9 . $p10 . $p11;
+                        return $result;
+                    }
+
+                    /** @psalm-taint-specialize */
+                    function fixedUrl(): string {
+                        return build();
+                    }
+
+                    /** @psalm-taint-sink redirect $url */
+                    function redirectTo(string $url): void {}
+
+                    echo htmlspecialchars(build(p0: (string) $_GET["v"]), ENT_QUOTES);
+                    echo htmlspecialchars(build(p1: (string) $_GET["v"]), ENT_QUOTES);
+                    echo htmlspecialchars(build(p2: (string) $_GET["v"]), ENT_QUOTES);
+                    echo htmlspecialchars(build(p3: (string) $_GET["v"]), ENT_QUOTES);
+                    echo htmlspecialchars(build(p4: (string) $_GET["v"]), ENT_QUOTES);
+                    echo htmlspecialchars(build(p5: (string) $_GET["v"]), ENT_QUOTES);
+                    echo htmlspecialchars(build(p6: (string) $_GET["v"]), ENT_QUOTES);
+                    echo htmlspecialchars(build(p7: (string) $_GET["v"]), ENT_QUOTES);
+                    echo htmlspecialchars(build(p8: (string) $_GET["v"]), ENT_QUOTES);
+                    echo htmlspecialchars(build(p9: (string) $_GET["v"]), ENT_QUOTES);
+                    echo htmlspecialchars(build(p10: (string) $_GET["v"]), ENT_QUOTES);
+                    echo htmlspecialchars(build(p11: (string) $_GET["v"]), ENT_QUOTES);
+                    redirectTo(fixedUrl());',
+            ],
             'sessionItemStoredButNeverRead' => [
                 'code' => '<?php
                     $_SESSION["user"] = $_GET["user"];',
@@ -9976,6 +10019,131 @@ final class TaintTest extends TestCase
                         echo (string) $document->title;
                     }',
                 'error_message' => 'TaintedHtml',
+            ],
+            'specializedCallWithManyTaintedParametersReturnsWhatItsOwnArgumentsHold' => [
+                'code' => '<?php
+                    /** @psalm-taint-specialize */
+                    function build(
+                        string $p0 = "",
+                        string $p1 = "",
+                        string $p2 = "",
+                        string $p3 = "",
+                        string $p4 = "",
+                        string $p5 = "",
+                        string $p6 = "",
+                        string $p7 = "",
+                        string $p8 = "",
+                        string $p9 = "",
+                        string $p10 = "",
+                        string $p11 = "",
+                    ): string {
+                        $result = $p0 . $p1 . $p2 . $p3 . $p4 . $p5 . $p6 . $p7 . $p8 . $p9 . $p10 . $p11;
+                        return $result;
+                    }
+
+                    /** @psalm-taint-sink redirect $url */
+                    function redirectTo(string $url): void {}
+
+                    echo htmlspecialchars(build(p0: (string) $_GET["v"]), ENT_QUOTES);
+                    echo htmlspecialchars(build(p1: (string) $_GET["v"]), ENT_QUOTES);
+                    echo htmlspecialchars(build(p2: (string) $_GET["v"]), ENT_QUOTES);
+                    echo htmlspecialchars(build(p3: (string) $_GET["v"]), ENT_QUOTES);
+                    echo htmlspecialchars(build(p4: (string) $_GET["v"]), ENT_QUOTES);
+                    echo htmlspecialchars(build(p5: (string) $_GET["v"]), ENT_QUOTES);
+                    echo htmlspecialchars(build(p6: (string) $_GET["v"]), ENT_QUOTES);
+                    echo htmlspecialchars(build(p7: (string) $_GET["v"]), ENT_QUOTES);
+                    echo htmlspecialchars(build(p8: (string) $_GET["v"]), ENT_QUOTES);
+                    echo htmlspecialchars(build(p9: (string) $_GET["v"]), ENT_QUOTES);
+                    echo htmlspecialchars(build(p10: (string) $_GET["v"]), ENT_QUOTES);
+                    echo htmlspecialchars(build(p11: (string) $_GET["v"]), ENT_QUOTES);
+                    redirectTo(build(p11: (string) $_GET["next"]));',
+                'error_message' => 'TaintedRedirect',
+            ],
+            'specializedCallWithManyTaintedParametersReturnsWhatItsWrapperIsGiven' => [
+                'code' => '<?php
+                    /** @psalm-taint-specialize */
+                    function build(
+                        string $p0 = "",
+                        string $p1 = "",
+                        string $p2 = "",
+                        string $p3 = "",
+                        string $p4 = "",
+                        string $p5 = "",
+                        string $p6 = "",
+                        string $p7 = "",
+                        string $p8 = "",
+                        string $p9 = "",
+                        string $p10 = "",
+                        string $p11 = "",
+                    ): string {
+                        $result = $p0 . $p1 . $p2 . $p3 . $p4 . $p5 . $p6 . $p7 . $p8 . $p9 . $p10 . $p11;
+                        return $result;
+                    }
+
+                    /** @psalm-taint-specialize */
+                    function wrapped(string $next): string {
+                        return build(p11: $next);
+                    }
+
+                    /** @psalm-taint-sink redirect $url */
+                    function redirectTo(string $url): void {}
+
+                    echo htmlspecialchars(build(p0: (string) $_GET["v"]), ENT_QUOTES);
+                    echo htmlspecialchars(build(p1: (string) $_GET["v"]), ENT_QUOTES);
+                    echo htmlspecialchars(build(p2: (string) $_GET["v"]), ENT_QUOTES);
+                    echo htmlspecialchars(build(p3: (string) $_GET["v"]), ENT_QUOTES);
+                    echo htmlspecialchars(build(p4: (string) $_GET["v"]), ENT_QUOTES);
+                    echo htmlspecialchars(build(p5: (string) $_GET["v"]), ENT_QUOTES);
+                    echo htmlspecialchars(build(p6: (string) $_GET["v"]), ENT_QUOTES);
+                    echo htmlspecialchars(build(p7: (string) $_GET["v"]), ENT_QUOTES);
+                    echo htmlspecialchars(build(p8: (string) $_GET["v"]), ENT_QUOTES);
+                    echo htmlspecialchars(build(p9: (string) $_GET["v"]), ENT_QUOTES);
+                    echo htmlspecialchars(build(p10: (string) $_GET["v"]), ENT_QUOTES);
+                    echo htmlspecialchars(build(p11: (string) $_GET["v"]), ENT_QUOTES);
+                    redirectTo(wrapped((string) $_GET["next"]));',
+                'error_message' => 'TaintedRedirect',
+            ],
+            'specializedCallWithManyTaintedParametersSharesWhatItStores' => [
+                'code' => '<?php
+                    final class Store { public static string $last = ""; }
+
+                    /** @psalm-taint-specialize */
+                    function build(
+                        string $p0 = "",
+                        string $p1 = "",
+                        string $p2 = "",
+                        string $p3 = "",
+                        string $p4 = "",
+                        string $p5 = "",
+                        string $p6 = "",
+                        string $p7 = "",
+                        string $p8 = "",
+                        string $p9 = "",
+                        string $p10 = "",
+                        string $p11 = "",
+                    ): string {
+                        $result = $p0 . $p1 . $p2 . $p3 . $p4 . $p5 . $p6 . $p7 . $p8 . $p9 . $p10 . $p11;
+                        Store::$last = $result;
+                        return $result;
+                    }
+
+                    /** @psalm-taint-sink redirect $url */
+                    function redirectTo(string $url): void {}
+
+                    echo htmlspecialchars(build(p0: (string) $_GET["v"]), ENT_QUOTES);
+                    echo htmlspecialchars(build(p1: (string) $_GET["v"]), ENT_QUOTES);
+                    echo htmlspecialchars(build(p2: (string) $_GET["v"]), ENT_QUOTES);
+                    echo htmlspecialchars(build(p3: (string) $_GET["v"]), ENT_QUOTES);
+                    echo htmlspecialchars(build(p4: (string) $_GET["v"]), ENT_QUOTES);
+                    echo htmlspecialchars(build(p5: (string) $_GET["v"]), ENT_QUOTES);
+                    echo htmlspecialchars(build(p6: (string) $_GET["v"]), ENT_QUOTES);
+                    echo htmlspecialchars(build(p7: (string) $_GET["v"]), ENT_QUOTES);
+                    echo htmlspecialchars(build(p8: (string) $_GET["v"]), ENT_QUOTES);
+                    echo htmlspecialchars(build(p9: (string) $_GET["v"]), ENT_QUOTES);
+                    echo htmlspecialchars(build(p10: (string) $_GET["v"]), ENT_QUOTES);
+                    echo htmlspecialchars(build(p11: (string) $_GET["v"]), ENT_QUOTES);
+                    redirectTo(Store::$last);',
+                'error_message' => 'TaintedRedirect',
             ],
             'taintedLocationHeader' => [
                 'code' => '<?php
