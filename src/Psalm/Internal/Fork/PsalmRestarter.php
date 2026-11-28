@@ -201,10 +201,13 @@ final class PsalmRestarter extends XdebugHandler
             $additional_options []= "-dopcache.memory_consumption={$requiredMemoryConsumption}";
         }
 
-        // On Windows the processes of a user share one opcache unless their cache ids differ: without timestamp
-        // validation, a Psalm process would run the plugins and other files another one cached before they changed
+        // On Windows, the PHP processes of one user share one opcache unless their opcache.cache_id differs. With
+        // validate_timestamps=0, Psalm would then run a plugin as another process cached it before it changed.
+        // The file cache directory depends on the cache id, so a file cache would leave a new one behind each run
         if (PHP_OS_FAMILY === 'Windows') {
             $additional_options []= '-dopcache.cache_id=' . uniqid('psalm-', true);
+            $additional_options []= '-dopcache.file_cache=';
+            $additional_options []= '-dopcache.file_cache_only=0';
         }
 
         array_splice(
