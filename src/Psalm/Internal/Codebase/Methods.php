@@ -175,22 +175,45 @@ final class Methods
                 );
             }
 
+            $referenced_method_ids = [];
+
             if ((string) $method_id !== (string) $declaring_method_id
                 && $class_storage->user_defined
-                && isset($class_storage->potential_declaring_method_ids[$method_name])
+                && isset($class_storage->inherited_method_sources[$method_name])
             ) {
-                foreach ($class_storage->potential_declaring_method_ids[$method_name] as $potential_id => $_) {
-                    $codebase->addReferenceToFunctionLike(
-                        strtolower($potential_id),
-                        $code_location,
-                        $calling_context,
-                        $is_used,
-                        $source_file_path,
-                    );
+                $inheriting_storage = $class_storage;
+                $visited_classes = [];
+
+                // Every level looks up the called name: a trait alias renames the method only for the class using it.
+                while (isset($inheriting_storage->inherited_method_sources[$method_name])) {
+                    [$source_fq_class_name, $source_method_name]
+                        = explode('::', $inheriting_storage->inherited_method_sources[$method_name])
+                        + [1 => $method_name];
+                    $inheriting_fq_class_name = strtolower($inheriting_storage->name);
+                    $visited_classes[$inheriting_fq_class_name] = true;
+
+                    $referenced_method_ids[$inheriting_fq_class_name . '::' . $source_method_name] = true;
+                    $referenced_method_ids[$source_fq_class_name . '::' . $source_method_name] = true;
+
+                    if (isset($visited_classes[$source_fq_class_name])) {
+                        break;
+                    }
+
+                    try {
+                        $inheriting_storage = $this->classlike_storage_provider->get($source_fq_class_name);
+                    } catch (InvalidArgumentException) {
+                        // a deleted file broke the chain: the called method is still the declaring one
+                        $referenced_method_ids[strtolower((string) $declaring_method_id)] = true;
+                        break;
+                    }
                 }
             } else {
+                $referenced_method_ids[strtolower((string) $declaring_method_id)] = true;
+            }
+
+            foreach ($referenced_method_ids as $referenced_method_id => $_) {
                 $codebase->addReferenceToFunctionLike(
-                    strtolower((string) $declaring_method_id),
+                    $referenced_method_id,
                     $code_location,
                     $calling_context,
                     $is_used,

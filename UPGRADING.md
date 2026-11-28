@@ -137,6 +137,8 @@
 
 - [BC] Constant Psalm\Type\Atomic\TKeyedArray::NAME_LIST was removed
 
+- [BC] Property `Psalm\Storage\ClassLikeStorage::$potential_declaring_method_ids` was removed.
+
 - [BC] Psalm\Type\Atomic\TKeyedArray#__construct() was made private
 
 # Upgrading from Psalm 5 to Psalm 6

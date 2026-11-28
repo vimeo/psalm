@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Tests;
 
+use Closure;
 use Override;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Psalm\Context;
@@ -11,6 +12,8 @@ use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\CacheMode;
 use Psalm\Internal\Codebase\CodeUseGraph;
+use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\FileReferenceCacheProvider;
 use Psalm\Internal\Provider\FileReferenceProvider;
@@ -239,6 +242,73 @@ final class FileReferenceTest extends TestCase
         $all = $graph->getAllReferences();
         $ksort_recursive($all);
         $this->assertSame($expected_references, $all);
+    }
+
+    /**
+     * @param array<string, list<string>> $expected_locations
+     */
+    #[DataProvider('providerReferenceLocationsThroughInheritingClasses')]
+    public function testReferenceLocationsThroughInheritingClasses(string $input_code, array $expected_locations): void
+    {
+        $this->addFile(self::$src_dir_path . 'somefile.php', $input_code);
+        $this->analyzeFile(self::$src_dir_path . 'somefile.php', new Context());
+
+        $found = [];
+
+        foreach (array_keys($expected_locations) as $symbol) {
+            $found[$symbol] = [];
+
+            foreach ($this->project_analyzer->getCodebase()->findReferencesToSymbol($symbol) as $location) {
+                $found[$symbol][] = $location->getLineNumber() . ':' . $location->getColumn()
+                    . ':' . $location->getSelectedText();
+            }
+        }
+
+        $this->assertSame($expected_locations, $found);
+    }
+
+    /**
+     * @param Closure(ClassLikeStorageProvider): mixed $break_the_chain
+     */
+    #[DataProvider('providerBrokenInheritanceChains')]
+    public function testReferencedMethodsStopWhereTheChainIsBroken(
+        Closure $break_the_chain,
+        ?array $declaring_method_references,
+    ): void {
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile($file_path, '<?php
+            class A { public function m(): int { return 1; } }
+            class B extends A {}
+            class C extends B {}');
+        $this->analyzeFile($file_path, new Context());
+
+        $codebase = $this->project_analyzer->getCodebase();
+        $break_the_chain($codebase->classlike_storage_provider);
+
+        $this->assertTrue($codebase->methods->methodExists($codebase, new MethodIdentifier('C', 'm'), 'caller::f'));
+
+        $references = $codebase->code_use_graph->getAllReferences();
+
+        $this->assertSame(['func caller::f' => true], $references['func c::m'] ?? null);
+        $this->assertSame(['func caller::f' => true], $references['func b::m'] ?? null);
+        $this->assertSame($declaring_method_references, $references['func a::m'] ?? null);
+    }
+
+    /**
+     * @return array<string, array{Closure(ClassLikeStorageProvider): mixed, array<string, true>|null}>
+     */
+    public static function providerBrokenInheritanceChains(): array
+    {
+        return [
+            'storageIsGone' => [
+                static fn(ClassLikeStorageProvider $provider) => $provider->remove('B', ''),
+                ['func caller::f' => true],
+            ],
+            'pointerCycle' => [
+                static fn(ClassLikeStorageProvider $provider) => $provider->get('B')->inherited_method_sources['m'] = 'c',
+                null,
+            ],
+        ];
     }
 
     public function testAnalysisPersistsEveryResultToTheReferenceCache(): void
@@ -532,6 +602,85 @@ final class FileReferenceTest extends TestCase
                     echo (new A())->foo;',
                 'A::$foo',
                 ['7:26:(new A())->foo'],
+            ],
+        ];
+    }
+
+    /**
+     * @return array<string, array{0: string, 1: array<string, list<string>>}>
+     * @psalm-pure
+     */
+    public static function providerReferenceLocationsThroughInheritingClasses(): array
+    {
+        return [
+            'throughNestedTraits' => [
+                '<?php
+                    trait T1 { public function m(): int { return 1; } }
+                    trait T2 { use T1; }
+                    class A { use T2; }
+                    class B extends A {}
+                    echo (new B())->m();',
+                [
+                    'T1::m' => ['6:37:m'],
+                    'T2::m' => ['6:37:m'],
+                    'A::m' => ['6:37:m'],
+                    'B::m' => ['6:37:m'],
+                ],
+            ],
+            'throughInterfaceChain' => [
+                '<?php
+                    interface I { public function m(): int; }
+                    interface J extends I {}
+                    interface K extends J {}
+                    function f(K $k): int { return $k->m(); }',
+                [
+                    'I::m' => ['5:56:m'],
+                    'J::m' => ['5:56:m'],
+                    'K::m' => ['5:56:m'],
+                ],
+            ],
+            'throughReflectedParent' => [
+                '<?php
+                    class C extends Exception {}
+                    class D extends C {}
+                    echo (new D("a"))->getMessage();',
+                [
+                    'Exception::getMessage' => ['4:40:getMessage'],
+                    'C::getMessage' => ['4:40:getMessage'],
+                    'D::getMessage' => ['4:40:getMessage'],
+                    'Exception::__construct' => ['4:27:new D("a")'],
+                    'C::__construct' => ['4:27:new D("a")'],
+                    'D::__construct' => ['4:27:new D("a")'],
+                ],
+            ],
+            'throughTraitAliasAndInsteadof' => [
+                '<?php
+                    trait TA { public function shared(): int { return 1; } }
+                    trait TB { public function shared(): int { return 2; } }
+                    class Al { use TA, TB { TB::shared insteadof TA; TA::shared as sharedA; } }
+                    class AlChild extends Al {}
+                    echo (new Al())->sharedA();
+                    echo (new AlChild())->sharedA();',
+                [
+                    'Al::sharedA' => ['7:43:sharedA'],
+                    'TA::shared' => ['6:38:sharedA', '7:43:sharedA'],
+                    'TB::shared' => [],
+                    'AlChild::sharedA' => ['7:43:sharedA'],
+                ],
+            ],
+            'throughAnAliasOfANestedTraitMethod' => [
+                '<?php
+                    trait TX { public function shared(): int { return 1; } }
+                    trait TA { use TX; }
+                    class A { use TA { shared as sharedA; } }
+                    class B extends A {}
+                    echo (new B())->sharedA();',
+                [
+                    'TX::shared' => [],
+                    'TA::shared' => ['6:37:sharedA'],
+                    'A::sharedA' => ['6:37:sharedA'],
+                    'B::sharedA' => ['6:37:sharedA'],
+                ],
             ],
         ];
     }

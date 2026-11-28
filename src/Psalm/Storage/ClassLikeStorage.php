@@ -385,9 +385,13 @@ final class ClassLikeStorage implements HasAttributesInterface
     public array $inheritable_method_ids = [];
 
     /**
-     * @var array<lowercase-string, array<string, bool>>
+     * Per method name, the class-like it was inherited from, as `class` or, when a trait alias renames it,
+     * `class::method`.
+     *
+     * @internal
+     * @var array<lowercase-string, lowercase-string>
      */
-    public array $potential_declaring_method_ids = [];
+    public array $inherited_method_sources = [];
 
     /**
      * @var array<string, PropertyStorage>
