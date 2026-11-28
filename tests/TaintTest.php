@@ -4407,6 +4407,36 @@ final class TaintTest extends TestCase
                         echo store_get(data_key($id));
                     }',
             ],
+            'keyedStoreKeyStartOfMagicConstantsDoesNotReachOtherKeys' => [
+                'code' => '<?php
+                    namespace App;
+
+                    /** @psalm-flow ($value) -> Store::$data[$key] */
+                    function store_set(string $key, string $value): void {}
+
+                    /** @psalm-flow Store::$data[$key] -> return */
+                    function store_get(string $key): string {}
+
+                    final class Cached {
+                        public static function byMethod(string $id): void {
+                            self::remember(__METHOD__ . $id, (string) $_GET["x"]);
+                        }
+
+                        public static function byClass(string $id): void {
+                            self::remember(__CLASS__ . "::" . __FUNCTION__ . $id, (string) $_GET["x"]);
+                        }
+
+                        public static function byNamespace(string $id): void {
+                            self::remember(__NAMESPACE__ . "_" . $id, (string) $_GET["x"]);
+                        }
+
+                        private static function remember(string $key, string $value): void {
+                            store_set($key, $value);
+                        }
+                    }
+
+                    echo store_get("other");',
+            ],
             'traitMethodEscapingWhatItReturns' => [
                 'code' => '<?php
                     trait Escapes {
@@ -14602,6 +14632,129 @@ final class TaintTest extends TestCase
                     function read(string $id): void {
                         echo store_get(data_key($id));
                     }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'keyedStoreKeyStartOfMagicConstantsReachesItsKeys' => [
+                'code' => '<?php
+                    namespace App;
+
+                    /** @psalm-flow ($value) -> Store::$data[$key] */
+                    function store_set(string $key, string $value): void {}
+
+                    /** @psalm-flow Store::$data[$key] -> return */
+                    function store_get(string $key): string {}
+
+                    final class Cached {
+                        public static function byMethod(string $id): void {
+                            self::remember(__METHOD__ . $id, (string) $_GET["x"]);
+                        }
+
+                        public static function byClass(string $id): void {
+                            self::remember(__CLASS__ . "::" . __FUNCTION__ . $id, "");
+                        }
+
+                        private static function remember(string $key, string $value): void {
+                            store_set($key, $value);
+                        }
+                    }
+
+                    echo store_get("App\\Cached::byMethod1");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'keyedStoreKeyStartsOfMagicConstantsOfDifferentMethodsAreUnknown' => [
+                'code' => '<?php
+                    /** @psalm-flow ($value) -> Store::$data[$key] */
+                    function store_set(string $key, string $value): void {}
+
+                    /** @psalm-flow Store::$data[$key] -> return */
+                    function store_get(string $key): string {}
+
+                    final class Cached {
+                        public static function alpha(): void {
+                            self::remember(__FUNCTION__, (string) $_GET["x"]);
+                        }
+
+                        public static function beta(): void {
+                            self::remember(__FUNCTION__, "");
+                        }
+
+                        private static function remember(string $key, string $value): void {
+                            store_set($key, $value);
+                        }
+                    }
+
+                    echo store_get("other");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'keyedStoreKeyStartOfAMagicConstantAfterAnUnknownPrefixIsUnknown' => [
+                'code' => '<?php
+                    /** @psalm-flow ($value) -> Store::$data[$key] */
+                    function store_set(string $key, string $value): void {}
+
+                    /** @psalm-flow Store::$data[$key] -> return */
+                    function store_get(string $key): string {}
+
+                    final class Cached {
+                        public static function write(string $prefix): void {
+                            self::remember($prefix . __METHOD__, (string) $_GET["x"]);
+                        }
+
+                        private static function remember(string $key, string $value): void {
+                            store_set($key, $value);
+                        }
+                    }
+
+                    echo store_get("other");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'keyedStoreKeyStartOfAMagicConstantOfATraitIsUnknown' => [
+                'code' => '<?php
+                    /** @psalm-flow ($value) -> Store::$data[$key] */
+                    function store_set(string $key, string $value): void {}
+
+                    /** @psalm-flow Store::$data[$key] -> return */
+                    function store_get(string $key): string {}
+
+                    trait Remembers {
+                        public static function write(): void {
+                            self::remember(__CLASS__, (string) $_GET["x"]);
+                        }
+
+                        private static function remember(string $key, string $value): void {
+                            store_set($key, $value);
+                        }
+                    }
+
+                    final class Cached {
+                        use Remembers;
+                    }
+
+                    Cached::write();
+                    echo store_get("other");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'keyedStoreKeyStartOfAMagicConstantInAClosureIsUnknown' => [
+                'code' => '<?php
+                    /** @psalm-flow ($value) -> Store::$data[$key] */
+                    function store_set(string $key, string $value): void {}
+
+                    /** @psalm-flow Store::$data[$key] -> return */
+                    function store_get(string $key): string {}
+
+                    final class Cached {
+                        public static function write(): void {
+                            $write = static function (): void {
+                                self::remember(__FUNCTION__, (string) $_GET["x"]);
+                            };
+                            $write();
+                        }
+
+                        private static function remember(string $key, string $value): void {
+                            store_set($key, $value);
+                        }
+                    }
+
+                    echo store_get("other");',
                 'error_message' => 'TaintedHtml',
             ],
             'keyedStoreKeyStartsOfAListAnOverridableMethodReturnsAreUnknown' => [
