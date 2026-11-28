@@ -720,7 +720,8 @@ final class VariableFetchAnalyzer
         );
         $graph->addSource($taint_source);
 
-        $type = $type->setParentNodes([
+        // the variable keeps where its value came from
+        $type = $type->addParentNodes([
             $taint_source->id => $taint_source,
         ]);
     }

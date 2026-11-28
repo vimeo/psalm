@@ -10,6 +10,7 @@ use PHPUnit\Framework\Attributes\Test;
 use PhpParser\Node\Expr\FuncCall;
 use PhpParser\Node\Expr\MethodCall;
 use PhpParser\Node\Expr\StaticCall;
+use PhpParser\Node\Expr\Variable;
 use PhpParser\Node\Identifier;
 use PhpParser\Node\Name;
 use Psalm\Config;
@@ -1763,6 +1764,81 @@ final class TaintTest extends TestCase
                 [25, 'TaintedTextWithQuotes'],
             ],
             array_map(static fn(IssueData $issue): array => [$issue->line_from, $issue->type], $issues),
+        );
+    }
+
+    /**
+     * @psalm-pure
+     * @return iterable<string, array{bool}>
+     */
+    public static function providerTrackUnusedVariables(): iterable
+    {
+        yield 'taint only' => [false];
+        yield 'tracking unused variables' => [true];
+    }
+
+    #[DataProvider('providerTrackUnusedVariables')]
+    public function testTaintAddedByAPluginToAParamReadKeepsWhatReachesTheParam(bool $track_unused_variables): void
+    {
+        if ($track_unused_variables) {
+            $this->trackUnusedVariables();
+        }
+
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile($file_path, '<?php
+            final class Endpoint
+            {
+                private function show(string $input): void
+                {
+                    echo $input;
+                }
+
+                public function run(): void
+                {
+                    $name = $_GET["name"] ?? "";
+                    if (is_string($name)) {
+                        $this->show($name);
+                    }
+                }
+            }
+        ');
+        $this->project_analyzer->setPhpVersion('8.0', 'tests');
+        $this->project_analyzer->trackTaintedInputs();
+
+        $handler = new class implements AddTaintsInterface {
+            /**
+             * @psalm-capabilities read-props
+             */
+            #[Override]
+            public static function addTaints(AddRemoveTaintsEvent $event): int
+            {
+                $expr = $event->getExpr();
+
+                return $expr instanceof Variable && $expr->name === 'input' ? TaintKind::INPUT_SQL : 0;
+            }
+        };
+
+        $codebase = $this->project_analyzer->getCodebase();
+        $socket = new PluginRegistrationSocket($codebase->config, $codebase);
+        $socket->registerHooksFromClass($handler::class);
+        $codebase->config->initializePlugins($this->project_analyzer);
+
+        $this->analyzeFile($file_path, new Context(), false);
+
+        self::assertEqualsCanonicalizing(
+            [
+                [6, 'TaintedHtml'],
+                [6, 'TaintedTextWithQuotes'],
+            ],
+            array_map(
+                static fn(IssueData $issue): array => [$issue->line_from, $issue->type],
+                array_values(array_filter(
+                    IssueBuffer::getIssuesDataForFile($file_path),
+                    static fn(IssueData $issue): bool => $issue->type === 'UnusedParam'
+                        || !in_array($issue->type, self::IGNORE, true),
+                )),
+            ),
         );
     }
 
