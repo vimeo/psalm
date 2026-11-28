@@ -101,7 +101,9 @@ final class NamespaceAnalyzer extends SourceAnalyzer
 
                     foreach ($branches as $branch) {
                         foreach ($branch->stmts as $if_stmt) {
-                            if ($if_stmt instanceof PhpParser\Node\Stmt\ClassLike) {
+                            if ($if_stmt instanceof PhpParser\Node\Stmt\ClassLike
+                                && $this->isScannedDeclaration($if_stmt)
+                            ) {
                                 $this->collectAnalyzableClassLike($if_stmt);
                             }
                         }
@@ -134,6 +136,30 @@ final class NamespaceAnalyzer extends SourceAnalyzer
                 );
             }
         }
+    }
+
+    /**
+     * The scanner skips the declarations in a branch of an `if` it knows is not taken, so the class-like may have no
+     * storage, or the storage of a declaration in another branch
+     */
+    private function isScannedDeclaration(PhpParser\Node\Stmt\ClassLike $stmt): bool
+    {
+        if (!$stmt->name) {
+            return false;
+        }
+
+        $fq_class_name_lc = strtolower(Type::getFQCLNFromString($stmt->name->name, $this->getAliases()));
+        $classlike_storage_provider = $this->getCodebase()->classlike_storage_provider;
+
+        if (!$classlike_storage_provider->has($fq_class_name_lc)) {
+            return false;
+        }
+
+        $stmt_location = $classlike_storage_provider->get($fq_class_name_lc)->stmt_location;
+
+        return $stmt_location !== null
+            && $stmt_location->file_path === $this->getFilePath()
+            && $stmt_location->raw_file_start === (int) $stmt->getAttribute('startFilePos');
     }
 
     public function collectAnalyzableClassLike(PhpParser\Node\Stmt\ClassLike $stmt): void

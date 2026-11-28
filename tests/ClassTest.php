@@ -226,6 +226,44 @@ final class ClassTest extends TestCase
                         }
                     }',
             ],
+            'parentConstructorOfAClassDeclaredInBothBranchesOfAnIfInANamespaceIsTheScannedOne' => [
+                'code' => '<?php
+                    namespace Foo;
+
+                    if (class_exists(\ArrayObject::class)) {
+                        abstract class P {
+                            protected int $x;
+
+                            public function __construct() {
+                                $this->x = 1;
+                            }
+                        }
+                    } else {
+                        abstract class P {
+                            protected int $x;
+
+                            public function __construct() {}
+                        }
+                    }
+
+                    final class C extends P {
+                        public function __construct() {
+                            parent::__construct();
+                        }
+                    }',
+            ],
+            'classDeclaredInAnIfOfANamespaceThatIsNotTakenIsNotAnalysed' => [
+                'code' => '<?php
+                    namespace Foo;
+
+                    if (class_exists(Missing::class)) {
+                        final class A {
+                            public function f(): void {}
+                        }
+                    } else {
+                        throw new \LogicException("no");
+                    }',
+            ],
             'parentConstructorOfAClassDeclaredInAnIfOfTheGlobalNamespaceSetsTheProperty' => [
                 'code' => '<?php
                     if (function_exists("foo_x")) {
