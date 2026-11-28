@@ -2521,6 +2521,16 @@ final class TypeParser
         ) {
             $extra_params = $last_property_branch->children;
             array_pop($parse_tree->children);
+        } elseif ($last_property_branch instanceof FieldEllipsis
+            && count($last_property_branch->children) === 1
+            && $last_property_branch->children[0] instanceof GenericTree
+            && strtolower($last_property_branch->children[0]->value) === strtolower($type)
+            && count($last_property_branch->children[0]->children) === (strtolower($type) === 'list' ? 1 : 2)
+        ) {
+            // `...array<K, V>` after the keys of an array shape and `...list<V>` after those of a list shape give the
+            // key and value types like `...<K, V>` and `...<V>`; any other generic is left as it was
+            $extra_params = $last_property_branch->children[0]->children;
+            $last_property_branch->children = [];
         }
 
         foreach ($parse_tree->children as $i => $property_branch) {
