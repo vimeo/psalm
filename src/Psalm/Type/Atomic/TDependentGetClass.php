@@ -7,6 +7,9 @@ namespace Psalm\Type\Atomic;
 use Override;
 use Psalm\Type\Union;
 
+use function array_keys;
+use function implode;
+
 /**
  * Represents a string whose value is a fully-qualified class found by get_class($var)
  *
@@ -26,10 +29,28 @@ final class TDependentGetClass extends TString implements DependentType
     #[Override]
     public function getId(bool $exact = true): string
     {
-        return $this->as_type->isMixed()
-            || $this->as_type->hasObject()
-            ? 'class-string'
-            : 'class-string<' . $this->as_type->getId($exact) . '>';
+        if ($this->as_type->isMixed() || $this->as_type->hasObject()) {
+            return 'class-string';
+        }
+
+        // the class of an enum case is the enum
+        $classes = [];
+        $has_enum_case = false;
+
+        foreach ($this->as_type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TEnumCase) {
+                $has_enum_case = true;
+                $classes[$atomic_type->value] = true;
+            } else {
+                $classes[$atomic_type->getId($exact)] = true;
+            }
+        }
+
+        if (!$has_enum_case) {
+            return 'class-string<' . $this->as_type->getId($exact) . '>';
+        }
+
+        return 'class-string<' . implode('|', array_keys($classes)) . '>';
     }
 
     #[Override]
