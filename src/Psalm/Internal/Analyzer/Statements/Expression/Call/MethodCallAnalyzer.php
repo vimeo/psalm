@@ -611,17 +611,7 @@ final class MethodCallAnalyzer extends CallAnalyzer
 
         foreach ($calls as $receiver => [$lhs_type_part, $method_names]) {
             foreach ($method_names as $method_name) {
-                $existent_method_ids = $result->existent_method_ids;
-                $had_mixed_method_call = $result->has_mixed_method_call;
-                $non_existent_class_method_ids = $result->non_existent_class_method_ids;
-                $non_existent_interface_method_ids = $result->non_existent_interface_method_ids;
-                $non_existent_magic_method_ids = $result->non_existent_magic_method_ids;
-
-                $result->existent_method_ids = [];
-                $result->has_mixed_method_call = false;
-                $result->non_existent_class_method_ids = [];
-                $result->non_existent_interface_method_ids = [];
-                $result->non_existent_magic_method_ids = [];
+                $aside = $result->setAsideFoundMethods();
 
                 $stmt->name = $method_name;
 
@@ -648,8 +638,9 @@ final class MethodCallAnalyzer extends CallAnalyzer
 
                 // a receiver without the method (null, false, a missing method) never returns
                 $found_method = $result->existent_method_ids || $result->has_mixed_method_call;
+                $correlated_call = $correlated && $method_name instanceof PhpParser\Node\Identifier;
 
-                if ($correlated && $method_name instanceof PhpParser\Node\Identifier) {
+                if ($correlated_call) {
                     if ($found_method) {
                         $receivers_with_a_method[$receiver] = true;
                         $names_of_a_method[$method_name->toLowerString()] = true;
@@ -666,26 +657,10 @@ final class MethodCallAnalyzer extends CallAnalyzer
                     foreach ($result->non_existent_magic_method_ids as $method_id) {
                         $missing_magic_method_ids[] = [$receiver, $method_name->toLowerString(), $method_id];
                     }
-
-                    $result->non_existent_class_method_ids = [];
-                    $result->non_existent_interface_method_ids = [];
-                    $result->non_existent_magic_method_ids = [];
                 }
 
-                $result->existent_method_ids += $existent_method_ids;
-                $result->has_mixed_method_call = $result->has_mixed_method_call || $had_mixed_method_call;
-                $result->non_existent_class_method_ids = [
-                    ...$non_existent_class_method_ids,
-                    ...$result->non_existent_class_method_ids,
-                ];
-                $result->non_existent_interface_method_ids = [
-                    ...$non_existent_interface_method_ids,
-                    ...$result->non_existent_interface_method_ids,
-                ];
-                $result->non_existent_magic_method_ids = [
-                    ...$non_existent_magic_method_ids,
-                    ...$result->non_existent_magic_method_ids,
-                ];
+                // a correlated call's missing methods are reported once every receiver is known
+                $result->addBackFoundMethods($aside, $correlated_call);
 
                 if ($call_count > 1) {
                     if ($found_method) {
