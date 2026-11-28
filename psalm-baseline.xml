@@ -836,11 +836,6 @@
       <code><![CDATA[$caller_identifier]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
-  <file src="src/Psalm/Internal/Analyzer/Statements/Expression/Call/Method/MethodCallPurityAnalyzer.php">
-    <RiskyTruthyFalsyComparison>
-      <code><![CDATA[$method_storage->this_property_mutations]]></code>
-    </RiskyTruthyFalsyComparison>
-  </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/Call/Method/MethodVisibilityAnalyzer.php">
     <ImplicitToStringCast>
       <code><![CDATA[$method_id]]></code>

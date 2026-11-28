@@ -3793,6 +3793,21 @@ final class CapabilitiesTest extends TestCase
                         return $copy;
                     }',
             ],
+            'aBuiltinMethodMayWriteAnyPropertyOfItsReceiver' => [
+                'code' => '<?php
+                    function appendTo(DOMElement $node, DOMElement $other, DOMText $child): void {
+                        if ($node->textContent !== "" || $other->textContent !== "") {
+                            throw new UnexpectedValueException("not empty");
+                        }
+
+                        $node->appendChild($child);
+
+                        $text = $node->textContent;
+                        /** @psalm-check-type-exact $text = string */;
+                        $otherText = $other->textContent;
+                        /** @psalm-check-type-exact $otherText = "" */;
+                    }',
+            ],
             'anElementOfAnArrayAccessPropertyIsWrittenByItsOffsetMethodsOnly' => [
                 'code' => '<?php
                     /** @implements ArrayAccess<string, int> */
