@@ -267,6 +267,17 @@ final class KeyOfArrayTest extends TestCase
                 ',
                 'error_message' => 'InvalidReturnStatement',
             ],
+            'keyOfWithTwoArguments' => [
+                'code' => '<?php
+                    /**
+                     * @return key-of<array<int, string>, int>
+                     */
+                    function getKey() {
+                        return 1;
+                    }
+                ',
+                'error_message' => 'InvalidDocblock',
+            ],
         ];
     }
 }

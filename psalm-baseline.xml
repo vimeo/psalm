@@ -2239,7 +2239,6 @@
       <code><![CDATA[array_keys($template_type_map[$template_param_name])[0]]]></code>
     </PossiblyUndefinedIntArrayOffset>
     <RiskyTruthyFalsyComparison>
-      <code><![CDATA[$extra_params]]></code>
       <code><![CDATA[strpos($parse_tree->value, '::')]]></code>
       <code><![CDATA[strpos($property_branch->value, '::')]]></code>
     </RiskyTruthyFalsyComparison>

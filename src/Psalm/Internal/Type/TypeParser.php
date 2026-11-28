@@ -1103,7 +1103,14 @@ final class TypeParser
             $types = [];
             foreach ($generic_params[0]->getAtomicTypes() as $type) {
                 if ($type instanceof TNamedObject) {
-                    $types[] = new TClassString($type->value, $type, false, false, false, $from_docblock);
+                    $types[] = new TClassString(
+                        $type->value,
+                        $type,
+                        false,
+                        $generic_type_value === 'interface-string',
+                        $generic_type_value === 'enum-string',
+                        $from_docblock,
+                    );
                     continue;
                 }
 
@@ -1212,6 +1219,10 @@ final class TypeParser
             );
         }
 
+        if (($generic_type_value === 'key-of' || $generic_type_value === 'value-of') && count($generic_params) > 1) {
+            throw new TypeParseTreeException('Too many template parameters for ' . $generic_type_value);
+        }
+
         if ($generic_type_value === 'key-of') {
             $param_name = $generic_params[0]->getId(false);
 
@@ -1315,29 +1326,30 @@ final class TypeParser
                 $atomic_types[] = $atomic_type;
             }
 
-            $potential_ints = [];
-            $int_mask_bits = 0;
-
-            foreach ($atomic_types as $atomic_type) {
-                if (!$atomic_type instanceof TLiteralInt) {
-                    return new TIntMask($atomic_types, $from_docblock);
-                }
-
-                $potential_ints[] = $atomic_type->value;
-                $int_mask_bits |= $atomic_type->value;
-            }
-
-            return new Union(
-                self::getComputedIntsFromMask($potential_ints, $from_docblock),
-                ['int_mask_bits' => $int_mask_bits],
-            );
+            return self::getIntMask($atomic_types, $from_docblock);
         }
 
         if ($generic_type_value === 'int-mask-of') {
             $param_union_types = array_values($generic_params[0]->getAtomicTypes());
 
             if (count($param_union_types) > 1) {
-                throw new TypeParseTreeException('Union types are not allowed in value-of type');
+                // e.g. `int-mask-of<1|2|4>`, which is `int-mask<1, 2, 4>`
+                $int_mask_members = [];
+
+                foreach ($param_union_types as $param_union_type) {
+                    if (!$param_union_type instanceof TLiteralInt
+                        && !($param_union_type instanceof TClassConstant
+                            && !str_contains($param_union_type->const_name, '*'))
+                    ) {
+                        throw new TypeParseTreeException(
+                            'int-mask-of union members must all be integer values or scalar class constants',
+                        );
+                    }
+
+                    $int_mask_members[] = $param_union_type;
+                }
+
+                return self::getIntMask($int_mask_members, $from_docblock);
             }
 
             $param_type = $param_union_types[0];
@@ -1418,6 +1430,30 @@ final class TypeParser
 
         return (new TGenericObject($generic_type_value, $generic_params, false, false, [], $from_docblock))
             ->setProjections(self::getStarProjections($generic_params, $star_params, $variance_params));
+    }
+
+    /**
+     * @param non-empty-array<TLiteralInt|TClassConstant|TGlobalConstant> $atomic_types
+     * @psalm-pure
+     */
+    private static function getIntMask(array $atomic_types, bool $from_docblock): TIntMask|Union
+    {
+        $potential_ints = [];
+        $int_mask_bits = 0;
+
+        foreach ($atomic_types as $atomic_type) {
+            if (!$atomic_type instanceof TLiteralInt) {
+                return new TIntMask($atomic_types, $from_docblock);
+            }
+
+            $potential_ints[] = $atomic_type->value;
+            $int_mask_bits |= $atomic_type->value;
+        }
+
+        return new Union(
+            self::getComputedIntsFromMask($potential_ints, $from_docblock),
+            ['int_mask_bits' => $int_mask_bits],
+        );
     }
 
     /**
@@ -2642,13 +2678,18 @@ final class TypeParser
             throw new TypeParseTreeException('A list shape cannot describe a non-list');
         }
 
-        if (!$properties) {
+        // `array{}` and `list{}` are empty, while `array{...}` and `list{...<T>}` have no fields but are open
+        if (!$properties && $sealed && ($extra_params === null || $extra_params === [])) {
             return new TArray([Type::getNever($from_docblock), Type::getNever($from_docblock)], $from_docblock);
         }
 
+        if (!$properties) {
+            $is_list = $type === 'list';
+        }
+
         $fallback_params = null;
-        if ($extra_params) {
-            $final_extra_params = $is_list ? [Type::getListKey(true)] : [];
+        if ($extra_params !== null && $extra_params !== []) {
+            $extra_types = [];
             foreach ($extra_params as $child_tree) {
                 $child_type = self::getTypeFromTree(
                     $child_tree,
@@ -2661,14 +2702,30 @@ final class TypeParser
                 if ($child_type instanceof Atomic) {
                     $child_type = new Union([$child_type]);
                 }
-                $final_extra_params []= $child_type;
+                $extra_types []= $child_type;
             }
-            if (count($final_extra_params) !== 2) {
+
+            // a single argument is the value type, as in PHPStan
+            if (count($extra_types) === 1) {
+                $fallback_params = [
+                    $is_list ? Type::getListKey(true) : Type::getArrayKey($from_docblock),
+                    $extra_types[0],
+                ];
+            } elseif (count($extra_types) === 2 && !$is_list) {
+                $fallback_params = [$extra_types[0], $extra_types[1]];
+            } else {
                 throw new TypeParseTreeException(
-                    $is_list ? 'Must have exactly one extra field!' : 'Must have exactly two extra fields!',
+                    $is_list ? 'Must have exactly one extra field!' : 'Must have one or two extra fields!',
                 );
             }
-            $fallback_params = $final_extra_params;
+        }
+
+        if (!$properties) {
+            $fallback_params ??= [$is_list ? Type::getListKey() : Type::getArrayKey(), Type::getMixed()];
+
+            return $is_list
+                ? Type::getListAtomic($fallback_params[1], $from_docblock)
+                : new TArray($fallback_params, $from_docblock);
         }
         return $callable
             ? TKeyedArray::makeCallable(

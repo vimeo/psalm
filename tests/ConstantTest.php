@@ -2087,6 +2087,22 @@ final class ConstantTest extends TestCase
                     A::foo(3);
                     A::foo(A::D_4);',
             ],
+            'wildcardAtStartOfConstantName' => [
+                'code' => '<?php
+                    class A {
+                        const A_REFERENCE = 1;
+                        const B_REFERENCE = 2;
+                        const OTHER = 3;
+
+                        /**
+                         * @param self::*_REFERENCE $i
+                         */
+                        public static function foo(int $i) : void {}
+                    }
+
+                    A::foo(A::A_REFERENCE);
+                    A::foo(2);',
+            ],
             'wildcardEnumAnyTemplateExtendConstant' => [
                 'code' => '<?php
                     /**
@@ -3739,6 +3755,22 @@ final class ConstantTest extends TestCase
                     }
 
                     A::bar("d");',
+                'error_message' => 'InvalidArgument',
+            ],
+            'wildcardAtStartOfConstantNameBadValue' => [
+                'code' => '<?php
+                    class A {
+                        const A_REFERENCE = 1;
+                        const B_REFERENCE = 2;
+                        const OTHER = 3;
+
+                        /**
+                         * @param self::*_REFERENCE $i
+                         */
+                        public static function foo(int $i) : void {}
+                    }
+
+                    A::foo(A::OTHER);',
                 'error_message' => 'InvalidArgument',
             ],
             'wildcardEnumBadValue' => [

@@ -276,6 +276,14 @@ final class IntMaskComparisonTest extends TestCase
                         return $m === 0 || $m === 7 || ($m & 2) === 2;
                     }',
             ],
+            'intMaskOfLiteralUnionIsIntMask' => [
+                'code' => '<?php
+                    /** @var int-mask-of<1|2|4> $m */
+                    $m = 0;',
+                'assertions' => [
+                    '$m===' => '0|1|2|3|4|5|6|7',
+                ],
+            ],
         ];
     }
 

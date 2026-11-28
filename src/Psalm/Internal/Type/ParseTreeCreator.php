@@ -243,6 +243,11 @@ final class ParseTreeCreator
 
                 case 'covariant':
                 case 'contravariant':
+                    if ($this->isKeyOfKeyedArray()) {
+                        $this->handleValue($type_token);
+                        break;
+                    }
+
                     // the variance of a type argument (`Foo<covariant Bar>`); anywhere else the keyword says nothing
                     if ($this->current_leaf instanceof GenericTree && !$this->current_leaf->terminated) {
                         $this->current_leaf->projections[count($this->current_leaf->children)]
@@ -848,13 +853,38 @@ final class ParseTreeCreator
         }
     }
 
+    /**
+     * A `?` right after an operator or an opening bracket starts a nullable type, it is never the `?` of a conditional
+     *
+     * @psalm-capabilities read-props
+     */
+    private function isNullablePrefix(): bool
+    {
+        $prev = $this->t - 1;
+
+        while ($prev >= 0 && $this->type_tokens[$prev][0] === ' ') {
+            $prev--;
+        }
+
+        return $prev < 0
+            || in_array($this->type_tokens[$prev][0], ['|', '&', '(', '<', ',', '{', ':', 'is', 'is not', '?'], true);
+    }
+
     private function handleQuestionMark(): void
     {
         $next_token = $this->t + 1 < $this->type_token_count ? $this->type_tokens[$this->t + 1] : null;
 
         if ($next_token === null || $next_token[0] !== ':') {
-            while (($this->current_leaf instanceof Value
+            if ($this->current_leaf instanceof NullableTree) {
+                throw new TypeParseTreeException('Unexpected token ?');
+            }
+
+            $is_nullable_prefix = $this->isNullablePrefix();
+
+            while (!$is_nullable_prefix
+                && ($this->current_leaf instanceof Value
                     || $this->current_leaf instanceof UnionTree
+                    || $this->current_leaf instanceof NullableTree
                     || ($this->current_leaf instanceof KeyedArrayTree
                         && $this->current_leaf->terminated)
                     || ($this->current_leaf instanceof GenericTree
@@ -869,7 +899,10 @@ final class ParseTreeCreator
                 $this->current_leaf = $this->current_leaf->parent;
             }
 
-            if ($this->current_leaf instanceof TemplateIsTree && $this->current_leaf->parent) {
+            if (!$is_nullable_prefix
+                && $this->current_leaf instanceof TemplateIsTree
+                && $this->current_leaf->parent
+            ) {
                 $current_parent = $this->current_leaf->parent;
 
                 $new_leaf = new ConditionalTree(
@@ -1216,7 +1249,7 @@ final class ParseTreeCreator
                 $nexter_token = $this->t + 2 < $this->type_token_count ? $this->type_tokens[$this->t + 2] : null;
 
                 if (!$nexter_token
-                    || (!preg_match('/^([a-zA-Z_][a-zA-Z_0-9]*\*?|\*)$/', $nexter_token[0])
+                    || (!preg_match('/^[a-zA-Z_*][a-zA-Z_0-9*]*$/', $nexter_token[0])
                         && strtolower($nexter_token[0]) !== 'class')
                 ) {
                     throw new TypeParseTreeException(

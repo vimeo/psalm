@@ -1311,6 +1311,44 @@ final class ClassLikeStringTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'enumStringOfAnInterfaceKeepsItsKindAndAcceptsEnums' => [
+                'code' => <<<'PHP'
+                    <?php
+                    interface HasLabel {}
+                    enum Suit implements HasLabel { case Hearts; }
+
+                    /** @return enum-string<HasLabel> */
+                    function getName(): string {
+                        throw new RuntimeException();
+                    }
+                    $name = getName();
+
+                    /** @param enum-string<HasLabel> $c */
+                    function takes(string $c): void {}
+
+                    takes(Suit::class);
+                    PHP,
+                'assertions' => [
+                    '$name===' => 'enum-string<HasLabel>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'interfaceStringOfAnInterfaceKeepsItsKind' => [
+                'code' => <<<'PHP'
+                    <?php
+                    interface HasLabel {}
+
+                    /** @return interface-string<HasLabel> */
+                    function getName(): string {
+                        throw new RuntimeException();
+                    }
+                    $name = getName();
+                    PHP,
+                'assertions' => [
+                    '$name===' => 'interface-string<HasLabel>',
+                ],
+            ],
             'traitStringStaysWhenTraitExistsNegated' => [
                 'code' => '<?php
                     /** @return trait-string */
@@ -1945,6 +1983,21 @@ final class ClassLikeStringTest extends TestCase
                     function takes(string $name): void {}
 
                     takes(Payable::class);
+                    PHP,
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'classLiteralForEnumStringOfAnInterface' => [
+                'code' => <<<'PHP'
+                    <?php
+                    interface HasLabel {}
+                    final class Plain implements HasLabel {}
+
+                    /** @param enum-string<HasLabel> $c */
+                    function takes(string $c): void {}
+
+                    takes(Plain::class);
                     PHP,
                 'error_message' => 'InvalidArgument',
                 'error_levels' => [],

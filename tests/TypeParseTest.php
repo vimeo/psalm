@@ -1288,6 +1288,51 @@ final class TypeParseTest extends TestCase
         );
     }
 
+    public function testConditionalTypeWithNullableCondition(): void
+    {
+        $this->assertSame(
+            '(T is int|null ? A : B)',
+            Type::parseString('(T is ?int ? A : B)', null, ['T' => ['' => Type::getArray()]])->getId(false),
+        );
+    }
+
+    public function testConditionalTypeWithNullableIfBranch(): void
+    {
+        $this->assertSame(
+            '(T is int ? A|null : B)',
+            Type::parseString('(T is int ? ?A : B)', null, ['T' => ['' => Type::getArray()]])->getId(false),
+        );
+    }
+
+    public function testNullableAfterIntersection(): void
+    {
+        $this->assertSame('A&B|null', Type::parseString('?A&?B')->getId(false));
+    }
+
+    public function testNullableInsideParenthesisedUnion(): void
+    {
+        $this->assertSame('A|B|null', Type::parseString('(A|?B)')->getId(false));
+        $this->assertSame('array<array-key, A|B|null>', Type::parseString('(A|?B)[]')->getId(false));
+    }
+
+    public function testDoubleNullable(): void
+    {
+        $this->expectException(TypeParseTreeException::class);
+        Type::parseString('??int');
+    }
+
+    public function testVarianceKeywordsAsShapeKeys(): void
+    {
+        $this->assertSame('array{covariant: int}', Type::parseString('array{covariant: int}')->getId(false));
+        $this->assertSame('array{contravariant?: int}', Type::parseString('array{contravariant?: int}')->getId(false));
+    }
+
+    public function testClassConstantMaskWithWildcardAtStartOrInside(): void
+    {
+        $this->assertSame('Foo::*_BAZ', Type::parseString('Foo::*_BAZ')->getId(false));
+        $this->assertSame('Foo::B*R', Type::parseString('Foo::B*R')->getId(false));
+    }
+
     public function testConditionalTypeWithIntersectionInIfBranch(): void
     {
         $this->assertSame(

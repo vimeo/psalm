@@ -129,16 +129,22 @@ final class ClassLikeStringComparator
             return false;
         }
 
+        // a class name is not the name of an interface or of an enum
+        if ($container_type_part instanceof TClassString
+            && $input_type_part instanceof TLiteralClassString
+            && (($container_type_part->is_interface
+                    && !$codebase->classlikes->interfaceExists($input_type_part->value))
+                || ($container_type_part->is_enum
+                    && !$codebase->classlikes->enumExists($input_type_part->value)))
+        ) {
+            return false;
+        }
+
         if ($container_type_part instanceof TClassString
             && $container_type_part->as === 'object'
             && !$container_type_part->as_type
         ) {
-            // a class name is not the name of an interface or of an enum
-            return !$input_type_part instanceof TLiteralClassString
-                || ((!$container_type_part->is_interface
-                        || $codebase->classlikes->interfaceExists($input_type_part->value))
-                    && (!$container_type_part->is_enum
-                        || $codebase->classlikes->enumExists($input_type_part->value)));
+            return true;
         }
 
         if ($input_type_part instanceof TClassString
