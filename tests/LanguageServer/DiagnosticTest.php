@@ -39,7 +39,9 @@ use function file_put_contents;
 use function getcwd;
 use function json_decode;
 use function json_encode;
+use function ltrim;
 use function rand;
+use function str_replace;
 use function sys_get_temp_dir;
 use function tempnam;
 use function unlink;
@@ -436,7 +438,7 @@ final class DiagnosticTest extends AsyncTestCase
         $errors = [];
         $this->codebase->config->throw_exception = false;
         foreach (['a.php', 'b.php'] as $file_name) {
-            $this->file_provider->registerFile((string) getcwd() . '/src/' . $file_name, "<?php\necho 0;");
+            $this->file_provider->registerFile(self::filePath($file_name), "<?php\necho 0;");
         }
 
         if ($clientConfiguration === null) {
@@ -490,6 +492,16 @@ final class DiagnosticTest extends AsyncTestCase
         return $published;
     }
 
+    private static function filePath(string $file_name): string
+    {
+        return (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . $file_name;
+    }
+
+    private static function fileUri(string $file_name): string
+    {
+        return 'file:///' . ltrim(str_replace('\\', '/', self::filePath($file_name)), '/');
+    }
+
     /**
      * @return array<string, mixed>
      */
@@ -499,7 +511,7 @@ final class DiagnosticTest extends AsyncTestCase
             'method' => 'textDocument/didChange',
             'params' => [
                 'textDocument' => [
-                    'uri' => 'file://' . (string) getcwd() . '/src/' . $file_name,
+                    'uri' => self::fileUri($file_name),
                     'version' => $version,
                 ],
                 'contentChanges' => [['range' => null, 'rangeLength' => null, 'text' => "<?php\necho $version;"]],
@@ -516,7 +528,7 @@ final class DiagnosticTest extends AsyncTestCase
             'method' => 'textDocument/didOpen',
             'params' => [
                 'textDocument' => [
-                    'uri' => 'file://' . (string) getcwd() . '/src/' . $file_name,
+                    'uri' => self::fileUri($file_name),
                     'languageId' => 'php',
                     'version' => $version,
                     'text' => "<?php\necho $version;",
@@ -533,7 +545,7 @@ final class DiagnosticTest extends AsyncTestCase
         return [
             'method' => 'textDocument/didClose',
             'params' => [
-                'textDocument' => ['uri' => 'file://' . (string) getcwd() . '/src/' . $file_name],
+                'textDocument' => ['uri' => self::fileUri($file_name)],
             ],
         ];
     }
