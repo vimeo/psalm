@@ -304,7 +304,11 @@ final class StaticPropertyFetchAnalyzer
                 : null,
         )
         ) {
-            if ($context->inside_isset || !$context->check_classes) {
+            // the assignment reports the property that is not defined
+            if ($context->inside_isset
+                || !$context->check_classes
+                || $stmt->getAttribute('assignmentTarget') === true
+            ) {
                 return true;
             }
 

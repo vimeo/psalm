@@ -11,11 +11,13 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
+use Psalm\Internal\Analyzer\IssueData;
 use Psalm\IssueBuffer;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
 use function array_column;
+use function array_map;
 use function sort;
 
 use const DIRECTORY_SEPARATOR;
@@ -25,6 +27,51 @@ final class PropertyTypeTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
+
+    public function testUndefinedStaticPropertyIsReportedOncePerWrite(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                final class K {
+                    public static int $real = 0;
+                }
+
+                /** @param class-string<K> $class */
+                function f(K $object, string $class): void {
+                    K::$nope = 1;
+                    $object::$nope = 1;
+                    $class::$nope = 1;
+                    K::$other ??= 1;
+                    [K::$list] = [1];
+                    K::$real = 2;
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        $issues = array_map(
+            static fn(IssueData $issue): string => $issue->type . ':' . $issue->line_from,
+            IssueBuffer::getIssuesDataForFile($file_path),
+        );
+        sort($issues);
+
+        self::assertSame(
+            [
+                'MixedAssignment:11',
+                'UndefinedPropertyAssignment:10',
+                'UndefinedPropertyAssignment:11',
+                'UndefinedPropertyAssignment:12',
+                'UndefinedPropertyAssignment:8',
+                'UndefinedPropertyAssignment:9',
+            ],
+            $issues,
+        );
+    }
 
     public function testForgetPropertyAssignments(): void
     {
