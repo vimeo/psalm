@@ -783,6 +783,19 @@ final class ArrayFunctionCallTest extends TestCase
                 ],
                 'ignored_issues' => ['MixedArgumentTypeCoercion', 'MixedArgument'],
             ],
+            'arrayFunctionsWithUnpackedArgumentsAreNotTooFewArguments' => [
+                'code' => '<?php
+                    /** @param list<mixed> $args */
+                    function f(array $args): void {
+                        array_map(...$args);
+                        array_filter(...$args);
+                        array_find(...$args);
+                        array_any(...$args);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedArgument'],
+                'php_version' => '8.4',
+            ],
             'arrayFindNullableResultIsIgnoredByDefaultInTests' => [
                 'code' => '<?php
                     /** @var list<string> $list */
@@ -5928,6 +5941,46 @@ final class ArrayFunctionCallTest extends TestCase
 
                     array_map("foo", ["hello"]);',
                 'error_message' => 'InvalidScalarArgument',
+            ],
+            'arrayFindWithoutACallbackIsTooFewArguments' => [
+                'code' => '<?php
+                    /** @param list<int> $list */
+                    function f(array $list): void {
+                        array_find($list);
+                    }',
+                'error_message' => 'Too few arguments for array_find',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
+            'arrayAnyWithoutACallbackIsTooFewArguments' => [
+                'code' => '<?php
+                    /** @param list<int> $list */
+                    function f(array $list): void {
+                        array_any($list);
+                    }',
+                'error_message' => 'Too few arguments for array_any',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
+            'arrayAllWithoutACallbackIsTooFewArguments' => [
+                'code' => '<?php
+                    /** @param list<int> $list */
+                    function f(array $list): void {
+                        array_all($list);
+                    }',
+                'error_message' => 'Too few arguments for array_all',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
+            'arrayFindKeyWithoutACallbackIsTooFewArguments' => [
+                'code' => '<?php
+                    /** @param list<int> $list */
+                    function f(array $list): void {
+                        array_find_key($list);
+                    }',
+                'error_message' => 'Too few arguments for array_find_key',
+                'error_levels' => [],
+                'php_version' => '8.4',
             ],
             'arrayMapTooFewArgs' => [
                 'code' => '<?php

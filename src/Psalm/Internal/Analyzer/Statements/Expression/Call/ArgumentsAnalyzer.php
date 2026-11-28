@@ -1877,16 +1877,10 @@ final class ArgumentsAnalyzer
         $f = in_array($method_id, self::ARRAY_FILTERLIKE, true);
         if ($f || $method_id === 'array_map') {
             assert(is_string($method_id));
-            if (!$f && count($args) < 2) {
-                IssueBuffer::maybeAdd(
-                    new TooFewArguments(
-                        'Too few arguments for ' . $method_id,
-                        $code_location,
-                        $method_id,
-                    ),
-                    $statements_analyzer->getSuppressedIssues(),
-                );
-            } elseif ($f && count($args) < 1) {
+            // only array_filter has an optional callback
+            if (count($args) < ($method_id === 'array_filter' ? 1 : 2)
+                && !array_any($args, static fn(PhpParser\Node\Arg $arg): bool => $arg->unpack)
+            ) {
                 IssueBuffer::maybeAdd(
                     new TooFewArguments(
                         'Too few arguments for ' . $method_id,
