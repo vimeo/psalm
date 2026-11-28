@@ -4407,6 +4407,55 @@ final class TaintTest extends TestCase
                         echo store_get(data_key($id));
                     }',
             ],
+            'keyedStoreKeyStartOfEveryReturnOfAMethodDoesNotReachOtherKeys' => [
+                'code' => '<?php
+                    /** @psalm-flow ($value) -> Store::$data[$key] */
+                    function store_set(string $key, string $value): void {}
+
+                    /** @psalm-flow Store::$data[$key] -> return */
+                    function store_get(string $key): string {}
+
+                    store_set("other", (string) $_GET["x"]);
+
+                    final class Keys {
+                        public static function read(string $id, ?string $locale): void {
+                            echo store_get(self::key($id, $locale));
+                        }
+
+                        private static function key(string $id, ?string $locale): string {
+                            if ($locale === null) {
+                                $locale = "ru";
+                            }
+                            if ($id === "") {
+                                return "data_empty";
+                            }
+                            return "data_{$locale}_{$id}";
+                        }
+                    }',
+            ],
+            'keyedStoreKeyStartOfAMethodIsNotThatOfTheClosuresInIt' => [
+                'code' => '<?php
+                    /** @psalm-flow ($value) -> Store::$data[$key] */
+                    function store_set(string $key, string $value): void {}
+
+                    /** @psalm-flow Store::$data[$key] -> return */
+                    function store_get(string $key): string {}
+
+                    store_set("other", (string) $_GET["x"]);
+
+                    final class Keys {
+                        public static function read(string $id, ?string $locale): void {
+                            echo store_get(self::key($id, $locale));
+                        }
+
+                        private static function key(string $id, ?string $locale): string {
+                            $normalize = static function (string $id): string {
+                                return trim($id);
+                            };
+                            return "data_" . $normalize($id) . (string) $locale;
+                        }
+                    }',
+            ],
             'traitMethodEscapingWhatItReturns' => [
                 'code' => '<?php
                     trait Escapes {
@@ -14601,6 +14650,81 @@ final class TaintTest extends TestCase
 
                     function read(string $id): void {
                         echo store_get(data_key($id));
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'keyedStoreKeyStartOfEveryReturnOfAMethodReachesItsKeys' => [
+                'code' => '<?php
+                    /** @psalm-flow ($value) -> Store::$data[$key] */
+                    function store_set(string $key, string $value): void {}
+
+                    /** @psalm-flow Store::$data[$key] -> return */
+                    function store_get(string $key): string {}
+
+                    store_set("data_ru_1", (string) $_GET["x"]);
+
+                    final class Keys {
+                        public static function read(string $id, ?string $locale): void {
+                            echo store_get(self::key($id, $locale));
+                        }
+
+                        private static function key(string $id, ?string $locale): string {
+                            if ($locale === null) {
+                                $locale = "ru";
+                            }
+                            if ($id === "") {
+                                return "data_empty";
+                            }
+                            return "data_{$locale}_{$id}";
+                        }
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'keyedStoreKeyStartsOfDifferentReturnsOfAMethodAreUnknown' => [
+                'code' => '<?php
+                    /** @psalm-flow ($value) -> Store::$data[$key] */
+                    function store_set(string $key, string $value): void {}
+
+                    /** @psalm-flow Store::$data[$key] -> return */
+                    function store_get(string $key): string {}
+
+                    store_set("other", (string) $_GET["x"]);
+
+                    final class Keys {
+                        public static function read(string $id, ?string $locale): void {
+                            echo store_get(self::key($id, $locale));
+                        }
+
+                        private static function key(string $id, ?string $locale): string {
+                            if ($locale === null) {
+                                return "a_" . $id;
+                            }
+                            return "b_" . $id;
+                        }
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'keyedStoreKeyStartOfAReturnAfterAnUnknownPrefixIsUnknown' => [
+                'code' => '<?php
+                    /** @psalm-flow ($value) -> Store::$data[$key] */
+                    function store_set(string $key, string $value): void {}
+
+                    /** @psalm-flow Store::$data[$key] -> return */
+                    function store_get(string $key): string {}
+
+                    store_set("other", (string) $_GET["x"]);
+
+                    final class Keys {
+                        public static function read(string $id, ?string $locale): void {
+                            echo store_get(self::key($id, $locale));
+                        }
+
+                        private static function key(string $id, ?string $locale): string {
+                            if ($locale === null) {
+                                return "data_" . $id;
+                            }
+                            return $locale . "data_" . $id;
+                        }
                     }',
                 'error_message' => 'TaintedHtml',
             ],

@@ -19,6 +19,9 @@ use PhpParser\Node\Expr\New_;
 use PhpParser\Node\Expr\PropertyFetch;
 use PhpParser\Node\Expr\StaticCall;
 use PhpParser\Node\Expr\Variable;
+use PhpParser\Node\Expr\YieldFrom;
+use PhpParser\Node\Expr\Yield_;
+use PhpParser\Node\FunctionLike;
 use PhpParser\Node\Identifier;
 use PhpParser\Node\InterpolatedStringPart;
 use PhpParser\Node\Name;
@@ -53,11 +56,11 @@ use function substr;
 
 /**
  * Records, while a class is scanned, how the strings some of its members hold start, for the names of the keyed stores
- * (see TaintStore), which are often built by them: what a method made of one return returns (`return "lock_$id";`),
- * what a private or readonly property gets from its default and its constructor only (`private string $key =
- * self::KEY;`), what the private methods of the class are called with in it, and what the class gives the
- * constructors of the classes it creates. They are kept in the storage of the class, as the scan may run in other
- * processes than the analysis.
+ * (see TaintStore), which are often built by them: what a method ending in a return returns by all its returns
+ * (`return "lock_$id";`), what a private or readonly property gets from its default and its constructor only
+ * (`private string $key = self::KEY;`), what the private methods of the class are called with in it, and what the
+ * class gives the constructors of the classes it creates. They are kept in the storage of the class, as the scan may
+ * run in other processes than the analysis.
  *
  * A start is a list of parts: `L` and a literal, `C` and a class constant (`Class::NAME`), `R` and a property of
  * `$this`, `N` and the offset of an argument of the constructor, `F` and a method called on `$this`, `self` or
@@ -355,9 +358,9 @@ final class StringStartScanner
     }
 
     /**
-     * The starts of what a function-like returns, separated by START_SEPARATOR: its one statement returning a string
-     * (`return "lock_$id";`), or the items of the list it returns from a variable that it only sets to literal lists
-     * and assigns items of (`$keys[] = "lock_$id"; ... return $keys;`), null if neither
+     * The starts of what a function-like ending in a return returns, separated by START_SEPARATOR: those of all its
+     * returns (`return "lock_$id";`), or the items of the list it returns from a variable that it only sets to literal
+     * lists and assigns items of (`$keys[] = "lock_$id"; ... return $keys;`), null if neither
      *
      * @param array<array-key, Node\Stmt> $stmts
      */
@@ -369,12 +372,17 @@ final class StringStartScanner
             return null;
         }
 
-        if (count($stmts) === 1) {
-            return implode(self::PART_SEPARATOR, self::getStart($aliases, $self, $return->expr));
-        }
+        if (count($stmts) === 1 || !$return->expr instanceof Variable || !is_string($return->expr->name)) {
+            $starts = [];
+            foreach (self::getOwnReturns($stmts) ?? [] as $own_return) {
+                if ($own_return->expr === null) {
+                    return null;
+                }
 
-        if (!$return->expr instanceof Variable || !is_string($return->expr->name)) {
-            return null;
+                $starts[] = implode(self::PART_SEPARATOR, self::getStart($aliases, $self, $own_return->expr));
+            }
+
+            return $starts === [] ? null : implode(self::START_SEPARATOR, $starts);
         }
 
         $finder = new NodeFinder();
@@ -417,6 +425,45 @@ final class StringStartScanner
         }
 
         return $starts === [] ? null : implode(self::START_SEPARATOR, $starts);
+    }
+
+    /**
+     * The returns of the function-like whose statements these are, not those of the closures, functions and classes
+     * declared in them; null if it is a generator, whose returns don't give what it returns
+     *
+     * @param list<Node\Stmt> $stmts
+     * @return list<Return_>|null
+     */
+    private static function getOwnReturns(array $stmts): ?array
+    {
+        $finder = new NodeFinder();
+        $is_exit = static fn(Node $node): bool => $node instanceof Return_
+            || $node instanceof Yield_
+            || $node instanceof YieldFrom;
+
+        $nested = [];
+        $scopes = $finder->find(
+            $stmts,
+            static fn(Node $node): bool => $node instanceof FunctionLike || $node instanceof ClassLike,
+        );
+        foreach ($finder->find($scopes, $is_exit) as $node) {
+            $nested[spl_object_id($node)] = true;
+        }
+
+        $returns = [];
+        foreach ($finder->find($stmts, $is_exit) as $node) {
+            if (isset($nested[spl_object_id($node)])) {
+                continue;
+            }
+
+            if (!$node instanceof Return_) {
+                return null;
+            }
+
+            $returns[] = $node;
+        }
+
+        return $returns;
     }
 
     /**
