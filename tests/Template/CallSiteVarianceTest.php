@@ -70,6 +70,40 @@ final class CallSiteVarianceTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'contravariantNeverAcceptsEveryArgument' => [
+                'code' => '<?php
+                    class Cat {}
+                    class Dog {}
+
+                    /** @template T */
+                    final class Box {}
+
+                    /** @template-contravariant T */
+                    final class Sink {}
+
+                    /** @param Box<contravariant never> $b */
+                    function takesNever(Box $b): void {}
+
+                    /** @param Sink<never> $s */
+                    function takesNeverSink(Sink $s): void {}
+
+                    /**
+                     * @param Box<*> $star
+                     * @param Box<covariant Cat> $cov
+                     * @param Box<contravariant Dog> $contra
+                     * @param Box<Cat> $inv
+                     * @param Sink<contravariant Cat> $sinkCov
+                     * @param Sink<Cat> $sink
+                     */
+                    function test(Box $star, Box $cov, Box $contra, Box $inv, Sink $sinkCov, Sink $sink): void {
+                        takesNever($star);
+                        takesNever($cov);
+                        takesNever($contra);
+                        takesNever($inv);
+                        takesNeverSink($sinkCov);
+                        takesNeverSink($sink);
+                    }',
+            ],
             'covariantArgumentAcceptsAnImplementationOfASubtype' => [
                 'code' => '<?php
                     class Node {}
@@ -724,6 +758,23 @@ final class CallSiteVarianceTest extends TestCase
                         take($box);
                     }',
                 'error_message' => 'Argument 1 of take expects Box<LeafNode>, but parent type Box<contravariant LeafNode> provided',
+            ],
+            'covariantArgumentIsNotAContravariantOneOfAnotherType' => [
+                'code' => '<?php
+                    class Cat {}
+                    class Dog {}
+
+                    /** @template T */
+                    final class Box {}
+
+                    /** @param Box<contravariant Dog> $b */
+                    function takesDog(Box $b): void {}
+
+                    /** @param Box<covariant Cat> $cov */
+                    function test(Box $cov): void {
+                        takesDog($cov);
+                    }',
+                'error_message' => 'InvalidArgument',
             ],
             'covariantArgumentIsNotAContravariantOne' => [
                 'code' => self::BOX . '
