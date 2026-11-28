@@ -422,7 +422,13 @@ function show(Model $model): void {
 + When `$name` isn't a literal string, the call sets or returns every property it may name. A copy loop,
   `foreach ($values as $name => $value) { $model->set($name, $value); }`, sets each property to what is under its
   name in `$values`, as `($values) -> $this->{key}` does, when `$name` and `$value` are still the key and the value of
-  the loop.
+  the loop. Likewise, what a call returns under a variable `$name` and a call sets under the same `$name` in the
+  same function, `$model->set($name, trim($model->get($name)))`, goes back to the property it came from, when
+  `$name` isn't changed in between (nor assigned in a loop holding the first call), and the value only goes through
+  that function and functions outside the project (builtins, stubs, vendor code). When both calls are made on the
+  same variable, also unchanged in between, the value only goes back to a property of a class the object it was
+  read from can be: `$object->set($name, $object->get($name))` with `$object` of type `Article|Comment` doesn't move
+  a property of an `Article` into one of a `Comment`.
 + For a class with [`@psalm-taint-specialize`](index.md#specializing-classes), properties
   are tracked per object.
 
