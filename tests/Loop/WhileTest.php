@@ -450,6 +450,39 @@ final class WhileTest extends TestCase
                     '$afterIncrement===' => '0|1',
                 ],
             ],
+            'postStepComparedWithAnIntLiteralIsShiftedAfterTheLoop' => [
+                'code' => '<?php
+                    $a = 3;
+                    while ($a-- !== 0) {}
+                    $afterNotIdentical = $a;
+
+                    $b = 3;
+                    while ($b-- != 0) {}
+                    $afterNotEqual = $b;
+
+                    $c = -3;
+                    while ($c++ !== 0) {}
+                    $afterIncrement = $c;
+
+                    $d = 3;
+                    while (0 !== $d--) {}
+                    $afterLiteralFirst = $d;
+
+                    $e = 3;
+                    do {} while ($e-- !== 0);
+                    $afterDoWhile = $e;
+
+                    for ($f = 3; $f-- !== 0;) {}
+                    $afterFor = $f;',
+                'assertions' => [
+                    '$afterNotIdentical===' => '-1',
+                    '$afterNotEqual===' => '-1',
+                    '$afterIncrement===' => '1',
+                    '$afterLiteralFirst===' => '-1',
+                    '$afterDoWhile===' => '-1',
+                    '$afterFor===' => '-1',
+                ],
+            ],
             'whileCounterIncrementedThroughAReferenceIsWidened' => [
                 'code' => <<<'PHP'
                     <?php
