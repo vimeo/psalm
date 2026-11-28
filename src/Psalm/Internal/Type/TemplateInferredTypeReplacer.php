@@ -93,14 +93,8 @@ final class TemplateInferredTypeReplacer
 
                 if ($template_type) {
                     $should_set = false;
-
-                    foreach ($template_type->getAtomicTypes() as $template_type_part) {
-                        if ($template_type_part instanceof TMixed) {
-                            $is_mixed = true;
-                        }
-
-                        $new_types[] = $template_type_part;
-                    }
+                    $is_mixed = $is_mixed || self::hasMixedPart($template_type);
+                    $new_types = [...$new_types, ...array_values($template_type->getAtomicTypes())];
                 }
             } elseif ($atomic_type instanceof TTemplateParamClass) {
                 $class_template_types = self::replaceTemplateParamClass(
@@ -119,13 +113,8 @@ final class TemplateInferredTypeReplacer
                 $template_type = self::replaceTemplateIndexedAccess($codebase, $atomic_type, $inferred_lower_bounds);
 
                 if ($template_type) {
-                    foreach ($template_type->getAtomicTypes() as $template_type_part) {
-                        if ($template_type_part instanceof TMixed) {
-                            $is_mixed = true;
-                        }
-
-                        $new_types[] = $template_type_part;
-                    }
+                    $is_mixed = $is_mixed || self::hasMixedPart($template_type);
+                    $new_types = [...$new_types, ...array_values($template_type->getAtomicTypes())];
                 } else {
                     $new_types[] = new TMixed();
                 }
@@ -572,6 +561,17 @@ final class TemplateInferredTypeReplacer
         }
 
         return null;
+    }
+
+    /**
+     * @psalm-pure
+     */
+    private static function hasMixedPart(Union $type): bool
+    {
+        return array_any(
+            $type->getAtomicTypes(),
+            static fn(Atomic $atomic_type): bool => $atomic_type instanceof TMixed,
+        );
     }
 
     /**
