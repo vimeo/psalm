@@ -417,9 +417,12 @@ final class TypeExpander
                 );
             }
         } elseif ($return_type instanceof TTemplateParam) {
+            // a bound (`@template T of Foo`) constrains the arguments: `Foo` stands for its bounds, not its defaults
             $new_as_type = self::expandUnion(
                 $codebase,
-                $return_type->as,
+                $expand_generic
+                    ? TemplateDefaults::bindBareUsesToBounds($return_type->as, $codebase)
+                    : $return_type->as,
                 $self_class,
                 $static_class_type,
                 $parent_class,

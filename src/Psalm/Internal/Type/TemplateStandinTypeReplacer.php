@@ -917,7 +917,8 @@ final class TemplateStandinTypeReplacer
             return array_values($template_type->getAtomicTypes());
         }
 
-        $replacement_type = $template_type;
+        // a bound (`@template T of Foo`) constrains the arguments: `Foo` stands for its bounds, not its defaults
+        $replacement_type = TemplateDefaults::bindBareUsesToBounds($template_type, $codebase);
 
         $param_name_key = $atomic_type->param_name;
 

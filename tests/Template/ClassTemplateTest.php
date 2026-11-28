@@ -6682,6 +6682,70 @@ final class ClassTemplateTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'templateBoundNamingAClassWithDefaultsKeepsItsBounds' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-immutable
+                     * @template T of Node
+                     */
+                    final class Val {
+                        /** @param T $node */
+                        public function __construct(public Node $node) {}
+                    }
+
+                    /**
+                     * @psalm-immutable
+                     * @template-covariant TParent of object|null = null
+                     */
+                    abstract class Node {
+                        /** @return Val<$this> */
+                        public function val(): Val {
+                            return new Val($this);
+                        }
+                    }
+
+                    /** @param Node<object> $node */
+                    function f(Node $node): void {
+                        new Val($node);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'instanceofStaticKeepsTheTypeArguments' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-mutable
+                     * @template TAsync of bool = false
+                     */
+                    class Req {
+                        /**
+                         * @param list<Req|int> $bare
+                         * @param list<Req<true>|int> $async
+                         * @return list<Req<bool>>
+                         */
+                        public function pool(array $bare, array $async): array {
+                            $requests = [];
+
+                            foreach ($bare as $item) {
+                                if ($item instanceof static) {
+                                    $requests[] = $item;
+                                }
+                            }
+
+                            foreach ($async as $item) {
+                                if ($item instanceof static) {
+                                    $requests[] = $item;
+                                }
+                            }
+
+                            return $requests;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['ClassMustBeFinal'],
+                'php_version' => '8.0',
+            ],
             'purityOnlyTypeArgumentsUseTemplateDefaults' => [
                 'code' => '<?php
                     /**

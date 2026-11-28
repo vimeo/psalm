@@ -1967,6 +1967,22 @@ final class AssertionReconciler extends Reconciler
         return $type_2_atomic->setIntersectionTypes($type_1_atomic->extra_types);
     }
 
+    /**
+     * The class a check narrows a `Foo<A>` to, without type arguments of its own: `static` is a `Foo<A>&static`, and a
+     * child class passing its templates straight to those of Foo is a child of those arguments, not of its bounds
+     */
+    private static function withArgumentsOf(
+        Codebase $codebase,
+        TGenericObject $generic,
+        TNamedObject $checked,
+    ): TNamedObject {
+        if (strtolower($generic->value) !== strtolower($checked->value)) {
+            return self::inferTemplateParamsFromParent($codebase, $checked, $generic);
+        }
+
+        return $checked->is_static ? $generic->setIsStatic(true, $checked->is_static_resolved) : $checked;
+    }
+
     private static function filterAtomicWithAnother(
         Atomic &$type_1_atomic,
         Atomic $type_2_atomic,
@@ -1990,14 +2006,11 @@ final class AssertionReconciler extends Reconciler
             $type_1_atomic = $type_1_atomic->setIsStatic(false);
         }
 
-        // a `Parent<A>` narrowed to a child class without type arguments is a child of those arguments, not of its
-        // bounds
         if ($type_1_atomic instanceof TGenericObject
             && $type_2_atomic::class === TNamedObject::class
             && !$type_1_atomic->hasUnknownArgument()
-            && strtolower($type_1_atomic->value) !== strtolower($type_2_atomic->value)
         ) {
-            $type_2_atomic = self::inferTemplateParamsFromParent($codebase, $type_2_atomic, $type_1_atomic);
+            $type_2_atomic = self::withArgumentsOf($codebase, $type_1_atomic, $type_2_atomic);
         }
 
         if ($type_1_atomic instanceof TNamedObject

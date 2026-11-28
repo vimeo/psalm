@@ -35,8 +35,6 @@ final class ClassTemplateParamCollector
     /**
      * @param lowercase-string $method_name
      * @return array<string, non-empty-array<string, Union>>|null
-     * @psalm-suppress MoreSpecificReturnType
-     * @psalm-suppress LessSpecificReturnStatement
      */
     public static function collect(
         Codebase $codebase,
@@ -45,6 +43,30 @@ final class ClassTemplateParamCollector
         ?string $method_name = null,
         ?Atomic $lhs_type_part = null,
         bool $self_call = false,
+    ): ?array {
+        return self::collectForReceiver(
+            $codebase,
+            $class_storage,
+            $static_class_storage,
+            $method_name,
+            self::getBareReceiverUse($codebase, $lhs_type_part, $self_call),
+            $self_call,
+        );
+    }
+
+    /**
+     * @param lowercase-string $method_name
+     * @return array<string, non-empty-array<string, Union>>|null
+     * @psalm-suppress MoreSpecificReturnType
+     * @psalm-suppress LessSpecificReturnStatement
+     */
+    private static function collectForReceiver(
+        Codebase $codebase,
+        ClassLikeStorage $class_storage,
+        ClassLikeStorage $static_class_storage,
+        ?string $method_name,
+        ?Atomic $lhs_type_part,
+        bool $self_call,
     ): ?array {
         $class_storage = self::getDocumentingClassStorage(
             $codebase,
@@ -74,8 +96,6 @@ final class ClassTemplateParamCollector
 
         $class_template_params = [];
         $e = $static_class_storage->template_extended_params;
-
-        $lhs_type_part = self::getBareReceiverUse($codebase, $lhs_type_part, $self_call);
 
         if ($lhs_type_part instanceof TGenericObject) {
             $lhs_type_part = StarProjection::resolveReads($lhs_type_part, $codebase);

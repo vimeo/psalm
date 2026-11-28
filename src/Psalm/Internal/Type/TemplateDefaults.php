@@ -216,7 +216,27 @@ final class TemplateDefaults
     }
 
     /**
-     * @psalm-mutation-free
+     * The type with each class written without type arguments in it standing for the bounds of its templates
+     * ({@see self::bindBareUse()})
+     *
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
+     */
+    public static function bindBareUsesToBounds(Union $type, Codebase $codebase): Union
+    {
+        $atomics = [];
+        $changed = false;
+
+        foreach ($type->getAtomicTypes() as $atomic) {
+            $bound_use = self::bindBareUse($atomic, $codebase, false);
+            $changed = $changed || $bound_use !== $atomic;
+            $atomics[] = $bound_use;
+        }
+
+        return $changed ? $type->setTypes($atomics) : $type;
+    }
+
+    /**
+     * @psalm-pure
      */
     private static function isExpandable(Union $default): bool
     {
