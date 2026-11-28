@@ -1210,7 +1210,6 @@ final class AtomicTypeComparator
             return true;
         }
 
-
         // the name of a function is never numeric
         if (($type1_part instanceof TCallableString
                 && $type2_part instanceof TString
