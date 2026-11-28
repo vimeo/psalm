@@ -3705,6 +3705,26 @@ final class ConstantTest extends TestCase
                     }',
                 'error_message' => 'CircularReference',
             ],
+            'circularConstantAsTemplateDefault' => [
+                'code' => '<?php
+                    /** @template T of string = self::A */
+                    final class C { public const A = self::A; }',
+                'error_message' => 'CircularReference',
+            ],
+            'circularConstantInTemplateBound' => [
+                'code' => '<?php
+                    /** @template T of self::A */
+                    final class C { public const A = self::A; }',
+                'error_message' => 'CircularReference',
+            ],
+            'circularConstantOfAnotherClassAsTemplateDefault' => [
+                'code' => '<?php
+                    final class D { public const A = D::A; }
+
+                    /** @template T of string = D::A */
+                    final class C {}',
+                'error_message' => 'CircularReference',
+            ],
             'keyOfBadValue' => [
                 'code' => '<?php
                     class A {
