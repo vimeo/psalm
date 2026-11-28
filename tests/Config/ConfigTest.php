@@ -2349,6 +2349,51 @@ final class ConfigTest extends DeferredAnalyzerTestCase
     }
 
 
+    /**
+     * @psalm-pure
+     * @return iterable<string, array{bool, bool}>
+     */
+    public static function providerFalseReturnOfDateIntervalCreateFromDateString(): iterable
+    {
+        yield 'ignored' => [true, false];
+        yield 'reported' => [false, true];
+    }
+
+    #[DataProvider('providerFalseReturnOfDateIntervalCreateFromDateString')]
+    public function testDateIntervalCreateFromDateStringReturnsFalseOnAnInvalidString(
+        bool $ignore_false_return,
+        bool $is_reported,
+    ): void {
+        if ($is_reported) {
+            $this->expectException(CodeException::class);
+            $this->expectExceptionMessage('FalsableReturnStatement');
+        }
+
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2),
+                '<?xml version="1.0"?>
+                <psalm ignoreInternalFunctionFalseReturn="' . ($ignore_false_return ? 'true' : 'false') . '">
+                </psalm>',
+            ),
+        );
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                function interval(string $s): DateInterval {
+                    return date_interval_create_from_date_string($s);
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        // an ignored issue: the analysis went through without an exception
+        $this->addToAssertionCount(1);
+    }
+
     public function testValidThrowInvalidCatch(): void
     {
         $this->expectExceptionMessage('InvalidCatch');
