@@ -309,6 +309,44 @@ final class ConstantTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'classConstantOfSelfAndStaticInAnIntersectionInATrait' => [
+                'code' => '<?php
+                    namespace App;
+
+                    trait HasFlags {
+                        public function f(): int {
+                            /** @var self::A&int $by_self */
+                            $by_self = self::A;
+                            /** @var static::A&int $by_static */
+                            $by_static = self::A;
+
+                            return $by_self + $by_static;
+                        }
+                    }
+
+                    final class Flags {
+                        use HasFlags;
+
+                        public const A = 1;
+                    }',
+            ],
+            'classConstantOfSelfAndStaticInAnIntersectionInANamespacedClass' => [
+                'code' => '<?php
+                    namespace App;
+
+                    final class Flags {
+                        public const A = 1;
+
+                        public function f(): int {
+                            /** @var self::A&int $by_self */
+                            $by_self = self::A;
+                            /** @var static::A&int $by_static */
+                            $by_static = self::A;
+
+                            return $by_self + $by_static;
+                        }
+                    }',
+            ],
             'lateStaticBoundConstantsKeepTheirDeclaredTypes' => [
                 'code' => '<?php
                     class Service {
@@ -3382,6 +3420,22 @@ final class ConstantTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'undefinedClassConstantOfSelfInAnIntersectionInANamespacedClass' => [
+                'code' => '<?php
+                    namespace App;
+
+                    final class Flags {
+                        public const A = 1;
+
+                        public function f(): int {
+                            /** @var self::MISSING&int $y */
+                            $y = self::A;
+
+                            return $y;
+                        }
+                    }',
+                'error_message' => 'UndefinedConstant - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:29 - Constant App\\Flags::MISSING is not defined',
+            ],
             'staticConstantInATraitOfAFinalClassKeepsItsValue' => [
                 'code' => '<?php
                     trait T {
