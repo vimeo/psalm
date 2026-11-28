@@ -123,7 +123,11 @@ final class ErrorBaseline
 
                 foreach ($codeSamples as $codeSample) {
                     $files[$fileName][$issueType]['o'] += 1;
-                    $files[$fileName][$issueType]['s'][] = str_replace("\r\n", "\n", trim($codeSample->textContent));
+                    $files[$fileName][$issueType]['s'][] = str_replace(
+                        ["\r\n", "\r"],
+                        "\n",
+                        trim($codeSample->textContent),
+                    );
                 }
             }
         }

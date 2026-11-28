@@ -12,6 +12,7 @@ use Mockery\MockInterface;
 use Psalm\ErrorBaseline;
 use Psalm\Exception\ConfigException;
 use Psalm\Internal\Analyzer\IssueData;
+use Psalm\Internal\BaselineMatcher;
 use Psalm\Internal\Provider\FileProvider;
 use Psalm\Internal\RuntimeCaches;
 
@@ -168,6 +169,33 @@ bar&#13;
             $expectedParsedBaseline,
             ErrorBaseline::read($this->fileProvider, $baselineFilePath),
         );
+    }
+
+    public function testReadShouldTurnALoneCarriageReturnIntoALineFeed(): void
+    {
+        $baselineFilePath = 'baseline.xml';
+
+        $this->fileProvider->allows()->fileExists($baselineFilePath)->andReturns(true);
+        $this->fileProvider->allows()->getContents($baselineFilePath)->andReturns(
+            '<?xml version="1.0" encoding="UTF-8"?>
+            <files>
+              <file src="sample/sample-file.php">
+                <MixedAssignment>
+                  <code>foo&#13;bar</code>
+                </MixedAssignment>
+              </file>
+            </files>',
+        );
+
+        $this->assertSame(
+            ['sample/sample-file.php' => ['MixedAssignment' => ['o' => 1, 's' => ["foo\nbar"]]]],
+            ErrorBaseline::read($this->fileProvider, $baselineFilePath),
+        );
+    }
+
+    public function testASelectedTextWithALoneCarriageReturnMatchesItsBaselineEntry(): void
+    {
+        $this->assertSame("x\ny\nz", BaselineMatcher::normalizeSelectedText("x\ry\r\nz"));
     }
 
     public function testLoadShouldThrowExceptionWhenFilesAreNotDefinedInBaselineFile(): void
@@ -726,6 +754,62 @@ bar&#13;
                     'sample/sample-file.php',
                     "[\r\n            1,\r\n        ]",
                     "[\r\n            1,\r\n        ]",
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                ),
+            ],
+        ];
+
+        $remainingBaseline = ErrorBaseline::update(
+            $this->fileProvider,
+            $baselineFile,
+            $newIssues,
+            false,
+        );
+
+        $this->assertSame([
+            'sample/sample-file.php' => [
+                'InvalidArgument' => ['o' => 1, 's' => ["[\n            1,\n        ]"]],
+            ],
+        ], $remainingBaseline);
+    }
+
+    public function testUpdateShouldKeepAMultilineCodeSampleOfALoneCrFile(): void
+    {
+        $baselineFile = 'baseline.xml';
+
+        $this->fileProvider->allows()->fileExists($baselineFile)->andReturns(true);
+        $this->fileProvider->allows()->getContents($baselineFile)->andReturns(
+            '<?xml version="1.0" encoding="UTF-8"?>
+            <files>
+              <file src="sample/sample-file.php">
+                <InvalidArgument>
+                    <code><![CDATA[[
+            1,
+        ]]]></code>
+                </InvalidArgument>
+              </file>
+            </files>',
+        );
+
+        $this->fileProvider->allows()->setContents(Mockery::andAnyOtherArgs());
+
+        $newIssues = [
+            'sample/sample-file.php' => [
+                new IssueData(
+                    IssueData::SEVERITY_ERROR,
+                    0,
+                    0,
+                    'InvalidArgument',
+                    'Message',
+                    'sample/sample-file.php',
+                    'sample/sample-file.php',
+                    "[\r            1,\r        ]",
+                    "[\r            1,\r        ]",
                     0,
                     0,
                     0,
