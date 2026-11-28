@@ -58,6 +58,20 @@ final class UnusedVariableTest extends TestCase
     public static function providerValidCodeParse(): array
     {
         return [
+            'varAnnotationOnForeachInsideAnotherLoopIsNotUnnecessary' => [
+                'code' => '<?php
+                    /** @param list<iterable<int, array<array-key, string|null>>> $sets */
+                    function g(array $sets): void {
+                        foreach ($sets as $rows) {
+                            /** @var string $a */
+                            foreach ($rows as ["a" => $a]) {
+                                echo $a;
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+            ],
             'methodNameOfAStaticCallOnAStringIsUsed' => [
                 'code' => '<?php
                     function f(string $class): void {
