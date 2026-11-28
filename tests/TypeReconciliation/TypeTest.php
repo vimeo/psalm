@@ -39,6 +39,110 @@ final class TypeTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'identicalListsOfOtherValueTypesCanBothBeEmpty' => [
+                'code' => '<?php
+                    /**
+                     * @param list<int> $li
+                     * @param list<string> $ls
+                     */
+                    function check(array $li, array $ls): int {
+                        if ($li === $ls) {
+                            /** @psalm-check-type-exact $li = array<never, never> */;
+                        }
+
+                        return match ($li) {
+                            $ls => 1,
+                            default => 2,
+                        };
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'identicalListsKeepTheValuesOfBothTypes' => [
+                'code' => '<?php
+                    class Open {}
+
+                    /**
+                     * @param list<int|string> $int_or_string
+                     * @param list<int|bool> $int_or_bool
+                     * @param list<list<int>> $int_lists
+                     * @param list<list<string>> $string_lists
+                     * @param list<object{foo: int}> $shapes
+                     * @param list<Open> $objects
+                     */
+                    function check(
+                        array $int_or_string,
+                        array $int_or_bool,
+                        array $int_lists,
+                        array $string_lists,
+                        array $shapes,
+                        array $objects,
+                    ): void {
+                        if ($int_or_string === $int_or_bool) {
+                            /** @psalm-check-type-exact $int_or_string = list<int> */;
+                        }
+
+                        if ($int_lists === $string_lists) {
+                            /** @psalm-check-type-exact $int_lists = list<array<never, never>> */;
+                        }
+
+                        if ($shapes === $objects) {
+                            /** @psalm-check-type-exact $shapes = list<Open&object{foo:int}> */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'identicalArrayShapesWithOptionalKeysAreKept' => [
+                'code' => '<?php
+                    /**
+                     * @param array{x?: int|string} $int_or_string
+                     * @param array{x?: int|bool} $int_or_bool
+                     */
+                    function check(array $int_or_string, array $int_or_bool): void {
+                        if ($int_or_string === $int_or_bool) {
+                            /** @psalm-check-type-exact $int_or_string = array{x?: int|string} */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'instanceofANonFinalClassOrAnInterfaceKeepsTheObjectShape' => [
+                'code' => '<?php
+                    class Open {}
+                    interface Marker {}
+                    class WithPrivateFoo {
+                        private string $foo = "";
+                    }
+
+                    /**
+                     * @param object{foo: int} $shape
+                     * @param object{foo: int}|int $shape_or_int
+                     */
+                    function check(object $shape, object|int $shape_or_int): void {
+                        if ($shape instanceof Open) {
+                            /** @psalm-check-type-exact $shape = Open&object{foo:int} */;
+                        }
+
+                        if ($shape instanceof WithPrivateFoo) {
+                            /** @psalm-check-type-exact $shape = WithPrivateFoo&object{foo:int} */;
+                        }
+
+                        if ($shape instanceof Marker) {
+                            /** @psalm-check-type-exact $shape = Marker&object{foo:int} */;
+                        }
+
+                        if ($shape_or_int instanceof Open) {
+                            /** @psalm-check-type-exact $shape_or_int = Open&object{foo:int} */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'closedResourceIsTruthyLikeAnyResource' => [
                 'code' => '<?php
                     /** @param resource|closed-resource|null $stream */
@@ -1459,6 +1563,45 @@ final class TypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'instanceofAFinalClassOnAnObjectShapeIsImpossible' => [
+                'code' => '<?php
+                    final class Closed {}
+
+                    /** @param object{foo: int} $shape */
+                    function check(object $shape): void {
+                        if ($shape instanceof Closed) {}
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:29 - Cannot resolve types for $shape - object{foo:int} does not contain Closed',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'instanceofAClassWithAPropertyOfAnotherTypeOnAnObjectShapeIsImpossible' => [
+                'code' => '<?php
+                    class WithStringFoo {
+                        public string $foo = "";
+                    }
+
+                    /** @param object{foo: int} $shape */
+                    function check(object $shape): void {
+                        if ($shape instanceof WithStringFoo) {}
+                    }',
+                'error_message' => 'Cannot resolve types for $shape - object{foo:int} does not contain WithStringFoo',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'assertingAListOfOtherValuesIsImpossible' => [
+                'code' => '<?php
+                    /** @psalm-assert list<string> $x */
+                    function assertStrings(mixed $x): void {}
+
+                    /** @param list<int> $li */
+                    function check(array $li): void {
+                        assertStrings($li);
+                    }',
+                'error_message' => 'Cannot resolve types for $li - list<int> does not contain list<string',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'possiblyUndefinedVariable' => [
                 'code' => '<?php
                     if (rand(0, 1)) {

@@ -7,6 +7,7 @@ namespace Psalm\Internal\Type;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Exception\TypeParseTreeException;
+use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\CoalesceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -1113,6 +1114,12 @@ final class AssertionReconciler extends Reconciler
                     $existing_var_type_part = $existing_var_type_part->addIntersectionType($new_type_part);
                     $acceptable_atomic_types[] = $existing_var_type_part;
                 }
+
+                $shaped_object = self::getShapedObject($codebase, $existing_var_type_part, $new_type_part);
+
+                if ($shaped_object !== null) {
+                    $acceptable_atomic_types[] = $shaped_object;
+                }
             }
 
             if ($acceptable_atomic_types) {
@@ -1470,6 +1477,15 @@ final class AssertionReconciler extends Reconciler
         if ($type_1_parts === null && $type_2_parts === null) {
             // `instanceof` of an interface on a callable keeps what it did: only `===` makes the object a callable
             $refined_type = ($is_identity ? self::getCallableObject($codebase, $type_1_atomic, $type_2_atomic) : null)
+                ?? self::getShapedObject($codebase, $type_1_atomic, $type_2_atomic)
+                ?? ($is_identity
+                    ? self::intersectArraysThatCanBeEmpty(
+                        $codebase,
+                        $type_1_atomic,
+                        $type_2_atomic,
+                        $any_scalar_type_match_found,
+                    )
+                    : null)
                 ?? self::refineWithIntersectionParts(
                     $type_1_atomic,
                     $type_2_atomic,
@@ -1789,6 +1805,114 @@ final class AssertionReconciler extends Reconciler
 
         if (AtomicTypeComparator::mayBeTheSameCallableObject($codebase, $type_2, $type_1)) {
             return $type_1->addIntersectionType(new TCallableObject());
+        }
+
+        return null;
+    }
+
+    /**
+     * The object of a non-final class or of an interface that an object shape may be (a child or an implementation may
+     * declare its properties, but can't change the type of a property the class declares), or null if one of the
+     * types isn't an object shape and the other such an object
+     */
+    private static function getShapedObject(Codebase $codebase, Atomic $type_1, Atomic $type_2): ?Atomic
+    {
+        [$shape, $object] = $type_1 instanceof TObjectWithProperties ? [$type_1, $type_2] : [$type_2, $type_1];
+
+        if (!$shape instanceof TObjectWithProperties
+            || !$object instanceof TNamedObject
+            || !$codebase->classlike_storage_provider->has($object->value)
+        ) {
+            return null;
+        }
+
+        $storage = $codebase->classlike_storage_provider->get($object->value);
+
+        if ($storage->final) {
+            return null;
+        }
+
+        foreach ($shape->properties as $name => $property_type) {
+            $declaring_class = $storage->declaring_property_ids[$name] ?? null;
+
+            if ($declaring_class === null) {
+                continue;
+            }
+
+            $property_storage = $codebase->properties->getStorage($declaring_class . '::$' . $name);
+
+            if ($property_storage->visibility !== ClassLikeAnalyzer::VISIBILITY_PRIVATE
+                && $property_storage->signature_type !== null
+                && !UnionTypeComparator::canExpressionTypesBeIdentical(
+                    $codebase,
+                    $property_storage->signature_type,
+                    $property_type,
+                )
+            ) {
+                return null;
+            }
+        }
+
+        return self::addIntersectionPart($codebase, $object, $shape);
+    }
+
+    /**
+     * The values of two arrays that can both be empty: those of both types when they share some, else only [].
+     * An array shape is kept as it is.
+     */
+    private static function intersectArraysThatCanBeEmpty(
+        Codebase $codebase,
+        Atomic $type_1,
+        Atomic $type_2,
+        bool &$any_scalar_type_match_found,
+    ): ?Atomic {
+        if (!self::canBeTheEmptyArray($type_1) || !self::canBeTheEmptyArray($type_2)) {
+            return null;
+        }
+
+        $params_1 = self::getGenericArrayParams($type_1);
+        $params_2 = self::getGenericArrayParams($type_2);
+
+        if ($params_1 === null || $params_2 === null) {
+            return $type_1;
+        }
+
+        [$key_1, $value_1] = $params_1;
+        [$key_2, $value_2] = $params_2;
+
+        $key = self::filterTypeWithAnother($codebase, $key_1, $key_2, $any_scalar_type_match_found, true);
+        $value = self::filterTypeWithAnother($codebase, $value_1, $value_2, $any_scalar_type_match_found, true);
+
+        if ($key === null || $value === null || $key->isNever() || $value->isNever()) {
+            return Type::getEmptyArrayAtomic();
+        }
+
+        return $type_1 instanceof TKeyedArray || $type_2 instanceof TKeyedArray
+            ? Type::getListAtomic($value)
+            : new TArray([$key, $value]);
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    private static function canBeTheEmptyArray(Atomic $type): bool
+    {
+        return $type::class === TArray::class
+            || ($type instanceof TKeyedArray && !$type->isNonEmpty());
+    }
+
+    /**
+     * @return array{Union, Union}|null null for an array shape
+     * @psalm-mutation-free
+     */
+    private static function getGenericArrayParams(Atomic $type): ?array
+    {
+        if ($type instanceof TArray) {
+            return $type->type_params;
+        }
+
+        if ($type instanceof TKeyedArray && $type->isGenericList()) {
+            return [Type::getListKey(), $type->fallback_params[1]];
         }
 
         return null;
