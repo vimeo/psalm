@@ -1988,6 +1988,21 @@ final class ClassLikeStringTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.1',
             ],
+            'enumStringOfAnInterfaceKeepsItsKindInANullableUnion' => [
+                'code' => <<<'PHP'
+                    <?php
+                    interface I {}
+                    final class Plain implements I {}
+
+                    /** @param enum-string<I>|null $c */
+                    function takes(?string $c): void {}
+
+                    takes(Plain::class);
+                    PHP,
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'arrayOfStringClasses' => [
                 'code' => '<?php
                     /**

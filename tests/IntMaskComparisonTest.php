@@ -296,6 +296,19 @@ final class IntMaskComparisonTest extends TestCase
                     '$n===' => '0|1|2|3|4|5|6|7',
                 ],
             ],
+            'intMaskOfUseConstImportsAreResolved' => [
+                'code' => '<?php
+                    namespace N;
+
+                    use const E_ERROR as SORT_ASC;
+                    use const E_WARNING as SORT_DESC;
+
+                    /** @var int-mask-of<SORT_ASC|SORT_DESC> $m */
+                    $m = 0;',
+                'assertions' => [
+                    '$m===' => '0|1|2|3',
+                ],
+            ],
         ];
     }
 

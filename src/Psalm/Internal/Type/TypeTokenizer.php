@@ -454,14 +454,14 @@ final class TypeTokenizer
     ): array {
         $type_tokens = self::tokenize($string_type);
 
-        // for each open `<`, whether it starts the arguments of an `int-mask`
+        // for each open `<`, whether it starts the arguments of an `int-mask` or `int-mask-of`
         $opens_int_mask = [];
 
         for ($i = 0, $l = count($type_tokens); $i < $l; ++$i) {
             $string_type_token = $type_tokens[$i];
 
             if ($string_type_token[0] === '<') {
-                $opens_int_mask[] = $i > 0 && $type_tokens[$i - 1][0] === 'int-mask';
+                $opens_int_mask[] = $i > 0 && self::isIntMaskKeyword($type_tokens[$i - 1][0]);
             } elseif ($string_type_token[0] === '>') {
                 array_pop($opens_int_mask);
             }
@@ -594,10 +594,10 @@ final class TypeTokenizer
             }
 
             // a constant of an `int-mask` imported with `use const` is the imported one, as if written fully
-            // qualified (no fallback to a global constant)
+            // qualified (no fallback to a global constant); `Foo::BAR` class constants are left alone
             if (end($opens_int_mask) === true
                 && isset($aliases->constants[$string_type_token[0]])
-                && (!isset($type_tokens[$i + 1]) || $type_tokens[$i + 1][0] !== '::')
+                && self::isBareConstantName($type_tokens, $i)
             ) {
                 $type_tokens[$i][0] = $aliases->constants[$string_type_token[0]];
                 $type_tokens[$i][2] = '\\' . $aliases->constants[$string_type_token[0]];
@@ -647,6 +647,26 @@ final class TypeTokenizer
             && $i > 1
             && ($type_tokens[$i - 2][0] === '<' || $type_tokens[$i - 2][0] === ',')
             && preg_match('/^[a-zA-Z_\\\\]/', $type_tokens[$i - 1][0]) === 1;
+    }
+
+    /**
+     * @psalm-pure
+     */
+    private static function isIntMaskKeyword(string $token): bool
+    {
+        return $token === 'int-mask' || $token === 'int-mask-of';
+    }
+
+    /**
+     * Whether the token at `$i` stands on its own, rather than being the class or the constant name of `Foo::BAR`
+     *
+     * @param array<int, array{0: string, 1: int, 2?: string}> $type_tokens
+     * @psalm-pure
+     */
+    private static function isBareConstantName(array $type_tokens, int $i): bool
+    {
+        return ($type_tokens[$i + 1][0] ?? null) !== '::'
+            && ($i === 0 || $type_tokens[$i - 1][0] !== '::');
     }
 
     /**

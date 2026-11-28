@@ -328,6 +328,7 @@ final class TypeCombiner
                 foreach ($combination->strings as $k => $string) {
                     if ($string instanceof TLiteralClassString) {
                         $combination->class_string_types[$string->value] = new TNamedObject($string->value);
+                        $combination->class_string_kinds[$string->value] = [false, false];
                         unset($combination->strings[$k]);
                     }
                 }
@@ -342,14 +343,44 @@ final class TypeCombiner
                     $codebase,
                 );
 
+                $result_keys = [];
                 foreach ($object_type->getAtomicTypes() as $object_atomic_type) {
                     if ($object_atomic_type instanceof TNamedObject) {
-                        $class_type = new TClassString($object_atomic_type->value, $object_atomic_type);
+                        $result_keys[$object_atomic_type->value] = true;
                     } elseif ($object_atomic_type instanceof TObject) {
-                        $class_type = new TClassString();
+                        $result_keys['object'] = true;
+                    }
+                }
+
+                foreach ($object_type->getAtomicTypes() as $object_atomic_type) {
+                    if ($object_atomic_type instanceof TNamedObject) {
+                        $kind_key = $object_atomic_type->value;
+                    } elseif ($object_atomic_type instanceof TObject) {
+                        $kind_key = 'object';
                     } else {
                         continue;
                     }
+
+                    // a kind survives only if every class-string merged into this member has it
+                    $is_interface = true;
+                    $is_enum = true;
+                    foreach ($combination->class_string_types as $key => $_) {
+                        if ($key === $kind_key || !isset($result_keys[$key])) {
+                            $kind = $combination->class_string_kinds[$key] ?? [false, false];
+                            $is_interface = $is_interface && $kind[0];
+                            $is_enum = $is_enum && $kind[1];
+                        }
+                    }
+
+                    $class_type = $object_atomic_type instanceof TNamedObject
+                        ? new TClassString(
+                            $object_atomic_type->value,
+                            $object_atomic_type,
+                            false,
+                            $is_interface,
+                            $is_enum,
+                        )
+                        : new TClassString('object', null, false, $is_interface, $is_enum);
 
                     $new_types[] = $class_type->setFromDocblock($from_docblock);
                 }
@@ -1414,6 +1445,15 @@ final class TypeCombiner
         if ($type instanceof TTemplateParamClass) {
             $combination->value_types[$type_key] = $type;
         } elseif ($type instanceof TClassString) {
+            $kind_key = $type->as_type ? $type->as : 'object';
+            $kind = [$type->is_interface, $type->is_enum];
+            $combination->class_string_kinds[$kind_key] = isset($combination->class_string_kinds[$kind_key])
+                ? [
+                    $combination->class_string_kinds[$kind_key][0] && $kind[0],
+                    $combination->class_string_kinds[$kind_key][1] && $kind[1],
+                ]
+                : $kind;
+
             if (!$type->as_type) {
                 $combination->class_string_types['object'] = new TObject();
             } else {
@@ -1499,8 +1539,10 @@ final class TypeCombiner
                         $first_class = array_keys($mutual)[0];
 
                         $combination->class_string_types[$first_class] = new TNamedObject($first_class);
+                        $combination->class_string_kinds[$first_class] = [false, false];
                     } else {
                         $combination->class_string_types['object'] = new TObject();
+                        $combination->class_string_kinds['object'] = [false, false];
                     }
                 } elseif (isset($combination->value_types['string'])
                     && $combination->value_types['string'] instanceof TNonspecificLiteralString
