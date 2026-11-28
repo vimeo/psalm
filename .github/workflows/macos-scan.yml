@@ -1,8 +1,11 @@
 name: Run Psalm (mac OS)
 
 on:
+  # only on the branches pull requests are merged into: Shepherd runs the same analysis on pull requests, on Linux
   push:
-  pull_request:
+    branches:
+      - master
+      - '[0-9]+.x'
   # dispatched by bin/ci/apply-queued-changes.php after merging, which doesn't trigger pushes
   workflow_dispatch:
 
