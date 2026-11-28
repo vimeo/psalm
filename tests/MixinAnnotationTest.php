@@ -1702,7 +1702,7 @@ final class MixinAnnotationTest extends TestCase
                         public object $otherObj;
 
                         public function __call(string $name, array $args) {
-                            if ($name === "test") {
+                            if ($name === "type") {
                                 return $this->obj->$name(...$args);
                             }
 
@@ -1710,7 +1710,7 @@ final class MixinAnnotationTest extends TestCase
                         }
 
                         public function __callStatic(string $name, array $args) {
-                            if ($name === "test") {
+                            if ($name === "type") {
                                 return (new static)->obj->$name(...$args);
                             }
 

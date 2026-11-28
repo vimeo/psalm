@@ -99,4 +99,69 @@ final class AtomicMethodCallAnalysisResult
      * @var list<array{ClassLikeStorage, array<string, array<string, Union>>}>
      */
     public array $analysed_receiver_classes = [];
+
+    /**
+     * Sets aside the methods earlier calls found and missed, so that those of the next call can be told apart
+     *
+     * @return array{array<string, bool>, bool, array<string>, array<string>, array<string>}
+     * @psalm-external-mutation-free
+     */
+    public function setAsideFoundMethods(): array
+    {
+        $aside = [
+            $this->existent_method_ids,
+            $this->has_mixed_method_call,
+            $this->non_existent_class_method_ids,
+            $this->non_existent_interface_method_ids,
+            $this->non_existent_magic_method_ids,
+        ];
+
+        $this->existent_method_ids = [];
+        $this->has_mixed_method_call = false;
+        $this->non_existent_class_method_ids = [];
+        $this->non_existent_interface_method_ids = [];
+        $this->non_existent_magic_method_ids = [];
+
+        return $aside;
+    }
+
+    /**
+     * Adds back what setAsideFoundMethods() set aside, without the methods the last call missed when
+     * $drop_missing_methods is true
+     *
+     * @param array{array<string, bool>, bool, array<string>, array<string>, array<string>} $aside
+     * @psalm-external-mutation-free
+     */
+    public function addBackFoundMethods(array $aside, bool $drop_missing_methods): void
+    {
+        [
+            $existent_method_ids,
+            $has_mixed_method_call,
+            $non_existent_class_method_ids,
+            $non_existent_interface_method_ids,
+            $non_existent_magic_method_ids,
+        ] = $aside;
+
+        $this->existent_method_ids += $existent_method_ids;
+        $this->has_mixed_method_call = $this->has_mixed_method_call || $has_mixed_method_call;
+
+        if ($drop_missing_methods) {
+            $this->non_existent_class_method_ids = $non_existent_class_method_ids;
+            $this->non_existent_interface_method_ids = $non_existent_interface_method_ids;
+            $this->non_existent_magic_method_ids = $non_existent_magic_method_ids;
+        } else {
+            $this->non_existent_class_method_ids = [
+                ...$non_existent_class_method_ids,
+                ...$this->non_existent_class_method_ids,
+            ];
+            $this->non_existent_interface_method_ids = [
+                ...$non_existent_interface_method_ids,
+                ...$this->non_existent_interface_method_ids,
+            ];
+            $this->non_existent_magic_method_ids = [
+                ...$non_existent_magic_method_ids,
+                ...$this->non_existent_magic_method_ids,
+            ];
+        }
+    }
 }

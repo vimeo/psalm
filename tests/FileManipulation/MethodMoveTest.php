@@ -812,6 +812,56 @@ final class MethodMoveTest extends DeferredAnalyzerTestCase
                     'Ns\A::foo' => 'Ns\A::Fedcba',
                 ],
             ],
+            'renameMethodsLeavesCallsByAVariableName' => [
+                'input' => '<?php
+                    namespace Ns;
+
+                    final class A {
+                        public function foo(): void {}
+
+                        public function bar(): void {}
+
+                        public static function sfoo(): void {}
+
+                        public static function sbar(): void {}
+
+                        public function run(): void {
+                            $m = random_int(0, 1) ? "foo" : "bar";
+                            $this->$m();
+                            $this->foo();
+
+                            $s = random_int(0, 1) ? "sfoo" : "sbar";
+                            self::$s();
+                            self::sfoo();
+                        }
+                    }',
+                'output' => '<?php
+                    namespace Ns;
+
+                    final class A {
+                        public function baz(): void {}
+
+                        public function bar(): void {}
+
+                        public static function sbaz(): void {}
+
+                        public static function sbar(): void {}
+
+                        public function run(): void {
+                            $m = random_int(0, 1) ? "foo" : "bar";
+                            $this->$m();
+                            $this->baz();
+
+                            $s = random_int(0, 1) ? "sfoo" : "sbar";
+                            self::$s();
+                            self::sbaz();
+                        }
+                    }',
+                'migrations' => [
+                    'Ns\A::foo' => 'Ns\A::baz',
+                    'Ns\A::sfoo' => 'Ns\A::sbaz',
+                ],
+            ],
         ];
     }
 }

@@ -14,7 +14,6 @@ use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\MethodAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentsAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ByRefArgumentAnalyzer;
-use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -242,63 +241,7 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
             }
 
             if ($stmt->isFirstClassCallable()) {
-                $return_type_candidate = null;
-                $method_name_type = $statements_analyzer->node_data->getType($stmt->name);
-                if ($method_name_type && $method_name_type->isSingleStringLiteral()) {
-                    $method_identifier = new MethodIdentifier(
-                        $fq_class_name,
-                        strtolower($method_name_type->getSingleStringLiteral()->value),
-                    );
-                    //the call to methodExists will register that the method was called from somewhere
-                    if ($codebase->methodExists(
-                        $method_identifier,
-                        $context->calling_method_id,
-                        null,
-                        $statements_analyzer,
-                        $statements_analyzer->getFilePath(),
-                        true,
-                        $context->insideUse(),
-                    )) {
-                        $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_identifier)
-                            ?? $method_identifier;
-
-                        // A method confirmed only by an existence provider has no storage.
-                        if ($codebase->methods->hasStorage($declaring_method_id)) {
-                            $declaring_class_storage = $codebase->classlike_storage_provider->get(
-                                $declaring_method_id->fq_class_name,
-                            );
-                            [$closure, $method_template_types] = MethodCallReturnTypeFetcher::getInheritedClosure(
-                                $codebase,
-                                $declaring_method_id,
-                                $codebase->methods->getStorage($declaring_method_id),
-                                $statements_analyzer,
-                            );
-
-                            $return_type_candidate = MethodCallReturnTypeFetcher::getFirstClassCallableType(
-                                $codebase,
-                                $stmt,
-                                $closure,
-                                new TemplateResult([], ClassTemplateParamCollector::collect(
-                                    $codebase,
-                                    $declaring_class_storage,
-                                    $class_storage,
-                                    $method_identifier->method_name,
-                                    $lhs_type_part,
-                                    $lhs_var_id === '$this',
-                                ) ?? []),
-                                $method_template_types,
-                                $fq_class_name,
-                                $static_type,
-                                $declaring_class_storage->parent_class,
-                                MethodCallReturnTypeFetcher::isFinalReceiver($codebase, $static_type),
-                                true,
-                            );
-                        }
-                    }
-                }
-
-                $statements_analyzer->node_data->setType($stmt, $return_type_candidate ?? Type::getClosure());
-
+                $statements_analyzer->node_data->setType($stmt, Type::getClosure());
 
                 return;
             }
