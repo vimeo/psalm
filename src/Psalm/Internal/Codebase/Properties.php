@@ -9,6 +9,7 @@ use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ClosureAnalyzer;
+use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\PropertyExistenceProvider;
 use Psalm\Internal\Provider\PropertyTypeProvider;
@@ -404,6 +405,11 @@ final class Properties
                 return $declaring_class !== null
                     && strtolower($declaring_class) === strtolower($class_name)
                     && str_starts_with(strtolower($hook_id), strtolower($hook_property_id . '::'));
+            }
+
+            // the file is the root of the sources
+            if ($source instanceof FileAnalyzer) {
+                return false;
             }
 
             $parent_source = $source->getSource();

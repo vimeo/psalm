@@ -143,6 +143,52 @@ final class DeprecatedAnnotationTest extends TestCase
                      */
                     class TheChildClass extends TheParentClass {}
                 '],
+            'deprecatedPropertyUsedByItsOwnHooks' => [
+                'code' => '<?php
+                    final class ShortSet {
+                        /** @deprecated */
+                        public string $declared = "" {
+                            set => strtolower($value);
+                        }
+                    }
+
+                    final class BlockSet {
+                        /** @deprecated */
+                        public string $declared = "" {
+                            set { $this->declared = strtolower($value); }
+                        }
+                    }
+
+                    final class Get {
+                        /** @deprecated */
+                        public string $declared = "" {
+                            get => $this->declared;
+                        }
+                    }
+
+                    final class InClosure {
+                        /** @deprecated */
+                        public string $declared = "" {
+                            get {
+                                $read = fn(): string => $this->declared;
+
+                                return $read();
+                            }
+                        }
+                    }
+
+                    final class Promoted {
+                        public function __construct(
+                            /** @deprecated */
+                            public string $declared {
+                                set => strtolower($value);
+                            },
+                        ) {}
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
         ];
     }
 
@@ -247,6 +293,50 @@ final class DeprecatedAnnotationTest extends TestCase
 
                     class Bar extends Foo {}',
                 'error_message' => 'DeprecatedClass',
+            ],
+            'deprecatedPropertyUsedByTheHookOfAnotherProperty' => [
+                'code' => '<?php
+                    final class A {
+                        /** @deprecated */
+                        public string $old = "";
+
+                        public string $other = "" {
+                            get => $this->old;
+                        }
+                    }',
+                'error_message' => 'DeprecatedProperty - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:36 - A::$old is marked deprecated',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
+            'deprecatedPropertyUsedByAMethodOfItsOwnClass' => [
+                'code' => '<?php
+                    final class A {
+                        /** @deprecated */
+                        public string $old = "";
+
+                        public function read(): string {
+                            return $this->old;
+                        }
+                    }',
+                'error_message' => 'DeprecatedProperty - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:36 - A::$old is marked deprecated',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
+            'deprecatedPropertyUsedOutsideItsOwnHooks' => [
+                'code' => '<?php
+                    final class A {
+                        /** @deprecated */
+                        public string $old = "" {
+                            set => strtolower($value);
+                        }
+                    }
+
+                    function f(A $a): void {
+                        $a->old = "x";
+                    }',
+                'error_message' => 'DeprecatedProperty - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:25 - A::$old is marked deprecated',
+                'error_levels' => [],
+                'php_version' => '8.4',
             ],
             'deprecatedPropertyGet' => [
                 'code' => '<?php
