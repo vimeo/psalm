@@ -12,6 +12,7 @@ use Revolt\EventLoop;
 use function explode;
 use function str_ends_with;
 use function strlen;
+use function substr;
 use function trim;
 
 /**
@@ -93,6 +94,12 @@ final class ProtocolStreamReader implements ProtocolReader
                     }
                     break;
                 case self::PARSE_BODY:
+                    // the body is often a whole document: take all of it that this chunk holds at once
+                    $missing = (int) $this->content_length - strlen($this->buffer);
+                    if ($missing > 0) {
+                        $this->buffer .= substr($buffer, $i, $missing);
+                        $i += $missing;
+                    }
                     if (strlen($this->buffer) === $this->content_length) {
                         if (!$this->is_accepting_new_requests) {
                             // If we fork, don't read any bytes in the input buffer from the worker process.
