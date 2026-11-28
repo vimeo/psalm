@@ -136,6 +136,33 @@ final class ReturnTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'selfDocblockForStaticSignatureOfAFinalClass' => [
+                'code' => '<?php
+                    abstract class AB {
+                        abstract public function ret(): static;
+                    }
+
+                    final class Impl extends AB {
+                        /** @return self */
+                        public function ret(): static {
+                            return $this;
+                        }
+                    }',
+            ],
+            'selfDocblockForStaticSignatureOfAnEnum' => [
+                'code' => '<?php
+                    enum Suit {
+                        case Hearts;
+
+                        /** @return self */
+                        public function same(): static {
+                            return $this;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'returnTypeIsInheritedWhenTheImplementationDocumentsOnlyItsParams' => [
                 'code' => '<?php
                     interface Node {}
@@ -3062,6 +3089,26 @@ final class ReturnTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'selfDocblockForStaticSignatureOfAFinalMethodOfAnExtensibleClass' => [
+                'code' => '<?php
+                    class Impl {
+                        /** @return self */
+                        final public function ret(): static {
+                            return $this;
+                        }
+                    }',
+                'error_message' => 'MismatchingDocblockReturnType',
+            ],
+            'selfDocblockForStaticSignatureOfAnExtensibleClass' => [
+                'code' => '<?php
+                    class Impl {
+                        /** @return self */
+                        public function ret(): static {
+                            return $this;
+                        }
+                    }',
+                'error_message' => 'MismatchingDocblockReturnType',
+            ],
             'returnTypeDocumentedByTheImplementationIsStillCheckedAgainstTheParent' => [
                 'code' => '<?php
                     final class Message {}

@@ -1081,6 +1081,9 @@ final class ReturnTypeAnalyzer
             $classlike_storage->name ?? null,
             $classlike_storage->name ?? null,
             $parent_class,
+            true,
+            false,
+            $classlike_storage->final ?? false,
         );
 
         if ($fleshed_out_signature_type->check(
