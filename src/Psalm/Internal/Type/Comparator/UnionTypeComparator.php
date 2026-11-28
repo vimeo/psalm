@@ -188,7 +188,11 @@ final class UnionTypeComparator
                 continue;
             }
 
-            if ($input_type_part instanceof TArrayKey && $container_type->hasTemplate()) {
+            // an array-key fits a template of array-key, but in a lower bound proof only what its lower bound contains
+            if ($input_type_part instanceof TArrayKey
+                && $container_type->hasTemplate()
+                && !LowerBoundProof::isRunning()
+            ) {
                 foreach ($container_type->getTemplateTypes() as $template_type) {
                     if ($template_type->as->isArrayKey()) {
                         continue 2;

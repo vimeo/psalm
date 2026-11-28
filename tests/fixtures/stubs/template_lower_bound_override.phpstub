@@ -1,0 +1,8 @@
+<?php
+
+/**
+ * @template T
+ * @param T $v
+ * @return T
+ */
+function dropsLowerBound(mixed $v): mixed {}

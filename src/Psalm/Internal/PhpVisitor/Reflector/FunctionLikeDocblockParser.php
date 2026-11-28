@@ -309,7 +309,7 @@ final class FunctionLikeDocblockParser
             }
         }
 
-        [$templates, $info->template_defaults] = TemplateTagParser::parseTags(
+        [$templates, $info->template_defaults, $info->template_lower_bounds] = TemplateTagParser::parseTags(
             $parsed_docblock,
             $comment,
             ['template' => TemplateVariance::Invariant],

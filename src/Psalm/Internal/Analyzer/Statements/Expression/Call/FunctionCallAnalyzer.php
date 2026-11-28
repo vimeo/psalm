@@ -467,14 +467,14 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             self::checkArrayKeyExistsKey($statements_analyzer, $stmt);
         }
 
+        $template_result->lower_bounds = [...$template_result->lower_bounds, ...$already_inferred_lower_bounds];
+
         CallAnalyzer::checkTemplateResult(
             $statements_analyzer,
             $template_result,
             $code_location,
             $function_call_info->function_id,
         );
-
-        $template_result->lower_bounds = [...$template_result->lower_bounds, ...$already_inferred_lower_bounds];
 
         if ($function_call_info->callable_return_type !== null) {
             $statements_analyzer->node_data->setType(

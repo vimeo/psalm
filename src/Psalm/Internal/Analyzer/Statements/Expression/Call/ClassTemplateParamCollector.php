@@ -362,9 +362,14 @@ final class ClassTemplateParamCollector
                     $star_templates[$template_name][$defining_class]
                         = $projection === TypeArgumentProjection::Covariant ? $projection : true;
 
-                    // what is written to a `contravariant X` argument is `X`, what is read from it is the bound
-                    if ($projection === TypeArgumentProjection::Contravariant) {
-                        $input_bounds[$template_name][$defining_class] = $lhs_type_part->type_params[$offset];
+                    // what is written to a `contravariant X` argument is `X`, what is read from it is the bound; what
+                    // is written to a `*` or `covariant X` one is the lower bound of the template (else `never`)
+                    $input_bound = $projection === TypeArgumentProjection::Contravariant
+                        ? $lhs_type_part->type_params[$offset]
+                        : $codebase->type_template_lower_bounds->get($defining_class, $template_name);
+
+                    if ($input_bound !== null) {
+                        $input_bounds[$template_name][$defining_class] = $input_bound;
                     }
                 }
             }
@@ -380,9 +385,12 @@ final class ClassTemplateParamCollector
                 $own_stars[$template_name][$static_class_storage->name]
                     = $projection === TypeArgumentProjection::Covariant ? $projection : true;
 
-                if ($projection === TypeArgumentProjection::Contravariant) {
-                    $own_input_bounds[$template_name][$static_class_storage->name]
-                        = $lhs_type_part->type_params[$offset];
+                $input_bound = $projection === TypeArgumentProjection::Contravariant
+                    ? $lhs_type_part->type_params[$offset]
+                    : $codebase->type_template_lower_bounds->get($static_class_storage->name, $template_name);
+
+                if ($input_bound !== null) {
+                    $own_input_bounds[$template_name][$static_class_storage->name] = $input_bound;
                 }
             }
         }

@@ -22,6 +22,7 @@ use function preg_split;
 use function rtrim;
 use function str_starts_with;
 use function strlen;
+use function strpos;
 use function strtolower;
 use function substr;
 use function substr_count;
@@ -29,8 +30,8 @@ use function trim;
 
 /**
  * Parses the `@template`, `@template-covariant` and `@template-contravariant` tags of a docblock, with their
- * `@psalm-` and `@phpstan-` forms: `T`, `T of Bound`, `T = Default` or `T of Bound = Default` (`as` and `super`
- * may stand for `of`), each followed by an optional description.
+ * `@psalm-` and `@phpstan-` forms: `T`, `T of Upper`, `T super Lower`, both in either order, each with an optional
+ * `= Default` (`as` may stand for `of`), and followed by an optional description.
  *
  * @internal
  * @psalm-immutable
@@ -39,15 +40,16 @@ final class TemplateTagParser
 {
     /**
      * The templates of the docblock in order of first declaration in any form, each from its preferred form
-     * (`@psalm-`, then `@phpstan-`, then the plain tag), as `[name, modifier, bound, variance, offset of the
-     * first declaration in the docblock]`, and their defaults. The bound comes with what follows it, as the
-     * scanner cuts the description off.
+     * (`@psalm-`, then `@phpstan-`, then the plain tag), as `[name, modifier, upper bound, variance, offset of the
+     * first declaration in the docblock]`, and their defaults and lower bounds. A bound the parser cannot split from
+     * the description comes with what follows it, for the scanner to report.
      *
      * @param array<string, TemplateVariance> $tags the tags to read, and the variance of their templates
      * @param array<string, array<string, array{string, ?string, ?string, TemplateVariance, int}>> $templates
      *     the purity templates already read, by name and form
      * @return array{
      *     list<array{string, ?string, ?string, TemplateVariance, int}>,
+     *     array<string, array{type: string, line_number: int}>,
      *     array<string, array{type: string, line_number: int}>
      * }
      * @throws IncorrectDocblockException
@@ -60,10 +62,11 @@ final class TemplateTagParser
         array $templates,
     ): array {
         $defaults = [];
+        $lower_bounds = [];
 
         foreach ($tags as $tag => $variance) {
             foreach ($parsed_docblock->combined_tags[$tag] ?? [] as $offset => $template_line) {
-                [$name, $modifier, $bound, $default] = self::parse($template_line, $tag);
+                [$name, $bound, $lower_bound, $default] = self::parse($template_line, $tag);
 
                 $source_prefix = 'none';
                 if (isset($parsed_docblock->tags['psalm-' . $tag][$offset])) {
@@ -73,14 +76,16 @@ final class TemplateTagParser
                 }
 
                 $docblock_offset = $offset - $comment->getStartFilePos();
-                $templates[$name][$source_prefix] = [$name, $modifier, $bound, $variance, $docblock_offset];
+                $templates[$name][$source_prefix]
+                    = [$name, $bound === null ? null : 'of', $bound, $variance, $docblock_offset];
+                $line_number = $comment->getStartLine() + substr_count($comment->getText(), "\n", 0, $docblock_offset);
 
                 if ($default !== null) {
-                    $defaults[$name][$source_prefix] = [
-                        'type' => $default,
-                        'line_number' => $comment->getStartLine()
-                            + substr_count($comment->getText(), "\n", 0, $docblock_offset),
-                    ];
+                    $defaults[$name][$source_prefix] = ['type' => $default, 'line_number' => $line_number];
+                }
+
+                if ($lower_bound !== null) {
+                    $lower_bounds[$name][$source_prefix] = ['type' => $lower_bound, 'line_number' => $line_number];
                 }
             }
         }
@@ -98,6 +103,7 @@ final class TemplateTagParser
 
         $chosen_templates = [];
         $chosen_defaults = [];
+        $chosen_lower_bounds = [];
 
         foreach ($declared_at as $name => $offset) {
             foreach (['psalm', 'phpstan', 'none'] as $source_prefix) {
@@ -109,17 +115,22 @@ final class TemplateTagParser
                         $chosen_defaults[$name] = $defaults[$name][$source_prefix];
                     }
 
+                    if (isset($lower_bounds[$name][$source_prefix])) {
+                        $chosen_lower_bounds[$name] = $lower_bounds[$name][$source_prefix];
+                    }
+
                     break;
                 }
             }
         }
 
-        return [$chosen_templates, $chosen_defaults];
+        return [$chosen_templates, $chosen_defaults, $chosen_lower_bounds];
     }
 
     /**
-     * @return array{non-empty-string, ?string, ?string, ?string} the name, modifier, bound and default: an empty
-     *     string for `=` with nothing after it, which the scanner reports for that template only
+     * @return array{non-empty-string, ?string, ?string, ?string} the name, upper bound, lower bound and default: an
+     *     empty lower bound or default for `super` or `=` with nothing after it, which the scanner reports for that
+     *     template only
      * @throws IncorrectDocblockException
      * @psalm-pure
      */
@@ -132,21 +143,75 @@ final class TemplateTagParser
             throw new IncorrectDocblockException('Empty @' . $tag . ' tag');
         }
 
-        $modifier = null;
+        $rest = implode(' ', $parts);
+        $bounds = [];
 
-        if (count($parts) > 1 && in_array(strtolower($parts[0]), ['as', 'super', 'of'], true)) {
-            $modifier = strtolower(array_shift($parts));
+        // an upper (`of`, `as`) and a lower (`super`) bound clause, in either order: a repeated `super` is an error, a
+        // repeated upper bound clause or a capitalised keyword after the first clause is description
+        // (`@template T of Animal Super class`)
+        while (true) {
+            $space = strpos($rest, ' ');
+            $word = $space === false ? $rest : substr($rest, 0, $space);
+
+            if ($bounds === []) {
+                $word = strtolower($word);
+            }
+
+            if ($word !== 'of' && $word !== 'as' && $word !== 'super') {
+                break;
+            }
+
+            $keyword = $word === 'super' ? 'super' : 'of';
+            $clause = $space === false ? '' : substr($rest, $space + 1);
+
+            if (isset($bounds[$keyword])) {
+                if ($keyword === 'super') {
+                    throw new IncorrectDocblockException('Repeated super clause in @' . $tag . ' tag');
+                }
+
+                break;
+            }
+
+            if ($clause === '') {
+                if ($keyword === 'super') {
+                    $bounds['super'] = '';
+                }
+
+                $rest = '';
+
+                break;
+            }
+
+            $equals = self::findDefaultSeparator($clause);
+
+            if ($equals !== null) {
+                $bounds[$keyword] = rtrim(substr($clause, 0, $equals));
+                $rest = substr($clause, $equals);
+
+                break;
+            }
+
+            try {
+                $type = CommentAnalyzer::splitDocLine($clause)[0];
+            } catch (DocblockParseException) {
+                $type = null;
+            }
+
+            if ($type === null || !str_starts_with($clause, $type)) {
+                $bounds[$keyword] = $clause;
+                $rest = '';
+
+                break;
+            }
+
+            $bounds[$keyword] = $type;
+            $rest = ltrim(substr($clause, strlen($type)));
         }
 
-        $rest = implode(' ', $parts);
         $default = null;
 
-        $equals = $modifier === null
-            ? (str_starts_with($rest, '=') ? 0 : null)
-            : self::findDefaultSeparator($rest);
-
-        if ($equals !== null) {
-            $default = ltrim(substr($rest, $equals + 1));
+        if (str_starts_with($rest, '=')) {
+            $default = ltrim(substr($rest, 1));
 
             if ($default !== '') {
                 try {
@@ -155,11 +220,9 @@ final class TemplateTagParser
                     // left whole, for the scanner to report as an invalid type
                 }
             }
-
-            $rest = rtrim(substr($rest, 0, $equals));
         }
 
-        return [$name, $modifier, $modifier === null ? null : $rest, $default];
+        return [$name, $bounds['of'] ?? null, $bounds['super'] ?? null, $default];
     }
 
     /**

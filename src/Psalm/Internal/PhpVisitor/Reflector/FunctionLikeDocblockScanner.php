@@ -21,6 +21,7 @@ use Psalm\Internal\Codebase\DatabaseTaints;
 use Psalm\Internal\Codebase\ReceiverPropertyTaints;
 use Psalm\Internal\Codebase\TaintFlowAnnotation;
 use Psalm\Internal\Codebase\TaintStore;
+use Psalm\Internal\Codebase\TypeTemplateLowerBounds;
 use Psalm\Internal\Scanner\FileScanner;
 use Psalm\Internal\Scanner\FunctionDocblockComment;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
@@ -2219,6 +2220,21 @@ final class FunctionLikeDocblockScanner
                 new TypeScanner($codebase->scanner, $file_storage, $storage->template_types),
             );
         $storage->docblock_issues = [...$storage->docblock_issues, ...$default_issues];
+
+        // a stub declaring the templates of a function-like it overrides replaces their lower bounds too
+        [$storage->type_template_lower_bounds, $lower_bound_issues] = TypeTemplateLowerBounds::parse(
+            $docblock_info->template_lower_bounds,
+            $storage->template_types,
+            $storage->template_types + ($template_types ?? []),
+            $aliases,
+            $type_aliases,
+            $classlike_storage && !$classlike_storage->is_trait ? $classlike_storage->name : null,
+            $classlike_storage?->parent_class,
+            new CodeLocation($file_scanner, $stmt, null, true),
+            $cased_function_id,
+            new TypeScanner($codebase->scanner, $file_storage, $storage->template_types),
+        );
+        $storage->docblock_issues = [...$storage->docblock_issues, ...$lower_bound_issues];
 
         return array_merge($template_types ?: [], $storage->template_types);
     }

@@ -6,10 +6,14 @@ namespace Psalm\Internal\Analyzer\Statements\TypeMismatch;
 
 use Psalm\CodeLocation;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Issue\CodeIssue;
 use Psalm\IssueBuffer;
+use Psalm\Type\Atomic\TFalse;
+use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
 use function count;
@@ -196,14 +200,31 @@ abstract class TypeMismatchReporter
 
     protected function acceptsNull(): bool
     {
-        return $this->expected_type->isNullable();
+        return $this->expected_type->isNullable() || $this->templateAccepts(new TNull());
     }
 
     protected function acceptsFalse(): bool
     {
         return $this->expected_type->isFalsable()
             || isset($this->expected_type->getAtomicTypes()['bool'])
-            || $this->expected_type->hasScalar();
+            || $this->expected_type->hasScalar()
+            || $this->templateAccepts(new TFalse());
+    }
+
+    /**
+     * Whether a template the expected type is takes the value whatever it stands for (its lower bound has it)
+     */
+    private function templateAccepts(TNull|TFalse $value): bool
+    {
+        foreach ($this->expected_type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TTemplateParam
+                && AtomicTypeComparator::isContainedBy($this->statements_analyzer->getCodebase(), $value, $atomic_type)
+            ) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     final protected function add(?CodeIssue $issue): void

@@ -324,10 +324,13 @@ final class ScalarTypeComparator
         // from https://wiki.php.net/rfc/scalar_type_hints_v5:
         //
         // > int types can resolve a parameter type of float
+        //
+        // but in a lower bound proof an int is no float, at any depth (`list<float>` is no supertype of `list<int>`)
         if ($input_type_part instanceof TInt
             && $container_type_part instanceof TFloat
             && !$container_type_part instanceof TLiteralFloat
             && $allow_float_int_equality
+            && !LowerBoundProof::isRunning()
         ) {
             return true;
         }

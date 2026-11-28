@@ -129,6 +129,8 @@
 
 - `MissingPureAnnotation`, `MissingImmutableAnnotation`, `MissingAbstractPureAnnotation` and `MissingInterfaceImmutableAnnotation` are suggestions that are off by default: they are only reported with the new config attribute `suggestPurityAnnotations="true"` (`Psalm\Config#$suggest_purity_annotations`), and their `ERROR_LEVEL` is now `-2` (feature-specific errors). Capability checks are unchanged (they use declared annotations only), and taint analysis still uses the purity it infers for unannotated code. `psalm --alter --issues=MissingPureAnnotation` and `--issues=MissingImmutableAnnotation` work without the attribute. If your baseline contains these issues, either set the attribute, or run `--update-baseline` to drop their entries (`UnusedBaselineEntry` reports them otherwise). A `@psalm-suppress` of one of them, or a nested `<errorLevel>` handler for it, is reported as unused while the attribute is off (`UnusedPsalmSuppress`, `UnusedIssueHandlerSuppression`).
 
+- [BC] `@template T super Foo` used to be read as `@template T of Foo`, an upper bound. It now declares a lower bound with a `mixed` upper bound: `T` is `Foo` or a supertype of `Foo`, so code calling `Foo` methods on a `T` value must declare `@template T of Foo` (or both bounds, `@template T of Foo super Bar`). See [template lower bounds](docs/annotating_code/templated_annotations.md#template-lower-bounds).
+
 ## Removed
 
 - Psalm no longer requires `psalm/plugin-sabre-event` nor enables it for projects requiring `sabre/event`: sabre/event 5.1.1 and later declare the same generic types. A config listing `Psalm\SabreEventPlugin\Plugin` needs the plugin installed (`composer require --dev psalm/plugin-sabre-event`), or the entry removed.

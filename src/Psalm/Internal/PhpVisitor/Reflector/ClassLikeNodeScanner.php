@@ -30,6 +30,7 @@ use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\SimpleTypeInferer;
 use Psalm\Internal\Codebase\PropertyMap;
+use Psalm\Internal\Codebase\TypeTemplateLowerBounds;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Scanner\ClassLikeDocblockComment;
@@ -687,6 +688,21 @@ final class ClassLikeNodeScanner
                         new TypeScanner($this->codebase->scanner, $this->file_storage, $storage->template_types),
                     );
                 $storage->docblock_issues = [...$storage->docblock_issues, ...$default_issues];
+
+                // a stub declaring the templates of a class it overrides replaces their lower bounds too
+                [$storage->type_template_lower_bounds, $lower_bound_issues] = TypeTemplateLowerBounds::parse(
+                    $docblock_info->template_lower_bounds,
+                    $storage->template_types,
+                    $storage->template_types,
+                    $this->aliases,
+                    $this->type_aliases,
+                    $fq_classlike_name,
+                    $storage->parent_class,
+                    $name_location ?? $class_location,
+                    $fq_classlike_name,
+                    new TypeScanner($this->codebase->scanner, $this->file_storage, $storage->template_types),
+                );
+                $storage->docblock_issues = [...$storage->docblock_issues, ...$lower_bound_issues];
 
                 foreach ($docblock_info->purity_templates as $purity_template) {
                     $bound = $storage->template_types[$purity_template][$fq_classlike_name] ?? null;

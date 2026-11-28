@@ -75,7 +75,7 @@ final class ClassLikeDocblockParser
             }
         }
 
-        [$info->templates, $info->template_defaults] = TemplateTagParser::parseTags(
+        [$info->templates, $info->template_defaults, $info->template_lower_bounds] = TemplateTagParser::parseTags(
             $parsed_docblock,
             $comment,
             [

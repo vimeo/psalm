@@ -46,6 +46,7 @@ namespace Psalm\HackConformance;
 use UnexpectedValueException;
 
 use function array_filter;
+use function array_key_exists;
 use function array_keys;
 use function array_map;
 use function array_merge;
@@ -501,7 +502,7 @@ final class Transpiler
 
     /**
      * @param array<string, mixed> $node a type_parameters node, or missing
-     * @return list<array{name: string, variance: string, as: ?array}>
+     * @return list<array{name: string, variance: string, as: ?array, super: ?array}>
      */
     private function parseTypeParameters(array $node): array
     {
@@ -514,17 +515,19 @@ final class Transpiler
             $this->reject($param['type_attribute_spec'], "attributes on $name");
             $this->reject($param['type_reified'], 'reified generic');
             $this->reject($param['type_param_params'], "higher-kinded $name");
-            $as = null;
+            $constraints = ['as' => null, 'super' => null];
             foreach (self::items($param['type_constraints']) as $constraint) {
-                if (strtolower(self::text($constraint['constraint_keyword'])) !== 'as' || $as !== null) {
+                $keyword = strtolower(self::text($constraint['constraint_keyword']));
+                if (!array_key_exists($keyword, $constraints) || $constraints[$keyword] !== null) {
                     $this->fail("unsupported constraint on $name", $constraint);
                 }
-                $as = $this->parseType($constraint['constraint_type']);
+                $constraints[$keyword] = $this->parseType($constraint['constraint_type']);
             }
             $params[] = [
                 'name' => $name,
                 'variance' => self::isMissing($param['type_variance']) ? '' : self::text($param['type_variance']),
-                'as' => $as,
+                'as' => $constraints['as'],
+                'super' => $constraints['super'],
             ];
         }
         return $params;
@@ -1248,7 +1251,7 @@ final class Transpiler
     }
 
     /**
-     * @param list<array{name: string, variance: string, as: ?array}> $templates
+     * @param list<array{name: string, variance: string, as: ?array, super: ?array}> $templates
      * @return list<string>
      */
     private function templateTags(array $templates): array
@@ -1262,6 +1265,9 @@ final class Transpiler
             } . ' ' . $template['name'];
             if ($template['as'] !== null) {
                 $tag .= ' of ' . $this->docType($template['as']);
+            }
+            if ($template['super'] !== null) {
+                $tag .= ' super ' . $this->docType($template['super']);
             }
             $tags[] = $tag;
         }
