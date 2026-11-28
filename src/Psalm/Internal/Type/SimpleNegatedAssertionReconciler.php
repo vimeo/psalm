@@ -1082,6 +1082,11 @@ final class SimpleNegatedAssertionReconciler extends Reconciler
                 }
             } elseif (!($type instanceof Scalar)) {
                 $non_scalar_types[] = $type;
+
+                // a callable-string is a scalar, the other callables are not
+                if ($type instanceof TCallable) {
+                    $redundant = false;
+                }
             } else {
                 $redundant = false;
 

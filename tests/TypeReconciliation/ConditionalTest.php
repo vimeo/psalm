@@ -196,6 +196,50 @@ final class ConditionalTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'isScalarOfACallableKeepsItsCallableString' => [
+                'code' => '<?php
+                    /** @var callable|int $c */
+                    $c = rand(0, 1) ? "strlen" : 5;
+
+                    $scalar = null;
+                    $other = null;
+
+                    if (is_scalar($c)) {
+                        $scalar = $c;
+                    } else {
+                        $other = $c;
+                    }',
+                'assertions' => [
+                    '$scalar===' => 'callable-string|int|null',
+                    '$other===' => 'callable[impure]|null',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'isScalarOfATemplateBoundedByACallableIsPossible' => [
+                'code' => '<?php
+                    /**
+                     * @template T of callable
+                     * @param T $c
+                     */
+                    function takesTemplate($c): void {
+                        if (is_scalar($c)) {
+                            echo $c;
+                        }
+                    }
+
+                    function negated(callable $c): void {
+                        if (!is_scalar($c)) {
+                            echo "not a string";
+                        }
+                    }
+
+                    function plain(callable $c): void {
+                        if (is_scalar($c)) {
+                            echo "a callable-string";
+                        }
+                    }',
+            ],
             'strictFalseComparisonOfACoalesceWithNullIsReachableAfterATruthyCoalesce' => [
                 'code' => '<?php
                     /** @param array<string, mixed> $context */
@@ -8117,6 +8161,15 @@ final class ConditionalTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'isScalarOfAClosureIsNeverTrue' => [
+                'code' => '<?php
+                    function f(Closure $c): void {
+                        if (is_scalar($c)) {
+                            echo "never";
+                        }
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+            ],
             'coalesceWithFalseInADisjunctionDoesNotEstablishTheKey' => [
                 'code' => '<?php
                     /** @param array{k?: string} $a */
