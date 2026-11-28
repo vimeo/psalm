@@ -1029,7 +1029,9 @@ final class AssignmentAnalyzer
                 $var_id,
             );
         } elseif ($assign_var instanceof PhpParser\Node\Expr\StaticPropertyFetch) {
-            // the target is written, not read: StaticPropertyAssignmentAnalyzer charges the write
+            // the target is written, not read: StaticPropertyAssignmentAnalyzer charges the write and reports a
+            // property that is not defined
+            $assign_var->setAttribute('assignmentTarget', true);
             $capabilities = $context->capabilities;
             $context->capabilities |= Capabilities::READ_GLOBALS;
             $analyzed = ExpressionAnalyzer::analyze($statements_analyzer, $assign_var, $context);
