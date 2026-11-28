@@ -9,6 +9,7 @@ use Amp\DeferredFuture;
 use Amp\TimeoutCancellation;
 use LanguageServerProtocol\ClientCapabilities;
 use LanguageServerProtocol\DiagnosticSeverity;
+use LanguageServerProtocol\MessageType;
 use Override;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\IssueData;
@@ -32,6 +33,7 @@ use Psalm\Tests\TestConfig;
 
 use function Amp\delay;
 use function array_map;
+use function basename;
 use function defined;
 use function file_put_contents;
 use function getcwd;
@@ -352,6 +354,172 @@ final class DiagnosticTest extends AsyncTestCase
         delay(0.5); // Wait for debounce
 
         $deferred->getFuture()->await(new TimeoutCancellation(5));
+    }
+
+    public function testTheChangesOfTwoFilesWithinTheDebounceAreBothAnalyzed(): void
+    {
+        $published = $this->publishedDiagnostics([
+            $this->didChange('a.php', 1),
+            $this->didChange('b.php', 1),
+        ]);
+
+        $this->assertSame([['a.php', 1], ['b.php', 1]], $published);
+    }
+
+    public function testOpeningAFileKeepsThePendingChangeOfAnother(): void
+    {
+        $published = $this->publishedDiagnostics([
+            $this->didChange('a.php', 4),
+            $this->didOpen('b.php', 1),
+        ]);
+
+        $this->assertSame([['a.php', 4], ['b.php', 1]], $published);
+    }
+
+    public function testABurstOfChangesIsAnalyzedOnceAtTheLatestVersion(): void
+    {
+        $published = $this->publishedDiagnostics([
+            $this->didChange('a.php', 1),
+            $this->didChange('a.php', 2),
+            $this->didChange('a.php', 3),
+        ]);
+
+        $this->assertSame([['a.php', 3]], $published);
+    }
+
+    public function testAFileClosedBeforeItsDebouncedAnalysisGetsNoDiagnostics(): void
+    {
+        $published = $this->publishedDiagnostics([
+            $this->didOpen('a.php', 1),
+            $this->didChange('a.php', 2),
+            $this->didClose('a.php'),
+        ]);
+
+        // the didClose notification clears the diagnostics, without a version
+        $this->assertSame([['a.php', 1], ['a.php', null]], $published);
+    }
+
+    public function testACancelledRequestIsNotReportedAsAnError(): void
+    {
+        $published = $this->publishedDiagnostics([
+            ['method' => '$/cancelRequest', 'params' => ['id' => 3]],
+        ], $errors);
+
+        $this->assertSame([], $published);
+        $this->assertSame([], $errors);
+    }
+
+    /**
+     * Sends the notifications about src/a.php and src/b.php after the initialize request, with a 100 ms debounce of
+     * changes and none of opens, and returns the file and version of each publishDiagnostics notification, in order.
+     *
+     * @param list<array<string, mixed>> $notifications
+     * @param-out list<string> $errors the messages logged as errors
+     * @return list<array{string, ?int}>
+     */
+    private function publishedDiagnostics(array $notifications, ?array &$errors = null): array
+    {
+        $errors = [];
+        $this->codebase->config->throw_exception = false;
+        foreach (['a.php', 'b.php'] as $file_name) {
+            $this->file_provider->registerFile((string) getcwd() . '/src/' . $file_name, "<?php\necho 0;");
+        }
+
+        $clientConfiguration = new ClientConfiguration();
+        $clientConfiguration->onChangeDebounceMs = 100;
+        $clientConfiguration->provideDiagnostics = true;
+        $clientConfiguration->logLevel = MessageType::ERROR;
+
+        $read = new MockProtocolStream();
+        $write = new MockProtocolStream();
+
+        $read->write(new Message(MessageBody::parseArray($this->generateInitializeRequest())));
+        foreach ($notifications as $notification) {
+            $read->write(new Message(MessageBody::parseArray($notification)));
+        }
+
+        new LanguageServer(
+            $read,
+            $write,
+            $this->project_analyzer,
+            $this->codebase,
+            $clientConfiguration,
+            new Progress,
+            new PathMapper((string) getcwd(), (string) getcwd()),
+        );
+
+        $published = [];
+        $initialized = new DeferredFuture;
+        $write->on('message', static function (Message $message) use (&$published, &$errors, $initialized): void {
+            if (!$message->body instanceof Notification) {
+                return;
+            }
+            /** @var object{uri?: string, version?: ?int, message?: string, value?: object{kind?: string, message?: string}} $params */
+            $params = $message->body->params;
+            if ($message->body->method === '$/progress'
+                && ($params->value->kind ?? null) === 'end'
+                && ($params->value->message ?? null) === 'initialized'
+            ) {
+                $initialized->complete(null);
+            } elseif ($message->body->method === 'textDocument/publishDiagnostics') {
+                $published[] = [basename($params->uri ?? ''), $params->version ?? null];
+            } elseif ($message->body->method === 'window/logMessage') {
+                $errors[] = $params->message ?? '';
+            }
+        });
+
+        $initialized->getFuture()->await(new TimeoutCancellation(30));
+        delay(0.5); // Wait for the debounce and the analysis
+
+        return $published;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function didChange(string $file_name, int $version): array
+    {
+        return [
+            'method' => 'textDocument/didChange',
+            'params' => [
+                'textDocument' => [
+                    'uri' => 'file://' . (string) getcwd() . '/src/' . $file_name,
+                    'version' => $version,
+                ],
+                'contentChanges' => [['range' => null, 'rangeLength' => null, 'text' => "<?php\necho $version;"]],
+            ],
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function didOpen(string $file_name, int $version): array
+    {
+        return [
+            'method' => 'textDocument/didOpen',
+            'params' => [
+                'textDocument' => [
+                    'uri' => 'file://' . (string) getcwd() . '/src/' . $file_name,
+                    'languageId' => 'php',
+                    'version' => $version,
+                    'text' => "<?php\necho $version;",
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function didClose(string $file_name): array
+    {
+        return [
+            'method' => 'textDocument/didClose',
+            'params' => [
+                'textDocument' => ['uri' => 'file://' . (string) getcwd() . '/src/' . $file_name],
+            ],
+        ];
     }
 
     /**
