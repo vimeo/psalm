@@ -68,11 +68,47 @@ final class DocblockParser
         'stable-parameter-names' => NamedArguments::STABLE,
     ];
 
+    private static bool $memoize = false;
+
+    /**
+     * What parse() returned for a docblock at an offset, by offset and docblock
+     *
+     * @var array<string, ParsedDocblock>
+     */
+    private static array $memo = [];
+
+    /**
+     * Makes parse() remember the docblocks it parsed, for a process that parses the same ones again and again (the
+     * tests parse the stubs for every test case); turning it off forgets them
+     *
+     * @psalm-capabilities write-globals
+     */
+    public static function memoize(bool $memoize = true): void
+    {
+        self::$memoize = $memoize;
+        if (!$memoize) {
+            self::$memo = [];
+        }
+    }
+
     /**
      * $offsetStart is the absolute position of the docblock in the file. It'll be used to add to the position of some
      * special tags (like `psalm-suppress`) for future uses
      */
     public static function parse(string $docblock, int $offsetStart): ParsedDocblock
+    {
+        if (!self::$memoize) {
+            return self::parseUncached($docblock, $offsetStart);
+        }
+
+        // The result depends on nothing but the arguments. A ParsedDocblock holds strings and arrays of strings,
+        // which a clone does not share with the memo: the caller may change the copy.
+        $key = $offsetStart . ':' . $docblock;
+
+        return clone (self::$memo[$key] ??= self::parseUncached($docblock, $offsetStart));
+    }
+
+    private static function parseUncached(string $docblock, int $offsetStart): ParsedDocblock
     {
         // Strip off comments.
         $docblock = trim($docblock);
