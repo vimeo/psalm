@@ -23,6 +23,8 @@ use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClassStringMap;
 use Psalm\Type\Atomic\TDecimalIntString;
 use Psalm\Type\Atomic\TDependentGetClass;
+use Psalm\Type\Atomic\TDependentGetDebugType;
+use Psalm\Type\Atomic\TDependentGetType;
 use Psalm\Type\Atomic\TEmptyMixed;
 use Psalm\Type\Atomic\TEnumCase;
 use Psalm\Type\Atomic\TFalse;
@@ -1381,8 +1383,19 @@ final class TypeCombiner
         ?Codebase $codebase,
         int $literal_limit,
     ): void {
-        // beside other strings, the class name `get_class()` gives is a non-falsy string
         $existing_string = $combination->value_types['string'] ?? null;
+
+        // the results of gettype() or get_debug_type() of different variables are no longer tied to any of them
+        if (($type instanceof TDependentGetType || $type instanceof TDependentGetDebugType)
+            && ($existing_string instanceof TDependentGetType || $existing_string instanceof TDependentGetDebugType)
+            && ($type::class !== $existing_string::class || $type->typeof !== $existing_string->typeof)
+        ) {
+            $combination->value_types['string'] = $type->getReplacement();
+
+            return;
+        }
+
+        // beside other strings, the class name `get_class()` gives is a non-falsy string
         $is_class_string = $type instanceof TClassString || $type instanceof TLiteralClassString;
 
         if ($existing_string instanceof TDependentGetClass

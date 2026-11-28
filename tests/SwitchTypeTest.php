@@ -61,6 +61,34 @@ final class SwitchTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'gettypeOfTheSameVariableOnBothBranchesNarrowsIt' => [
+                'code' => '<?php
+                    function takesString(string $s): void {}
+
+                    function foo(int|string $x): void {
+                        $t = rand(0, 1) ? gettype($x) : gettype($x);
+
+                        switch ($t) {
+                            case "string":
+                                takesString($x);
+                                break;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'getDebugTypeOfTwoVariablesIsANonFalsyString' => [
+                'code' => '<?php
+                    $x = rand(0, 1) ? 1 : "a";
+                    $y = rand(0, 1) ? 1.5 : [];
+                    $t = rand(0, 1) ? get_debug_type($x) : get_debug_type($y);',
+                'assertions' => [
+                    '$t===' => 'non-falsy-string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'groupedCaseIsComparedWhereTheCaseBeforeItDidNotMatch' => [
                 'code' => '<?php
                     final class O {
@@ -2157,6 +2185,57 @@ final class SwitchTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'gettypeOfTwoVariablesNarrowsNeitherOfThem' => [
+                'code' => '<?php
+                    function takesString(string $s): void {}
+
+                    function foo(int|string $x, int|string $y): void {
+                        $t = rand(0, 1) ? gettype($x) : gettype($y);
+
+                        switch ($t) {
+                            case "string":
+                                takesString($x);
+                                break;
+                        }
+                    }',
+                'error_message' => 'InvalidScalarArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'gettypeOfThreeVariablesNarrowsNoneOfThem' => [
+                'code' => '<?php
+                    function takesString(string $s): void {}
+
+                    function foo(int|string $x, int|string $y, int|string $z): void {
+                        $t = rand(0, 1) ? gettype($x) : (rand(0, 1) ? gettype($y) : gettype($z));
+
+                        switch ($t) {
+                            case "string":
+                                takesString($x);
+                                break;
+                        }
+                    }',
+                'error_message' => 'InvalidScalarArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'getDebugTypeOfTwoVariablesNarrowsNeitherOfThem' => [
+                'code' => '<?php
+                    function takesString(string $s): void {}
+
+                    function foo(int|string $x, int|string $y): void {
+                        $t = rand(0, 1) ? get_debug_type($x) : get_debug_type($y);
+
+                        switch ($t) {
+                            case "string":
+                                takesString($x);
+                                break;
+                        }
+                    }',
+                'error_message' => 'InvalidScalarArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'switchTrueCaseThatReassignsAVariableDropsTheEarlierNegations' => [
                 'code' => '<?php
                     final class O {
