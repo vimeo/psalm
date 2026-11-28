@@ -4325,6 +4325,36 @@ final class FunctionTemplateTest extends TestCase
                     '$c===' => "array{name: 'x', user_id: int}",
                 ],
             ],
+            'templateOfEmptyOrGenericArrayIntersectedWithArrayShape' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array
+                     * @param T $data
+                     * @return T&array{user_id: int}
+                     */
+                    function appendUser(array $data): array {
+                        throw new RuntimeException();
+                    }
+
+                    /**
+                     * @template T of array
+                     * @param T $data
+                     * @return T&array{id?: int}
+                     */
+                    function maybeId(array $data): array {
+                        throw new RuntimeException();
+                    }
+
+                    /** @var array<string, string> */
+                    $strings = [];
+
+                    $a = appendUser([]);
+                    $b = maybeId($strings);',
+                'assertions' => [
+                    '$a===' => 'array{user_id: int}',
+                    '$b===' => 'array{id?: never, ...<string, string>}',
+                ],
+            ],
             'templateIntersectedWithArrayShapes' => [
                 'code' => '<?php
                     /**
@@ -4419,6 +4449,32 @@ final class FunctionTemplateTest extends TestCase
                     function id(array $data): int {
                         /** @var T&array{id: int} $data */
                         return $data["id"];
+                    }',
+            ],
+            'nestedTemplateIntersectedWithArrayShape' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array
+                     * @param list<T&array{id: int}> $rows
+                     */
+                    function firstId(array $rows): int {
+                        return $rows[0]["id"] ?? 0;
+                    }
+
+                    /**
+                     * @template T of array
+                     */
+                    final class Rows {
+                        /** @var array<array-key, T&array{id: int}> */
+                        public array $rows = [];
+
+                        public function firstId(): int {
+                            foreach ($this->rows as $row) {
+                                return $row["id"];
+                            }
+
+                            return 0;
+                        }
                     }',
             ],
             'classTemplateIntersectedWithArrayShape' => [

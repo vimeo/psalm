@@ -30,6 +30,7 @@ use Psalm\Internal\Type\ParseTree\TemplateIsTree;
 use Psalm\Internal\Type\ParseTree\UnionTree;
 use Psalm\Internal\Type\ParseTree\Value;
 use Psalm\Internal\Type\PurityWildcard;
+use Psalm\Internal\TypeVisitor\IntersectedTemplateNarrower;
 use Psalm\Storage\Capabilities;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Type;
@@ -1843,23 +1844,13 @@ final class TypeParser
 
     /**
      * A declared type where its templates aren't replaced, as in the function declaring them, with each template
-     * intersected with an array as getIntersectedTemplate() gives it
+     * intersected with an array as getIntersectedTemplate() gives it, nested ones included
      */
     public static function narrowIntersectedTemplates(Union $type, Codebase $codebase): Union
     {
-        if (!array_any(
-            $type->getAtomicTypes(),
-            static fn(Atomic $atomic_type): bool => $atomic_type instanceof TIntersection,
-        )) {
-            return $type;
-        }
+        (new IntersectedTemplateNarrower($codebase))->traverse($type);
 
-        return $type->getBuilder()->setTypes(array_map(
-            static fn(Atomic $atomic_type): Atomic => $atomic_type instanceof TIntersection
-                ? self::getIntersectedTemplate($atomic_type, $codebase) ?? $atomic_type
-                : $atomic_type,
-            array_values($type->getAtomicTypes()),
-        ))->freeze();
+        return $type;
     }
 
     /**
@@ -2217,19 +2208,22 @@ final class TypeParser
         }
 
         [$key_type, $value_type] = $array->type_params;
+
+        if ($key_type->isNever() || $value_type->isNever()) {
+            // the empty array has no keys to add to the shape
+            return [
+                TKeyedArray::make($keyed_array->properties, $keyed_array->class_strings, null, false, $from_docblock),
+            ];
+        }
+
         $properties = [];
 
         foreach ($keyed_array->properties as $key => $property_type) {
-            $intersected_type = self::intersectUnions($property_type, $value_type, $codebase, $from_docblock)
-                ->setPossiblyUndefined($property_type->possibly_undefined);
-
-            if ($intersected_type->isNever()
-                || !UnionTypeComparator::isContainedBy(
-                    $codebase,
-                    new Union([is_int($key) ? new TLiteralInt($key) : TLiteralString::make($key)]),
-                    $key_type,
-                )
-            ) {
+            if (!UnionTypeComparator::isContainedBy(
+                $codebase,
+                new Union([is_int($key) ? new TLiteralInt($key) : TLiteralString::make($key)]),
+                $key_type,
+            )) {
                 if ($property_type->possibly_undefined) {
                     continue;
                 }
@@ -2238,6 +2232,14 @@ final class TypeParser
                 return [];
             }
 
+            $intersected_type = self::intersectUnions($property_type, $value_type, $codebase, $from_docblock)
+                ->setPossiblyUndefined($property_type->possibly_undefined);
+
+            if ($intersected_type->isNever() && !$property_type->possibly_undefined) {
+                return [];
+            }
+
+            // an optional key no value fits stays, as `never`, so that the fallback doesn't allow it
             $properties[$key] = $intersected_type;
         }
 
