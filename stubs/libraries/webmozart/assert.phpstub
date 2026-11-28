@@ -492,7 +492,7 @@ class Assert
      *
      * @param string|callable():string $message
      *
-     * @return empty
+     * @return false|0|0.0|''|'0'|null|array{}
      *
      * @throws InvalidArgumentException
      *
@@ -2954,7 +2954,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return empty
+     * @return false|0|0.0|''|'0'|null|array{}
      *
      * @throws InvalidArgumentException
      *
@@ -2971,7 +2971,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return ($value is list ? list<empty> : ($value is array ? array<empty> : iterable<empty>))
+     * @return ($value is list ? list<false|0|0.0|''|'0'|null|array{}> : ($value is array ? array<false|0|0.0|''|'0'|null|array{}> : iterable<false|0|0.0|''|'0'|null|array{}>))
      *
      * @throws InvalidArgumentException
      *
@@ -2988,7 +2988,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return ($value is list ? list<empty|null> : ($value is array ? array<empty|null> : iterable<empty|null>))
+     * @return ($value is list ? list<false|0|0.0|''|'0'|null|array{}> : ($value is array ? array<false|0|0.0|''|'0'|null|array{}> : iterable<false|0|0.0|''|'0'|null|array{}>))
      *
      * @throws InvalidArgumentException
      *

@@ -146,6 +146,38 @@ final class WebmozartAssertLibraryStubTypesTest extends LibraryStubsTestCase
                     'InvalidArgument on line 14',
                 ],
             ],
+            'emptyAssertionsReturnTheValuesEmptyIsTrueFor' => [
+                '<?php
+                    use Webmozart\Assert\Assert;
+
+                    function f(mixed $v): object {
+                        return Assert::isEmpty($v);
+                    }
+
+                    /**
+                     * @param list<mixed> $l
+                     * @return list<object>
+                     */
+                    function g(array $l): array {
+                        return Assert::allIsEmpty($l);
+                    }
+
+                    /**
+                     * @param list<mixed> $l
+                     * @return list<object>
+                     */
+                    function h(array $l): array {
+                        return Assert::allNullOrIsEmpty($l);
+                    }',
+                [
+                    'InvalidReturnStatement on line 13',
+                    'InvalidReturnStatement on line 21',
+                    'InvalidReturnStatement on line 5',
+                    'InvalidReturnType on line 10',
+                    'InvalidReturnType on line 18',
+                    'InvalidReturnType on line 4',
+                ],
+            ],
         ];
     }
 }

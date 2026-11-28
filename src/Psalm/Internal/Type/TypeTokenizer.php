@@ -34,6 +34,13 @@ use function substr;
 final class TypeTokenizer
 {
     /**
+     * The tokens of `(false|0|0.0|''|'0'|null|array{})`, the values `empty()` is true for
+     */
+    private const FALSY_TOKENS = [
+        '(', 'false', '|', '0', '|', '0.0', '|', "''", '|', "'0'", '|', 'null', '|', 'array', '{', '}', ')',
+    ];
+
+    /**
      * @var array<string, bool>
      */
     public const PSALM_RESERVED_WORDS = [
@@ -438,6 +445,50 @@ final class TypeTokenizer
     }
 
     /**
+     * Replaces each `empty` or `falsy` of an assertion with the values `empty()` is true for, instead of `never`
+     *
+     * @param list<array{0: string, 1: int, 2?: string}> $type_tokens
+     * @return list<array{0: string, 1: int, 2?: string}>
+     * @psalm-pure
+     */
+    private static function replaceFalsyKeywords(array $type_tokens): array
+    {
+        $replaced_tokens = [];
+
+        foreach ($type_tokens as $i => $type_token) {
+            if (($type_token[0] === 'empty' || $type_token[0] === 'falsy')
+                && !self::isShapeKey($type_tokens, $i)
+                && ($i === 0 || $type_tokens[$i - 1][0] !== '::')
+            ) {
+                foreach (self::FALSY_TOKENS as $falsy_token) {
+                    $replaced_tokens[] = [$falsy_token, $type_token[1]];
+                }
+            } else {
+                $replaced_tokens[] = $type_token;
+            }
+        }
+
+        return $replaced_tokens;
+    }
+
+    /**
+     * Whether the token at `$i` is a key of a shape, optional or not
+     *
+     * @param array<int, array{0: string, 1: int, 2?: string}> $type_tokens
+     * @psalm-pure
+     */
+    private static function isShapeKey(array $type_tokens, int $i): bool
+    {
+        return isset($type_tokens[$i + 1])
+            && $i > 0
+            && ($type_tokens[$i - 1][0] === '{' || $type_tokens[$i - 1][0] === ',')
+            && ($type_tokens[$i + 1][0] === ':'
+                || ($type_tokens[$i + 1][0] === '?'
+                    && isset($type_tokens[$i + 2])
+                    && $type_tokens[$i + 2][0] === ':'));
+    }
+
+    /**
      * @param array<string, mixed>|null       $template_type_map
      * @param array<string, TypeAlias>|null   $type_aliases
      * @return list<array{0: string, 1: int, 2?: string}>
@@ -453,6 +504,10 @@ final class TypeTokenizer
         bool $allow_assertions = false,
     ): array {
         $type_tokens = self::tokenize($string_type);
+
+        if ($allow_assertions) {
+            $type_tokens = self::replaceFalsyKeywords($type_tokens);
+        }
 
         // for each open `<`, whether it starts the arguments of an `int-mask`
         $opens_int_mask = [];
@@ -498,15 +553,7 @@ final class TypeTokenizer
                 continue;
             }
 
-            // a key of a shape, optional or not
-            if (isset($type_tokens[$i + 1])
-                && $i > 0
-                && ($type_tokens[$i - 1][0] === '{' || $type_tokens[$i - 1][0] === ',')
-                && ($type_tokens[$i + 1][0] === ':'
-                    || ($type_tokens[$i + 1][0] === '?'
-                        && isset($type_tokens[$i + 2])
-                        && $type_tokens[$i + 2][0] === ':'))
-            ) {
+            if (self::isShapeKey($type_tokens, $i)) {
                 continue;
             }
 
@@ -578,11 +625,6 @@ final class TypeTokenizer
                 && $type_tokens[$i + 1][0] === '['
                 && $type_tokens[$i + 2][0] !== ']'
             ) {
-                continue;
-            }
-
-            if ($allow_assertions && $string_type_token[0] === 'falsy') {
-                $type_tokens[$i][0] = 'false-y';
                 continue;
             }
 
