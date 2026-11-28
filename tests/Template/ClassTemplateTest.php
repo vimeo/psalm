@@ -6622,6 +6622,35 @@ final class ClassTemplateTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'bareDocblockTypeArgumentInfersTemplateDefaults' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-immutable
+                     * @template T of \'a\'|\'b\' = \'a\'
+                     */
+                    final class Box {
+                        /** @param T $v */
+                        public function __construct(public string $v) {}
+                    }
+
+                    /**
+                     * @template X of \'a\'|\'b\'
+                     * @param Box<X> $box
+                     * @return X
+                     */
+                    function unwrap(Box $box): string {
+                        return $box->v;
+                    }
+
+                    /** @var Box $box */
+                    $box = $GLOBALS["box"];
+                    $unwrapped = unwrap($box);',
+                'assertions' => [
+                    '$unwrapped===' => '\'a\'',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'purityOnlyTypeArgumentsUseTemplateDefaults' => [
                 'code' => '<?php
                     /**

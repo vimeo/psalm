@@ -342,17 +342,21 @@ final class AssertionReconciler extends Reconciler
             );
         }
 
-        return self::reconcileUnion(
-            $assertion,
+        return self::bindCheckedClasses(
+            $statements_analyzer->getCodebase(),
+            self::reconcileUnion(
+                $assertion,
+                $existing_var_type,
+                $key,
+                $statements_analyzer,
+                $inside_loop,
+                $template_type_map,
+                $code_location,
+                $suppressed_issues,
+                $failed_reconciliation,
+                $negated,
+            ),
             $existing_var_type,
-            $key,
-            $statements_analyzer,
-            $inside_loop,
-            $template_type_map,
-            $code_location,
-            $suppressed_issues,
-            $failed_reconciliation,
-            $negated,
         );
     }
 
@@ -564,7 +568,7 @@ final class AssertionReconciler extends Reconciler
             );
 
             if ($should_return) {
-                return self::bindCheckedClasses($codebase, new Union($new_type_parts), $existing_var_type);
+                return new Union($new_type_parts);
             }
 
             $new_type_part = $new_type_parts[0];
@@ -601,7 +605,7 @@ final class AssertionReconciler extends Reconciler
                 return $existing_var_type;
             }
 
-            return self::bindCheckedClasses($codebase, new Union([$new_type_part]), $existing_var_type);
+            return new Union([$new_type_part]);
         }
 
         $refined_type = self::refineWithJuggling(
@@ -3244,29 +3248,32 @@ final class AssertionReconciler extends Reconciler
 
     /**
      * The narrowed type with the classes the check names without type arguments, and that the existing type does not
-     * hold, standing for their bounds ({@see TemplateDefaults::getBoundUse()})
+     * hold, standing for their bounds ({@see TemplateDefaults::bindBareUse()})
      *
-     * @psalm-impure
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
-    private static function bindCheckedClasses(Codebase $codebase, Union $narrowed, Union $existing_var_type): Union
+    private static function bindCheckedClasses(Codebase $codebase, Union $narrowed, ?Union $existing_var_type): Union
     {
         $existing_classes = [];
 
-        foreach ($existing_var_type->getAtomicTypes() as $existing_atomic) {
+        foreach ($existing_var_type?->getAtomicTypes() ?? [] as $existing_atomic) {
             if ($existing_atomic instanceof TNamedObject) {
                 $existing_classes[strtolower($existing_atomic->value)] = true;
             }
         }
 
         $atomics = [];
+        $changed = false;
 
         foreach ($narrowed->getAtomicTypes() as $atomic) {
-            $atomics[] = $atomic instanceof TNamedObject && isset($existing_classes[strtolower($atomic->value)])
+            $bound_use = $atomic instanceof TNamedObject && isset($existing_classes[strtolower($atomic->value)])
                 ? $atomic
-                : TemplateDefaults::getBoundUse($atomic, $codebase);
+                : TemplateDefaults::bindBareUse($atomic, $codebase, false);
+            $changed = $changed || $bound_use !== $atomic;
+            $atomics[] = $bound_use;
         }
 
-        return $narrowed->setTypes($atomics);
+        return $changed ? $narrowed->setTypes($atomics) : $narrowed;
     }
 
     /**

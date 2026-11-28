@@ -102,15 +102,39 @@ final class TemplateDefaults
     /**
      * The use of the class a use without type arguments (`Foo`) stands for: its type templates bound to their defaults,
      * expanded in the scope of the class, and the others to their bounds, the type templates among them marked as
-     * left out. Without $with_defaults, every template is bound to its bound, as for an `instanceof Foo` check, which
-     * knows nothing of the arguments.
+     * left out.
      *
      * @psalm-impure
      */
-    public static function getBareUse(
+    public static function getBareUse(TNamedObject $type, ClassLikeStorage $storage, Codebase $codebase): TGenericObject
+    {
+        $bare_use = self::getUnexpandedBareUse($type, $storage, $codebase, true);
+        $type_args = $bare_use->type_params;
+
+        foreach (array_keys($storage->template_types ?? []) as $i => $template_name) {
+            if (isset($type_args[$i])
+                && $bare_use->getProjection($i) === null
+                && isset($storage->template_defaults[$template_name])
+                && !isset($storage->purity_templates[$template_name])
+            ) {
+                $type_args[$i] = self::expandDefault($codebase, $type_args[$i], $storage, $template_name);
+            }
+        }
+
+        return $bare_use->setHeldTypes($type_args);
+    }
+
+    /**
+     * {@see self::getBareUse()}, with the defaults not expanded, or, without $with_defaults, every template bound to
+     * its bound, as for an `instanceof Foo` check, which knows nothing of the arguments. A bound naming earlier or
+     * later templates (`TIterator of Traversable[TPurity]<TKey, TValue>`) has them replaced by what they stand for.
+     *
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
+     */
+    public static function getUnexpandedBareUse(
         TNamedObject $type,
         ClassLikeStorage $storage,
-        Codebase $codebase,
+        ?Codebase $codebase,
         bool $with_defaults,
     ): TGenericObject {
         $type_args = [];
@@ -120,29 +144,36 @@ final class TemplateDefaults
         foreach ($storage->template_types ?? [] as $template_name => $type_map) {
             $bound = reset($type_map);
 
-            if (Capabilities::isPurityType($bound)) {
-                $type_args[] = PurityArguments::getOmittedArgument($bound);
-
-                continue;
-            }
-
-            if ($with_defaults && isset($storage->template_defaults[$template_name])) {
-                $default = self::resolve(
+            if ($with_defaults
+                && isset($storage->template_defaults[$template_name])
+                && !isset($storage->purity_templates[$template_name])
+            ) {
+                $argument = self::resolve(
                     $storage->template_defaults[$template_name],
                     new TemplateResult([], $given),
                     $codebase,
-                );
-                $argument = self::expandDefault($codebase, $default->setFromDocblock(true), $storage, $template_name);
+                )->setFromDocblock(true);
             } else {
                 $argument = PurityArguments::getOmittedArgument($bound);
-                $projections[count($type_args)] = TypeArgumentProjection::Omitted;
+
+                if (!Capabilities::isPurityType($bound)) {
+                    $projections[count($type_args)] = TypeArgumentProjection::Omitted;
+                }
             }
 
             $type_args[] = $given[$template_name][array_key_first($type_map)] = $argument;
         }
 
         if ($type_args === []) {
-            throw new AssertionError('A class with type defaults has type templates');
+            throw new AssertionError('A class with type defaults has templates');
+        }
+
+        $all_given = new TemplateResult([], $given);
+
+        foreach ($type_args as $i => $type_arg) {
+            if (isset($projections[$i])) {
+                $type_args[$i] = self::resolve($type_arg, $all_given, $codebase);
+            }
         }
 
         return (new TGenericObject(
@@ -156,13 +187,16 @@ final class TemplateDefaults
     }
 
     /**
-     * A check of the class (`instanceof Foo`, `is_a()`, `@psalm-assert Foo`) or a template bound (`@template T of Foo`)
-     * naming a class without type arguments: its templates stand for their bounds, not for the defaults
-     * ({@see self::getBareUse()}).
+     * A class written without type arguments as {@see self::getUnexpandedBareUse()}, any other type as it is. A check
+     * of the class (`instanceof Foo`, `is_a()`, `@psalm-assert Foo`) knows nothing of the arguments: it stands for
+     * the bounds, without $with_defaults.
      *
-     * @psalm-impure
+     * @template TAtomic of Atomic
+     * @param TAtomic $type
+     * @return TAtomic|TGenericObject
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
-    public static function getBoundUse(Atomic $type, Codebase $codebase): Atomic
+    public static function bindBareUse(Atomic $type, Codebase $codebase, bool $with_defaults): Atomic
     {
         if ($type::class !== TNamedObject::class
             || $type->is_static
@@ -173,7 +207,9 @@ final class TemplateDefaults
 
         $storage = $codebase->classlike_storage_provider->get($type->value);
 
-        return self::hasTypeDefaults($storage) ? self::getBareUse($type, $storage, $codebase, false) : $type;
+        return self::hasTypeDefaults($storage)
+            ? self::getUnexpandedBareUse($type, $storage, $codebase, $with_defaults)
+            : $type;
     }
 
     /**

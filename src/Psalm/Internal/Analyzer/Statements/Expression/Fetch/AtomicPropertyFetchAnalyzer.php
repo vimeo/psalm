@@ -1710,12 +1710,7 @@ final class AtomicPropertyFetchAnalyzer
         if (strtolower($lhs_type_part->value) === strtolower($class_storage->name)
             && TemplateDefaults::hasTypeDefaults($class_storage)
         ) {
-            return TemplateDefaults::getBareUse(
-                $lhs_type_part,
-                $class_storage,
-                $codebase,
-                true,
-            );
+            return TemplateDefaults::getBareUse($lhs_type_part, $class_storage, $codebase);
         }
 
         return new TGenericObject($lhs_type_part->value, $template_types);

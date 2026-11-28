@@ -76,18 +76,8 @@ final class ClassTemplateParamCollector
         $class_template_params = [];
         $e = $static_class_storage->template_extended_params;
 
-        if (!$self_call
-            && $lhs_type_part !== null
-            && $lhs_type_part::class === TNamedObject::class
-            && strtolower($lhs_type_part->value) === strtolower($static_class_storage->name)
-            && TemplateDefaults::hasTypeDefaults($static_class_storage)
-        ) {
-            $lhs_type_part = TemplateDefaults::getBareUse(
-                $lhs_type_part,
-                $static_class_storage,
-                $codebase,
-                true,
-            );
+        if (!$self_call && $lhs_type_part !== null) {
+            $lhs_type_part = self::getBareReceiverUse($codebase, $static_class_storage, $lhs_type_part);
         }
 
         if ($lhs_type_part instanceof TGenericObject) {
@@ -219,6 +209,23 @@ final class ClassTemplateParamCollector
         }
 
         return $class_template_params;
+    }
+
+    /**
+     * A receiver without type arguments stands for the defaults of its class ({@see TemplateDefaults::getBareUse()})
+     *
+     * @psalm-impure
+     */
+    private static function getBareReceiverUse(
+        Codebase $codebase,
+        ClassLikeStorage $static_class_storage,
+        Atomic $lhs_type_part,
+    ): Atomic {
+        return $lhs_type_part::class === TNamedObject::class
+            && strtolower($lhs_type_part->value) === strtolower($static_class_storage->name)
+            && TemplateDefaults::hasTypeDefaults($static_class_storage)
+            ? TemplateDefaults::getBareUse($lhs_type_part, $static_class_storage, $codebase)
+            : $lhs_type_part;
     }
 
     /**
