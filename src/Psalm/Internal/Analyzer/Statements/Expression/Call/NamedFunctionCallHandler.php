@@ -1076,6 +1076,7 @@ final class NamedFunctionCallHandler
      * argument given by position.
      *
      * @param array<int, FunctionLikeParameter>|null $function_params
+     * @psalm-capabilities read-props
      */
     private static function getArg(
         PhpParser\Node\Expr\FuncCall $stmt,
