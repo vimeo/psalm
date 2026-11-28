@@ -1790,6 +1790,23 @@ final class SimpleAssertionReconciler extends Reconciler
         foreach ($existing_var_atomic_types as $type) {
             if ($type instanceof TResource) {
                 $resource_types[] = $type;
+            } elseif ($type instanceof TTemplateParam) {
+                $bound = self::getTemplateBound($type);
+
+                if ($bound->hasType('resource') || $bound->hasMixed()) {
+                    $resource_types[] = $type->replaceAs(self::reconcileResource(
+                        $assertion,
+                        $type->as,
+                        null,
+                        false,
+                        null,
+                        $suppressed_issues,
+                        $failed_reconciliation,
+                        $is_equality,
+                    ));
+                }
+
+                $redundant = false;
             } else {
                 $redundant = false;
             }

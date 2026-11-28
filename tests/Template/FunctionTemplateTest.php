@@ -111,6 +111,42 @@ final class FunctionTemplateTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'isResourceKeepsTheTemplateOfAResourceBound' => [
+                'code' => '<?php
+                    /**
+                     * @template T of resource
+                     * @param T $t
+                     */
+                    function ofResource($t): void {
+                        if (is_resource($t)) {
+                            /** @psalm-check-type $t = resource */;
+                        }
+                    }
+
+                    /**
+                     * @template T of resource|string
+                     * @param T $t
+                     */
+                    function ofResourceOrString($t): void {
+                        if (is_resource($t)) {
+                            /** @psalm-check-type $t = resource */;
+                        } else {
+                            /** @psalm-check-type $t = string */;
+                        }
+                    }
+
+                    /**
+                     * @template T
+                     * @param T $t
+                     */
+                    function ofMixed($t): void {
+                        if (is_resource($t)) {
+                            /** @psalm-check-type $t = resource */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['ReservedWord'],
+            ],
             'closureParamWithTemplatesNamingKeyOfAnotherTemplateNotInItsType' => [
                 'code' => '<?php
                     /**
@@ -4513,6 +4549,19 @@ final class FunctionTemplateTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'isResourceOfATemplateBoundByIntIsImpossible' => [
+                'code' => '<?php
+                    /**
+                     * @template T of int
+                     * @param T $i
+                     */
+                    function f($i): void {
+                        if (is_resource($i)) {
+                            echo "never";
+                        }
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+            ],
             'classStringAndInvariantParamsOfDifferentClassesAreIncompatible' => [
                 'code' => '<?php
                     final class A {}
