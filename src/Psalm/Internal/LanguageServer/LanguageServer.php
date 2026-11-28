@@ -85,7 +85,6 @@ use function trim;
 use function uniqid;
 use function urldecode;
 
-use const ARRAY_FILTER_USE_KEY;
 use const JSON_PRETTY_PRINT;
 use const PHP_URL_PATH;
 use const STDERR;
@@ -117,9 +116,16 @@ final class LanguageServer extends Dispatcher
     public ?string $trace = null;
 
     /**
-     * The AMP Delay token
+     * The timer of the debounced analysis
      */
-    private string $versionedAnalysisDelayToken = '';
+    private string $pendingAnalysisToken = '';
+
+    /**
+     * The files waiting for analysis, with the document version to publish their diagnostics for
+     *
+     * @var array<string, array{uri: string, version: ?int}>
+     */
+    private array $pendingAnalysis = [];
 
     /** @var array<string,array<string,array{o:int, s: list<string>}>> */
     private array $issue_baseline = [];
@@ -585,7 +591,7 @@ final class LanguageServer extends Dispatcher
      */
     public function queueChangeFileAnalysis(string $file_path, string $uri, ?int $version = null): void
     {
-        $this->doVersionedAnalysisOnChangeDebounce([$file_path => $uri], $version);
+        $this->scheduleAnalysis([$file_path => $uri], $version, $this->client->clientConfiguration->onChangeDebounceMs);
     }
 
     /**
@@ -593,7 +599,7 @@ final class LanguageServer extends Dispatcher
      */
     public function queueOpenFileAnalysis(string $file_path, string $uri, ?int $version = null): void
     {
-        $this->doVersionedAnalysisOnOpenDebounce([$file_path => $uri], $version);
+        $this->scheduleAnalysis([$file_path => $uri], $version, $this->client->clientConfiguration->onOpenDebounceMs);
     }
 
     /**
@@ -635,59 +641,79 @@ final class LanguageServer extends Dispatcher
     }
 
     /**
-     * Debounced Queue File Analysis with optional version for onChange events
+     * Drops a file from the pending analysis, so that a file closed before its debounced analysis runs gets no
+     * diagnostics after the client cleared them.
+     *
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    public function cancelPendingAnalysis(string $file_path): void
+    {
+        unset($this->pendingAnalysis[$file_path]);
+    }
+
+    /**
+     * Adds the files to the pending analysis and restarts its timer. Analysis blocks the event loop, so the events that
+     * arrive meanwhile only update the pending files, and the next run analyzes each file once, at its latest version.
      *
      * @param array<string, string> $files
      */
-    public function doVersionedAnalysisOnChangeDebounce(array $files, ?int $version = null): void
+    private function scheduleAnalysis(array $files, ?int $version, ?int $debounce_ms): void
     {
-        EventLoop::cancel($this->versionedAnalysisDelayToken);
-        if ($this->client->clientConfiguration->onChangeDebounceMs === null) {
-            $this->doVersionedAnalysis($files, $version);
+        $this->addPendingAnalysis($files, $version);
+
+        EventLoop::cancel($this->pendingAnalysisToken);
+        if ($debounce_ms === null) {
+            $this->analyzePendingFiles();
         } else {
             /** @psalm-suppress MixedAssignment,UnusedPsalmSuppress */
-            $this->versionedAnalysisDelayToken = EventLoop::delay(
-                $this->client->clientConfiguration->onChangeDebounceMs / 1000,
-                fn() => $this->doVersionedAnalysis($files, $version),
+            $this->pendingAnalysisToken = EventLoop::delay(
+                $debounce_ms / 1000,
+                $this->analyzePendingFiles(...),
             );
         }
     }
 
     /**
-     * Debounced Queue File Analysis with optional version for onOpen events
-     *
      * @param array<string, string> $files
+     * @psalm-capabilities read-props|write-this-props|write-refs
      */
-    public function doVersionedAnalysisOnOpenDebounce(array $files, ?int $version = null): void
+    private function addPendingAnalysis(array $files, ?int $version): void
     {
-        if ($this->client->clientConfiguration->onOpenDebounceMs === null) {
-            $this->doVersionedAnalysis($files, $version);
-        } else {
-            EventLoop::delay(
-                $this->client->clientConfiguration->onOpenDebounceMs / 1000,
-                function () use ($files, $version): void {
-                    $files = array_filter(
-                        $files,
-                        fn(string $file_path) => $this->project_analyzer->getCodebase()->file_provider
-                        ->isOpen($file_path),
-                        ARRAY_FILTER_USE_KEY,
-                    );
-                    $this->doVersionedAnalysis($files, $version);
-                },
-            );
+        foreach ($files as $file_path => $uri) {
+            $this->pendingAnalysis[$file_path] = [
+                'uri' => $uri,
+                'version' => $version ?? $this->pendingAnalysis[$file_path]['version'] ?? null,
+            ];
         }
     }
 
     /**
-     * Queue File Analysis with optional version
+     * Queue File Analysis with optional version, together with the files still waiting for a debounced analysis
      *
      * @param array<string, string> $files
      */
     public function doVersionedAnalysis(array $files, ?int $version = null): void
     {
-        EventLoop::cancel($this->versionedAnalysisDelayToken);
+        $this->addPendingAnalysis($files, $version);
+        $this->analyzePendingFiles();
+    }
+
+    private function analyzePendingFiles(): void
+    {
+        EventLoop::cancel($this->pendingAnalysisToken);
+
+        $pending = $this->pendingAnalysis;
+        $this->pendingAnalysis = [];
+
+        if ($pending === []) {
+            return;
+        }
+
+        $files = array_map(static fn(array $file): string => $file['uri'], $pending);
+        $versions = array_map(static fn(array $file): ?int => $file['version'], $pending);
+
         try {
-            $this->logDebug("Doing Analysis from version: $version");
+            $this->logDebug('Doing Analysis', ['versions' => $versions]);
             $this->codebase->reloadFiles(
                 $this->project_analyzer,
                 array_keys($files),
@@ -700,7 +726,7 @@ final class LanguageServer extends Dispatcher
             $this->logDebug("Reloading Files");
             $this->codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
 
-            $this->emitVersionedIssues($files, $version);
+            $this->emitVersionedIssues($files, $versions);
         } catch (Throwable $e) {
             $this->logError((string) $e);
         }
@@ -710,12 +736,13 @@ final class LanguageServer extends Dispatcher
      * Emit Publish Diagnostics
      *
      * @param array<string, string> $files
+     * @param array<string, ?int> $versions the document version of each file, if known
      */
-    public function emitVersionedIssues(array $files, ?int $version = null): void
+    public function emitVersionedIssues(array $files, array $versions = []): void
     {
         $this->logDebug("Perform Analysis", [
             'files' => array_keys($files),
-            'version' => $version,
+            'versions' => $versions,
         ]);
 
         //Copy variable here to be able to process it
@@ -802,7 +829,11 @@ final class LanguageServer extends Dispatcher
                 ),
             );
 
-            $this->client->textDocument->publishDiagnostics($uri, array_values($diagnostics), $version);
+            $this->client->textDocument->publishDiagnostics(
+                $uri,
+                array_values($diagnostics),
+                $versions[$file_path] ?? null,
+            );
         }
     }
 
@@ -827,6 +858,16 @@ final class LanguageServer extends Dispatcher
         }
 
         return $object;
+    }
+
+    /**
+     * The client cancels a request it no longer needs. Requests are answered synchronously, in the order they arrive,
+     * so the request was already answered when its cancellation is read.
+     *
+     * @psalm-capabilities read-props
+     */
+    public function cancelRequest(): void
+    {
     }
 
     /**

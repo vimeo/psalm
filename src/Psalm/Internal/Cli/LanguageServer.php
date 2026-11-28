@@ -185,7 +185,7 @@ final class LanguageServer
                     Enables sending help uri links with the code in diagnostic messages.
 
                 --on-change-debounce-ms=[INT]
-                    The number of milliseconds to debounce onChange events.
+                    The number of milliseconds to debounce onChange events. Default is 200.
 
                 --on-open-debounce-ms=[INT]
                     The number of milliseconds to debounce onOpen events.

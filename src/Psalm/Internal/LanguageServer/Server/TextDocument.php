@@ -165,6 +165,7 @@ final class TextDocument
         $file_path = $this->server->uriToPath($textDocument->uri);
 
         $this->codebase->file_provider->closeFile($file_path);
+        $this->server->cancelPendingAnalysis($file_path);
         $this->server->client->textDocument->publishDiagnostics($textDocument->uri, []);
     }
 
