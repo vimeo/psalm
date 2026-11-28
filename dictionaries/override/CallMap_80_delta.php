@@ -3026,12 +3026,12 @@ return array (
     array (
       'old' => 
       array (
-        0 => 'DateInterval',
+        0 => 'DateInterval|false',
         'time' => 'string',
       ),
       'new' => 
       array (
-        0 => 'DateInterval',
+        0 => 'DateInterval|false',
         'datetime' => 'string',
       ),
     ),

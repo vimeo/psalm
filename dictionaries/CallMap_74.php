@@ -16154,7 +16154,7 @@ return array (
   ),
   'date_interval_create_from_date_string' => 
   array (
-    0 => 'DateInterval',
+    0 => 'DateInterval|false',
     'time' => 'string',
     -2 => 'none',
   ),

@@ -13648,7 +13648,6 @@ return array (
   ),
   'date_interval_create_from_date_string' => 
   array (
-    0 => 'DateInterval',
     -1 => 'DateInterval|false',
     'datetime' => 'string',
   ),
