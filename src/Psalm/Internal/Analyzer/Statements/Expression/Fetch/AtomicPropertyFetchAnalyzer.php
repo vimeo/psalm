@@ -1699,7 +1699,7 @@ final class AtomicPropertyFetchAnalyzer
     /**
      * A receiver without type arguments: the defaults of the templates of its class, and the bounds of the others
      *
-     * @param list<Union> $template_types the bounds of the templates of the class declaring the property
+     * @param non-empty-list<Union> $template_types the bounds of the templates of the class declaring the property
      */
     private static function getBareReceiver(
         Codebase $codebase,
@@ -1714,7 +1714,7 @@ final class AtomicPropertyFetchAnalyzer
                 $lhs_type_part,
                 $class_storage,
                 $codebase,
-                static fn(Union $default): Union => $default,
+                true,
             );
         }
 

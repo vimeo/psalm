@@ -86,7 +86,7 @@ final class ClassTemplateParamCollector
                 $lhs_type_part,
                 $static_class_storage,
                 $codebase,
-                static fn(Union $default): Union => $default,
+                true,
             );
         }
 

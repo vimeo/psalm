@@ -6520,6 +6520,130 @@ final class ClassTemplateTest extends TestCase
                 'ignored_issues' => ['MixedAssignment'],
                 'php_version' => '8.0',
             ],
+            'bareReceiverKeepsAResolvedStaticArgument' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-mutable
+                     * @template TParent of object|null = null
+                     */
+                    class NodeBuilder {
+                        /** @return Leaf<static> */
+                        public function leaf(): Leaf {
+                            throw new Exception();
+                        }
+                    }
+
+                    /**
+                     * @psalm-mutable
+                     * @template TParent of NodeBuilder|null = null
+                     */
+                    final class Leaf {
+                        /** @return TParent */
+                        public function end(): ?NodeBuilder {
+                            throw new Exception();
+                        }
+                    }
+
+                    /** @var NodeBuilder $builder */
+                    $builder = $GLOBALS["b"];
+                    $twice = $builder->leaf()->end()->leaf()->end();',
+                'assertions' => [
+                    '$twice===' => 'NodeBuilder<null>&static',
+                ],
+                'ignored_issues' => ['ClassMustBeFinal'],
+                'php_version' => '8.0',
+            ],
+            'classCheckNarrowsAGenericParentToAChildOfItsArguments' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-immutable
+                     * @template-covariant T of \'a\'|\'b\'|null = null
+                     */
+                    abstract class Base {}
+
+                    /**
+                     * @psalm-immutable
+                     * @template T of \'a\'|\'b\'|null = null
+                     * @extends Base<T>
+                     */
+                    final class Sub extends Base {}
+
+                    function base(): Base {
+                        throw new Exception();
+                    }
+
+                    /** @return Base<\'a\'> */
+                    function baseA(): Base {
+                        throw new Exception();
+                    }
+
+                    $bare = base();
+                    $a = baseA();
+                    $narrowed = $bare instanceof Sub ? $bare : null;
+                    $narrowed_a = $a instanceof Sub ? $a : null;',
+                'assertions' => [
+                    '$narrowed===' => 'Sub<null>|null',
+                    '$narrowed_a===' => 'Sub<\'a\'>|null',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'bareTemplateBoundAcceptsTheSameBareClass' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-immutable
+                     * @template-covariant T of \'a\'|null = null
+                     */
+                    abstract class Node {}
+
+                    /**
+                     * @psalm-immutable
+                     * @template T of Node
+                     */
+                    final class Expr {
+                        /** @param T $node */
+                        public function __construct(public Node $node) {}
+                    }
+
+                    /**
+                     * @psalm-immutable
+                     * @template T of Node
+                     */
+                    final class Rule {
+                        /** @param T $node */
+                        public function __construct(public Node $node) {}
+
+                        /** @return Expr<T> */
+                        public function expr(): Expr {
+                            return new Expr($this->node);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'purityOnlyTypeArgumentsUseTemplateDefaults' => [
+                'code' => '<?php
+                    /**
+                     * @template T of \'a\'|\'b\' = \'a\'
+                     * @template TPurity of pure|impure = impure
+                     */
+                    final class Pur {
+                        /** @return T */
+                        public function get(): string {
+                            throw new Exception();
+                        }
+                    }
+
+                    /** @var Pur[pure] $pure */
+                    $pure = $GLOBALS["p"];
+                    $from_pure = $pure->get();',
+                'assertions' => [
+                    '$from_pure===' => '\'a\'',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'methodTemplateDefaultNamingClassTemplate' => [
                 'code' => '<?php
                     /**
@@ -7271,6 +7395,26 @@ final class ClassTemplateTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'defaultOfANativeBareTypeIsADocblockType' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-immutable
+                     * @template T of \'a\'|\'b\' = \'a\'
+                     */
+                    final class Box {
+                        /** @return T */
+                        public function get(): string {
+                            throw new Exception();
+                        }
+                    }
+
+                    function f(Box $box): void {
+                        if ($box->get() === \'b\') {}
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'bareParamTypeTakesTemplateDefaults' => [
                 'code' => '<?php
                     /**

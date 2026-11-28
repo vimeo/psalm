@@ -564,7 +564,7 @@ final class AssertionReconciler extends Reconciler
             );
 
             if ($should_return) {
-                return new Union($new_type_parts);
+                return self::bindCheckedClasses($codebase, new Union($new_type_parts), $existing_var_type);
             }
 
             $new_type_part = $new_type_parts[0];
@@ -594,8 +594,6 @@ final class AssertionReconciler extends Reconciler
             }
         }
 
-        $new_type_part = self::getCheckedClass($codebase, $new_type_part);
-
         if ($existing_var_type->hasMixed()) {
             if ($assertion instanceof IsLooselyEqual
                 && $new_type_part instanceof Scalar
@@ -603,7 +601,7 @@ final class AssertionReconciler extends Reconciler
                 return $existing_var_type;
             }
 
-            return new Union([$new_type_part]);
+            return self::bindCheckedClasses($codebase, new Union([$new_type_part]), $existing_var_type);
         }
 
         $refined_type = self::refineWithJuggling(
@@ -620,7 +618,7 @@ final class AssertionReconciler extends Reconciler
 
         return TypeExpander::expandUnion(
             $codebase,
-            $refined_type,
+            self::bindCheckedClasses($codebase, $refined_type, $existing_var_type),
             null,
             null,
             null,
@@ -1988,6 +1986,16 @@ final class AssertionReconciler extends Reconciler
             $type_1_atomic = $type_1_atomic->setIsStatic(false);
         }
 
+        // a `Parent<A>` narrowed to a child class without type arguments is a child of those arguments, not of its
+        // bounds
+        if ($type_1_atomic instanceof TGenericObject
+            && $type_2_atomic::class === TNamedObject::class
+            && !$type_1_atomic->hasUnknownArgument()
+            && strtolower($type_1_atomic->value) !== strtolower($type_2_atomic->value)
+        ) {
+            $type_2_atomic = self::inferTemplateParamsFromParent($codebase, $type_2_atomic, $type_1_atomic);
+        }
+
         if ($type_1_atomic instanceof TNamedObject
             && $type_2_atomic instanceof TString
             && $codebase->classOrInterfaceExists($type_1_atomic->value)
@@ -3235,30 +3243,36 @@ final class AssertionReconciler extends Reconciler
     }
 
     /**
+     * The narrowed type with the classes the check names without type arguments, and that the existing type does not
+     * hold, standing for their bounds ({@see TemplateDefaults::getBoundUse()})
+     *
+     * @psalm-impure
+     */
+    private static function bindCheckedClasses(Codebase $codebase, Union $narrowed, Union $existing_var_type): Union
+    {
+        $existing_classes = [];
+
+        foreach ($existing_var_type->getAtomicTypes() as $existing_atomic) {
+            if ($existing_atomic instanceof TNamedObject) {
+                $existing_classes[strtolower($existing_atomic->value)] = true;
+            }
+        }
+
+        $atomics = [];
+
+        foreach ($narrowed->getAtomicTypes() as $atomic) {
+            $atomics[] = $atomic instanceof TNamedObject && isset($existing_classes[strtolower($atomic->value)])
+                ? $atomic
+                : TemplateDefaults::getBoundUse($atomic, $codebase);
+        }
+
+        return $narrowed->setTypes($atomics);
+    }
+
+    /**
      * @param array<string>           $suppressed_issues
      * @return non-empty-list<Atomic>
      */
-    /**
-     * A check of the class (`instanceof Foo`, `is_a()`, `@psalm-assert Foo`) says nothing of the type arguments: its
-     * templates stand for their bounds, not for the defaults a declared `Foo` stands for.
-     *
-     * @template TAtomic of Atomic
-     * @param TAtomic $type
-     * @return TAtomic|TGenericObject
-     */
-    private static function getCheckedClass(Codebase $codebase, Atomic $type): Atomic
-    {
-        if ($type::class !== TNamedObject::class || !$codebase->classlike_storage_provider->has($type->value)) {
-            return $type;
-        }
-
-        $class_storage = $codebase->classlike_storage_provider->get($type->value);
-
-        return TemplateDefaults::hasTypeDefaults($class_storage)
-            ? TemplateDefaults::getBareUse($type, $class_storage, $codebase, null)
-            : $type;
-    }
-
     private static function handleIsA(
         IsAClass $assertion,
         Codebase $codebase,
@@ -3270,7 +3284,7 @@ final class AssertionReconciler extends Reconciler
     ): array {
         $allow_string_comparison = $assertion->allow_string;
 
-        $assertion_type = self::getCheckedClass($codebase, $assertion->type);
+        $assertion_type = $assertion->type;
 
         if ($existing_var_type->hasMixed()) {
             if (!$assertion_type instanceof TNamedObject) {

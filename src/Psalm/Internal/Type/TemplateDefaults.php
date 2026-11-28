@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Type;
 
+use AssertionError;
 use Closure;
 use Psalm\Aliases;
 use Psalm\CodeLocation;
@@ -22,6 +23,7 @@ use Psalm\Storage\Capabilities;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Type;
+use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TTemplateParam;
@@ -50,8 +52,8 @@ final class TemplateDefaults
 
     /**
      * The type arguments of a use giving only some of them (`Foo<A>`), plus the defaults of the trailing type templates
-     * it leaves out, marked as written where the use is ($from_docblock). A use with no type arguments (`Foo`,
-     * `Foo[pure]`) is left alone ({@see self::getBareUse()}).
+     * it leaves out, marked as written where the use is ($from_docblock). A use with only purity arguments
+     * (`Foo[pure]`) gets the defaults as well; a use without any (`Foo`) is {@see self::getBareUse()}.
      *
      * @param list<Union> $type_params
      * @return ($type_params is non-empty-list ? non-empty-list<Union> : list<Union>)
@@ -68,11 +70,6 @@ final class TemplateDefaults
         }
 
         [$type_args, $purity_args] = PurityArguments::split($type_params);
-
-        if ($type_args === []) {
-            return $type_params;
-        }
-
         $given = [];
         $i = 0;
 
@@ -104,18 +101,17 @@ final class TemplateDefaults
 
     /**
      * The use of the class a use without type arguments (`Foo`) stands for: its type templates bound to their defaults,
-     * and the others to their bounds, the type templates among them marked as left out. $fill_default fills each
-     * default. Without $fill_default, every template is bound to its bound, as for an `instanceof Foo` check, which
+     * expanded in the scope of the class, and the others to their bounds, the type templates among them marked as
+     * left out. Without $with_defaults, every template is bound to its bound, as for an `instanceof Foo` check, which
      * knows nothing of the arguments.
      *
-     * @param ?Closure(Union, string): Union $fill_default
      * @psalm-impure
      */
     public static function getBareUse(
         TNamedObject $type,
         ClassLikeStorage $storage,
-        ?Codebase $codebase,
-        ?Closure $fill_default,
+        Codebase $codebase,
+        bool $with_defaults,
     ): TGenericObject {
         $type_args = [];
         $projections = [];
@@ -130,13 +126,13 @@ final class TemplateDefaults
                 continue;
             }
 
-            if ($fill_default !== null && isset($storage->template_defaults[$template_name])) {
+            if ($with_defaults && isset($storage->template_defaults[$template_name])) {
                 $default = self::resolve(
                     $storage->template_defaults[$template_name],
                     new TemplateResult([], $given),
                     $codebase,
                 );
-                $argument = $fill_default($default->setFromDocblock($type->from_docblock), $template_name);
+                $argument = self::expandDefault($codebase, $default->setFromDocblock(true), $storage, $template_name);
             } else {
                 $argument = PurityArguments::getOmittedArgument($bound);
                 $projections[count($type_args)] = TypeArgumentProjection::Omitted;
@@ -145,14 +141,39 @@ final class TemplateDefaults
             $type_args[] = $given[$template_name][array_key_first($type_map)] = $argument;
         }
 
+        if ($type_args === []) {
+            throw new AssertionError('A class with type defaults has type templates');
+        }
+
         return (new TGenericObject(
             $type->value,
             $type_args,
             false,
             $type->is_static,
-            [],
+            $type->extra_types,
             $type->from_docblock,
-        ))->setProjections($projections);
+        ))->setIsStatic($type->is_static, $type->is_static_resolved)->setProjections($projections);
+    }
+
+    /**
+     * A check of the class (`instanceof Foo`, `is_a()`, `@psalm-assert Foo`) or a template bound (`@template T of Foo`)
+     * naming a class without type arguments: its templates stand for their bounds, not for the defaults
+     * ({@see self::getBareUse()}).
+     *
+     * @psalm-impure
+     */
+    public static function getBoundUse(Atomic $type, Codebase $codebase): Atomic
+    {
+        if ($type::class !== TNamedObject::class
+            || $type->is_static
+            || !$codebase->classlike_storage_provider->has($type->value)
+        ) {
+            return $type;
+        }
+
+        $storage = $codebase->classlike_storage_provider->get($type->value);
+
+        return self::hasTypeDefaults($storage) ? self::getBareUse($type, $storage, $codebase, false) : $type;
     }
 
     /**

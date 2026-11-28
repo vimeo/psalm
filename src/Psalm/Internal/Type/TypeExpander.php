@@ -1040,17 +1040,7 @@ final class TypeExpander
             );
 
             if (TemplateDefaults::hasTypeDefaults($container_class_storage)) {
-                $return_type = TemplateDefaults::getBareUse(
-                    $return_type,
-                    $container_class_storage,
-                    $codebase,
-                    static fn(Union $default, string $template_name): Union => TemplateDefaults::expandDefault(
-                        $codebase,
-                        $default,
-                        $container_class_storage,
-                        $template_name,
-                    ),
-                );
+                $return_type = TemplateDefaults::getBareUse($return_type, $container_class_storage, $codebase, true);
 
                 $expand_generic = false;
             } elseif ($container_class_storage->template_types

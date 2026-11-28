@@ -1875,6 +1875,18 @@ final class TemplateStandinTypeReplacer
     ): array {
         $input_unbound_offsets = [];
 
+        // an input without type arguments stands for the defaults of its class, as a declared one does
+        if ($input_type_part::class === TNamedObject::class
+            && !$input_type_part->is_static
+            && $codebase->classlike_storage_provider->has($input_type_part->value)
+        ) {
+            $bare_input_storage = $codebase->classlike_storage_provider->get($input_type_part->value);
+
+            if (TemplateDefaults::hasTypeDefaults($bare_input_storage)) {
+                $input_type_part = TemplateDefaults::getBareUse($input_type_part, $bare_input_storage, $codebase, true);
+            }
+        }
+
         if ($input_type_part instanceof TGenericObject || $input_type_part instanceof TIterable) {
             $input_type_params = $input_type_part->type_params;
 
