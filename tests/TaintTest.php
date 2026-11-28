@@ -5871,6 +5871,16 @@ final class TaintTest extends TestCase
                         render($numeric);
                     }',
             ],
+            'htmlSinkNotTaintedByNumericStringNarrowing' => [
+                'code' => '<?php
+                    /** @psalm-taint-sink html $s */
+                    function render($s): void {}
+
+                    $s = $_GET["x"];
+                    if (is_string($s) && is_numeric($s)) {
+                        render($s);
+                    }',
+            ],
             'sleepSinkNotTaintedByLiteralNarrowing' => [
                 'code' => '<?php
                     /** @psalm-taint-sink sleep $s */
@@ -22277,6 +22287,23 @@ final class TaintTest extends TestCase
 
                     $seconds = input();
                     if (is_numeric($seconds)) {
+                        sleep((int) $seconds);
+                    }',
+                'error_message' => 'TaintedSleep',
+            ],
+            'shellSurvivesNumericStringNarrowing' => [
+                'code' => '<?php
+                    $value = $_GET["x"];
+                    // "1\n" is numeric
+                    if (is_string($value) && is_numeric($value)) {
+                        shell_exec("echo " . $value . " done");
+                    }',
+                'error_message' => 'TaintedShell',
+            ],
+            'sleepSurvivesNumericStringNarrowing' => [
+                'code' => '<?php
+                    $seconds = $_GET["x"];
+                    if (is_string($seconds) && is_numeric($seconds)) {
                         sleep((int) $seconds);
                     }',
                 'error_message' => 'TaintedSleep',
