@@ -4496,6 +4496,26 @@ final class MethodCallTest extends TestCase
                     }
                 PHP,
             ],
+            'callOfAMethodMissingOnAReceiverThatASubclassMayDefineIsMixed' => [
+                'code' => <<<'PHP'
+                    <?php
+                    interface Shape {}
+                    final class Text {
+                        public function id(): string { return ""; }
+                    }
+                    final class Square implements Shape {
+                        public function id(): int { return 0; }
+                    }
+
+                    /** @param Shape|Text $t */
+                    function f(object $t): void {
+                        $i = $t->id();
+                        /** @psalm-check-type-exact $i = mixed */
+                    }
+                PHP,
+                'assertions' => [],
+                'ignored_issues' => ['PossiblyUndefinedMethod', 'MixedAssignment'],
+            ],
             'instanceCallOfAMethodNamedForEachReceiver' => [
                 'code' => <<<'PHP'
                     <?php
@@ -4518,19 +4538,6 @@ final class MethodCallTest extends TestCase
                 'assertions' => ['$s===' => 'int|string'],
                 'ignored_issues' => [],
                 'php_version' => '8.0',
-            ],
-            'instanceCallOfMethodsNamedByLiteralsOneOfThemUndefinedHasTheTypeOfTheOthers' => [
-                'code' => <<<'PHP'
-                    <?php
-                    final class Foo {
-                        public function a(): int { return 0; }
-                    }
-
-                    $m = random_int(0, 1) ? 'a' : 'foo';
-                    $r = (new Foo())->$m();
-                PHP,
-                'assertions' => ['$r===' => 'int'],
-                'ignored_issues' => ['PossiblyUndefinedMethod'],
             ],
         ];
     }

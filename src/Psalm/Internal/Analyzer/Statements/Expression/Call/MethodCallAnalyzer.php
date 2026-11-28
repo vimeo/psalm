@@ -375,10 +375,8 @@ final class MethodCallAnalyzer extends CallAnalyzer
         }
 
         if ($result->non_existent_class_method_ids) {
-            $possibly_undefined = $result->existent_method_ids || $result->has_mixed_method_call;
-
             if ($context->check_methods) {
-                if ($possibly_undefined) {
+                if ($result->existent_method_ids || $result->has_mixed_method_call) {
                     IssueBuffer::maybeAdd(
                         new PossiblyUndefinedMethod(
                             'Method ' . $result->non_existent_class_method_ids[0] . ' does not exist',
@@ -399,17 +397,12 @@ final class MethodCallAnalyzer extends CallAnalyzer
                 }
             }
 
-            // the methods that exist still give the call its type
-            if (!$possibly_undefined) {
-                return true;
-            }
+            return true;
         }
 
         if ($result->non_existent_interface_method_ids) {
-            $possibly_undefined = $result->existent_method_ids || $result->has_mixed_method_call;
-
             if ($context->check_methods) {
-                if ($possibly_undefined) {
+                if ($result->existent_method_ids || $result->has_mixed_method_call) {
                     IssueBuffer::maybeAdd(
                         new PossiblyUndefinedMethod(
                             'Method ' . $result->non_existent_interface_method_ids[0] . ' does not exist',
@@ -430,10 +423,7 @@ final class MethodCallAnalyzer extends CallAnalyzer
                 }
             }
 
-            // the methods that exist still give the call its type
-            if (!$possibly_undefined) {
-                return true;
-            }
+            return true;
         }
 
         if ($result->too_many_arguments && $result->too_many_arguments_method_ids) {
