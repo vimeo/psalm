@@ -24,6 +24,7 @@ use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
@@ -2485,6 +2486,28 @@ final class TypeParseTest extends TestCase
 
         self::assertSame('self', $type->toPhpString('Ns', [], 'Ns\Foo', 7_04_00));
         self::assertSame('static', $type->toPhpString('Ns', [], 'Ns\Foo', 8_00_00));
+    }
+
+    public function testObjectShapeKeepsItsMethodsAndIntersectionsInNamespacedString(): void
+    {
+        $this->assertSame(
+            'object{a:int}&I',
+            Type::parseString('object{a: int}&I')->toNamespacedString(null, [], null, false),
+        );
+
+        $shape = new TObjectWithProperties(['a' => Type::getInt()], ['foo' => 'foo', 'bar' => 'bar']);
+
+        $this->assertSame('object{a:int, foo(), bar()}', $shape->toNamespacedString(null, [], null, false));
+        $this->assertSame('object{foo()}', (new TObjectWithProperties([], ['foo' => 'foo']))
+            ->toNamespacedString(null, [], null, false));
+        $this->assertSame(
+            'object{foo()}&Countable&Traversable',
+            (new TObjectWithProperties([], ['foo' => 'foo']))
+                ->addIntersectionType(new TNamedObject('Countable'))
+                ->addIntersectionType(new TNamedObject('Traversable'))
+                ->toNamespacedString(null, [], null, false),
+        );
+        $this->assertSame('object', $shape->toNamespacedString(null, [], null, true));
     }
 
     public function testConditionalKeepsItsTypesInNamespacedString(): void

@@ -151,29 +151,44 @@ final class TObjectWithProperties extends TObject
             return 'object';
         }
 
-        return 'object{' .
-                implode(
-                    ', ',
-                    array_map(
-                        /**
-                         * @psalm-pure
-                         * @param  string|int $name
-                         */
-                        static fn($name, Union $type): string =>
-                            $name .
-                            ($type->possibly_undefined ? '?' : '')
-                            . ':'
-                            . $type->toNamespacedString(
-                                $namespace,
-                                $aliased_classes,
-                                $this_class,
-                                false,
-                            ),
-                        array_keys($this->properties),
-                        $this->properties,
+        $properties_string = implode(
+            ', ',
+            array_map(
+                /**
+                 * @psalm-pure
+                 * @param  string|int $name
+                 */
+                static fn($name, Union $type): string =>
+                    $name .
+                    ($type->possibly_undefined ? '?' : '')
+                    . ':'
+                    . $type->toNamespacedString(
+                        $namespace,
+                        $aliased_classes,
+                        $this_class,
+                        false,
                     ),
-                ) .
-                '}';
+                array_keys($this->properties),
+                $this->properties,
+            ),
+        );
+
+        $methods_string = implode(
+            ', ',
+            array_map(
+                /**
+                 * @psalm-pure
+                 */
+                static fn(string $name): string => $name . '()',
+                array_keys($this->methods),
+            ),
+        );
+
+        return 'object{'
+            . $properties_string . ($methods_string && $properties_string ? ', ' : '')
+            . $methods_string
+            . '}'
+            . $this->getNamespacedIntersectionTypes($namespace, $aliased_classes, $this_class, false);
     }
 
     /**
