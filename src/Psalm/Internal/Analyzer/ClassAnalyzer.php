@@ -1186,6 +1186,14 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 }
 
                 if (!$property_storage->inherited_type) {
+                    // expanding the type below replaces the class constants of an intersection
+                    TypeChecker::checkDeferredIntersections(
+                        $property_type,
+                        $statements_source,
+                        $property_type_location,
+                        $storage->suppressed_issues + $statements_source->getSuppressedIssues() + $suppressed,
+                    );
+
                     (new TypeChecker(
                         $statements_source,
                         $property_type_location,
