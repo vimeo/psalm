@@ -443,6 +443,48 @@ final class TypeVariableTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'falseAssignedToAPropertyRecordsABoundOnATypeVariable' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     */
+                    final class A {
+                        /** @var T */
+                        public $prop;
+
+                        /**
+                         * @param T $value
+                         */
+                        public function __construct($value) {
+                            $this->prop = $value;
+                        }
+                    }
+
+                    /** @var bool */
+                    $value = true;
+                    $obj = new A($value);
+                    $obj->prop = false;',
+            ],
+            'nullAssignedToAPropertyRecordsABoundOnATypeVariable' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     */
+                    final class A {
+                        /** @var T */
+                        public $prop;
+
+                        /**
+                         * @param T $value
+                         */
+                        public function __construct($value) {
+                            $this->prop = $value;
+                        }
+                    }
+
+                    $obj = new A(1);
+                    $obj->prop = null;',
+            ],
             'constructorClassStringOrTemplateParamIsBoundToTheTemplateOfAClassString' => [
                 'code' => '<?php
                     /** @template TModel */

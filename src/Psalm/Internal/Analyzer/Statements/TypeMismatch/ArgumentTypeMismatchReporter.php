@@ -18,7 +18,6 @@ use Psalm\Issue\NullArgument;
 use Psalm\Issue\PossiblyFalseArgument;
 use Psalm\Issue\PossiblyInvalidArgument;
 use Psalm\Issue\PossiblyNullArgument;
-use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Union;
 
 use function implode;
@@ -213,28 +212,12 @@ final class ArgumentTypeMismatchReporter extends TypeMismatchReporter
     #[Override]
     protected function acceptsNull(): bool
     {
-        return $this->casts_to_string || parent::acceptsNull() || $this->expectsTypeVariable();
+        return $this->casts_to_string || parent::acceptsNull();
     }
 
     #[Override]
     protected function acceptsFalse(): bool
     {
-        return $this->casts_to_string || parent::acceptsFalse() || $this->expectsTypeVariable();
-    }
-
-    /**
-     * A null or false argument against a type variable records a bound like any other value
-     *
-     * @psalm-capabilities read-props
-     */
-    private function expectsTypeVariable(): bool
-    {
-        foreach ($this->expected_type->getAtomicTypes() as $atomic_type) {
-            if ($atomic_type instanceof TTypeVariable) {
-                return true;
-            }
-        }
-
-        return false;
+        return $this->casts_to_string || parent::acceptsFalse();
     }
 }
