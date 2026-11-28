@@ -84,6 +84,32 @@ final class TaintFlowGraph extends DataFlowGraph
     public const ARRAY_CONVERSION_SUFFIX = '-of-array';
 
     /**
+     * The start of the foreach marker (see TaintFlowResolution::scopeSlot()) of the name of a property read or set
+     * by name through `@psalm-flow`, a variable not known exactly (see ReceiverPropertyTaints::getNameMarker()):
+     * the value read under it is put back under it as an element of a foreach loop is, by a write under the name.
+     * It is followed by the hash of the name, then by the hash of the variable holding the object called (`-` if
+     * there is none), then by the class of what the edge reads or sets, and then by `|` and the bounds of the
+     * marker: of a property read, `<class holding it>:<class read through>`, or `*<class>` for the node of the
+     * properties of other names of that class (see ReceiverPropertyTaints::getOtherPropertiesNodes()), and of a
+     * write, the class of the node set; `-` without the variable.
+     */
+    public const NAME_MARKER_PREFIX = 'name ';
+
+    /**
+     * The start of the type of an edge from a property read by a name of a name marker (see NAME_MARKER_PREFIX),
+     * followed by the key of the property, quoted, `@` and the marker: what goes through it is that property, as
+     * the element under its key of an array of the properties (see TaintFlowResolution::applyNamePathType())
+     */
+    public const NAME_BIND_PREFIX = 'name-bind-';
+
+    /**
+     * The start of the type of an edge into a property set by a name of a name marker, followed as for
+     * NAME_BIND_PREFIX: what was read under the same name only goes through it into that property, and only for
+     * a class the object it was read from may be (see TaintFlowResolution::applyNamePathType())
+     */
+    public const NAME_PUT_PREFIX = 'name-put-';
+
+    /**
      * The separator DataFlowNode uses to build a specialized node id from its
      * unspecialized base id and specialization key (see DataFlowNode::make()).
      */

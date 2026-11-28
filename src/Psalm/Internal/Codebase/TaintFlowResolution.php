@@ -14,6 +14,7 @@ use Psalm\Internal\Perf;
 use Psalm\Progress\Progress;
 use Psalm\Type\TaintKind;
 
+use function array_diff_key;
 use function array_filter;
 use function array_intersect_key;
 use function array_key_exists;
@@ -35,7 +36,9 @@ use function str_contains;
 use function str_ends_with;
 use function str_starts_with;
 use function strlen;
+use function strpbrk;
 use function strpos;
+use function strtolower;
 use function substr;
 
 use const PHP_INT_MAX;
@@ -86,6 +89,12 @@ final class TaintFlowResolution
      * (see ArrayAssignmentAnalyzer::getOverwritePathType())
      */
     private const OVERWRITE_PREFIX = 'arrayvalue-overwrite-';
+
+    /**
+     * The start of the marker of a slot of the class of the object a flow is a property of (see getObjectClassSlot()),
+     * followed by the class
+     */
+    private const OBJECT_CLASS_MARKER_PREFIX = 'object-class ';
 
     /**
      * The class (see getClass()) of an open assignment of an array key: a fetch of an array value ignores
@@ -159,6 +168,36 @@ final class TaintFlowResolution
     private const NO_SLOT = -1;
     private const INHERITED_SLOT = -2;
     private const BLOCKED_SLOT = -3;
+
+    /**
+     * The stages of a flow with a slot of the class of the object it is a property of (see getObjectClassSlot()):
+     * set by a write under a name into the node of a property (CLASS_PUT), or into that of the properties of other
+     * names (CLASS_ELEMENT_PUT), in that node (CLASS_STORED, CLASS_ELEMENT_STORED), and in the node a read under a
+     * name gets it from (CLASS_FETCHED). CLASS_LEFT is the slot, of no class, of the flows that reached the node with
+     * one, past its other edges (see reach()).
+     */
+    private const CLASS_PUT = 0;
+    private const CLASS_STORED = 1;
+    private const CLASS_FETCHED = 2;
+    private const CLASS_ELEMENT_PUT = 3;
+    private const CLASS_ELEMENT_STORED = 4;
+    private const CLASS_LEFT = 5;
+
+    /**
+     * How many classes the flows in the node of a property may keep (see reach()): the node of a property of a parent
+     * class of many classes would else see the flows of each apart, through every read under a name of it, for a
+     * precision few of them need.
+     */
+    private const MAX_OBJECT_CLASSES = 8;
+
+    /**
+     * Stage => the type of the edge that takes a flow to the next stage (see getObjectClassSlot())
+     */
+    private const CLASS_STAGE_PATH_TYPES = [
+        self::CLASS_PUT => 'property-assignment',
+        self::CLASS_STORED => 'property-fetch',
+        self::CLASS_ELEMENT_PUT => '=',
+    ];
 
     /**
      * What getNextOpenAssignments() returns for an edge shouldIgnoreFetch() ignores, and for one whose
@@ -395,11 +434,81 @@ final class TaintFlowResolution
 
     /**
      * Foreach loop marker => [path of its file, start and end of its function (or of the loop outside of
-     * any), start and end of the loop, start of its body]
+     * any), start and end of the loop, start of its body, whether it is the marker of a name (see
+     * TaintFlowGraph::NAME_MARKER_PREFIX)]
      *
-     * @var array<string, array{string, int, int, int, int, int}>
+     * @var array<string, array{string, int, int, int, int, int, bool}>
      */
     private array $foreach_markers = [];
+
+    /**
+     * File path => whether it is in the project (see scopeSlot())
+     *
+     * @var array<string, bool>
+     */
+    private array $project_file_paths = [];
+
+    /**
+     * Path type id => [whether it is the type of an edge into a property (TaintFlowGraph::NAME_PUT_PREFIX) or out
+     * of it (TaintFlowGraph::NAME_BIND_PREFIX), the key of the property, its name marker]
+     *
+     * @var array<int, array{bool, string, string}>
+     */
+    private array $name_path_types = [];
+
+    /**
+     * Name marker => [the marker of the name alone, the variable holding the object called, the class] (see
+     * TaintFlowGraph::NAME_MARKER_PREFIX)
+     *
+     * @var array<string, array{string, string, string}>
+     */
+    private array $name_markers = [];
+
+    /**
+     * Node id => [the marker of the name alone (see parseNameMarker()) of its edges into properties set by name
+     * (TaintFlowGraph::NAME_PUT_PREFIX), those edges by the key of their property, its other edges], or false if
+     * it has none (see getNameSlotEdges())
+     *
+     * @var array<string, array{string, array<string, array<string, Path>>, array<string, Path>}|false>
+     */
+    private array $name_put_edges = [];
+
+    /**
+     * Slot id => [the class, the stage] of a slot of the class of the object a flow is a property of (see
+     * getObjectClassSlot())
+     *
+     * @var array<int, array{string, int}>
+     */
+    private array $object_class_slots = [];
+
+    /**
+     * Node id => the edges out of it into a read under a name of a variable holding the object (see
+     * getObjectClassEdges())
+     *
+     * @var array<string, array<string, Path>>
+     */
+    private array $object_class_edges = [];
+
+    /**
+     * Node id => the lowercase classes kept by the flows in it (see reach())
+     *
+     * @var array<string, array<string, true>>
+     */
+    private array $node_object_classes = [];
+
+    /**
+     * Two lowercase class names => whether the objects of the first are all of the second (see isNarrowerClass())
+     *
+     * @var array<string, bool>
+     */
+    private array $class_narrowings = [];
+
+    /**
+     * Two lowercase class names => whether an object may be of both (see mayBeOfBoth())
+     *
+     * @var array<string, bool>
+     */
+    private array $class_overlaps = [];
 
     /**
      * Open assignments key => path type => the open assignments after taking an edge of that type, IGNORED
@@ -1368,6 +1477,18 @@ final class TaintFlowResolution
             $this->array_conversion_path_types[$id] = true;
         } elseif (str_starts_with($path_type, self::OVERWRITE_PREFIX)) {
             $this->overwrite_path_types[$id] = true;
+        } elseif (str_starts_with($path_type, TaintFlowGraph::NAME_BIND_PREFIX)
+            || str_starts_with($path_type, TaintFlowGraph::NAME_PUT_PREFIX)
+        ) {
+            $is_put = str_starts_with($path_type, TaintFlowGraph::NAME_PUT_PREFIX);
+            $prefix_length = strlen($is_put ? TaintFlowGraph::NAME_PUT_PREFIX : TaintFlowGraph::NAME_BIND_PREFIX);
+            $at = (int) strpos($path_type, '@');
+
+            $this->name_path_types[$id] = [
+                $is_put,
+                substr($path_type, $prefix_length, $at - $prefix_length),
+                substr($path_type, $at + 1),
+            ];
         }
 
         return $id;
@@ -1537,6 +1658,14 @@ final class TaintFlowResolution
             return $this->open_assignment_transitions[$open_assignments][$path_type];
         }
 
+        $slot = $this->open_assignment_slots[$open_assignments];
+        if ($slot >= 0 && isset($this->object_class_slots[$slot])) {
+            $next = $this->getNextObjectClassOpenAssignments($open_assignments, $path_type);
+            $this->open_assignment_transitions[$open_assignments][$path_type] = $next;
+
+            return $next;
+        }
+
         [$observed_family, $observed_key] = $this->path_type_effects[$path_type];
         [$made, $closed] = $this->open_assignments[$open_assignments];
         $array_assignments = $made[self::ARRAY_FAMILY];
@@ -1550,7 +1679,9 @@ final class TaintFlowResolution
         $property_assignments = $made[self::PROPERTY_FAMILY];
         $innermost_property = $property_assignments ? $property_assignments[count($property_assignments) - 1] : -1;
 
-        if (isset($this->array_conversion_path_types[$path_type])) {
+        if (isset($this->name_path_types[$path_type])) {
+            $next = $this->applyNamePathType($open_assignments, $path_type);
+        } elseif (isset($this->array_conversion_path_types[$path_type])) {
             // An array converts to "Array", or to 0/1, never to what it holds: the conversion takes nothing the
             // flow put in an array as its innermost open assignment, under a key or as a key. That's the one it
             // made last, past any open assignment of a property it made: those of the call entering its context
@@ -1605,7 +1736,18 @@ final class TaintFlowResolution
             // to be told apart by it in filters (see getFilter()).
             $next = self::IGNORED;
         } elseif ($observed_family === -1) {
-            $next = $this->applyPathType($open_assignments, $path_type);
+            $foreach_marker = $this->path_type_effects[$path_type][4];
+
+            // a write under a name of what was read under it from an object it can't be set to (see matchNameSlot())
+            $next = $foreach_marker !== null
+                && !$this->path_type_effects[$path_type][5]
+                && $this->matchNameSlot(
+                    $this->open_assignment_slots[$open_assignments],
+                    $foreach_marker,
+                    false,
+                ) === false
+                ? self::IGNORED
+                : $this->applyPathType($open_assignments, $path_type);
         } elseif ($made[$observed_family] && $made[$observed_family][count($made[$observed_family]) - 1] < 0) {
             // one of the call put back
             $next = self::OBSERVES_CALL;
@@ -1671,6 +1813,8 @@ final class TaintFlowResolution
         [$made, $closed] = $this->open_assignments[$open_assignments];
         $slot = $this->open_assignment_slots[$open_assignments];
 
+        $bound = false;
+
         if ($closed_family !== -1) {
             $array_assignments = $made[self::ARRAY_FAMILY];
             $made_overwrites = $array_assignments
@@ -1698,6 +1842,7 @@ final class TaintFlowResolution
 
                 if ($foreach_marker !== null && $fetches_elements && $closed_assignment !== null) {
                     $slot = $this->getSlot($foreach_marker, $closed_assignment);
+                    $bound = true;
                 }
             } elseif ($closed[$closed_family] !== self::NO_CALL && $closed[$closed_family] !== self::FORGOTTEN) {
                 // past MAX_CALL_OPEN_ASSIGNMENT_DEPTH, FORGOTTEN
@@ -1706,7 +1851,22 @@ final class TaintFlowResolution
                 if ($foreach_marker !== null && $fetches_elements && $closed[$closed_family] !== self::FORGOTTEN) {
                     // one of the call entering the context, by its depth there
                     $slot = $this->getSlot($foreach_marker, -$closed[$closed_family]);
+                    $bound = true;
                 }
+            }
+
+            if (!$bound
+                && $foreach_marker !== null
+                && $fetches_elements
+                && str_starts_with($foreach_marker, TaintFlowGraph::NAME_MARKER_PREFIX)
+            ) {
+                // A property of a name the flow doesn't know (forgotten in a convergence, ...): still the one of
+                // that name, under any key, as the write under the name puts back what it doesn't know, and of the
+                // class of the marker (see matchNameSlot()).
+                $slot = $this->getSlot(
+                    $foreach_marker,
+                    $this->getPathTypeId('arrayvalue-assignment@' . $foreach_marker),
+                );
             }
         }
 
@@ -1714,11 +1874,14 @@ final class TaintFlowResolution
             if ($foreach_marker !== null
                 && !$fetches_elements
                 && $slot >= 0
-                && $this->slots[$slot][0] === $foreach_marker
+                && ($this->slots[$slot][0] === $foreach_marker
+                    || $this->matchNameSlot($slot, $foreach_marker, false) === true)
             ) {
                 // the value of the element, or what was made of it, back under its key
                 $made[$added_family][] = $this->slots[$slot][1];
-                $slot = self::NO_SLOT;
+                $slot = $this->slots[$slot][0] === $foreach_marker
+                    ? self::NO_SLOT
+                    : $this->getObjectClassSlot($slot, $foreach_marker, self::CLASS_ELEMENT_PUT);
             } else {
                 $made[$added_family][] = $path_type;
             }
@@ -1748,34 +1911,498 @@ final class TaintFlowResolution
     }
 
     /**
+     * The open assignments of a flow with open assignments $open_assignments after it takes an edge of type
+     * $path_type out of a property read by name (see TaintFlowGraph::NAME_BIND_PREFIX), or into one set by name
+     * (TaintFlowGraph::NAME_PUT_PREFIX), or IGNORED. The property read is the element under its key of an array of
+     * the properties, as a value fetch of a foreach loop over them gets it (see applyPathType()), without the array:
+     * no flow ever sees it, and the property read through a node that many flows reach would else make them converge
+     * there (see enterConvergence()), forgetting its key. A flow set back under the same name only goes into the
+     * property of its key, and of a class the object it was read from may be (see matchNameSlot()), and any other
+     * into all of them.
+     *
+     * @psalm-external-mutation-free
+     */
+    private function applyNamePathType(int $open_assignments, int $path_type): int
+    {
+        [$is_put, $key, $marker] = $this->name_path_types[$path_type];
+        [$made, $closed] = $this->open_assignments[$open_assignments];
+
+        if (!$is_put) {
+            return $this->internOpenAssignments(
+                $made,
+                $closed,
+                $this->getSlot($marker, $this->getPathTypeId('arrayvalue-assignment-' . $key)),
+            );
+        }
+
+        $slot = $this->open_assignment_slots[$open_assignments];
+        $matches = $this->matchNameSlot($slot, $marker, true);
+
+        if ($matches === null) {
+            return $open_assignments;
+        }
+
+        $assignment = $this->slots[$slot][1];
+
+        // the key of one of the call entering the context (see applyPathType()) isn't known here
+        if (!$matches
+            || ($assignment >= 0
+                && !self::classPassesFetch($this->getClass($assignment, self::ARRAY_FAMILY), $key))
+        ) {
+            return self::IGNORED;
+        }
+
+        return $this->internOpenAssignments($made, $closed, $this->getObjectClassSlot($slot, $marker, self::CLASS_PUT));
+    }
+
+    /**
+     * The slot, at stage $stage (see CLASS_PUT), of the class of the object a flow with element slot $slot read under
+     * a name is a property of, as a write under the name marker $marker that it matches (see matchNameSlot()) sets it
+     * back; NO_SLOT if the node it sets tells as much. When the read and the write are on the same variable, the flow
+     * is a property of an object of the class of the node it was read from (see matchNameSlot()), and the write may
+     * set it into the node of a parent class or of an interface of that class, of whose subclasses a read under a
+     * name there would take it for a property of any. The slot keeps the class until that read (see
+     * getNextObjectClassOpenAssignments()).
+     *
+     * @psalm-external-mutation-free
+     */
+    private function getObjectClassSlot(int $slot, string $marker, int $stage): int
+    {
+        $read_marker = $this->slots[$slot][0];
+        [, $read_object, $read_class] = $this->name_markers[$read_marker] ??= self::parseNameMarker($read_marker);
+        [, $object, $class] = $this->name_markers[$marker] ??= self::parseNameMarker($marker);
+
+        if ($object === '-' || $object !== $read_object) {
+            return self::NO_SLOT;
+        }
+
+        $read_class = str_starts_with($read_class, '*')
+            ? substr($read_class, 1)
+            : explode(':', $read_class, 2)[0];
+
+        if (!$this->isNarrowerClass($read_class, $class)) {
+            return self::NO_SLOT;
+        }
+
+        $id = $this->getSlot(self::OBJECT_CLASS_MARKER_PREFIX . $read_class, $stage);
+        $this->object_class_slots[$id] ??= [$read_class, $stage];
+
+        return $id;
+    }
+
+    /**
+     * The open assignments of a flow with open assignments $open_assignments, with a slot of the class of the object
+     * it is a property of (see getObjectClassSlot()), after it takes an edge of type $path_type, or IGNORED. The edge
+     * goes as without the slot, which it keeps on the way from the write into the node of the property to the read
+     * under a name of it: that read is of an object of the class of the slot, if it is narrower than the class the
+     * read binds (see narrowNameSlot()). Any other edge leaves the property, and the slot.
+     *
+     * @psalm-external-mutation-free
+     */
+    private function getNextObjectClassOpenAssignments(int $open_assignments, int $path_type): int
+    {
+        [$class, $stage] = $this->object_class_slots[$this->open_assignment_slots[$open_assignments]];
+        [$made, $closed] = $this->open_assignments[$open_assignments];
+
+        $next = $this->getNextOpenAssignments($this->internOpenAssignments($made, $closed), $path_type);
+
+        if ($next < 0) {
+            return $next;
+        }
+
+        $next_slot = $this->open_assignment_slots[$next];
+
+        if ($stage === self::CLASS_FETCHED || $stage === self::CLASS_ELEMENT_STORED) {
+            return $next_slot >= 0 ? $this->narrowNameSlot($next, $next_slot, $class) : $next;
+        }
+
+        if ($next_slot !== self::NO_SLOT
+            || (self::CLASS_STAGE_PATH_TYPES[$stage] ?? null) !== $this->path_types[$path_type]
+        ) {
+            return $next;
+        }
+
+        [$next_made, $next_closed] = $this->open_assignments[$next];
+        $id = $this->getSlot(self::OBJECT_CLASS_MARKER_PREFIX . $class, $stage + 1);
+        $this->object_class_slots[$id] ??= [$class, $stage + 1];
+
+        return $this->internOpenAssignments($next_made, $next_closed, $id);
+    }
+
+    /**
+     * The edges out of node $from_id that a flow with a slot of the class of the object it is a property of (see
+     * getObjectClassSlot()) at stage $stage takes there: in the node of the property, those into a read under a name
+     * of a variable holding the object, which the class narrows (see narrowNameSlot()), and for CLASS_LEFT the
+     * others; null for all of them.
+     *
+     * @return array<string, Path>|null
+     * @psalm-external-mutation-free
+     */
+    private function getObjectClassEdges(string $from_id, int $stage): ?array
+    {
+        if ($stage !== self::CLASS_STORED && $stage !== self::CLASS_ELEMENT_STORED && $stage !== self::CLASS_LEFT) {
+            return null;
+        }
+
+        if (!isset($this->object_class_edges[$from_id])) {
+            $edges = [];
+
+            foreach ($this->forward_edges[$from_id] ?? [] as $to_id => $path) {
+                if ($this->bindsObjectName($path->type)) {
+                    $edges[$to_id] = $path;
+                } elseif ($path->type === 'property-fetch') {
+                    foreach ($this->forward_edges[$to_id] ?? [] as $read_path) {
+                        if ($this->bindsObjectName($read_path->type)) {
+                            $edges[$to_id] = $path;
+
+                            break;
+                        }
+                    }
+                }
+            }
+
+            $this->object_class_edges[$from_id] = $edges;
+        }
+
+        return $stage === self::CLASS_LEFT
+            ? array_diff_key($this->forward_edges[$from_id] ?? [], $this->object_class_edges[$from_id])
+            : $this->object_class_edges[$from_id];
+    }
+
+    /**
+     * Whether an edge of type $path_type binds what it reads to a name marker of a variable holding the object (see
+     * TaintFlowGraph::NAME_MARKER_PREFIX)
+     *
+     * @psalm-external-mutation-free
+     */
+    private function bindsObjectName(string $path_type): bool
+    {
+        if (str_starts_with($path_type, TaintFlowGraph::NAME_BIND_PREFIX)) {
+            $marker = substr($path_type, (int) strpos($path_type, '@') + 1);
+        } elseif (str_starts_with($path_type, 'arrayvalue-fetch@' . TaintFlowGraph::NAME_MARKER_PREFIX)) {
+            $marker = substr($path_type, strlen('arrayvalue-fetch@'));
+        } else {
+            return false;
+        }
+
+        return ($this->name_markers[$marker] ??= self::parseNameMarker($marker))[1] !== '-';
+    }
+
+    /**
+     * The open assignments $open_assignments, with element slot $slot, with the class the slot was read from
+     * replaced by $class if it is that of a name marker of a variable holding the object (see
+     * TaintFlowGraph::NAME_MARKER_PREFIX) and $class is narrower
+     *
+     * @psalm-external-mutation-free
+     */
+    private function narrowNameSlot(int $open_assignments, int $slot, string $class): int
+    {
+        $marker = $this->slots[$slot][0];
+
+        if (!str_starts_with($marker, TaintFlowGraph::NAME_MARKER_PREFIX)) {
+            return $open_assignments;
+        }
+
+        $prefix_length = strlen(TaintFlowGraph::NAME_MARKER_PREFIX);
+        $bounds = (int) strpos($marker, '|');
+        $parts = explode(' ', substr($marker, $prefix_length, $bounds - $prefix_length), 3);
+
+        if (count($parts) !== 3 || $parts[1] === '-') {
+            return $open_assignments;
+        }
+
+        if (str_starts_with($parts[2], '*')) {
+            $read_class = substr($parts[2], 1);
+            $narrowed = '*' . $class;
+        } else {
+            [$read_class, $read_through] = explode(':', $parts[2], 2) + [1 => ''];
+            $narrowed = $class . ':' . $read_through;
+        }
+
+        if (!$this->isNarrowerClass($class, $read_class)) {
+            return $open_assignments;
+        }
+
+        [$made, $closed] = $this->open_assignments[$open_assignments];
+
+        return $this->internOpenAssignments(
+            $made,
+            $closed,
+            $this->getSlot(
+                TaintFlowGraph::NAME_MARKER_PREFIX . $parts[0] . ' ' . $parts[1] . ' ' . $narrowed
+                    . substr($marker, $bounds),
+                $this->slots[$slot][1],
+            ),
+        );
+    }
+
+    /**
+     * Whether knowing an object is of class $class tells more than knowing it is of class $other_class, which it also
+     * is: $class is a class (an interface or a trait tells nothing, see mayBeOfBoth()), and not $other_class nor one
+     * of its parent classes.
+     *
+     * @psalm-external-mutation-free
+     */
+    private function isNarrowerClass(string $class, string $other_class): bool
+    {
+        $class = strtolower($class);
+        $other_class = strtolower($other_class);
+
+        if ($class === $other_class) {
+            return false;
+        }
+
+        if (isset($this->class_narrowings[$class . ' ' . $other_class])) {
+            return $this->class_narrowings[$class . ' ' . $other_class];
+        }
+
+        $provider = $this->codebase->classlike_storage_provider;
+
+        if (!$provider->has($class)) {
+            $narrower = false;
+        } else {
+            $storage = $provider->get($class);
+
+            $narrower = !$storage->is_interface
+                && !$storage->is_trait
+                && (!$provider->has($other_class) || !isset($provider->get($other_class)->parent_classes[$class]));
+        }
+
+        return $this->class_narrowings[$class . ' ' . $other_class] = $narrower;
+    }
+
+    /**
+     * Whether a flow with element slot $slot read under the name of the name marker $marker (see
+     * TaintFlowGraph::NAME_MARKER_PREFIX) can be set by a write under that marker, into a property of the name of the
+     * key it was read under ($is_put), or else into the node of the properties of other names (see
+     * ReceiverPropertyTaints::getOtherPropertiesNodes()); null if it wasn't read under that name. Read from the same
+     * variable holding the object as the write, it can't be set into the property of a class the object can't be,
+     * nor, read from a property of a name the class read through has, into the properties of other names of that
+     * class: a write of that name sets it through the node of the property (see ReceiverPropertyTaints::addWrite()).
+     *
+     * @psalm-external-mutation-free
+     */
+    private function matchNameSlot(int $slot, string $marker, bool $is_put): ?bool
+    {
+        if ($slot < 0
+            || !str_starts_with($marker, TaintFlowGraph::NAME_MARKER_PREFIX)
+            || !str_starts_with($this->slots[$slot][0], TaintFlowGraph::NAME_MARKER_PREFIX)
+        ) {
+            return null;
+        }
+
+        $read_marker = $this->slots[$slot][0];
+        [$read_name, $read_object, $read_class] = $this->name_markers[$read_marker]
+            ??= self::parseNameMarker($read_marker);
+        [$name, $object, $class] = $this->name_markers[$marker] ??= self::parseNameMarker($marker);
+
+        if ($read_name !== $name) {
+            return null;
+        }
+
+        if ($object === '-' || $object !== $read_object) {
+            return true;
+        }
+
+        if (str_starts_with($read_class, '*')) {
+            return $this->mayBeOfBoth(substr($read_class, 1), $class);
+        }
+
+        [$holding_class, $read_through] = explode(':', $read_class, 2) + [1 => ''];
+
+        return $this->mayBeOfBoth($holding_class, $class) && ($is_put || $read_through !== $class);
+    }
+
+    /**
+     * @return array{string, string, string}
+     * @psalm-pure
+     */
+    private static function parseNameMarker(string $marker): array
+    {
+        $prefix_length = strlen(TaintFlowGraph::NAME_MARKER_PREFIX);
+        $bounds = (int) strpos($marker, '|');
+        $parts = explode(' ', substr($marker, $prefix_length, $bounds - $prefix_length));
+
+        return [
+            TaintFlowGraph::NAME_MARKER_PREFIX . $parts[0] . substr($marker, $bounds),
+            $parts[1] ?? '-',
+            $parts[2] ?? '-',
+        ];
+    }
+
+    /**
+     * Whether an object may be of both classes: only of a class extending both is an object of two classes, so
+     * one of them extends the other; an interface (or a trait) may be implemented by any class.
+     *
+     * @psalm-external-mutation-free
+     */
+    private function mayBeOfBoth(string $class, string $other_class): bool
+    {
+        $class = strtolower($class);
+        $other_class = strtolower($other_class);
+
+        if ($class === $other_class) {
+            return true;
+        }
+
+        if (isset($this->class_overlaps[$class . ' ' . $other_class])) {
+            return $this->class_overlaps[$class . ' ' . $other_class];
+        }
+
+        $provider = $this->codebase->classlike_storage_provider;
+
+        if (!$provider->has($class) || !$provider->has($other_class)) {
+            $overlaps = true;
+        } else {
+            $storage = $provider->get($class);
+            $other_storage = $provider->get($other_class);
+
+            $overlaps = $storage->is_interface
+                || $storage->is_trait
+                || $other_storage->is_interface
+                || $other_storage->is_trait
+                || isset($storage->parent_classes[$other_class])
+                || isset($other_storage->parent_classes[$class]);
+        }
+
+        return $this->class_overlaps[$class . ' ' . $other_class] = $overlaps;
+    }
+
+    /**
+     * The edges of node $from_id that a flow with element slot $slot can take, if they are fewer than all of them: of
+     * a property read under the name of the edges into the properties set by name of the node (a write under it, see
+     * ReceiverPropertyTaints::addWriteByName()), and under a key known exactly, only the edge into the property of
+     * that key, and the edges of other types, take it (see applyNamePathType()). A write under a name of an object
+     * with many properties has as many edges, which every flow reaching it would else try.
+     *
+     * @return array<string, Path>|null
+     * @psalm-external-mutation-free
+     */
+    private function getNameSlotEdges(string $from_id, int $slot): ?array
+    {
+        $read_marker = $this->slots[$slot][0];
+        $assignment = $this->slots[$slot][1];
+
+        if ($assignment < 0 || !str_starts_with($read_marker, TaintFlowGraph::NAME_MARKER_PREFIX)) {
+            return null;
+        }
+
+        if (!isset($this->name_put_edges[$from_id])) {
+            $this->name_put_edges[$from_id] = $this->indexNamePutEdges($from_id);
+        }
+
+        $index = $this->name_put_edges[$from_id];
+        if ($index === false) {
+            return null;
+        }
+
+        [$name, $edges_by_key, $other_edges] = $index;
+        $class = $this->getClass($assignment, self::ARRAY_FAMILY);
+        $key = substr($class, 1);
+
+        // a key of another name, or one known by its start only, or one of a few, may be that of any edge
+        if (($this->name_markers[$read_marker] ??= self::parseNameMarker($read_marker))[0] !== $name
+            || !str_starts_with($class, ":'")
+            || !str_ends_with($class, "'")
+            || strpbrk(substr($key, 1, -1), "'*|") !== false
+        ) {
+            return null;
+        }
+
+        return $other_edges + ($edges_by_key[$key] ?? []);
+    }
+
+    /**
+     * @return array{string, array<string, array<string, Path>>, array<string, Path>}|false
+     * @psalm-external-mutation-free
+     */
+    private function indexNamePutEdges(string $from_id): array|false
+    {
+        $name = null;
+        $edges_by_key = [];
+        $other_edges = [];
+
+        foreach ($this->forward_edges[$from_id] ?? [] as $to_id => $path) {
+            if (!str_starts_with($path->type, TaintFlowGraph::NAME_PUT_PREFIX)) {
+                $other_edges[$to_id] = $path;
+
+                continue;
+            }
+
+            [, $key, $marker] = $this->name_path_types[$this->getPathTypeId($path->type)];
+            $edge_name = ($this->name_markers[$marker] ??= self::parseNameMarker($marker))[0];
+
+            if ($name !== null && $edge_name !== $name) {
+                return false;
+            }
+
+            $name = $edge_name;
+            $edges_by_key[$key][$to_id] = $path;
+        }
+
+        return $name === null ? false : [$name, $edges_by_key, $other_edges];
+    }
+
+    /**
+     * Whether the flows of state $state hold a property read under a name (see TaintFlowGraph::NAME_MARKER_PREFIX)
+     * that a write under it puts back into that property: they aren't walked in a convergence (see
+     * enterConvergence()), which, past MAX_CONVERGENCE_KEYS of them, can't tell apart the names of the flows
+     * entering it. They only keep it in the function of the name and in the files outside the project (see
+     * scopeSlot()).
+     *
+     * @psalm-mutation-free
+     */
+    private function holdsName(int $state): bool
+    {
+        $slot = $this->open_assignment_slots[$this->state_open_assignments[$state]];
+
+        return $slot >= 0
+            && (str_starts_with($this->slots[$slot][0], TaintFlowGraph::NAME_MARKER_PREFIX)
+                || isset($this->object_class_slots[$slot]));
+    }
+
+    /**
      * The open assignments $open_assignments, with element slot $slot, of a flow reaching node $node_id: without
      * the slot if the value of the element may outlive the iteration it was fetched in there. That's where it
      * may be kept: in a node without a location (a property, ...), in a variable of the body of the loop, which
      * the next iterations see, or in the function of the loop out of the loop, the function being called again
      * through its parameters and left through its return value. In the body walk of a specialized call, only
-     * the first is known.
+     * the first is known. The value of a property read under a name (see TaintFlowGraph::NAME_MARKER_PREFIX) is
+     * that of the name in the body of its function, and in the files outside the project, whose functions psalm
+     * doesn't analyze the bodies of: what a call gives their nodes they give back to it. Anywhere else it may be
+     * kept for another call of the function (in a generator, ...).
      *
      * @psalm-external-mutation-free
      */
     private function scopeSlot(int $open_assignments, int $slot, string $node_id): int
     {
+        // kept from the write into the property to the read of it (see getNextObjectClassOpenAssignments())
+        if ($slot >= 0 && isset($this->object_class_slots[$slot])) {
+            return $open_assignments;
+        }
+
         $row = $this->getRow($node_id);
 
         if ($row === null || !$this->table->hasLocation($row)) {
             $scoped_slot = $slot === self::INHERITED_SLOT ? self::BLOCKED_SLOT : self::NO_SLOT;
         } elseif ($slot >= 0) {
             $foreach_marker = $this->slots[$slot][0];
-            [$file_path, $function_start, $function_end, $start, $end, $body_start]
+            [$file_path, $function_start, $function_end, $start, $end, $body_start, $of_name]
                 = $this->foreach_markers[$foreach_marker] ??= self::parseForeachMarker($foreach_marker);
 
             [$raw_file_start, $raw_file_end] = $this->table->getRawBounds($row);
 
-            $scoped_slot = $this->table->getFilePath($row) === $file_path
+            $node_file_path = $this->table->getFilePath($row) ?? '';
+
+            $scoped_slot = ($node_file_path === $file_path
                 && $raw_file_start >= $function_start
                 && $raw_file_end <= $function_end
-                && ($raw_file_start < $start
+                ? $raw_file_start < $start
                     || $raw_file_end > $end
-                    || ($raw_file_start >= $body_start && str_starts_with($this->table->getLabel($row), '$')))
+                    || ($raw_file_start >= $body_start && str_starts_with($this->table->getLabel($row), '$'))
+                : $of_name
+                    && ($this->project_file_paths[$node_file_path]
+                        ??= $this->config->isInProjectDirs($node_file_path)))
                 ? self::NO_SLOT
                 : $slot;
         } else {
@@ -1792,11 +2419,16 @@ final class TaintFlowResolution
     }
 
     /**
-     * @return array{string, int, int, int, int, int}
+     * @return array{string, int, int, int, int, int, bool}
      * @psalm-pure
      */
     private static function parseForeachMarker(string $foreach_marker): array
     {
+        $of_name = str_starts_with($foreach_marker, TaintFlowGraph::NAME_MARKER_PREFIX);
+        if ($of_name) {
+            $foreach_marker = substr($foreach_marker, (int) strpos($foreach_marker, '|') + 1);
+        }
+
         $parts = explode(':', $foreach_marker, 6);
 
         return [
@@ -1806,6 +2438,7 @@ final class TaintFlowResolution
             (int) ($parts[2] ?? 0),
             (int) ($parts[3] ?? 0),
             (int) ($parts[4] ?? 0),
+            $of_name,
         ];
     }
 
@@ -2119,6 +2752,42 @@ final class TaintFlowResolution
             $open_assignments = $this->scopeSlot($open_assignments, $slot, $node_id);
         }
 
+        if ($slot >= 0
+            && isset($this->object_class_slots[$slot])
+            && ($this->object_class_slots[$slot][1] === self::CLASS_STORED
+                || $this->object_class_slots[$slot][1] === self::CLASS_ELEMENT_STORED)
+        ) {
+            [$made, $closed] = $this->open_assignments[$open_assignments];
+            $class = strtolower($this->object_class_slots[$slot][0]);
+
+            if (!isset($this->node_object_classes[$node_id][$class])
+                && count($this->node_object_classes[$node_id] ?? []) >= self::MAX_OBJECT_CLASSES
+            ) {
+                // past MAX_OBJECT_CLASSES, a property of any of them, as without the class
+                $open_assignments = $this->internOpenAssignments($made, $closed);
+            } else {
+                $this->node_object_classes[$node_id][$class] = true;
+
+                // In the node of the property, the class only matters to the reads under a name of a variable (see
+                // getObjectClassEdges()): the flows of all classes go past its other edges as one, which the node of
+                // a property of many subclasses would else see as many.
+                $left = $this->getSlot(self::OBJECT_CLASS_MARKER_PREFIX, self::CLASS_LEFT);
+                $this->object_class_slots[$left] ??= ['', self::CLASS_LEFT];
+
+                $this->reach(
+                    $node_id,
+                    $context,
+                    $this->internOpenAssignments($made, $closed, $left),
+                    $kept,
+                    $added,
+                    $predecessor,
+                    $link,
+                    $path_type,
+                    $caller,
+                );
+            }
+        }
+
         $copied_position = $this->copied_position;
 
         if (isset($this->state_ids[$node_id])
@@ -2235,6 +2904,7 @@ final class TaintFlowResolution
         if (isset($this->forward_edges[$id])) {
             if (!isset($this->root_entries[$state])
                 && count($this->state_ids[$id]) >= self::CONVERGING_STATES
+                && !$this->holdsName($state)
                 && ($this->isOutsideOfCalls($this->state_contexts[$state])
                     || count($this->call_entries_reaching[$id] ?? []) > 1
                     || !$this->hasLocation($id))
@@ -2299,6 +2969,7 @@ final class TaintFlowResolution
         if ($outside_of_calls
             && !isset($this->root_entries[$state])
             && count($this->state_ids[$id]) >= self::CONVERGING_STATES
+            && !$this->holdsName($state)
         ) {
             // like any node many flows reach (see enterConvergence()): else each would leave through all its call
             // sites, a function-like's return reached from many convergences through a property its class sets
@@ -2361,8 +3032,14 @@ final class TaintFlowResolution
         $added = $this->state_added[$state];
 
         $input_taints = $this->codebase->getInputTaints();
+        $slot = $this->open_assignment_slots[$open_assignments];
+        $edges = $slot >= 0
+            ? (isset($this->object_class_slots[$slot])
+                ? $this->getObjectClassEdges($from_id, $this->object_class_slots[$slot][1])
+                : $this->getNameSlotEdges($from_id, $slot))
+            : null;
 
-        foreach ($this->forward_edges[$from_id] as $to_id => $path) {
+        foreach ($edges ?? $this->forward_edges[$from_id] as $to_id => $path) {
             $removed_taints = $path->removed_taints;
             $path_added = $path->added_taints;
 
