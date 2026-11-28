@@ -47,6 +47,7 @@ use Psalm\Type\Atomic\TKeyOf;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TResource;
 use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Atomic\TTypeAlias;
 use Psalm\Type\Atomic\TValueOf;
 use Psalm\Type\MutableUnion;
@@ -206,6 +207,8 @@ final class TypeChecker extends TypeVisitor
 
                 return self::DONT_TRAVERSE_CHILDREN;
             }
+        } elseif ($type instanceof TTemplateParamClass) {
+            $this->checkTemplateParam($type);
         } elseif ($type instanceof TResource) {
             $this->checkResource($type);
         } elseif ($type instanceof TIntersection) {
@@ -729,7 +732,7 @@ final class TypeChecker extends TypeVisitor
         );
     }
 
-    public function checkTemplateParam(TTemplateParam $atomic): void
+    public function checkTemplateParam(TTemplateParam|TTemplateParamClass $atomic): void
     {
         if (str_starts_with($atomic->defining_class, 'fn-')
             || $atomic->defining_class === 'class-string-map'

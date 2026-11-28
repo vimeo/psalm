@@ -721,6 +721,15 @@ final class ClassTemplateCovarianceTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'covariantTemplateInTheClassStringParamOfAMethod' => [
+                'code' => '<?php
+                    /** @template-covariant T */
+                    interface Factory {
+                        /** @param class-string<T> $class */
+                        public function register(string $class): void;
+                    }',
+                'error_message' => 'InvalidTemplateParam - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:36 - Template param T of Factory is marked covariant and cannot be used here',
+            ],
             'covariantTemplateInAnInvariantParamOfAGenericWithACovariantParam' => [
                 'code' => '<?php
                     /**

@@ -355,6 +355,26 @@ final class ClassTemplateContravarianceTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.4',
             ],
+            'contravariantTemplateInAClassStringParamAndACovariantOneInAClassStringReturn' => [
+                'code' => '<?php
+                    /** @template-contravariant T */
+                    interface Opener {
+                        /** @param class-string<T>|null $class */
+                        public function open(?string $class): void;
+                    }
+
+                    /** @template-covariant T */
+                    interface Maker {
+                        /** @return class-string<T> */
+                        public function make(): string;
+                    }
+
+                    /** @template-contravariant T */
+                    final class Registry {
+                        /** @var class-string<T>|null */
+                        private ?string $type = null;
+                    }',
+            ],
             'newThroughASinkArgOfAnInvariantTemplateTakesWhatTheSinkTakes' => [
                 'code' => self::SINK . '
                     /** @template T */
@@ -431,6 +451,24 @@ final class ClassTemplateContravarianceTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'contravariantTemplateInTheClassStringReturnedByAMethod' => [
+                'code' => '<?php
+                    /** @template-contravariant T */
+                    interface Filler {
+                        /** @return class-string<T> */
+                        public function type(): string;
+                    }',
+                'error_message' => 'InvalidTemplateParam - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:37 - Template param T of Filler is marked contravariant and cannot be used here',
+            ],
+            'contravariantTemplateInAClassStringProperty' => [
+                'code' => '<?php
+                    /** @template-contravariant T */
+                    final class Holder {
+                        /** @var class-string<T>|null */
+                        public ?string $type = null;
+                    }',
+                'error_message' => 'InvalidTemplateParam - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:34 - Template param T of Holder is marked contravariant and cannot be used here',
+            ],
             'narrowerSinkDoesNotFitWiderSink' => [
                 'code' => self::SINK . '
                     /** @param Sink<int|string> $sink */
