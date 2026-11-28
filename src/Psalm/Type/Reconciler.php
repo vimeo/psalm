@@ -352,7 +352,11 @@ class Reconciler
 
             $failed_reconciliation = self::RECONCILIATION_OK;
 
-            foreach (self::orderExclusionOfEmptyStringFirst($new_type_parts) as $offset => $new_type_part_parts) {
+            $ordered_type_parts = self::orderKeyExistsBeforeNotIsset(
+                self::orderExclusionOfEmptyStringFirst($new_type_parts),
+            );
+
+            foreach ($ordered_type_parts as $offset => $new_type_part_parts) {
                 $orred_type = null;
                 $report_location = $code_location
                     && isset($referenced_var_ids[$key])
@@ -865,6 +869,56 @@ class Reconciler
 
             if ($offset === $first_zero_exclusion) {
                 $ordered += $empty_string_exclusions_after_it;
+            }
+
+            $ordered[$offset] = $new_type_part_parts;
+        }
+
+        return $ordered;
+    }
+
+    /**
+     * A negated isset() of an offset that may be undefined leaves no value (never): the offset is not there. Once
+     * array_key_exists() has said the offset is there, the same assertion leaves the null it can hold, so
+     * `!isset($a['b']) && array_key_exists('b', $a)` is read like `array_key_exists('b', $a) && !isset($a['b'])`:
+     * the assertions of a variable that say the offset exists are applied before the one that negates its isset().
+     *
+     * @param array<array-key, array<int, Assertion>> $new_type_parts
+     * @return array<array-key, array<int, Assertion>>
+     * @psalm-pure
+     */
+    private static function orderKeyExistsBeforeNotIsset(array $new_type_parts): array
+    {
+        $first_not_isset = null;
+        $key_exists_after_it = [];
+
+        foreach ($new_type_parts as $offset => $new_type_part_parts) {
+            $assertion = $new_type_part_parts[0] ?? null;
+
+            if (count($new_type_part_parts) !== 1) {
+                continue;
+            }
+
+            if ($assertion instanceof IsNotIsset) {
+                $first_not_isset ??= $offset;
+            } elseif ($assertion instanceof ArrayKeyExists && $first_not_isset !== null) {
+                $key_exists_after_it[$offset] = $new_type_part_parts;
+            }
+        }
+
+        if (!$key_exists_after_it) {
+            return $new_type_parts;
+        }
+
+        $ordered = [];
+
+        foreach ($new_type_parts as $offset => $new_type_part_parts) {
+            if (isset($key_exists_after_it[$offset])) {
+                continue;
+            }
+
+            if ($offset === $first_not_isset) {
+                $ordered += $key_exists_after_it;
             }
 
             $ordered[$offset] = $new_type_part_parts;
