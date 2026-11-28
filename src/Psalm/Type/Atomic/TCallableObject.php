@@ -37,10 +37,7 @@ final class TCallableObject extends TObject
     #[Override]
     public function getKey(bool $include_extra = true): string
     {
-        $key = 'callable-object';
-        if ($this->callable !== null) {
-            $key .= $this->callable->getParamString() . $this->callable->getReturnTypeString();
-        }
+        $key = 'callable-object' . $this->getCallableString();
         if ($include_extra && $this->extra_types) {
             // parenthesised so that the intersection doesn't read as part of the return type
             $key = '(' . $key . ')&' . implode('&', $this->extra_types);
@@ -51,11 +48,23 @@ final class TCallableObject extends TObject
     #[Override]
     public function getId(bool $exact = true): string
     {
-        $id = 'callable-object';
-        if ($this->callable !== null) {
-            $id .= $this->callable->getParamString() . $this->callable->getReturnTypeString();
+        return 'callable-object' . $this->getCallableString() . $this->getIntersectionTypesId($exact);
+    }
+
+    /**
+     * The purity is printed unless it is the default one, as for `callable[impure]` of a plain callable
+     */
+    private function getCallableString(): string
+    {
+        if ($this->callable === null) {
+            return '';
         }
-        return $id . $this->getIntersectionTypesId($exact);
+
+        $purity = $this->callable->purity->getId();
+
+        return ($purity === 'impure' ? '' : '[' . $purity . ']')
+            . $this->callable->getParamString()
+            . $this->callable->getReturnTypeString();
     }
 
     /**

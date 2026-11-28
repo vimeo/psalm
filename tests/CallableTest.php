@@ -5116,6 +5116,18 @@ final class CallableTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'impureCallableObjectForAPureOne' => [
+                'code' => '<?php
+                    /** @param object&pure-callable(int): string $o */
+                    function takesPure(object $o): void {}
+
+                    /** @param object&callable(int): string $c */
+                    function impure(object $c): void {
+                        takesPure($c);
+                    }',
+                'error_message' => 'expects callable-object[pure](int):string, but parent type'
+                    . ' callable-object(int):string provided',
+            ],
             'untypedFunctionParamNamedLikeACallableParam' => [
                 'code' => '<?php
                     /**
