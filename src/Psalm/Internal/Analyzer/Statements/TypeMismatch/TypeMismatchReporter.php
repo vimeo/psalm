@@ -10,6 +10,7 @@ use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Issue\CodeIssue;
 use Psalm\IssueBuffer;
+use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Union;
 
 use function count;
@@ -196,14 +197,31 @@ abstract class TypeMismatchReporter
 
     protected function acceptsNull(): bool
     {
-        return $this->expected_type->isNullable();
+        return $this->expected_type->isNullable() || $this->expectsTypeVariable();
     }
 
     protected function acceptsFalse(): bool
     {
         return $this->expected_type->isFalsable()
             || isset($this->expected_type->getAtomicTypes()['bool'])
-            || $this->expected_type->hasScalar();
+            || $this->expected_type->hasScalar()
+            || $this->expectsTypeVariable();
+    }
+
+    /**
+     * A null or false value against a type variable records a bound like any other value
+     *
+     * @psalm-capabilities read-props
+     */
+    final protected function expectsTypeVariable(): bool
+    {
+        foreach ($this->expected_type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TTypeVariable) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     final protected function add(?CodeIssue $issue): void
