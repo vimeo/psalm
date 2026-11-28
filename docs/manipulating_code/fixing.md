@@ -616,3 +616,35 @@ class AChild extends A {
     }
 }
 ```
+
+### LegacySyntax
+
+This replaces `empty` in an array type with `array{}`.
+
+Running `vendor/bin/psalter --issues=LegacySyntax` on
+
+```php
+<?php
+
+/**
+ * @param list<empty> $ids
+ * @return array<string, list<empty>>
+ */
+function none(array $ids): array {
+    return ['a' => $ids];
+}
+```
+
+gives
+
+```php
+<?php
+
+/**
+ * @param array{} $ids
+ * @return array<string, array{}>
+ */
+function none(array $ids): array {
+    return ['a' => $ids];
+}
+```

@@ -53,7 +53,7 @@ Psalter fixes part of what a level adds. Pass the types the report shows that
 
 ```bash
 vendor/bin/psalter --issues=MissingReturnType,MissingPropertyType,MissingClosureReturnType,InvalidReturnType,\
-LessSpecificReturnType,MismatchingDocblockReturnType,RedundantCast,UnnecessaryVarAnnotation \
+LessSpecificReturnType,MismatchingDocblockReturnType,RedundantCast,UnnecessaryVarAnnotation,LegacySyntax \
   --php-version=<phpv> --dry-run
 ```
 

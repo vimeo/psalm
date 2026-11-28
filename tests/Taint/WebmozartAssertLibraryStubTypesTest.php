@@ -126,6 +126,35 @@ final class WebmozartAssertLibraryStubTypesTest extends LibraryStubsTestCase
                     }',
                 [],
             ],
+            'allIsEmptyReturnsTheEmptyArray' => [
+                '<?php
+                    use Webmozart\Assert\Assert;
+
+                    /**
+                     * @param list<int> $l
+                     * @return array{}
+                     */
+                    function f(array $l): array {
+                        return Assert::allIsEmpty($l);
+                    }
+
+                    /**
+                     * @param array<string, int> $a
+                     * @return array{}
+                     */
+                    function g(array $a): array {
+                        return Assert::allIsEmpty($a);
+                    }
+
+                    /**
+                     * @param iterable<int> $i
+                     * @return iterable<never>
+                     */
+                    function h(iterable $i): iterable {
+                        return Assert::allIsEmpty($i);
+                    }',
+                [],
+            ],
             'allAssertionsReturnAnIterableForAnIterable' => [
                 '<?php
                     use Webmozart\Assert\Assert;

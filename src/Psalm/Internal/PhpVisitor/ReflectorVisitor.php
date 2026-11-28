@@ -11,6 +11,7 @@ use PhpParser\Node\Expr;
 use PhpParser\Node\Name;
 use Psalm\Aliases;
 use Psalm\CodeLocation;
+use Psalm\CodeLocation\DocblockTypeLocation;
 use Psalm\Codebase;
 use Psalm\DocComment;
 use Psalm\Exception\CodeException;
@@ -29,9 +30,11 @@ use Psalm\Internal\PhpVisitor\Reflector\StringStartScanner;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Scanner\FileScanner;
 use Psalm\Internal\Scanner\PhpStormMetaScanner;
+use Psalm\Internal\Type\LegacyEmptyArrayFinder;
 use Psalm\Internal\Type\TypeAlias;
 use Psalm\Internal\Type\TypeParser;
 use Psalm\Issue\InvalidDocblock;
+use Psalm\Issue\LegacySyntax;
 use Psalm\Issue\TaintedInput;
 use Psalm\Plugin\EventHandler\Event\AfterClassLikeVisitEvent;
 use Psalm\Storage\FileStorage;
@@ -51,11 +54,14 @@ use function implode;
 use function in_array;
 use function is_string;
 use function preg_match;
+use function preg_replace;
 use function reset;
 use function spl_object_id;
 use function str_contains;
 use function strpos;
 use function strtolower;
+use function substr;
+use function substr_count;
 use function trim;
 
 /**
@@ -94,6 +100,14 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
      * @var array<int, bool>
      */
     private array $bad_classes = [];
+
+    /**
+     * Start offsets of the docblocks checked for legacy syntax, as a docblock can be attached to several nodes
+     *
+     * @var array<int, true>
+     */
+    private array $checked_docblocks = [];
+
     private readonly EventDispatcher $eventDispatcher;
 
     /**
@@ -117,6 +131,10 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
     public function enterNode(PhpParser\Node $node): ?int
     {
         foreach ($node->getComments() as $comment) {
+            if ($comment instanceof PhpParser\Comment\Doc && $this->scan_deep) {
+                $this->reportLegacyEmptyArrays($comment);
+            }
+
             if ($comment instanceof PhpParser\Comment\Doc && !$node instanceof PhpParser\Node\Stmt\ClassLike) {
                 try {
                     $type_aliases = ClassLikeNodeScanner::getTypeAliasesFromComment(
@@ -578,6 +596,33 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
         $this->recordExternalEffects($node);
 
         return null;
+    }
+
+    private function reportLegacyEmptyArrays(PhpParser\Comment\Doc $comment): void
+    {
+        $docblock_start = $comment->getStartFilePos();
+
+        if (isset($this->checked_docblocks[$docblock_start])) {
+            return;
+        }
+
+        $this->checked_docblocks[$docblock_start] = true;
+        $docblock = $comment->getText();
+
+        foreach (LegacyEmptyArrayFinder::find($docblock) as [$start, $end]) {
+            $type = (string) preg_replace('/\s*\n[\s*]*/', ' ', substr($docblock, $start, $end - $start));
+
+            $this->file_storage->docblock_issues[] = new LegacySyntax(
+                $type . ' is legacy syntax for the empty array, write array{}: empty changes meaning in Psalm 8',
+                new DocblockTypeLocation(
+                    $this->file_scanner,
+                    $docblock_start + $start,
+                    $docblock_start + $end,
+                    $comment->getStartLine() + substr_count($docblock, "\n", 0, $start),
+                ),
+                'array{}',
+            );
+        }
     }
 
     /**

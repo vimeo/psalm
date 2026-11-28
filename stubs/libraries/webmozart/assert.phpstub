@@ -2971,7 +2971,7 @@ trait Mixin
      *
      * @param string|callable():string $message
      *
-     * @return ($value is list ? list<empty> : ($value is array ? array<empty> : iterable<empty>))
+     * @return ($value is array ? array{} : iterable<never>)
      *
      * @throws InvalidArgumentException
      *

@@ -29,6 +29,7 @@ use Psalm\Issue\CodeIssue;
 use Psalm\Issue\InvalidFalsableReturnType;
 use Psalm\Issue\InvalidNullableReturnType;
 use Psalm\Issue\InvalidReturnType;
+use Psalm\Issue\LegacySyntax;
 use Psalm\Issue\LessSpecificReturnType;
 use Psalm\Issue\MismatchingDocblockParamType;
 use Psalm\Issue\MismatchingDocblockReturnType;
@@ -172,6 +173,7 @@ final class ProjectAnalyzer
         InvalidFalsableReturnType::class,
         InvalidNullableReturnType::class,
         InvalidReturnType::class,
+        LegacySyntax::class,
         LessSpecificReturnType::class,
         MismatchingDocblockParamType::class,
         MismatchingDocblockReturnType::class,
