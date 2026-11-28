@@ -58,6 +58,8 @@ final class YieldAnalyzer
                     $doc_comment,
                     $statements_analyzer,
                     $statements_analyzer->getAliases(),
+                    $statements_analyzer->getTemplateTypeMap(),
+                    $codebase->file_storage_provider->get($statements_analyzer->getFilePath())->type_aliases,
                 );
             } catch (DocblockParseException $e) {
                 IssueBuffer::maybeAdd(
