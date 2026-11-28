@@ -120,7 +120,6 @@ final class AndAnalyzer
         // the left side always runs, so the offsets it read are read after the expression too
         $context->null_array_offsets_read = $left_context->null_array_offsets_read;
 
-        /** @var array<string, bool> */
         $left_referenced_var_ids = $left_context->cond_referenced_var_ids;
         $context->cond_referenced_var_ids = array_merge($pre_referenced_var_ids, $left_referenced_var_ids);
 

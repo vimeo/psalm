@@ -73,6 +73,15 @@ final class MethodStorage extends FunctionLikeStorage
     public array $this_property_item_mutations = [];
 
     /**
+     * The methods the body calls on `$this` (`$this->name()`, `self::name()`, `static::name()`) or on its parent
+     * (`parent::name()`), by lowercase name, `parent::name` for the parent's: Populator adds the properties of
+     * `$this` they write to $this_property_mutations
+     *
+     * @var array<lowercase-string, true>
+     */
+    public array $this_method_calls = [];
+
+    /**
      * Whether the body changes nothing but properties of `$this` and local variables: it calls nothing (except to
      * build the exception it throws), so $this_property_mutations is all it writes outside of itself
      */

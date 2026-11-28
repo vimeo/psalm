@@ -131,7 +131,6 @@ final class TryAnalyzer
             [],
         );
 
-        /** @var array<string, int> */
         $newly_assigned_var_ids = $context->assigned_var_ids;
 
         $context->assigned_var_ids = array_merge(
@@ -586,7 +585,6 @@ final class TryAnalyzer
                 // when it runs from that state: the type it ends with has the state before the try in it too
                 $partially_assigned_var_ids = [];
 
-                /** @var string $var_id */
                 foreach ($finally_context->possibly_assigned_var_ids as $var_id => $_) {
                     if (!isset($finally_context->assigned_var_ids[$var_id])) {
                         $partially_assigned_var_ids[$var_id] = true;
@@ -622,7 +620,6 @@ final class TryAnalyzer
                 $finally_assigned_var_ids = $finally_context->assigned_var_ids
                     + $finally_context->possibly_assigned_var_ids;
 
-                /** @var string $var_id */
                 foreach ($finally_assigned_var_ids as $var_id => $_) {
                     if (isset($context->vars_in_scope[$var_id])
                         && isset($finally_context->vars_in_scope[$var_id])

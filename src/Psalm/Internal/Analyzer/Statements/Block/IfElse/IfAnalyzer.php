@@ -225,9 +225,7 @@ final class IfAnalyzer
             $if_scope->phantom_classes_of_blocks[] = $if_context->phantom_classes;
         }
 
-        /** @var array<string, int> */
         $new_assigned_var_ids = $if_context->assigned_var_ids;
-        /** @var array<string, bool> */
         $new_possibly_assigned_var_ids = $if_context->possibly_assigned_var_ids;
 
         $if_context->assigned_var_ids = array_merge($assigned_var_ids, $new_assigned_var_ids);

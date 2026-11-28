@@ -222,8 +222,17 @@ final class ExistingAtomicStaticCallAnalyzer
         );
 
         $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id) ?? $method_id;
-        $static_property_mutations = self::getMethodStorage($codebase, $declaring_method_id)
-            ?->static_property_mutations;
+        $declaring_method_storage = self::getMethodStorage($codebase, $declaring_method_id);
+        $static_property_mutations = $declaring_method_storage?->static_property_mutations;
+
+        if ($declaring_method_storage !== null) {
+            CallAnalyzer::forgetArgumentPropertiesWrittenByCallee(
+                $statements_analyzer,
+                $context,
+                $declaring_method_storage,
+                $args,
+            );
+        }
 
         if ($static_property_mutations !== null
             && !$context->collect_initializations

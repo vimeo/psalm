@@ -3539,8 +3539,8 @@ final class ForeachTest extends TestCase
                     }
                     PHP,
                 'assertions' => [
-                    '$direct===' => 'int<1, max>',
-                    '$deep===' => 'int<1, max>',
+                    '$direct===' => 'int',
+                    '$deep===' => 'int',
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.1',
@@ -5207,14 +5207,14 @@ final class ForeachTest extends TestCase
                         public array $ids = [];
                     }
 
-                    function fill(Collector $c): void {
-                        $c->ids[] = 1;
-                    }
-
                     function f(): void {
                         $c = new Collector();
                         $c->ids = [];
-                        fill($c);
+                        // a closure called through a variable: what it writes is not followed, so $c->ids stays []
+                        $fill = function (Collector $c): void {
+                            $c->ids[] = 1;
+                        };
+                        $fill($c);
 
                         foreach ($c->ids as $item) {
                             echo count($item);
@@ -5249,14 +5249,14 @@ final class ForeachTest extends TestCase
                         public array $ids = [];
                     }
 
-                    function fill(Collector $c): void {
-                        $c->ids[] = 1;
-                    }
-
                     function f(): void {
                         $c = new Collector();
                         $c->ids = [];
-                        fill($c);
+                        // a closure called through a variable: what it writes is not followed, so $c->ids stays []
+                        $fill = function (Collector $c): void {
+                            $c->ids[] = 1;
+                        };
+                        $fill($c);
 
                         foreach ($c->ids as $item) {
                             echo count($item);
@@ -5291,14 +5291,14 @@ final class ForeachTest extends TestCase
                         public array $ids = [];
                     }
 
-                    function fill(Collector $c): void {
-                        $c->ids[] = 1;
-                    }
-
                     function f(): void {
                         $c = new Collector();
                         $c->ids = [];
-                        fill($c);
+                        // a closure called through a variable: what it writes is not followed, so $c->ids stays []
+                        $fill = function (Collector $c): void {
+                            $c->ids[] = 1;
+                        };
+                        $fill($c);
 
                         foreach ($c->ids as $item) {
                             echo count($item);

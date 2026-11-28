@@ -16,6 +16,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAss
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ByRefArgumentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\CallPurityResolver;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\NoDiscardAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\GlobalStateAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ReturnAnalyzer;
@@ -942,6 +943,8 @@ final class MethodCallPurityAnalyzer
                 $context->assigned_var_ids[$lhs_var_id . '->' . $name] ??= 0;
             }
         }
+
+        CallAnalyzer::forgetArgumentPropertiesWrittenByCallee($statements_analyzer, $context, $method_storage, $args);
     }
 
     /**
@@ -1036,6 +1039,11 @@ final class MethodCallPurityAnalyzer
     ): void {
         if (isset($result->property_types_after_call[$property_id])) {
             $type = Type::combineUnionTypes($result->property_types_after_call[$property_id], $type);
+        }
+
+        // what it held may still be there, as the data flow of taint analysis sees it
+        if (isset($context->vars_in_scope[$property_id])) {
+            $type = $type->addParentNodes($context->vars_in_scope[$property_id]->parent_nodes);
         }
 
         $result->property_types_after_call[$property_id] = $type;
@@ -1387,8 +1395,11 @@ final class MethodCallPurityAnalyzer
             $declared_type = self::getTypeAfterItemWrites($codebase, $type_before, $declared_type);
         }
 
-        // assigned rather than forgotten, so that it holds this type after the branches of a condition too
-        $context->vars_in_scope[$property_id] = $declared_type;
+        // assigned rather than forgotten, so that it holds this type after the branches of a condition too; what it
+        // held may still be there, as the data flow of taint analysis sees it
+        $context->vars_in_scope[$property_id] = $type_before !== null
+            ? $declared_type->addParentNodes($type_before->parent_nodes)
+            : $declared_type;
         $context->possibly_assigned_var_ids[$property_id] = true;
     }
 

@@ -8884,6 +8884,58 @@ final class TaintTest extends TestCase
     public static function providerInvalidCodeParse(): array
     {
         return [
+            'taintOfAnArrayBoundByReferenceToAPropertyAHelperOfACallWritesItemsOf' => [
+                'code' => '<?php
+                    final class Core {
+                        /** @var array<string, mixed> */
+                        public array $info = [];
+                    }
+
+                    final class Handler {
+                        public function __construct(private Core $core) {}
+
+                        public function analyze(): void {
+                            $info = &$this->core->info;
+                            $this->parse($info);
+                            include (string) $info["module"];
+                        }
+
+                        /** @param array<string, mixed> $info */
+                        private function parse(array &$info): void {
+                            $info["module"] = (string) $_GET["m"];
+                            $this->note();
+                        }
+
+                        private function note(): void {
+                            $this->core->info["notes"][] = "x";
+                        }
+                    }',
+                'error_message' => 'TaintedInclude',
+            ],
+            'taintOfAnArrayBoundByReferenceToAPropertyACallWritesItemsOf' => [
+                'code' => '<?php
+                    final class Core {
+                        /** @var array<string, mixed> */
+                        public array $info = [];
+                    }
+
+                    final class Handler {
+                        public function __construct(private Core $core) {}
+
+                        public function analyze(): void {
+                            $info = &$this->core->info;
+                            $this->parse($info);
+                            include (string) $info["module"];
+                        }
+
+                        /** @param array<string, mixed> $info */
+                        private function parse(array &$info): void {
+                            $info["module"] = (string) $_GET["m"];
+                            $this->core->info["notes"][] = "x";
+                        }
+                    }',
+                'error_message' => 'TaintedInclude',
+            ],
             'arrayWalkCallbackWritingTaintedValuesByReference' => [
                 'code' => '<?php
                     $items = ["a"];

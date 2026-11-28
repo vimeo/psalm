@@ -393,9 +393,11 @@ final class GlobalAnalyzer
     }
 
     /**
+     * The function-like of an id of FunctionLikeStorage::$called_function_like_ids
+     *
      * @param lowercase-string $function_like_id
      */
-    private static function getCalleeStorage(
+    public static function getCalleeStorage(
         Codebase $codebase,
         StatementsAnalyzer $statements_analyzer,
         string $function_like_id,

@@ -325,11 +325,9 @@ final class ElseIfAnalyzer
 
         $outer_context->removeClausesOfVarsChangedIn($elseif_context, $statements_analyzer);
 
-        /** @var array<string, int> */
         $new_stmts_assigned_var_ids = $elseif_context->assigned_var_ids;
         $elseif_context->assigned_var_ids = $pre_stmts_assigned_var_ids + $new_stmts_assigned_var_ids;
 
-        /** @var array<string, bool> */
         $new_stmts_possibly_assigned_var_ids = $elseif_context->possibly_assigned_var_ids;
         $elseif_context->possibly_assigned_var_ids =
             $pre_stmts_possibly_assigned_var_ids + $new_stmts_possibly_assigned_var_ids;

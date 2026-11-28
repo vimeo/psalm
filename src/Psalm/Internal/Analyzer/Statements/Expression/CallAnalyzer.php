@@ -18,6 +18,7 @@ use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentsAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallProhibitionAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\ParamPropertyMutationResolver;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Codebase\AssertionsFromInheritanceResolver;
@@ -336,6 +337,77 @@ abstract class CallAnalyzer
                 || $static_class === strtolower((string) $context->self)
                 || $static_class === strtolower((string) $context->parent))
             && self::isInTrait($source);
+    }
+
+    /**
+     * Forgets what is known of the properties of the arguments that the callee writes, itself or through the calls it
+     * passes them to (see ParamPropertyMutationResolver)
+     *
+     * @param list<PhpParser\Node\Arg> $args
+     */
+    public static function forgetArgumentPropertiesWrittenByCallee(
+        StatementsAnalyzer $statements_analyzer,
+        Context $context,
+        FunctionLikeStorage $function_storage,
+        array $args,
+    ): void {
+        $param_property_mutations = ParamPropertyMutationResolver::getParamPropertyMutations(
+            $statements_analyzer,
+            $function_storage,
+        );
+
+        if (!$param_property_mutations) {
+            return;
+        }
+
+        foreach ($args as $offset => $arg) {
+            if ($arg->unpack) {
+                return;
+            }
+
+            $param = $arg->name === null ? $function_storage->params[$offset] ?? null : null;
+
+            if ($arg->name !== null) {
+                foreach ($function_storage->params as $named_param) {
+                    if ($named_param->name === $arg->name->name) {
+                        $param = $named_param;
+                        break;
+                    }
+                }
+            }
+
+            $mutations = $param === null ? null : $param_property_mutations[$param->name] ?? null;
+
+            if ($mutations === null) {
+                continue;
+            }
+
+            $arg_var_id = ExpressionIdentifier::getExtendedVarId(
+                $arg->value,
+                $statements_analyzer->getFQCLN(),
+                $statements_analyzer,
+            );
+
+            if ($arg_var_id === null) {
+                continue;
+            }
+
+            foreach ($mutations as $name => $writes_property) {
+                $property_id = $arg_var_id . '->' . $name;
+
+                if ($writes_property) {
+                    $context->forgetAssignedProperty($property_id);
+                } else {
+                    $context->forgetPropertyOfHeldObject($property_id);
+                }
+
+                $context->forgetMethodResultsDependingOn($property_id);
+
+                if ($context->inside_conditional) {
+                    $context->assigned_var_ids[$property_id] ??= 0;
+                }
+            }
+        }
     }
 
     /**

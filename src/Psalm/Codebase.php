@@ -29,6 +29,7 @@ use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\ForeachAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\NativeClassTaintAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\ParamPropertyMutationResolver;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\GlobalAnalyzer;
@@ -905,6 +906,7 @@ final class Codebase
 
         FunctionLikeAnalyzer::clearCache();
         GlobalAnalyzer::clearCache();
+        ParamPropertyMutationResolver::clearCache();
         $project_analyzer->clearStatementsForMutations();
 
         if ($force || !$this->statements_provider->parser_cache_provider) {
