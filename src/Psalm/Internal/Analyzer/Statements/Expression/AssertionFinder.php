@@ -671,7 +671,7 @@ final class AssertionFinder
         $typed_value_position = self::hasTypedValueComparison($conditional, $source);
 
         if ($typed_value_position) {
-            return self::getTypedValueComparisonAssertions(
+            $assertions = self::getTypedValueComparisonAssertions(
                 $conditional,
                 $this_class_name,
                 $source,
@@ -679,9 +679,70 @@ final class AssertionFinder
                 $typed_value_position,
                 $negated,
             );
+
+            $step_assertions = self::getSteppedVariableComparisonAssertions(
+                $conditional,
+                $this_class_name,
+                $source,
+                $negated,
+            );
+
+            if ($step_assertions === []) {
+                return $assertions;
+            }
+
+            return $assertions === [] ? $step_assertions : [$assertions[0] + $step_assertions[0]];
         }
 
         return self::getOperandTypeComparisonAssertions($conditional, $this_class_name, $source, $codebase);
+    }
+
+    /**
+     * `$a-- !== 0` compares the value `$a` had before: when it is an integer and is compared with an integer, what
+     * `$a` holds afterwards is compared with the integer shifted by one
+     *
+     * @param Identical|Equal|NotIdentical|NotEqual $conditional
+     * @return list<non-empty-array<string, non-empty-list<non-empty-list<Assertion>>>>
+     */
+    private static function getSteppedVariableComparisonAssertions(
+        PhpParser\Node\Expr\BinaryOp $conditional,
+        ?string $this_class_name,
+        StatementsAnalyzer $source,
+        bool $negated,
+    ): array {
+        foreach ([
+            [$conditional->left, $conditional->right],
+            [$conditional->right, $conditional->left],
+        ] as [$step, $value]) {
+            if (!$step instanceof PhpParser\Node\Expr\PostInc && !$step instanceof PhpParser\Node\Expr\PostDec) {
+                continue;
+            }
+
+            $old_type = $source->node_data->getType($step);
+            $value_type = $source->node_data->getType($value);
+            $var_id = ExpressionIdentifier::getExtendedVarId($step->var, $this_class_name, $source);
+
+            if ($old_type === null
+                || !$old_type->isInt()
+                || $value_type === null
+                || !$value_type->isSingleIntLiteral()
+                || $var_id === null
+            ) {
+                continue;
+            }
+
+            $shifted_value = $value_type->getSingleIntLiteral()->value
+                + ($step instanceof PhpParser\Node\Expr\PostInc ? 1 : -1);
+
+            // beyond the integers, the value before was not an integer
+            if (!is_int($shifted_value)) {
+                return [];
+            }
+
+            return [[$var_id => [[self::withPolarity(new IsIdentical(new TLiteralInt($shifted_value)), $negated)]]]];
+        }
+
+        return [];
     }
 
     /**

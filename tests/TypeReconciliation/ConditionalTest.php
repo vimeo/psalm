@@ -7596,6 +7596,45 @@ final class ConditionalTest extends TestCase
                         }
                     }',
             ],
+            'postStepComparedWithAnIntLiteralAssertsTheShiftedValue' => [
+                'code' => '<?php
+                    final class Counter {
+                        public int $n = 0;
+
+                        public function drain(): void {
+                            if ($this->n-- === 2) {
+                                /** @psalm-check-type-exact $this->n = 1 */
+                            } else {
+                                /** @psalm-check-type-exact $this->n = int */
+                            }
+                        }
+                    }
+
+                    function up(int $x): void {
+                        if ($x++ == 0) {
+                            /** @psalm-check-type-exact $x = 1 */
+                        }
+                    }
+
+                    function notFinished(int $x): void {
+                        if ($x-- !== 0) {
+                            return;
+                        }
+                        /** @psalm-check-type-exact $x = -1 */
+                    }
+
+                    function float(float $f): void {
+                        if ($f-- === 0.0) {
+                            /** @psalm-check-type-exact $f = float */
+                        }
+                    }
+
+                    function atTheLimit(int $x): void {
+                        if ($x++ === PHP_INT_MAX) {
+                            /** @psalm-check-type-exact $x = int */
+                        }
+                    }',
+            ],
             'typeChecksOfAnEmptyOrNonEmptyScalarGiveTheExactPartsOfEachKind' => [
                 'code' => '<?php
                     /** @param non-empty-scalar $v */
