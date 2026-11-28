@@ -38,12 +38,25 @@ class TClassString extends TString
         bool $from_docblock = false,
     ) {
         parent::__construct($from_docblock);
+        $this->as_type = self::withoutEnumCase($as_type);
     }
+
+    /**
+     * The class of an enum case is the enum, which is what a class-string of the case stands for
+     *
+     * @psalm-pure
+     */
+    private static function withoutEnumCase(?TNamedObject $as_type): ?TNamedObject
+    {
+        return $as_type instanceof TEnumCase ? new TNamedObject($as_type->value) : $as_type;
+    }
+
     /**
      * @return static
      */
     public function setAs(string $as, ?TNamedObject $as_type): self
     {
+        $as_type = self::withoutEnumCase($as_type);
         if ($this->as === $as && $this->as_type === $as_type) {
             return $this;
         }

@@ -122,6 +122,51 @@ final class EnumTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'classStringOfAnEnumCaseIsTheClassStringOfTheEnum' => [
+                'code' => '<?php
+                    enum Suit {
+                        case Hearts;
+                        case Spades;
+                    }
+
+                    /** @param class-string<Suit> $class */
+                    function takes(string $class): void {}
+
+                    $from_function = get_class(Suit::Hearts);
+                    $case = Suit::Hearts;
+                    $from_keyword = $case::class;
+                    $either = rand(0, 1) ? Suit::Hearts : Suit::Spades;
+                    $of_either = get_class($either);
+
+                    takes($from_function);
+                    takes($from_keyword);
+                    takes($of_either);',
+                'assertions' => [
+                    '$from_function===' => 'class-string<Suit>',
+                    '$from_keyword===' => 'class-string<Suit>',
+                    '$of_either===' => 'class-string<Suit>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'getClassOfAnEnumCaseVariableStillNarrowsItToTheCasesOfTheEnum' => [
+                'code' => '<?php
+                    enum Suit {
+                        case Hearts;
+                        case Spades;
+                    }
+
+                    function f(Suit $suit): string {
+                        if (get_class($suit) === Suit::class) {
+                            return $suit->name;
+                        }
+
+                        return "other";
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'instanceofAnEnumInterfaceExcludesClasses' => [
                 'code' => '<?php
                     interface Labeled {}
