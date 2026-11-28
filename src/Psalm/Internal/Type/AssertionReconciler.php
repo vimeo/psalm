@@ -3283,7 +3283,11 @@ final class AssertionReconciler extends Reconciler
 
         foreach ($existing_var_type?->getAtomicTypes() ?? [] as $existing_atomic) {
             if ($existing_atomic instanceof TNamedObject) {
-                $existing_classes[strtolower($existing_atomic->value)] = true;
+                foreach ([$existing_atomic, ...$existing_atomic->extra_types] as $existing_class) {
+                    if ($existing_class instanceof TNamedObject) {
+                        $existing_classes[strtolower($existing_class->value)] = true;
+                    }
+                }
             }
         }
 
@@ -3291,14 +3295,38 @@ final class AssertionReconciler extends Reconciler
         $changed = false;
 
         foreach ($narrowed->getAtomicTypes() as $atomic) {
-            $bound_use = $atomic instanceof TNamedObject && isset($existing_classes[strtolower($atomic->value)])
-                ? $atomic
-                : TemplateDefaults::bindBareUse($atomic, $codebase, false);
+            $bound_use = self::bindCheckedClass($codebase, $atomic, $existing_classes);
+
+            if ($bound_use instanceof TNamedObject && $bound_use->extra_types) {
+                $extra_types = [];
+
+                foreach ($bound_use->extra_types as $extra_type) {
+                    $extra_type = self::bindCheckedClass($codebase, $extra_type, $existing_classes);
+                    $extra_types[$extra_type->getKey()] = $extra_type;
+                }
+
+                $bound_use = $bound_use->setIntersectionTypes($extra_types);
+            }
+
             $changed = $changed || $bound_use !== $atomic;
             $atomics[] = $bound_use;
         }
 
         return $changed ? $narrowed->setTypes($atomics) : $narrowed;
+    }
+
+    /**
+     * @template TAtomic of Atomic
+     * @param TAtomic $atomic
+     * @param array<lowercase-string, true> $existing_classes
+     * @return TAtomic|TGenericObject
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
+     */
+    private static function bindCheckedClass(Codebase $codebase, Atomic $atomic, array $existing_classes): Atomic
+    {
+        return $atomic instanceof TNamedObject && isset($existing_classes[strtolower($atomic->value)])
+            ? $atomic
+            : TemplateDefaults::bindBareUse($atomic, $codebase, false);
     }
 
     /**

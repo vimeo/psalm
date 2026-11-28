@@ -1173,6 +1173,17 @@ final class AtomicTypeComparator
     }
 
     /**
+     * @psalm-mutation-free
+     */
+    private static function isStaticOfGeneric(Atomic $static, Atomic $generic): bool
+    {
+        return $static::class === TNamedObject::class
+            && $static->is_static
+            && $generic instanceof TGenericObject
+            && strtolower($static->value) === strtolower($generic->value);
+    }
+
+    /**
      * Does the input param atomic type match the given param atomic type
      */
     public static function canBeIdentical(
@@ -1184,6 +1195,11 @@ final class AtomicTypeComparator
         if ($type1_part instanceof TTypeVariable || $type2_part instanceof TTypeVariable) {
             // A type variable can be identical to anything; its constraints
             // are reconciled at the end of the surrounding function-like.
+            return true;
+        }
+
+        // `static` stands for the object with whatever type arguments it has
+        if (self::isStaticOfGeneric($type1_part, $type2_part) || self::isStaticOfGeneric($type2_part, $type1_part)) {
             return true;
         }
 

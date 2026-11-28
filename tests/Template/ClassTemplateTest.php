@@ -6782,9 +6782,54 @@ final class ClassTemplateTest extends TestCase
 
                             return $requests;
                         }
+
+                        /**
+                         * @param list<Req|int> $bare
+                         * @param list<Req<true>|int> $async
+                         * @return list<Req<bool>|int>
+                         */
+                        public function negated(array $bare, array $async): array {
+                            $kept = [];
+
+                            foreach ($bare as $item) {
+                                $kept[] = $item instanceof static ? $item : 0;
+                            }
+
+                            foreach ($async as $item) {
+                                $kept[] = $item instanceof static ? $item : 0;
+                            }
+
+                            return $kept;
+                        }
                     }',
                 'assertions' => [],
                 'ignored_issues' => ['ClassMustBeFinal'],
+                'php_version' => '8.0',
+            ],
+            'classCheckInAnIntersectionKeepsBounds' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-immutable
+                     * @template T of \'a\'|\'b\' = \'a\'
+                     * @implements IteratorAggregate<int, T>
+                     */
+                    final class Coll implements IteratorAggregate {
+                        public function getIterator(): Iterator {
+                            throw new Exception();
+                        }
+                    }
+
+                    /** @return Traversable<int, \'b\'> */
+                    function bs(): Traversable {
+                        throw new Exception();
+                    }
+
+                    $bs = bs();
+                    $coll = $bs instanceof Coll ? $bs : null;',
+                'assertions' => [
+                    '$coll===' => 'Traversable<int, \'b\'>&Coll<\'a\'|\'b\'>|null',
+                ],
+                'ignored_issues' => ['MissingOverrideAttribute'],
                 'php_version' => '8.0',
             ],
             'purityOnlyTypeArgumentsUseTemplateDefaults' => [

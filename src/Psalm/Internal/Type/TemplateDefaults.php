@@ -13,7 +13,6 @@ use Psalm\Exception\TypeParseTreeException;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
-use Psalm\Internal\TypeVisitor\BareUseBoundBinder;
 use Psalm\Internal\TypeVisitor\ContainsExpandableTypeVisitor;
 use Psalm\Internal\TypeVisitor\TemplateDefaultFiller;
 use Psalm\Internal\TypeVisitor\TemplateTypeCollector;
@@ -26,7 +25,10 @@ use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic;
+use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TGenericObject;
+use Psalm\Type\Atomic\TIterable;
+use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
@@ -218,15 +220,90 @@ final class TemplateDefaults
 
     /**
      * The type with each class written without type arguments in it, at any depth, standing for the bounds of its
-     * templates ({@see BareUseBoundBinder})
+     * templates ({@see self::bindBareUse()})
      *
      * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     public static function bindBareUsesToBounds(Union $type, Codebase $codebase): Union
     {
-        (new BareUseBoundBinder($codebase))->traverse($type);
+        $atomics = [];
+        $changed = false;
 
-        return $type;
+        foreach ($type->getAtomicTypes() as $atomic) {
+            $bound_use = self::bindNestedBareUses($atomic, $codebase);
+            $changed = $changed || $bound_use !== $atomic;
+            $atomics[] = $bound_use;
+        }
+
+        return $changed ? $type->setTypes($atomics) : $type;
+    }
+
+    /**
+     * The bounds of a class are not bound again: they can name the class itself (`@template T of Node` in Node)
+     *
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
+     */
+    private static function bindNestedBareUses(Atomic $atomic, Codebase $codebase): Atomic
+    {
+        $bound_use = self::bindBareUse($atomic, $codebase, false);
+
+        if ($bound_use !== $atomic) {
+            return $bound_use;
+        }
+
+        if ($atomic instanceof TKeyedArray) {
+            return self::bindBareUsesInShape($atomic, $codebase);
+        }
+
+        if (!$atomic instanceof TGenericObject && !$atomic instanceof TArray && !$atomic instanceof TIterable) {
+            return $atomic;
+        }
+
+        if ($atomic instanceof TGenericObject) {
+            $type_params = [];
+
+            foreach ($atomic->type_params as $type_param) {
+                $type_params[] = self::bindBareUsesToBounds($type_param, $codebase);
+            }
+        } else {
+            $type_params = [
+                self::bindBareUsesToBounds($atomic->type_params[0], $codebase),
+                self::bindBareUsesToBounds($atomic->type_params[1], $codebase),
+            ];
+        }
+
+        return $type_params === $atomic->type_params ? $atomic : $atomic->setTypeParams($type_params);
+    }
+
+    /**
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
+     */
+    private static function bindBareUsesInShape(TKeyedArray $shape, Codebase $codebase): TKeyedArray|TArray
+    {
+        if ($shape->is_callable || $shape->disjoint_shapes) {
+            return $shape;
+        }
+
+        $properties = [];
+
+        foreach ($shape->properties as $name => $property) {
+            $properties[$name] = self::bindBareUsesToBounds($property, $codebase);
+        }
+
+        $fallback_params = $shape->fallback_params === null ? null : [
+            self::bindBareUsesToBounds($shape->fallback_params[0], $codebase),
+            self::bindBareUsesToBounds($shape->fallback_params[1], $codebase),
+        ];
+
+        return $properties === $shape->properties && $fallback_params === $shape->fallback_params
+            ? $shape
+            : TKeyedArray::make(
+                $properties,
+                $shape->class_strings,
+                $fallback_params,
+                $shape->is_list,
+                $shape->from_docblock,
+            );
     }
 
     /**
