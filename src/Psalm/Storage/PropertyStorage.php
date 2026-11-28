@@ -141,6 +141,11 @@ final class PropertyStorage implements HasAttributesInterface
     public ?PropertyHookStorage $hook_set = null;
 
     /**
+     * A hooked property with no value of its own: none of its hooks reads or writes it
+     */
+    public bool $is_virtual = false;
+
+    /**
      * @psalm-mutation-free
      */
     public function getInfo(): string

@@ -355,6 +355,27 @@ final class ClassTemplateContravarianceTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.4',
             ],
+            'contravariantTemplateInAPropertyWithOnlyASetHookAndNoValue' => [
+                'code' => '<?php
+                    /** @template-contravariant T */
+                    final class Box {
+                        /** @var T */
+                        public mixed $value {
+                            set(mixed $v) { $this->stored = $v; }
+                        }
+
+                        private mixed $stored = null;
+                    }
+
+                    /** @template-contravariant T */
+                    interface Writable {
+                        /** @var T */
+                        public mixed $value { set; }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
             'newThroughASinkArgOfAnInvariantTemplateTakesWhatTheSinkTakes' => [
                 'code' => self::SINK . '
                     /** @template T */
@@ -431,6 +452,34 @@ final class ClassTemplateContravarianceTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'contravariantTemplateInAPropertyWithASetHookThatWritesTheValue' => [
+                'code' => '<?php
+                    /** @template-contravariant T */
+                    final class Box {
+                        /** @var T */
+                        public mixed $value {
+                            set(mixed $v) { $this->value = $v; }
+                        }
+                    }',
+                'error_message' => 'InvalidTemplateParam - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:34 - Template param T of Box is marked contravariant and cannot be used here',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
+            'contravariantTemplateInAPropertyWithOnlyAGetHook' => [
+                'code' => '<?php
+                    /** @template-contravariant T */
+                    final class Box {
+                        /** @var T */
+                        public mixed $value {
+                            get => $this->stored;
+                        }
+
+                        private mixed $stored = null;
+                    }',
+                'error_message' => 'InvalidTemplateParam - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:34 - Template param T of Box is marked contravariant and cannot be used here',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
             'narrowerSinkDoesNotFitWiderSink' => [
                 'code' => self::SINK . '
                     /** @param Sink<int|string> $sink */
