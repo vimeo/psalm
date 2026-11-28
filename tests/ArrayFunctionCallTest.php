@@ -190,6 +190,14 @@ final class ArrayFunctionCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'arrayFilterWithOnlyANamedCallbackDoesNotCrash' => [
+                'code' => '<?php
+                    function f(): void {
+                        array_filter(callback: fn($x) => true);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['UnusedFunctionCall', 'MissingClosureParamType'],
+            ],
             'implodeOfAShapeWithAUnionOfLiterals' => [
                 'code' => '<?php
                     $a = implode(",", ["x", rand(0, 1) ? "a" : "b"]);

@@ -1029,7 +1029,10 @@ final class ArgumentsAnalyzer
                 $param_storage->type_inferred = true;
             }
 
-            if ($method_id === 'array_map' || in_array($method_id, self::ARRAY_FILTERLIKE, true)) {
+            // a call with only the callback is reported as too few arguments
+            if (($method_id === 'array_map' || in_array($method_id, self::ARRAY_FILTERLIKE, true))
+                && isset($args[1 - $argument_offset])
+            ) {
                 self::taintClosureParamWithArrayElements(
                     $statements_analyzer,
                     $args[1 - $argument_offset]->value,
