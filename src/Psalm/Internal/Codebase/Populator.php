@@ -1125,6 +1125,11 @@ final class Populator
             $storage->trait_visibility_map[$method_name_lc] ??= $visibility;
         }
 
+        // an adaptation of the class does not apply to the method it declares itself, which PHP uses instead
+        foreach ($storage->methods as $method_name_lc => $_) {
+            unset($storage->trait_visibility_map[$method_name_lc], $storage->trait_final_map[$method_name_lc]);
+        }
+
         $this->extendTemplateParams($storage, $trait_storage, false);
 
         $storage->pseudo_property_get_types += self::localizeInheritedTypes(
