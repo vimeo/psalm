@@ -11,6 +11,7 @@ use PhpParser\Node\Expr;
 use PhpParser\Node\Name;
 use Psalm\Aliases;
 use Psalm\CodeLocation;
+use Psalm\CodeLocation\DocblockTypeLocation;
 use Psalm\Codebase;
 use Psalm\DocComment;
 use Psalm\Exception\CodeException;
@@ -29,9 +30,11 @@ use Psalm\Internal\PhpVisitor\Reflector\StringStartScanner;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Scanner\FileScanner;
 use Psalm\Internal\Scanner\PhpStormMetaScanner;
+use Psalm\Internal\Type\LegacyEmptyArrayFinder;
 use Psalm\Internal\Type\TypeAlias;
 use Psalm\Internal\Type\TypeParser;
 use Psalm\Issue\InvalidDocblock;
+use Psalm\Issue\LegacySyntax;
 use Psalm\Issue\TaintedInput;
 use Psalm\Plugin\EventHandler\Event\AfterClassLikeVisitEvent;
 use Psalm\Storage\FileStorage;
@@ -51,11 +54,14 @@ use function implode;
 use function in_array;
 use function is_string;
 use function preg_match;
+use function preg_replace;
 use function reset;
 use function spl_object_id;
 use function str_contains;
 use function strpos;
 use function strtolower;
+use function substr;
+use function substr_count;
 use function trim;
 
 /**
@@ -94,6 +100,14 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
      * @var array<int, bool>
      */
     private array $bad_classes = [];
+
+    /**
+     * Start offsets of the docblocks checked for legacy syntax, as a docblock can be attached to several nodes
+     *
+     * @var array<int, true>
+     */
+    private array $checked_docblocks = [];
+
     private readonly EventDispatcher $eventDispatcher;
 
     /**
@@ -117,6 +131,10 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
     public function enterNode(PhpParser\Node $node): ?int
     {
         foreach ($node->getComments() as $comment) {
+            if ($comment instanceof PhpParser\Comment\Doc && $this->scan_deep) {
+                $this->reportLegacyEmptyArrays($comment);
+            }
+
             if ($comment instanceof PhpParser\Comment\Doc && !$node instanceof PhpParser\Node\Stmt\ClassLike) {
                 try {
                     $type_aliases = ClassLikeNodeScanner::getTypeAliasesFromComment(
@@ -578,6 +596,75 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
         $this->recordExternalEffects($node);
 
         return null;
+    }
+
+    private function reportLegacyEmptyArrays(PhpParser\Comment\Doc $comment): void
+    {
+        $docblock_start = $comment->getStartFilePos();
+
+        if (isset($this->checked_docblocks[$docblock_start])) {
+            return;
+        }
+
+        $this->checked_docblocks[$docblock_start] = true;
+        $docblock = $comment->getText();
+        $found = LegacyEmptyArrayFinder::find($docblock);
+
+        if (!$found) {
+            return;
+        }
+
+        $suppressed_issues = $this->getSuppressedIssuesAround($comment);
+
+        foreach ($found as [$start, $end]) {
+            $type = (string) preg_replace('/\s*\n[\s*]*/', ' ', substr($docblock, $start, $end - $start));
+
+            $this->file_storage->legacy_syntax_issues[] = [
+                new LegacySyntax(
+                    $type . ' is legacy syntax for the empty array, write array{}: empty changes meaning in Psalm 8',
+                    new DocblockTypeLocation(
+                        $this->file_scanner,
+                        $docblock_start + $start,
+                        $docblock_start + $end,
+                        $comment->getStartLine() + substr_count($docblock, "\n", 0, $start),
+                    ),
+                    'array{}',
+                ),
+                $suppressed_issues,
+            ];
+        }
+    }
+
+    /**
+     * The issues suppressed by $comment and by the function-likes and the class-like it is in
+     *
+     * @return array<array-key, string>
+     */
+    private function getSuppressedIssuesAround(PhpParser\Comment\Doc $comment): array
+    {
+        $suppressed_issues = [];
+
+        try {
+            $suppress_entries = DocComment::parsePreservingLength($comment, true)->tags['psalm-suppress'] ?? [];
+        } catch (DocblockParseException) {
+            $suppress_entries = [];
+        }
+
+        foreach ($suppress_entries as $offset => $suppress_entry) {
+            foreach (DocComment::parseSuppressList($suppress_entry) as $issue_offset => $suppressed_issue) {
+                $suppressed_issues[$issue_offset + $offset] = $suppressed_issue;
+            }
+        }
+
+        foreach ($this->functionlike_node_scanners as $functionlike_node_scanner) {
+            $suppressed_issues += $functionlike_node_scanner->storage->suppressed_issues ?? [];
+        }
+
+        if ($this->classlike_node_scanners) {
+            $suppressed_issues += end($this->classlike_node_scanners)->storage->suppressed_issues ?? [];
+        }
+
+        return $suppressed_issues;
     }
 
     /**

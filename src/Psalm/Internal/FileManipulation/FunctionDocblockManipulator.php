@@ -123,7 +123,7 @@ final class FunctionDocblockManipulator
     }
 
     private function __construct(
-        string $file_path,
+        private readonly string $file_path,
         private readonly Closure|Function_|ClassMethod|ArrowFunction $stmt,
         ProjectAnalyzer $project_analyzer,
     ) {
@@ -347,7 +347,9 @@ final class FunctionDocblockManipulator
         $docblock = $this->stmt->getDocComment();
 
         if ($docblock) {
-            $parsed_docblock = DocComment::parsePreservingLength($docblock);
+            $parsed_docblock = DocComment::parsePreservingLength(
+                FileManipulationBuffer::fixLegacySyntax($docblock, $this->file_path),
+            );
         } else {
             $parsed_docblock = new ParsedDocblock('', []);
         }

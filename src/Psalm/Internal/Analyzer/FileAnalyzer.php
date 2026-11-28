@@ -11,6 +11,7 @@ use Psalm\CodeLocation\DocblockTypeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Exception\UnpreparedAnalysisException;
+use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\Statements\DeclareAnalyzer;
 use Psalm\Internal\Codebase\Functions;
 use Psalm\Internal\Codebase\Reflection;
@@ -186,6 +187,20 @@ class FileAnalyzer extends SourceAnalyzer
 
         foreach ($file_storage->docblock_issues as $docblock_issue) {
             IssueBuffer::maybeAdd($docblock_issue);
+        }
+
+        $fix_legacy_syntax = $codebase->alter_code && isset($this->project_analyzer->getIssuesToFix()['LegacySyntax']);
+
+        foreach ($file_storage->legacy_syntax_issues as [$legacy_syntax, $suppressed_issues]) {
+            if (!$fix_legacy_syntax) {
+                IssueBuffer::maybeAdd($legacy_syntax, $suppressed_issues, true);
+            } elseif (!IssueBuffer::isSuppressedInList($legacy_syntax, $suppressed_issues)) {
+                FileManipulationBuffer::add($this->file_path, [new FileManipulation(
+                    $legacy_syntax->code_location->raw_file_start,
+                    $legacy_syntax->code_location->raw_file_end,
+                    $legacy_syntax->replacement,
+                )]);
+            }
         }
 
         // if there are any leftover statements, evaluate them,

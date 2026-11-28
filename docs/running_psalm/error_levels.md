@@ -165,6 +165,7 @@ These issues become info (non-blocking) at level 3 and higher.
  - [InvalidDocblockParamName](issues/InvalidDocblockParamName.md)
  - [InvalidFalsableReturnType](issues/InvalidFalsableReturnType.md)
  - [InvalidStringClass](issues/InvalidStringClass.md)
+ - [LegacySyntax](issues/LegacySyntax.md)
  - [MismatchingDocblockPropertyType](issues/MismatchingDocblockPropertyType.md)
  - [MissingClassConstType](issues/MissingClassConstType.md)
  - [MissingClosureParamType](issues/MissingClosureParamType.md)

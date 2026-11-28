@@ -116,6 +116,7 @@
  - [InvalidToString](issues/InvalidToString.md)
  - [InvalidTraversableImplementation](issues/InvalidTraversableImplementation.md)
  - [InvalidTypeImport](issues/InvalidTypeImport.md)
+ - [LegacySyntax](issues/LegacySyntax.md)
  - [LessSpecificClassConstantType](issues/LessSpecificClassConstantType.md)
  - [LessSpecificImplementedReturnType](issues/LessSpecificImplementedReturnType.md)
  - [LessSpecificReturnStatement](issues/LessSpecificReturnStatement.md)
