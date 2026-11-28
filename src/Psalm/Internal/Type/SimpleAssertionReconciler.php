@@ -1494,10 +1494,14 @@ final class SimpleAssertionReconciler extends Reconciler
         foreach ($existing_var_atomic_types as $type) {
             if ($type instanceof Scalar) {
                 $scalar_types[] = $type;
+            } elseif ($type instanceof TCallable) {
+                // only a callable-string is a scalar
+                $scalar_types[] = new TCallableString();
+                $redundant = false;
             } elseif ($type instanceof TTemplateParam) {
                 $bound = self::getTemplateBound($type);
 
-                if (self::hasScalarAtomic($bound) || $bound->hasMixed()) {
+                if (self::hasScalarAtomic($bound) || self::hasCallableAtomic($bound) || $bound->hasMixed()) {
                     $type = $type->replaceAs(self::reconcileScalar(
                         $assertion,
                         $type->as,
@@ -3188,6 +3192,22 @@ final class SimpleAssertionReconciler extends Reconciler
         $class_storage = $codebase->classlike_storage_provider->get($type->value);
 
         return !$class_storage->final;
+    }
+
+    /**
+     * Whether a type holds a callable, a part of which is a scalar (`callable-string`)
+     *
+     * @psalm-pure
+     */
+    private static function hasCallableAtomic(Union $type): bool
+    {
+        foreach ($type->getAtomicTypes() as $atomic) {
+            if ($atomic instanceof TCallable) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
