@@ -18,6 +18,48 @@ final class MissingReturnTypeTest extends FileManipulationTestCase
     public static function providerValidCodeParse(): array
     {
         return [
+            'objectShapeWithAnIntersectionAndAMethodKeepsThemInTheReturnType' => [
+                'input' => '<?php
+                    interface I {}
+
+                    /** @param object{a: int}&I $o */
+                    function k(object $o) {
+                        return $o;
+                    }
+
+                    function g(object $o) {
+                        if (method_exists($o, "foo")) {
+                            return $o;
+                        }
+
+                        throw new Exception();
+                    }',
+                'output' => '<?php
+                    interface I {}
+
+                    /**
+                     * @param object{a: int}&I $o
+                     *
+                     * @psalm-return object{a:int}&I
+                     */
+                    function k(object $o): object {
+                        return $o;
+                    }
+
+                    /**
+                     * @psalm-return object{foo()}
+                     */
+                    function g(object $o): object {
+                        if (method_exists($o, "foo")) {
+                            return $o;
+                        }
+
+                        throw new Exception();
+                    }',
+                'php_version' => '8.0',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => false,
+            ],
             'addMissingVoidReturnType56' => [
                 'input' => '<?php
                     function foo() { }',
