@@ -2272,7 +2272,9 @@ final class ClassLikeNodeScanner
             $storage->declaring_property_ids[$property->name->name] = $fq_classlike_name;
             $storage->appearing_property_ids[$property->name->name] = $property_id;
 
-            if ($property_is_initialized || self::isVirtualProperty($stmt, $property->name->name)) {
+            $property_storage->is_virtual = self::isVirtualProperty($stmt, $property->name->name);
+
+            if ($property_is_initialized || $property_storage->is_virtual) {
                 $storage->initialized_properties[$property->name->name] = true;
             }
 

@@ -2438,7 +2438,8 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
 
     /**
      * The position of the type of a property of a class with contravariant templates: one that only the class
-     * writes hands its value out (an output position), any other one also takes values (an invariant one). A
+     * writes hands its value out (an output position), one that can only be written (a virtual property with
+     * only a set hook) takes values (an input position), any other one does both (an invariant one). A
      * private property is in neither, as a constructor's parameters.
      *
      * @psalm-mutation-free
@@ -2451,6 +2452,14 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
             || $property_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE
         ) {
             return null;
+        }
+
+        // a set hook is all there is to such a property: it can only be written
+        if ($property_storage->is_virtual
+            && $property_storage->hook_set !== null
+            && $property_storage->hook_get === null
+        ) {
+            return TemplateVariance::Contravariant;
         }
 
         return $property_storage->readonly
