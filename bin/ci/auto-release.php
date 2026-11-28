@@ -19,8 +19,9 @@
  *    by 7.0.1. A removal needs a new major version, which is left to the maintainers;
  *  - the release notes are the ones GitHub generates from the labels of the merged pull requests
  *    (.github/release.yml);
- *  - a release made with the workflow's token doesn't trigger other workflows, so the phar and docker builds
- *    and the announcement (announce-release.php) are dispatched on the new tag, and dispatched again next hour
+ *  - a release made with the workflow's token doesn't trigger other workflows, so the phar and docker builds,
+ *    the announcement (announce-release.php) and the agent plugins (publish-agent-plugins.php) are dispatched on
+ *    the new tag, and dispatched again next hour
  *    on the last tag of each branch if they never ran (if dispatching failed). A workflow is only dispatched
  *    on a tag whose version of it has a workflow_dispatch trigger, so not on releases made before it existed.
  *
@@ -31,7 +32,7 @@ declare(strict_types=1);
 
 $required_workflows = ['Run unit tests', 'Run unit tests on Windows'];
 $own_workflow = 'Automatic release';
-$dispatched_workflows = ['build-phar.yml', 'build-docker.yml', 'announce-release.yml'];
+$dispatched_workflows = ['build-phar.yml', 'build-docker.yml', 'announce-release.yml', 'publish-agent-plugins.yml'];
 $version_pattern = '/^(?<major>\d+)\.(?<minor>\d+)\.(?<patch>\d+)'
     . '(?:-(?<stage>alpha|beta|rc)(?<dot>\.?)(?<number>\d+))?$/';
 

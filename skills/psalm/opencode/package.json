@@ -1,0 +1,18 @@
+{
+  "name": "opencode-psalm",
+  "private": true,
+  "description": "Psalm for OpenCode: the Psalm MCP server and skill, and on OpenCode 1 the Psalm language server",
+  "type": "module",
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js",
+    "./server": "./index.js"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/vimeo/psalm",
+    "directory": "skills/psalm/opencode"
+  },
+  "keywords": ["opencode", "opencode-plugin", "psalm", "php", "static-analysis"]
+}

@@ -372,18 +372,18 @@ final class ProjectAnalyzer
         );
     }
 
-    public function serverMode(LanguageServer $server): void
+    public function serverMode(?LanguageServer $server = null): void
     {
         $this->initExtraFiles();
         $this->initProjectFiles();
 
-        $server->logInfo("Initializing: Initialize Plugins...");
+        $server?->logInfo("Initializing: Initialize Plugins...");
         $this->config->initializePlugins($this);
 
-        $server->logInfo("Initializing: Visiting Autoload Files...");
+        $server?->logInfo("Initializing: Visiting Autoload Files...");
         $this->visitAutoloadFiles();
         $this->codebase->diff_methods = true;
-        $server->logInfo("Initializing: Loading Reference Cache...");
+        $server?->logInfo("Initializing: Loading Reference Cache...");
         $this->file_reference_provider->loadReferenceCache();
         $this->codebase->enterServerMode();
 

@@ -19,6 +19,9 @@ It has a few features that go further than other similar tools:
 - **Language Server**<br />
   Psalm has a Language Server that’s [compatible with a range of different IDEs](https://psalm.dev/docs/running_psalm/language_server/).
 
+- **AI agents**<br />
+  Psalm has an MCP server, an agent skill, and plugins for [Claude Code, OpenCode and other agents](https://psalm.dev/docs/running_psalm/ai_agents/).
+
 - **Automatic fixes**<br />
   Psalm can [fix many of the issues it finds automatically](https://psalm.dev/docs/manipulating_code/fixing/).
   
@@ -57,9 +60,9 @@ There are two main inspirations for Psalm:
         - [Authoring plugins](running_psalm/plugins/authoring_plugins.md)
         - [How Psalm represents types](running_psalm/plugins/plugins_type_system.md)
     - [Command line usage](running_psalm/command_line_usage.md)
-    - [Running Psalm from AI coding agents](running_psalm/ai_agents.md)
     - [Finding out why Psalm is slow](running_psalm/performance.md)
     - [IDE support](running_psalm/language_server.md)
+    - [AI agents](running_psalm/ai_agents.md)
     - Handling errors:
         - [Dealing with code issues](running_psalm/dealing_with_code_issues.md)
         - [Issue Types](running_psalm/issues.md)

@@ -10,18 +10,27 @@ use Psalm\Internal\Cli\Psalm;
 use Psalm\Internal\Cli\Psalter;
 use ReflectionClassConstant;
 
+use function array_intersect_key;
 use function array_map;
 use function basename;
 use function dirname;
+use function escapeshellarg;
+use function exec;
 use function file_exists;
 use function file_get_contents;
+use function getmypid;
 use function glob;
+use function implode;
+use function json_decode;
 use function preg_match;
 use function preg_match_all;
 use function preg_replace;
 use function rtrim;
 use function str_contains;
 use function str_ends_with;
+use function sys_get_temp_dir;
+
+use const PHP_BINARY;
 
 /**
  * Keeps the user-facing agent skill in skills/ in sync with the CLI and the docs it names.
@@ -104,6 +113,68 @@ final class AgentSkillTest extends BaseTestCase
         $this->assertFalse(str_contains($gitattributes, '/skills '), 'skills/ must not be export-ignored');
         $composer = (string) file_get_contents(__DIR__ . '/../composer.json');
         $this->assertStringContainsString('"source": "skills"', $composer);
+    }
+
+    public function testThePluginsStartTheServersThroughTheLauncher(): void
+    {
+        $plugin = json_decode((string) file_get_contents(self::SKILL_DIR . '/.claude-plugin/plugin.json'), true);
+        $this->assertIsArray($plugin);
+        $this->assertSame(['psalm' => [
+            'command' => 'php',
+            'args' => ['${CLAUDE_PLUGIN_ROOT}/scripts/server.php', 'mcp', '${CLAUDE_PROJECT_DIR}'],
+        ]], $plugin['mcpServers'] ?? null);
+        $this->assertSame(['psalm' => [
+            'command' => 'php',
+            'args' => ['${CLAUDE_PLUGIN_ROOT}/scripts/server.php', 'lsp', '${CLAUDE_PROJECT_DIR}'],
+            'extensionToLanguage' => ['.php' => 'php'],
+            'startupTimeout' => 300_000,
+        ]], $plugin['lspServers'] ?? null);
+
+        $opencode = (string) file_get_contents(self::SKILL_DIR . '/opencode/index.js');
+        $this->assertStringContainsString('join(skillDir, "scripts", "server.php")', $opencode);
+        $this->assertFileExists(self::SKILL_DIR . '/scripts/server.php');
+    }
+
+    public function testTheAgentPluginsBranchHasTheMarketplaceAndThePlugins(): void
+    {
+        $dir = sys_get_temp_dir() . '/psalm-agent-plugins-test-' . (int) getmypid();
+        exec(
+            escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg(__DIR__ . '/../bin/ci/publish-agent-plugins.php')
+                . ' --build 7.99.1 ' . escapeshellarg($dir),
+            $output,
+            $exit_code,
+        );
+        $this->assertSame(0, $exit_code, implode("\n", $output));
+
+        try {
+            $marketplace = json_decode((string) file_get_contents($dir . '/.claude-plugin/marketplace.json'), true);
+            $this->assertIsArray($marketplace);
+            $this->assertSame('psalm', $marketplace['name'] ?? null);
+            $plugins = $marketplace['plugins'] ?? null;
+            $this->assertIsArray($plugins);
+            $this->assertSame(
+                ['name' => 'psalm', 'source' => './psalm', 'version' => '7.99.1'],
+                array_intersect_key((array) ($plugins[0] ?? []), ['name' => true, 'source' => true, 'version' => true]),
+            );
+
+            $plugin = json_decode((string) file_get_contents($dir . '/psalm/.claude-plugin/plugin.json'), true);
+            $this->assertIsArray($plugin);
+            $this->assertSame('7.99.1', $plugin['version'] ?? null);
+            $this->assertFileExists($dir . '/psalm/SKILL.md');
+            $this->assertFileExists($dir . '/psalm/scripts/server.php');
+
+            $package = json_decode((string) file_get_contents($dir . '/psalm/package.json'), true);
+            $this->assertIsArray($package);
+            $this->assertSame(['opencode-psalm', '7.99.1', 'opencode/index.js'], [
+                $package['name'] ?? null,
+                $package['version'] ?? null,
+                $package['main'] ?? null,
+            ]);
+            $this->assertArrayNotHasKey('private', $package);
+            $this->assertFileExists($dir . '/psalm/opencode/index.js');
+        } finally {
+            exec('rm -rf ' . escapeshellarg($dir));
+        }
     }
 
     /**

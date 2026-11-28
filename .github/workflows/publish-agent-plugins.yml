@@ -1,0 +1,63 @@
+# Publishes the Claude Code and OpenCode plugins of a release, see bin/ci/publish-agent-plugins.php
+name: Publish agent plugins
+
+on:
+  release:
+    types:
+      - published
+  # dispatched on the tags of the releases bin/ci/auto-release.php publishes, which don't trigger the release event
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  branch:
+    if: github.repository == 'vimeo/psalm'
+    permissions:
+      contents: write # to push the agent-plugins branch
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up PHP
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
+        with:
+          php-version: '8.4'
+          coverage: none
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v6
+
+      - name: Publish the marketplace branch
+        run: php bin/ci/publish-agent-plugins.php "$GITHUB_REF_NAME"
+
+  npm:
+    # off until the repository variable PUBLISH_OPENCODE_NPM is true, which needs the opencode-psalm package on npmjs.com
+    # with this workflow as its trusted publisher
+    if: github.repository == 'vimeo/psalm' && vars.PUBLISH_OPENCODE_NPM == 'true'
+    permissions:
+      contents: read
+      id-token: write # for npm trusted publishing
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up PHP
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
+        with:
+          php-version: '8.4'
+          coverage: none
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v6
+
+      - name: Publish opencode-psalm
+        run: |
+          php bin/ci/publish-agent-plugins.php --build "$GITHUB_REF_NAME" "$RUNNER_TEMP/agent-plugins"
+          cd "$RUNNER_TEMP/agent-plugins/psalm"
+          if npm view "opencode-psalm@$GITHUB_REF_NAME" version > /dev/null 2>&1; then
+            echo "opencode-psalm $GITHUB_REF_NAME is published already"
+            exit 0
+          fi
+          # trusted publishing needs npm 11.5.1 or later
+          npm install --global npm@11
+          npm publish --provenance --access public --tag "$(case "$GITHUB_REF_NAME" in *-*) echo next;; *) echo latest;; esac)"
