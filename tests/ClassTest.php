@@ -192,6 +192,96 @@ final class ClassTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'parentConstructorOfAClassDeclaredInAnIfInANamespaceSetsTheProperty' => [
+                'code' => '<?php
+                    namespace Foo;
+
+                    if (function_exists("foo_x")) {
+                        abstract class P {
+                            protected int $x;
+
+                            public function __construct() {
+                                $this->x = 1;
+                            }
+                        }
+                    } else {
+                        abstract class Q {
+                            protected int $y;
+
+                            public function __construct() {
+                                $this->y = 1;
+                            }
+                        }
+                    }
+
+                    final class C extends P {
+                        public function __construct() {
+                            parent::__construct();
+                        }
+                    }
+
+                    final class D extends Q {
+                        public function __construct() {
+                            parent::__construct();
+                        }
+                    }',
+            ],
+            'parentConstructorOfAClassDeclaredInBothBranchesOfAnIfInANamespaceIsTheScannedOne' => [
+                'code' => '<?php
+                    namespace Foo;
+
+                    if (class_exists(\ArrayObject::class)) {
+                        abstract class P {
+                            protected int $x;
+
+                            public function __construct() {
+                                $this->x = 1;
+                            }
+                        }
+                    } else {
+                        abstract class P {
+                            protected int $x;
+
+                            public function __construct() {}
+                        }
+                    }
+
+                    final class C extends P {
+                        public function __construct() {
+                            parent::__construct();
+                        }
+                    }',
+            ],
+            'classDeclaredInAnIfOfANamespaceThatIsNotTakenIsNotAnalysed' => [
+                'code' => '<?php
+                    namespace Foo;
+
+                    if (class_exists(Missing::class)) {
+                        final class A {
+                            public function f(): void {}
+                        }
+                    } else {
+                        throw new \LogicException("no");
+                    }',
+            ],
+            'parentConstructorOfAClassDeclaredInAnIfOfTheGlobalNamespaceSetsTheProperty' => [
+                'code' => '<?php
+                    if (function_exists("foo_x")) {
+                        abstract class P {
+                            protected int $x;
+
+                            public function __construct() {
+                                $this->x = 1;
+                            }
+                        }
+                    }
+
+                    final class C extends P {
+                        public function __construct() {
+                            parent::__construct();
+                        }
+                    }',
+            ],
             'paramNamedAsInOneOfTwoConflictingAncestors' => [
                 'code' => '<?php
                     class A {
@@ -2087,6 +2177,29 @@ final class ClassTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'parentConstructorOfAClassDeclaredInAnIfInANamespaceDoesNotSetThePropertyOfTheChild' => [
+                'code' => '<?php
+                    namespace Foo;
+
+                    if (function_exists("foo_x")) {
+                        abstract class P {
+                            protected int $x;
+
+                            public function __construct() {
+                                $this->x = 1;
+                            }
+                        }
+                    }
+
+                    final class C extends P {
+                        protected int $other;
+
+                        public function __construct() {
+                            parent::__construct();
+                        }
+                    }',
+                'error_message' => 'Property Foo\\C::$other is not defined in constructor',
+            ],
             'paramNamedAsInNoneOfTwoConflictingAncestors' => [
                 'code' => '<?php
                     class A {
