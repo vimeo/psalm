@@ -104,6 +104,10 @@ function names(): Collection { … }
 - A parameter that takes a `Collection` of `Parent` or of any subtype, for reading:
   `Collection<covariant Parent>`. Of `Child` or of any supertype, for writing:
   `Collection<contravariant Child>`.
+- A lower bound: `@template T super Cat` (with `of Animal` before or after it). A `Cat` fits `T` inside the
+  class or function, a type argument must be a supertype of `Cat`, and a call joins `Cat` with what the
+  arguments give (`keep(1)` is `1|Cat`). A method template `@template U super T` lets a method add to an
+  immutable `@template-covariant T` collection: `with(U $item): ImmutableList<U>`.
 - Details: `docs/annotating_code/templated_annotations.md`.
 
 ## Assertions

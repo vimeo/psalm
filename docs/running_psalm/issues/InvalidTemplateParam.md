@@ -25,3 +25,18 @@ interface Source {}
 /** @param Source<contravariant Exception> $source */
 function consume(Source $source): void {}
 ```
+
+Also emitted when a type argument is not a supertype of the template's lower bound (`@template T super Cat`):
+
+```php
+<?php
+
+class Animal {}
+class Cat extends Animal {}
+
+/** @template T super Cat */
+interface Sink {}
+
+/** @param Sink<int> $sink */
+function feed(Sink $sink): void {}
+```

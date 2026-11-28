@@ -275,6 +275,170 @@ function f(Repository $users): void {
 }
 ```
 
+## Template lower bounds
+
+`@template T super Type` gives a template a lower bound: `T` is `Type` or a supertype of it. In the function or class, a `Type` value fits `T`, and a `T` value reads as the constraint (`mixed` without one). A type argument must be a supertype of the lower bound.
+
+```php
+<?php
+class Animal {}
+class Cat extends Animal {}
+final class Kitten extends Cat {}
+
+/** @template T super Cat */
+interface Sink {
+    /** @param T $value */
+    public function put(mixed $value): void;
+}
+
+/**
+ * @template T super Cat
+ * @param Sink<T> $sink
+ * @param T $value
+ */
+function fill(Sink $sink, mixed $value): void {
+    $sink->put(new Cat()); // no issue
+    $sink->put($value); // no issue
+    $sink->put(new Animal()); // InvalidArgument
+}
+
+/**
+ * @param Sink<Animal> $animals
+ * @param Sink<mixed> $anything
+ */
+function f(Sink $animals, Sink $anything): void {} // no issue
+
+/** @param Sink<int> $ints */ // InvalidTemplateParam
+function g(Sink $ints): void {}
+```
+
+A template can have both bounds, in either order, and then a default within both. `@template-covariant`, `@template-contravariant`, `@psalm-template` and `@phpstan-template` take a lower bound the same way.
+
+```php
+<?php
+class Animal {}
+final class Cat extends Animal {}
+
+/**
+ * @template T of Animal super Cat
+ * @template U super Cat of Animal = Animal
+ * @template-covariant V super Cat
+ */
+interface Shelter {}
+
+/** @param Shelter<Animal, Cat, Animal> $shelter */
+function f(Shelter $shelter): void {} // no issue
+```
+
+A call infers a template with a lower bound as Hack does: the lower bound is one more type the template takes, joined with what the arguments give (`keep(1)` is `1|Cat`). So a value argument can only be invalid against the constraint. An invariant argument (`Cage<int>` for `Cage<T>`) and a callback parameter must contain the lower bound. `new` infers class templates the same way.
+
+```php
+<?php
+class Animal {}
+class Cat extends Animal {}
+final class Kitten extends Cat {}
+
+/**
+ * @template T super Cat
+ * @param T $value
+ * @return T
+ */
+function keep(mixed $value): mixed { return $value; }
+
+$cat = keep(new Kitten()); // Cat
+$animal = keep(new Animal()); // Animal
+$mixed = keep(1); // 1|Cat
+
+/**
+ * @template T of Animal super Cat
+ * @param T $value
+ * @return T
+ */
+function keepAnimal(mixed $value): mixed { return $value; }
+
+keepAnimal(1); // InvalidArgument
+
+/** @template T super Cat */
+final class Box {
+    /** @param T $value */
+    public function __construct(public mixed $value) {}
+}
+
+$value = (new Box(1))->value; // 1|Cat
+
+/** @template T */
+final class Cage {
+    /** @param T $value */
+    public function __construct(public mixed $value) {}
+}
+
+/**
+ * @template T super Cat
+ * @param Cage<T> $cage
+ */
+function fill(Cage $cage): void {}
+
+/**
+ * @template T super Cat
+ * @param callable(T): void $callback
+ */
+function each(callable $callback): void {}
+
+/** @param Cage<int> $ints */
+function f(Cage $ints): void {
+    fill($ints); // InvalidArgument
+    each(function (int $i): void {}); // InvalidArgument
+}
+```
+
+A method template can have a template of its class as lower bound (nested in the lower bound, the class template must be invariant), which types the methods that add to an immutable collection:
+
+```php
+<?php
+class Animal {}
+final class Cat extends Animal {}
+final class Dog extends Animal {}
+
+/** @template-covariant T */
+final class ImmutableList {
+    /** @param list<T> $items */
+    public function __construct(private array $items) {}
+
+    /**
+     * @template U super T
+     * @param U $item
+     * @return ImmutableList<U>
+     */
+    public function with(mixed $item): ImmutableList {
+        return new ImmutableList([...$this->items, $item]);
+    }
+}
+
+$cats = new ImmutableList([new Cat()]); // ImmutableList<Cat>
+$pets = $cats->with(new Dog()); // ImmutableList<Cat|Dog>
+```
+
+An override may lower or drop the lower bound of a method template, but not raise it or add one: it must take every type the parent's template may be, wherever the template appears. The templates of the two methods correspond by position. Psalm reports [MethodSignatureMismatch](../running_psalm/issues/MethodSignatureMismatch.md) otherwise.
+
+Psalm does not support a lower bound naming a template of the same `@template` list (itself included), nor one on a template whose constraint names such a template. It reports [InvalidDocblock](../running_psalm/issues/InvalidDocblock.md) and ignores the lower bound, though Hack accepts some of these:
+
+```php
+<?php
+/**
+ * @template A
+ * @template B super A
+ */
+interface Pair {} // InvalidDocblock
+
+/**
+ * @template A
+ * @template B of A super int
+ */
+interface Bounded {} // InvalidDocblock
+```
+
+Psalm used to read `super` as `of`. Code that relied on that now gets the lower bound: with the `Sink` above, `Sink<Kitten>` is reported and `Sink<Animal>` is not.
+
 ## Template defaults
 
 `@template T = Default` gives a template a default type. A constraint comes before it: `@template T of Constraint = Default`. `@template-covariant`, `@template-contravariant`, `@psalm-template` and `@phpstan-template` take a default the same way.
