@@ -39,7 +39,12 @@ function compareAll(array $plan, string $inDir, bool $depsChanged): array
                 $judged = withIssueDiff($judged, $dir, $name);
             }
 
-            $projects[$name] = ['job' => $job['job'], 'base' => slim($base), 'head' => slim($head)] + $judged;
+            $projects[$name] = [
+                'job' => $job['job'],
+                'source' => $plan['sources'][$name] ?? null,
+                'base' => slim($base),
+                'head' => slim($head),
+            ] + $judged;
         }
     }
 
