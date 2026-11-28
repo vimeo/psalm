@@ -3496,6 +3496,78 @@ final class IssetTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],
+            'issetOfADynamicPropertyNameReadsTheName' => [
+                'code' => '<?php
+                    final class R {
+                        public ?array $p = null;
+                        public static ?array $s = null;
+                    }
+
+                    function f(R $r): bool {
+                        if (rand(0, 1)) {
+                            $n = "p";
+                        }
+
+                        return isset($r->{$n});
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'coalesceOnAnOffsetOfADynamicPropertyReadsTheName' => [
+                'code' => '<?php
+                    final class R {
+                        public ?array $p = null;
+                        public static ?array $s = null;
+                    }
+
+                    function f(R $r): mixed {
+                        if (rand(0, 1)) {
+                            $n = "p";
+                        }
+
+                        return $r->{$n}["k"] ?? [];
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'issetOfADynamicNullsafePropertyNameReadsTheName' => [
+                'code' => '<?php
+                    final class R {
+                        public ?array $p = null;
+                        public static ?array $s = null;
+                    }
+
+                    function f(?R $r): bool {
+                        if (rand(0, 1)) {
+                            $n = "p";
+                        }
+
+                        return isset($r?->{$n});
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'issetOfADynamicStaticPropertyNameReadsTheName' => [
+                'code' => '<?php
+                    final class R {
+                        public ?array $p = null;
+                        public static ?array $s = null;
+                    }
+
+                    function f(): bool {
+                        if (rand(0, 1)) {
+                            $n = "p";
+                        }
+
+                        return isset(R::${$n});
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'coalesceOnAFetchFromANullsafeCallKeepsDynamicNameIssues' => [
                 'code' => '<?php
                     final class R {

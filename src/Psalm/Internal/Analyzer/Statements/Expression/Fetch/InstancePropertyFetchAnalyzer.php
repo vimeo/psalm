@@ -101,11 +101,18 @@ final class InstancePropertyFetchAnalyzer
         $context->inside_general_use = true;
 
         if (!$stmt->name instanceof PhpParser\Node\Identifier) {
+            // the name is read even in isset mode
+            $was_inside_isset = $context->inside_isset;
+            $context->inside_isset = false;
+
             if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->name, $context) === false) {
                 $context->inside_general_use = $was_inside_general_use;
+                $context->inside_isset = $was_inside_isset;
 
                 return false;
             }
+
+            $context->inside_isset = $was_inside_isset;
         }
 
         if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->var, $context) === false) {
