@@ -1243,6 +1243,8 @@ final class AssignmentAnalyzer
                 && !$var_comment->from_phpstan
                 && (!$not_ignored_docblock_var_ids || isset($not_ignored_docblock_var_ids[$var_comment->var_id]))
                 && isset($context->vars_in_scope[$var_comment->var_id])
+                // a variable left over from a previous pass of an enclosing loop is only possibly defined
+                && !$context->vars_in_scope[$var_comment->var_id]->possibly_undefined
                 && $context->vars_in_scope[$var_comment->var_id]->getId() === $var_comment_type->getId()
                 && !$var_comment_type->isMixed()
             ) {
