@@ -33,6 +33,7 @@ use Psalm\Node\Expr\VirtualArray;
 use Psalm\Node\Expr\VirtualVariable;
 use Psalm\Node\Scalar\VirtualString;
 use Psalm\Node\VirtualArrayItem;
+use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Type;
 use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TClassString;
@@ -207,6 +208,7 @@ final class NamedFunctionCallHandler
 
     /**
      * @param lowercase-string $function_id
+     * @param array<int, FunctionLikeParameter>|null $function_params
      */
     public static function handle(
         StatementsAnalyzer $statements_analyzer,
@@ -216,6 +218,7 @@ final class NamedFunctionCallHandler
         PhpParser\Node\Name $function_name,
         string $function_id,
         Context $context,
+        ?array $function_params,
     ): void {
         if ($function_id === 'get_class'
             || $function_id === 'gettype'
@@ -242,10 +245,10 @@ final class NamedFunctionCallHandler
 
         self::checkDeprecatedArguments($statements_analyzer, $stmt, $function_id);
 
-        $first_arg = $stmt->getArgs()[0] ?? null;
+        $first_arg = self::getArg($stmt, $function_params, 0);
 
         if ($function_id === 'method_exists') {
-            $second_arg = $stmt->getArgs()[1] ?? null;
+            $second_arg = self::getArg($stmt, $function_params, 1);
 
             if ($first_arg
                 && $first_arg->value instanceof PhpParser\Node\Expr\Variable
@@ -261,7 +264,7 @@ final class NamedFunctionCallHandler
         }
 
         if ($function_id === 'class_alias') {
-            $alias_name = self::getClassNameOfArgument($stmt->getArgs()[1] ?? null);
+            $alias_name = self::getClassNameOfArgument(self::getArg($stmt, $function_params, 1));
             $alias_name_parts = explode('\\', (string) $alias_name);
             $alias_message = PhpDeprecations::getClassLikeNameMessage('an alias', array_pop($alias_name_parts), false);
 
@@ -282,7 +285,7 @@ final class NamedFunctionCallHandler
             || $function_id === 'interface_exists'
             || $function_id === 'enum_exists'
         ) {
-            self::handleClassLikeDeclarationCheck($codebase, $stmt, $function_id, $context);
+            self::handleClassLikeDeclarationCheck($codebase, $stmt, $function_id, $context, $function_params);
 
             return;
         }
@@ -511,8 +514,9 @@ final class NamedFunctionCallHandler
                     );
                 }
 
-                if ($fq_const_name !== null && isset($stmt->getArgs()[1])) {
-                    $second_arg = $stmt->getArgs()[1];
+                if ($fq_const_name !== null
+                    && ($second_arg = self::getArg($stmt, $function_params, 1)) !== null
+                ) {
                     $was_in_call = $context->inside_call;
                     $context->inside_call = true;
                     ExpressionAnalyzer::analyze($statements_analyzer, $second_arg->value, $context);
@@ -705,7 +709,7 @@ final class NamedFunctionCallHandler
             $first_arg_type = $statements_analyzer->node_data->getType($first_arg->value);
 
             if ($first_arg_type && $first_arg_type->isString()) {
-                $third_arg = $stmt->getArgs()[2] ?? null;
+                $third_arg = self::getArg($stmt, $function_params, 2);
                 if ($third_arg) {
                     $third_arg_type = $statements_analyzer->node_data->getType($third_arg->value);
                 } else {
@@ -1022,14 +1026,16 @@ final class NamedFunctionCallHandler
      * makes it a phantom class
      *
      * @param 'class_alias'|'class_exists'|'interface_exists'|'enum_exists' $function_id
+     * @param array<int, FunctionLikeParameter>|null $function_params
      */
     private static function handleClassLikeDeclarationCheck(
         Codebase $codebase,
         PhpParser\Node\Expr\FuncCall $stmt,
         string $function_id,
         Context $context,
+        ?array $function_params,
     ): void {
-        $class_name = self::getClassNameOfArgument($stmt->getArgs()[0] ?? null);
+        $class_name = self::getClassNameOfArgument(self::getArg($stmt, $function_params, 0));
 
         if ($class_name === null) {
             return;
@@ -1038,7 +1044,7 @@ final class NamedFunctionCallHandler
         if ($function_id === 'class_alias') {
             // the alias is declared from here on, whatever was checked about it before, unless the class it aliases
             // may not exist: then class_alias() fails
-            $alias_arg = $stmt->getArgs()[1] ?? null;
+            $alias_arg = self::getArg($stmt, $function_params, 1);
 
             if (($codebase->classlikes->classOrInterfaceOrEnumExists($class_name, null, $context)
                     || $codebase->classlikes->traitExists($class_name, null, $context))
@@ -1065,6 +1071,31 @@ final class NamedFunctionCallHandler
     /**
      * The class an argument names: a string literal, or `Foo::class`
      */
+    /**
+     * The argument given to the parameter at $offset, by position or by name. Without the parameters, only an
+     * argument given by position.
+     *
+     * @param array<int, FunctionLikeParameter>|null $function_params
+     * @psalm-capabilities read-props
+     */
+    private static function getArg(
+        PhpParser\Node\Expr\FuncCall $stmt,
+        ?array $function_params,
+        int $offset,
+    ): ?PhpParser\Node\Arg {
+        if (isset($function_params[$offset])) {
+            return ArgumentsAnalyzer::getArgForParam(
+                $stmt->getArgs(),
+                $function_params,
+                $function_params[$offset]->name,
+            );
+        }
+
+        $arg = $stmt->getArgs()[$offset] ?? null;
+
+        return $arg?->name === null ? $arg : null;
+    }
+
     private static function getClassNameOfArgument(?PhpParser\Node\Arg $arg): ?string
     {
         if ($arg === null) {

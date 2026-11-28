@@ -4978,6 +4978,63 @@ final class FunctionCallTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => ['ImplicitToStringCast'],
             ],
+            'arrayWalkWithNamedArgumentsInAnotherOrder' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param list<string> $values */
+                    function named(array $values): void {
+                        array_walk(callback: static function (string $v): void { echo $v; }, array: $values);
+                        array_walk_recursive(callback: static function (string $v): void { echo $v; }, array: $values);
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'classAliasWithNamedArgumentsInAnotherOrder' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Foo {}
+                    class_alias(alias: 'FooAlias', class: Foo::class);
+                    new FooAlias();
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'classExistsWithNamedArgumentsInAnotherOrder' => [
+                'code' => <<<'PHP'
+                    <?php
+                    if (class_exists(autoload: false, class: 'MaybeThere')) {
+                        new MaybeThere();
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'defineWithNamedArgumentsInAnotherOrder' => [
+                'code' => <<<'PHP'
+                    <?php
+                    define(value: 1, constant_name: 'MY_CONST');
+                    echo MY_CONST;
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'isAWithNamedArgumentsAllowingStrings' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Foo {}
+                    function isFoo(string $name): bool {
+                        return is_a(allow_string: true, class: Foo::class, object_or_class: $name);
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
@@ -7195,6 +7252,18 @@ final class FunctionCallTest extends TestCase
                 ',
                 'error_message' => 'RedundantFunctionCall',
                 'error_levels' => ['DeprecatedFunction'],
+            ],
+            'is_a_withNamedArgumentsInAnotherOrder' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Foo {}
+                    function isFoo(string $name): bool {
+                        return is_a(allow_string: false, class: Foo::class, object_or_class: $name);
+                    }
+                    PHP,
+                'error_message' => 'RedundantFunctionCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:12 - Call to is_a always return false',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'is_a_withAUnionOfStringsAndNoThirdArg' => [
                 'code' => '<?php

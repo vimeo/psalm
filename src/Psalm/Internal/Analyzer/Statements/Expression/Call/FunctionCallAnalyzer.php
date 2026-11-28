@@ -813,6 +813,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                 $function_name,
                 strtolower($function_call_info->function_id),
                 $context,
+                $function_call_info->function_params,
             );
         }
 
