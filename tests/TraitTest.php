@@ -256,6 +256,58 @@ final class TraitTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'ownMethodOfAClassIsUsedInsteadOfTheTraitMethodAdaptedAsPrivate' => [
+                'code' => '<?php
+                    class P {
+                        public function __call(string $name, array $arguments): int {
+                            return 1;
+                        }
+                    }
+
+                    trait T {
+                        public function foo(): string {
+                            return "";
+                        }
+                    }
+
+                    final class C extends P {
+                        use T {
+                            foo as private;
+                        }
+
+                        public function foo(): string {
+                            return "own";
+                        }
+                    }
+
+                    $a = (new C)->foo();',
+                'assertions' => [
+                    '$a===' => 'string',
+                ],
+            ],
+            'ownMethodOfAClassWithoutAMagicCallIsPublicWhenTheTraitMethodIsAdaptedAsPrivate' => [
+                'code' => '<?php
+                    trait T {
+                        public function foo(): string {
+                            return "";
+                        }
+                    }
+
+                    final class C {
+                        use T {
+                            foo as private;
+                        }
+
+                        public function foo(): string {
+                            return "own";
+                        }
+                    }
+
+                    $a = (new C)->foo();',
+                'assertions' => [
+                    '$a===' => 'string',
+                ],
+            ],
             'parentClassConstantAndStaticPropertyInATraitAreTheOnesOfTheClassUsingIt' => [
                 'code' => '<?php
                     class Box {
@@ -2484,6 +2536,23 @@ final class TraitTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'traitMethodAdaptedAsPrivateWhenTheClassDoesNotDeclareIt' => [
+                'code' => '<?php
+                    trait T {
+                        public function foo(): string {
+                            return "";
+                        }
+                    }
+
+                    final class C {
+                        use T {
+                            foo as private;
+                        }
+                    }
+
+                    (new C)->foo();',
+                'error_message' => 'InaccessibleMethod',
+            ],
             'parentClassOfATraitUsedByAClassWithoutParent' => [
                 'code' => '<?php
                     trait Describes {
