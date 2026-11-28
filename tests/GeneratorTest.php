@@ -22,6 +22,40 @@ final class GeneratorTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'varAnnotationOfAYieldSeesTheTemplatesOfTheFunction' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array
+                     * @param T $data
+                     * @return Generator<int, mixed, mixed, void>
+                     */
+                    function gen(array $data): Generator {
+                        /** @psalm-suppress MixedAssignment */
+                        $x = /** @var T $data */ yield $data;
+                        /** @psalm-check-type $data = array<array-key, mixed> */;
+                        echo (int) $x;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['UnnecessaryVarAnnotation'],
+            ],
+            'varAnnotationOfAYieldSeesTheTypeAliasesOfTheFile' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-type Pair = array{int, int}
+                     */
+                    final class Holder {
+                        /** @return Generator<int, mixed, mixed, void> */
+                        public function gen(): Generator {
+                            $data = [1, 2];
+                            /** @psalm-suppress MixedAssignment */
+                            $x = /** @var Pair $data */ yield $data;
+                            /** @psalm-check-type-exact $data = list{int, int} */;
+                            echo (int) $x;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['UnnecessaryVarAnnotation'],
+            ],
             'yieldFromOfAnOuterGeneratorWithoutASendTypeToAnInnerOneSentNull' => [
                 'code' => '<?php
                     /** @return Generator<int, string, null, void> */
