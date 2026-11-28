@@ -1540,7 +1540,7 @@ final class AtomicTypeComparator
      */
     private static function getUnsealedShape(Union $type): Union
     {
-        $shape = $type->isSingle() ? $type->getSingleAtomic() : null;
+        $shape = $type->isSingleAtomic() ? $type->getSingleAtomic() : null;
 
         if (!$shape instanceof TKeyedArray || $shape->fallback_params !== null || $shape->is_list) {
             return $type;

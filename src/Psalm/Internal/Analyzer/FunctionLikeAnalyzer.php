@@ -93,14 +93,12 @@ use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCapabilities;
 use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TGenericObject;
-use Psalm\Type\Atomic\TIntersection;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
-use function array_any;
 use function array_combine;
 use function array_diff_key;
 use function array_filter;
@@ -2510,18 +2508,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
                 $param_type = $param_type->addParentNodes($parent_nodes);
 
-                if (array_any(
-                    $param_type->getAtomicTypes(),
-                    static fn(Atomic $atomic_type): bool => $atomic_type instanceof TIntersection,
-                )) {
-                    // in its function, a template intersected with an array is the template, with a narrower bound
-                    $param_type = $param_type->getBuilder()->setTypes(array_map(
-                        static fn(Atomic $atomic_type): Atomic => $atomic_type instanceof TIntersection
-                            ? TypeParser::getIntersectedTemplate($atomic_type, $codebase) ?? $atomic_type
-                            : $atomic_type,
-                        array_values($param_type->getAtomicTypes()),
-                    ))->freeze();
-                }
+                $param_type = TypeParser::narrowIntersectedTemplates($param_type, $codebase);
             } else {
                 $param_type = new Union([new TMixed()], [
                     'by_ref' => $function_param->by_ref,

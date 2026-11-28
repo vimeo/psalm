@@ -93,7 +93,6 @@ use Psalm\Type\Union;
 
 use function array_all;
 use function array_any;
-use function array_filter;
 use function array_key_exists;
 use function array_key_first;
 use function array_keys;
@@ -130,6 +129,7 @@ use function strspn;
 use function strtolower;
 use function strtr;
 use function substr;
+use function usort;
 
 use const PHP_INT_MAX;
 
@@ -1647,19 +1647,18 @@ final class TypeParser
             return new TMixed();
         }
 
-        $is_template = static fn(array $member): bool => $member[0] instanceof TTemplateParam;
-        $intersects_template_with_array = array_any($members, $is_template)
+        if (array_any($members, static fn(array $member): bool => $member[0] instanceof TTemplateParam)
             && array_any(
                 $members,
                 static fn(array $member): bool => $member[0] instanceof TArray || $member[0] instanceof TKeyedArray,
-            );
-
-        if ($intersects_template_with_array) {
+            )
+        ) {
             // the arrays are intersected together first, then with the templates
-            $members = [
-                ...array_filter($members, static fn(array $member): bool => !$is_template($member)),
-                ...array_filter($members, $is_template),
-            ];
+            usort(
+                $members,
+                static fn(array $member_1, array $member_2): int => ($member_1[0] instanceof TTemplateParam)
+                    <=> ($member_2[0] instanceof TTemplateParam),
+            );
         } elseif ($only_object_types
             && !array_all(
                 $members,
@@ -1814,7 +1813,7 @@ final class TypeParser
         $members = [[new TArray([Type::getArrayKey(), Type::getMixed()])]];
 
         foreach ($intersection->types as $type) {
-            $atomic_type = $type->isSingle() ? $type->getSingleAtomic() : null;
+            $atomic_type = $type->isSingleAtomic() ? $type->getSingleAtomic() : null;
 
             if ($template === null && $atomic_type instanceof TTemplateParam) {
                 $template = $atomic_type;
@@ -1840,6 +1839,63 @@ final class TypeParser
         }
 
         return $template->replaceAs(self::getUnionOrNever($bound, $intersection->from_docblock));
+    }
+
+    /**
+     * A declared type where its templates aren't replaced, as in the function declaring them, with each template
+     * intersected with an array as getIntersectedTemplate() gives it
+     */
+    public static function narrowIntersectedTemplates(Union $type, Codebase $codebase): Union
+    {
+        if (!array_any(
+            $type->getAtomicTypes(),
+            static fn(Atomic $atomic_type): bool => $atomic_type instanceof TIntersection,
+        )) {
+            return $type;
+        }
+
+        return $type->getBuilder()->setTypes(array_map(
+            static fn(Atomic $atomic_type): Atomic => $atomic_type instanceof TIntersection
+                ? self::getIntersectedTemplate($atomic_type, $codebase) ?? $atomic_type
+                : $atomic_type,
+            array_values($type->getAtomicTypes()),
+        ))->freeze();
+    }
+
+    /**
+     * An intersection whose templates are replaced: the values having all its types, or a template intersected with
+     * an array as getIntersectedTemplate() gives it where the template is still there
+     *
+     * @return non-empty-list<Atomic>
+     */
+    public static function resolveIntersection(TIntersection $intersection, Codebase $codebase): array
+    {
+        // a type variable stands for its bounds
+        $intersection = $intersection->setTypes(array_map(
+            static fn(Union $type): Union => TypeVariableTracker::resolveTypeVariables($type, $codebase),
+            $intersection->types,
+        ));
+
+        if ($template = self::getIntersectedTemplate($intersection, $codebase)) {
+            return [$template];
+        }
+
+        if (array_any($intersection->types, static fn(Union $type): bool => $type->hasTemplate())) {
+            return [$intersection];
+        }
+
+        try {
+            $atomic_types = self::intersectTypes(
+                array_map(static fn(Union $type): array => array_values($type->getAtomicTypes()), $intersection->types),
+                $codebase,
+                $intersection->from_docblock,
+            );
+        } catch (TypeParseTreeException) {
+            // e.g. a class constant that isn't known yet
+            return [$intersection];
+        }
+
+        return $atomic_types === [] ? [new TNever($intersection->from_docblock)] : $atomic_types;
     }
 
     /**
@@ -1962,6 +2018,13 @@ final class TypeParser
     ): array {
         if (self::hasUnresolvedReference($type_1) || self::hasUnresolvedReference($type_2)) {
             throw self::getUnrepresentableIntersectionException($type_1, $type_2);
+        }
+
+        // like `array`, `mixed` leaves the keys of a shape open
+        if ($type_1::class === TMixed::class && $type_2 instanceof TKeyedArray) {
+            $type_1 = new TArray([Type::getArrayKey(), Type::getMixed()], $from_docblock);
+        } elseif ($type_2::class === TMixed::class && $type_1 instanceof TKeyedArray) {
+            $type_2 = new TArray([Type::getArrayKey(), Type::getMixed()], $from_docblock);
         }
 
         if ($type_1::class === TMixed::class) {

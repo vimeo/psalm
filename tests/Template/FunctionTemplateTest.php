@@ -4360,6 +4360,67 @@ final class FunctionTemplateTest extends TestCase
                     '$a===' => "array{id: 2, name: 'x'}",
                 ],
             ],
+            'propertyOfTemplateIntersectedWithArrayShape' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array
+                     */
+                    final class Holder {
+                        /** @var T&array{id: int} */
+                        public array $v;
+
+                        /** @param T&array{id: int} $v */
+                        public function __construct(array $v) {
+                            $this->v = $v;
+                        }
+
+                        public function id(): int {
+                            return $this->v["id"];
+                        }
+                    }
+
+                    $a = (new Holder(["id" => 1, "n" => "x"]))->v;
+
+                    /** @var Holder<array{z: bool}> $holder */
+                    $holder = new Holder(["id" => 1, "z" => true]);
+                    $b = $holder->v;',
+                'assertions' => [
+                    '$a===' => "array{id: 1, n: 'x'}",
+                    '$b===' => 'array{id: int, z: bool}',
+                ],
+            ],
+            'docblockVarOfTemplateIntersectedWithArrayShape' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array
+                     * @param T $data
+                     * @param list<T> $list
+                     * @return Generator<int, int>
+                     */
+                    function ids(array $data, array $list): Generator {
+                        /** @var T&array{id: int} $data */
+                        $a = $data;
+                        yield $a["id"];
+
+                        /** @var T&array{id: int} $item */
+                        foreach ($list as $item) {
+                            yield $item["id"];
+                        }
+
+                        /** @var T&array{id: int} $b */
+                        $b = $data;
+                        yield $b["id"];
+                    }
+
+                    /**
+                     * @template T of array
+                     * @param T $data
+                     */
+                    function id(array $data): int {
+                        /** @var T&array{id: int} $data */
+                        return $data["id"];
+                    }',
+            ],
             'classTemplateIntersectedWithArrayShape' => [
                 'code' => '<?php
                     /**

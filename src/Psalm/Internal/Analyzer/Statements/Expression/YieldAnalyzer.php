@@ -21,6 +21,7 @@ use Psalm\Internal\Codebase\PhpDeprecations;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Internal\Type\TypeParser;
 use Psalm\Issue\DeprecatedSyntax;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\UnnecessaryVarAnnotation;
@@ -81,6 +82,7 @@ final class YieldAnalyzer
                     $context->self ? new TNamedObject($context->self) : null,
                     $statements_analyzer->getParentFQCLN(),
                 );
+                $comment_type = TypeParser::narrowIntersectedTemplates($comment_type, $codebase);
 
                 $type_location = null;
 

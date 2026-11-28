@@ -2636,6 +2636,18 @@ final class ReturnTypeTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'mixedAndShapeIntersection' => [
+                'code' => '<?php
+                    /** @return mixed&array{a: int} */
+                    function shape(): array {
+                        throw new RuntimeException();
+                    }
+
+                    $a = shape();',
+                'assertions' => [
+                    '$a===' => 'array{a: int, ...<array-key, mixed>}',
+                ],
+            ],
             'genericArrayAndClassConstantShapeIntersection' => [
                 'code' => '<?php
                     /** @return array<string, int>&Shapes::USER */
